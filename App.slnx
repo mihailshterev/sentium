@@ -12,10 +12,10 @@
   </Folder>
   <Folder Name="/services/" />
   <Folder Name="/services/identity-provider/">
-    <Project Path="IdentityProvider.Application/IdentityProvider.Application.csproj" Id="72ed316f-4d98-4e89-ba73-583715d742ed" />
-    <Project Path="IdentityProvider.Core/IdentityProvider.Core.csproj" Id="d01a0c8f-6343-4217-8248-050fd4d7771a" />
-    <Project Path="IdentityProvider.Infrastructure/IdentityProvider.Infrastructure.csproj" Id="74ef70ce-9867-4a3d-b8da-683f3085ff02" />
     <Project Path="services/identity-provider/IdentityProvider.Api/IdentityProvider.Api.csproj" />
+    <Project Path="services/identity-provider/IdentityProvider.Application/IdentityProvider.Application.csproj" />
+    <Project Path="services/identity-provider/IdentityProvider.Core/IdentityProvider.Core.csproj" />
+    <Project Path="services/identity-provider/IdentityProvider.Infrastructure/IdentityProvider.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/Solution Items/">
     <File Path="Directory.Build.props" />
