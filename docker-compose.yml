@@ -1,0 +1,11 @@
+version: "3.8"
+
+services:
+  identity-provider:
+    build:
+      context: .
+      dockerfile: services/identity-provider/IdentityProvider.Api/Dockerfile
+    ports:
+      - "7001:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development

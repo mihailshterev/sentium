@@ -1,7 +1,7 @@
 {
   "version": 2,
   "dependencies": {
-    "net9.0": {
+    "net10.0": {
       "Yarp.ReverseProxy": {
         "type": "Direct",
         "requested": "[2.3.0, )",
@@ -17,8 +17,8 @@
         "contentHash": "ne1843evDugl0md7Fjzy6QjJrzsjh46ZKbhf8GwBXb5f/gw97J4bxMs0NQKifDuThh/f0bZ0e62NPl1jzTuRqA=="
       }
     },
-    "net9.0/linux-x64": {},
-    "net9.0/osx-x64": {},
-    "net9.0/win-x64": {}
+    "net10.0/linux-x64": {},
+    "net10.0/osx-x64": {},
+    "net10.0/win-x64": {}
   }
 }

@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <Sdk Name="Aspire.AppHost.Sdk" Version="9.4.0" />
+  <Sdk Name="Aspire.AppHost.Sdk" Version="13.0.0" />
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
@@ -11,5 +11,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\gateway\ApiGateway.csproj" />
+    <ProjectReference Include="..\services\identity-provider\IdentityProvider.Api\IdentityProvider.Api.csproj" />
   </ItemGroup>
 </Project>
