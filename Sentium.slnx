@@ -4,12 +4,8 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Folder Name="/aspire/">
-    <Project Path="aspire/AppHost.csproj" />
-  </Folder>
-  <Folder Name="/gateway/">
-    <Project Path="gateway/ApiGateway.csproj" />
-  </Folder>
+  <Project Path="aspire/AppHost.csproj" />
+  <Project Path="gateway/ApiGateway.csproj" />
   <Folder Name="/services/" />
   <Folder Name="/services/IdentityProvider/">
     <Project Path="services/IdentityProvider/IdentityProvider.Api/IdentityProvider.Api.csproj" />
