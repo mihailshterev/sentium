@@ -1,18 +1,23 @@
 using IdentityProvider.Infrastructure.Data;
-using IdentityProvider.Infrastructure.Options;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
 
 namespace IdentityProvider.Infrastructure;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddDatabaseServices(this IServiceCollection services)
+    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddDbContext<IdentityDbContext>((provider, options) =>
-            options.UseSqlServer(provider.GetRequiredService<IOptionsSnapshot<DatabaseOptions>>().Value.DefaultConnection));
-
+        services.AddDbContext<IdentityDbContext>((options) => options.UseSqlServer(configuration.GetConnectionString("Default")));
         return services;
+    }
+
+    public static void ApplyMigrations(this WebApplication app)
+    {
+        using var scope = app.Services.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
+        db.Database.Migrate();
     }
 }

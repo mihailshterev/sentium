@@ -1,7 +1,5 @@
 using IdentityProvider.Application;
 using IdentityProvider.Infrastructure;
-using IdentityProvider.Infrastructure.Data;
-using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,7 +7,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
-builder.Services.AddDatabaseServices();
+builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddIdentityServices();
 
 var app = builder.Build();
@@ -17,11 +15,13 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    //using (var scope = app.Services.CreateScope())
-    //{
-    //    var db = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
-    //    db.Database.Migrate();
-    //}
+    using var scope = app.Services.CreateScope();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+    logger.LogInformation("Applying database migrations...");
+    app.ApplyMigrations();
+    logger.LogInformation("Database migrations applied");
+
     app.MapOpenApi();
 }
 
