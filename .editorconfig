@@ -10,6 +10,22 @@ trim_trailing_whitespace = true
 insert_final_newline = true
 charset = utf-8
 
+# Analyzer severity levels
+# CS8602: Dereferencing a value that might be null (prevents NullReferenceException)
+dotnet_diagnostic.CS8602.severity = error
+
+# CS8604: Passing a possibly null value to a non-nullable parameter
+dotnet_diagnostic.CS8604.severity = error
+
+# CA2000: IDisposable objects must be disposed before going out of scope
+dotnet_diagnostic.CA2000.severity = error
+
+# CA1062: Suggests null-checking parameters in externally visible methods
+dotnet_diagnostic.CA1062.severity = suggestion
+
+# IDE0058: Expression value is computed but never used
+dotnet_diagnostic.IDE0058.severity = none
+
 # New line
 csharp_new_line_before_open_brace = all
 csharp_new_line_before_else = true
@@ -41,6 +57,10 @@ dotnet_naming_style.pascal_case_style.capitalization = pascal_case
 csharp_using_directive_placement = outside_namespace:suggestion
 dotnet_sort_system_directives_first = true
 csharp_prefer_braces = true:silent
+csharp_style_namespace_declarations = file_scoped:silent
+csharp_style_var_for_built_in_types = true:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = true:suggestion
 
 # Expression-level preferences
 dotnet_style_object_initializer = true:suggestion
