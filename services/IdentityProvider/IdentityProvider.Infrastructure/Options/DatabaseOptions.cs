@@ -1,6 +1,6 @@
 namespace IdentityProvider.Infrastructure.Options;
 
-internal class DatabaseOptions
+public sealed class DatabaseOptions
 {
     public string DefaultConnection { get; set; } = null!;
 }

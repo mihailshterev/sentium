@@ -194,7 +194,11 @@
         "contentHash": "o94k2RKuAce3GeDMlUvIXlhVa1kWpJw95E6C9LwW0KlG0nj5+SgCiIxJ2Eroqb9sLtG1mEMbFttZIBZ13EJPvQ=="
       },
       "identityprovider.application": {
-        "type": "Project"
+        "type": "Project",
+        "dependencies": {
+          "IdentityProvider.Core": "[1.0.0, )",
+          "IdentityProvider.Infrastructure": "[1.0.0, )"
+        }
       },
       "identityprovider.core": {
         "type": "Project",
@@ -205,6 +209,7 @@
       "identityprovider.infrastructure": {
         "type": "Project",
         "dependencies": {
+          "IdentityProvider.Application": "[1.0.0, )",
           "IdentityProvider.Core": "[1.0.0, )",
           "Microsoft.AspNetCore.Authentication.JwtBearer": "[10.0.1, )",
           "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "[10.0.1, )",

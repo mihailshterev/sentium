@@ -1,6 +1,6 @@
-namespace IdentityProvider.Infrastructure.Options;
+namespace IdentityProvider.Application.Options;
 
-internal class JwtOptions
+public sealed class JwtOptions
 {
     public string Secret { get; set; } = null!;
     public string Issuer { get; set; } = null!;

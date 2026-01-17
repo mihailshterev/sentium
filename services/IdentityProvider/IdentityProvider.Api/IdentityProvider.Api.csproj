@@ -12,7 +12,4 @@
     <ProjectReference Include="..\IdentityProvider.Core\IdentityProvider.Core.csproj" />
     <ProjectReference Include="..\IdentityProvider.Infrastructure\IdentityProvider.Infrastructure.csproj" />
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="DTOs\" />
-  </ItemGroup>
 </Project>
