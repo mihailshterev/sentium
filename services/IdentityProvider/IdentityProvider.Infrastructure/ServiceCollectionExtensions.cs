@@ -14,10 +14,10 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    public static void ApplyMigrations(this WebApplication app)
+    public static async Task ApplyMigrations(this WebApplication app)
     {
         using var scope = app.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
-        db.Database.Migrate();
+        await db.Database.MigrateAsync();
     }
 }

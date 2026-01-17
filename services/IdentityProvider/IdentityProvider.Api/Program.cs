@@ -19,7 +19,7 @@ if (app.Environment.IsDevelopment())
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
 
     logger.LogInformation("Applying database migrations...");
-    app.ApplyMigrations();
+    await app.ApplyMigrations();
     logger.LogInformation("Database migrations applied");
 
     app.MapOpenApi();
