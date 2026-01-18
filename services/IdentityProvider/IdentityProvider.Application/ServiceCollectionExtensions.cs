@@ -50,7 +50,6 @@ public static class ServiceCollectionExtensions
                 }
             };
         });
-        //.AddCookie(IdentityConstants.ApplicationScheme);
 
         services.AddAuthorizationBuilder();
 
@@ -64,6 +63,27 @@ public static class ServiceCollectionExtensions
         })
         .AddEntityFrameworkStores<IdentityDbContext>()
         .AddDefaultTokenProviders();
+
+        services.AddOpenIddict().AddCore(options =>
+        {
+            options.UseEntityFrameworkCore()
+                   .UseDbContext<IdentityDbContext>();
+        }).AddServer(options =>
+        {
+            options.AllowAuthorizationCodeFlow();
+
+            options.AddDevelopmentEncryptionCertificate()
+                    .AddDevelopmentSigningCertificate();
+
+            options.UseAspNetCore()
+                   .EnableAuthorizationEndpointPassthrough()
+                   .EnableTokenEndpointPassthrough();
+
+            options.SetAuthorizationEndpointUris("/connect/authorize");
+            options.SetTokenEndpointUris("/connect/token");
+
+            options.RegisterScopes("openid", "profile", "email", "api");
+        });
 
         return services;
     }

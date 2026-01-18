@@ -14,5 +14,7 @@ public sealed class IdentityDbContext(DbContextOptions<IdentityDbContext> option
         builder.Entity<ApplicationUser>(b => b.ToTable("Users"));
         builder.Entity<ApplicationRole>(b => b.ToTable("Roles"));
         builder.Entity<IdentityUserRole<Guid>>(b => b.ToTable("UserRoles"));
+
+        builder.UseOpenIddict();
     }
 }
