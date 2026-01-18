@@ -5,7 +5,9 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi();
+builder.Services.AddControllers();
 
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddIdentityServices();
@@ -13,6 +15,8 @@ builder.Services.AddIdentityServices();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
+app.UseExceptionHandler();
+
 if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();
@@ -29,5 +33,7 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapControllers();
 
 app.Run();
