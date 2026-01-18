@@ -500,6 +500,7 @@
           "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "[10.0.1, )",
           "Microsoft.EntityFrameworkCore": "[10.0.1, )",
           "Microsoft.EntityFrameworkCore.SqlServer": "[10.0.1, )",
+          "OpenIddict.AspNetCore": "[7.2.0, )",
           "OpenIddict.EntityFrameworkCore": "[7.2.0, )"
         }
       },

@@ -11,6 +11,7 @@ builder.Services.AddControllers();
 
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddIdentityServices();
+builder.Services.AddApplication();
 
 var app = builder.Build();
 
