@@ -482,7 +482,6 @@
         "type": "Project",
         "dependencies": {
           "IdentityProvider.Core": "[1.0.0, )",
-          "IdentityProvider.Infrastructure": "[1.0.0, )",
           "OpenIddict.AspNetCore": "[7.2.0, )"
         }
       },
@@ -495,6 +494,7 @@
       "identityprovider.infrastructure": {
         "type": "Project",
         "dependencies": {
+          "IdentityProvider.Application": "[1.0.0, )",
           "IdentityProvider.Core": "[1.0.0, )",
           "Microsoft.AspNetCore.Authentication.JwtBearer": "[10.0.1, )",
           "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "[10.0.1, )",

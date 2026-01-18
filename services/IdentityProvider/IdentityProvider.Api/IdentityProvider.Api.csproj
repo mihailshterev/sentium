@@ -10,7 +10,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\IdentityProvider.Application\IdentityProvider.Application.csproj" />
-    <ProjectReference Include="..\IdentityProvider.Core\IdentityProvider.Core.csproj" />
     <ProjectReference Include="..\IdentityProvider.Infrastructure\IdentityProvider.Infrastructure.csproj" />
   </ItemGroup>
 </Project>
