@@ -1,6 +1,6 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore;
-using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
@@ -11,56 +11,42 @@ namespace IdentityProvider.Api.Controllers;
 [Route("auth")]
 public sealed class AuthController : ControllerBase
 {
-    [HttpGet("/connect/authorize")]
+    [HttpGet("~/connect/authorize")]
     public IActionResult Authorize()
     {
-        var request = HttpContext.GetOpenIddictServerRequest()
-            ?? throw new InvalidOperationException("OIDC request missing");
+        var request = HttpContext.GetOpenIddictServerRequest()!;
 
         if (!User.Identity!.IsAuthenticated)
         {
-            return Challenge(); // Redirects to /login
+            return Challenge(IdentityConstants.ApplicationScheme);
         }
 
-        var identity = new ClaimsIdentity(
-            OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+        var identity = new ClaimsIdentity(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
 
-        identity.AddClaim(
-            OpenIddictConstants.Claims.Subject,
-            User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-
-        identity.AddClaim(
-            OpenIddictConstants.Claims.Email,
-            User.FindFirstValue(ClaimTypes.Email)!);
+        identity.AddClaim(OpenIddictConstants.Claims.Subject, User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        identity.AddClaim(OpenIddictConstants.Claims.Email, User.FindFirstValue(ClaimTypes.Email)!);
 
         var principal = new ClaimsPrincipal(identity);
         principal.SetScopes(request.GetScopes());
 
-        return SignIn(
-            principal,
-            OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+        return SignIn(principal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
     }
 
     [HttpPost("~/connect/token")]
-    public async Task<IActionResult> Exchange()
+    public IActionResult Exchange()
     {
-        var request = HttpContext.GetOpenIddictServerRequest();
+        var request = HttpContext.GetOpenIddictServerRequest()!;
 
-        if (request!.IsClientCredentialsGrantType())
+        if (request.IsClientCredentialsGrantType())
         {
-            var identity = new ClaimsIdentity(
-                OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+            var identity = new ClaimsIdentity(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
 
-            identity.AddClaim(
-                OpenIddictConstants.Claims.Subject,
-                request!.ClientId!,
-                OpenIddictConstants.Destinations.AccessToken);
+            identity.AddClaim(OpenIddictConstants.Claims.Subject, request.ClientId!, OpenIddictConstants.Destinations.AccessToken);
 
             var principal = new ClaimsPrincipal(identity);
             principal.SetScopes(request.GetScopes());
 
-            return SignIn(principal,
-                OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
+            return SignIn(principal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
         }
 
         return BadRequest("Unsupported grant type.");

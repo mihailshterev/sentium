@@ -27,7 +27,8 @@ public sealed class OpenIddictWorker(IServiceProvider serviceProvider) : IHosted
                 Permissions =
                 {
                     Permissions.Endpoints.Token,
-                    Permissions.GrantTypes.ClientCredentials
+                    Permissions.GrantTypes.ClientCredentials,
+                    Permissions.Prefixes.Scope + Core.Security.Scopes.Api
                 }
             }, cancellationToken);
         }

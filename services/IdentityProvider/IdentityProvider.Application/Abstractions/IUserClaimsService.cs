@@ -4,5 +4,5 @@ namespace IdentityProvider.Application.Abstractions;
 
 public interface IUserClaimsService
 {
-    Task<IEnumerable<Claim>> GetClaimsAsync(string userId, IEnumerable<string> scopes);
+    Task<IReadOnlyCollection<Claim>> GetClaimsAsync(Guid userId, IEnumerable<string> scopes, CancellationToken ct);
 }

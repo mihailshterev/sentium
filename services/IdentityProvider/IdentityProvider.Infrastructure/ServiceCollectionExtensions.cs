@@ -14,14 +14,7 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddDbContext<IdentityDbContext>((options) =>
-        {
-            options.UseSqlServer(configuration.GetConnectionString("Default"));
-            options.UseOpenIddict();
-        });
-
-        services.AddHostedService<OpenIddictWorker>();
-
+        services.AddDbContext<IdentityDbContext>((options) => options.UseSqlServer(configuration.GetConnectionString("Default")));
         return services;
     }
 
@@ -42,10 +35,14 @@ public static class ServiceCollectionExtensions
             .AddCore(options =>
             {
                 options.UseEntityFrameworkCore()
-                       .UseDbContext<IdentityDbContext>();
+                       .UseDbContext<IdentityDbContext>()
+                       .ReplaceDefaultEntities<Guid>();
             })
             .AddServer(options =>
             {
+                options.DisableAccessTokenEncryption();
+
+                options.AllowClientCredentialsFlow();
                 options.AllowAuthorizationCodeFlow();
 
                 options.AddDevelopmentEncryptionCertificate()
@@ -66,6 +63,8 @@ public static class ServiceCollectionExtensions
                     Scopes.Roles
                 );
             });
+
+        services.AddHostedService<OpenIddictWorker>();
 
         return services;
     }
