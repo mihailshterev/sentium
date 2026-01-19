@@ -1,24 +1,24 @@
 # ---- Build stage ----
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
-# Copy csproj files
-COPY *.sln .
-COPY services/identity-provider/IdentityProvider.Api/*.csproj ./IdentityProvider.Api/
+# Copy all IdentityProvider projects (for project references)
+COPY services/IdentityProvider ./services/IdentityProvider
 
-RUN dotnet restore ./IdentityProvider.Api/IdentityProvider.Api.csproj
-
-# Copy source code
-COPY services/ ./services/
+# Restore
+RUN dotnet restore services/IdentityProvider/IdentityProvider.Api/IdentityProvider.Api.csproj
 
 # Publish
-WORKDIR /src/services/identity-provider/IdentityProvider.Api
-RUN dotnet publish -c Release -o /app/publish
+WORKDIR /src/services/IdentityProvider/IdentityProvider.Api
+RUN dotnet publish -c Release -o /app/publish --no-restore
 
 # ---- Runtime stage ----
-FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
+
 COPY --from=build /app/publish .
 
 ENV ASPNETCORE_URLS=http://+:80
+EXPOSE 80
+
 ENTRYPOINT ["dotnet", "IdentityProvider.Api.dll"]

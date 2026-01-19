@@ -1,11 +1,13 @@
 version: "3.8"
 
 services:
-  identity-provider:
+  sentium-identity:
+    container_name: sentium-identity
     build:
       context: .
-      dockerfile: services/identity-provider/IdentityProvider.Api/Dockerfile
+      dockerfile: services/IdentityProvider/IdentityProvider.Api/Dockerfile
     ports:
       - "7001:80"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
+    restart: unless-stopped
