@@ -1,0 +1,11 @@
+name: "🧪 Tech Debt"
+description: "Internal cleanup or refactor"
+title: "[Tech Debt] "
+labels: ["type:tech-debt"]
+body:
+  - type: textarea
+    attributes:
+      label: What’s wrong?
+      description: What hurts, smells, or is risky?
+    validations:
+      required: true
