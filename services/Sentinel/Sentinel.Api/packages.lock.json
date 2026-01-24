@@ -28,6 +28,7 @@
       "sentinel.infrastructure": {
         "type": "Project",
         "dependencies": {
+          "Sentinel.Application": "[1.0.0, )",
           "Sentinel.Core": "[1.0.0, )"
         }
       }
