@@ -4,20 +4,17 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Folder Name="/apphost/">
-    <Project Path="apphost/AppHost.csproj" />
-  </Folder>
-  <Folder Name="/gateway/">
-    <Project Path="gateway/ApiGateway.csproj" />
-  </Folder>
+  <Project Path="aspire/AppHost.csproj" />
+  <Project Path="gateway/ApiGateway.csproj" />
   <Folder Name="/services/" />
-  <Folder Name="/services/identity-provider/">
-    <Project Path="services/identity-provider/IdentityProvider.Api/IdentityProvider.Api.csproj" />
-    <Project Path="services/identity-provider/IdentityProvider.Application/IdentityProvider.Application.csproj" />
-    <Project Path="services/identity-provider/IdentityProvider.Core/IdentityProvider.Core.csproj" />
-    <Project Path="services/identity-provider/IdentityProvider.Infrastructure/IdentityProvider.Infrastructure.csproj" />
+  <Folder Name="/services/IdentityProvider/">
+    <Project Path="services/IdentityProvider/IdentityProvider.Api/IdentityProvider.Api.csproj" />
+    <Project Path="services/IdentityProvider/IdentityProvider.Application/IdentityProvider.Application.csproj" />
+    <Project Path="services/IdentityProvider/IdentityProvider.Core/IdentityProvider.Core.csproj" />
+    <Project Path="services/IdentityProvider/IdentityProvider.Infrastructure/IdentityProvider.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
     <File Path="Directory.Build.props" />
     <File Path="Directory.Packages.props" />
     <File Path="nuget.config" />
