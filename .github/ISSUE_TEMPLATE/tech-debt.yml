@@ -1,7 +1,9 @@
 name: "🧪 Tech Debt"
 description: "Internal cleanup or refactor"
-title: "[Tech Debt] "
-labels: ["type:tech-debt"]
+title: "[Tech Debt]: "
+labels: ["tech-debt"]
+assignees:
+  - Shredrox
 body:
   - type: textarea
     attributes:

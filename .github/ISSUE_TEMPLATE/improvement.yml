@@ -1,7 +1,9 @@
 name: "📈 Improvement"
 description: "Improve existing behavior"
-title: "[Improve] "
-labels: ["type:improvement"]
+title: "[Improve]: "
+labels: ["improvement"]
+assignees:
+  - Shredrox
 body:
   - type: textarea
     attributes:
