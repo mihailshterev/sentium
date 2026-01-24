@@ -1,7 +1,9 @@
 name: "🐞 Bug"
 description: "Something is broken"
-title: "[Bug] "
-labels: ["type:bug"]
+title: "[Bug]: "
+labels: ["bug"]
+assignees:
+  - Shredrox
 body:
   - type: textarea
     attributes:

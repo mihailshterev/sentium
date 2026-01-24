@@ -1,7 +1,9 @@
 name: "🚀 Feature"
 description: "New user-facing functionality"
-title: "[Feature] "
-labels: ["type:feature"]
+title: "[Feature]: "
+labels: ["feature"]
+assignees:
+  - Shredrox
 body:
   - type: textarea
     attributes:
