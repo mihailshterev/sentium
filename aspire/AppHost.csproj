@@ -11,7 +11,8 @@
     <PackageReference Include="Aspire.Hosting.JavaScript" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\gateway\ApiGateway.csproj" />
+    <ProjectReference Include="..\services\Gateway\ApiGateway.csproj" />
     <ProjectReference Include="..\services\IdentityProvider\IdentityProvider.Api\IdentityProvider.Api.csproj" />
+    <ProjectReference Include="..\services\Sentinel\Sentinel.Api\Sentinel.Api.csproj" />
   </ItemGroup>
 </Project>

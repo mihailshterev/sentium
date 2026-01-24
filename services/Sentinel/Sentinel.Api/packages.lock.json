@@ -1,0 +1,39 @@
+{
+  "version": 2,
+  "dependencies": {
+    "net10.0": {
+      "Microsoft.AspNetCore.OpenApi": {
+        "type": "Direct",
+        "requested": "[10.0.1, )",
+        "resolved": "10.0.1",
+        "contentHash": "gMY53EggRIFawhue66GanHcm1Tcd0+QzzMwnMl60LrEoJhGgzA9qAbLx6t/ON3hX4flc2NcEbTK1Z5GCLYHcwA==",
+        "dependencies": {
+          "Microsoft.OpenApi": "2.0.0"
+        }
+      },
+      "Microsoft.OpenApi": {
+        "type": "Transitive",
+        "resolved": "2.0.0",
+        "contentHash": "GGYLfzV/G/ct80OZ45JxnWP7NvMX1BCugn/lX7TH5o0lcVaviavsLMTxmFV2AybXWjbi3h6FF1vgZiTK6PXndw=="
+      },
+      "sentinel.application": {
+        "type": "Project",
+        "dependencies": {
+          "Sentinel.Core": "[1.0.0, )"
+        }
+      },
+      "sentinel.core": {
+        "type": "Project"
+      },
+      "sentinel.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Sentinel.Core": "[1.0.0, )"
+        }
+      }
+    },
+    "net10.0/linux-x64": {},
+    "net10.0/osx-x64": {},
+    "net10.0/win-x64": {}
+  }
+}
