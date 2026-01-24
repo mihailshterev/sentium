@@ -1,0 +1,11 @@
+name: "🚀 Feature"
+description: "New user-facing functionality"
+title: "[Feature] "
+labels: ["type:feature"]
+body:
+  - type: textarea
+    attributes:
+      label: Description
+      description: Provide a detailed description of the feature
+    validations:
+      required: true

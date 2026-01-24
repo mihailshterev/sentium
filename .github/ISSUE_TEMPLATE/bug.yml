@@ -1,0 +1,20 @@
+name: "🐞 Bug"
+description: "Something is broken"
+title: "[Bug] "
+labels: ["type:bug"]
+body:
+  - type: textarea
+    attributes:
+      label: What happened?
+      description: Describe the bug clearly
+    validations:
+      required: true
+
+  - type: dropdown
+    attributes:
+      label: Severity
+      options:
+        - Critical
+        - High
+        - Medium
+        - Low
