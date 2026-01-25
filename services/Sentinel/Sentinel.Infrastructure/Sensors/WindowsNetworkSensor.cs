@@ -39,8 +39,8 @@ public sealed class WindowsNetworkSensor : INetworkSensor
 
             var evt = new SentinelEvent(
                 EventSources.Host,
-                "Network",
-                "Outbound",
+                EventType.Network,
+                TrafficDirection.Outbound,
                 DateTime.UtcNow,
                 new Dictionary<string, string>
                 {

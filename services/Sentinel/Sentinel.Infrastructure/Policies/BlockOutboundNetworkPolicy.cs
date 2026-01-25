@@ -10,7 +10,7 @@ public sealed class BlockOutboundNetworkPolicy : ISentinelPolicy
     {
         ArgumentNullException.ThrowIfNull(evt);
 
-        if (evt.Type == EventType.Network && evt.Action == EventType.Outbound)
+        if (evt.Type == EventType.Network && evt.Action == TrafficDirection.Outbound)
         {
             return new SentinelDecision(
                 Allowed: false,
