@@ -6,6 +6,7 @@
   </Configurations>
   <Folder Name="/aspire/">
     <Project Path="aspire/AppHost/AppHost.csproj" />
+    <Project Path="aspire/ServiceDefaults/ServiceDefaults.csproj" />
   </Folder>
   <Folder Name="/services/" />
   <Folder Name="/services/Gateway/">
