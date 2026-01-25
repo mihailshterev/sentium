@@ -1,0 +1,166 @@
+{
+  "version": 2,
+  "dependencies": {
+    "net10.0": {
+      "Microsoft.AspNetCore.OpenApi": {
+        "type": "Direct",
+        "requested": "[10.0.1, )",
+        "resolved": "10.0.1",
+        "contentHash": "gMY53EggRIFawhue66GanHcm1Tcd0+QzzMwnMl60LrEoJhGgzA9qAbLx6t/ON3hX4flc2NcEbTK1Z5GCLYHcwA==",
+        "dependencies": {
+          "Microsoft.OpenApi": "2.0.0"
+        }
+      },
+      "Microsoft.Agents.AI.Abstractions": {
+        "type": "Transitive",
+        "resolved": "1.0.0-preview.260121.1",
+        "contentHash": "Jjm/q1Q9Ktxid49BR/uxqlLuDQ1ICLyM9CZd/jB2rJF2+Xr9ugapbhIuZ2QfJ+f5Y+m1ZkpNw9iyyuPC7RUTmQ==",
+        "dependencies": {
+          "Microsoft.Extensions.AI.Abstractions": "10.2.0"
+        }
+      },
+      "Microsoft.Extensions.AI": {
+        "type": "Transitive",
+        "resolved": "10.2.0",
+        "contentHash": "hKLdKfwzwQ30Z5hA1DwHFvJJtRuyPmf41Es6t8DXW4PE/6caWK4qSDRY3i+QYmYbIVXnPlVR5xXQjYNz07giNg==",
+        "dependencies": {
+          "Microsoft.Extensions.AI.Abstractions": "10.2.0",
+          "System.Numerics.Tensors": "10.0.2"
+        }
+      },
+      "Microsoft.Extensions.AI.Abstractions": {
+        "type": "Transitive",
+        "resolved": "10.2.0",
+        "contentHash": "ONGlIBht0ygEdKc0bCt9XWUiq19/460dAu7fCKzPM34OFJSMQIohEDTJwjCJ8vVp8znNakloc9xFF9+R/eDCYQ=="
+      },
+      "Microsoft.Extensions.AI.OpenAI": {
+        "type": "Transitive",
+        "resolved": "10.2.0-preview.1.26063.2",
+        "contentHash": "5rySSma4ubLQr5SF8EOeKhpVsWsqVnHE4uT/ezJnNBX779xUMU+/wMqejUvjYw9RsiSc3NwxqmlGNq9TDDJEAg==",
+        "dependencies": {
+          "Microsoft.Extensions.AI.Abstractions": "10.2.0",
+          "OpenAI": "2.8.0"
+        }
+      },
+      "Microsoft.Extensions.VectorData.Abstractions": {
+        "type": "Transitive",
+        "resolved": "9.7.0",
+        "contentHash": "Vth/omSCX2vR0JabzSRU/hdPhr0CvUVZlaS2lJPWHrEwvak8ntrQLDtLMtMiWKSvviGBe/WmjUW8gA3qqn9tjw==",
+        "dependencies": {
+          "Microsoft.Extensions.AI.Abstractions": "9.5.0"
+        }
+      },
+      "Microsoft.OpenApi": {
+        "type": "Transitive",
+        "resolved": "2.0.0",
+        "contentHash": "GGYLfzV/G/ct80OZ45JxnWP7NvMX1BCugn/lX7TH5o0lcVaviavsLMTxmFV2AybXWjbi3h6FF1vgZiTK6PXndw=="
+      },
+      "OpenAI": {
+        "type": "Transitive",
+        "resolved": "2.8.0",
+        "contentHash": "KcYpZ9IhuxFD2hGAJlL5vABtkr00CjeJU0SY8CjZQyzvzkzLop8jhdX3iDvteVJg6e3y4TEiY+Kti4gDJAagnA==",
+        "dependencies": {
+          "System.ClientModel": "1.8.1"
+        }
+      },
+      "OpenTelemetry.Api": {
+        "type": "Transitive",
+        "resolved": "1.13.1",
+        "contentHash": "tieglRERo7Rgu8oE8aamnuXCMPEW5fXIqO5ngTMCNk9pOEXanc0SdQ86ZAD1goNiGcjWHn+P3WMZp0FZSJgCoQ=="
+      },
+      "System.ClientModel": {
+        "type": "Transitive",
+        "resolved": "1.8.1",
+        "contentHash": "4oUQgw/vaO4FBOk3YsH40hbrjxRED1l95rRLvTMtHXfQxapXya9IfPpm/KgwValFFtYTfYGFOs/qzGmGyexicQ==",
+        "dependencies": {
+          "System.Memory.Data": "8.0.1"
+        }
+      },
+      "System.Memory.Data": {
+        "type": "Transitive",
+        "resolved": "8.0.1",
+        "contentHash": "BVYuec3jV23EMRDeR7Dr1/qhx7369dZzJ9IWy2xylvb4YfXsrUxspWc4UWYid/tj4zZK58uGZqn2WQiaDMhmAg=="
+      },
+      "System.Numerics.Tensors": {
+        "type": "Transitive",
+        "resolved": "10.0.2",
+        "contentHash": "EzimXy5WX7RJxf1pHBfolBApA4GR7qje1cY9XofD4C+cQepx0a5ZVlZjde8NHk+W1+6kltrbbfa8LIOVpTM6yQ=="
+      },
+      "agentruntime.application": {
+        "type": "Project",
+        "dependencies": {
+          "AgentRuntime.Core": "[1.0.0, )",
+          "Microsoft.Agents.AI": "[1.0.0-preview.260121.1, )",
+          "Microsoft.Agents.AI.OpenAI": "[1.0.0-preview.260121.1, )",
+          "Microsoft.Agents.AI.Workflows": "[1.0.0-preview.260121.1, )",
+          "OllamaSharp": "[5.4.12, )"
+        }
+      },
+      "agentruntime.core": {
+        "type": "Project"
+      },
+      "agentruntime.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "AgentRuntime.Core": "[1.0.0, )",
+          "Microsoft.Agents.AI": "[1.0.0-preview.260121.1, )",
+          "Microsoft.Agents.AI.OpenAI": "[1.0.0-preview.260121.1, )",
+          "OllamaSharp": "[5.4.12, )"
+        }
+      },
+      "Microsoft.Agents.AI": {
+        "type": "CentralTransitive",
+        "requested": "[1.0.0-preview.260121.1, )",
+        "resolved": "1.0.0-preview.260121.1",
+        "contentHash": "9RGE+99cVdURN575cy0gUVdH01EUaNY1RQYFiA7uQOOR35ve/BvGowL/BzrKYAougNx8+zBjAtk/SEWDyEt5Pg==",
+        "dependencies": {
+          "Microsoft.Agents.AI.Abstractions": "1.0.0-preview.260121.1",
+          "Microsoft.Extensions.AI": "10.2.0",
+          "Microsoft.Extensions.AI.Abstractions": "10.2.0",
+          "Microsoft.Extensions.VectorData.Abstractions": "9.7.0"
+        }
+      },
+      "Microsoft.Agents.AI.OpenAI": {
+        "type": "CentralTransitive",
+        "requested": "[1.0.0-preview.260121.1, )",
+        "resolved": "1.0.0-preview.260121.1",
+        "contentHash": "rBKXB2Faq51YAI3O+X35igkzvwuunBJjQCVFGqXaNccG9t9Z9EGGxzJviERX6QcMYN3q5DiLYvLI7WDgpf5mJQ==",
+        "dependencies": {
+          "Microsoft.Agents.AI": "1.0.0-preview.260121.1",
+          "Microsoft.Extensions.AI": "10.2.0",
+          "Microsoft.Extensions.AI.Abstractions": "10.2.0",
+          "Microsoft.Extensions.AI.OpenAI": "10.2.0-preview.1.26063.2",
+          "Microsoft.Extensions.VectorData.Abstractions": "9.7.0",
+          "OpenAI": "2.8.0",
+          "System.ClientModel": "1.8.1"
+        }
+      },
+      "Microsoft.Agents.AI.Workflows": {
+        "type": "CentralTransitive",
+        "requested": "[1.0.0-preview.260121.1, )",
+        "resolved": "1.0.0-preview.260121.1",
+        "contentHash": "OPh1iKG3bLFo3O9WR5P6PRf9JYBOTy1NNsSciDuEh15xN7zY9SftvnCDtWLL9RDvvJEEYGB3+QMM9p0xhcPtug==",
+        "dependencies": {
+          "Microsoft.Agents.AI": "1.0.0-preview.260121.1",
+          "Microsoft.Agents.AI.Abstractions": "1.0.0-preview.260121.1",
+          "Microsoft.Extensions.AI": "10.2.0",
+          "Microsoft.Extensions.AI.Abstractions": "10.2.0",
+          "Microsoft.Extensions.VectorData.Abstractions": "9.7.0",
+          "OpenTelemetry.Api": "1.13.1"
+        }
+      },
+      "OllamaSharp": {
+        "type": "CentralTransitive",
+        "requested": "[5.4.12, )",
+        "resolved": "5.4.12",
+        "contentHash": "uUKOgoTV9Fxo9J5syrY4OMZ/2/xlPO83tGG+FjGmY8HqJVJ1iUT5f8EsC9yNEqBBIoth9D8zzN4I5p1oQEMBhQ==",
+        "dependencies": {
+          "Microsoft.Extensions.AI.Abstractions": "10.0.0"
+        }
+      }
+    },
+    "net10.0/linux-x64": {},
+    "net10.0/osx-x64": {},
+    "net10.0/win-x64": {}
+  }
+}
