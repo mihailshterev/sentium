@@ -4,7 +4,9 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="aspire/AppHost.csproj" />
+  <Folder Name="/aspire/">
+    <Project Path="aspire/AppHost/AppHost.csproj" />
+  </Folder>
   <Folder Name="/services/" />
   <Folder Name="/services/Gateway/">
     <Project Path="services/Gateway/ApiGateway.csproj" />
