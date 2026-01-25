@@ -9,6 +9,12 @@
     <Project Path="aspire/ServiceDefaults/ServiceDefaults.csproj" />
   </Folder>
   <Folder Name="/services/" />
+  <Folder Name="/services/AgentRuntime/">
+    <Project Path="services/AgentRuntime/AgentRuntime.Api/AgentRuntime.Api.csproj" />
+    <Project Path="services/AgentRuntime/AgentRuntime.Application/AgentRuntime.Application.csproj" />
+    <Project Path="services/AgentRuntime/AgentRuntime.Core/AgentRuntime.Core.csproj" />
+    <Project Path="services/AgentRuntime/AgentRuntime.Infrastructure/AgentRuntime.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/services/Gateway/">
     <Project Path="services/Gateway/ApiGateway.csproj" />
   </Folder>
