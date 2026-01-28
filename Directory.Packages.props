@@ -31,5 +31,6 @@
     <PackageVersion Include="Microsoft.Agents.AI.OpenAI" Version="1.0.0-preview.260121.1" />
     <PackageVersion Include="Microsoft.Agents.AI.Workflows" Version="1.0.0-preview.260121.1" />
     <PackageVersion Include="OllamaSharp" Version="5.4.12" />
+    <PackageVersion Include="CommunityToolkit.Aspire.Hosting.Ollama" Version="13.1.1" />
   </ItemGroup>
 </Project>

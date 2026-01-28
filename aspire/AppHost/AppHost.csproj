@@ -9,6 +9,7 @@
   <ItemGroup>
     <PackageReference Include="Aspire.Hosting.AppHost" />
     <PackageReference Include="Aspire.Hosting.JavaScript" />
+    <PackageReference Include="CommunityToolkit.Aspire.Hosting.Ollama" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\services\AgentRuntime\AgentRuntime.Api\AgentRuntime.Api.csproj" />
