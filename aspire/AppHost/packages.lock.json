@@ -80,6 +80,16 @@
         "resolved": "13.1.0",
         "contentHash": "3w2UahEauTq719LPJ/BCySh31kz26sfjuOkRF5E4VYy1Q3xLRV43+OIGI3C5sy8feUHjrYz+DDq3DQn/2fu+4g=="
       },
+      "CommunityToolkit.Aspire.Hosting.Ollama": {
+        "type": "Direct",
+        "requested": "[13.1.1, )",
+        "resolved": "13.1.1",
+        "contentHash": "5jRe/YV/jeVj9SvxvG7XfouofCYjAECB04XZM+y0x1wMsk9GYNUFHt6RTAYrjP6GoqFzGgMoDP0gt3/AvWAqkA==",
+        "dependencies": {
+          "Aspire.Hosting": "13.1.0",
+          "OllamaSharp": "5.4.12"
+        }
+      },
       "Aspire.Hosting": {
         "type": "Transitive",
         "resolved": "13.1.0",
@@ -242,6 +252,11 @@
         "type": "Transitive",
         "resolved": "2.5.192",
         "contentHash": "jaJuwcgovWIZ8Zysdyf3b7b34/BrADw4v82GaEZymUhDd3ScMPrYd/cttekeDteJJPXseJxp04yTIcxiVUjTWg=="
+      },
+      "Microsoft.Extensions.AI.Abstractions": {
+        "type": "Transitive",
+        "resolved": "10.0.0",
+        "contentHash": "PHeuDm2tC6wJPEQvleUr2kNQaIMNqSf3aEbzkIPlZyQ0+0SYI9SwXVLdGD1NPBI+xB+Vb2lxZKhrFlIf9kP9WA=="
       },
       "Microsoft.Extensions.Configuration": {
         "type": "Transitive",
@@ -623,6 +638,15 @@
           "Microsoft.Extensions.Logging.EventLog": "10.0.1",
           "Microsoft.Extensions.Logging.EventSource": "10.0.1",
           "Microsoft.Extensions.Options": "10.0.1"
+        }
+      },
+      "OllamaSharp": {
+        "type": "CentralTransitive",
+        "requested": "[5.4.12, )",
+        "resolved": "5.4.12",
+        "contentHash": "uUKOgoTV9Fxo9J5syrY4OMZ/2/xlPO83tGG+FjGmY8HqJVJ1iUT5f8EsC9yNEqBBIoth9D8zzN4I5p1oQEMBhQ==",
+        "dependencies": {
+          "Microsoft.Extensions.AI.Abstractions": "10.0.0"
         }
       }
     },
