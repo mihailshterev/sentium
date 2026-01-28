@@ -3,6 +3,7 @@ using AppHost;
 var builder = DistributedApplication.CreateBuilder(args);
 
 var ollama = builder.AddOllama(ServiceConstants.OllamaServiceName)
+    .WithDataVolume()
     .WithGPUSupport(OllamaGpuVendor.Nvidia);
 //.WithOpenWebUI();
 
