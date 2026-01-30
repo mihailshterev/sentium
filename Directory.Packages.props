@@ -4,6 +4,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Aspire.Hosting.JavaScript" Version="13.1.0" />
+    <PackageVersion Include="Aspire.Hosting.Nats" Version="13.1.0" />
     <PackageVersion Include="Yarp.ReverseProxy" Version="2.3.0" />
     <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery.Abstractions" Version="10.2.0"/>
     <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery.Yarp" Version="10.2.0"/>
@@ -32,5 +33,6 @@
     <PackageVersion Include="Microsoft.Agents.AI.Workflows" Version="1.0.0-preview.260121.1" />
     <PackageVersion Include="OllamaSharp" Version="5.4.12" />
     <PackageVersion Include="CommunityToolkit.Aspire.Hosting.Ollama" Version="13.1.1" />
+    <PackageVersion Include="NATS.Client" Version="1.1.8" />
   </ItemGroup>
 </Project>
