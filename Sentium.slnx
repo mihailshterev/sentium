@@ -8,6 +8,9 @@
     <Project Path="aspire/AppHost/AppHost.csproj" />
     <Project Path="aspire/ServiceDefaults/ServiceDefaults.csproj" />
   </Folder>
+  <Folder Name="/infrastructure/">
+    <Project Path="infrastructure/Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/services/" />
   <Folder Name="/services/AgentRuntime/">
     <Project Path="services/AgentRuntime/AgentRuntime.Api/AgentRuntime.Api.csproj" />
