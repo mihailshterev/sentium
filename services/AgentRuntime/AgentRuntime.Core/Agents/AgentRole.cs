@@ -1,10 +1,8 @@
 namespace AgentRuntime.Core.Agents;
 
-public enum AgentRole
+public static class AgentRole
 {
-    Summarizer,
-    SecurityAnalyst,
-    Classifier,
-    Planner,
-    Explainer
+    public const string Planner = "Planner";
+    public const string Summarizer = "Summarizer";
+    public const string SecurityAnalyst = "SecurityAnalyst";
 }
