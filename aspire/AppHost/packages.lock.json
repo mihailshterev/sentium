@@ -651,21 +651,6 @@
           "NATS.Client.Serializers.Json": "2.6.11"
         }
       },
-      "NATS.Net": {
-        "type": "Transitive",
-        "resolved": "2.6.11",
-        "contentHash": "KpTRNBigWGX9c5lWWU31yCg4c3CEVrBNiLKRWlF2hO97u8EopMh1rrAN+VMTSBPe8YtN/UPncVvPTX3Q1gyiqA==",
-        "dependencies": {
-          "NATS.Client.Core": "2.6.11",
-          "NATS.Client.Hosting": "2.6.11",
-          "NATS.Client.JetStream": "2.6.11",
-          "NATS.Client.KeyValueStore": "2.6.11",
-          "NATS.Client.ObjectStore": "2.6.11",
-          "NATS.Client.Serializers.Json": "2.6.11",
-          "NATS.Client.Services": "2.6.11",
-          "NATS.Client.Simplified": "2.6.11"
-        }
-      },
       "Nerdbank.Streams": {
         "type": "Transitive",
         "resolved": "2.12.87",
@@ -754,6 +739,22 @@
           "Microsoft.Extensions.Logging.EventLog": "10.0.1",
           "Microsoft.Extensions.Logging.EventSource": "10.0.1",
           "Microsoft.Extensions.Options": "10.0.1"
+        }
+      },
+      "NATS.Net": {
+        "type": "CentralTransitive",
+        "requested": "[2.7.1, )",
+        "resolved": "2.6.11",
+        "contentHash": "KpTRNBigWGX9c5lWWU31yCg4c3CEVrBNiLKRWlF2hO97u8EopMh1rrAN+VMTSBPe8YtN/UPncVvPTX3Q1gyiqA==",
+        "dependencies": {
+          "NATS.Client.Core": "2.6.11",
+          "NATS.Client.Hosting": "2.6.11",
+          "NATS.Client.JetStream": "2.6.11",
+          "NATS.Client.KeyValueStore": "2.6.11",
+          "NATS.Client.ObjectStore": "2.6.11",
+          "NATS.Client.Serializers.Json": "2.6.11",
+          "NATS.Client.Services": "2.6.11",
+          "NATS.Client.Simplified": "2.6.11"
         }
       },
       "OllamaSharp": {

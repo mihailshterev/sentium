@@ -1,67 +1,44 @@
-using System.Text.Json;
-using NATS.Client;
+using System.Runtime.CompilerServices;
+using NATS.Client.Core;
 
 namespace Infrastructure.Messaging;
 
-public sealed class NatsEventBus : IEventBus, IDisposable, IAsyncDisposable
+public sealed class NatsEventBus : IEventBus, IAsyncDisposable
 {
-    private readonly IConnection Connection;
+    private readonly NatsConnection Connection;
+    private bool Disposed;
 
     public NatsEventBus(string url)
     {
-        Connection = new ConnectionFactory().CreateConnection(url);
+        Connection = new NatsConnection(new NatsOpts { Url = url });
     }
 
-    public void Publish<T>(string subject, T message)
+    public async Task PublishAsync<T>(string subject, T message, CancellationToken ct = default)
     {
-        var payload = JsonSerializer.SerializeToUtf8Bytes(message);
-        Connection.Publish(subject, payload);
-        Connection.Flush();
+        await Connection.PublishAsync(subject, message, cancellationToken: ct);
     }
 
-    public void Subscribe<T>(string subject, Action<T> handler)
+    public async IAsyncEnumerable<T> SubscribeAsync<T>(string subject, Action<T> handler, [EnumeratorCancellation] CancellationToken ct = default)
     {
-        var sub = Connection.SubscribeAsync(subject);
-        sub.MessageHandler += (_, args) =>
+        ArgumentNullException.ThrowIfNull(handler);
+        await foreach (var msg in Connection.SubscribeAsync<T>(subject, cancellationToken: ct).WithCancellation(ct))
         {
-            var data = JsonSerializer.Deserialize<T>(args.Message.Data);
-            if (data != null)
+            if (msg.Data is not null)
             {
-                handler(data);
+                yield return msg.Data;
             }
-        };
-        sub.Start();
-    }
-
-    public void Dispose()
-    {
-        if (Connection != null && !Connection.IsClosed())
-        {
-            Connection.Drain();
-            Connection.Dispose();
         }
-
-        GC.SuppressFinalize(this);
     }
 
     public async ValueTask DisposeAsync()
     {
-        if (Connection != null && !Connection.IsClosed())
+        if (Disposed)
         {
-            try
-            {
-                await Connection.DrainAsync();
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error draining NATS connection: {ex.Message}");
-            }
-            finally
-            {
-                Connection.Dispose();
-            }
+            return;
         }
 
+        await Connection.DisposeAsync();
+        Disposed = true;
         GC.SuppressFinalize(this);
     }
 }
