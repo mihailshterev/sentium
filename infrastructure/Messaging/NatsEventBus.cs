@@ -3,25 +3,19 @@ using NATS.Client.Core;
 
 namespace Infrastructure.Messaging;
 
-public sealed class NatsEventBus : IEventBus, IAsyncDisposable
+public sealed class NatsEventBus(INatsConnection connection) : IEventBus, IAsyncDisposable
 {
-    private readonly NatsConnection Connection;
     private bool Disposed;
-
-    public NatsEventBus(string url)
-    {
-        Connection = new NatsConnection(new NatsOpts { Url = url });
-    }
 
     public async Task PublishAsync<T>(string subject, T message, CancellationToken ct = default)
     {
-        await Connection.PublishAsync(subject, message, cancellationToken: ct);
+        await connection.PublishAsync(subject, message, cancellationToken: ct);
     }
 
     public async IAsyncEnumerable<T> SubscribeAsync<T>(string subject, Action<T> handler, [EnumeratorCancellation] CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(handler);
-        await foreach (var msg in Connection.SubscribeAsync<T>(subject, cancellationToken: ct).WithCancellation(ct))
+        await foreach (var msg in connection.SubscribeAsync<T>(subject, cancellationToken: ct).WithCancellation(ct))
         {
             if (msg.Data is not null)
             {
@@ -37,7 +31,7 @@ public sealed class NatsEventBus : IEventBus, IAsyncDisposable
             return;
         }
 
-        await Connection.DisposeAsync();
+        await connection.DisposeAsync();
         Disposed = true;
         GC.SuppressFinalize(this);
     }
