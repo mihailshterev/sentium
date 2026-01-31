@@ -3,6 +3,7 @@ using AppHost;
 var builder = DistributedApplication.CreateBuilder(args);
 
 var nats = builder.AddNats("nats")
+    .WithJetStream()
     .WithDataVolume();
 
 var ollama = builder.AddOllama(ServiceConstants.OllamaServiceName)
