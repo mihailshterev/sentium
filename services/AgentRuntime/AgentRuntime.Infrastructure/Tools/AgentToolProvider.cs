@@ -1,30 +1,31 @@
 using AgentRuntime.Core.Tools;
+using Microsoft.Extensions.AI;
 
 namespace AgentRuntime.Infrastructure.Tools;
 
 public sealed class AgentToolProvider
 {
-    private readonly IToolRegistry ToolRegistry;
-
-    public AgentToolProvider(IToolRegistry registry)
+    public static List<AITool> GetToolsForAgent(string agentName, CancellationToken ct)
     {
-        ToolRegistry = registry;
-    }
+        var tools = new List<AITool>();
 
-    public IReadOnlyList<IAgentTool> GetToolsForAgent(string agentName)
-    {
-        return ToolRegistry.GetTools()
-            .Where(tool =>
+        var types = AppDomain.CurrentDomain.GetAssemblies()
+            .SelectMany(a => a.GetTypes())
+            .Where(t => typeof(IAgentTool).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract);
+
+        foreach (var type in types)
+        {
+            var instance = (IAgentTool)Activator.CreateInstance(type)!;
+            var policy = ToolPolicyReader.GetPolicy(instance);
+
+            if (policy.AllowedAgents.Length == 0 || !policy.AllowedAgents.Contains(agentName))
             {
-                var policy = ToolPolicyReader.GetPolicy(tool);
+                continue;
+            }
 
-                if (policy.AllowedAgents.Length > 0 && !policy.AllowedAgents.Contains(agentName))
-                {
-                    return false;
-                }
+            tools.Add(AIFunctionAdapter.ToAIFunction(instance, ct));
+        }
 
-                return true;
-            })
-            .ToList();
+        return tools;
     }
 }

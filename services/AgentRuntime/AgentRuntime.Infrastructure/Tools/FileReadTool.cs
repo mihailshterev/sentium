@@ -1,7 +1,12 @@
 using AgentRuntime.Core.Tools;
+using AgentRuntime.Core.Tools.Attributes;
 
 namespace AgentRuntime.Infrastructure.Tools;
 
+[AgentToolPolicy(
+    AllowedAgents = new[] { "FileReaderAgent" },
+    RiskLevel = ToolRiskLevel.Low,
+    RequiresApproval = false)]
 public sealed class FileReadTool : IAgentTool
 {
     public string Name => "File Read Tool";

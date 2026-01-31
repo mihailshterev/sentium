@@ -11,7 +11,6 @@ public static class ToolPolicyReader
         return tool.GetType()
                    .GetCustomAttributes(typeof(AgentToolPolicyAttribute), inherit: true)
                    .Cast<AgentToolPolicyAttribute>()
-                   .FirstOrDefault()
-               ?? new AgentToolPolicyAttribute();
+                   .FirstOrDefault() ?? new AgentToolPolicyAttribute();
     }
 }

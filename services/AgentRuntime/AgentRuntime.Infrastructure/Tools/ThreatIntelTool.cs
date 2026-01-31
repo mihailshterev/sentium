@@ -12,8 +12,7 @@ public sealed class ThreatIntelTool : IAgentTool
 {
     public string Name => "threat_intel_lookup";
 
-    public string Description =>
-        "Check IP addresses or domains against threat intelligence feeds.";
+    public string Description => "Check IP addresses or domains against threat intelligence feeds.";
 
     public Task<string> ExecuteAsync(
         string input,
