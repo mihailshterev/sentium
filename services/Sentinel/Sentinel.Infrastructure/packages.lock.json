@@ -38,6 +38,12 @@
           "Microsoft.Extensions.Options": "10.0.2"
         }
       },
+      "NATS.Client": {
+        "type": "Direct",
+        "requested": "[1.1.8, )",
+        "resolved": "1.1.8",
+        "contentHash": "ISyMFTeESWsGQR10HEg5YtgrroDMg8XGsEWRMoWBrGWGRRHq+uSU3RzSU62tFW6ULEyjXQqPrnk6giyBKE98Aw=="
+      },
       "Microsoft.Extensions.Configuration": {
         "type": "Transitive",
         "resolved": "10.0.2",
@@ -287,6 +293,12 @@
         "type": "Transitive",
         "resolved": "10.0.2",
         "contentHash": "TJPpTLF5MFPobq09c9BQ5X8QuviQfsKvH0Jbm7MkGylGvfIdRqJQLZDPC5sMRFkk9aZhmgir1NJKekip2NxfaA=="
+      },
+      "infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "NATS.Client": "[1.1.8, )"
+        }
       },
       "sentinel.application": {
         "type": "Project",

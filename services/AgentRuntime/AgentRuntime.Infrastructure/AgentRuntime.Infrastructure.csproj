@@ -7,6 +7,8 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\AgentRuntime.Core\AgentRuntime.Core.csproj" />
+    <ProjectReference Include="..\AgentRuntime.Application\AgentRuntime.Application.csproj" />
+    <ProjectReference Include="..\..\..\infrastructure\Infrastructure.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
@@ -14,6 +16,7 @@
     <PackageReference Include="Microsoft.Agents.AI.OpenAI" />
     <PackageReference Include="Microsoft.Agents.AI" />
     <PackageReference Include="OllamaSharp" />
+    <PackageReference Include="NATS.Net" />
   </ItemGroup>
 
 </Project>
