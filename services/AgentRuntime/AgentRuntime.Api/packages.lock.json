@@ -163,11 +163,15 @@
           "Microsoft.Agents.AI": "[1.0.0-preview.260121.1, )",
           "Microsoft.Agents.AI.OpenAI": "[1.0.0-preview.260121.1, )",
           "Microsoft.Agents.AI.Workflows": "[1.0.0-preview.260121.1, )",
+          "NATS.Net": "[2.7.1, )",
           "OllamaSharp": "[5.4.12, )"
         }
       },
       "agentruntime.core": {
-        "type": "Project"
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Agents.AI": "[1.0.0-preview.260121.1, )"
+        }
       },
       "agentruntime.infrastructure": {
         "type": "Project",

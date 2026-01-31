@@ -510,11 +510,15 @@
           "Microsoft.Agents.AI.Workflows": "[1.0.0-preview.260121.1, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.2, )",
           "Microsoft.Extensions.Hosting": "[10.0.2, )",
+          "NATS.Net": "[2.7.1, )",
           "OllamaSharp": "[5.4.12, )"
         }
       },
       "agentruntime.core": {
-        "type": "Project"
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Agents.AI": "[1.0.0-preview.260121.1, )"
+        }
       },
       "infrastructure": {
         "type": "Project",
