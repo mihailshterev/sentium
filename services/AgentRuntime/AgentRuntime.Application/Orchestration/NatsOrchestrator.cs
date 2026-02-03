@@ -7,7 +7,7 @@ using AgentRuntime.Core.Orchestration;
 
 namespace AgentRuntime.Application.Orchestration;
 
-public sealed class NatsAgentOrchestrator : IHostedService
+public sealed class NatsAgentOrchestrator : BackgroundService
 {
     private readonly INatsConnection Nats;
     private readonly IOrchestrator Orchestrator;
@@ -23,25 +23,41 @@ public sealed class NatsAgentOrchestrator : IHostedService
         Logger = logger;
     }
 
-    public async Task StartAsync(CancellationToken ct)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        await foreach (var msg in Nats.SubscribeAsync<string>(AgentEvents.AllEvents, cancellationToken: ct))
+        Logger.LogInformation("NATS Orchestrator is starting and listening for events...");
+
+        try
         {
-            // Execute in background to keep NATS processing high-throughput
-            _ = Task.Run(async () =>
+            await foreach (var msg in Nats.SubscribeAsync<string>(AgentEvents.AllEvents, cancellationToken: stoppingToken))
             {
-                var trigger = new WorkflowTrigger
+                _ = Task.Run(async () =>
                 {
-                    TriggerType = msg.Subject,
-                    Payload = msg.Data!
-                };
+                    try
+                    {
+                        var trigger = new WorkflowTrigger
+                        {
+                            TriggerType = msg.Subject,
+                            Payload = msg.Data!
+                        };
 
-                var result = await Orchestrator.RunAsync(trigger, ct);
-
-                await Nats.PublishAsync($"insights.{msg.Subject}", result, cancellationToken: ct);
-            }, ct);
+                        var result = await Orchestrator.RunAsync(trigger, stoppingToken);
+                        await Nats.PublishAsync($"insights.{msg.Subject}", result, cancellationToken: stoppingToken);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.LogError(ex, "Error processing NATS message on {Subject}", msg.Subject);
+                    }
+                }, stoppingToken);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            Logger.LogInformation("NATS Orchestrator is shutting down.");
+        }
+        catch (Exception ex)
+        {
+            Logger.LogCritical(ex, "NATS Orchestrator encountered a fatal error.");
         }
     }
-
-    public Task StopAsync(CancellationToken ct) => Task.CompletedTask;
 }
