@@ -105,7 +105,7 @@
         "type": "Project",
         "dependencies": {
           "Infrastructure": "[1.0.0, )",
-          "NATS.Client": "(, )",
+          "NATS.Net": "[2.7.1, )",
           "Sentinel.Application": "[1.0.0, )",
           "Sentinel.Core": "[1.0.0, )"
         }

@@ -38,11 +38,21 @@
           "Microsoft.Extensions.Options": "10.0.2"
         }
       },
-      "NATS.Client": {
+      "NATS.Net": {
         "type": "Direct",
-        "requested": "[1.1.8, )",
-        "resolved": "1.1.8",
-        "contentHash": "ISyMFTeESWsGQR10HEg5YtgrroDMg8XGsEWRMoWBrGWGRRHq+uSU3RzSU62tFW6ULEyjXQqPrnk6giyBKE98Aw=="
+        "requested": "[2.7.1, )",
+        "resolved": "2.7.1",
+        "contentHash": "p9UTnFlYJezH8DUIbh965ds43FSSr8guZoqkq38efsYrIoZGNa3aRu8iUJrgIOJkLacivE9auxwP1em7eA9KdA==",
+        "dependencies": {
+          "NATS.Client.Core": "2.7.1",
+          "NATS.Client.Hosting": "2.7.1",
+          "NATS.Client.JetStream": "2.7.1",
+          "NATS.Client.KeyValueStore": "2.7.1",
+          "NATS.Client.ObjectStore": "2.7.1",
+          "NATS.Client.Serializers.Json": "2.7.1",
+          "NATS.Client.Services": "2.7.1",
+          "NATS.Client.Simplified": "2.7.1"
+        }
       },
       "Microsoft.Extensions.Configuration": {
         "type": "Transitive",
@@ -289,6 +299,79 @@
         "resolved": "10.0.2",
         "contentHash": "QmSiO+oLBEooGgB3i0GRXyeYRDHjllqt3k365jwfZlYWhvSHA3UL2NEVV5m8aZa041eIlblo6KMI5txvTMpTwA=="
       },
+      "NATS.Client.Abstractions": {
+        "type": "Transitive",
+        "resolved": "2.7.1",
+        "contentHash": "+YI7ims3YZncagjGAT9ExGahqZUkaMBHGSUaOAC4Z2zziernDeJ3Jl1h7PYKCKTSCT5dKO8rK9kk7uldA1UJ9g=="
+      },
+      "NATS.Client.Core": {
+        "type": "Transitive",
+        "resolved": "2.7.1",
+        "contentHash": "W3MdPPw9/EoiuWUO1j2HMBaVr2ZGKd87h94phanrE+ZdiLYJN9nRQVZITLJICUdMtKV4fUs3DKlQxHz+RhOyxQ==",
+        "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "6.0.1",
+          "Microsoft.Extensions.Primitives": "6.0.0",
+          "NATS.Client.Abstractions": "2.7.1"
+        }
+      },
+      "NATS.Client.Hosting": {
+        "type": "Transitive",
+        "resolved": "2.7.1",
+        "contentHash": "iVj3S6ZXxE8t5hlditmJ+iG+1cK7zVkX1AA49jMIcE92DLUU17U3dXw93M3EUltfvDL1vZ9UthvPl/i/CzUiIQ==",
+        "dependencies": {
+          "Microsoft.Extensions.Hosting.Abstractions": "8.0.0",
+          "NATS.Client.Core": "2.7.1"
+        }
+      },
+      "NATS.Client.JetStream": {
+        "type": "Transitive",
+        "resolved": "2.7.1",
+        "contentHash": "m38ah12yGT5X04ycIO1IkigMS9HW4txqufhIh4dKlxEUWbBqvvzSXEt4Q4cfWrB2OTjyRiQHCHQ2WqnNHSGeDg==",
+        "dependencies": {
+          "NATS.Client.Core": "2.7.1"
+        }
+      },
+      "NATS.Client.KeyValueStore": {
+        "type": "Transitive",
+        "resolved": "2.7.1",
+        "contentHash": "kL6/1xPfHoHb5Pl0vA7Kne/A0G2DJZtas0lxZK6oKAAmwO1X/rwmhKQ+h55UDkBM0hoBxKu0XcwfyHcE67ySFw==",
+        "dependencies": {
+          "NATS.Client.JetStream": "2.7.1"
+        }
+      },
+      "NATS.Client.ObjectStore": {
+        "type": "Transitive",
+        "resolved": "2.7.1",
+        "contentHash": "+Fu04tpRh3EE0Fq9W8pyiuqpgG4eqBuox+qguTkHCkN5GiWTvS/RXePCTdN2fJAltZJWIVlYo1YXNJo85tomAg==",
+        "dependencies": {
+          "NATS.Client.JetStream": "2.7.1"
+        }
+      },
+      "NATS.Client.Serializers.Json": {
+        "type": "Transitive",
+        "resolved": "2.7.1",
+        "contentHash": "6wZypR6b8PNa3ECz9Y3gZHyjz5bT6OYKlcgYWq2zlaB3aWTXS4P/RO1x5wahkIn1Wj6Qxhb4uq4BmyMHbwjpRA==",
+        "dependencies": {
+          "NATS.Client.Abstractions": "2.7.1"
+        }
+      },
+      "NATS.Client.Services": {
+        "type": "Transitive",
+        "resolved": "2.7.1",
+        "contentHash": "jZDcDoLBH04QDuXAwF9CbjVtKzG523EWor1ty3O7X07su3XGJnRx197/GrpGCC0trufgsw2tyhKFZ2EQF1oFPQ==",
+        "dependencies": {
+          "NATS.Client.Core": "2.7.1"
+        }
+      },
+      "NATS.Client.Simplified": {
+        "type": "Transitive",
+        "resolved": "2.7.1",
+        "contentHash": "sODAVztL0YcErsiX6oiZUBjFf8fE5pJtPqsiNJKq/4KPC/V5cZn/OX7AuWs/wQUL6scSvi0jrSfx+yDR630kIg==",
+        "dependencies": {
+          "NATS.Client.Core": "2.7.1",
+          "NATS.Client.Serializers.Json": "2.7.1"
+        }
+      },
       "System.Diagnostics.EventLog": {
         "type": "Transitive",
         "resolved": "10.0.2",
@@ -297,7 +380,7 @@
       "infrastructure": {
         "type": "Project",
         "dependencies": {
-          "NATS.Client": "[1.1.8, )"
+          "NATS.Net": "[2.7.1, )"
         }
       },
       "sentinel.application": {
