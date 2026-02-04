@@ -2,7 +2,7 @@ using AppHost;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
-var nats = builder.AddNats("nats")
+var nats = builder.AddNats(ServiceConstants.NatsServiceName)
     .WithJetStream()
     .WithDataVolume();
 
@@ -20,9 +20,13 @@ var agentRuntimeApi = builder.AddProject<Projects.AgentRuntime_Api>(ServiceNames
     .WithReference(gemma31b).WaitFor(gemma31b)
     .WithReference(nats).WaitFor(nats);
 
-builder.AddProject<Projects.ApiGateway>(ServiceNames.Gateway)
+var apiGateway = builder.AddProject<Projects.ApiGateway>(ServiceNames.Gateway)
     .WithReference(identityApi).WaitFor(identityApi)
     .WithReference(sentinelApi).WaitFor(sentinelApi)
     .WithReference(agentRuntimeApi).WaitFor(agentRuntimeApi);
+
+identityApi.WithParentRelationship(apiGateway);
+sentinelApi.WithParentRelationship(apiGateway);
+agentRuntimeApi.WithParentRelationship(apiGateway);
 
 builder.Build().Run();
