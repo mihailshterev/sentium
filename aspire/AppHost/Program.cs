@@ -8,7 +8,8 @@ var nats = builder.AddNats(ServiceConstants.NatsServiceName)
 
 var ollama = builder.AddOllama(ServiceConstants.OllamaServiceName)
     .WithDataVolume()
-    .WithGPUSupport(OllamaGpuVendor.Nvidia);
+    .WithGPUSupport(OllamaGpuVendor.Nvidia)
+    .WithEndpoint("http", e => e.Port = 11434);
 //.WithOpenWebUI();
 
 var gemma31b = ollama.AddModel(ServiceConstants.Gemma3ModelName);
