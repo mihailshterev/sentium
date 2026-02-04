@@ -1,9 +1,10 @@
-using NATS.Client.Core;
-using AgentRuntime.Core.Workflows;
 using AgentRuntime.Core.Agents;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Hosting;
 using AgentRuntime.Core.Orchestration;
+using AgentRuntime.Core.Workflows;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using NATS.Client.Core;
+using NATS.Client.Serializers.Json;
 
 namespace AgentRuntime.Application.Orchestration;
 
@@ -42,7 +43,12 @@ public sealed class NatsAgentOrchestrator : BackgroundService
                         };
 
                         var result = await Orchestrator.RunAsync(trigger, stoppingToken);
-                        await Nats.PublishAsync($"insights.{msg.Subject}", result, cancellationToken: stoppingToken);
+                        await Nats.PublishAsync(
+                            $"insights.{msg.Subject}",
+                            result,
+                            serializer: NatsJsonSerializer<WorkflowResult>.Default,
+                            cancellationToken: stoppingToken
+                        );
                     }
                     catch (Exception ex)
                     {
