@@ -1,4 +1,4 @@
-namespace AppHost;
+namespace AppHost.Constants;
 
 public static class ServiceNames
 {

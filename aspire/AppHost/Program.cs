@@ -1,24 +1,29 @@
-using AppHost;
+using AppHost.Constants;
+using AppHost.Config;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
-var nats = builder.AddNats(ServiceConstants.NatsServiceName)
+var nats = builder.AddNats(ResourceNames.NatsServiceName)
     .WithJetStream()
     .WithDataVolume();
 
-var ollama = builder.AddOllama(ServiceConstants.OllamaServiceName)
+var ollama = builder.AddOllama(ResourceNames.OllamaServiceName)
     .WithDataVolume()
     .WithGPUSupport(OllamaGpuVendor.Nvidia)
+    .WithEnvironment(OllamaConfig.ContextSizeKey, OllamaConfig.DefaultContextSize)
+    .WithEnvironment(OllamaConfig.FlashAttentionKey, "1")
+    .WithEnvironment(OllamaConfig.CacheTypeKey, "q4_0")
+    .WithEnvironment(OllamaConfig.DebugKey, "1")
     .WithEndpoint("http", e => e.Port = 11434);
 //.WithOpenWebUI();
 
-var gemma31b = ollama.AddModel(ServiceConstants.Gemma3ModelName);
+var ollamaModel = ollama.AddModel(AIModels.Qwen3);
 
 var identityApi = builder.AddProject<Projects.IdentityProvider_Api>(ServiceNames.Identity);
 var sentinelApi = builder.AddProject<Projects.Sentinel_Api>(ServiceNames.Sentinel)
     .WithReference(nats).WaitFor(nats);
 var agentRuntimeApi = builder.AddProject<Projects.AgentRuntime_Api>(ServiceNames.AgentRuntime)
-    .WithReference(gemma31b).WaitFor(gemma31b)
+    .WithReference(ollamaModel).WaitFor(ollamaModel)
     .WithReference(nats).WaitFor(nats);
 
 var apiGateway = builder.AddProject<Projects.ApiGateway>(ServiceNames.Gateway)
