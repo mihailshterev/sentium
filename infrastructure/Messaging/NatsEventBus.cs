@@ -1,9 +1,9 @@
-using System.Runtime.CompilerServices;
+using Microsoft.Extensions.Logging;
 using NATS.Client.Core;
 
 namespace Infrastructure.Messaging;
 
-public sealed class NatsEventBus(INatsConnection connection) : IEventBus, IAsyncDisposable
+public sealed class NatsEventBus(INatsConnection connection, ILogger<NatsEventBus> logger) : IEventBus, IAsyncDisposable
 {
     private bool Disposed;
 
@@ -12,14 +12,22 @@ public sealed class NatsEventBus(INatsConnection connection) : IEventBus, IAsync
         await connection.PublishAsync(subject, message, cancellationToken: ct);
     }
 
-    public async IAsyncEnumerable<T> SubscribeAsync<T>(string subject, Action<T> handler, [EnumeratorCancellation] CancellationToken ct = default)
+    public async Task SubscribeAsync<T>(string subject, Func<NatsMsg<T>, Task> handler, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(handler);
+
         await foreach (var msg in connection.SubscribeAsync<T>(subject, cancellationToken: ct).WithCancellation(ct))
         {
             if (msg.Data is not null)
             {
-                yield return msg.Data;
+                try
+                {
+                    await handler(msg);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Error handling message for subject {Subject}", subject);
+                }
             }
         }
     }
