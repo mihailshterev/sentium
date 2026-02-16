@@ -24,7 +24,7 @@ public class DynamicDiscoveryWorkflow : IAgentWorkflow
             "Based on the input, delegate tasks to the appropriate agents.", ct
         );
 
-        var thread = await planner.GetNewThreadAsync(ct);
+        var thread = await planner.CreateSessionAsync(ct);
 
         var result = await planner.RunAsync(trigger.Payload, thread, cancellationToken: ct);
 
