@@ -9,6 +9,7 @@
   <ItemGroup>
     <PackageReference Include="Aspire.Hosting.AppHost" />
     <PackageReference Include="Aspire.Hosting.JavaScript" />
+    <PackageReference Include="Aspire.Hosting.PostgreSQL" />
     <PackageReference Include="Aspire.Hosting.Nats" />
     <PackageReference Include="CommunityToolkit.Aspire.Hosting.Ollama" />
   </ItemGroup>

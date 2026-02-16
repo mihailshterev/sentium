@@ -5,6 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Aspire.Hosting.JavaScript" Version="13.1.0" />
+    <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.1.0" />
     <PackageVersion Include="Aspire.Hosting.Nats" Version="13.1.0" />
     <PackageVersion Include="Yarp.ReverseProxy" Version="2.3.0" />
     <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery.Abstractions" Version="10.2.0"/>
@@ -12,11 +13,11 @@
     <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="10.2.0"/>
     <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery.Dns" Version="10.2.0"/>
     <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.2.0" />
-    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.12.0" />
-    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.12.0" />
-    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.12.0" />
-    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.12.0" />
-    <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.12.0" />
+    <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.14.0" />
+    <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.14.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.14.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.14.0" />
+    <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.14.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.1" />
     <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.2" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore" Version="10.0.2" />
@@ -35,5 +36,7 @@
     <PackageVersion Include="OllamaSharp" Version="5.4.12" />
     <PackageVersion Include="CommunityToolkit.Aspire.Hosting.Ollama" Version="13.1.1" />
     <PackageVersion Include="NATS.Net" Version="2.7.1" />
+    <PackageVersion Include="Aspire.NATS.Net" Version="13.1.0" />
+    <PackageVersion Include="Docker.DotNet" Version="3.125.15" />
   </ItemGroup>
 </Project>

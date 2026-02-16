@@ -2,6 +2,16 @@
   "version": 2,
   "dependencies": {
     "net10.0": {
+      "Aspire.NATS.Net": {
+        "type": "Direct",
+        "requested": "[13.1.0, )",
+        "resolved": "13.1.0",
+        "contentHash": "CyuSw9OXgyQNJpBO3WwMlR7RohU1Pzi6yvDtYYN+QVNbC1n/7PUQSZ7/tzifawEnb2I5r/a75Js3VnGDawt/5g==",
+        "dependencies": {
+          "NATS.Net": "2.6.11",
+          "OpenTelemetry.Extensions.Hosting": "1.14.0"
+        }
+      },
       "Microsoft.AspNetCore.OpenApi": {
         "type": "Direct",
         "requested": "[10.0.1, )",
@@ -86,6 +96,27 @@
           "NATS.Client.Serializers.Json": "2.7.1"
         }
       },
+      "OpenTelemetry": {
+        "type": "Transitive",
+        "resolved": "1.14.0",
+        "contentHash": "aiPBAr1+0dPDItH++MQQr5UgMf4xiybruzNlAoYYMYN3UUk+mGRcoKuZy4Z4rhhWUZIpK2Xhe7wUUXSTM32duQ==",
+        "dependencies": {
+          "OpenTelemetry.Api.ProviderBuilderExtensions": "1.14.0"
+        }
+      },
+      "OpenTelemetry.Api": {
+        "type": "Transitive",
+        "resolved": "1.14.0",
+        "contentHash": "foHci6viUw1f3gUB8qzz3Rk02xZIWMo299X0rxK0MoOWok/3dUVru+KKdY7WIoSHwRGpxGKkmAz9jIk2RFNbsQ=="
+      },
+      "OpenTelemetry.Api.ProviderBuilderExtensions": {
+        "type": "Transitive",
+        "resolved": "1.14.0",
+        "contentHash": "i/lxOM92v+zU5I0rGl5tXAGz6EJtxk2MvzZ0VN6F6L5pMqT6s6RCXnGWXg6fW+vtZJsllBlQaf/VLPTzgefJpg==",
+        "dependencies": {
+          "OpenTelemetry.Api": "1.14.0"
+        }
+      },
       "infrastructure": {
         "type": "Project",
         "dependencies": {
@@ -124,6 +155,15 @@
           "NATS.Client.Serializers.Json": "2.7.1",
           "NATS.Client.Services": "2.7.1",
           "NATS.Client.Simplified": "2.7.1"
+        }
+      },
+      "OpenTelemetry.Extensions.Hosting": {
+        "type": "CentralTransitive",
+        "requested": "[1.14.0, )",
+        "resolved": "1.14.0",
+        "contentHash": "ZAxkCIa3Q3YWZ1sGrolXfkhPqn2PFSz2Cel74em/fATZgY5ixlw6MQp2icmqKCz4C7M1W2G0b92K3rX8mOtFRg==",
+        "dependencies": {
+          "OpenTelemetry": "1.14.0"
         }
       }
     },

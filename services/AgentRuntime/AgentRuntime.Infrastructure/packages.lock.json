@@ -2,6 +2,15 @@
   "version": 2,
   "dependencies": {
     "net10.0": {
+      "Docker.DotNet": {
+        "type": "Direct",
+        "requested": "[3.125.15, )",
+        "resolved": "3.125.15",
+        "contentHash": "XN8FKxVv8Mjmwu104/Hl9lM61pLY675s70gzwSj8KR5pwblo8HfWLcCuinh9kYsqujBkMH4HVRCEcRuU6al4BQ==",
+        "dependencies": {
+          "Newtonsoft.Json": "13.0.1"
+        }
+      },
       "Microsoft.Agents.AI": {
         "type": "Direct",
         "requested": "[1.0.0-preview.260121.1, )",
@@ -464,6 +473,11 @@
           "NATS.Client.Serializers.Json": "2.7.1"
         }
       },
+      "Newtonsoft.Json": {
+        "type": "Transitive",
+        "resolved": "13.0.1",
+        "contentHash": "ppPFpBcvxdsfUonNcvITKqLl3bqxWbDCZIzDWHzjpdAHRFfZe0Dw9HmA0+za13IdyrgJwpkDTDA9fHaxOrt20A=="
+      },
       "OpenAI": {
         "type": "Transitive",
         "resolved": "2.8.0",
@@ -505,6 +519,7 @@
         "type": "Project",
         "dependencies": {
           "AgentRuntime.Core": "[1.0.0, )",
+          "Infrastructure": "[1.0.0, )",
           "Microsoft.Agents.AI": "[1.0.0-preview.260121.1, )",
           "Microsoft.Agents.AI.OpenAI": "[1.0.0-preview.260121.1, )",
           "Microsoft.Agents.AI.Workflows": "[1.0.0-preview.260121.1, )",

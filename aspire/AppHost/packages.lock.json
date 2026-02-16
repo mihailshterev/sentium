@@ -114,6 +114,40 @@
         "resolved": "13.1.0",
         "contentHash": "3w2UahEauTq719LPJ/BCySh31kz26sfjuOkRF5E4VYy1Q3xLRV43+OIGI3C5sy8feUHjrYz+DDq3DQn/2fu+4g=="
       },
+      "Aspire.Hosting.PostgreSQL": {
+        "type": "Direct",
+        "requested": "[13.1.0, )",
+        "resolved": "13.1.0",
+        "contentHash": "PxGe4UXh/Gcfr69m/IicL01nicv8n5k6T/l2NVoyosk2/xt6yGNfTwUyU4fIRmvnLpFl+ow1lZs7R4GYY37dLw==",
+        "dependencies": {
+          "AspNetCore.HealthChecks.NpgSql": "9.0.0",
+          "AspNetCore.HealthChecks.Uris": "9.0.0",
+          "Aspire.Hosting": "13.1.0",
+          "Google.Protobuf": "3.33.0",
+          "Grpc.AspNetCore": "2.71.0",
+          "Grpc.Net.ClientFactory": "2.71.0",
+          "Grpc.Tools": "2.72.0",
+          "Humanizer.Core": "2.14.1",
+          "JsonPatch.Net": "3.3.0",
+          "KubernetesClient": "18.0.5",
+          "Microsoft.Extensions.Configuration.Abstractions": "8.0.0",
+          "Microsoft.Extensions.Configuration.Binder": "8.0.2",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "8.0.2",
+          "Microsoft.Extensions.Diagnostics.HealthChecks": "8.0.22",
+          "Microsoft.Extensions.FileSystemGlobbing": "10.0.1",
+          "Microsoft.Extensions.Hosting": "8.0.1",
+          "Microsoft.Extensions.Hosting.Abstractions": "8.0.1",
+          "Microsoft.Extensions.Http": "8.0.1",
+          "Microsoft.Extensions.Logging.Abstractions": "8.0.3",
+          "Microsoft.Extensions.Options": "8.0.2",
+          "Microsoft.Extensions.Primitives": "8.0.0",
+          "Newtonsoft.Json": "13.0.4",
+          "Polly.Core": "8.6.4",
+          "Semver": "3.0.0",
+          "StreamJsonRpc": "2.22.23",
+          "System.IO.Hashing": "9.0.10"
+        }
+      },
       "CommunityToolkit.Aspire.Hosting.Ollama": {
         "type": "Direct",
         "requested": "[13.1.1, )",
@@ -153,6 +187,15 @@
           "Semver": "3.0.0",
           "StreamJsonRpc": "2.22.23",
           "System.IO.Hashing": "9.0.10"
+        }
+      },
+      "AspNetCore.HealthChecks.NpgSql": {
+        "type": "Transitive",
+        "resolved": "9.0.0",
+        "contentHash": "npc58/AD5zuVxERdhCl2Kb7WnL37mwX42SJcXIwvmEig0/dugOLg3SIwtfvvh3TnvTwR/sk5LYNkkPaBdks61A==",
+        "dependencies": {
+          "Microsoft.Extensions.Diagnostics.HealthChecks": "8.0.11",
+          "Npgsql": "8.0.3"
         }
       },
       "AspNetCore.HealthChecks.Uris": {
@@ -670,6 +713,14 @@
         "type": "Transitive",
         "resolved": "13.0.4",
         "contentHash": "pdgNNMai3zv51W5aq268sujXUyx7SNdE2bj1wZcWjAQrKMFZV260lbqYop1d2GM67JI1huLRwxo9ZqnfF/lC6A=="
+      },
+      "Npgsql": {
+        "type": "Transitive",
+        "resolved": "8.0.3",
+        "contentHash": "6WEmzsQJCZAlUG1pThKg/RmeF6V+I0DmBBBE/8YzpRtEzhyZzKcK7ulMANDm5CkxrALBEC8H+5plxHWtIL7xnA==",
+        "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "8.0.0"
+        }
       },
       "Polly.Core": {
         "type": "Transitive",

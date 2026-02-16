@@ -2,6 +2,16 @@
   "version": 2,
   "dependencies": {
     "net10.0": {
+      "Aspire.NATS.Net": {
+        "type": "Direct",
+        "requested": "[13.1.0, )",
+        "resolved": "13.1.0",
+        "contentHash": "CyuSw9OXgyQNJpBO3WwMlR7RohU1Pzi6yvDtYYN+QVNbC1n/7PUQSZ7/tzifawEnb2I5r/a75Js3VnGDawt/5g==",
+        "dependencies": {
+          "NATS.Net": "2.6.11",
+          "OpenTelemetry.Extensions.Hosting": "1.14.0"
+        }
+      },
       "Microsoft.AspNetCore.OpenApi": {
         "type": "Direct",
         "requested": "[10.0.1, )",
@@ -125,6 +135,11 @@
           "NATS.Client.Serializers.Json": "2.7.1"
         }
       },
+      "Newtonsoft.Json": {
+        "type": "Transitive",
+        "resolved": "13.0.1",
+        "contentHash": "ppPFpBcvxdsfUonNcvITKqLl3bqxWbDCZIzDWHzjpdAHRFfZe0Dw9HmA0+za13IdyrgJwpkDTDA9fHaxOrt20A=="
+      },
       "OpenAI": {
         "type": "Transitive",
         "resolved": "2.8.0",
@@ -133,10 +148,26 @@
           "System.ClientModel": "1.8.1"
         }
       },
+      "OpenTelemetry": {
+        "type": "Transitive",
+        "resolved": "1.14.0",
+        "contentHash": "aiPBAr1+0dPDItH++MQQr5UgMf4xiybruzNlAoYYMYN3UUk+mGRcoKuZy4Z4rhhWUZIpK2Xhe7wUUXSTM32duQ==",
+        "dependencies": {
+          "OpenTelemetry.Api.ProviderBuilderExtensions": "1.14.0"
+        }
+      },
       "OpenTelemetry.Api": {
         "type": "Transitive",
-        "resolved": "1.13.1",
-        "contentHash": "tieglRERo7Rgu8oE8aamnuXCMPEW5fXIqO5ngTMCNk9pOEXanc0SdQ86ZAD1goNiGcjWHn+P3WMZp0FZSJgCoQ=="
+        "resolved": "1.14.0",
+        "contentHash": "foHci6viUw1f3gUB8qzz3Rk02xZIWMo299X0rxK0MoOWok/3dUVru+KKdY7WIoSHwRGpxGKkmAz9jIk2RFNbsQ=="
+      },
+      "OpenTelemetry.Api.ProviderBuilderExtensions": {
+        "type": "Transitive",
+        "resolved": "1.14.0",
+        "contentHash": "i/lxOM92v+zU5I0rGl5tXAGz6EJtxk2MvzZ0VN6F6L5pMqT6s6RCXnGWXg6fW+vtZJsllBlQaf/VLPTzgefJpg==",
+        "dependencies": {
+          "OpenTelemetry.Api": "1.14.0"
+        }
       },
       "System.ClientModel": {
         "type": "Transitive",
@@ -160,6 +191,7 @@
         "type": "Project",
         "dependencies": {
           "AgentRuntime.Core": "[1.0.0, )",
+          "Infrastructure": "[1.0.0, )",
           "Microsoft.Agents.AI": "[1.0.0-preview.260121.1, )",
           "Microsoft.Agents.AI.OpenAI": "[1.0.0-preview.260121.1, )",
           "Microsoft.Agents.AI.Workflows": "[1.0.0-preview.260121.1, )",
@@ -178,6 +210,7 @@
         "dependencies": {
           "AgentRuntime.Application": "[1.0.0, )",
           "AgentRuntime.Core": "[1.0.0, )",
+          "Docker.DotNet": "[3.125.15, )",
           "Infrastructure": "[1.0.0, )",
           "Microsoft.Agents.AI": "[1.0.0-preview.260121.1, )",
           "Microsoft.Agents.AI.OpenAI": "[1.0.0-preview.260121.1, )",
@@ -189,6 +222,15 @@
         "type": "Project",
         "dependencies": {
           "NATS.Net": "[2.7.1, )"
+        }
+      },
+      "Docker.DotNet": {
+        "type": "CentralTransitive",
+        "requested": "[3.125.15, )",
+        "resolved": "3.125.15",
+        "contentHash": "XN8FKxVv8Mjmwu104/Hl9lM61pLY675s70gzwSj8KR5pwblo8HfWLcCuinh9kYsqujBkMH4HVRCEcRuU6al4BQ==",
+        "dependencies": {
+          "Newtonsoft.Json": "13.0.1"
         }
       },
       "Microsoft.Agents.AI": {
@@ -255,6 +297,15 @@
         "contentHash": "uUKOgoTV9Fxo9J5syrY4OMZ/2/xlPO83tGG+FjGmY8HqJVJ1iUT5f8EsC9yNEqBBIoth9D8zzN4I5p1oQEMBhQ==",
         "dependencies": {
           "Microsoft.Extensions.AI.Abstractions": "10.0.0"
+        }
+      },
+      "OpenTelemetry.Extensions.Hosting": {
+        "type": "CentralTransitive",
+        "requested": "[1.14.0, )",
+        "resolved": "1.14.0",
+        "contentHash": "ZAxkCIa3Q3YWZ1sGrolXfkhPqn2PFSz2Cel74em/fATZgY5ixlw6MQp2icmqKCz4C7M1W2G0b92K3rX8mOtFRg==",
+        "dependencies": {
+          "OpenTelemetry": "1.14.0"
         }
       }
     },

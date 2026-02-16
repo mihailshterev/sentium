@@ -17,6 +17,7 @@
     <PackageReference Include="Microsoft.Agents.AI" />
     <PackageReference Include="OllamaSharp" />
     <PackageReference Include="NATS.Net" />
+    <PackageReference Include="Docker.DotNet" />
   </ItemGroup>
 
 </Project>
