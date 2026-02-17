@@ -7,7 +7,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AgentRuntimePolicy", policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "http://localhost:5173")
+        policy.WithOrigins("http://localhost:60276")
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();

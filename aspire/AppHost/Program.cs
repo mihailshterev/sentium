@@ -31,6 +31,9 @@ var apiGateway = builder.AddProject<Projects.ApiGateway>(ServiceNames.Gateway)
     .WithReference(sentinelApi).WaitFor(sentinelApi)
     .WithReference(agentRuntimeApi).WaitFor(agentRuntimeApi);
 
+var frontend = builder.AddViteApp(ServiceNames.Frontend, "../../frontend")
+    .WithReference(apiGateway).WaitFor(apiGateway);
+
 identityApi.WithParentRelationship(apiGateway);
 sentinelApi.WithParentRelationship(apiGateway);
 agentRuntimeApi.WithParentRelationship(apiGateway);
