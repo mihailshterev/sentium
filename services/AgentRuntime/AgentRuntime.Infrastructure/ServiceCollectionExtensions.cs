@@ -8,9 +8,10 @@ using AgentRuntime.Infrastructure.Agents;
 using AgentRuntime.Infrastructure.Ollama;
 using AgentRuntime.Infrastructure.Tools;
 using Infrastructure.Messaging;
+using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using NATS.Client.Hosting;
+using OllamaSharp;
 
 namespace AgentRuntime.Infrastructure;
 
@@ -18,27 +19,28 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddAgentRuntimeInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddNats(poolSize: 1, options =>
+        services.AddChatClient(sp =>
         {
-            return options with { Url = "nats://localhost:4222" };
-        });
-        services.AddSingleton<IAgentRegistry, AgentRegistry>();
+            var uri = new Uri("http://localhost:11434");
+            var client = new OllamaApiClient(uri)
+            {
+                SelectedModel = "qwen3:4b"
+            };
 
-        services.AddTransient<IAgentFactory, OllamaAgentFactory>(sp =>
-        {
-            return new OllamaAgentFactory(
-                sp.GetRequiredService<IAgentRegistry>(),
-                model: "gemma3:1b"
-            );
+            return new ChatClientBuilder(client)
+                .UseFunctionInvocation()
+                .Build();
         });
 
         services.AddSingleton<IAgentTool, ThreatIntelTool>();
         services.AddSingleton<IAgentTool, FileReadTool>();
 
+        services.AddSingleton<IAgentRegistry, AgentRegistry>();
+        services.AddSingleton<IAgentToolProvider, AgentToolProvider>();
+        services.AddTransient<IAgentFactory, OllamaAgentFactory>();
+
         services.AddScoped<IAgentWorkflow, AgentWorkflow>();
         services.AddTransient<IOrchestrator, AgentOrchestrator>();
-
-
         services.AddSingleton<IEventBus, NatsEventBus>();
 
         return services;

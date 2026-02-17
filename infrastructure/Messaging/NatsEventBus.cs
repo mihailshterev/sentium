@@ -7,9 +7,9 @@ public sealed class NatsEventBus(INatsConnection connection, ILogger<NatsEventBu
 {
     private bool Disposed;
 
-    public async Task PublishAsync<T>(string subject, T message, CancellationToken ct = default)
+    public async Task PublishAsync<T>(string subject, T message, INatsSerializer<T>? serializer = null, CancellationToken ct = default)
     {
-        await connection.PublishAsync(subject, message, cancellationToken: ct);
+        await connection.PublishAsync(subject, message, serializer: serializer, cancellationToken: ct);
     }
 
     public async Task SubscribeAsync<T>(string subject, Func<NatsMsg<T>, Task> handler, CancellationToken ct = default)

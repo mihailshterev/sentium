@@ -11,6 +11,10 @@ public sealed class AgentRegistry : IAgentRegistry
         Registry = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase)
         {
             { "Planner", typeof(PlannerAgent) },
+            { "SecurityAnalyst", typeof(SecurityAnalyst) },
+            { "Summarizer", typeof(SummaryAgent) },
+            { "ThreatIntel", typeof(ThreatIntelAgent) },
+            { "Forensics", typeof(ForensicsAgent) }
         };
     }
 

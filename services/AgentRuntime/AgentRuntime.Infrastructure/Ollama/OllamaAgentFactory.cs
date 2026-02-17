@@ -1,39 +1,29 @@
 using AgentRuntime.Core.Agents;
-using AgentRuntime.Infrastructure.Tools;
+using AgentRuntime.Core.Tools;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
-using OllamaSharp;
 
 namespace AgentRuntime.Infrastructure.Ollama;
 
-public sealed class OllamaAgentFactory : IAgentFactory
+public sealed class OllamaAgentFactory(IAgentRegistry registry, IChatClient chatClient, IAgentToolProvider agentToolProvider) : IAgentFactory
 {
-    private readonly IChatClient Client;
-    private readonly IAgentRegistry AgentRegistry;
-
-    public OllamaAgentFactory(IAgentRegistry registry, string model = "gemma3:1b")
-    {
-        AgentRegistry = registry;
-        Client = new OllamaApiClient(new Uri("http://localhost:11434")) { SelectedModel = model };
-    }
-
     public AIAgent Create(string agentName, string? overrideInstructions = null, CancellationToken ct = default)
     {
         IAgent? definition = null;
-        var type = AgentRegistry.GetAgentType(agentName);
+        var type = registry.GetAgentType(agentName);
 
         if (type != null)
         {
             definition = Activator.CreateInstance(type) as IAgent;
         }
 
-        return new ChatClientAgent(Client, new ChatClientAgentOptions
+        return new ChatClientAgent(chatClient, new ChatClientAgentOptions
         {
             Name = agentName,
             ChatOptions = new ChatOptions
             {
                 Instructions = overrideInstructions ?? definition?.Instructions,
-                Tools = AgentToolProvider.GetToolsForAgent(agentName, ct)
+                Tools = agentToolProvider.GetToolsForAgent(agentName, ct)
             }
         });
     }

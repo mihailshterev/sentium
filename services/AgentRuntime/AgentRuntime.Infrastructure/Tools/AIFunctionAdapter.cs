@@ -9,8 +9,12 @@ public static class AIFunctionAdapter
     {
         ArgumentNullException.ThrowIfNull(tool);
 
-        Task<string> Invoke(string input) => tool.ExecuteAsync(input, ct);
+        async Task<string> Invoke(string input) => await tool.ExecuteAsync(input, ct);
 
-        return AIFunctionFactory.Create(Invoke, name: tool.Name, description: tool.Description);
+        return AIFunctionFactory.Create(
+            method: Invoke,
+            name: tool.Name,
+            description: tool.Description
+        );
     }
 }

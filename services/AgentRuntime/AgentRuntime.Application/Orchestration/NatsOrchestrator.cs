@@ -43,12 +43,17 @@ public sealed class NatsAgentOrchestrator : BackgroundService
                         };
 
                         var result = await Orchestrator.RunAsync(trigger, stoppingToken);
-                        await Nats.PublishAsync(
-                            $"insights.{msg.Subject}",
-                            result,
-                            serializer: NatsJsonSerializer<WorkflowResult>.Default,
-                            cancellationToken: stoppingToken
-                        );
+                        Logger.LogInformation("Workflow completed for event {Subject} with explanation: {Explanation}", msg.Subject, result.Explanation);
+                        foreach (var (Role, Text) in result.History)
+                        {
+                            Logger.LogInformation(" - {Role}: {Text}", Role, Text);
+                        }
+                        // await Nats.PublishAsync(
+                        //     $"insights.{msg.Subject}",
+                        //     result,
+                        //     serializer: NatsJsonSerializer<WorkflowResult>.Default,
+                        //     cancellationToken: stoppingToken
+                        // );
                     }
                     catch (Exception ex)
                     {

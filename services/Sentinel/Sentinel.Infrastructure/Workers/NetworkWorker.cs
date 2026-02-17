@@ -1,38 +1,37 @@
+using Infrastructure.Messaging;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Sentinel.Core.Sensors;
 
 namespace Sentinel.Infrastructure.Workers;
 
-public sealed class NetworkWorker : BackgroundService
+public sealed class NetworkSentinelWorker(
+    INetworkSensor sensor,
+    IEventBus bus,
+    ILogger<NetworkSentinelWorker> logger) : BackgroundService
 {
-    private readonly INetworkSensor Sensor;
-    private readonly ILogger<NetworkWorker> Logger;
-
-    public NetworkWorker(
-        INetworkSensor sensor,
-        ILogger<NetworkWorker> logger)
-    {
-        Sensor = sensor;
-        Logger = logger;
-    }
-
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        Logger.LogInformation("Network worker started");
+        using var timer = new PeriodicTimer(TimeSpan.FromMilliseconds(500));
 
-        while (!stoppingToken.IsCancellationRequested)
+        while (await timer.WaitForNextTickAsync(stoppingToken))
         {
             try
             {
-                Sensor.Scan();
+                await sensor.ScanAsync(async evt =>
+                {
+                    logger.LogInformation("New network event detected: {Event}", evt);
+                    foreach (var signal in evt.Metadata)
+                    {
+                        logger.LogInformation(" - Signal: ({SignalValue})", signal.Value);
+                    }
+                    //await bus.PublishAsync("agents.analyst.inbound", evt, stoppingToken);
+                }, stoppingToken);
             }
             catch (Exception ex)
             {
-                Logger.LogError(ex, "Network scan failed");
+                logger.LogCritical(ex, "Sentinel Heartbeat Failure");
             }
-
-            await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
         }
     }
 }

@@ -4,6 +4,6 @@ public sealed class WorkflowResult
 {
     public string Explanation { get; init; } = "";
     public object Risk { get; init; } = default!;
-    public object? History { get; init; }
+    public IEnumerable<(string Action, string Result)> History { get; init; } = [];
     public object Recommendation { get; init; } = default!;
 }
