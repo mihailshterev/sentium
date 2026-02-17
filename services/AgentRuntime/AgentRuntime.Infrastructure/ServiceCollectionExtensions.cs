@@ -19,12 +19,16 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddAgentRuntimeInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
+        ArgumentNullException.ThrowIfNull(configuration, nameof(configuration));
+
+        var modelName = configuration["AI:ModelName"] ?? "gemma3:1b";
+
         services.AddChatClient(sp =>
         {
             var uri = new Uri("http://localhost:11434");
             var client = new OllamaApiClient(uri)
             {
-                SelectedModel = "qwen3:4b"
+                SelectedModel = modelName
             };
 
             return new ChatClientBuilder(client)

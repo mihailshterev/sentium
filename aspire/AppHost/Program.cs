@@ -24,7 +24,8 @@ var sentinelApi = builder.AddProject<Projects.Sentinel_Api>(ServiceNames.Sentine
     .WithReference(nats).WaitFor(nats);
 var agentRuntimeApi = builder.AddProject<Projects.AgentRuntime_Api>(ServiceNames.AgentRuntime)
     .WithReference(ollamaModel).WaitFor(ollamaModel)
-    .WithReference(nats).WaitFor(nats);
+    .WithReference(nats).WaitFor(nats)
+    .WithEnvironment("AI__ModelName", ollamaModel.Resource.ModelName);
 
 var apiGateway = builder.AddProject<Projects.ApiGateway>(ServiceNames.Gateway)
     .WithReference(identityApi).WaitFor(identityApi)
