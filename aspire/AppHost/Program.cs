@@ -17,7 +17,7 @@ var ollama = builder.AddOllama(ResourceNames.OllamaServiceName)
     .WithEndpoint("http", e => e.Port = 11434);
 //.WithOpenWebUI();
 
-var ollamaModel = ollama.AddModel(AIModels.Qwen3);
+var ollamaModel = ollama.AddModel(AIModels.Qwen3_8);
 
 var identityApi = builder.AddProject<Projects.IdentityProvider_Api>(ServiceNames.Identity);
 var sentinelApi = builder.AddProject<Projects.Sentinel_Api>(ServiceNames.Sentinel)
