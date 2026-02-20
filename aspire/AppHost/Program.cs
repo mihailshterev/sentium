@@ -33,7 +33,8 @@ var apiGateway = builder.AddProject<Projects.ApiGateway>(ServiceNames.Gateway)
     .WithReference(agentRuntimeApi).WaitFor(agentRuntimeApi);
 
 var frontend = builder.AddViteApp(ServiceNames.Frontend, "../../frontend")
-    .WithReference(apiGateway).WaitFor(apiGateway);
+    .WithReference(apiGateway).WaitFor(apiGateway)
+    .WithEndpoint("http", e => e.Port = 5173);
 
 identityApi.WithParentRelationship(apiGateway);
 sentinelApi.WithParentRelationship(apiGateway);
