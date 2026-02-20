@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <Sdk Name="Aspire.AppHost.Sdk" Version="13.1.0" />
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.AppHost" />
+    <PackageReference Include="Aspire.Hosting.JavaScript" />
+    <PackageReference Include="Aspire.Hosting.PostgreSQL" />
+    <PackageReference Include="Aspire.Hosting.Nats" />
+    <PackageReference Include="CommunityToolkit.Aspire.Hosting.Ollama" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\services\AgentRuntime\AgentRuntime.Api\AgentRuntime.Api.csproj" />
+    <ProjectReference Include="..\..\services\Gateway\ApiGateway.csproj" />
+    <ProjectReference Include="..\..\services\IdentityProvider\IdentityProvider.Api\IdentityProvider.Api.csproj" />
+    <ProjectReference Include="..\..\services\Sentinel\Sentinel.Api\Sentinel.Api.csproj" />
+  </ItemGroup>
+</Project>

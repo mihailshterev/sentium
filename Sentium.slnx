@@ -4,14 +4,34 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="aspire/AppHost.csproj" />
-  <Project Path="gateway/ApiGateway.csproj" />
+  <Folder Name="/aspire/">
+    <Project Path="aspire/AppHost/AppHost.csproj" />
+    <Project Path="aspire/ServiceDefaults/ServiceDefaults.csproj" />
+  </Folder>
+  <Folder Name="/infrastructure/">
+    <Project Path="infrastructure/Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/services/" />
+  <Folder Name="/services/AgentRuntime/">
+    <Project Path="services/AgentRuntime/AgentRuntime.Api/AgentRuntime.Api.csproj" />
+    <Project Path="services/AgentRuntime/AgentRuntime.Application/AgentRuntime.Application.csproj" />
+    <Project Path="services/AgentRuntime/AgentRuntime.Core/AgentRuntime.Core.csproj" />
+    <Project Path="services/AgentRuntime/AgentRuntime.Infrastructure/AgentRuntime.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/services/Gateway/">
+    <Project Path="services/Gateway/ApiGateway.csproj" />
+  </Folder>
   <Folder Name="/services/IdentityProvider/">
     <Project Path="services/IdentityProvider/IdentityProvider.Api/IdentityProvider.Api.csproj" />
     <Project Path="services/IdentityProvider/IdentityProvider.Application/IdentityProvider.Application.csproj" />
     <Project Path="services/IdentityProvider/IdentityProvider.Core/IdentityProvider.Core.csproj" />
     <Project Path="services/IdentityProvider/IdentityProvider.Infrastructure/IdentityProvider.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/services/Sentinel/">
+    <Project Path="services/Sentinel/Sentinel.Api/Sentinel.Api.csproj" />
+    <Project Path="services/Sentinel/Sentinel.Application/Sentinel.Application.csproj" />
+    <Project Path="services/Sentinel/Sentinel.Core/Sentinel.Core.csproj" />
+    <Project Path="services/Sentinel/Sentinel.Infrastructure/Sentinel.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />
