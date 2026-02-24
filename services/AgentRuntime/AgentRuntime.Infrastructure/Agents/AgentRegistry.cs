@@ -10,11 +10,12 @@ public sealed class AgentRegistry : IAgentRegistry
     {
         Registry = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase)
         {
-            { "Planner", typeof(PlannerAgent) },
-            { "SecurityAnalyst", typeof(SecurityAnalyst) },
-            { "Summarizer", typeof(SummaryAgent) },
-            { "ThreatIntel", typeof(ThreatIntelAgent) },
-            { "Forensics", typeof(ForensicsAgent) }
+            { AgentRole.Planner, typeof(PlannerAgent) },
+            { AgentRole.SecurityAnalyst, typeof(SecurityAnalyst) },
+            { AgentRole.Summarizer, typeof(SummaryAgent) },
+            { AgentRole.ThreatIntel, typeof(ThreatIntelAgent) },
+            { AgentRole.Forensics, typeof(ForensicsAgent) },
+            { AgentRole.Validator, typeof(ValidationAgent) }
         };
     }
 
