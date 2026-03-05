@@ -1,9 +1,7 @@
 using AgentRuntime.Application.Orchestration;
-using AgentRuntime.Application.Workflows;
 using AgentRuntime.Core.Agents;
 using AgentRuntime.Core.Orchestration;
 using AgentRuntime.Core.Tools;
-using AgentRuntime.Core.Workflows;
 using AgentRuntime.Infrastructure.Agents;
 using AgentRuntime.Infrastructure.Ollama;
 using AgentRuntime.Infrastructure.Tools;
@@ -43,7 +41,6 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IAgentToolProvider, AgentToolProvider>();
         services.AddTransient<IAgentFactory, OllamaAgentFactory>();
 
-        services.AddScoped<IAgentWorkflow, AgentWorkflow>();
         services.AddTransient<IOrchestrator, AgentOrchestrator>();
         services.AddSingleton<IEventBus, NatsEventBus>();
 

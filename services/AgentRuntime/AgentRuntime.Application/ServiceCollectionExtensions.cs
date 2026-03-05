@@ -7,7 +7,7 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddAgentRuntimeApplication(this IServiceCollection services)
     {
-        services.AddHostedService<NatsAgentOrchestrator>();
+        services.AddHostedService<NatsMessageProcessor>();
         return services;
     }
 }

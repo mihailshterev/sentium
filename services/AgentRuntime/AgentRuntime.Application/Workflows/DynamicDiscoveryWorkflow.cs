@@ -9,32 +9,25 @@ using System.Text.RegularExpressions;
 
 namespace AgentRuntime.Application.Workflows;
 
-public partial class DynamicDiscoveryWorkflow : IAgentWorkflow
+public partial class DynamicDiscoveryWorkflow(
+    IAgentFactory factory,
+    IAgentRegistry registry,
+    IEventBus nats) : IAgentWorkflow
 {
     public WorkflowType Type => WorkflowType.Dynamic;
-    private readonly IAgentFactory AgentFactory;
-    private readonly IAgentRegistry AgentRegistry;
-    private readonly IEventBus Nats;
-
-    public DynamicDiscoveryWorkflow(IAgentFactory factory, IAgentRegistry registry, IEventBus nats)
-    {
-        AgentFactory = factory;
-        AgentRegistry = registry;
-        Nats = nats;
-    }
 
     public async Task<WorkflowResult> ExecuteAsync(WorkflowTrigger trigger, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(trigger);
 
-        var planner = AgentFactory.Create(AgentRole.Planner, ct: ct);
+        var planner = factory.Create(AgentRole.Planner, ct: ct);
         var plannerSession = await planner.CreateSessionAsync(ct);
 
         var rawPlan = string.Empty;
         await foreach (var update in planner.RunStreamingAsync(trigger.Payload, plannerSession, cancellationToken: ct))
         {
             rawPlan += update.Text;
-            await StreamToNats(trigger.TriggerType, "Planner", update.Text, ct);
+            await StreamToNats(trigger.TriggerType, AgentRole.Planner, update.Text, ct);
         }
 
         var rolesToExecute = ParseRolesRobustly(rawPlan);
@@ -43,7 +36,7 @@ public partial class DynamicDiscoveryWorkflow : IAgentWorkflow
             return new WorkflowResult { Explanation = "Planner failed to identify required agents." };
         }
 
-        var squadAgents = rolesToExecute.Select(role => AgentFactory.Create(role, ct: ct)).ToArray();
+        var squadAgents = rolesToExecute.Select(role => factory.Create(role, ct: ct)).ToArray();
         var squadWorkflow = AgentWorkflowBuilder.BuildSequential("dynamic-squad", squadAgents).AsAgent();
         var squadSession = await squadWorkflow.CreateSessionAsync(ct);
 
@@ -58,7 +51,7 @@ public partial class DynamicDiscoveryWorkflow : IAgentWorkflow
             }
         }
 
-        var validator = AgentFactory.Create(AgentRole.Validator, ct: ct);
+        var validator = factory.Create(AgentRole.Validator, ct: ct);
         var validatorSession = await validator.CreateSessionAsync(ct);
 
         var validationInput = $"Original Request: {trigger.Payload}\n\nSquad Findings:\n{squadReport}";
@@ -99,7 +92,7 @@ public partial class DynamicDiscoveryWorkflow : IAgentWorkflow
             }
 
             var parsed = JsonSerializer.Deserialize<List<string>>(match.Value, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-            var registered = AgentRegistry.GetRegisteredNames();
+            var registered = registry.GetRegisteredNames();
 
             return parsed?.Select(p => registered.FirstOrDefault(r =>
                 string.Equals(r.Replace(" ", ""), p.Replace(" ", ""), StringComparison.OrdinalIgnoreCase)))
@@ -113,7 +106,7 @@ public partial class DynamicDiscoveryWorkflow : IAgentWorkflow
 
     private async Task StreamToNats(string type, string author, string text, CancellationToken ct)
     {
-        await Nats.PublishAsync($"stream.{type}", new AgentStreamUpdate(author, text),
+        await nats.PublishAsync($"stream.{type}", new AgentStreamUpdate(author, text),
             serializer: NatsJsonSerializer<AgentStreamUpdate>.Default, ct: ct);
     }
 

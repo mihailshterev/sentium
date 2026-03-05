@@ -6,27 +6,19 @@ using Infrastructure.Messaging;
 
 namespace AgentRuntime.Application.Orchestration;
 
-public sealed class AgentOrchestrator : IOrchestrator
+public sealed class AgentOrchestrator(
+    IAgentFactory factory,
+    IAgentRegistry registry,
+    IEventBus nats) : IOrchestrator
 {
-    private readonly IAgentFactory AgentFactory;
-    private readonly IAgentRegistry AgentRegistry;
-    private readonly IEventBus Nats;
-
-    public AgentOrchestrator(IAgentFactory factory, IAgentRegistry registry, IEventBus nats)
-    {
-        AgentFactory = factory;
-        AgentRegistry = registry;
-        Nats = nats;
-    }
-
     public async Task<WorkflowResult> RunAsync(WorkflowTrigger trigger, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(trigger);
 
         IAgentWorkflow workflow = trigger.TriggerType switch
         {
-            AgentEvents.NetworkScan => new NetworkAnalysisWorkflow(this.AgentFactory, this.AgentRegistry, this.Nats),
-            _ => new DynamicDiscoveryWorkflow(AgentFactory, AgentRegistry)
+            AgentEvents.NetworkScan => new NetworkAnalysisWorkflow(factory, nats),
+            _ => new DynamicDiscoveryWorkflow(factory, registry, nats)
         };
 
         return await workflow.ExecuteAsync(trigger, ct);
