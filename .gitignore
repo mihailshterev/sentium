@@ -14,6 +14,10 @@
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
+# Ignore CSS module type definitions
+*.module.css.d.ts
+*.module.scss.d.ts
+
 # Mono auto generated files
 mono_crash.*
 
