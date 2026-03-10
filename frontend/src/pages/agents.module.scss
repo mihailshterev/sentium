@@ -1,0 +1,338 @@
+.agents-container {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 60px);
+  background-color: var(--terminal-bg);
+  font-family: "JetBrains Mono", "Fira Code", "Courier New", monospace;
+  overflow: hidden;
+}
+
+.agents-header {
+  padding: 1.5rem 2rem 1rem;
+  border-bottom: 1px solid #27272a;
+  background-color: #18181b;
+  flex-shrink: 0;
+}
+
+.agents-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.agents-prompt {
+  color: var(--terminal-accent);
+  font-size: 1.4rem;
+  font-weight: 800;
+  text-shadow: 0 0 10px var(--terminal-accent-glow);
+}
+
+.agents-title {
+  color: var(--terminal-accent);
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: 3px;
+  margin: 0;
+  text-shadow:
+    0 0 10px var(--terminal-accent-glow),
+    0 0 20px rgba(34, 197, 94, 0.1);
+}
+
+.agents-subtitle {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  letter-spacing: 1.5px;
+  margin-top: 0.4rem;
+  padding-left: 1.5rem;
+}
+
+.agents-body {
+  display: grid;
+  grid-template-columns: 400px 1fr;
+  gap: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.create-panel {
+  border-right: 1px solid #27272a;
+  background-color: #0c0c0e;
+}
+
+.list-panel {
+  background-color: var(--terminal-bg);
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 1.5rem;
+  background-color: #18181b;
+  border-bottom: 1px solid #27272a;
+  font-size: 0.7rem;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.panel-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #3f3f46;
+  flex-shrink: 0;
+}
+
+.panel-dot.active {
+  background-color: var(--terminal-accent);
+  box-shadow: 0 0 6px var(--terminal-accent-glow);
+  animation: pulse-dot 2.5s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.panel-label {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.agent-count {
+  color: var(--terminal-accent);
+  margin-left: auto;
+}
+
+.create-form {
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  overflow-y: auto;
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  position: relative;
+}
+
+.field-label {
+  font-size: 0.7rem;
+  letter-spacing: 2px;
+  color: var(--terminal-accent);
+  font-weight: 700;
+}
+
+.field-input {
+  background-color: #111114;
+  border: 1px solid #27272a;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 0.85rem;
+  padding: 0.65rem 0.9rem;
+  outline: none;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+  resize: none;
+}
+
+.field-input::placeholder {
+  color: #3f3f46;
+}
+
+.field-input:focus {
+  border-color: var(--terminal-accent);
+  box-shadow:
+    0 0 0 1px var(--terminal-accent-glow),
+    inset 0 0 10px rgba(34, 197, 94, 0.03);
+}
+
+.field-textarea {
+  min-height: 100px;
+}
+
+.char-count {
+  font-size: 0.65rem;
+  color: #3f3f46;
+  text-align: right;
+  margin-top: -0.1rem;
+}
+
+.submit-btn {
+  background-color: transparent;
+  border: 1px solid var(--terminal-accent);
+  color: var(--terminal-accent);
+  font-family: inherit;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  padding: 0.75rem 1.5rem;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  margin-top: 0.25rem;
+}
+
+.submit-btn:hover:not(:disabled) {
+  background-color: var(--terminal-accent);
+  color: #052e16;
+  box-shadow: 0 0 20px var(--terminal-accent-glow);
+}
+
+.submit-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.submit-btn.submitting {
+  opacity: 0.6;
+}
+
+.btn-cursor,
+.btn-blink {
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+.status-msg {
+  font-size: 0.72rem;
+  letter-spacing: 1.5px;
+  padding: 0.6rem 0.9rem;
+  border-left: 2px solid;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.status-msg.success {
+  color: var(--terminal-accent);
+  border-color: var(--terminal-accent);
+  background: rgba(34, 197, 94, 0.06);
+}
+
+.status-msg.error {
+  color: #ef4444;
+  border-color: #ef4444;
+  background: rgba(239, 68, 68, 0.06);
+}
+
+.status-icon {
+  font-weight: 900;
+}
+
+.agent-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem 0;
+}
+
+.agent-list::-webkit-scrollbar {
+  width: 4px;
+}
+.agent-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.agent-list::-webkit-scrollbar-thumb {
+  background-color: #27272a;
+}
+
+.list-placeholder {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  letter-spacing: 1.5px;
+  padding: 2rem 1.5rem;
+}
+
+.agent-entry {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #18181b;
+  transition: background-color 0.15s;
+}
+
+.agent-entry:hover {
+  background-color: #0f0f12;
+}
+
+.agent-entry-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.4rem;
+}
+
+.agent-index {
+  color: #3f3f46;
+  font-size: 0.7rem;
+  flex-shrink: 0;
+}
+
+.agent-name {
+  color: var(--terminal-accent);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agent-status-badge {
+  font-size: 0.6rem;
+  letter-spacing: 2px;
+  color: var(--terminal-accent);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  background: rgba(34, 197, 94, 0.07);
+  padding: 2px 7px;
+  flex-shrink: 0;
+}
+
+.agent-description {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  line-height: 1.5;
+  padding-left: 0.1rem;
+  margin-bottom: 0.5rem;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.agent-meta {
+  display: flex;
+  gap: 1.5rem;
+  font-size: 0.65rem;
+  color: #3f3f46;
+  letter-spacing: 1px;
+}

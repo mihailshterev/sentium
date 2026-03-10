@@ -26,9 +26,11 @@
     "eslint-plugin-react-hooks": "7.0.1",
     "eslint-plugin-react-refresh": "0.4.24",
     "globals": "16.5.0",
+    "sass-embedded": "1.97.3",
     "typescript": "5.9.3",
     "typescript-eslint": "8.48.0",
-    "vite": "8.0.0-beta.13"
+    "vite": "8.0.0-beta.13",
+    "vite-plugin-sass-dts": "1.3.35"
   },
   "overrides": {
     "vite": "8.0.0-beta.13"

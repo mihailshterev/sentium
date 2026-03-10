@@ -1,0 +1,59 @@
+.sentium-nav {
+  display: flex;
+  justify-content: start;
+  align-items: center;
+  padding: 1.2rem 2.5rem;
+  gap: 3rem;
+  background: linear-gradient(to right, #0c0c0e, #16161a);
+  border-bottom: 1px solid var(--border-color);
+  font-family: "JetBrains Mono", monospace;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  position: relative;
+  z-index: 10;
+}
+
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--accent-green);
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  text-shadow: 0 0 10px var(--terminal-accent-glow);
+}
+
+.nav-links {
+  display: flex;
+  gap: 2rem;
+}
+
+.nav-link {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.nav-link .cursor-prefix {
+  opacity: 0;
+  color: var(--accent-blue);
+  transition: opacity 0.2s;
+}
+
+.nav-link:hover {
+  color: var(--text-primary);
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+}
+
+.nav-link:hover .cursor-prefix,
+.nav-link.active .cursor-prefix {
+  opacity: 1;
+}
+
+.nav-link.active {
+  color: var(--accent-blue);
+  text-shadow: 0 0 10px var(--accent-blue-glow);
+}

@@ -1,0 +1,391 @@
+.terminal-container {
+  flex: 1;
+  min-height: 0;
+  background-color: var(--bg-dark);
+  color: var(--text-primary);
+  font-family: "Inter", "JetBrains Mono", monospace;
+  display: flex;
+  padding: 1.5rem;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.terminal-card {
+  width: 100%;
+  /* max-width: 1300px; */
+  margin: 0 auto;
+  background-color: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
+}
+
+.terminal-header {
+  padding: 1.5rem 2rem;
+  background: linear-gradient(to right, #0c0c0e, #16161a);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.terminal-title {
+  color: var(--terminal-accent);
+  font-size: 1.2rem;
+  font-weight: 800;
+  letter-spacing: 2px;
+  margin: 0;
+  text-shadow:
+    0 0 10px var(--terminal-accent-glow),
+    0 0 20px rgba(34, 197, 94, 0.1);
+}
+
+.terminal-body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.terminal-sidebar {
+  width: 280px;
+  border-right: 1px solid var(--border-color);
+  padding: 1.5rem;
+  background: rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.sidebar-label {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--text-muted);
+  letter-spacing: 2px;
+}
+
+.phase-tracker {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.phase-badge {
+  padding: 6px 14px;
+  border-radius: 6px;
+  background: #16161a;
+  border: 1px solid var(--border-color);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.phase-badge.active {
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+  background: rgba(59, 130, 246, 0.1);
+  transform: translateY(-1px);
+}
+.phase-badge.done {
+  border-color: var(--accent-green);
+  color: var(--accent-green);
+  background: rgba(16, 185, 129, 0.1);
+}
+
+.brand-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--accent-green);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--accent-green);
+}
+
+/* ── Scenario list ── */
+.scenario-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.scenario-btn {
+  background: transparent;
+  border: 1px solid #27272a;
+  color: var(--text-muted);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.7rem;
+  letter-spacing: 1px;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s;
+  line-height: 1.4;
+}
+
+.scenario-btn:hover:not(:disabled) {
+  border-color: var(--terminal-accent);
+  color: var(--text-primary);
+  background: rgba(34, 197, 94, 0.04);
+}
+
+.scenario-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* ── Agent registry in sidebar ── */
+.sidebar-count {
+  color: var(--terminal-accent);
+  margin-left: 6px;
+  font-weight: 700;
+}
+
+.agent-registry-list {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sidebar-empty {
+  font-size: 0.68rem;
+  color: #3f3f46;
+  letter-spacing: 1px;
+}
+
+.registry-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.registry-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--terminal-accent);
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+.registry-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text-primary);
+  font-size: 0.72rem;
+  letter-spacing: 0.5px;
+}
+
+/* ── Session meta ── */
+.sidebar-group--bottom {
+  margin-top: auto;
+}
+
+.sidebar-group {
+  font-size: 1;
+}
+
+.session-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+  font-size: 0.68rem;
+  color: #52525b;
+  letter-spacing: 0.5px;
+}
+
+/* ── Terminal subtitle ── */
+.terminal-subtitle {
+  font-size: 9px;
+  color: #52525b;
+  margin-top: 2px;
+  letter-spacing: 1px;
+}
+
+/* ── Idle state ── */
+.log-idle {
+  color: #3f3f46;
+  font-size: 0.8rem;
+  letter-spacing: 1.5px;
+  padding: 1rem 0;
+}
+
+.log-idle-prompt {
+  color: var(--terminal-accent);
+  opacity: 0.5;
+}
+
+/* ── Author divider ── */
+.author-divider {
+  height: 1px;
+  flex: 1;
+  background: #1f1f23;
+}
+
+/* ── Input area (kept for future use) ── */
+.terminal-input-area {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 20px;
+  background: #111114;
+  border-top: 1px solid #1f1f23;
+}
+
+.prompt-char {
+  color: #3f3f46;
+  font-family: "Courier New", monospace;
+  font-weight: bold;
+}
+
+.terminal-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: #e4e4e7;
+  font-family: "Courier New", monospace;
+  font-size: 14px;
+  outline: none;
+}
+
+.terminal-input:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.send-btn {
+  background: #27272a;
+  color: #a1a1aa;
+  border: 1px solid #3f3f46;
+  padding: 4px 12px;
+  font-size: 10px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.send-btn:hover:not(:disabled) {
+  background: #3f3f46;
+  color: #fff;
+}
+
+.log-window {
+  flex: 1;
+  padding: 2rem;
+  overflow-y: auto;
+  background: radial-gradient(circle at top right, #111115, transparent);
+  scrollbar-width: thin;
+}
+
+.log-window::-webkit-scrollbar {
+  width: 4px;
+}
+.log-window::-webkit-scrollbar-thumb {
+  background: #27272a;
+}
+
+.log-entry {
+  margin-bottom: 2rem;
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.author-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+/* Agent Specific Colors */
+.role-badge {
+  font-size: 10px;
+  font-weight: 900;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid;
+}
+.role-planner {
+  color: var(--accent-purple);
+  border-color: var(--accent-purple);
+  background: rgba(168, 85, 247, 0.1);
+}
+.role-validator {
+  color: var(--accent-green);
+  border-color: var(--accent-green);
+  background: rgba(16, 185, 129, 0.1);
+}
+.role-squad {
+  color: var(--accent-blue);
+  border-color: var(--accent-blue);
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.text-content {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 14px;
+  color: #d1d1d6;
+  line-height: 1.7;
+  padding-left: 14px;
+  border-left: 2px solid #1f1f23;
+}
+
+/* Markdown Styling */
+.text-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  font-size: 12px;
+}
+.text-content th {
+  text-align: left;
+  color: var(--text-muted);
+  border-bottom: 1px solid #27272a;
+  padding: 8px;
+}
+.text-content td {
+  padding: 8px;
+  border-bottom: 1px solid #16161a;
+}
+.text-content strong {
+  color: #fff;
+}
+
+.cursor {
+  display: inline-block;
+  width: 6px;
+  height: 15px;
+  background: var(--accent-green);
+  animation: blink 1s infinite;
+  margin-left: 5px;
+}
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
