@@ -3,9 +3,11 @@ using AgentRuntime.Core.Agents;
 using AgentRuntime.Core.Orchestration;
 using AgentRuntime.Core.Tools;
 using AgentRuntime.Infrastructure.Agents;
+using AgentRuntime.Infrastructure.Data;
 using AgentRuntime.Infrastructure.Ollama;
 using AgentRuntime.Infrastructure.Tools;
 using Infrastructure.Messaging;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,6 +20,10 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddAgentRuntimeInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(configuration, nameof(configuration));
+
+        services.AddDbContext<AgentRuntimeDbContext>(options =>
+            options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"))
+        );
 
         var modelName = configuration["AI:ModelName"] ?? "gemma3:1b";
 
