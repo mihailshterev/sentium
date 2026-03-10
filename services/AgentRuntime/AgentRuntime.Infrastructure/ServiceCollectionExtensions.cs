@@ -49,6 +49,7 @@ public static class ServiceCollectionExtensions
 
         services.AddTransient<IOrchestrator, AgentOrchestrator>();
         services.AddSingleton<IEventBus, NatsEventBus>();
+        services.AddTransient<IAgentManager, AgentManager>();
 
         return services;
     }
