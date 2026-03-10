@@ -1,5 +1,7 @@
 using AgentRuntime.Application;
 using AgentRuntime.Infrastructure;
+using AgentRuntime.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,6 +30,14 @@ var app = builder.Build();
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
+    using var scope = app.Services.CreateScope();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+    logger.LogInformation("Applying database migrations...");
+    var db = scope.ServiceProvider.GetRequiredService<AgentRuntimeDbContext>();
+    await db.Database.MigrateAsync();
+    logger.LogInformation("Database migrations applied");
+
     app.MapOpenApi();
 }
 

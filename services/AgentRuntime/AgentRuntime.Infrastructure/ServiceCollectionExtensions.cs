@@ -22,7 +22,7 @@ public static class ServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(configuration, nameof(configuration));
 
         services.AddDbContext<AgentRuntimeDbContext>(options =>
-            options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"))
+            options.UseSqlServer(configuration.GetConnectionString("agentruntimedb"))
         );
 
         var modelName = configuration["AI:ModelName"] ?? "gemma3:1b";

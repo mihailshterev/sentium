@@ -7,6 +7,11 @@ var nats = builder.AddNats(ResourceNames.NatsServiceName)
     .WithJetStream()
     .WithDataVolume();
 
+var sql = builder.AddSqlServer(ResourceNames.SqlServerName)
+    .WithDataVolume();
+var identityDb = sql.AddDatabase(ResourceNames.IdentityDbName);
+var agentRuntimeDb = sql.AddDatabase(ResourceNames.AgentRuntimeDbName);
+
 var ollama = builder.AddOllama(ResourceNames.OllamaServiceName)
     .WithDataVolume()
     .WithGPUSupport(OllamaGpuVendor.Nvidia)
@@ -19,12 +24,14 @@ var ollama = builder.AddOllama(ResourceNames.OllamaServiceName)
 
 var ollamaModel = ollama.AddModel(AIModels.Qwen3_8);
 
-var identityApi = builder.AddProject<Projects.IdentityProvider_Api>(ServiceNames.Identity);
+var identityApi = builder.AddProject<Projects.IdentityProvider_Api>(ServiceNames.Identity)
+    .WithReference(identityDb).WaitFor(identityDb);
 var sentinelApi = builder.AddProject<Projects.Sentinel_Api>(ServiceNames.Sentinel)
     .WithReference(nats).WaitFor(nats);
 var agentRuntimeApi = builder.AddProject<Projects.AgentRuntime_Api>(ServiceNames.AgentRuntime)
     .WithReference(ollamaModel).WaitFor(ollamaModel)
     .WithReference(nats).WaitFor(nats)
+    .WithReference(agentRuntimeDb).WaitFor(agentRuntimeDb)
     .WithEnvironment("AI__ModelName", ollamaModel.Resource.ModelName);
 
 var apiGateway = builder.AddProject<Projects.ApiGateway>(ServiceNames.Gateway)
