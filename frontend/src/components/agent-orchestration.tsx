@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Markdown from "react-markdown";
 import styles from "./agent-orchestration.module.scss";
 
@@ -31,7 +31,6 @@ const AgentOrchestration = () => {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [phase, setPhase] = useState<Phase>("IDLE");
   const [dbAgents, setDbAgents] = useState<AgentRecord[]>([]);
-  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch(`${API_BASE}/agents`)
@@ -39,12 +38,6 @@ const AgentOrchestration = () => {
       .then((data: AgentRecord[]) => setDbAgents(data))
       .catch(() => {});
   }, []);
-
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [logs]);
 
   const runAgent = useCallback(
     async (scenarioData?: Record<string, string>) => {
@@ -56,16 +49,23 @@ const AgentOrchestration = () => {
       );
 
       eventSource.onmessage = (e) => {
-        if (!e.data || e.data === "null") return;
+        if (!e.data || e.data === "null") {
+          return;
+        }
+
         try {
           const data = JSON.parse(e.data);
           const author: string = data.Author || data.author || "Agent";
           const text: string = data.Text || data.text || "";
 
           const lowerAuthor = author.toLowerCase();
-          if (lowerAuthor.includes("planner")) setPhase("PLANNING");
-          else if (lowerAuthor.includes("validator")) setPhase("VALIDATING");
-          else setPhase("SQUAD");
+          if (lowerAuthor.includes("planner")) {
+            setPhase("PLANNING");
+          } else if (lowerAuthor.includes("validator")) {
+            setPhase("VALIDATING");
+          } else {
+            setPhase("SQUAD");
+          }
 
           if (text) {
             setLogs((prev) => {
@@ -199,7 +199,7 @@ const AgentOrchestration = () => {
             </div>
           </aside>
 
-          <main className={styles.logWindow} ref={scrollRef}>
+          <main className={styles.logWindow}>
             {logs.length === 0 && phase === "IDLE" && (
               <div className={styles.logIdle}>
                 <span className={styles.logIdlePrompt}>&gt; </span>
