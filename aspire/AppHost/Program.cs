@@ -7,7 +7,9 @@ var nats = builder.AddNats(ResourceNames.NatsServiceName)
     .WithJetStream()
     .WithDataVolume();
 
-var sql = builder.AddSqlServer(ResourceNames.SqlServerName)
+var sqlPassword = builder.AddParameter("sql-password", secret: true);
+
+var sql = builder.AddSqlServer(ResourceNames.SqlServerName, password: sqlPassword)
     .WithDataVolume();
 var identityDb = sql.AddDatabase(ResourceNames.IdentityDbName);
 var agentRuntimeDb = sql.AddDatabase(ResourceNames.AgentRuntimeDbName);
