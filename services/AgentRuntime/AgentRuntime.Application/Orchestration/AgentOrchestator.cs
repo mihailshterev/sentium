@@ -9,6 +9,7 @@ namespace AgentRuntime.Application.Orchestration;
 public sealed class AgentOrchestrator(
     IAgentFactory factory,
     IAgentRegistry registry,
+    IAgentManager agentManager,
     IEventBus nats) : IOrchestrator
 {
     public async Task<WorkflowResult> RunAsync(WorkflowTrigger trigger, CancellationToken ct = default)
@@ -18,7 +19,7 @@ public sealed class AgentOrchestrator(
         IAgentWorkflow workflow = trigger.TriggerType switch
         {
             AgentEvents.NetworkScan => new NetworkAnalysisWorkflow(factory, nats),
-            _ => new DynamicDiscoveryWorkflow(factory, registry, nats)
+            _ => new DynamicDiscoveryWorkflow(factory, registry, agentManager, nats)
         };
 
         return await workflow.ExecuteAsync(trigger, ct);

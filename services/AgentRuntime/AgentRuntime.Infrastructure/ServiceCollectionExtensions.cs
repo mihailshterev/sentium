@@ -1,6 +1,4 @@
-using AgentRuntime.Application.Orchestration;
 using AgentRuntime.Core.Agents;
-using AgentRuntime.Core.Orchestration;
 using AgentRuntime.Core.Tools;
 using AgentRuntime.Infrastructure.Agents;
 using AgentRuntime.Infrastructure.Data;
@@ -47,7 +45,6 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IAgentToolProvider, AgentToolProvider>();
         services.AddTransient<IAgentFactory, OllamaAgentFactory>();
 
-        services.AddTransient<IOrchestrator, AgentOrchestrator>();
         services.AddSingleton<IEventBus, NatsEventBus>();
         services.AddTransient<IAgentManager, AgentManager>();
 

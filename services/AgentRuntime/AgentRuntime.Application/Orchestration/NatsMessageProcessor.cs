@@ -1,6 +1,7 @@
 using AgentRuntime.Core.Agents;
 using AgentRuntime.Core.Orchestration;
 using AgentRuntime.Core.Workflows;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using NATS.Client.Core;
@@ -10,7 +11,7 @@ namespace AgentRuntime.Application.Orchestration;
 
 public sealed class NatsMessageProcessor(
     INatsConnection nats,
-    IOrchestrator orchestrator,
+    IServiceScopeFactory scopeFactory,
     ILogger<NatsMessageProcessor> logger) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -25,6 +26,9 @@ public sealed class NatsMessageProcessor(
                 {
                     try
                     {
+                        using var scope = scopeFactory.CreateScope();
+                        var orchestrator = scope.ServiceProvider.GetRequiredService<IOrchestrator>();
+
                         var trigger = new WorkflowTrigger
                         {
                             TriggerType = msg.Subject,

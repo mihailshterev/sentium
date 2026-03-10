@@ -1,4 +1,5 @@
 using AgentRuntime.Core.Agents;
+using AgentRuntime.Core.Dtos;
 using AgentRuntime.Core.Workflows;
 using Infrastructure.Messaging;
 using Microsoft.Agents.AI.Workflows;
@@ -12,15 +13,26 @@ namespace AgentRuntime.Application.Workflows;
 public partial class DynamicDiscoveryWorkflow(
     IAgentFactory factory,
     IAgentRegistry registry,
+    IAgentManager agentManager,
     IEventBus nats) : IAgentWorkflow
 {
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+
     public WorkflowType Type => WorkflowType.Dynamic;
 
     public async Task<WorkflowResult> ExecuteAsync(WorkflowTrigger trigger, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(trigger);
 
-        var planner = factory.Create(AgentRole.Planner, ct: ct);
+        var dbAgents = await agentManager.GetAgentsAsync(ct);
+        var dbAgentMap = dbAgents.ToDictionary(a => a.Name, a => a.Description, StringComparer.OrdinalIgnoreCase);
+
+        var plannerInstructions = BuildPlannerInstructions(dbAgents);
+
+        var planner = factory.Create(AgentRole.Planner, overrideInstructions: plannerInstructions, ct: ct);
         var plannerSession = await planner.CreateSessionAsync(ct);
 
         var rawPlan = string.Empty;
@@ -30,13 +42,20 @@ public partial class DynamicDiscoveryWorkflow(
             await StreamToNats(trigger.TriggerType, AgentRole.Planner, update.Text, ct);
         }
 
-        var rolesToExecute = ParseRolesRobustly(rawPlan);
+        var rolesToExecute = ParseRolesRobustly(rawPlan, dbAgentMap);
         if (rolesToExecute.Count == 0)
         {
             return new WorkflowResult { Explanation = "Planner failed to identify required agents." };
         }
 
-        var squadAgents = rolesToExecute.Select(role => factory.Create(role, ct: ct)).ToArray();
+        var squadAgents = rolesToExecute
+            .Select(role =>
+            {
+                var overrideInstructions = dbAgentMap.TryGetValue(role, out var desc) ? desc : null;
+                return factory.Create(role, overrideInstructions: overrideInstructions, ct: ct);
+            })
+            .ToArray();
+
         var squadWorkflow = AgentWorkflowBuilder.BuildSequential("dynamic-squad", squadAgents).AsAgent();
         var squadSession = await squadWorkflow.CreateSessionAsync(ct);
 
@@ -66,6 +85,35 @@ public partial class DynamicDiscoveryWorkflow(
         return ParseFinalResult(finalFullResponse.ToString(), rolesToExecute);
     }
 
+    private string BuildPlannerInstructions(IReadOnlyList<AgentResponse> dbAgents)
+    {
+        var builtInAgents = registry.GetRegisteredNames()
+            .Where(n => !string.Equals(n, AgentRole.Planner, StringComparison.OrdinalIgnoreCase)
+                     && !string.Equals(n, AgentRole.Validator, StringComparison.OrdinalIgnoreCase));
+
+        var agentLines = new StringBuilder();
+
+        foreach (var name in builtInAgents)
+        {
+            agentLines.AppendLine($"- {name}: Built-in agent.");
+        }
+
+        foreach (var agent in dbAgents)
+        {
+            agentLines.AppendLine($"- {agent.Name}: {agent.Description}");
+        }
+
+        return $"""
+            You are an orchestration agent. Analyze the input and determine which specialized agents are required to resolve the issue.
+
+            Available Agents:
+            {agentLines.ToString().TrimEnd()}
+
+            You MUST output strictly a JSON array of strings representing the required agent roles. Do not include markdown, explanations, or any other text.
+            Example output: ["Forensics", "ThreatIntel"]
+            """;
+    }
+
     private static WorkflowResult ParseFinalResult(string validatorOutput, List<string> roles)
     {
         var riskMatch = Regex.Match(validatorOutput, @"RISK:\s*(.*)", RegexOptions.IgnoreCase);
@@ -73,14 +121,14 @@ public partial class DynamicDiscoveryWorkflow(
 
         return new WorkflowResult
         {
-            Explanation = validatorOutput, // Full summary
-            Risk = riskMatch.Groups[1].Value.Trim() ?? "Unknown",
-            Recommendation = recMatch.Groups[1].Value.Trim() ?? "Review squad logs manually.",
+            Explanation = validatorOutput,
+            Risk = riskMatch.Groups[1].Value.Trim() is { Length: > 0 } r ? r : "Unknown",
+            Recommendation = recMatch.Groups[1].Value.Trim() is { Length: > 0 } rec ? rec : "Review squad logs manually.",
             History = roles.Select(r => ("AgentSelection", r)).ToList()
         };
     }
 
-    private List<string> ParseRolesRobustly(string llmOutput)
+    private List<string> ParseRolesRobustly(string llmOutput, Dictionary<string, string> dbAgentMap)
     {
         try
         {
@@ -91,12 +139,40 @@ public partial class DynamicDiscoveryWorkflow(
                 return [];
             }
 
-            var parsed = JsonSerializer.Deserialize<List<string>>(match.Value, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-            var registered = registry.GetRegisteredNames();
+            var parsed = JsonSerializer.Deserialize<List<string>>(match.Value, JsonOptions);
+            if (parsed is null)
+            {
+                return [];
+            }
 
-            return parsed?.Select(p => registered.FirstOrDefault(r =>
-                string.Equals(r.Replace(" ", ""), p.Replace(" ", ""), StringComparison.OrdinalIgnoreCase)))
-                .Where(m => m != null).Cast<string>().Distinct().ToList() ?? new();
+            var registeredNames = registry.GetRegisteredNames().ToList();
+
+            var resolved = new List<string>();
+            foreach (var p in parsed)
+            {
+                var dbMatch = dbAgentMap.Keys.FirstOrDefault(k =>
+                    string.Equals(k.Replace(" ", ""), p.Replace(" ", ""), StringComparison.OrdinalIgnoreCase));
+
+                if (dbMatch is not null)
+                {
+                    if (!resolved.Contains(dbMatch, StringComparer.OrdinalIgnoreCase))
+                    {
+                        resolved.Add(dbMatch);
+                    }
+
+                    continue;
+                }
+
+                var registryMatch = registeredNames.FirstOrDefault(r =>
+                    string.Equals(r.Replace(" ", ""), p.Replace(" ", ""), StringComparison.OrdinalIgnoreCase));
+
+                if (registryMatch is not null && !resolved.Contains(registryMatch, StringComparer.OrdinalIgnoreCase))
+                {
+                    resolved.Add(registryMatch);
+                }
+            }
+
+            return resolved;
         }
         catch
         {
