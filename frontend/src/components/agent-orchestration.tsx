@@ -27,7 +27,7 @@ const SCENARIOS = [
   },
 ];
 
-export default function SentiumTerminal() {
+const AgentOrchestration = () => {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [phase, setPhase] = useState<Phase>("IDLE");
   const [dbAgents, setDbAgents] = useState<AgentRecord[]>([]);
@@ -105,35 +105,34 @@ export default function SentiumTerminal() {
 
   const getRoleClass = (author: string) => {
     const a = author.toLowerCase();
-    if (a.includes("security")) return "role-security";
-    if (a.includes("summarizer")) return "role-summarizer";
-    if (a.includes("forensics")) return "role-forensics";
-    if (a.includes("intel")) return "role-intel";
-    if (a.includes("planner")) return "role-planner";
-    if (a.includes("validator")) return "role-validator";
-    return "role-squad";
+    if (a.includes("security")) return "roleSecurity";
+    if (a.includes("summarizer")) return "roleSummarizer";
+    if (a.includes("forensics")) return "roleForensics";
+    if (a.includes("intel")) return "roleIntel";
+    if (a.includes("planner")) return "rolePlanner";
+    if (a.includes("validator")) return "roleValidator";
+    return "roleSquad";
   };
 
   const isRunning = phase !== "IDLE" && phase !== "COMPLETE";
 
   return (
-    <div className={styles["terminal-container"]}>
-      <div className={styles["terminal-card"]}>
-        {/* ── Header ── */}
-        <header className={styles["terminal-header"]}>
-          <div className={styles["brand-section"]}>
-            <div className={styles["status-dot"]}></div>
+    <div className={styles.terminalContainer}>
+      <div className={styles.terminalCard}>
+        <header className={styles.terminalHeader}>
+          <div className={styles.brandSection}>
+            <div className="status-dot"></div>
             <div>
-              <h2 className={styles["terminal-title"]}>
+              <h2 className={styles.terminalTitle}>
                 SENTIUM // ORCHESTRATION_LOGS
               </h2>
-              <div className={styles["terminal-subtitle"]}>
+              <div className={styles.terminalSubtitle}>
                 SYSTEM_STATUS: ONLINE
               </div>
             </div>
           </div>
 
-          <div className={styles["phase-tracker"]}>
+          <div className={styles.phaseTracker}>
             {(["PLANNING", "SQUAD", "VALIDATING"] as const).map((p, i) => {
               const labels = ["1. PLAN", "2. EXECUTE", "3. VALIDATE"];
               const order = ["PLANNING", "SQUAD", "VALIDATING", "COMPLETE"];
@@ -142,7 +141,7 @@ export default function SentiumTerminal() {
               return (
                 <div
                   key={p}
-                  className={`${styles["phase-badge"]}${isActive ? ` ${styles["active"]}` : ""}${isDone ? ` ${styles["done"]}` : ""}`}
+                  className={`${styles.phaseBadge}${isActive ? ` ${styles.active}` : ""}${isDone ? ` ${styles.done}` : ""}`}
                 >
                   {labels[i]}
                 </div>
@@ -151,16 +150,15 @@ export default function SentiumTerminal() {
           </div>
         </header>
 
-        <div className={styles["terminal-body"]}>
-          {/* ── Sidebar ── */}
-          <aside className={styles["terminal-sidebar"]}>
-            <div className={styles["sidebar-group"]}>
-              <p className={styles["sidebar-label"]}>ATTACK_VECTORS</p>
-              <div className={styles["scenario-list"]}>
+        <div className={styles.terminalBody}>
+          <aside className={styles.terminalSidebar}>
+            <div className={styles.sidebarGroup}>
+              <p className={styles.sidebarLabel}>ATTACK_VECTORS</p>
+              <div className={styles.scenarioList}>
                 {SCENARIOS.map((s) => (
                   <button
                     key={s.label}
-                    className={styles["scenario-btn"]}
+                    className={styles.scenarioBtn}
                     onClick={() => runAgent(s.payload)}
                     disabled={isRunning}
                   >
@@ -170,23 +168,19 @@ export default function SentiumTerminal() {
               </div>
             </div>
 
-            <div className={styles["sidebar-group"]}>
-              <p className={styles["sidebar-label"]}>
+            <div className={styles.sidebarGroup}>
+              <p className={styles.sidebarLabel}>
                 AGENT_REGISTRY
-                <span className={styles["sidebar-count"]}>
-                  [{dbAgents.length}]
-                </span>
+                <span className={styles.sidebarCount}>[{dbAgents.length}]</span>
               </p>
-              <div className={styles["agent-registry-list"]}>
+              <div className={styles.agentRegistryList}>
                 {dbAgents.length === 0 ? (
-                  <span className={styles["sidebar-empty"]}>
-                    No custom agents
-                  </span>
+                  <span className={styles.sidebarEmpty}>No custom agents</span>
                 ) : (
                   dbAgents.map((a) => (
-                    <div className={styles["registry-entry"]} key={a.id}>
-                      <span className={styles["registry-dot"]}></span>
-                      <span className={styles["registry-name"]}>{a.name}</span>
+                    <div className={styles.registryEntry} key={a.id}>
+                      <span className={styles.registryDot}></span>
+                      <span className={styles.registryName}>{a.name}</span>
                     </div>
                   ))
                 )}
@@ -194,10 +188,10 @@ export default function SentiumTerminal() {
             </div>
 
             <div
-              className={`${styles["sidebar-group"]} ${styles["sidebar-group--bottom"]}`}
+              className={`${styles.sidebarGroup} ${styles.sidebarGroupBottom}`}
             >
-              <p className={styles["sidebar-label"]}>ACTIVE_SESSION</p>
-              <div className={styles["session-meta"]}>
+              <p className={styles.sidebarLabel}>ACTIVE_SESSION</p>
+              <div className={styles.sessionMeta}>
                 <span>IP: 192.168.1.104</span>
                 <span>PORT: 7127</span>
                 <span>PROTO: SSE/JSON</span>
@@ -205,34 +199,33 @@ export default function SentiumTerminal() {
             </div>
           </aside>
 
-          {/* ── Log Window ── */}
-          <main className={styles["log-window"]} ref={scrollRef}>
+          <main className={styles.logWindow} ref={scrollRef}>
             {logs.length === 0 && phase === "IDLE" && (
-              <div className={styles["log-idle"]}>
-                <span className={styles["log-idle-prompt"]}>&gt; </span>
+              <div className={styles.logIdle}>
+                <span className={styles.logIdlePrompt}>&gt; </span>
                 Awaiting scenario trigger...
               </div>
             )}
 
             {logs.map((log, i) => (
-              <div key={i} className={styles["log-entry"]}>
-                <div className={styles["author-meta"]}>
+              <div key={i} className={styles.logEntry}>
+                <div className={styles.authorMeta}>
                   <span
-                    className={`${styles["role-badge"]} ${getRoleClass(log.Author)}`}
+                    className={`${styles.roleBadge} ${getRoleClass(log.Author)}`}
                   >
                     {log.Author.toUpperCase()}
                   </span>
-                  <div className={styles["author-divider"]}></div>
+                  <div className={styles.authorDivider}></div>
                 </div>
-                <div className={styles["text-content"]}>
+                <div className={styles.textContent}>
                   <Markdown>{log.Text}</Markdown>
                 </div>
               </div>
             ))}
 
             {isRunning && (
-              <div className="log-entry">
-                <span className="cursor"></span>
+              <div className={styles.logEntry}>
+                <span className={styles.cursor}></span>
               </div>
             )}
           </main>
@@ -240,4 +233,6 @@ export default function SentiumTerminal() {
       </div>
     </div>
   );
-}
+};
+
+export default AgentOrchestration;

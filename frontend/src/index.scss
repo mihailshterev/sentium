@@ -29,7 +29,7 @@ body,
   overflow: hidden;
 }
 
-.role-label {
+.roleLabel {
   width: var(--role-width);
   flex-shrink: 0;
   font-weight: 800;
@@ -39,45 +39,48 @@ body,
   text-shadow: 0 0 5px rgba(255, 255, 255, 0.05);
 }
 
-.role-security {
+.roleSecurity {
   color: #3b82f6;
 }
-.role-summarizer {
+.roleSummarizer {
   color: #eab308;
 }
-.role-system {
+.roleSystem {
   color: var(--text-muted);
 }
 
-.role-forensics {
+.roleForensics {
   color: #a855f7;
   text-shadow: 0 0 8px rgba(168, 85, 247, 0.3);
 }
 
-.role-intel {
+.roleIntel {
   color: #f43f5e;
   text-shadow: 0 0 8px rgba(244, 63, 94, 0.3);
 }
 
-.role-badge {
-  font-size: 10px;
-  font-weight: 900;
-  padding: 2px 8px;
-  border-radius: 4px;
-  border: 1px solid;
-}
-.role-planner {
+.rolePlanner {
   color: var(--accent-purple);
   border-color: var(--accent-purple);
   background: rgba(168, 85, 247, 0.1);
 }
-.role-validator {
+
+.roleValidator {
   color: var(--accent-green);
   border-color: var(--accent-green);
   background: rgba(16, 185, 129, 0.1);
 }
-.role-squad {
+
+.roleSquad {
   color: var(--accent-blue);
   border-color: var(--accent-blue);
   background: rgba(59, 130, 246, 0.1);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--accent-green);
+  border-radius: 50%;
+  box-shadow: 0 0 8px var(--accent-green);
 }

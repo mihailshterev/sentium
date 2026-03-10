@@ -3,44 +3,38 @@ import styles from "./navbar.module.scss";
 
 const Navbar = () => {
   return (
-    <nav className={styles["sentium-nav"]}>
-      <div className={styles["nav-brand"]}>
+    <nav className={styles.nav}>
+      <div className={styles.navBrand}>
         <div className="status-dot"></div>
         <span>SENTIUM</span>
       </div>
 
-      <div className={styles["nav-links"]}>
+      <div className={styles.navLinks}>
         <NavLink
           to="/"
           className={({ isActive }) =>
-            isActive
-              ? `${styles["nav-link"]} ${styles["active"]}`
-              : styles["nav-link"]
+            isActive ? `${styles.navLink} ${styles.active}` : styles.navLink
           }
         >
-          <span className={styles["cursor-prefix"]}>&gt; </span>HOME
+          <span className={styles.cursorPrefix}>&gt; </span>HOME
         </NavLink>
 
         <NavLink
           to="/terminal"
           className={({ isActive }) =>
-            isActive
-              ? `${styles["nav-link"]} ${styles["active"]}`
-              : styles["nav-link"]
+            isActive ? `${styles.navLink} ${styles.active}` : styles.navLink
           }
         >
-          <span className={styles["cursor-prefix"]}>&gt; </span>ORCHESTRATOR
+          <span className={styles.cursorPrefix}>&gt; </span>ORCHESTRATOR
         </NavLink>
 
         <NavLink
           to="/agents"
           className={({ isActive }) =>
-            isActive
-              ? `${styles["nav-link"]} ${styles["active"]}`
-              : styles["nav-link"]
+            isActive ? `${styles.navLink} ${styles.active}` : styles.navLink
           }
         >
-          <span className={styles["cursor-prefix"]}>&gt; </span>AGENTS
+          <span className={styles.cursorPrefix}>&gt; </span>AGENTS
         </NavLink>
       </div>
     </nav>

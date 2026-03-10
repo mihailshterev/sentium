@@ -1,4 +1,4 @@
-.home-container {
+.homeContainer {
   position: relative;
   min-height: calc(100vh - 60px);
   display: flex;
@@ -8,7 +8,7 @@
   background-color: var(--bg-dark);
 }
 
-.grid-overlay {
+.gridOverlay {
   position: absolute;
   top: 0;
   left: 0;
@@ -28,7 +28,7 @@
   z-index: 1;
 }
 
-.hero-content {
+.heroContent {
   position: relative;
   z-index: 2;
   text-align: center;
@@ -49,7 +49,7 @@
   margin-bottom: 1.5rem;
 }
 
-.hero-title {
+.heroTitle {
   font-size: 4.5rem;
   font-weight: 900;
   margin: 0;
@@ -57,13 +57,13 @@
   color: var(--text-primary);
 }
 
-.hero-title .highlight {
+.heroTitle .highlight {
   color: transparent;
   -webkit-text-stroke: 1px var(--text-primary);
   text-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
 }
 
-.hero-subtitle {
+.heroSubtitle {
   font-family: "JetBrains Mono", monospace;
   color: var(--text-muted);
   font-size: 1rem;
@@ -72,7 +72,7 @@
   max-width: 600px;
 }
 
-.init-btn {
+.initBtn {
   background: transparent;
   border: 1px solid var(--accent-blue);
   color: var(--accent-blue);
@@ -91,7 +91,7 @@
     0 0 20px rgba(59, 130, 246, 0.2);
 }
 
-.init-btn:hover {
+.initBtn:hover {
   background: var(--accent-blue);
   color: #fff;
   box-shadow:
@@ -99,7 +99,7 @@
     0 0 40px var(--glow-blue);
 }
 
-.btn-cursor {
+.btnCursor {
   display: inline-block;
   margin-left: 8px;
   animation: blink 1s infinite;

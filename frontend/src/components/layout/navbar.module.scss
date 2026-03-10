@@ -1,4 +1,4 @@
-.sentium-nav {
+.nav {
   display: flex;
   justify-content: start;
   align-items: center;
@@ -12,7 +12,7 @@
   z-index: 10;
 }
 
-.nav-brand {
+.navBrand {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -23,12 +23,12 @@
   text-shadow: 0 0 10px var(--terminal-accent-glow);
 }
 
-.nav-links {
+.navLinks {
   display: flex;
   gap: 2rem;
 }
 
-.nav-link {
+.navLink {
   color: var(--text-muted);
   font-size: 0.9rem;
   font-weight: 700;
@@ -37,23 +37,23 @@
   position: relative;
 }
 
-.nav-link .cursor-prefix {
+.navLink .cursorPrefix {
   opacity: 0;
   color: var(--accent-blue);
   transition: opacity 0.2s;
 }
 
-.nav-link:hover {
+.navLink:hover {
   color: var(--text-primary);
   text-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
 }
 
-.nav-link:hover .cursor-prefix,
-.nav-link.active .cursor-prefix {
+.navLink:hover .cursorPrefix,
+.navLink.active .cursorPrefix {
   opacity: 1;
 }
 
-.nav-link.active {
+.navLink.active {
   color: var(--accent-blue);
   text-shadow: 0 0 10px var(--accent-blue-glow);
 }

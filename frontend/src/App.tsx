@@ -1,19 +1,21 @@
 import { BrowserRouter, Routes, Route } from "react-router";
-import SentiumTerminal from "./components/agent-orchestration";
 import Layout from "./components/layout/layout";
 import Home from "./pages/home";
 import Agents from "./pages/agents";
+import AgentOrchestration from "./components/agent-orchestration";
 
-export default function App() {
+const App = () => {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
-          <Route path="terminal" element={<SentiumTerminal />} />
+          <Route path="terminal" element={<AgentOrchestration />} />
           <Route path="agents" element={<Agents />} />
         </Route>
       </Routes>
     </BrowserRouter>
   );
-}
+};
+
+export default App;

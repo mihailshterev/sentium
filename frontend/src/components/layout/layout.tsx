@@ -4,9 +4,9 @@ import styles from "./layout.module.scss";
 
 const Layout = () => {
   return (
-    <div className={styles["sentium-layout-wrapper"]}>
+    <div className={styles.layoutWrapper}>
       <Navbar />
-      <main className={styles["content-area"]}>
+      <main className={styles.contentArea}>
         <Outlet />
       </main>
     </div>
