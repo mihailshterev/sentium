@@ -12,7 +12,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddHostedService<NatsMessageProcessor>();
         services.AddTransient<IAgentService, AgentService>();
-        services.AddTransient<IOrchestrator, AgentOrchestrator>();
+        services.AddTransient<IOrchestrator, WorkflowOrchestrator>();
         return services;
     }
 }

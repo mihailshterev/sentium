@@ -7,7 +7,7 @@ namespace AgentRuntime.Api.Controllers;
 
 [ApiController]
 [Route("agents")]
-public class AgentController(INatsConnection nats) : ControllerBase
+public class OrchestrationController(INatsConnection nats) : ControllerBase
 {
     [HttpPost("test-pipeline")]
     public async Task<IActionResult> RunPipeline([FromBody] dynamic customInput, CancellationToken ct)

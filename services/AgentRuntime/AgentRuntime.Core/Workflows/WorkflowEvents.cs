@@ -1,6 +1,6 @@
-namespace AgentRuntime.Core.Agents;
+namespace AgentRuntime.Core.Workflows;
 
-public static class AgentEvents
+public static class WorkflowEvents
 {
     public const string SecurityAlert = "events.security.alert";
     public const string NetworkScan = "events.network.scan";

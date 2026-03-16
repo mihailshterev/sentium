@@ -6,7 +6,7 @@ using Infrastructure.Messaging;
 
 namespace AgentRuntime.Application.Orchestration;
 
-public sealed class AgentOrchestrator(
+public sealed class WorkflowOrchestrator(
     IAgentFactory factory,
     IAgentRegistry registry,
     IAgentManager agentManager,
@@ -15,10 +15,9 @@ public sealed class AgentOrchestrator(
     public async Task<WorkflowResult> RunAsync(WorkflowTrigger trigger, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(trigger);
-
         IAgentWorkflow workflow = trigger.TriggerType switch
         {
-            AgentEvents.NetworkScan => new NetworkAnalysisWorkflow(factory, nats),
+            WorkflowEvents.NetworkScan => new NetworkAnalysisWorkflow(factory, nats),
             _ => new DynamicDiscoveryWorkflow(factory, registry, agentManager, nats)
         };
 

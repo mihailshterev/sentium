@@ -1,4 +1,3 @@
-using AgentRuntime.Core.Agents;
 using AgentRuntime.Core.Orchestration;
 using AgentRuntime.Core.Workflows;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,7 +19,7 @@ public sealed class NatsMessageProcessor(
 
         try
         {
-            await foreach (var msg in nats.SubscribeAsync<string>(AgentEvents.AllEvents, cancellationToken: stoppingToken))
+            await foreach (var msg in nats.SubscribeAsync<string>(WorkflowEvents.AllEvents, cancellationToken: stoppingToken))
             {
                 _ = Task.Run(async () =>
                 {
