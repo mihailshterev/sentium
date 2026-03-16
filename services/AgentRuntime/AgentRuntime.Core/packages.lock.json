@@ -4,22 +4,28 @@
     "net10.0": {
       "Microsoft.Agents.AI": {
         "type": "Direct",
-        "requested": "[1.0.0-preview.260212.1, )",
-        "resolved": "1.0.0-preview.260212.1",
-        "contentHash": "s6AU3LjsgxbxjL6Rp1shWN8sUDvYK+3zybVmauul/p0pqIEfjzJEyPOzOFnBqGToBI1KIGyZesa4SlKSmGd/Sg==",
+        "requested": "[1.0.0-rc4, )",
+        "resolved": "1.0.0-rc4",
+        "contentHash": "fDsowhBBbWjJmm7kT0RJG4ED3I5X5xqsOg4R4gW2eR/ptzT2OLqsOJiO0rCPUrqWsPcpL0hbCD0heD4oMfirFQ==",
         "dependencies": {
-          "Microsoft.Agents.AI.Abstractions": "1.0.0-preview.260212.1",
+          "Microsoft.Agents.AI.Abstractions": "1.0.0-rc4",
           "Microsoft.Extensions.AI": "10.3.0",
           "Microsoft.Extensions.AI.Abstractions": "10.3.0",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.3",
           "Microsoft.Extensions.Logging.Abstractions": "10.0.3",
-          "Microsoft.Extensions.VectorData.Abstractions": "9.7.0"
+          "Microsoft.Extensions.VectorData.Abstractions": "9.7.0",
+          "Microsoft.ML.Tokenizers": "2.0.0"
         }
+      },
+      "Google.Protobuf": {
+        "type": "Transitive",
+        "resolved": "3.30.2",
+        "contentHash": "Y2aOVLIt75yeeEWigg9V9YnjsEm53sADtLGq0gLhwaXpk3iu8tYSoauolyhenagA2sWno2TQ2WujI0HQd6s1Vw=="
       },
       "Microsoft.Agents.AI.Abstractions": {
         "type": "Transitive",
-        "resolved": "1.0.0-preview.260212.1",
-        "contentHash": "N6a5m1Edxyk5Q1kEmVakvozR1inPElNTioFKs41ufbnK4MYoVX1kTcOB+mVN6Xb16Axt6i+3/fU5oLh0oM3Isg==",
+        "resolved": "1.0.0-rc4",
+        "contentHash": "3/5gnZxpod0WUyeQtLmgXDoa7HFKLau4pp6+cHcd9A5wYuZmIXlIltonp9kw0akBbPF/0X6dYIFCq2r+yHduOw==",
         "dependencies": {
           "Microsoft.Extensions.AI.Abstractions": "10.3.0",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.3",
@@ -70,6 +76,14 @@
         "contentHash": "Vth/omSCX2vR0JabzSRU/hdPhr0CvUVZlaS2lJPWHrEwvak8ntrQLDtLMtMiWKSvviGBe/WmjUW8gA3qqn9tjw==",
         "dependencies": {
           "Microsoft.Extensions.AI.Abstractions": "9.5.0"
+        }
+      },
+      "Microsoft.ML.Tokenizers": {
+        "type": "Transitive",
+        "resolved": "2.0.0",
+        "contentHash": "+b8lT4cLLO/sBR2hjvE/qG6qrZG15h7/PBvnIrzTh4xDaAxdHUY6449rC+1pHzQUsBiCHZVbj+VMn+xS0sL7TA==",
+        "dependencies": {
+          "Google.Protobuf": "3.30.2"
         }
       },
       "System.Numerics.Tensors": {

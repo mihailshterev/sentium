@@ -19,7 +19,7 @@ public sealed class NetworkAnalysisWorkflow(IAgentFactory factory, IEventBus nat
         var intel = factory.Create(AgentRole.ThreatIntel, ct: ct);
         var validator = factory.Create(AgentRole.Validator, ct: ct);
 
-        var workflow = AgentWorkflowBuilder.BuildSequential("deep-analysis", [analyst, forensics, intel, validator]).AsAgent();
+        var workflow = AgentWorkflowBuilder.BuildSequential("deep-analysis", [analyst, forensics, intel, validator]).AsAIAgent();
 
         var session = await workflow.CreateSessionAsync(ct);
 

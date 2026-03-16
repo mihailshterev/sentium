@@ -56,7 +56,7 @@ public partial class DynamicDiscoveryWorkflow(
             })
             .ToArray();
 
-        var squadWorkflow = AgentWorkflowBuilder.BuildSequential("dynamic-squad", squadAgents).AsAgent();
+        var squadWorkflow = AgentWorkflowBuilder.BuildSequential("dynamic-squad", squadAgents).AsAIAgent();
         var squadSession = await squadWorkflow.CreateSessionAsync(ct);
 
         var squadReport = new StringBuilder();
