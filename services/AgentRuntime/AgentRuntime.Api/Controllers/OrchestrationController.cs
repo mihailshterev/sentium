@@ -15,7 +15,7 @@ public class OrchestrationController(INatsConnection nats) : ControllerBase
         var payload = customInput ?? new { activity = "Manual trigger", user = "admin" };
         var jsonPayload = System.Text.Json.JsonSerializer.Serialize(payload);
 
-        await nats.PublishAsync("dynamic", jsonPayload, cancellationToken: ct);
+        await nats.PublishAsync("events.dynamic", jsonPayload, cancellationToken: ct);
         return Ok();
     }
 
