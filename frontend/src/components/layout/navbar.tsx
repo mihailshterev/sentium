@@ -20,12 +20,12 @@ const Navbar = () => {
         </NavLink>
 
         <NavLink
-          to="/terminal"
+          to="/orchestration"
           className={({ isActive }) =>
             isActive ? `${styles.navLink} ${styles.active}` : styles.navLink
           }
         >
-          <span className={styles.cursorPrefix}>&gt; </span>ORCHESTRATOR
+          <span className={styles.cursorPrefix}>&gt; </span>ORCHESTRATION
         </NavLink>
 
         <NavLink

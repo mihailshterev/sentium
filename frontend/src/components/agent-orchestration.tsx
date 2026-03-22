@@ -118,40 +118,21 @@ const AgentOrchestration = () => {
 
   return (
     <div className={styles.terminalContainer}>
-      <div className={styles.terminalCard}>
-        <header className={styles.terminalHeader}>
-          <div className={styles.brandSection}>
-            <div className="status-dot"></div>
-            <div>
-              <h2 className={styles.terminalTitle}>
-                SENTIUM // ORCHESTRATION_LOGS
-              </h2>
-              <div className={styles.terminalSubtitle}>
-                SYSTEM_STATUS: ONLINE
-              </div>
-            </div>
-          </div>
+      <div className={styles.terminalHeader}>
+        <div className={styles.titleRow}>
+          <span className={styles.pagePrompt}>&gt;</span>
+          <h2 className={styles.terminalTitle}>ORCHESTRATION_LOGS</h2>
+        </div>
+        <div className={styles.terminalSubtitle}>SYSTEM_STATUS: ONLINE</div>
+      </div>
 
-          <div className={styles.phaseTracker}>
-            {(["PLANNING", "SQUAD", "VALIDATING"] as const).map((p, i) => {
-              const labels = ["1. PLAN", "2. EXECUTE", "3. VALIDATE"];
-              const order = ["PLANNING", "SQUAD", "VALIDATING", "COMPLETE"];
-              const isDone = order.indexOf(phase) > order.indexOf(p);
-              const isActive = phase === p;
-              return (
-                <div
-                  key={p}
-                  className={`${styles.phaseBadge}${isActive ? ` ${styles.active}` : ""}${isDone ? ` ${styles.done}` : ""}`}
-                >
-                  {labels[i]}
-                </div>
-              );
-            })}
+      <div className={styles.terminalBody}>
+        <aside className={styles.terminalSidebar}>
+          <div className={styles.panelHeader}>
+            <span className={styles.panelDot}></span>
+            <span className={styles.panelLabel}>CONTROLS</span>
           </div>
-        </header>
-
-        <div className={styles.terminalBody}>
-          <aside className={styles.terminalSidebar}>
+          <div className={styles.sidebarInner}>
             <div className={styles.sidebarGroup}>
               <p className={styles.sidebarLabel}>ATTACK_VECTORS</p>
               <div className={styles.scenarioList}>
@@ -197,9 +178,31 @@ const AgentOrchestration = () => {
                 <span>PROTO: SSE/JSON</span>
               </div>
             </div>
-          </aside>
+          </div>
+        </aside>
 
-          <main className={styles.logWindow}>
+        <main className={styles.logPanel}>
+          <div className={styles.panelHeader}>
+            <span className={`${styles.panelDot} ${styles.dotActive}`}></span>
+            <span className={styles.panelLabel}>LOG_OUTPUT</span>
+            <div className={styles.phaseTracker}>
+              {(["PLANNING", "SQUAD", "VALIDATING"] as const).map((p, i) => {
+                const labels = ["1. PLAN", "2. EXECUTE", "3. VALIDATE"];
+                const order = ["PLANNING", "SQUAD", "VALIDATING", "COMPLETE"];
+                const isDone = order.indexOf(phase) > order.indexOf(p);
+                const isActive = phase === p;
+                return (
+                  <div
+                    key={p}
+                    className={`${styles.phaseBadge}${isActive ? ` ${styles.active}` : ""}${isDone ? ` ${styles.done}` : ""}`}
+                  >
+                    {labels[i]}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          <div className={styles.logWindow}>
             {logs.length === 0 && phase === "IDLE" && (
               <div className={styles.logIdle}>
                 <span className={styles.logIdlePrompt}>&gt; </span>
@@ -228,8 +231,8 @@ const AgentOrchestration = () => {
                 <span className={styles.cursor}></span>
               </div>
             )}
-          </main>
-        </div>
+          </div>
+        </main>
       </div>
     </div>
   );

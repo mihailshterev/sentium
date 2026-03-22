@@ -20,9 +20,9 @@ const Home = () => {
 
         <button
           className={styles.initBtn}
-          onClick={() => navigate("/terminal")}
+          onClick={() => navigate("/orchestration")}
         >
-          <span>INITIALIZE TERMINAL</span>
+          <span>INITIALIZE ORCHESTRATION</span>
           <span className={styles.btnCursor}>_</span>
         </button>
       </div>

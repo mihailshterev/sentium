@@ -1,51 +1,56 @@
 .nav {
   display: flex;
-  justify-content: start;
-  align-items: center;
-  padding: 1.2rem 2.5rem;
-  gap: 3rem;
-  background: linear-gradient(to right, #0c0c0e, #16161a);
-  border-bottom: 1px solid var(--border-color);
+  flex-direction: column;
+  width: 200px;
+  height: 100vh;
+  background-color: #0c0c0e;
+  border-right: 1px solid #27272a;
   font-family: "JetBrains Mono", monospace;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-  position: relative;
+  flex-shrink: 0;
   z-index: 10;
 }
 
 .navBrand {
   display: flex;
   align-items: center;
-  gap: 12px;
-  color: var(--accent-green);
-  font-size: 1.1rem;
+  gap: 10px;
+  color: var(--terminal-accent);
+  font-size: 0.95rem;
   font-weight: 800;
   letter-spacing: 2px;
+  padding: 1.5rem;
+  border-bottom: 1px solid #27272a;
   text-shadow: 0 0 10px var(--terminal-accent-glow);
 }
 
 .navLinks {
   display: flex;
-  gap: 2rem;
+  flex-direction: column;
+  padding-top: 0.75rem;
+  flex: 1;
 }
 
 .navLink {
+  display: block;
   color: var(--text-muted);
-  font-size: 0.9rem;
+  font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 1.5px;
+  padding: 0.7rem 1.5rem;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  position: relative;
+  border-left: 2px solid transparent;
+  text-decoration: none;
 }
 
 .navLink .cursorPrefix {
   opacity: 0;
-  color: var(--accent-blue);
+  color: var(--terminal-accent);
   transition: opacity 0.2s;
 }
 
 .navLink:hover {
   color: var(--text-primary);
-  text-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .navLink:hover .cursorPrefix,
@@ -54,6 +59,8 @@
 }
 
 .navLink.active {
-  color: var(--accent-blue);
-  text-shadow: 0 0 10px var(--accent-blue-glow);
+  color: var(--terminal-accent);
+  border-left-color: var(--terminal-accent);
+  background: rgba(34, 197, 94, 0.05);
+  text-shadow: 0 0 8px var(--terminal-accent-glow);
 }

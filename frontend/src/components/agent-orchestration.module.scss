@@ -1,43 +1,97 @@
 .terminalContainer {
-  flex: 1;
-  min-height: 0;
-  background-color: var(--bg-dark);
-  color: var(--text-primary);
-  font-family: "Inter", "JetBrains Mono", monospace;
   display: flex;
-  padding: 1.5rem;
-  box-sizing: border-box;
+  flex-direction: column;
+  height: 100%;
+  background-color: var(--terminal-bg);
+  color: var(--text-primary);
+  font-family: "JetBrains Mono", monospace;
   overflow: hidden;
 }
 
-.terminalCard {
-  width: 100%;
-  margin: 0 auto;
-  background-color: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.pagePrompt {
+  color: var(--terminal-accent);
+  font-size: 1.4rem;
+  font-weight: 800;
+  text-shadow: 0 0 10px var(--terminal-accent-glow);
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 1.5rem;
+  background-color: #18181b;
+  border-bottom: 1px solid #27272a;
+  font-size: 0.7rem;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.panelDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #3f3f46;
+  flex-shrink: 0;
+}
+
+.dotActive {
+  background-color: var(--terminal-accent);
+  box-shadow: 0 0 6px var(--terminal-accent-glow);
+  animation: pulse-dot 2.5s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.panelLabel {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.sidebarInner {
+  padding: 1.5rem;
   display: flex;
   flex-direction: column;
+  gap: 1.5rem;
   flex: 1;
-  min-height: 0;
+  overflow-y: auto;
+}
+
+.logPanel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
-  box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
+  background-color: var(--terminal-bg);
 }
 
 .terminalHeader {
-  padding: 1.5rem 2rem;
-  background: linear-gradient(to right, #0c0c0e, #16161a);
-  border-bottom: 1px solid var(--border-color);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  padding: 1.5rem 2rem 1rem;
+  border-bottom: 1px solid #27272a;
+  background-color: #18181b;
+  flex-shrink: 0;
 }
 
 .terminalTitle {
   color: var(--terminal-accent);
-  font-size: 1.2rem;
+  font-size: 1.4rem;
   font-weight: 800;
-  letter-spacing: 2px;
+  letter-spacing: 3px;
   margin: 0;
   text-shadow:
     0 0 10px var(--terminal-accent-glow),
@@ -52,12 +106,12 @@
 
 .terminalSidebar {
   width: 280px;
-  border-right: 1px solid var(--border-color);
-  padding: 1.5rem;
-  background: rgba(0, 0, 0, 0.2);
+  border-right: 1px solid #27272a;
+  background-color: #0c0c0e;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  overflow: hidden;
+  flex-shrink: 0;
 }
 
 .sidebarLabel {
@@ -70,6 +124,7 @@
 .phaseTracker {
   display: flex;
   gap: 0.75rem;
+  margin-left: auto;
 }
 
 .phaseBadge {
@@ -199,10 +254,11 @@
 }
 
 .terminalSubtitle {
-  font-size: 9px;
-  color: #52525b;
-  margin-top: 2px;
-  letter-spacing: 1px;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  letter-spacing: 1.5px;
+  margin-top: 0.4rem;
+  padding-left: 1.5rem;
 }
 
 .logIdle {
