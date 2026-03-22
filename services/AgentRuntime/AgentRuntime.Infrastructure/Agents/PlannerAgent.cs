@@ -1,5 +1,4 @@
 using AgentRuntime.Core.Agents;
-using AgentRuntime.Core.Tools;
 
 namespace AgentRuntime.Infrastructure.Agents;
 
@@ -16,6 +15,4 @@ public sealed class PlannerAgent : IAgent
 
     You MUST output strictly a JSON array of strings representing the required agent roles. Do not include markdown, explanations, or any other text.
     Example output: [""Forensics"", ""ThreatIntel""]";
-
-    public IEnumerable<IAgentTool> Tools => Array.Empty<IAgentTool>();
 }

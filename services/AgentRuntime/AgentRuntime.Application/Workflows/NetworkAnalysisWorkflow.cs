@@ -14,10 +14,10 @@ public sealed class NetworkAnalysisWorkflow(IAgentFactory factory, IEventBus nat
     {
         ArgumentNullException.ThrowIfNull(trigger);
 
-        var analyst = factory.Create(AgentRole.SecurityAnalyst, ct: ct);
-        var forensics = factory.Create(AgentRole.Forensics, ct: ct);
-        var intel = factory.Create(AgentRole.ThreatIntel, ct: ct);
-        var validator = factory.Create(AgentRole.Validator, ct: ct);
+        var analyst = await factory.CreateAsync(AgentRole.SecurityAnalyst, ct: ct);
+        var forensics = await factory.CreateAsync(AgentRole.Forensics, ct: ct);
+        var intel = await factory.CreateAsync(AgentRole.ThreatIntel, ct: ct);
+        var validator = await factory.CreateAsync(AgentRole.Validator, ct: ct);
 
         var workflow = AgentWorkflowBuilder.BuildSequential("deep-analysis", [analyst, forensics, intel, validator]).AsAIAgent();
 

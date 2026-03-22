@@ -1,21 +1,38 @@
 using AgentRuntime.Core.Tools;
-using AgentRuntime.Core.Tools.Attributes;
 
 namespace AgentRuntime.Infrastructure.Tools;
 
-[AgentToolPolicy(
-    AllowedAgents = new[] { "FileReaderAgent" },
-    RiskLevel = ToolRiskLevel.Low,
-    RequiresApproval = false)]
 public sealed class FileReadTool : IAgentTool
 {
-    public string Name => "File Read Tool";
+    public string Name => "read_file";
 
-    public string Description => "Reads the contents of a file given its path.";
+    public string Description =>
+        "Reads and returns the full text content of a file from the local file system. " +
+        "Input must be a valid absolute or relative file path.";
 
-    public Task<string> ExecuteAsync(string input, CancellationToken ct)
+    public async Task<string> ExecuteAsync(string filePath, CancellationToken ct)
     {
-        var fileContent = $"Contents of the file at path: {input}";
-        return Task.FromResult(fileContent);
+        ArgumentNullException.ThrowIfNull(filePath);
+
+        try
+        {
+            if (!File.Exists(filePath))
+            {
+                return $"Error: The file at '{filePath}' does not exist.";
+            }
+
+            using var reader = new StreamReader(filePath);
+            var content = await reader.ReadToEndAsync(ct);
+
+            return content;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return $"Error: Access denied to file '{filePath}'. Permission issues.";
+        }
+        catch (Exception ex)
+        {
+            return $"Error: An unexpected error occurred: {ex.Message}";
+        }
     }
 }

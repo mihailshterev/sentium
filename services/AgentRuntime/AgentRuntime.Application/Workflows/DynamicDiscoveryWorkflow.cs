@@ -1,8 +1,8 @@
 using AgentRuntime.Application.Common.Helpers;
 using AgentRuntime.Core.Agents;
-using AgentRuntime.Core.Dtos;
 using AgentRuntime.Core.Workflows;
 using Infrastructure.Messaging;
+using Microsoft.Agents.AI;
 using Microsoft.Agents.AI.Workflows;
 using NATS.Client.Serializers.Json;
 using System.Text;
@@ -26,7 +26,7 @@ public sealed class DynamicDiscoveryWorkflow(
 
         var plannerInstructions = BuildPlannerInstructions(dbAgents);
 
-        var planner = factory.Create(AgentRole.Planner, overrideInstructions: plannerInstructions, ct: ct);
+        var planner = await factory.CreateAsync(AgentRole.Planner, overrideInstructions: plannerInstructions, ct: ct);
         var plannerSession = await planner.CreateSessionAsync(ct);
 
         var rawPlan = string.Empty;
@@ -42,13 +42,13 @@ public sealed class DynamicDiscoveryWorkflow(
             return new WorkflowResult { Explanation = "Planner failed to identify required agents." };
         }
 
-        var squadAgents = rolesToExecute
-            .Select(role =>
-            {
-                var overrideInstructions = dbAgentMap.TryGetValue(role, out var desc) ? desc : null;
-                return factory.Create(role, overrideInstructions: overrideInstructions, ct: ct);
-            })
-            .ToArray();
+        var squadAgents = new List<AIAgent>();
+        foreach (var role in rolesToExecute)
+        {
+            var overrideInstructions = dbAgentMap.TryGetValue(role, out var desc) ? desc : null;
+            var agent = await factory.CreateAsync(role, overrideInstructions: overrideInstructions, ct: ct);
+            squadAgents.Add(agent);
+        }
 
         var squadWorkflow = AgentWorkflowBuilder.BuildSequential("dynamic-squad", squadAgents).AsAIAgent();
         var squadSession = await squadWorkflow.CreateSessionAsync(ct);
@@ -64,7 +64,7 @@ public sealed class DynamicDiscoveryWorkflow(
             }
         }
 
-        var validator = factory.Create(AgentRole.Validator, ct: ct);
+        var validator = await factory.CreateAsync(AgentRole.Validator, ct: ct);
         var validatorSession = await validator.CreateSessionAsync(ct);
 
         var validationInput = $"Original Request: {trigger.Payload}\n\nSquad Findings:\n{squadReport}";
@@ -79,7 +79,7 @@ public sealed class DynamicDiscoveryWorkflow(
         return LlmParser.ParseWorkflowResult(finalFullResponse.ToString(), rolesToExecute);
     }
 
-    private string BuildPlannerInstructions(IReadOnlyList<AgentResponse> dbAgents)
+    private string BuildPlannerInstructions(IReadOnlyList<Core.Dtos.AgentResponse> dbAgents)
     {
         var builtInAgents = registry.GetRegisteredNames()
             .Where(n => !string.Equals(n, AgentRole.Planner, StringComparison.OrdinalIgnoreCase)

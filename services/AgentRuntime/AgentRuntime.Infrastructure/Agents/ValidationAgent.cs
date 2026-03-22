@@ -1,5 +1,4 @@
 using AgentRuntime.Core.Agents;
-using AgentRuntime.Core.Tools;
 
 namespace AgentRuntime.Infrastructure.Agents;
 
@@ -18,6 +17,4 @@ public sealed class ValidationAgent : IAgent
     SUMMARY: [Text]
     RISK: [Level]
     RECOMMENDATION: [Text]";
-
-    public IEnumerable<IAgentTool> Tools => Array.Empty<IAgentTool>();
 }

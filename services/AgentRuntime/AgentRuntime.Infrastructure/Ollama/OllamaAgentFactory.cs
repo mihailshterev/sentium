@@ -1,5 +1,6 @@
 using AgentRuntime.Core.Agents;
 using AgentRuntime.Core.Tools;
+using AgentRuntime.Infrastructure.Agents;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 
@@ -8,25 +9,41 @@ namespace AgentRuntime.Infrastructure.Ollama;
 public sealed class OllamaAgentFactory(
     IAgentRegistry registry,
     IChatClient chatClient,
-    IAgentToolProvider agentToolProvider) : IAgentFactory
+    IAgentToolProvider agentToolProvider,
+    IAgentManager agentManager) : IAgentFactory
 {
-    public AIAgent Create(string agentName, string? overrideInstructions = null, CancellationToken ct = default)
+    public async Task<AIAgent> CreateAsync(string agentName, string? overrideInstructions = null, CancellationToken ct = default)
     {
         IAgent? definition = null;
-        var type = registry.GetAgentType(agentName);
 
-        if (type != null)
+        var type = registry.GetAgentType(agentName);
+        if (type is not null)
         {
             definition = Activator.CreateInstance(type) as IAgent;
+        }
+        else
+        {
+            var dbAgents = await agentManager.GetAgentsAsync(ct);
+            var dbData = dbAgents.FirstOrDefault(a => a.Name.Equals(agentName, StringComparison.OrdinalIgnoreCase));
+
+            if (dbData is not null)
+            {
+                definition = new DynamicCustomAgent(dbData.Name, dbData.Description);
+            }
+        }
+
+        if (definition is null)
+        {
+            throw new InvalidOperationException($"Agent '{agentName}' could not be found in Registry or Database.");
         }
 
         return new ChatClientAgent(chatClient, new ChatClientAgentOptions
         {
-            Name = agentName,
+            Name = definition.Name,
             ChatOptions = new ChatOptions
             {
-                Instructions = overrideInstructions ?? definition?.Instructions,
-                Tools = agentToolProvider.GetToolsForAgent(agentName, ct)
+                Instructions = overrideInstructions ?? definition.Instructions,
+                Tools = agentToolProvider.GetToolsForAgent(definition.Name, ct)
             }
         });
     }
