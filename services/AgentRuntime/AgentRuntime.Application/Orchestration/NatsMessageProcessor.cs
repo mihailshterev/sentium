@@ -35,11 +35,15 @@ public sealed class NatsMessageProcessor(
                         };
 
                         var result = await orchestrator.RunAsync(trigger, stoppingToken);
-                        logger.LogInformation("Workflow completed for event {Subject} with explanation: {Explanation}", msg.Subject, result.Explanation);
 
-                        foreach (var (Role, Text) in result.History)
+                        if (logger.IsEnabled(LogLevel.Information))
                         {
-                            logger.LogInformation(" - {Role}: {Text}", Role, Text);
+                            logger.LogInformation("Workflow completed for event {Subject} with explanation: {Explanation}", msg.Subject, result.Explanation);
+
+                            foreach (var (Role, Text) in result.History)
+                            {
+                                logger.LogInformation(" - {Role}: {Text}", Role, Text);
+                            }
                         }
 
                         await nats.PublishAsync(

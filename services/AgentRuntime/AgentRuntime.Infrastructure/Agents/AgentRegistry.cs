@@ -1,10 +1,11 @@
+using System.Collections.Frozen;
 using AgentRuntime.Core.Agents;
 
 namespace AgentRuntime.Infrastructure.Agents;
 
 public sealed class AgentRegistry : IAgentRegistry
 {
-    private readonly Dictionary<string, Type> Registry;
+    private readonly FrozenDictionary<string, Type> Registry;
 
     public AgentRegistry()
     {
@@ -16,13 +17,10 @@ public sealed class AgentRegistry : IAgentRegistry
             { AgentRole.ThreatIntel, typeof(ThreatIntelAgent) },
             { AgentRole.Forensics, typeof(ForensicsAgent) },
             { AgentRole.Validator, typeof(ValidationAgent) }
-        };
+        }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
     }
 
-    public Type? GetAgentType(string name)
-    {
-        return Registry.TryGetValue(name, out var type) ? type : null;
-    }
+    public Type? GetAgentType(string name) => Registry.TryGetValue(name, out var type) ? type : null;
 
     public IEnumerable<string> GetRegisteredNames() => Registry.Keys;
 }

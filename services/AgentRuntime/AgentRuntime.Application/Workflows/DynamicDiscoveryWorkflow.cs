@@ -1,3 +1,4 @@
+using AgentRuntime.Application.Common.Helpers;
 using AgentRuntime.Core.Agents;
 using AgentRuntime.Core.Dtos;
 using AgentRuntime.Core.Workflows;
@@ -5,22 +6,15 @@ using Infrastructure.Messaging;
 using Microsoft.Agents.AI.Workflows;
 using NATS.Client.Serializers.Json;
 using System.Text;
-using System.Text.Json;
-using System.Text.RegularExpressions;
 
 namespace AgentRuntime.Application.Workflows;
 
-public partial class DynamicDiscoveryWorkflow(
+public sealed class DynamicDiscoveryWorkflow(
     IAgentFactory factory,
     IAgentRegistry registry,
     IAgentManager agentManager,
     IEventBus nats) : IAgentWorkflow
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true
-    };
-
     public WorkflowType Type => WorkflowType.Dynamic;
 
     public async Task<WorkflowResult> ExecuteAsync(WorkflowTrigger trigger, CancellationToken ct)
@@ -42,7 +36,7 @@ public partial class DynamicDiscoveryWorkflow(
             await StreamToNats(trigger.TriggerType, AgentRole.Planner, update.Text, ct);
         }
 
-        var rolesToExecute = ParseRolesRobustly(rawPlan, dbAgentMap);
+        var rolesToExecute = LlmParser.ParseAgentRoles(rawPlan, dbAgentMap, registry);
         if (rolesToExecute.Count == 0)
         {
             return new WorkflowResult { Explanation = "Planner failed to identify required agents." };
@@ -82,7 +76,7 @@ public partial class DynamicDiscoveryWorkflow(
             await StreamToNats(trigger.TriggerType, "Validator", update.Text, ct);
         }
 
-        return ParseFinalResult(finalFullResponse.ToString(), rolesToExecute);
+        return LlmParser.ParseWorkflowResult(finalFullResponse.ToString(), rolesToExecute);
     }
 
     private string BuildPlannerInstructions(IReadOnlyList<AgentResponse> dbAgents)
@@ -114,78 +108,9 @@ public partial class DynamicDiscoveryWorkflow(
             """;
     }
 
-    private static WorkflowResult ParseFinalResult(string validatorOutput, List<string> roles)
-    {
-        var riskMatch = Regex.Match(validatorOutput, @"RISK:\s*(.*)", RegexOptions.IgnoreCase);
-        var recMatch = Regex.Match(validatorOutput, @"RECOMMENDATION:\s*(.*)", RegexOptions.IgnoreCase);
-
-        return new WorkflowResult
-        {
-            Explanation = validatorOutput,
-            Risk = riskMatch.Groups[1].Value.Trim() is { Length: > 0 } r ? r : "Unknown",
-            Recommendation = recMatch.Groups[1].Value.Trim() is { Length: > 0 } rec ? rec : "Review squad logs manually.",
-            History = roles.Select(r => ("AgentSelection", r)).ToList()
-        };
-    }
-
-    private List<string> ParseRolesRobustly(string llmOutput, Dictionary<string, string> dbAgentMap)
-    {
-        try
-        {
-            var cleanJson = Regex.Replace(llmOutput, @"```(?:json)?\s*([\s\S]*?)\s*```", "$1").Trim();
-            var match = JsonArrayRegex().Match(cleanJson);
-            if (!match.Success)
-            {
-                return [];
-            }
-
-            var parsed = JsonSerializer.Deserialize<List<string>>(match.Value, JsonOptions);
-            if (parsed is null)
-            {
-                return [];
-            }
-
-            var registeredNames = registry.GetRegisteredNames().ToList();
-
-            var resolved = new List<string>();
-            foreach (var p in parsed)
-            {
-                var dbMatch = dbAgentMap.Keys.FirstOrDefault(k =>
-                    string.Equals(k.Replace(" ", ""), p.Replace(" ", ""), StringComparison.OrdinalIgnoreCase));
-
-                if (dbMatch is not null)
-                {
-                    if (!resolved.Contains(dbMatch, StringComparer.OrdinalIgnoreCase))
-                    {
-                        resolved.Add(dbMatch);
-                    }
-
-                    continue;
-                }
-
-                var registryMatch = registeredNames.FirstOrDefault(r =>
-                    string.Equals(r.Replace(" ", ""), p.Replace(" ", ""), StringComparison.OrdinalIgnoreCase));
-
-                if (registryMatch is not null && !resolved.Contains(registryMatch, StringComparer.OrdinalIgnoreCase))
-                {
-                    resolved.Add(registryMatch);
-                }
-            }
-
-            return resolved;
-        }
-        catch
-        {
-            return [];
-        }
-    }
-
     private async Task StreamToNats(string type, string author, string text, CancellationToken ct)
     {
         await nats.PublishAsync($"stream.{type}", new AgentStreamUpdate(author, text),
             serializer: NatsJsonSerializer<AgentStreamUpdate>.Default, ct: ct);
     }
-
-    [GeneratedRegex(@"\[\s*.*?\s*\]", RegexOptions.Singleline)]
-    private static partial Regex JsonArrayRegex();
 }

@@ -5,7 +5,10 @@ using Microsoft.Extensions.AI;
 
 namespace AgentRuntime.Infrastructure.Ollama;
 
-public sealed class OllamaAgentFactory(IAgentRegistry registry, IChatClient chatClient, IAgentToolProvider agentToolProvider) : IAgentFactory
+public sealed class OllamaAgentFactory(
+    IAgentRegistry registry,
+    IChatClient chatClient,
+    IAgentToolProvider agentToolProvider) : IAgentFactory
 {
     public AIAgent Create(string agentName, string? overrideInstructions = null, CancellationToken ct = default)
     {
