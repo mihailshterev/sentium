@@ -1,10 +1,11 @@
 using AgentRuntime.Application.Common.Helpers;
+using AgentRuntime.Application.Extensions;
 using AgentRuntime.Core.Agents;
 using AgentRuntime.Core.Workflows;
 using Infrastructure.Messaging;
 using Microsoft.Agents.AI;
 using Microsoft.Agents.AI.Workflows;
-using NATS.Client.Serializers.Json;
+using Microsoft.Extensions.AI;
 using System.Text;
 
 namespace AgentRuntime.Application.Workflows;
@@ -33,7 +34,7 @@ public sealed class DynamicDiscoveryWorkflow(
         await foreach (var update in planner.RunStreamingAsync(trigger.Payload, plannerSession, cancellationToken: ct))
         {
             rawPlan += update.Text;
-            await StreamToNats(trigger.TriggerType, AgentRole.Planner, update.Text, ct);
+            await nats.StreamAgentUpdateAsync(trigger.TriggerType, AgentRole.Planner, update.Text, ct);
         }
 
         var rolesToExecute = LlmParser.ParseAgentRoles(rawPlan, dbAgentMap, registry);
@@ -50,30 +51,37 @@ public sealed class DynamicDiscoveryWorkflow(
             squadAgents.Add(agent);
         }
 
-        var squadWorkflow = AgentWorkflowBuilder.BuildSequential("dynamic-squad", squadAgents).AsAIAgent();
-        var squadSession = await squadWorkflow.CreateSessionAsync(ct);
+        var squadWorkflow = AgentWorkflowBuilder.BuildSequential("dynamic-squad", squadAgents);
 
-        var squadReport = new StringBuilder();
+        var messages = new List<ChatMessage> { new(ChatRole.User, trigger.Payload) };
 
-        await foreach (var update in squadWorkflow.RunStreamingAsync(trigger.Payload, squadSession, cancellationToken: ct))
+        await using var run = await InProcessExecution.RunStreamingAsync(squadWorkflow, messages, cancellationToken: ct);
+        await run.TrySendMessageAsync(new TurnToken(emitEvents: true));
+
+        List<ChatMessage> finalHistory = [];
+        await foreach (var evt in run.WatchStreamAsync(ct).ConfigureAwait(false).WithCancellation(ct))
         {
-            if (!string.IsNullOrEmpty(update.Text))
+            if (evt is AgentResponseUpdateEvent e)
             {
-                squadReport.AppendLine($"{update.AuthorName}: {update.Text}");
-                await StreamToNats(trigger.TriggerType, update.AuthorName ?? "Squad", update.Text, ct);
+                await nats.StreamAgentUpdateAsync(trigger.TriggerType, e.Update.AuthorName ?? "Squad", e.Update.Text, ct);
+            }
+            else if (evt is WorkflowOutputEvent outputEvt)
+            {
+                finalHistory = outputEvt.As<List<ChatMessage>>()!;
             }
         }
 
         var validator = await factory.CreateAsync(AgentRole.Validator, ct: ct);
         var validatorSession = await validator.CreateSessionAsync(ct);
 
-        var validationInput = $"Original Request: {trigger.Payload}\n\nSquad Findings:\n{squadReport}";
+        var squadFindings = string.Join("\n", finalHistory.Select(m => $"{m.Role}: {m.Text}"));
+        var validationInput = $"Original Request: {trigger.Payload}\n\nSquad Findings:\n{squadFindings}";
         var finalFullResponse = new StringBuilder();
 
         await foreach (var update in validator.RunStreamingAsync(validationInput, validatorSession, cancellationToken: ct))
         {
             finalFullResponse.Append(update.Text);
-            await StreamToNats(trigger.TriggerType, "Validator", update.Text, ct);
+            await nats.StreamAgentUpdateAsync(trigger.TriggerType, AgentRole.Validator, update.Text, ct);
         }
 
         return LlmParser.ParseWorkflowResult(finalFullResponse.ToString(), rolesToExecute);
@@ -89,7 +97,7 @@ public sealed class DynamicDiscoveryWorkflow(
 
         foreach (var name in builtInAgents)
         {
-            agentLines.AppendLine($"- {name}: Built-in agent.");
+            agentLines.AppendLine($"- {name}: {registry.GetInstructions(name)}");
         }
 
         foreach (var agent in dbAgents)
@@ -97,20 +105,6 @@ public sealed class DynamicDiscoveryWorkflow(
             agentLines.AppendLine($"- {agent.Name}: {agent.Description}");
         }
 
-        return $"""
-            You are an orchestration agent. Analyze the input and determine which specialized agents are required to resolve the issue.
-
-            Available Agents:
-            {agentLines.ToString().TrimEnd()}
-
-            You MUST output strictly a JSON array of strings representing the required agent roles. Do not include markdown, explanations, or any other text.
-            Example output: ["Forensics", "ThreatIntel"]
-            """;
-    }
-
-    private async Task StreamToNats(string type, string author, string text, CancellationToken ct)
-    {
-        await nats.PublishAsync($"stream.{type}", new AgentStreamUpdate(author, text),
-            serializer: NatsJsonSerializer<AgentStreamUpdate>.Default, ct: ct);
+        return PlannerTemplate.Build(agentLines.ToString());
     }
 }
