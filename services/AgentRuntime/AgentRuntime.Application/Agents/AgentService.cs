@@ -10,4 +10,13 @@ public sealed class AgentService(IAgentManager manager) : IAgentService
 
     public Task<IReadOnlyList<AgentResponse>> GetAgentsAsync(CancellationToken ct = default)
         => manager.GetAgentsAsync(ct);
+
+    public Task<AgentResponse> GetAgentByIdAsync(Guid agentId, CancellationToken ct = default)
+        => manager.GetAgentByIdAsync(agentId, ct);
+
+    public Task UpdateAgentAsync(Guid agentId, UpdateAgentRequest request, CancellationToken ct = default)
+        => manager.UpdateAgentAsync(agentId, request, ct);
+
+    public Task DeleteAgentAsync(Guid agentId, CancellationToken ct = default)
+        => manager.DeleteAgentAsync(agentId, ct);
 }
