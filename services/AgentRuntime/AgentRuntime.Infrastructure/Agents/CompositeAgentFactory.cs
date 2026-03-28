@@ -1,12 +1,11 @@
 using AgentRuntime.Core.Agents;
 using AgentRuntime.Core.Tools;
-using AgentRuntime.Infrastructure.Agents;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 
-namespace AgentRuntime.Infrastructure.Ollama;
+namespace AgentRuntime.Infrastructure.Agents;
 
-public sealed class OllamaAgentFactory(
+public sealed class CompositeAgentFactory(
     IAgentRegistry registry,
     IChatClient chatClient,
     IAgentToolProvider agentToolProvider,

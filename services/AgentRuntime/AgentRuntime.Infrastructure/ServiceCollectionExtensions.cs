@@ -2,7 +2,6 @@ using AgentRuntime.Core.Agents;
 using AgentRuntime.Core.Tools;
 using AgentRuntime.Infrastructure.Agents;
 using AgentRuntime.Infrastructure.Data;
-using AgentRuntime.Infrastructure.Ollama;
 using AgentRuntime.Infrastructure.Tools;
 using Infrastructure.Messaging;
 using Microsoft.EntityFrameworkCore;
@@ -27,14 +26,10 @@ public static class ServiceCollectionExtensions
 
         services.AddChatClient(sp =>
         {
-            var uri = new Uri("http://localhost:11434");
-            var client = new OllamaApiClient(uri)
-            {
-                SelectedModel = modelName
-            };
-
+            var client = new OllamaApiClient(new Uri("http://localhost:11434"), modelName);
             return new ChatClientBuilder(client)
                 .UseFunctionInvocation()
+                .UseOpenTelemetry()
                 .Build();
         });
 
@@ -43,7 +38,7 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<IAgentRegistry, AgentRegistry>();
         services.AddSingleton<IAgentToolProvider, AgentToolProvider>();
-        services.AddTransient<IAgentFactory, OllamaAgentFactory>();
+        services.AddTransient<IAgentFactory, CompositeAgentFactory>();
 
         services.AddSingleton<IEventBus, NatsEventBus>();
         services.AddTransient<IAgentManager, AgentManager>();
