@@ -6,37 +6,20 @@ using NATS.Client.Serializers.Json;
 
 namespace AgentRuntime.Application.Workflows;
 
-public sealed class NetworkAnalysisWorkflow : IAgentWorkflow
+public sealed class NetworkAnalysisWorkflow(IAgentFactory factory, IEventBus nats) : IAgentWorkflow
 {
     public WorkflowType Type => WorkflowType.Predefined;
-
-    private readonly IAgentFactory AgentFactory;
-    private readonly IAgentRegistry AgentRegistry;
-    private readonly IEventBus Nats;
-
-    public NetworkAnalysisWorkflow(IAgentFactory factory, IAgentRegistry registry, IEventBus nats)
-    {
-        AgentFactory = factory;
-        AgentRegistry = registry;
-        Nats = nats;
-    }
 
     public async Task<WorkflowResult> ExecuteAsync(WorkflowTrigger trigger, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(trigger);
-        var availablePersonas = AgentRegistry.GetRegisteredNames();
 
-        var analyst = AgentFactory.Create(AgentRole.SecurityAnalyst, ct: ct);
-        var forensics = AgentFactory.Create(AgentRole.Forensics, ct: ct);
-        var intel = AgentFactory.Create(AgentRole.ThreatIntel, ct: ct);
-        var summarizer = AgentFactory.Create(AgentRole.Summarizer, ct: ct);
+        var analyst = await factory.CreateAsync(AgentRole.SecurityAnalyst, ct: ct);
+        var forensics = await factory.CreateAsync(AgentRole.Forensics, ct: ct);
+        var intel = await factory.CreateAsync(AgentRole.ThreatIntel, ct: ct);
+        var validator = await factory.CreateAsync(AgentRole.Validator, ct: ct);
 
-        var workflow = AgentWorkflowBuilder.BuildSequential("deep-analysis", [analyst, forensics, intel, summarizer]).AsAgent();
-
-        // var workflow = AgentWorkflowBuilder.BuildSequential("full-pipeline", [
-        //     analysisGroup.AsAgent(),
-        //     summarizer
-        // ]).AsAgent();
+        var workflow = AgentWorkflowBuilder.BuildSequential("deep-analysis", [analyst, forensics, intel, validator]).AsAIAgent();
 
         var session = await workflow.CreateSessionAsync(ct);
 
@@ -48,7 +31,7 @@ public sealed class NetworkAnalysisWorkflow : IAgentWorkflow
                     update.AuthorName ?? "SecurityAnalyst",
                     update.Text
                 );
-                await Nats.PublishAsync($"stream.{trigger.TriggerType}", streamPayload, serializer: NatsJsonSerializer<AgentStreamUpdate>.Default, ct: ct);
+                await nats.PublishAsync($"stream.{trigger.TriggerType}", streamPayload, serializer: NatsJsonSerializer<AgentStreamUpdate>.Default, ct: ct);
             }
         }
 

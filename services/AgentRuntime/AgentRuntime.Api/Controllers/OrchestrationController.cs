@@ -7,7 +7,7 @@ namespace AgentRuntime.Api.Controllers;
 
 [ApiController]
 [Route("agents")]
-public class AgentController(INatsConnection nats) : ControllerBase
+public class OrchestrationController(INatsConnection nats) : ControllerBase
 {
     [HttpPost("test-pipeline")]
     public async Task<IActionResult> RunPipeline([FromBody] dynamic customInput, CancellationToken ct)
@@ -15,7 +15,7 @@ public class AgentController(INatsConnection nats) : ControllerBase
         var payload = customInput ?? new { activity = "Manual trigger", user = "admin" };
         var jsonPayload = System.Text.Json.JsonSerializer.Serialize(payload);
 
-        await nats.PublishAsync("events.network.scan", jsonPayload, cancellationToken: ct);
+        await nats.PublishAsync("events.dynamic", jsonPayload, cancellationToken: ct);
         return Ok();
     }
 

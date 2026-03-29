@@ -4,12 +4,12 @@
     "net10.0": {
       "Aspire.NATS.Net": {
         "type": "Direct",
-        "requested": "[13.1.0, )",
-        "resolved": "13.1.0",
-        "contentHash": "CyuSw9OXgyQNJpBO3WwMlR7RohU1Pzi6yvDtYYN+QVNbC1n/7PUQSZ7/tzifawEnb2I5r/a75Js3VnGDawt/5g==",
+        "requested": "[13.2.0, )",
+        "resolved": "13.2.0",
+        "contentHash": "5GjaeMmbOh5JNi7tKmZadaPXLqI+GR57KEfTfVF7CTfSOsmhhfkZVmfInJcKfhe7Zi7wlbUkwjn94HIbqYj3nQ==",
         "dependencies": {
-          "NATS.Net": "2.6.11",
-          "OpenTelemetry.Extensions.Hosting": "1.14.0"
+          "NATS.Net": "2.7.2",
+          "OpenTelemetry.Extensions.Hosting": "1.15.0"
         }
       },
       "Microsoft.AspNetCore.OpenApi": {
@@ -28,99 +28,99 @@
       },
       "NATS.Client.Abstractions": {
         "type": "Transitive",
-        "resolved": "2.7.1",
-        "contentHash": "+YI7ims3YZncagjGAT9ExGahqZUkaMBHGSUaOAC4Z2zziernDeJ3Jl1h7PYKCKTSCT5dKO8rK9kk7uldA1UJ9g=="
+        "resolved": "2.7.2",
+        "contentHash": "rmTLKjqNCgmloOFRYkg9NRrYXFKpjqlxbbCQrCEYckiRtU8I38Vf9B3sT7wiG34lmc//l0hLQLQRv9emcDjRvA=="
       },
       "NATS.Client.Core": {
         "type": "Transitive",
-        "resolved": "2.7.1",
-        "contentHash": "W3MdPPw9/EoiuWUO1j2HMBaVr2ZGKd87h94phanrE+ZdiLYJN9nRQVZITLJICUdMtKV4fUs3DKlQxHz+RhOyxQ==",
+        "resolved": "2.7.2",
+        "contentHash": "la0KCjuoMkOQkhf+uzIc+79GYxx2q6LBoFOT+q91LhpziPJbRgtKRBpvCkAmd+1GuYdB+IZmUAgXVp2Z+Fk7kQ==",
         "dependencies": {
-          "NATS.Client.Abstractions": "2.7.1"
+          "NATS.Client.Abstractions": "2.7.2"
         }
       },
       "NATS.Client.Hosting": {
         "type": "Transitive",
-        "resolved": "2.7.1",
-        "contentHash": "iVj3S6ZXxE8t5hlditmJ+iG+1cK7zVkX1AA49jMIcE92DLUU17U3dXw93M3EUltfvDL1vZ9UthvPl/i/CzUiIQ==",
+        "resolved": "2.7.2",
+        "contentHash": "cH5JY3x57knW6kIrmVRe0e1FsJZOa2rMxeEzpGsomuMyELjCZAjU2swV4VlT9ZCk4tiHrafXn14icX8UoQyDmQ==",
         "dependencies": {
-          "NATS.Client.Core": "2.7.1"
+          "NATS.Client.Core": "2.7.2"
         }
       },
       "NATS.Client.JetStream": {
         "type": "Transitive",
-        "resolved": "2.7.1",
-        "contentHash": "m38ah12yGT5X04ycIO1IkigMS9HW4txqufhIh4dKlxEUWbBqvvzSXEt4Q4cfWrB2OTjyRiQHCHQ2WqnNHSGeDg==",
+        "resolved": "2.7.2",
+        "contentHash": "1naI0Z42QYke5qFWkuYnJ59V5jX0471/Wa06jbqQtoCmPUMbDZwL/zGPvWyMk+Cz02VuYJlhSMwE+Gw8nQJFVQ==",
         "dependencies": {
-          "NATS.Client.Core": "2.7.1"
+          "NATS.Client.Core": "2.7.2"
         }
       },
       "NATS.Client.KeyValueStore": {
         "type": "Transitive",
-        "resolved": "2.7.1",
-        "contentHash": "kL6/1xPfHoHb5Pl0vA7Kne/A0G2DJZtas0lxZK6oKAAmwO1X/rwmhKQ+h55UDkBM0hoBxKu0XcwfyHcE67ySFw==",
+        "resolved": "2.7.2",
+        "contentHash": "ZZpkiu+C02alZGJMslEmOlo3yZxil2siu5etEMUbHrAo4uZmeUVhRqu8+eoKpc5q5Bb23yqgHnFhDwb7DmoeoA==",
         "dependencies": {
-          "NATS.Client.JetStream": "2.7.1"
+          "NATS.Client.JetStream": "2.7.2"
         }
       },
       "NATS.Client.ObjectStore": {
         "type": "Transitive",
-        "resolved": "2.7.1",
-        "contentHash": "+Fu04tpRh3EE0Fq9W8pyiuqpgG4eqBuox+qguTkHCkN5GiWTvS/RXePCTdN2fJAltZJWIVlYo1YXNJo85tomAg==",
+        "resolved": "2.7.2",
+        "contentHash": "nOyKFnnYB6ZP4dU9z+rZcSdw9yr9vWv0hTYBwd80jL02RBruF/uL6ot3Pj/IAEXcYfldrz43il3IAyvV1Uzc3g==",
         "dependencies": {
-          "NATS.Client.JetStream": "2.7.1"
+          "NATS.Client.JetStream": "2.7.2"
         }
       },
       "NATS.Client.Serializers.Json": {
         "type": "Transitive",
-        "resolved": "2.7.1",
-        "contentHash": "6wZypR6b8PNa3ECz9Y3gZHyjz5bT6OYKlcgYWq2zlaB3aWTXS4P/RO1x5wahkIn1Wj6Qxhb4uq4BmyMHbwjpRA==",
+        "resolved": "2.7.2",
+        "contentHash": "aWRhN7xMfH3bVtUCUBmZGjBS7WtciLUGowJDjCg1Lw+lP9wZpBiqUFg2J50jxv7PiwJzxaEdNbZgAQ78P0PWqA==",
         "dependencies": {
-          "NATS.Client.Abstractions": "2.7.1"
+          "NATS.Client.Abstractions": "2.7.2"
         }
       },
       "NATS.Client.Services": {
         "type": "Transitive",
-        "resolved": "2.7.1",
-        "contentHash": "jZDcDoLBH04QDuXAwF9CbjVtKzG523EWor1ty3O7X07su3XGJnRx197/GrpGCC0trufgsw2tyhKFZ2EQF1oFPQ==",
+        "resolved": "2.7.2",
+        "contentHash": "RXXMfgojmi2UTNMJlyEW2gn9x7OBjITz31WyQ4Jziz+y0dNljUbSmCL3wcnIrChVhNNp/QEvpUYbhS2t1GxCEg==",
         "dependencies": {
-          "NATS.Client.Core": "2.7.1"
+          "NATS.Client.Core": "2.7.2"
         }
       },
       "NATS.Client.Simplified": {
         "type": "Transitive",
-        "resolved": "2.7.1",
-        "contentHash": "sODAVztL0YcErsiX6oiZUBjFf8fE5pJtPqsiNJKq/4KPC/V5cZn/OX7AuWs/wQUL6scSvi0jrSfx+yDR630kIg==",
+        "resolved": "2.7.2",
+        "contentHash": "SW1PrEPBBMIrJ5ARIzL+chr5yhYySWQkDsDB9d9sJWgb2tkZ0tzYE+RFIrRoa38TgeAT6BV5zTYg26U912vl1w==",
         "dependencies": {
-          "NATS.Client.Core": "2.7.1",
-          "NATS.Client.Serializers.Json": "2.7.1"
+          "NATS.Client.Core": "2.7.2",
+          "NATS.Client.Serializers.Json": "2.7.2"
         }
       },
       "OpenTelemetry": {
         "type": "Transitive",
-        "resolved": "1.14.0",
-        "contentHash": "aiPBAr1+0dPDItH++MQQr5UgMf4xiybruzNlAoYYMYN3UUk+mGRcoKuZy4Z4rhhWUZIpK2Xhe7wUUXSTM32duQ==",
+        "resolved": "1.15.0",
+        "contentHash": "7mS/oZFF8S6xyqGQfMU1btp0nXJQUPWV535Vp/XMLYwRAUv36xQN+U4vufWBF1+z4HnRTOwuFHtUSGnHbyN6FQ==",
         "dependencies": {
-          "OpenTelemetry.Api.ProviderBuilderExtensions": "1.14.0"
+          "OpenTelemetry.Api.ProviderBuilderExtensions": "1.15.0"
         }
       },
       "OpenTelemetry.Api": {
         "type": "Transitive",
-        "resolved": "1.14.0",
-        "contentHash": "foHci6viUw1f3gUB8qzz3Rk02xZIWMo299X0rxK0MoOWok/3dUVru+KKdY7WIoSHwRGpxGKkmAz9jIk2RFNbsQ=="
+        "resolved": "1.15.0",
+        "contentHash": "vk5OGdf6K9kQScCWo3bRjhDWCv6Pqw92IpX4dlARZ8B1WL7/2NGTDtCkkw42eQf7UdwyoHKzVvMH/PtL8d6z7w=="
       },
       "OpenTelemetry.Api.ProviderBuilderExtensions": {
         "type": "Transitive",
-        "resolved": "1.14.0",
-        "contentHash": "i/lxOM92v+zU5I0rGl5tXAGz6EJtxk2MvzZ0VN6F6L5pMqT6s6RCXnGWXg6fW+vtZJsllBlQaf/VLPTzgefJpg==",
+        "resolved": "1.15.0",
+        "contentHash": "OnuSUlRpGvowkOzGFQfy+KZFu0cITfKfh2IYJJiZskxVJiOuexwOOuvfDAgpJdmTzVWAHjYdz2shcHZaJ06UjQ==",
         "dependencies": {
-          "OpenTelemetry.Api": "1.14.0"
+          "OpenTelemetry.Api": "1.15.0"
         }
       },
       "infrastructure": {
         "type": "Project",
         "dependencies": {
-          "NATS.Net": "[2.7.1, )"
+          "NATS.Net": "[2.7.2, )"
         }
       },
       "sentinel.application": {
@@ -136,34 +136,34 @@
         "type": "Project",
         "dependencies": {
           "Infrastructure": "[1.0.0, )",
-          "NATS.Net": "[2.7.1, )",
+          "NATS.Net": "[2.7.2, )",
           "Sentinel.Application": "[1.0.0, )",
           "Sentinel.Core": "[1.0.0, )"
         }
       },
       "NATS.Net": {
         "type": "CentralTransitive",
-        "requested": "[2.7.1, )",
-        "resolved": "2.7.1",
-        "contentHash": "p9UTnFlYJezH8DUIbh965ds43FSSr8guZoqkq38efsYrIoZGNa3aRu8iUJrgIOJkLacivE9auxwP1em7eA9KdA==",
+        "requested": "[2.7.2, )",
+        "resolved": "2.7.2",
+        "contentHash": "6B8RlcstYwgoKm9IXcZEDADpH93Hn6+LcvR8hvmFa8jzwshNlIArv8tL5jelJD+fQmnlymKoQYcZ5cL7J1bITw==",
         "dependencies": {
-          "NATS.Client.Core": "2.7.1",
-          "NATS.Client.Hosting": "2.7.1",
-          "NATS.Client.JetStream": "2.7.1",
-          "NATS.Client.KeyValueStore": "2.7.1",
-          "NATS.Client.ObjectStore": "2.7.1",
-          "NATS.Client.Serializers.Json": "2.7.1",
-          "NATS.Client.Services": "2.7.1",
-          "NATS.Client.Simplified": "2.7.1"
+          "NATS.Client.Core": "2.7.2",
+          "NATS.Client.Hosting": "2.7.2",
+          "NATS.Client.JetStream": "2.7.2",
+          "NATS.Client.KeyValueStore": "2.7.2",
+          "NATS.Client.ObjectStore": "2.7.2",
+          "NATS.Client.Serializers.Json": "2.7.2",
+          "NATS.Client.Services": "2.7.2",
+          "NATS.Client.Simplified": "2.7.2"
         }
       },
       "OpenTelemetry.Extensions.Hosting": {
         "type": "CentralTransitive",
-        "requested": "[1.14.0, )",
-        "resolved": "1.14.0",
-        "contentHash": "ZAxkCIa3Q3YWZ1sGrolXfkhPqn2PFSz2Cel74em/fATZgY5ixlw6MQp2icmqKCz4C7M1W2G0b92K3rX8mOtFRg==",
+        "requested": "[1.15.0, )",
+        "resolved": "1.15.0",
+        "contentHash": "RixjKyB1pbYGhWdvPto4KJs+exdQknJsnjUO9WszdLles5Vcd0EYzxPNJdwmLjYfP+Jfbr4B5nktM4ZgeHSWtg==",
         "dependencies": {
-          "OpenTelemetry": "1.14.0"
+          "OpenTelemetry": "1.15.0"
         }
       }
     },

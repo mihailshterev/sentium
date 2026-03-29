@@ -1,11 +1,11 @@
+using AgentRuntime.Core.Agents;
 using AgentRuntime.Core.Tools;
 using AgentRuntime.Core.Tools.Attributes;
 
 namespace AgentRuntime.Infrastructure.Tools;
 
-
 [AgentToolPolicy(
-    AllowedAgents = new[] { "SecurityAnalyst" },
+    AllowedAgents = new[] { AgentRole.SecurityAnalyst },
     RiskLevel = ToolRiskLevel.Low,
     RequiresApproval = false)]
 public sealed class ThreatIntelTool : IAgentTool

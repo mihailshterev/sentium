@@ -1,0 +1,116 @@
+.homeContainer {
+  position: relative;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background-color: var(--bg-dark);
+}
+
+.gridOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    linear-gradient(rgba(31, 31, 35, 0.4) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(31, 31, 35, 0.4) 1px, transparent 1px);
+  background-size: 40px 40px;
+  background-position: center center;
+  mask-image: radial-gradient(circle at center, black 20%, transparent 70%);
+  -webkit-mask-image: radial-gradient(
+    circle at center,
+    black 20%,
+    transparent 70%
+  );
+  z-index: 1;
+}
+
+.heroContent {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  max-width: 800px;
+  padding: 2rem;
+}
+
+.badge {
+  display: inline-block;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  color: var(--accent-green);
+  border: 1px solid var(--accent-green);
+  background: rgba(16, 185, 129, 0.1);
+  padding: 4px 12px;
+  border-radius: 4px;
+  letter-spacing: 2px;
+  margin-bottom: 1.5rem;
+}
+
+.heroTitle {
+  font-size: 4.5rem;
+  font-weight: 900;
+  margin: 0;
+  letter-spacing: -1px;
+  color: var(--text-primary);
+}
+
+.heroTitle .highlight {
+  color: transparent;
+  -webkit-text-stroke: 1px var(--text-primary);
+  text-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+}
+
+.heroSubtitle {
+  font-family: "JetBrains Mono", monospace;
+  color: var(--text-muted);
+  font-size: 1rem;
+  line-height: 1.6;
+  margin: 1.5rem auto 3rem;
+  max-width: 600px;
+}
+
+.initBtn {
+  background: transparent;
+  border: 1px solid var(--accent-blue);
+  color: var(--accent-blue);
+  padding: 1rem 2.5rem;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    0 0 15px rgba(59, 130, 246, 0.1) inset,
+    0 0 20px rgba(59, 130, 246, 0.2);
+}
+
+.initBtn:hover {
+  background: var(--accent-blue);
+  color: #fff;
+  box-shadow:
+    0 0 20px var(--glow-blue),
+    0 0 40px var(--glow-blue);
+}
+
+.btnCursor {
+  display: inline-block;
+  margin-left: 8px;
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}

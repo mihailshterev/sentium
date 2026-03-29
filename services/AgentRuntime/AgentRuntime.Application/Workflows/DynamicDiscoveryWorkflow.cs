@@ -1,53 +1,110 @@
+using AgentRuntime.Application.Common.Helpers;
+using AgentRuntime.Application.Extensions;
 using AgentRuntime.Core.Agents;
 using AgentRuntime.Core.Workflows;
+using Infrastructure.Messaging;
+using Microsoft.Agents.AI;
 using Microsoft.Agents.AI.Workflows;
-using NATS.Client.Serializers.Json;
+using Microsoft.Extensions.AI;
+using System.Text;
 
 namespace AgentRuntime.Application.Workflows;
 
-public class DynamicDiscoveryWorkflow : IAgentWorkflow
+public sealed class DynamicDiscoveryWorkflow(
+    IAgentFactory factory,
+    IAgentRegistry registry,
+    IAgentManager agentManager,
+    IEventBus nats) : IAgentWorkflow
 {
     public WorkflowType Type => WorkflowType.Dynamic;
-    private readonly IAgentFactory AgentFactory;
-    private readonly IAgentRegistry AgentRegistry;
-
-    public DynamicDiscoveryWorkflow(IAgentFactory factory, IAgentRegistry registry)
-    {
-        AgentFactory = factory;
-        AgentRegistry = registry;
-    }
 
     public async Task<WorkflowResult> ExecuteAsync(WorkflowTrigger trigger, CancellationToken ct)
     {
-        // var planner = AgentFactory.Create(AgentRole.Planner, ct: ct);
-        // var session = await planner.CreateSessionAsync(ct);
+        ArgumentNullException.ThrowIfNull(trigger);
 
-        // string planJson = "";
-        // await foreach (var update in planner.RunStreamingAsync(trigger.Payload, session, ct))
-        // {
-        //     planJson += update.Text;
-        //     await Nats.PublishAsync($"stream.{trigger.TriggerType}", new AgentStreamUpdate("Planner", update.Text), serializer: NatsJsonSerializer<AgentStreamUpdate>.Default, ct: ct);
-        // }
+        var dbAgents = await agentManager.GetAgentsAsync(ct);
+        var dbAgentMap = dbAgents.ToDictionary(a => a.Name, a => a.Description, StringComparer.OrdinalIgnoreCase);
 
-        // var roles = ParseRoles(planJson); // Your logic to turn "Analyst" into AgentRole.SecurityAnalyst
-        // var dynamicAgents = roles.Select(r => AgentFactory.Create(r, ct: ct)).ToArray();
+        var plannerInstructions = BuildPlannerInstructions(dbAgents);
 
-        // if (dynamicAgents.Any())
-        // {
-        //     var dynamicWorkflow = AgentWorkflowBuilder.BuildConcurrent("dynamic-squad", dynamicAgents).AsAgent();
-        //     var dynamicSession = await dynamicWorkflow.CreateSessionAsync(ct);
+        var planner = await factory.CreateAsync(AgentRole.Planner, overrideInstructions: plannerInstructions, ct: ct);
+        var plannerSession = await planner.CreateSessionAsync(ct);
 
-        //     await foreach (var update in dynamicWorkflow.RunStreamingAsync(trigger.Payload, dynamicSession, ct))
-        //     {
-        //         if (!string.IsNullOrEmpty(update.Text))
-        //         {
-        //             await Nats.PublishAsync($"stream.{trigger.TriggerType}",
-        //                 new AgentStreamUpdate(update.AuthorName ?? "Agent", update.Text),
-        //                 serializer: NatsJsonSerializer<AgentStreamUpdate>.Default, ct: ct);
-        //         }
-        //     }
-        // }
+        var rawPlan = string.Empty;
+        await foreach (var update in planner.RunStreamingAsync(trigger.Payload, plannerSession, cancellationToken: ct))
+        {
+            rawPlan += update.Text;
+            await nats.StreamAgentUpdateAsync(trigger.TriggerType, AgentRole.Planner, update.Text, ct);
+        }
 
-        return new WorkflowResult { Explanation = "Dynamic plan executed." };
+        var rolesToExecute = LlmParser.ParseAgentRoles(rawPlan, dbAgentMap, registry);
+        if (rolesToExecute.Count == 0)
+        {
+            return new WorkflowResult { Explanation = "Planner failed to identify required agents." };
+        }
+
+        var squadAgents = new List<AIAgent>();
+        foreach (var role in rolesToExecute)
+        {
+            var overrideInstructions = dbAgentMap.TryGetValue(role, out var desc) ? desc : null;
+            var agent = await factory.CreateAsync(role, overrideInstructions: overrideInstructions, ct: ct);
+            squadAgents.Add(agent);
+        }
+
+        var squadWorkflow = AgentWorkflowBuilder.BuildSequential("dynamic-squad", squadAgents);
+
+        var messages = new List<ChatMessage> { new(ChatRole.User, trigger.Payload) };
+
+        await using var run = await InProcessExecution.RunStreamingAsync(squadWorkflow, messages, cancellationToken: ct);
+        await run.TrySendMessageAsync(new TurnToken(emitEvents: true));
+
+        List<ChatMessage> finalHistory = [];
+        await foreach (var evt in run.WatchStreamAsync(ct).ConfigureAwait(false).WithCancellation(ct))
+        {
+            if (evt is AgentResponseUpdateEvent e)
+            {
+                await nats.StreamAgentUpdateAsync(trigger.TriggerType, e.Update.AuthorName ?? "Squad", e.Update.Text, ct);
+            }
+            else if (evt is WorkflowOutputEvent outputEvt)
+            {
+                finalHistory = outputEvt.As<List<ChatMessage>>()!;
+            }
+        }
+
+        var validator = await factory.CreateAsync(AgentRole.Validator, ct: ct);
+        var validatorSession = await validator.CreateSessionAsync(ct);
+
+        var squadFindings = string.Join("\n", finalHistory.Select(m => $"{m.Role}: {m.Text}"));
+        var validationInput = $"Original Request: {trigger.Payload}\n\nSquad Findings:\n{squadFindings}";
+        var finalFullResponse = new StringBuilder();
+
+        await foreach (var update in validator.RunStreamingAsync(validationInput, validatorSession, cancellationToken: ct))
+        {
+            finalFullResponse.Append(update.Text);
+            await nats.StreamAgentUpdateAsync(trigger.TriggerType, AgentRole.Validator, update.Text, ct);
+        }
+
+        return LlmParser.ParseWorkflowResult(finalFullResponse.ToString(), rolesToExecute);
+    }
+
+    private string BuildPlannerInstructions(IReadOnlyList<Core.Dtos.AgentResponse> dbAgents)
+    {
+        var builtInAgents = registry.GetRegisteredNames()
+            .Where(n => !string.Equals(n, AgentRole.Planner, StringComparison.OrdinalIgnoreCase)
+                     && !string.Equals(n, AgentRole.Validator, StringComparison.OrdinalIgnoreCase));
+
+        var agentLines = new StringBuilder();
+
+        foreach (var name in builtInAgents)
+        {
+            agentLines.AppendLine($"- {name}: {registry.GetInstructions(name)}");
+        }
+
+        foreach (var agent in dbAgents)
+        {
+            agentLines.AppendLine($"- {agent.Name}: {agent.Description}");
+        }
+
+        return PlannerTemplate.Build(agentLines.ToString());
     }
 }

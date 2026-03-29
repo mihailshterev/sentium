@@ -1,13 +1,10 @@
-using AgentRuntime.Application.Orchestration;
-using AgentRuntime.Application.Workflows;
 using AgentRuntime.Core.Agents;
-using AgentRuntime.Core.Orchestration;
 using AgentRuntime.Core.Tools;
-using AgentRuntime.Core.Workflows;
 using AgentRuntime.Infrastructure.Agents;
-using AgentRuntime.Infrastructure.Ollama;
+using AgentRuntime.Infrastructure.Data;
 using AgentRuntime.Infrastructure.Tools;
 using Infrastructure.Messaging;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,18 +18,18 @@ public static class ServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(configuration, nameof(configuration));
 
+        services.AddDbContext<AgentRuntimeDbContext>(options =>
+            options.UseSqlServer(configuration.GetConnectionString("agentruntimedb"))
+        );
+
         var modelName = configuration["AI:ModelName"] ?? "gemma3:1b";
 
         services.AddChatClient(sp =>
         {
-            var uri = new Uri("http://localhost:11434");
-            var client = new OllamaApiClient(uri)
-            {
-                SelectedModel = modelName
-            };
-
+            var client = new OllamaApiClient(new Uri("http://localhost:11434"), modelName);
             return new ChatClientBuilder(client)
                 .UseFunctionInvocation()
+                .UseOpenTelemetry()
                 .Build();
         });
 
@@ -41,11 +38,10 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<IAgentRegistry, AgentRegistry>();
         services.AddSingleton<IAgentToolProvider, AgentToolProvider>();
-        services.AddTransient<IAgentFactory, OllamaAgentFactory>();
+        services.AddTransient<IAgentFactory, CompositeAgentFactory>();
 
-        services.AddScoped<IAgentWorkflow, AgentWorkflow>();
-        services.AddTransient<IOrchestrator, AgentOrchestrator>();
         services.AddSingleton<IEventBus, NatsEventBus>();
+        services.AddTransient<IAgentManager, AgentManager>();
 
         return services;
     }
