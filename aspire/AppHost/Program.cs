@@ -29,11 +29,27 @@ var ollamaModel = ollama.AddModel(AIModels.Qwen3_8B_Q4KM);
 var identityApi = builder.AddProject<Projects.IdentityProvider_Api>(ServiceNames.Identity)
     .WithReference(identityDb).WaitFor(identityDb);
 
+var baseDataDir = Path.Combine(builder.Environment.ContentRootPath, "data", "zeek");
+var capturePath = Path.Combine(baseDataDir, "capture");
+var logsPath = Path.Combine(baseDataDir, "logs");
+
+Directory.CreateDirectory(capturePath);
+Directory.CreateDirectory(logsPath);
+
+var zeek = builder.AddContainer(ResourceNames.ZeekServiceName, "zeek/zeek")
+    .WithBindMount(capturePath, "/capture")
+    .WithBindMount(logsPath, "/output")
+    .WithEntrypoint("sh")
+    .WithArgs("-c", "cd /output && while true; do for f in /capture/*.pcap; do [ -e \"$f\" ] && zeek -C -r \"$f\" LogAscii::use_json=T local; done; sleep 5; done")
+    .WithReference(nats)
+    .WaitFor(nats);
+
 var python = builder.AddPythonApp(ServiceNames.NetworkFilter, "../../services/NetworkFilter", "main.py")
     .WithEnvironment("NATS_SUBJECT_IN", "traffic.raw")
     .WithEnvironment("NATS_SUBJECT_OUT", "traffic.anomaly")
     .WithHttpEndpoint(port: 8000, env: "PORT")
-    .WithReference(nats).WaitFor(nats);
+    .WithReference(nats).WaitFor(nats)
+    .WaitFor(zeek);
 
 var sentinelApi = builder.AddProject<Projects.Sentinel_Api>(ServiceNames.Sentinel)
     .WithReference(nats).WaitFor(nats);
