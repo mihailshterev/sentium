@@ -30,6 +30,12 @@ var ollamaModel = ollama.AddModel(AIModels.Qwen3_8_Q4_K_M);
 var identityApi = builder.AddProject<Projects.IdentityProvider_Api>(ServiceNames.Identity)
     .WithReference(identityDb).WaitFor(identityDb);
 
+var python = builder.AddPythonApp(ServiceNames.NetworkFilter, "../../services/NetworkFilter", "main.py")
+    .WithEnvironment("NATS_SUBJECT_IN", "traffic.raw")
+    .WithEnvironment("NATS_SUBJECT_OUT", "traffic.anomaly")
+    .WithHttpEndpoint(port: 8000, env: "PORT")
+    .WithReference(nats).WaitFor(nats);
+
 var sentinelApi = builder.AddProject<Projects.Sentinel_Api>(ServiceNames.Sentinel)
     .WithReference(nats).WaitFor(nats);
 
