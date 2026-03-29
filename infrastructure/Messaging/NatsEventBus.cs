@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging;
 using NATS.Client.Core;
+using NATS.Client.Serializers.Json;
 
 namespace Infrastructure.Messaging;
 
@@ -7,7 +8,18 @@ public sealed class NatsEventBus(INatsConnection connection, ILogger<NatsEventBu
 {
     public async Task PublishAsync<T>(string subject, T message, INatsSerializer<T>? serializer = null, CancellationToken ct = default)
     {
-        await connection.PublishAsync(subject, message, serializer: serializer, cancellationToken: ct);
+        try
+        {
+            var selectedSerializer = serializer ?? NatsJsonSerializer<T>.Default;
+
+            await connection.PublishAsync(subject, message, serializer: selectedSerializer, cancellationToken: ct);
+            logger.LogDebug("Published message to {Subject}", subject);
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to publish message to {Subject}", subject);
+            throw;
+        }
     }
 
     public Task SubscribeAsync<T>(string subject, Func<NatsMsg<T>, Task> handler, CancellationToken ct = default)
@@ -18,7 +30,9 @@ public sealed class NatsEventBus(INatsConnection connection, ILogger<NatsEventBu
         {
             try
             {
-                await foreach (var msg in connection.SubscribeAsync<T>(subject, cancellationToken: ct).WithCancellation(ct))
+                INatsSerializer<T>? serializer = typeof(T) == typeof(byte[]) ? null : NatsJsonSerializer<T>.Default;
+
+                await foreach (var msg in connection.SubscribeAsync(subject, serializer: serializer, cancellationToken: ct).WithCancellation(ct))
                 {
                     if (msg.Data is not null)
                     {

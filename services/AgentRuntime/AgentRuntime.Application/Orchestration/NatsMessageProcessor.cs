@@ -1,15 +1,15 @@
+using System.Text;
 using AgentRuntime.Core.Orchestration;
 using AgentRuntime.Core.Workflows;
+using Infrastructure.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using NATS.Client.Core;
-using NATS.Client.Serializers.Json;
 
 namespace AgentRuntime.Application.Orchestration;
 
 public sealed class NatsMessageProcessor(
-    INatsConnection nats,
+    IEventBus bus,
     IServiceScopeFactory scopeFactory,
     ILogger<NatsMessageProcessor> logger) : BackgroundService
 {
@@ -19,46 +19,32 @@ public sealed class NatsMessageProcessor(
 
         try
         {
-            await foreach (var msg in nats.SubscribeAsync<string>(WorkflowEvents.AllEvents, cancellationToken: stoppingToken))
+            await bus.SubscribeAsync<byte[]>(WorkflowEvents.AllEvents, async (msg) =>
             {
-                _ = Task.Run(async () =>
+                try
                 {
-                    try
+                    using var scope = scopeFactory.CreateScope();
+                    var orchestrator = scope.ServiceProvider.GetRequiredService<IOrchestrator>();
+
+                    var payloadString = Encoding.UTF8.GetString(msg.Data!);
+
+                    logger.LogInformation("Triggering Workflow for Subject: {Subject}", msg.Subject);
+
+                    var trigger = new WorkflowTrigger
                     {
-                        using var scope = scopeFactory.CreateScope();
-                        var orchestrator = scope.ServiceProvider.GetRequiredService<IOrchestrator>();
+                        TriggerType = msg.Subject,
+                        Payload = payloadString
+                    };
 
-                        var trigger = new WorkflowTrigger
-                        {
-                            TriggerType = msg.Subject,
-                            Payload = msg.Data!
-                        };
+                    var result = await orchestrator.RunAsync(trigger, stoppingToken);
 
-                        var result = await orchestrator.RunAsync(trigger, stoppingToken);
-
-                        if (logger.IsEnabled(LogLevel.Information))
-                        {
-                            logger.LogInformation("Workflow completed for event {Subject} with explanation: {Explanation}", msg.Subject, result.Explanation);
-
-                            foreach (var (Role, Text) in result.History)
-                            {
-                                logger.LogInformation(" - {Role}: {Text}", Role, Text);
-                            }
-                        }
-
-                        await nats.PublishAsync(
-                            $"insights.{msg.Subject}",
-                            result,
-                            serializer: NatsJsonSerializer<WorkflowResult>.Default,
-                            cancellationToken: stoppingToken
-                        );
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.LogError(ex, "Error processing NATS message on {Subject}", msg.Subject);
-                    }
-                }, stoppingToken);
-            }
+                    logger.LogInformation("Workflow Complete. Result: {Explanation}", result.Explanation);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Error processing NATS message on {Subject}", msg.Subject);
+                }
+            }, stoppingToken);
         }
         catch (OperationCanceledException)
         {
