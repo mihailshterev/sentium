@@ -23,9 +23,8 @@ var ollama = builder.AddOllama(ResourceNames.OllamaServiceName)
     .WithEnvironment(OllamaConfig.CacheTypeKey, "q4_0")
     .WithEnvironment(OllamaConfig.DebugKey, "1")
     .WithEndpoint("http", e => e.Port = 11434);
-//.WithOpenWebUI();
 
-var ollamaModel = ollama.AddModel(AIModels.Qwen3_8_Q4_K_M);
+var ollamaModel = ollama.AddModel(AIModels.Qwen3_8B_Q4KM);
 
 var identityApi = builder.AddProject<Projects.IdentityProvider_Api>(ServiceNames.Identity)
     .WithReference(identityDb).WaitFor(identityDb);
