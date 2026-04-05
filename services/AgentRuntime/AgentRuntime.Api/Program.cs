@@ -2,8 +2,11 @@ using AgentRuntime.Application;
 using AgentRuntime.Infrastructure;
 using AgentRuntime.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Hybrid;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.AddServiceDefaults();
 
 builder.Services.AddCors(options =>
 {
@@ -22,10 +25,20 @@ builder.Services.AddOpenApi();
 builder.Services.AddControllers();
 
 builder.AddNatsClient("nats");
+builder.AddRedisDistributedCache("redis");
 builder.Services.AddAgentRuntimeApplication();
 builder.Services.AddAgentRuntimeInfrastructure(builder.Configuration);
 
 builder.Services.AddHttpClient();
+
+builder.Services.AddHybridCache(options =>
+{
+    options.DefaultEntryOptions = new HybridCacheEntryOptions
+    {
+        Expiration = TimeSpan.FromMinutes(30),
+        LocalCacheExpiration = TimeSpan.FromMinutes(5)
+    };
+});
 
 var app = builder.Build();
 

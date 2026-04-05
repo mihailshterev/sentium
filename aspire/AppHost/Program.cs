@@ -7,6 +7,8 @@ var nats = builder.AddNats(ResourceNames.NatsServiceName)
     .WithJetStream()
     .WithDataVolume();
 
+var redis = builder.AddRedis("redis");
+
 var sqlPassword = builder.AddParameter("sql-password", secret: true);
 
 var sql = builder.AddSqlServer(ResourceNames.SqlServerName, password: sqlPassword)
@@ -59,6 +61,7 @@ var agentRuntimeApi = builder.AddProject<Projects.AgentRuntime_Api>(ServiceNames
     .WithReference(ollamaModel).WaitFor(ollamaModel)
     .WithReference(nats).WaitFor(nats)
     .WithReference(agentRuntimeDb).WaitFor(agentRuntimeDb)
+    .WithReference(redis).WaitFor(redis)
     .WithEnvironment("AI__ModelName", ollamaModel.Resource.ModelName);
 
 var apiGateway = builder.AddProject<Projects.ApiGateway>(ServiceNames.Gateway)
