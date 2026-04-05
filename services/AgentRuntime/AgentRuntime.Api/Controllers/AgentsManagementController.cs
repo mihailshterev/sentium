@@ -6,7 +6,7 @@ namespace AgentRuntime.Api.Controllers;
 
 [ApiController]
 [Route("agents")]
-public class AgentsManagementController(IAgentService agentService) : ControllerBase
+public sealed class AgentsManagementController(IAgentService agentService) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> GetAgents(CancellationToken ct)

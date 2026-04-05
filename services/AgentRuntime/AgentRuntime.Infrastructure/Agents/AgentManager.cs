@@ -17,6 +17,7 @@ public sealed class AgentManager(AgentRuntimeDbContext context) : IAgentManager
             Id = Guid.NewGuid(),
             Name = request.Name,
             Description = request.Description,
+            Model = request.Model,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -24,7 +25,7 @@ public sealed class AgentManager(AgentRuntimeDbContext context) : IAgentManager
         context.Agents.Add(agent);
         await context.SaveChangesAsync(ct);
 
-        return new AgentResponse(agent.Id, agent.Name, agent.Description, agent.CreatedAt, agent.UpdatedAt);
+        return new AgentResponse(agent.Id, agent.Name, agent.Description, agent.Model, agent.CreatedAt, agent.UpdatedAt);
     }
 
     public async Task<IReadOnlyList<AgentResponse>> GetAgentsAsync(CancellationToken ct = default)
@@ -32,7 +33,7 @@ public sealed class AgentManager(AgentRuntimeDbContext context) : IAgentManager
         return await context.Agents
             .AsNoTracking()
             .OrderByDescending(a => a.CreatedAt)
-            .Select(a => new AgentResponse(a.Id, a.Name, a.Description, a.CreatedAt, a.UpdatedAt))
+            .Select(a => new AgentResponse(a.Id, a.Name, a.Description, a.Model, a.CreatedAt, a.UpdatedAt))
             .ToListAsync(ct);
     }
 
@@ -41,7 +42,7 @@ public sealed class AgentManager(AgentRuntimeDbContext context) : IAgentManager
         var response = await context.Agents
             .AsNoTracking()
             .Where(a => a.Id == agentId)
-            .Select(a => new AgentResponse(a.Id, a.Name, a.Description, a.CreatedAt, a.UpdatedAt))
+            .Select(a => new AgentResponse(a.Id, a.Name, a.Description, a.Model, a.CreatedAt, a.UpdatedAt))
             .FirstOrDefaultAsync(ct);
 
         return response ?? throw new KeyNotFoundException($"Agent with ID {agentId} not found.");
@@ -56,6 +57,7 @@ public sealed class AgentManager(AgentRuntimeDbContext context) : IAgentManager
             .ExecuteUpdateAsync(setters => setters
                 .SetProperty(a => a.Name, request.Name)
                 .SetProperty(a => a.Description, request.Description)
+                .SetProperty(a => a.Model, request.Model)
                 .SetProperty(a => a.UpdatedAt, DateTime.UtcNow),
             ct);
 
