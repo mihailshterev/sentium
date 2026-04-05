@@ -93,6 +93,7 @@ const Navbar = () => {
             );
           })}
           <div className={styles.navSectionBottom}>
+            <div className={styles.navDivider} />
             <NavLink to="/system" className={getLinkClass}>
               <Cpu size={18} className={styles.navIcon} />
               <span>System</span>
