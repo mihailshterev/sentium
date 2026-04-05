@@ -11,5 +11,6 @@
   <ItemGroup>
     <ProjectReference Include="..\IdentityProvider.Application\IdentityProvider.Application.csproj" />
     <ProjectReference Include="..\IdentityProvider.Infrastructure\IdentityProvider.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\aspire\ServiceDefaults\ServiceDefaults.csproj" />
   </ItemGroup>
 </Project>

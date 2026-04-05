@@ -1,22 +1,55 @@
+using Microsoft.Extensions.Caching.Hybrid;
 using AgentRuntime.Core.Agents;
 using AgentRuntime.Core.Dtos;
 
 namespace AgentRuntime.Application.Agents;
 
-public sealed class AgentService(IAgentManager manager) : IAgentService
+public sealed class AgentService(IAgentManager manager, HybridCache cache) : IAgentService
 {
-    public Task<AgentResponse> CreateAgentAsync(CreateAgentRequest request, CancellationToken ct = default)
-        => manager.CreateAgentAsync(request, ct);
+    private const string CacheTag = "agents";
 
-    public Task<IReadOnlyList<AgentResponse>> GetAgentsAsync(CancellationToken ct = default)
-        => manager.GetAgentsAsync(ct);
+    public async ValueTask<AgentResponse> CreateAgentAsync(CreateAgentRequest request, CancellationToken ct = default)
+    {
+        var response = await manager.CreateAgentAsync(request, ct);
 
-    public Task<AgentResponse> GetAgentByIdAsync(Guid agentId, CancellationToken ct = default)
-        => manager.GetAgentByIdAsync(agentId, ct);
+        await cache.RemoveByTagAsync(CacheTag, ct);
 
-    public Task UpdateAgentAsync(Guid agentId, UpdateAgentRequest request, CancellationToken ct = default)
-        => manager.UpdateAgentAsync(agentId, request, ct);
+        return response;
+    }
 
-    public Task DeleteAgentAsync(Guid agentId, CancellationToken ct = default)
-        => manager.DeleteAgentAsync(agentId, ct);
+    public async ValueTask<IReadOnlyList<AgentResponse>> GetAgentsAsync(CancellationToken ct = default)
+    {
+        var cacheKey = $"{CacheTag}:all";
+
+        return await cache.GetOrCreateAsync(
+            cacheKey,
+            async token => await manager.GetAgentsAsync(token),
+            tags: [CacheTag],
+            cancellationToken: ct
+        );
+    }
+
+    public async ValueTask<AgentResponse> GetAgentByIdAsync(Guid agentId, CancellationToken ct = default)
+    {
+        var cacheKey = $"{CacheTag}:{agentId}";
+
+        return await cache.GetOrCreateAsync(
+            cacheKey,
+            async token => await manager.GetAgentByIdAsync(agentId, token),
+            tags: [CacheTag],
+            cancellationToken: ct
+        );
+    }
+
+    public async ValueTask UpdateAgentAsync(Guid agentId, UpdateAgentRequest request, CancellationToken ct = default)
+    {
+        await manager.UpdateAgentAsync(agentId, request, ct);
+        await cache.RemoveByTagAsync(CacheTag, ct);
+    }
+
+    public async ValueTask DeleteAgentAsync(Guid agentId, CancellationToken ct = default)
+    {
+        await manager.DeleteAgentAsync(agentId, ct);
+        await cache.RemoveByTagAsync(CacheTag, ct);
+    }
 }

@@ -1,21 +1,19 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Markdown from "react-markdown";
+import {
+  Play,
+  Bot,
+  Zap,
+  CheckCircle,
+  Circle,
+  Loader,
+  Terminal,
+  GitBranch,
+} from "lucide-react";
 import styles from "./agent-orchestration.module.scss";
-
-const API_BASE = "https://localhost:7127";
-
-interface LogEntry {
-  Author: string;
-  Text: string;
-}
-
-interface AgentRecord {
-  id: string;
-  name: string;
-  description: string;
-}
-
-type Phase = "IDLE" | "PLANNING" | "SQUAD" | "VALIDATING" | "COMPLETE";
+import { API_BASE } from "../utils/constants";
+import type { Phase, LogEntry, WorkflowRecord } from "../types/orchestration";
+import type { AgentRecord } from "../types/agents";
 
 const SCENARIOS = [
   {
@@ -27,26 +25,67 @@ const SCENARIOS = [
   },
 ];
 
+const PHASE_STEPS: { key: Phase; label: string; icon: React.ElementType }[] = [
+  { key: "PLANNING", label: "Plan", icon: Circle },
+  { key: "SQUAD", label: "Execute", icon: Zap },
+  { key: "VALIDATING", label: "Validate", icon: CheckCircle },
+];
+
+const PHASE_ORDER: Phase[] = [
+  "IDLE",
+  "PLANNING",
+  "SQUAD",
+  "VALIDATING",
+  "COMPLETE",
+];
+
 const AgentOrchestration = () => {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [phase, setPhase] = useState<Phase>("IDLE");
   const [dbAgents, setDbAgents] = useState<AgentRecord[]>([]);
+  const [workflows, setWorkflows] = useState<WorkflowRecord[]>([]);
+  const [selectedWorkflow, setSelectedWorkflow] =
+    useState<WorkflowRecord | null>(null);
+  const [scenarioInput, setScenarioInput] = useState("");
+
+  const logsBufferRef = useRef<LogEntry[]>([]);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const animationFrameRef = useRef<number | null>(null);
 
   useEffect(() => {
     fetch(`${API_BASE}/agents`)
       .then((r) => (r.ok ? r.json() : []))
       .then((data: AgentRecord[]) => setDbAgents(data))
       .catch(() => {});
+
+    fetch(`${API_BASE}/workflows`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data: WorkflowRecord[]) => setWorkflows(data))
+      .catch(() => {});
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
   }, []);
 
   const runAgent = useCallback(
     async (scenarioData?: Record<string, string>) => {
+      logsBufferRef.current = [];
       setLogs([]);
       setPhase("PLANNING");
 
       const eventSource = new EventSource(
-        `${API_BASE}/agents/stream/events.network.scan`,
+        `${API_BASE}/agents/stream/events.dynamic`,
       );
+
+      const syncLogs = () => {
+        setLogs([...logsBufferRef.current]);
+        animationFrameRef.current = requestAnimationFrame(syncLogs);
+      };
+
+      animationFrameRef.current = requestAnimationFrame(syncLogs);
 
       eventSource.onmessage = (e) => {
         if (!e.data || e.data === "null") {
@@ -68,24 +107,30 @@ const AgentOrchestration = () => {
           }
 
           if (text) {
-            setLogs((prev) => {
-              if (prev.length > 0 && prev[prev.length - 1].Author === author) {
-                const updated = [...prev];
-                updated[updated.length - 1] = {
-                  ...updated[updated.length - 1],
-                  Text: updated[updated.length - 1].Text + text,
-                };
-                return updated;
-              }
-              return [...prev, { Author: author, Text: text }];
-            });
+            const currentLogs = logsBufferRef.current;
+            const lastIndex = currentLogs.length - 1;
+
+            if (lastIndex >= 0 && currentLogs[lastIndex].Author === author) {
+              currentLogs[lastIndex].Text += text;
+            } else {
+              currentLogs.push({ Author: author, Text: text });
+            }
           }
         } catch (err) {
-          console.error(err);
+          console.error("Stream error:", err);
         }
       };
 
-      await new Promise((resolve) => setTimeout(resolve, 600));
+      eventSource.onerror = () => {
+        eventSource.close();
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+        }
+        setLogs([...logsBufferRef.current]);
+        setPhase("COMPLETE");
+      };
+
+      await new Promise((resolve) => setTimeout(resolve, 200));
 
       await fetch(`${API_BASE}/agents/test-pipeline`, {
         method: "POST",
@@ -94,14 +139,82 @@ const AgentOrchestration = () => {
           scenarioData ?? { activity: "Manual Scan", user: "root" },
         ),
       });
-
-      eventSource.onerror = () => {
-        eventSource.close();
-        setPhase("COMPLETE");
-      };
     },
     [],
   );
+
+  const runWorkflow = useCallback(async () => {
+    if (!selectedWorkflow) {
+      return;
+    }
+
+    const scenario =
+      scenarioInput.trim() || `Execute workflow: ${selectedWorkflow.name}`;
+
+    logsBufferRef.current = [];
+    setLogs([]);
+    setPhase("PLANNING");
+
+    const eventSource = new EventSource(
+      `${API_BASE}/agents/stream/events.dynamic`,
+    );
+
+    const syncLogs = () => {
+      setLogs([...logsBufferRef.current]);
+      animationFrameRef.current = requestAnimationFrame(syncLogs);
+    };
+
+    animationFrameRef.current = requestAnimationFrame(syncLogs);
+
+    eventSource.onmessage = (e) => {
+      if (!e.data || e.data === "null") {
+        return;
+      }
+      try {
+        const data = JSON.parse(e.data);
+        const author: string = data.Author || data.author || "Agent";
+        const text: string = data.Text || data.text || "";
+
+        const lowerAuthor = author.toLowerCase();
+        if (lowerAuthor.includes("planner")) {
+          setPhase("PLANNING");
+        } else if (lowerAuthor.includes("validator")) {
+          setPhase("VALIDATING");
+        } else {
+          setPhase("SQUAD");
+        }
+
+        if (text) {
+          const currentLogs = logsBufferRef.current;
+          const lastIndex = currentLogs.length - 1;
+          if (lastIndex >= 0 && currentLogs[lastIndex].Author === author) {
+            currentLogs[lastIndex].Text += text;
+          } else {
+            currentLogs.push({ Author: author, Text: text });
+          }
+        }
+      } catch (err) {
+        console.error("Stream error:", err);
+      }
+    };
+
+    eventSource.onerror = () => {
+      eventSource.close();
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+      setLogs([...logsBufferRef.current]);
+      setPhase("COMPLETE");
+    };
+
+    await new Promise((resolve) => setTimeout(resolve, 200));
+
+    await fetch(`${API_BASE}/agents/run-workflow`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ workflowId: selectedWorkflow.id, scenario }),
+    });
+  }, [selectedWorkflow, scenarioInput]);
 
   const getRoleClass = (author: string) => {
     const a = author.toLowerCase();
@@ -115,110 +228,195 @@ const AgentOrchestration = () => {
   };
 
   const isRunning = phase !== "IDLE" && phase !== "COMPLETE";
+  const currentPhaseIndex = PHASE_ORDER.indexOf(phase);
 
   return (
-    <div className={styles.terminalContainer}>
-      <div className={styles.terminalHeader}>
-        <div className={styles.titleRow}>
-          <span className={styles.pagePrompt}>&gt;</span>
-          <h2 className={styles.terminalTitle}>ORCHESTRATION_LOGS</h2>
-        </div>
-        <div className={styles.terminalSubtitle}>SYSTEM_STATUS: ONLINE</div>
-      </div>
-
-      <div className={styles.terminalBody}>
-        <aside className={styles.terminalSidebar}>
-          <div className={styles.panelHeader}>
-            <span className={styles.panelDot}></span>
-            <span className={styles.panelLabel}>CONTROLS</span>
+    <div className={styles.container}>
+      <div className={styles.header}>
+        <div className={styles.headerLeft}>
+          <Terminal size={16} className={styles.headerIcon} />
+          <div>
+            <h2 className={styles.headerTitle}>Orchestration</h2>
+            <span className={styles.headerSub}>
+              Real-time multi-agent pipeline
+            </span>
           </div>
-          <div className={styles.sidebarInner}>
-            <div className={styles.sidebarGroup}>
-              <p className={styles.sidebarLabel}>ATTACK_VECTORS</p>
-              <div className={styles.scenarioList}>
-                {SCENARIOS.map((s) => (
-                  <button
-                    key={s.label}
-                    className={styles.scenarioBtn}
-                    onClick={() => runAgent(s.payload)}
-                    disabled={isRunning}
-                  >
-                    &gt; {s.label}
-                  </button>
-                ))}
-              </div>
-            </div>
+        </div>
 
-            <div className={styles.sidebarGroup}>
-              <p className={styles.sidebarLabel}>
-                AGENT_REGISTRY
-                <span className={styles.sidebarCount}>[{dbAgents.length}]</span>
-              </p>
-              <div className={styles.agentRegistryList}>
-                {dbAgents.length === 0 ? (
-                  <span className={styles.sidebarEmpty}>No custom agents</span>
-                ) : (
-                  dbAgents.map((a) => (
-                    <div className={styles.registryEntry} key={a.id}>
-                      <span className={styles.registryDot}></span>
-                      <span className={styles.registryName}>{a.name}</span>
-                    </div>
-                  ))
+        <div className={styles.phaseBar}>
+          {PHASE_STEPS.map((step, i) => {
+            const stepIndex = PHASE_ORDER.indexOf(step.key);
+            const isDone = currentPhaseIndex > stepIndex;
+            const isActive = phase === step.key;
+            const Icon = isDone ? CheckCircle : isActive ? Loader : step.icon;
+            return (
+              <div key={step.key} className={styles.phaseStep}>
+                <div
+                  className={`${styles.phaseNode} ${isActive ? styles.phaseNodeActive : ""} ${isDone ? styles.phaseNodeDone : ""}`}
+                >
+                  <Icon
+                    size={13}
+                    className={isActive ? styles.spinIcon : undefined}
+                  />
+                </div>
+                <span
+                  className={`${styles.phaseLabel} ${isActive ? styles.phaseLabelActive : ""} ${isDone ? styles.phaseLabelDone : ""}`}
+                >
+                  {step.label}
+                </span>
+                {i < PHASE_STEPS.length - 1 && (
+                  <div
+                    className={`${styles.phaseConnector} ${isDone ? styles.phaseConnectorDone : ""}`}
+                  />
                 )}
               </div>
-            </div>
+            );
+          })}
+        </div>
+      </div>
 
-            <div
-              className={`${styles.sidebarGroup} ${styles.sidebarGroupBottom}`}
-            >
-              <p className={styles.sidebarLabel}>ACTIVE_SESSION</p>
-              <div className={styles.sessionMeta}>
-                <span>IP: 192.168.1.104</span>
-                <span>PORT: 7127</span>
-                <span>PROTO: SSE/JSON</span>
+      <div className={styles.body}>
+        <aside className={styles.sidebar}>
+          <div className={styles.sidebarSection}>
+            <p className={styles.sidebarLabel}>Scenarios</p>
+            <div className={styles.scenarioList}>
+              {SCENARIOS.map((s) => (
+                <button
+                  key={s.label}
+                  className={`${styles.scenarioBtn} ${!selectedWorkflow ? styles.scenarioBtnActive : ""}`}
+                  onClick={() => {
+                    setSelectedWorkflow(null);
+                    runAgent(s.payload);
+                  }}
+                  disabled={isRunning}
+                >
+                  <Play size={12} className={styles.scenarioBtnIcon} />
+                  <span>{s.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className={styles.sidebarSection}>
+            <p className={styles.sidebarLabel}>
+              Workflows
+              <span className={styles.sidebarCount}>{workflows.length}</span>
+            </p>
+            <div className={styles.workflowList}>
+              {workflows.length === 0 ? (
+                <span className={styles.sidebarEmpty}>
+                  No workflows defined
+                </span>
+              ) : (
+                workflows.map((wf) => (
+                  <button
+                    key={wf.id}
+                    className={`${styles.workflowBtn} ${selectedWorkflow?.id === wf.id ? styles.workflowBtnActive : ""}`}
+                    onClick={() => setSelectedWorkflow(wf)}
+                    disabled={isRunning}
+                  >
+                    <GitBranch size={12} className={styles.workflowBtnIcon} />
+                    <div className={styles.workflowBtnInfo}>
+                      <span className={styles.workflowBtnName}>{wf.name}</span>
+                      <span className={styles.workflowBtnMeta}>
+                        {wf.agents.length} agent
+                        {wf.agents.length !== 1 ? "s" : ""}
+                      </span>
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
+
+          {selectedWorkflow && (
+            <div className={styles.sidebarSection}>
+              <p className={styles.sidebarLabel}>
+                Run: {selectedWorkflow.name}
+              </p>
+              <textarea
+                className={styles.scenarioInput}
+                value={scenarioInput}
+                onChange={(e) => setScenarioInput(e.target.value)}
+                placeholder="Describe the scenario for this workflow..."
+                rows={3}
+              />
+              <button
+                className={styles.runWorkflowBtn}
+                onClick={runWorkflow}
+                disabled={isRunning}
+              >
+                <Play size={13} />
+                Execute Workflow
+              </button>
+            </div>
+          )}
+
+          <div className={styles.sidebarSection}>
+            <p className={styles.sidebarLabel}>
+              Agent Registry
+              <span className={styles.sidebarCount}>{dbAgents.length}</span>
+            </p>
+            <div className={styles.agentRegistryList}>
+              {dbAgents.length === 0 ? (
+                <span className={styles.sidebarEmpty}>No custom agents</span>
+              ) : (
+                dbAgents.map((a) => (
+                  <div className={styles.registryEntry} key={a.id}>
+                    <Bot size={12} className={styles.registryIcon} />
+                    <span className={styles.registryName}>{a.name}</span>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          <div className={styles.sidebarFooter}>
+            <p className={styles.sidebarLabel}>Connection</p>
+            <div className={styles.connectionInfo}>
+              <div className={styles.connRow}>
+                <span className={styles.connKey}>Host</span>
+                <span className={styles.connVal}>127.0.0.1:7127</span>
+              </div>
+              <div className={styles.connRow}>
+                <span className={styles.connKey}>Protocol</span>
+                <span className={styles.connVal}>SSE/JSON</span>
               </div>
             </div>
           </div>
         </aside>
 
         <main className={styles.logPanel}>
-          <div className={styles.panelHeader}>
-            <span className={`${styles.panelDot} ${styles.dotActive}`}></span>
-            <span className={styles.panelLabel}>LOG_OUTPUT</span>
-            <div className={styles.phaseTracker}>
-              {(["PLANNING", "SQUAD", "VALIDATING"] as const).map((p, i) => {
-                const labels = ["1. PLAN", "2. EXECUTE", "3. VALIDATE"];
-                const order = ["PLANNING", "SQUAD", "VALIDATING", "COMPLETE"];
-                const isDone = order.indexOf(phase) > order.indexOf(p);
-                const isActive = phase === p;
-                return (
-                  <div
-                    key={p}
-                    className={`${styles.phaseBadge}${isActive ? ` ${styles.active}` : ""}${isDone ? ` ${styles.done}` : ""}`}
-                  >
-                    {labels[i]}
-                  </div>
-                );
-              })}
-            </div>
+          <div className={styles.logPanelHeader}>
+            <span
+              className={`${styles.logDot} ${isRunning ? styles.logDotActive : ""}`}
+            ></span>
+            <span className={styles.logPanelTitle}>Output</span>
+            {phase === "COMPLETE" && (
+              <span className={styles.completeBadge}>
+                <CheckCircle size={11} /> Complete
+              </span>
+            )}
           </div>
-          <div className={styles.logWindow}>
+
+          <div className={styles.logWindow} ref={scrollRef}>
             {logs.length === 0 && phase === "IDLE" && (
               <div className={styles.logIdle}>
-                <span className={styles.logIdlePrompt}>&gt; </span>
-                Awaiting scenario trigger...
+                <Terminal size={32} className={styles.logIdleIcon} />
+                <p>Select a scenario or workflow to start the pipeline</p>
+                <span>Output will stream here in real time</span>
               </div>
             )}
 
             {logs.map((log, i) => (
               <div key={i} className={styles.logEntry}>
-                <div className={styles.authorMeta}>
+                <div className={styles.authorRow}>
                   <span
                     className={`${styles.roleBadge} ${getRoleClass(log.Author)}`}
                   >
-                    {log.Author.toUpperCase()}
+                    {log.Author}
                   </span>
-                  <div className={styles.authorDivider}></div>
+                  <div className={styles.authorLine}></div>
                 </div>
                 <div className={styles.textContent}>
                   <Markdown>{log.Text}</Markdown>
@@ -227,8 +425,9 @@ const AgentOrchestration = () => {
             ))}
 
             {isRunning && (
-              <div className={styles.logEntry}>
+              <div className={styles.streamingIndicator}>
                 <span className={styles.cursor}></span>
+                <span className={styles.streamingLabel}>Streaming...</span>
               </div>
             )}
           </div>

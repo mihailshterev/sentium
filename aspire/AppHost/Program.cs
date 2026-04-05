@@ -7,6 +7,8 @@ var nats = builder.AddNats(ResourceNames.NatsServiceName)
     .WithJetStream()
     .WithDataVolume();
 
+var redis = builder.AddRedis("redis");
+
 var sqlPassword = builder.AddParameter("sql-password", secret: true);
 
 var sql = builder.AddSqlServer(ResourceNames.SqlServerName, password: sqlPassword)
@@ -16,15 +18,16 @@ var identityDb = sql.AddDatabase(ResourceNames.IdentityDbName);
 var agentRuntimeDb = sql.AddDatabase(ResourceNames.AgentRuntimeDbName);
 
 var ollama = builder.AddOllama(ResourceNames.OllamaServiceName)
+    .WithImage("ollama/ollama", "0.20.2")
     .WithDataVolume()
     .WithGPUSupport(OllamaGpuVendor.Nvidia)
-    .WithEnvironment(OllamaConfig.ContextSizeKey, OllamaConfig.DefaultContextSize)
+    // .WithEnvironment(OllamaConfig.ContextSizeKey, OllamaConfig.DefaultContextSize)
     .WithEnvironment(OllamaConfig.FlashAttentionKey, "1")
-    .WithEnvironment(OllamaConfig.CacheTypeKey, "q4_0")
+    // .WithEnvironment(OllamaConfig.CacheTypeKey, "q4_0")
     .WithEnvironment(OllamaConfig.DebugKey, "1")
     .WithEndpoint("http", e => e.Port = 11434);
 
-var ollamaModel = ollama.AddModel(AIModels.Qwen3_8B_Q4KM);
+var ollamaModel = ollama.AddModel(AIModels.Gemma4);
 
 var identityApi = builder.AddProject<Projects.IdentityProvider_Api>(ServiceNames.Identity)
     .WithReference(identityDb).WaitFor(identityDb);
@@ -58,6 +61,7 @@ var agentRuntimeApi = builder.AddProject<Projects.AgentRuntime_Api>(ServiceNames
     .WithReference(ollamaModel).WaitFor(ollamaModel)
     .WithReference(nats).WaitFor(nats)
     .WithReference(agentRuntimeDb).WaitFor(agentRuntimeDb)
+    .WithReference(redis).WaitFor(redis)
     .WithEnvironment("AI__ModelName", ollamaModel.Resource.ModelName);
 
 var apiGateway = builder.AddProject<Projects.ApiGateway>(ServiceNames.Gateway)

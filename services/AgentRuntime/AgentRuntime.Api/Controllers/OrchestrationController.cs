@@ -1,4 +1,6 @@
 using AgentRuntime.Application.Workflows;
+using AgentRuntime.Core.Dtos;
+using AgentRuntime.Core.WorkflowManagement;
 using Microsoft.AspNetCore.Mvc;
 using NATS.Client.Core;
 using NATS.Client.Serializers.Json;
@@ -7,7 +9,7 @@ namespace AgentRuntime.Api.Controllers;
 
 [ApiController]
 [Route("agents")]
-public class OrchestrationController(INatsConnection nats) : ControllerBase
+public sealed class OrchestrationController(INatsConnection nats, IWorkflowService workflowService) : ControllerBase
 {
     [HttpPost("test-pipeline")]
     public async Task<IActionResult> RunPipeline([FromBody] dynamic customInput, CancellationToken ct)
@@ -16,7 +18,29 @@ public class OrchestrationController(INatsConnection nats) : ControllerBase
         var jsonPayload = System.Text.Json.JsonSerializer.Serialize(payload);
 
         await nats.PublishAsync("events.dynamic", jsonPayload, cancellationToken: ct);
-        return Ok();
+        return Ok(new { eventId = "events.dynamic" });
+    }
+
+    [HttpPost("run-workflow")]
+    public async Task<IActionResult> RunWorkflow([FromBody] RunWorkflowRequest request, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var workflow = await workflowService.GetWorkflowAsync(request.WorkflowId, ct);
+
+        var payload = new
+        {
+            activity = request.Scenario,
+            workflowId = workflow.Id,
+            workflowName = workflow.Name,
+            agents = workflow.Agents.Select(a => a.AgentId)
+        };
+
+        var jsonPayload = System.Text.Json.JsonSerializer.Serialize(payload);
+        // TODO: Needs separate event type for custom workflows separate from dynamic
+        await nats.PublishAsync("events.dynamic", jsonPayload, cancellationToken: ct);
+
+        return Ok(new { eventId = "events.dynamic" });
     }
 
     [HttpGet("stream/{eventId}")]

@@ -1,3 +1,9 @@
 namespace AgentRuntime.Core.Dtos;
 
-public sealed record AgentResponse(Guid Id, string Name, string Description, DateTime CreatedAt, DateTime UpdatedAt);
+public sealed record AgentResponse(
+    Guid Id,
+    string Name,
+    string Description,
+    string Model,
+    DateTime CreatedAt,
+    DateTime UpdatedAt);

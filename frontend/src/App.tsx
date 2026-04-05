@@ -1,21 +1,10 @@
-import { BrowserRouter, Routes, Route } from "react-router";
-import Layout from "./components/layout/layout";
-import Home from "./pages/home";
-import Agents from "./pages/agents";
-import AgentOrchestration from "./components/agent-orchestration";
+import { useRoutes } from "react-router";
+import { routes } from "./routes/routes";
+import ConversationProvider from "./providers/conversation-provider";
 
 const App = () => {
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Home />} />
-          <Route path="orchestration" element={<AgentOrchestration />} />
-          <Route path="agents" element={<Agents />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
-  );
+  const content = useRoutes(routes);
+  return <ConversationProvider>{content}</ConversationProvider>;
 };
 
 export default App;
