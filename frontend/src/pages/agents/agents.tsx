@@ -1,15 +1,5 @@
 import { useState, useEffect } from "react";
-import {
-  Bot,
-  Plus,
-  CheckCircle,
-  AlertCircle,
-  Loader,
-  Clock,
-  Pencil,
-  X,
-  Cpu,
-} from "lucide-react";
+import { Bot, Plus, CheckCircle, AlertCircle, Loader, Clock, Pencil, X, Cpu } from "lucide-react";
 import styles from "./agents.module.scss";
 import { API_BASE } from "../../utils/constants";
 import type { AgentRecord } from "../../types/agents";
@@ -20,9 +10,7 @@ const Agents = () => {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [model, setModel] = useState("");
-  const [status, setStatus] = useState<
-    "idle" | "submitting" | "success" | "error"
-  >("idle");
+  const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [loading, setLoading] = useState(true);
 
@@ -30,9 +18,7 @@ const Agents = () => {
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editModel, setEditModel] = useState("");
-  const [editStatus, setEditStatus] = useState<
-    "idle" | "submitting" | "success" | "error"
-  >("idle");
+  const [editStatus, setEditStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [editErrorMsg, setEditErrorMsg] = useState("");
 
   const fetchAgents = async () => {
@@ -177,9 +163,7 @@ const Agents = () => {
       <div className={styles.agentsHeader}>
         <div>
           <h1 className={styles.agentsTitle}>Agent Registry</h1>
-          <p className={styles.agentsSubtitle}>
-            Register and manage autonomous agents in the pipeline
-          </p>
+          <p className={styles.agentsSubtitle}>Register and manage autonomous agents in the pipeline</p>
         </div>
         <div className={styles.headerBadge}>
           <Bot size={14} />
@@ -216,9 +200,7 @@ const Agents = () => {
             <div className={styles.fieldGroup}>
               <label className={styles.fieldLabel} htmlFor="agent-description">
                 Description
-                <span className={styles.charCount}>
-                  {description.length}/1000
-                </span>
+                <span className={styles.charCount}>{description.length}/1000</span>
               </label>
               <textarea
                 id="agent-description"
@@ -315,9 +297,7 @@ const Agents = () => {
               <div className={styles.listPlaceholder}>
                 <Bot size={32} className={styles.emptyIcon} />
                 <span>No agents registered yet</span>
-                <span className={styles.emptyHint}>
-                  Register your first agent using the form.
-                </span>
+                <span className={styles.emptyHint}>Register your first agent using the form.</span>
               </div>
             )}
             {agents.map((agent, i) => (
@@ -330,14 +310,10 @@ const Agents = () => {
                 <div className={styles.agentCardContent}>
                   <div className={styles.agentCardHeader}>
                     <span className={styles.agentName}>{agent.name}</span>
-                    <span className={styles.agentIndex}>
-                      #{String(i + 1).padStart(2, "0")}
-                    </span>
+                    <span className={styles.agentIndex}>#{String(i + 1).padStart(2, "0")}</span>
                     <span className={styles.agentStatusBadge}>Active</span>
                   </div>
-                  <p className={styles.agentDescription}>
-                    {agent.description || "No description provided."}
-                  </p>
+                  <p className={styles.agentDescription}>{agent.description || "No description provided."}</p>
                   <div className={styles.agentMeta}>
                     {agent.model && (
                       <span className={styles.agentMetaItem}>
@@ -353,17 +329,11 @@ const Agents = () => {
                         day: "numeric",
                       })}
                     </span>
-                    <span className={styles.agentMetaItem}>
-                      ID: {agent.id.slice(0, 8)}
-                    </span>
+                    <span className={styles.agentMetaItem}>ID: {agent.id.slice(0, 8)}</span>
                   </div>
                 </div>
                 <div className={styles.agentCardActions}>
-                  <button
-                    className={styles.iconBtn}
-                    onClick={() => openEdit(agent)}
-                    title="Edit agent"
-                  >
+                  <button className={styles.iconBtn} onClick={() => openEdit(agent)} title="Edit agent">
                     <Pencil size={13} />
                   </button>
                   <button
@@ -410,9 +380,7 @@ const Agents = () => {
               <div className={styles.fieldGroup}>
                 <label className={styles.fieldLabel} htmlFor="edit-description">
                   Description
-                  <span className={styles.charCount}>
-                    {editDescription.length}/1000
-                  </span>
+                  <span className={styles.charCount}>{editDescription.length}/1000</span>
                 </label>
                 <textarea
                   id="edit-description"

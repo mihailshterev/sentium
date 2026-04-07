@@ -79,8 +79,7 @@ const Navbar = () => {
       <div className={styles.navSection}>
         <div className={styles.navLinks}>
           {NAV_LINKS.map(({ to, label, icon: Icon, end, group }, index) => {
-            const isNewGroup =
-              index > 0 && group !== NAV_LINKS[index - 1].group;
+            const isNewGroup = index > 0 && group !== NAV_LINKS[index - 1].group;
 
             return (
               <React.Fragment key={to}>

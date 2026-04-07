@@ -22,22 +22,16 @@ const Dashboard = () => {
         </h1>
 
         <p className={styles.heroSubtitle}>
-          Advanced threat modeling, automated forensics, and AI-driven response
-          protocols. Connect and deploy your agent pipeline instantly.
+          Advanced threat modeling, automated forensics, and AI-driven response protocols. Connect and deploy your agent
+          pipeline instantly.
         </p>
 
         <div className={styles.ctaRow}>
-          <button
-            className={styles.initBtn}
-            onClick={() => navigate("/orchestration")}
-          >
+          <button className={styles.initBtn} onClick={() => navigate("/orchestration")}>
             <span>Launch Orchestration</span>
             <ArrowRight size={16} />
           </button>
-          <button
-            className={styles.secondaryBtn}
-            onClick={() => navigate("/agents")}
-          >
+          <button className={styles.secondaryBtn} onClick={() => navigate("/agents")}>
             Manage Agents
           </button>
         </div>

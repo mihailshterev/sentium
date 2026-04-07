@@ -1,52 +1,16 @@
 import { useState, useEffect, useCallback } from "react";
-import {
-  DndContext,
-  closestCenter,
-  type DragEndEvent,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-  useSortable,
-  arrayMove,
-} from "@dnd-kit/sortable";
+import { DndContext, closestCenter, type DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import {
-  Plus,
-  X,
-  GripVertical,
-  Bot,
-  GitBranch,
-  Loader,
-  CheckCircle,
-  AlertCircle,
-  Pencil,
-  Trash2,
-} from "lucide-react";
+import { Plus, X, GripVertical, Bot, GitBranch, Loader, CheckCircle, AlertCircle, Pencil, Trash2 } from "lucide-react";
 import styles from "./workflows.module.scss";
 import { API_BASE } from "../../utils/constants";
 import type { AgentRecord } from "../../types/agents";
 import type { WorkflowRecord } from "../../types/orchestration";
 import type { SortableAgentItem } from "../../types/workflows";
 
-const SortableAgent = ({
-  item,
-  onRemove,
-}: {
-  item: SortableAgentItem;
-  onRemove: (sortId: string) => void;
-}) => {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: item.sortId });
+const SortableAgent = ({ item, onRemove }: { item: SortableAgentItem; onRemove: (sortId: string) => void }) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.sortId });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -56,20 +20,12 @@ const SortableAgent = ({
 
   return (
     <div ref={setNodeRef} style={style} className={styles.sortableAgent}>
-      <button
-        type="button"
-        className={styles.dragHandle}
-        {...attributes}
-        {...listeners}
-      >
+      <button type="button" className={styles.dragHandle} {...attributes} {...listeners}>
         <GripVertical size={14} />
       </button>
       <Bot size={13} className={styles.sortableAgentIcon} />
       <span className={styles.sortableAgentName}>{item.name}</span>
-      <button
-        className={styles.sortableAgentRemove}
-        onClick={() => onRemove(item.sortId)}
-      >
+      <button className={styles.sortableAgentRemove} onClick={() => onRemove(item.sortId)}>
         <X size={12} />
       </button>
     </div>
@@ -80,16 +36,13 @@ const Workflows = () => {
   const [workflows, setWorkflows] = useState<WorkflowRecord[]>([]);
   const [agents, setAgents] = useState<AgentRecord[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedWorkflow, setSelectedWorkflow] =
-    useState<WorkflowRecord | null>(null);
+  const [selectedWorkflow, setSelectedWorkflow] = useState<WorkflowRecord | null>(null);
   const [isEditing, setIsEditing] = useState(false);
 
   const [formName, setFormName] = useState("");
   const [formDescription, setFormDescription] = useState("");
   const [formAgents, setFormAgents] = useState<SortableAgentItem[]>([]);
-  const [formStatus, setFormStatus] = useState<
-    "idle" | "submitting" | "success" | "error"
-  >("idle");
+  const [formStatus, setFormStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [formError, setFormError] = useState("");
 
   const sensors = useSensors(useSensor(PointerSensor));
@@ -142,9 +95,7 @@ const Workflows = () => {
       workflow.agents.map((a) => ({
         sortId: `${a.agentId}-${a.order}`,
         agentId: a.agentId,
-        name:
-          agents.find((ag) => ag.id === a.agentId)?.name ??
-          a.agentId.slice(0, 8),
+        name: agents.find((ag) => ag.id === a.agentId)?.name ?? a.agentId.slice(0, 8),
       })),
     );
     setFormStatus("idle");
@@ -234,17 +185,14 @@ const Workflows = () => {
     }
   };
 
-  const getAgentName = (agentId: string) =>
-    agents.find((a) => a.id === agentId)?.name ?? agentId.slice(0, 8);
+  const getAgentName = (agentId: string) => agents.find((a) => a.id === agentId)?.name ?? agentId.slice(0, 8);
 
   return (
     <div className={styles.container}>
       <div className={styles.pageHeader}>
         <div>
           <h1 className={styles.pageTitle}>Workflow Builder</h1>
-          <p className={styles.pageSubtitle}>
-            Compose agents into ordered execution pipelines
-          </p>
+          <p className={styles.pageSubtitle}>Compose agents into ordered execution pipelines</p>
         </div>
         <div className={styles.headerRight}>
           <div className={styles.headerBadge}>
@@ -288,9 +236,7 @@ const Workflows = () => {
                   <GitBranch size={13} className={styles.wfIcon} />
                   <span className={styles.wfName}>{wf.name}</span>
                 </div>
-                <p className={styles.wfDescription}>
-                  {wf.description || "No description"}
-                </p>
+                <p className={styles.wfDescription}>{wf.description || "No description"}</p>
                 <div className={styles.wfMeta}>
                   <span className={styles.wfAgentCount}>
                     <Bot size={11} />
@@ -337,9 +283,7 @@ const Workflows = () => {
           ) : (
             <div className={styles.editorContent}>
               <div className={styles.editorHeader}>
-                <span className={styles.editorTitle}>
-                  {selectedWorkflow ? "Edit Workflow" : "New Workflow"}
-                </span>
+                <span className={styles.editorTitle}>{selectedWorkflow ? "Edit Workflow" : "New Workflow"}</span>
                 <button className={styles.closeBtn} onClick={closeEdit}>
                   <X size={14} />
                 </button>
@@ -368,9 +312,7 @@ const Workflows = () => {
                     <div className={styles.fieldGroup}>
                       <label className={styles.fieldLabel} htmlFor="wf-desc">
                         Description
-                        <span className={styles.charCount}>
-                          {formDescription.length}/4000
-                        </span>
+                        <span className={styles.charCount}>{formDescription.length}/4000</span>
                       </label>
                       <textarea
                         id="wf-desc"
@@ -386,11 +328,7 @@ const Workflows = () => {
                     <div className={styles.fieldGroup}>
                       <label className={styles.fieldLabel}>Add Agents</label>
                       <div className={styles.agentPicker}>
-                        {agents.length === 0 && (
-                          <span className={styles.pickerEmpty}>
-                            No agents registered yet
-                          </span>
-                        )}
+                        {agents.length === 0 && <span className={styles.pickerEmpty}>No agents registered yet</span>}
                         {agents.map((agent) => (
                           <button
                             key={agent.id}
@@ -413,8 +351,7 @@ const Workflows = () => {
                     >
                       {formStatus === "submitting" ? (
                         <>
-                          <Loader size={14} className={styles.spinIcon} />{" "}
-                          Saving...
+                          <Loader size={14} className={styles.spinIcon} /> Saving...
                         </>
                       ) : formStatus === "success" ? (
                         <>
@@ -438,42 +375,23 @@ const Workflows = () => {
                   <div className={styles.pipelineColumn}>
                     <div className={styles.pipelineHeader}>
                       <span>Execution Order</span>
-                      <span className={styles.pipelineCount}>
-                        {formAgents.length} agents
-                      </span>
+                      <span className={styles.pipelineCount}>{formAgents.length} agents</span>
                     </div>
 
                     {formAgents.length === 0 ? (
                       <div className={styles.pipelineEmpty}>
                         <Bot size={24} className={styles.pipelineEmptyIcon} />
                         <span>Add agents from the list</span>
-                        <span className={styles.pipelineEmptyHint}>
-                          Drag to reorder execution sequence
-                        </span>
+                        <span className={styles.pipelineEmptyHint}>Drag to reorder execution sequence</span>
                       </div>
                     ) : (
-                      <DndContext
-                        sensors={sensors}
-                        collisionDetection={closestCenter}
-                        onDragEnd={handleDragEnd}
-                      >
-                        <SortableContext
-                          items={formAgents.map((a) => a.sortId)}
-                          strategy={verticalListSortingStrategy}
-                        >
+                      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                        <SortableContext items={formAgents.map((a) => a.sortId)} strategy={verticalListSortingStrategy}>
                           <div className={styles.sortableList}>
                             {formAgents.map((item, idx) => (
-                              <div
-                                key={item.sortId}
-                                className={styles.sortableRow}
-                              >
-                                <span className={styles.sortableIndex}>
-                                  {String(idx + 1).padStart(2, "0")}
-                                </span>
-                                <SortableAgent
-                                  item={item}
-                                  onRemove={removeAgentFromForm}
-                                />
+                              <div key={item.sortId} className={styles.sortableRow}>
+                                <span className={styles.sortableIndex}>{String(idx + 1).padStart(2, "0")}</span>
+                                <SortableAgent item={item} onRemove={removeAgentFromForm} />
                               </div>
                             ))}
                           </div>
@@ -486,13 +404,8 @@ const Workflows = () => {
                         {selectedWorkflow.agents
                           .sort((a, b) => a.order - b.order)
                           .map((a, idx) => (
-                            <div
-                              key={a.agentId}
-                              className={styles.previewAgent}
-                            >
-                              <span className={styles.previewIndex}>
-                                {idx + 1}
-                              </span>
+                            <div key={a.agentId} className={styles.previewAgent}>
+                              <span className={styles.previewIndex}>{idx + 1}</span>
                               <Bot size={12} />
                               <span>{getAgentName(a.agentId)}</span>
                             </div>
