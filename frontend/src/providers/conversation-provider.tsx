@@ -4,7 +4,7 @@ import { ConversationContext, INITIAL_MESSAGE, type ConversationMessage } from "
 const ConversationProvider = ({ children }: { children: ReactNode }) => {
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ConversationMessage[]>([INITIAL_MESSAGE]);
-  const [model, setModelState] = useState<string>("gemma3:1b");
+  const [model, setModelState] = useState<string>("gemma4:e4b");
 
   const setActiveConversation = useCallback((id: string | null, msgs: ConversationMessage[], m: string) => {
     setActiveConversationId(id);
