@@ -1,15 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Markdown from "react-markdown";
-import {
-  Play,
-  Bot,
-  Zap,
-  CheckCircle,
-  Circle,
-  Loader,
-  Terminal,
-  GitBranch,
-} from "lucide-react";
+import { Play, Bot, Zap, CheckCircle, Circle, Loader, Terminal, GitBranch } from "lucide-react";
 import styles from "./agent-orchestration.module.scss";
 import { API_BASE } from "../utils/constants";
 import type { Phase, LogEntry, WorkflowRecord } from "../types/orchestration";
@@ -31,21 +22,14 @@ const PHASE_STEPS: { key: Phase; label: string; icon: React.ElementType }[] = [
   { key: "VALIDATING", label: "Validate", icon: CheckCircle },
 ];
 
-const PHASE_ORDER: Phase[] = [
-  "IDLE",
-  "PLANNING",
-  "SQUAD",
-  "VALIDATING",
-  "COMPLETE",
-];
+const PHASE_ORDER: Phase[] = ["IDLE", "PLANNING", "SQUAD", "VALIDATING", "COMPLETE"];
 
 const AgentOrchestration = () => {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [phase, setPhase] = useState<Phase>("IDLE");
   const [dbAgents, setDbAgents] = useState<AgentRecord[]>([]);
   const [workflows, setWorkflows] = useState<WorkflowRecord[]>([]);
-  const [selectedWorkflow, setSelectedWorkflow] =
-    useState<WorkflowRecord | null>(null);
+  const [selectedWorkflow, setSelectedWorkflow] = useState<WorkflowRecord | null>(null);
   const [scenarioInput, setScenarioInput] = useState("");
 
   const logsBufferRef = useRef<LogEntry[]>([]);
@@ -70,94 +54,8 @@ const AgentOrchestration = () => {
     };
   }, []);
 
-  const runAgent = useCallback(
-    async (scenarioData?: Record<string, string>) => {
-      logsBufferRef.current = [];
-      setLogs([]);
-      setPhase("PLANNING");
-
-      const eventSource = new EventSource(
-        `${API_BASE}/agents/stream/events.dynamic`,
-      );
-
-      const syncLogs = () => {
-        setLogs([...logsBufferRef.current]);
-        animationFrameRef.current = requestAnimationFrame(syncLogs);
-      };
-
-      animationFrameRef.current = requestAnimationFrame(syncLogs);
-
-      eventSource.onmessage = (e) => {
-        if (!e.data || e.data === "null") {
-          return;
-        }
-
-        try {
-          const data = JSON.parse(e.data);
-          const author: string = data.Author || data.author || "Agent";
-          const text: string = data.Text || data.text || "";
-
-          const lowerAuthor = author.toLowerCase();
-          if (lowerAuthor.includes("planner")) {
-            setPhase("PLANNING");
-          } else if (lowerAuthor.includes("validator")) {
-            setPhase("VALIDATING");
-          } else {
-            setPhase("SQUAD");
-          }
-
-          if (text) {
-            const currentLogs = logsBufferRef.current;
-            const lastIndex = currentLogs.length - 1;
-
-            if (lastIndex >= 0 && currentLogs[lastIndex].Author === author) {
-              currentLogs[lastIndex].Text += text;
-            } else {
-              currentLogs.push({ Author: author, Text: text });
-            }
-          }
-        } catch (err) {
-          console.error("Stream error:", err);
-        }
-      };
-
-      eventSource.onerror = () => {
-        eventSource.close();
-        if (animationFrameRef.current) {
-          cancelAnimationFrame(animationFrameRef.current);
-        }
-        setLogs([...logsBufferRef.current]);
-        setPhase("COMPLETE");
-      };
-
-      await new Promise((resolve) => setTimeout(resolve, 200));
-
-      await fetch(`${API_BASE}/agents/test-pipeline`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(
-          scenarioData ?? { activity: "Manual Scan", user: "root" },
-        ),
-      });
-    },
-    [],
-  );
-
-  const runWorkflow = useCallback(async () => {
-    if (!selectedWorkflow) {
-      return;
-    }
-
-    const scenario =
-      scenarioInput.trim() || `Execute workflow: ${selectedWorkflow.name}`;
-
-    logsBufferRef.current = [];
-    setLogs([]);
-    setPhase("PLANNING");
-
-    const eventSource = new EventSource(
-      `${API_BASE}/agents/stream/events.dynamic`,
-    );
+  const openStream = useCallback((eventId: string) => {
+    const eventSource = new EventSource(`${API_BASE}/agents/stream/${eventId}`);
 
     const syncLogs = () => {
       setLogs([...logsBufferRef.current]);
@@ -206,15 +104,44 @@ const AgentOrchestration = () => {
       setLogs([...logsBufferRef.current]);
       setPhase("COMPLETE");
     };
+  }, []);
 
-    await new Promise((resolve) => setTimeout(resolve, 200));
+  const runAgent = useCallback(
+    async (scenarioData?: Record<string, string>) => {
+      logsBufferRef.current = [];
+      setLogs([]);
+      setPhase("PLANNING");
 
-    await fetch(`${API_BASE}/agents/run-workflow`, {
+      const res = await fetch(`${API_BASE}/agents/test-pipeline`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(scenarioData ?? { activity: "Manual Scan", user: "root" }),
+      });
+      const { eventId } = await res.json();
+      openStream(eventId);
+    },
+    [openStream],
+  );
+
+  const runWorkflow = useCallback(async () => {
+    if (!selectedWorkflow) {
+      return;
+    }
+
+    const scenario = scenarioInput.trim() || `Execute workflow: ${selectedWorkflow.name}`;
+
+    logsBufferRef.current = [];
+    setLogs([]);
+    setPhase("PLANNING");
+
+    const res = await fetch(`${API_BASE}/agents/run-workflow`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ workflowId: selectedWorkflow.id, scenario }),
     });
-  }, [selectedWorkflow, scenarioInput]);
+    const { eventId } = await res.json();
+    openStream(eventId);
+  }, [selectedWorkflow, scenarioInput, openStream]);
 
   const getRoleClass = (author: string) => {
     const a = author.toLowerCase();
@@ -237,9 +164,7 @@ const AgentOrchestration = () => {
           <Terminal size={16} className={styles.headerIcon} />
           <div>
             <h2 className={styles.headerTitle}>Orchestration</h2>
-            <span className={styles.headerSub}>
-              Real-time multi-agent pipeline
-            </span>
+            <span className={styles.headerSub}>Real-time multi-agent pipeline</span>
           </div>
         </div>
 
@@ -254,10 +179,7 @@ const AgentOrchestration = () => {
                 <div
                   className={`${styles.phaseNode} ${isActive ? styles.phaseNodeActive : ""} ${isDone ? styles.phaseNodeDone : ""}`}
                 >
-                  <Icon
-                    size={13}
-                    className={isActive ? styles.spinIcon : undefined}
-                  />
+                  <Icon size={13} className={isActive ? styles.spinIcon : undefined} />
                 </div>
                 <span
                   className={`${styles.phaseLabel} ${isActive ? styles.phaseLabelActive : ""} ${isDone ? styles.phaseLabelDone : ""}`}
@@ -265,9 +187,7 @@ const AgentOrchestration = () => {
                   {step.label}
                 </span>
                 {i < PHASE_STEPS.length - 1 && (
-                  <div
-                    className={`${styles.phaseConnector} ${isDone ? styles.phaseConnectorDone : ""}`}
-                  />
+                  <div className={`${styles.phaseConnector} ${isDone ? styles.phaseConnectorDone : ""}`} />
                 )}
               </div>
             );
@@ -304,9 +224,7 @@ const AgentOrchestration = () => {
             </p>
             <div className={styles.workflowList}>
               {workflows.length === 0 ? (
-                <span className={styles.sidebarEmpty}>
-                  No workflows defined
-                </span>
+                <span className={styles.sidebarEmpty}>No workflows defined</span>
               ) : (
                 workflows.map((wf) => (
                   <button
@@ -331,9 +249,7 @@ const AgentOrchestration = () => {
 
           {selectedWorkflow && (
             <div className={styles.sidebarSection}>
-              <p className={styles.sidebarLabel}>
-                Run: {selectedWorkflow.name}
-              </p>
+              <p className={styles.sidebarLabel}>Run: {selectedWorkflow.name}</p>
               <textarea
                 className={styles.scenarioInput}
                 value={scenarioInput}
@@ -341,11 +257,7 @@ const AgentOrchestration = () => {
                 placeholder="Describe the scenario for this workflow..."
                 rows={3}
               />
-              <button
-                className={styles.runWorkflowBtn}
-                onClick={runWorkflow}
-                disabled={isRunning}
-              >
+              <button className={styles.runWorkflowBtn} onClick={runWorkflow} disabled={isRunning}>
                 <Play size={13} />
                 Execute Workflow
               </button>
@@ -388,9 +300,7 @@ const AgentOrchestration = () => {
 
         <main className={styles.logPanel}>
           <div className={styles.logPanelHeader}>
-            <span
-              className={`${styles.logDot} ${isRunning ? styles.logDotActive : ""}`}
-            ></span>
+            <span className={`${styles.logDot} ${isRunning ? styles.logDotActive : ""}`}></span>
             <span className={styles.logPanelTitle}>Output</span>
             {phase === "COMPLETE" && (
               <span className={styles.completeBadge}>
@@ -411,11 +321,7 @@ const AgentOrchestration = () => {
             {logs.map((log, i) => (
               <div key={i} className={styles.logEntry}>
                 <div className={styles.authorRow}>
-                  <span
-                    className={`${styles.roleBadge} ${getRoleClass(log.Author)}`}
-                  >
-                    {log.Author}
-                  </span>
+                  <span className={`${styles.roleBadge} ${getRoleClass(log.Author)}`}>{log.Author}</span>
                   <div className={styles.authorLine}></div>
                 </div>
                 <div className={styles.textContent}>
