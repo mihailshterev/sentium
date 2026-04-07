@@ -56,7 +56,12 @@ const SortableAgent = ({
 
   return (
     <div ref={setNodeRef} style={style} className={styles.sortableAgent}>
-      <button className={styles.dragHandle} {...attributes} {...listeners}>
+      <button
+        type="button"
+        className={styles.dragHandle}
+        {...attributes}
+        {...listeners}
+      >
         <GripVertical size={14} />
       </button>
       <Bot size={13} className={styles.sortableAgentIcon} />
