@@ -33,6 +33,11 @@
     <Project Path="services/Sentinel/Sentinel.Core/Sentinel.Core.csproj" />
     <Project Path="services/Sentinel/Sentinel.Infrastructure/Sentinel.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/services/Watchdog/">
+    <Project Path="services/Watchdog/Watchdog.Api/Watchdog.Api.csproj" />
+    <Project Path="services/Watchdog/Watchdog.Application/Watchdog.Application.csproj" />
+    <Project Path="services/Watchdog/Watchdog.Core/Watchdog.Core.csproj" />
+  </Folder>
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />
     <File Path="Directory.Build.props" />
