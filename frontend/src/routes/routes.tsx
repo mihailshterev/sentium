@@ -4,6 +4,7 @@ import Assistant from "../pages/assistant/assistant";
 import AgentOrchestration from "../components/agent-orchestration";
 import Agents from "../pages/agents/agents";
 import Workflows from "../pages/workflows/workflows";
+import System from "../pages/system/system";
 import Placeholder from "../pages/placeholder";
 import type { RouteObject } from "react-router";
 
@@ -21,7 +22,7 @@ export const routes: RouteObject[] = [
       { path: "workflows", element: <Workflows /> },
       { path: "users", element: <Placeholder title="Users" /> },
       { path: "inventory", element: <Placeholder title="Inventory" /> },
-      { path: "system", element: <Placeholder title="System" /> },
+      { path: "system", element: <System /> },
       { path: "settings", element: <Placeholder title="Settings" /> },
     ],
   },
