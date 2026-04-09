@@ -84,8 +84,8 @@ const Dashboard = () => {
     const fetchData = async () => {
       try {
         const [agentsRes, workflowsRes] = await Promise.allSettled([
-          fetch(`${API_BASE}/agents`),
-          fetch(`${API_BASE}/workflows`),
+          fetch(`${API_BASE}/agent-runtime/agents`),
+          fetch(`${API_BASE}/agent-runtime/workflows`),
         ]);
         if (agentsRes.status === "fulfilled" && agentsRes.value.ok) {
           setAgents(await agentsRes.value.json());

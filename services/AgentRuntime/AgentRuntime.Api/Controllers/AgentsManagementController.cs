@@ -26,7 +26,7 @@ public sealed class AgentsManagementController(IAgentService agentService) : Con
     public async ValueTask<IActionResult> CreateAgent([FromBody] CreateAgentRequest request, CancellationToken ct)
     {
         var result = await agentService.CreateAgentAsync(request, ct);
-        return CreatedAtAction(nameof(GetAgents), result);
+        return CreatedAtAction(nameof(GetAgentById), new { agentId = result.Id }, result);
     }
 
     [HttpPut("{agentId:guid}")]

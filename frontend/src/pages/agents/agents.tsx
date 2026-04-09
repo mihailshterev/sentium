@@ -23,7 +23,7 @@ const Agents = () => {
 
   const fetchAgents = async () => {
     try {
-      const res = await fetch(`${API_BASE}/agents`);
+      const res = await fetch(`${API_BASE}/agent-runtime/agents`);
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}`);
       }
@@ -38,7 +38,7 @@ const Agents = () => {
 
   const fetchModels = async () => {
     try {
-      const res = await fetch(`${API_BASE}/assistant/models`);
+      const res = await fetch(`${API_BASE}/agent-runtime/assistant/models`);
       if (!res.ok) {
         return;
       }
@@ -64,7 +64,7 @@ const Agents = () => {
     setErrorMsg("");
 
     try {
-      const res = await fetch(`${API_BASE}/agents`, {
+      const res = await fetch(`${API_BASE}/agent-runtime/agents`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -114,7 +114,7 @@ const Agents = () => {
     setEditErrorMsg("");
 
     try {
-      const res = await fetch(`${API_BASE}/agents/${editAgent.id}`, {
+      const res = await fetch(`${API_BASE}/agent-runtime/agents/${editAgent.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -145,7 +145,7 @@ const Agents = () => {
     }
 
     try {
-      const res = await fetch(`${API_BASE}/agents/${agentId}`, {
+      const res = await fetch(`${API_BASE}/agent-runtime/agents/${agentId}`, {
         method: "DELETE",
       });
       if (!res.ok) {

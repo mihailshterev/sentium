@@ -37,12 +37,12 @@ const AgentOrchestration = () => {
   const animationFrameRef = useRef<number | null>(null);
 
   useEffect(() => {
-    fetch(`${API_BASE}/agents`)
+    fetch(`${API_BASE}/agent-runtime/agents`)
       .then((r) => (r.ok ? r.json() : []))
       .then((data: AgentRecord[]) => setDbAgents(data))
       .catch(() => {});
 
-    fetch(`${API_BASE}/workflows`)
+    fetch(`${API_BASE}/agent-runtime/workflows`)
       .then((r) => (r.ok ? r.json() : []))
       .then((data: WorkflowRecord[]) => setWorkflows(data))
       .catch(() => {});
@@ -55,7 +55,7 @@ const AgentOrchestration = () => {
   }, []);
 
   const openStream = useCallback((eventId: string) => {
-    const eventSource = new EventSource(`${API_BASE}/agents/stream/${eventId}`);
+    const eventSource = new EventSource(`${API_BASE}/agent-runtime/agents/stream/${eventId}`);
 
     const syncLogs = () => {
       setLogs([...logsBufferRef.current]);
@@ -112,7 +112,7 @@ const AgentOrchestration = () => {
       setLogs([]);
       setPhase("PLANNING");
 
-      const res = await fetch(`${API_BASE}/agents/test-pipeline`, {
+      const res = await fetch(`${API_BASE}/agent-runtime/agents/test-pipeline`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(scenarioData ?? { activity: "Manual Scan", user: "root" }),
@@ -134,7 +134,7 @@ const AgentOrchestration = () => {
     setLogs([]);
     setPhase("PLANNING");
 
-    const res = await fetch(`${API_BASE}/agents/run-workflow`, {
+    const res = await fetch(`${API_BASE}/agent-runtime/agents/run-workflow`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ workflowId: selectedWorkflow.id, scenario }),

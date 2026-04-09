@@ -80,7 +80,7 @@ const System = () => {
       setRefreshing(true);
     }
     try {
-      const res = await fetch(`${API_BASE}/system/metrics`);
+      const res = await fetch(`${API_BASE}/watchdog/system/metrics`);
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}`);
       }

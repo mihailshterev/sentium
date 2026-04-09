@@ -49,7 +49,7 @@ const Workflows = () => {
 
   const fetchWorkflows = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/workflows`);
+      const res = await fetch(`${API_BASE}/agent-runtime/workflows`);
       if (!res.ok) return;
       const data: WorkflowRecord[] = await res.json();
       setWorkflows(data);
@@ -62,7 +62,7 @@ const Workflows = () => {
 
   const fetchAgents = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/agents`);
+      const res = await fetch(`${API_BASE}/agent-runtime/agents`);
       if (!res.ok) return;
       const data: AgentRecord[] = await res.json();
       setAgents(data);
@@ -147,13 +147,13 @@ const Workflows = () => {
     try {
       let res: Response;
       if (selectedWorkflow) {
-        res = await fetch(`${API_BASE}/workflows/${selectedWorkflow.id}`, {
+        res = await fetch(`${API_BASE}/agent-runtime/workflows/${selectedWorkflow.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
       } else {
-        res = await fetch(`${API_BASE}/workflows`, {
+        res = await fetch(`${API_BASE}/agent-runtime/workflows`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
@@ -177,7 +177,7 @@ const Workflows = () => {
   const handleDelete = async (workflowId: string) => {
     if (!confirm("Delete this workflow?")) return;
     try {
-      await fetch(`${API_BASE}/workflows/${workflowId}`, { method: "DELETE" });
+      await fetch(`${API_BASE}/agent-runtime/workflows/${workflowId}`, { method: "DELETE" });
       await fetchWorkflows();
       if (selectedWorkflow?.id === workflowId) closeEdit();
     } catch {

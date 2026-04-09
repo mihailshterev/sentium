@@ -37,7 +37,7 @@ const Assistant = () => {
 
   const fetchConversations = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/conversations`);
+      const res = await fetch(`${API_BASE}/agent-runtime/conversations`);
       if (!res.ok) {
         return;
       }
@@ -50,7 +50,7 @@ const Assistant = () => {
 
   const fetchModels = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/assistant/models`);
+      const res = await fetch(`${API_BASE}/agent-runtime/assistant/models`);
       if (!res.ok) {
         return;
       }
@@ -71,7 +71,7 @@ const Assistant = () => {
 
   const loadConversation = async (conv: ConversationSummary) => {
     try {
-      const res = await fetch(`${API_BASE}/conversations/${conv.id}`);
+      const res = await fetch(`${API_BASE}/agent-runtime/conversations/${conv.id}`);
       if (!res.ok) {
         return;
       }
@@ -99,7 +99,7 @@ const Assistant = () => {
       minute: "2-digit",
     })}`;
     try {
-      const res = await fetch(`${API_BASE}/conversations`, {
+      const res = await fetch(`${API_BASE}/agent-runtime/conversations`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, model }),
@@ -119,7 +119,7 @@ const Assistant = () => {
   const deleteConversation = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      await fetch(`${API_BASE}/conversations/${id}`, { method: "DELETE" });
+      await fetch(`${API_BASE}/agent-runtime/conversations/${id}`, { method: "DELETE" });
       await fetchConversations();
       if (activeConversationId === id) {
         clearConversation();
@@ -167,7 +167,7 @@ const Assistant = () => {
     }));
 
     try {
-      const response = await fetch(`${API_BASE}/assistant/chat`, {
+      const response = await fetch(`${API_BASE}/agent-runtime/assistant/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
