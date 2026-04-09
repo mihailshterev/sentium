@@ -74,6 +74,7 @@ var apiGateway = builder.AddProject<Projects.ApiGateway>(ServiceNames.Gateway)
 
 var frontend = builder.AddViteApp(ServiceNames.Frontend, "../../frontend")
     .WithReference(apiGateway).WaitFor(apiGateway)
+    .WithEnvironment("VITE_API_BASE", apiGateway.GetEndpoint("https"))
     .WithEndpoint("http", e => e.Port = 5173);
 
 identityApi.WithParentRelationship(apiGateway);
