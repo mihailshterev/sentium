@@ -1,42 +1,49 @@
-using IdentityProvider.Infrastructure.Identity;
-using Microsoft.AspNetCore.Identity;
+using IdentityProvider.Application.Abstractions;
+using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 
 namespace IdentityProvider.Api.Controllers;
 
 [ApiController]
 [Route("account")]
-public class AccountController(
-    UserManager<ApplicationUser> userManager,
-    SignInManager<ApplicationUser> signInManager) : ControllerBase
+public sealed class AccountController(IIdentityService identityService) : ControllerBase
 {
-    [HttpPost("/register")]
-    public async Task<IActionResult> Register(string email, string password)
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
-        var user = new ApplicationUser
-        {
-            UserName = email,
-            Email = email
-        };
-
-        var result = await userManager.CreateAsync(user, password);
+        var (result, user) = await identityService.RegisterUserAsync(request);
         if (!result.Succeeded)
         {
             return BadRequest(result.Errors);
         }
 
-        await signInManager.SignInAsync(user, isPersistent: false);
-        return Ok();
+        return Ok(new
+        {
+            user!.Id,
+            user.Email
+        });
     }
 
-    [HttpPost("/login")]
-    public async Task<IActionResult> Login(string email, string password)
+    [HttpPost("login")]
+    public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
-        var result = await signInManager.PasswordSignInAsync(email, password, false, lockoutOnFailure: true);
+        ArgumentNullException.ThrowIfNull(request);
+
+        var result = await identityService.LoginAsync(request.Email, request.Password);
+
+        if (result.IsLockedOut)
+        {
+            return StatusCode(StatusCodes.Status423Locked, "Account is locked due to too many failed attempts.");
+        }
+
+        if (result.RequiresTwoFactor)
+        {
+            return Ok(new { RequiresTwoFactor = true });
+        }
 
         if (!result.Succeeded)
         {
-            return Unauthorized();
+            return Unauthorized("Invalid login attempt.");
         }
 
         return Ok();

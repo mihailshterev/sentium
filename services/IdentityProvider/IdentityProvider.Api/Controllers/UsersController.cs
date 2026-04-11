@@ -1,5 +1,10 @@
-﻿namespace IdentityProvider.Api.Controllers;
+﻿using Microsoft.AspNetCore.Mvc;
 
-public class UsersController
+namespace IdentityProvider.Api.Controllers;
+
+[ApiController]
+[Route("users")]
+public sealed class UsersController : ControllerBase
 {
+    // TODO: Implement user management
 }
