@@ -1,5 +1,5 @@
+using IdentityProvider.Core.Entities;
 using IdentityProvider.Core.Users;
-using IdentityProvider.Infrastructure.Identity;
 
 namespace IdentityProvider.Infrastructure.Mappings;
 

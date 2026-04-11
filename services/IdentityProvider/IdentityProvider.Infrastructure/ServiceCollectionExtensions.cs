@@ -1,3 +1,4 @@
+using IdentityProvider.Core.Entities;
 using IdentityProvider.Core.Security;
 using IdentityProvider.Infrastructure.Data;
 using IdentityProvider.Infrastructure.Identity;

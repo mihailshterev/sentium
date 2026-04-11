@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using IdentityProvider.Application.Abstractions;
+using IdentityProvider.Core.Entities;
 using IdentityProvider.Core.Security;
 using Microsoft.AspNetCore.Identity;
 

@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using IdentityProvider.Core.Entities;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
