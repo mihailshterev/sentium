@@ -1,3 +1,4 @@
+using IdentityProvider.Application.Abstractions;
 using IdentityProvider.Core.Entities;
 using IdentityProvider.Core.Security;
 using IdentityProvider.Infrastructure.Data;
@@ -68,6 +69,7 @@ public static class ServiceCollectionExtensions
                 );
             });
 
+        services.AddScoped<IIdentityService, IdentityService>();
         services.AddHostedService<OpenIddictWorker>();
 
         return services;
