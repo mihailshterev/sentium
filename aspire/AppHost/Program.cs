@@ -56,22 +56,30 @@ var python = builder.AddPythonApp(ServiceNames.NetworkFilter, "../../services/Ne
     .WaitFor(zeek);
 
 var sentinelApi = builder.AddProject<Projects.Sentinel_Api>(ServiceNames.Sentinel)
-    .WithReference(nats).WaitFor(nats);
+    .WithReference(nats).WaitFor(nats)
+    .WithReference(identityApi).WaitFor(identityApi)
+    .WithEnvironment("Identity__Authority", identityApi.GetEndpoint("http"));
 
-var watchdogApi = builder.AddProject<Projects.Watchdog_Api>(ServiceNames.Watchdog);
+var watchdogApi = builder.AddProject<Projects.Watchdog_Api>(ServiceNames.Watchdog)
+    .WithReference(nats).WaitFor(nats)
+    .WithReference(identityApi).WaitFor(identityApi)
+    .WithEnvironment("Identity__Authority", identityApi.GetEndpoint("http"));
 
 var agentRuntimeApi = builder.AddProject<Projects.AgentRuntime_Api>(ServiceNames.AgentRuntime)
     .WithReference(ollamaModel).WaitFor(ollamaModel)
     .WithReference(nats).WaitFor(nats)
     .WithReference(agentRuntimeDb).WaitFor(agentRuntimeDb)
     .WithReference(redis).WaitFor(redis)
-    .WithEnvironment("AI__ModelName", ollamaModel.Resource.ModelName);
+    .WithReference(identityApi).WaitFor(identityApi)
+    .WithEnvironment("AI__ModelName", ollamaModel.Resource.ModelName)
+    .WithEnvironment("Identity__Authority", identityApi.GetEndpoint("http"));
 
 var apiGateway = builder.AddProject<Projects.ApiGateway>(ServiceNames.Gateway)
     .WithReference(identityApi).WaitFor(identityApi)
     .WithReference(sentinelApi).WaitFor(sentinelApi)
     .WithReference(watchdogApi).WaitFor(watchdogApi)
-    .WithReference(agentRuntimeApi).WaitFor(agentRuntimeApi);
+    .WithReference(agentRuntimeApi).WaitFor(agentRuntimeApi)
+    .WithEnvironment("Identity__Authority", identityApi.GetEndpoint("http"));
 
 var frontend = builder.AddViteApp(ServiceNames.Frontend, "../../frontend")
     .WithReference(apiGateway).WaitFor(apiGateway)
