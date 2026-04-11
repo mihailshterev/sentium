@@ -14,7 +14,7 @@ builder.Services.AddControllers();
 builder.AddNatsClient("nats");
 
 builder.Services.AddInfrastructure(builder.Configuration);
-builder.Services.AddIdentityServices();
+builder.Services.AddIdentityServices(builder.Configuration);
 builder.Services.AddApplication();
 
 var app = builder.Build();

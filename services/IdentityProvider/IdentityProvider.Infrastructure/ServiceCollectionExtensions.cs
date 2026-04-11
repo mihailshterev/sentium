@@ -23,7 +23,7 @@ public static class ServiceCollectionExtensions
         return services;
     }
 
-    public static IServiceCollection AddIdentityServices(this IServiceCollection services)
+    public static IServiceCollection AddIdentityServices(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddIdentity<ApplicationUser, ApplicationRole>(options =>
         {
@@ -45,20 +45,27 @@ public static class ServiceCollectionExtensions
             })
             .AddServer(options =>
             {
+                var issuer = configuration["Identity:Issuer"] ?? "https://localhost:5001/";
+                options.SetIssuer(new Uri(issuer));
                 options.DisableAccessTokenEncryption();
 
                 options.AllowClientCredentialsFlow();
-                options.AllowAuthorizationCodeFlow();
+                options.AllowAuthorizationCodeFlow()
+                       .RequireProofKeyForCodeExchange();
+
+                options.AllowRefreshTokenFlow();
 
                 options.AddDevelopmentEncryptionCertificate()
                         .AddDevelopmentSigningCertificate();
 
                 options.UseAspNetCore()
+                       .DisableTransportSecurityRequirement()
                        .EnableAuthorizationEndpointPassthrough()
                        .EnableTokenEndpointPassthrough();
 
-                options.SetAuthorizationEndpointUris("/connect/authorize");
-                options.SetTokenEndpointUris("/connect/token");
+                options.SetAuthorizationEndpointUris("/connect/authorize")
+                       .SetTokenEndpointUris("/connect/token")
+                       .SetEndSessionEndpointUris("/connect/logout");
 
                 options.RegisterScopes(
                     Scopes.OpenId,
@@ -69,6 +76,7 @@ public static class ServiceCollectionExtensions
                 );
             });
 
+        services.AddScoped<IUserClaimsService, UserClaimsService>();
         services.AddScoped<IIdentityService, IdentityService>();
         services.AddHostedService<OpenIddictWorker>();
 
@@ -77,6 +85,8 @@ public static class ServiceCollectionExtensions
 
     public static async Task ApplyMigrations(this WebApplication app)
     {
+        ArgumentNullException.ThrowIfNull(app);
+
         using var scope = app.Services.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
         await db.Database.MigrateAsync();
