@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Bot, Plus, CheckCircle, AlertCircle, Loader, Clock, Pencil, X, Cpu } from "lucide-react";
 import styles from "./agents.module.scss";
-import { API_BASE } from "../../utils/constants";
+import { API_BASE, apiFetch } from "../../utils/constants";
 import type { AgentRecord } from "../../types/agents";
 
 const Agents = () => {
@@ -23,7 +23,7 @@ const Agents = () => {
 
   const fetchAgents = async () => {
     try {
-      const res = await fetch(`${API_BASE}/agent-runtime/agents`);
+      const res = await apiFetch(`${API_BASE}/agent-runtime/agents`);
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}`);
       }
@@ -38,7 +38,7 @@ const Agents = () => {
 
   const fetchModels = async () => {
     try {
-      const res = await fetch(`${API_BASE}/agent-runtime/assistant/models`);
+      const res = await apiFetch(`${API_BASE}/agent-runtime/assistant/models`);
       if (!res.ok) {
         return;
       }
@@ -64,7 +64,7 @@ const Agents = () => {
     setErrorMsg("");
 
     try {
-      const res = await fetch(`${API_BASE}/agent-runtime/agents`, {
+      const res = await apiFetch(`${API_BASE}/agent-runtime/agents`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -114,7 +114,7 @@ const Agents = () => {
     setEditErrorMsg("");
 
     try {
-      const res = await fetch(`${API_BASE}/agent-runtime/agents/${editAgent.id}`, {
+      const res = await apiFetch(`${API_BASE}/agent-runtime/agents/${editAgent.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -145,7 +145,7 @@ const Agents = () => {
     }
 
     try {
-      const res = await fetch(`${API_BASE}/agent-runtime/agents/${agentId}`, {
+      const res = await apiFetch(`${API_BASE}/agent-runtime/agents/${agentId}`, {
         method: "DELETE",
       });
       if (!res.ok) {
@@ -161,9 +161,12 @@ const Agents = () => {
   return (
     <div className={styles.agentsContainer}>
       <div className={styles.agentsHeader}>
-        <div>
-          <h1 className={styles.agentsTitle}>Agent Registry</h1>
-          <p className={styles.agentsSubtitle}>Register and manage autonomous agents in the pipeline</p>
+        <div className={styles.headerLeft}>
+          <Bot size={16} className={styles.headerIcon} />
+          <div>
+            <h2 className={styles.headerTitle}>Agent Registry</h2>
+            <span className={styles.headerSub}>Register and manage autonomous agents in the pipeline</span>
+          </div>
         </div>
         <div className={styles.headerBadge}>
           <Bot size={14} />

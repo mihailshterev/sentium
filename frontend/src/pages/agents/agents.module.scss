@@ -10,22 +10,35 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1.5rem 1.75rem;
+  height: 64px;
+  padding: 0 1.75rem;
   border-bottom: 1px solid var(--border-subtle);
-  background-color: var(--bg-surface);
+  background: var(--bg-surface);
+  flex-shrink: 0;
+  gap: 1rem;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.headerIcon {
+  color: var(--accent-green);
   flex-shrink: 0;
 }
 
-.agentsTitle {
-  font-size: 1.15rem;
-  font-weight: 650;
+.headerTitle {
+  font-size: 1.05rem;
+  font-weight: 700;
   color: var(--text-primary);
-  margin: 0 0 4px;
+  margin: 0 0 2px;
   letter-spacing: -0.3px;
 }
 
-.agentsSubtitle {
-  font-size: 0.8rem;
+.headerSub {
+  font-size: 0.72rem;
   color: var(--text-muted);
 }
 
@@ -33,13 +46,14 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.75rem;
-  font-weight: 500;
+  font-size: 0.72rem;
+  font-weight: 600;
   color: var(--text-secondary);
   background: var(--bg-elevated);
-  border: 1px solid var(--border-subtle);
-  padding: 5px 12px;
+  border: 1px solid var(--border-color);
+  padding: 4px 12px;
   border-radius: 99px;
+  letter-spacing: 0.1px;
 }
 
 .agentsBody {
@@ -171,31 +185,32 @@
   align-items: center;
   justify-content: center;
   gap: 7px;
-  background-color: var(--accent-green);
-  border: none;
-  color: #031a0a;
+  background: var(--accent-green-subtle);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: var(--accent-green);
   font-family: inherit;
   font-size: 0.85rem;
   font-weight: 650;
   padding: 0.65rem 1.25rem;
   border-radius: 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 160ms ease;
   margin-top: 0.15rem;
 }
 
 .submitBtn:hover:not(:disabled) {
-  background-color: #16a34a;
-  box-shadow: 0 0 16px rgba(34, 197, 94, 0.3);
+  background: rgba(34, 197, 94, 0.15);
+  border-color: rgba(34, 197, 94, 0.55);
+  box-shadow: 0 0 20px rgba(34, 197, 94, 0.15);
 }
 
 .submitBtn:disabled {
-  opacity: 0.4;
+  opacity: 0.35;
   cursor: not-allowed;
 }
 
 .submitBtn.submitting {
-  opacity: 0.7;
+  opacity: 0.6;
 }
 
 .spinIcon {

@@ -4,7 +4,7 @@ import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } 
 import { CSS } from "@dnd-kit/utilities";
 import { Plus, X, GripVertical, Bot, GitBranch, Loader, CheckCircle, AlertCircle, Pencil, Trash2 } from "lucide-react";
 import styles from "./workflows.module.scss";
-import { API_BASE } from "../../utils/constants";
+import { API_BASE, apiFetch } from "../../utils/constants";
 import type { AgentRecord } from "../../types/agents";
 import type { WorkflowRecord } from "../../types/orchestration";
 import type { SortableAgentItem } from "../../types/workflows";
@@ -49,7 +49,7 @@ const Workflows = () => {
 
   const fetchWorkflows = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/agent-runtime/workflows`);
+      const res = await apiFetch(`${API_BASE}/agent-runtime/workflows`);
       if (!res.ok) return;
       const data: WorkflowRecord[] = await res.json();
       setWorkflows(data);
@@ -62,7 +62,7 @@ const Workflows = () => {
 
   const fetchAgents = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/agent-runtime/agents`);
+      const res = await apiFetch(`${API_BASE}/agent-runtime/agents`);
       if (!res.ok) return;
       const data: AgentRecord[] = await res.json();
       setAgents(data);
@@ -147,13 +147,13 @@ const Workflows = () => {
     try {
       let res: Response;
       if (selectedWorkflow) {
-        res = await fetch(`${API_BASE}/agent-runtime/workflows/${selectedWorkflow.id}`, {
+        res = await apiFetch(`${API_BASE}/agent-runtime/workflows/${selectedWorkflow.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
         });
       } else {
-        res = await fetch(`${API_BASE}/agent-runtime/workflows`, {
+        res = await apiFetch(`${API_BASE}/agent-runtime/workflows`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(payload),
@@ -177,7 +177,7 @@ const Workflows = () => {
   const handleDelete = async (workflowId: string) => {
     if (!confirm("Delete this workflow?")) return;
     try {
-      await fetch(`${API_BASE}/agent-runtime/workflows/${workflowId}`, { method: "DELETE" });
+      await apiFetch(`${API_BASE}/agent-runtime/workflows/${workflowId}`, { method: "DELETE" });
       await fetchWorkflows();
       if (selectedWorkflow?.id === workflowId) closeEdit();
     } catch {
@@ -190,9 +190,12 @@ const Workflows = () => {
   return (
     <div className={styles.container}>
       <div className={styles.pageHeader}>
-        <div>
-          <h1 className={styles.pageTitle}>Workflow Builder</h1>
-          <p className={styles.pageSubtitle}>Compose agents into ordered execution pipelines</p>
+        <div className={styles.headerLeft}>
+          <GitBranch size={16} className={styles.headerIcon} />
+          <div>
+            <h2 className={styles.headerTitle}>Workflow Builder</h2>
+            <span className={styles.headerSub}>Compose agents into ordered execution pipelines</span>
+          </div>
         </div>
         <div className={styles.headerRight}>
           <div className={styles.headerBadge}>

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Markdown from "react-markdown";
 import { Play, Bot, Zap, CheckCircle, Circle, Loader, Terminal, GitBranch } from "lucide-react";
 import styles from "./agent-orchestration.module.scss";
-import { API_BASE } from "../utils/constants";
+import { API_BASE, apiFetch } from "../utils/constants";
 import type { Phase, LogEntry, WorkflowRecord } from "../types/orchestration";
 import type { AgentRecord } from "../types/agents";
 
@@ -37,12 +37,12 @@ const AgentOrchestration = () => {
   const animationFrameRef = useRef<number | null>(null);
 
   useEffect(() => {
-    fetch(`${API_BASE}/agent-runtime/agents`)
+    apiFetch(`${API_BASE}/agent-runtime/agents`)
       .then((r) => (r.ok ? r.json() : []))
       .then((data: AgentRecord[]) => setDbAgents(data))
       .catch(() => {});
 
-    fetch(`${API_BASE}/agent-runtime/workflows`)
+    apiFetch(`${API_BASE}/agent-runtime/workflows`)
       .then((r) => (r.ok ? r.json() : []))
       .then((data: WorkflowRecord[]) => setWorkflows(data))
       .catch(() => {});
@@ -112,7 +112,7 @@ const AgentOrchestration = () => {
       setLogs([]);
       setPhase("PLANNING");
 
-      const res = await fetch(`${API_BASE}/agent-runtime/agents/test-pipeline`, {
+      const res = await apiFetch(`${API_BASE}/agent-runtime/agents/test-pipeline`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(scenarioData ?? { activity: "Manual Scan", user: "root" }),
@@ -134,7 +134,7 @@ const AgentOrchestration = () => {
     setLogs([]);
     setPhase("PLANNING");
 
-    const res = await fetch(`${API_BASE}/agent-runtime/agents/run-workflow`, {
+    const res = await apiFetch(`${API_BASE}/agent-runtime/agents/run-workflow`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ workflowId: selectedWorkflow.id, scenario }),

@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import styles from "./assistant.module.scss";
 import Markdown from "react-markdown";
 import { Plus, Trash2, MessageSquare, ChevronRight, Cpu } from "lucide-react";
-import { API_BASE } from "../../utils/constants";
+import { API_BASE, apiFetch } from "../../utils/constants";
 import useConversation from "../../hooks/useConversation";
 import type { ConversationMessage } from "../../providers/conversation-context";
 import type { ConversationSummary } from "../../types/assistant";
@@ -37,7 +37,7 @@ const Assistant = () => {
 
   const fetchConversations = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/agent-runtime/conversations`);
+      const res = await apiFetch(`${API_BASE}/agent-runtime/conversations`);
       if (!res.ok) {
         return;
       }
@@ -50,7 +50,7 @@ const Assistant = () => {
 
   const fetchModels = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/agent-runtime/assistant/models`);
+      const res = await apiFetch(`${API_BASE}/agent-runtime/assistant/models`);
       if (!res.ok) {
         return;
       }
@@ -71,7 +71,7 @@ const Assistant = () => {
 
   const loadConversation = async (conv: ConversationSummary) => {
     try {
-      const res = await fetch(`${API_BASE}/agent-runtime/conversations/${conv.id}`);
+      const res = await apiFetch(`${API_BASE}/agent-runtime/conversations/${conv.id}`);
       if (!res.ok) {
         return;
       }
@@ -99,7 +99,7 @@ const Assistant = () => {
       minute: "2-digit",
     })}`;
     try {
-      const res = await fetch(`${API_BASE}/agent-runtime/conversations`, {
+      const res = await apiFetch(`${API_BASE}/agent-runtime/conversations`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, model }),
@@ -119,7 +119,7 @@ const Assistant = () => {
   const deleteConversation = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      await fetch(`${API_BASE}/agent-runtime/conversations/${id}`, { method: "DELETE" });
+      await apiFetch(`${API_BASE}/agent-runtime/conversations/${id}`, { method: "DELETE" });
       await fetchConversations();
       if (activeConversationId === id) {
         clearConversation();
@@ -167,7 +167,7 @@ const Assistant = () => {
     }));
 
     try {
-      const response = await fetch(`${API_BASE}/agent-runtime/assistant/chat`, {
+      const response = await apiFetch(`${API_BASE}/agent-runtime/assistant/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -296,12 +296,15 @@ const Assistant = () => {
               }}
             />
           </button>
-          <div className={styles.headerTitle}>
-            <h1>Assistant Workspace</h1>
+          <div className={styles.headerLeft}>
+            <MessageSquare size={16} className={styles.headerIcon} />
+            <div>
+              <h2 className={styles.headerTitle}>Assistant Workspace</h2>
+              <span className={styles.headerSub}>
+                {model} · {activeConversationId ? "conversation active" : "no active conversation"}
+              </span>
+            </div>
           </div>
-          <p className={styles.subtitle}>
-            {model} · {activeConversationId ? "conversation active" : "no active conversation"}
-          </p>
         </header>
 
         <div className={styles.chatArea}>

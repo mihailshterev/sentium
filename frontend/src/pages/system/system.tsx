@@ -12,7 +12,7 @@ import {
   Database,
 } from "lucide-react";
 import styles from "./system.module.scss";
-import { API_BASE } from "../../utils/constants";
+import { API_BASE, apiFetch } from "../../utils/constants";
 import type { SystemMetrics } from "../../types/system";
 
 const REFRESH_INTERVAL = 5000;
@@ -80,7 +80,7 @@ const System = () => {
       setRefreshing(true);
     }
     try {
-      const res = await fetch(`${API_BASE}/watchdog/system/metrics`);
+      const res = await apiFetch(`${API_BASE}/watchdog/system/metrics`);
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}`);
       }

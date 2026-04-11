@@ -18,7 +18,7 @@ import {
   Zap,
 } from "lucide-react";
 import styles from "./dashboard.module.scss";
-import { API_BASE } from "../../utils/constants";
+import { API_BASE, apiFetch } from "../../utils/constants";
 import type { AgentRecord } from "../../types/agents";
 import type { WorkflowRecord } from "../../types/workflows";
 
@@ -84,8 +84,8 @@ const Dashboard = () => {
     const fetchData = async () => {
       try {
         const [agentsRes, workflowsRes] = await Promise.allSettled([
-          fetch(`${API_BASE}/agent-runtime/agents`),
-          fetch(`${API_BASE}/agent-runtime/workflows`),
+          apiFetch(`${API_BASE}/agent-runtime/agents`),
+          apiFetch(`${API_BASE}/agent-runtime/workflows`),
         ]);
         if (agentsRes.status === "fulfilled" && agentsRes.value.ok) {
           setAgents(await agentsRes.value.json());
