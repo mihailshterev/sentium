@@ -16,7 +16,7 @@ public sealed class AssistantController(IHttpClientFactory httpClientFactory, IC
     [HttpGet("models")]
     public async Task<IActionResult> GetModels(CancellationToken ct)
     {
-        using var client = httpClientFactory.CreateClient();
+        using var client = httpClientFactory.CreateClient("ollama");
         using var response = await client.GetAsync(new Uri(OllamaBase, "/api/tags"), ct);
 
         if (!response.IsSuccessStatusCode)
@@ -48,7 +48,7 @@ public sealed class AssistantController(IHttpClientFactory httpClientFactory, IC
             }
         }
 
-        using var client = httpClientFactory.CreateClient();
+        using var client = httpClientFactory.CreateClient("ollama");
 
         var ollamaPayload = new
         {

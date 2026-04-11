@@ -14,19 +14,14 @@ interface ConversationState {
 }
 
 export interface ConversationContextValue extends ConversationState {
-  setActiveConversation: (
-    id: string | null,
-    messages: ConversationMessage[],
-    model: string,
-  ) => void;
+  setActiveConversation: (id: string | null, messages: ConversationMessage[], model: string) => void;
   appendMessage: (message: ConversationMessage) => void;
   updateLastMessage: (id: string, appendContent: string) => void;
   setModel: (model: string) => void;
   clearConversation: () => void;
 }
 
-export const ConversationContext =
-  createContext<ConversationContextValue | null>(null);
+export const ConversationContext = createContext<ConversationContextValue | null>(null);
 
 export const INITIAL_MESSAGE: ConversationMessage = {
   id: "init",

@@ -37,7 +37,7 @@ const Assistant = () => {
 
   const fetchConversations = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/conversations`);
+      const res = await fetch(`${API_BASE}/agent-runtime/conversations`);
       if (!res.ok) {
         return;
       }
@@ -50,7 +50,7 @@ const Assistant = () => {
 
   const fetchModels = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE}/assistant/models`);
+      const res = await fetch(`${API_BASE}/agent-runtime/assistant/models`);
       if (!res.ok) {
         return;
       }
@@ -71,18 +71,13 @@ const Assistant = () => {
 
   const loadConversation = async (conv: ConversationSummary) => {
     try {
-      const res = await fetch(`${API_BASE}/conversations/${conv.id}`);
+      const res = await fetch(`${API_BASE}/agent-runtime/conversations/${conv.id}`);
       if (!res.ok) {
         return;
       }
       const data = await res.json();
       const loadedMessages: ConversationMessage[] = (data.messages ?? []).map(
-        (m: {
-          id: string;
-          role: "user" | "assistant";
-          content: string;
-          timestamp: string;
-        }) => ({
+        (m: { id: string; role: "user" | "assistant"; content: string; timestamp: string }) => ({
           id: m.id,
           role: m.role,
           content: m.content,
@@ -104,7 +99,7 @@ const Assistant = () => {
       minute: "2-digit",
     })}`;
     try {
-      const res = await fetch(`${API_BASE}/conversations`, {
+      const res = await fetch(`${API_BASE}/agent-runtime/conversations`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ title, model }),
@@ -124,7 +119,7 @@ const Assistant = () => {
   const deleteConversation = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      await fetch(`${API_BASE}/conversations/${id}`, { method: "DELETE" });
+      await fetch(`${API_BASE}/agent-runtime/conversations/${id}`, { method: "DELETE" });
       await fetchConversations();
       if (activeConversationId === id) {
         clearConversation();
@@ -172,7 +167,7 @@ const Assistant = () => {
     }));
 
     try {
-      const response = await fetch(`${API_BASE}/assistant/chat`, {
+      const response = await fetch(`${API_BASE}/agent-runtime/assistant/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -212,17 +207,13 @@ const Assistant = () => {
         }
       }
     } catch {
-      updateLastMessage(
-        aiMsgId,
-        "\n\n_Error: Connection to Ollama node failed._",
-      );
+      updateLastMessage(aiMsgId, "\n\n_Error: Connection to Ollama node failed._");
     } finally {
       setIsTyping(false);
     }
   };
 
-  const formatTime = (date: Date) =>
-    date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const formatTime = (date: Date) => date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
   const formatDate = (dateStr: string) =>
     new Date(dateStr).toLocaleDateString("en-US", {
@@ -232,16 +223,10 @@ const Assistant = () => {
 
   return (
     <div className={styles.container}>
-      <aside
-        className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ""}`}
-      >
+      <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ""}`}>
         <div className={styles.sidebarHeader}>
           <span className={styles.sidebarTitle}>Conversations</span>
-          <button
-            className={styles.newChatBtn}
-            onClick={createNewConversation}
-            title="New conversation"
-          >
+          <button className={styles.newChatBtn} onClick={createNewConversation} title="New conversation">
             <Plus size={13} />
           </button>
         </div>
@@ -249,11 +234,7 @@ const Assistant = () => {
         <div className={styles.modelSelector}>
           <Cpu size={12} />
           {models.length > 0 ? (
-            <select
-              className={styles.modelSelect}
-              value={model}
-              onChange={(e) => setModel(e.target.value)}
-            >
+            <select className={styles.modelSelect} value={model} onChange={(e) => setModel(e.target.value)}>
               {models.map((m) => (
                 <option key={m} value={m}>
                   {m}
@@ -286,9 +267,7 @@ const Assistant = () => {
               <MessageSquare size={12} className={styles.convIcon} />
               <div className={styles.convInfo}>
                 <span className={styles.convTitle}>{conv.title}</span>
-                <span className={styles.convDate}>
-                  {formatDate(conv.createdAt)}
-                </span>
+                <span className={styles.convDate}>{formatDate(conv.createdAt)}</span>
               </div>
               <button
                 className={styles.convDelete}
@@ -319,16 +298,9 @@ const Assistant = () => {
           </button>
           <div className={styles.headerTitle}>
             <h1>Assistant Workspace</h1>
-            <div className={styles.statusIndicator}>
-              <div className="status-dot" />
-              <span>Node Active</span>
-            </div>
           </div>
           <p className={styles.subtitle}>
-            {model} ·{" "}
-            {activeConversationId
-              ? "conversation active"
-              : "no active conversation"}
+            {model} · {activeConversationId ? "conversation active" : "no active conversation"}
           </p>
         </header>
 
@@ -338,16 +310,10 @@ const Assistant = () => {
               key={msg.id}
               className={`${styles.messageWrapper} ${msg.role === "user" ? styles.wrapperUser : styles.wrapperAi}`}
             >
-              <div
-                className={`${styles.message} ${msg.role === "user" ? styles.messageUser : styles.messageAi}`}
-              >
+              <div className={`${styles.message} ${msg.role === "user" ? styles.messageUser : styles.messageAi}`}>
                 <div className={styles.messageHeader}>
-                  <span className={styles.sender}>
-                    {msg.role === "user" ? "YOU" : "SYSTEM"}
-                  </span>
-                  <span className={styles.timestamp}>
-                    {formatTime(msg.timestamp)}
-                  </span>
+                  <span className={styles.sender}>{msg.role === "user" ? "YOU" : "SYSTEM"}</span>
+                  <span className={styles.timestamp}>{formatTime(msg.timestamp)}</span>
                 </div>
 
                 <div className={styles.content}>
@@ -382,11 +348,7 @@ const Assistant = () => {
               autoComplete="off"
               disabled={isTyping}
             />
-            <button
-              type="submit"
-              disabled={!input.trim() || isTyping}
-              className={styles.sendButton}
-            >
+            <button type="submit" disabled={!input.trim() || isTyping} className={styles.sendButton}>
               <svg
                 width="20"
                 height="20"
@@ -402,9 +364,7 @@ const Assistant = () => {
               </svg>
             </button>
           </form>
-          <div className={styles.inputFooter}>
-            Protected by Sentium Security Protocols
-          </div>
+          <div className={styles.inputFooter}>Protected by Sentium Security Protocols</div>
         </div>
       </div>
     </div>

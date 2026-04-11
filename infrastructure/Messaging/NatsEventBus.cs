@@ -10,8 +10,7 @@ public sealed class NatsEventBus(INatsConnection connection, ILogger<NatsEventBu
     {
         try
         {
-            var selectedSerializer = serializer ?? NatsJsonSerializer<T>.Default;
-
+            var selectedSerializer = serializer ?? (typeof(T) == typeof(byte[]) || typeof(T) == typeof(string) ? null : NatsJsonSerializer<T>.Default);
             await connection.PublishAsync(subject, message, serializer: selectedSerializer, cancellationToken: ct);
             logger.LogDebug("Published message to {Subject}", subject);
         }
@@ -61,5 +60,11 @@ public sealed class NatsEventBus(INatsConnection connection, ILogger<NatsEventBu
         }, ct);
 
         return Task.CompletedTask;
+    }
+
+    public IAsyncEnumerable<NatsMsg<T>> SubscribeStreamAsync<T>(string subject, INatsSerializer<T>? serializer = null, CancellationToken ct = default)
+    {
+        var selectedSerializer = serializer ?? (typeof(T) == typeof(byte[]) ? null : NatsJsonSerializer<T>.Default);
+        return connection.SubscribeAsync(subject, serializer: selectedSerializer, cancellationToken: ct);
     }
 }

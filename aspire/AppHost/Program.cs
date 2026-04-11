@@ -57,6 +57,8 @@ var python = builder.AddPythonApp(ServiceNames.NetworkFilter, "../../services/Ne
 var sentinelApi = builder.AddProject<Projects.Sentinel_Api>(ServiceNames.Sentinel)
     .WithReference(nats).WaitFor(nats);
 
+var watchdogApi = builder.AddProject<Projects.Watchdog_Api>(ServiceNames.Watchdog);
+
 var agentRuntimeApi = builder.AddProject<Projects.AgentRuntime_Api>(ServiceNames.AgentRuntime)
     .WithReference(ollamaModel).WaitFor(ollamaModel)
     .WithReference(nats).WaitFor(nats)
@@ -67,14 +69,17 @@ var agentRuntimeApi = builder.AddProject<Projects.AgentRuntime_Api>(ServiceNames
 var apiGateway = builder.AddProject<Projects.ApiGateway>(ServiceNames.Gateway)
     .WithReference(identityApi).WaitFor(identityApi)
     .WithReference(sentinelApi).WaitFor(sentinelApi)
+    .WithReference(watchdogApi).WaitFor(watchdogApi)
     .WithReference(agentRuntimeApi).WaitFor(agentRuntimeApi);
 
 var frontend = builder.AddViteApp(ServiceNames.Frontend, "../../frontend")
     .WithReference(apiGateway).WaitFor(apiGateway)
+    .WithEnvironment("VITE_API_BASE", apiGateway.GetEndpoint("https"))
     .WithEndpoint("http", e => e.Port = 5173);
 
 identityApi.WithParentRelationship(apiGateway);
 sentinelApi.WithParentRelationship(apiGateway);
+watchdogApi.WithParentRelationship(apiGateway);
 agentRuntimeApi.WithParentRelationship(apiGateway);
 
 builder.Build().Run();
