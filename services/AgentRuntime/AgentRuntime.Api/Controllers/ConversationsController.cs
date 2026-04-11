@@ -1,10 +1,12 @@
 using AgentRuntime.Core.Conversations;
 using AgentRuntime.Core.Dtos;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AgentRuntime.Api.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("conversations")]
 public sealed class ConversationsController(IConversationService conversationService) : ControllerBase
 {

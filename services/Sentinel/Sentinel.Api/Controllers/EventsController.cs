@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sentinel.Application.Engine;
 using Sentinel.Core.Events;
@@ -5,20 +6,14 @@ using Sentinel.Core.Events;
 namespace Sentinel.Api.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("events")]
-public sealed class EventsController : ControllerBase
+public sealed class EventsController(SentinelPolicyEngine engine) : ControllerBase
 {
-    private readonly SentinelPolicyEngine Engine;
-
-    public EventsController(SentinelPolicyEngine engine)
-    {
-        Engine = engine;
-    }
-
     [HttpPost]
     public IActionResult Evaluate([FromBody] SentinelEvent evt)
     {
-        var decision = Engine.Evaluate(evt);
+        var decision = engine.Evaluate(evt);
 
         return decision.Allowed
             ? Ok(decision)

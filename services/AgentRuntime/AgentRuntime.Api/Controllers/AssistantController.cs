@@ -1,5 +1,6 @@
 using AgentRuntime.Core.Conversations;
 using AgentRuntime.Core.Dtos;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Text;
 using System.Text.Json;
@@ -8,6 +9,7 @@ using System.Text.Json.Nodes;
 namespace AgentRuntime.Api.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("assistant")]
 public sealed class AssistantController(IHttpClientFactory httpClientFactory, IConversationService conversationService) : ControllerBase
 {

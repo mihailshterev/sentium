@@ -3,6 +3,7 @@ using Watchdog.Application;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
+builder.AddAuthenticationDefaults();
 
 builder.Services.AddOpenApi();
 builder.Services.AddControllers();
@@ -15,6 +16,9 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapControllers();
 
