@@ -2,6 +2,7 @@ using IdentityProvider.Core.Security;
 using IdentityProvider.Infrastructure.Data;
 using IdentityProvider.Infrastructure.Identity;
 using IdentityProvider.Infrastructure.Identity.OpenIddict;
+using Infrastructure.Messaging;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -15,6 +16,8 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddDbContext<IdentityDbContext>((options) => options.UseSqlServer(configuration.GetConnectionString("identitydb")));
+        services.AddSingleton<IEventBus, NatsEventBus>();
+
         return services;
     }
 

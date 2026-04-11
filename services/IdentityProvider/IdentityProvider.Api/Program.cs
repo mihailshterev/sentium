@@ -11,6 +11,8 @@ builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi();
 builder.Services.AddControllers();
 
+builder.AddNatsClient("nats");
+
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddIdentityServices();
 builder.Services.AddApplication();

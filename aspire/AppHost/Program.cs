@@ -30,7 +30,8 @@ var ollama = builder.AddOllama(ResourceNames.OllamaServiceName)
 var ollamaModel = ollama.AddModel(AIModels.Gemma4);
 
 var identityApi = builder.AddProject<Projects.IdentityProvider_Api>(ServiceNames.Identity)
-    .WithReference(identityDb).WaitFor(identityDb);
+    .WithReference(identityDb).WaitFor(identityDb)
+    .WithReference(nats).WaitFor(nats);
 
 var baseDataDir = Path.Combine(builder.Environment.ContentRootPath, "data", "zeek");
 var capturePath = Path.Combine(baseDataDir, "capture");
