@@ -55,7 +55,9 @@ const AgentOrchestration = () => {
   }, []);
 
   const openStream = useCallback((eventId: string) => {
-    const eventSource = new EventSource(`${API_BASE}/agent-runtime/agents/stream/${eventId}`);
+    const eventSource = new EventSource(`${API_BASE}/agent-runtime/agents/stream/${eventId}`, {
+      withCredentials: true,
+    });
 
     const syncLogs = () => {
       setLogs([...logsBufferRef.current]);
