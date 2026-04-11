@@ -1,4 +1,5 @@
 using IdentityProvider.Infrastructure.Data;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using OpenIddict.Abstractions;
@@ -6,11 +7,11 @@ using static OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace IdentityProvider.Infrastructure.Identity.OpenIddict;
 
-public sealed class OpenIddictWorker(IServiceProvider serviceProvider) : IHostedService
+public sealed class OpenIddictWorker(IServiceProvider serviceProvider, IConfiguration configuration) : IHostedService
 {
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        using var scope = serviceProvider.CreateScope();
+        await using var scope = serviceProvider.CreateAsyncScope();
 
         var context = scope.ServiceProvider.GetRequiredService<IdentityDbContext>();
         await context.Database.EnsureCreatedAsync(cancellationToken);
@@ -32,6 +33,47 @@ public sealed class OpenIddictWorker(IServiceProvider serviceProvider) : IHosted
                 }
             }, cancellationToken);
         }
+
+        await SeedGatewayBffClientAsync(manager, cancellationToken);
+    }
+
+    private async Task SeedGatewayBffClientAsync(IOpenIddictApplicationManager manager, CancellationToken ct)
+    {
+        const string clientId = "gateway-bff";
+
+        if (await manager.FindByClientIdAsync(clientId, ct) is not null)
+        {
+            return;
+        }
+
+        var gatewaySecret = configuration["Identity:GatewayBffSecret"] ?? throw new InvalidOperationException("Gateway BFF secret is not configured.");
+
+        await manager.CreateAsync(new OpenIddictApplicationDescriptor
+        {
+            ClientId = clientId,
+            ClientSecret = gatewaySecret,
+            ClientType = ClientTypes.Confidential,
+            ConsentType = ConsentTypes.Implicit,
+            Permissions =
+            {
+                Permissions.Endpoints.Authorization,
+                Permissions.Endpoints.Token,
+                Permissions.GrantTypes.AuthorizationCode,
+                Permissions.GrantTypes.RefreshToken,
+                Permissions.ResponseTypes.Code,
+                Permissions.Prefixes.Scope + Core.Security.Scopes.OpenId,
+                Permissions.Prefixes.Scope + Core.Security.Scopes.Profile,
+                Permissions.Prefixes.Scope + Core.Security.Scopes.Email,
+                Permissions.Prefixes.Scope + Core.Security.Scopes.Api,
+                Permissions.Prefixes.Scope + Core.Security.Scopes.Roles,
+            },
+            RedirectUris = { new Uri(configuration["Identity:GatewayRedirectUri"] ?? "https://localhost:7282/bff/callback") },
+            PostLogoutRedirectUris = { new Uri(configuration["Identity:GatewayPostLogoutUri"] ?? "https://localhost:7282/bff/logged-out") },
+            Requirements =
+            {
+                Requirements.Features.ProofKeyForCodeExchange
+            }
+        }, ct);
     }
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
