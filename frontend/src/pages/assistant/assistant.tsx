@@ -298,10 +298,6 @@ const Assistant = () => {
           </button>
           <div className={styles.headerTitle}>
             <h1>Assistant Workspace</h1>
-            <div className={styles.statusIndicator}>
-              <div className="status-dot" />
-              <span>Node Active</span>
-            </div>
           </div>
           <p className={styles.subtitle}>
             {model} · {activeConversationId ? "conversation active" : "no active conversation"}
