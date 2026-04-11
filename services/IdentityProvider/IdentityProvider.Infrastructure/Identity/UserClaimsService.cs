@@ -3,6 +3,7 @@ using IdentityProvider.Application.Abstractions;
 using IdentityProvider.Core.Entities;
 using IdentityProvider.Core.Security;
 using Microsoft.AspNetCore.Identity;
+using OpenIddict.Abstractions;
 
 namespace IdentityProvider.Infrastructure.Identity;
 
@@ -10,20 +11,17 @@ public sealed class UserClaimsService(UserManager<ApplicationUser> userManager) 
 {
     public async Task<IReadOnlyCollection<Claim>> GetClaimsAsync(Guid userId, IEnumerable<string> scopes, CancellationToken ct)
     {
-        var user = await userManager.FindByIdAsync(userId.ToString());
-        if (user is null)
-        {
-            throw new InvalidOperationException($"User '{userId}' not found.");
-        }
-
+        var user = await userManager.FindByIdAsync(userId.ToString()) ?? throw new InvalidOperationException($"User '{userId}' not found.");
         var claims = new List<Claim>
         {
+            new(OpenIddictConstants.Claims.Subject, user.Id.ToString()),
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new(ClaimTypes.Name, user.UserName ?? string.Empty),
         };
 
         if (!string.IsNullOrWhiteSpace(user.Email))
         {
+            claims.Add(new Claim(OpenIddictConstants.Claims.Email, user.Email));
             claims.Add(new Claim(ClaimTypes.Email, user.Email));
         }
 
