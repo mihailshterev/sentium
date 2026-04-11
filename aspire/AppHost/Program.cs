@@ -7,6 +7,8 @@ var nats = builder.AddNats(ResourceNames.NatsServiceName)
     .WithJetStream()
     .WithDataVolume();
 
+var redis = builder.AddRedis("redis");
+
 var sqlPassword = builder.AddParameter("sql-password", secret: true);
 
 var sql = builder.AddSqlServer(ResourceNames.SqlServerName, password: sqlPassword)
@@ -16,15 +18,16 @@ var identityDb = sql.AddDatabase(ResourceNames.IdentityDbName);
 var agentRuntimeDb = sql.AddDatabase(ResourceNames.AgentRuntimeDbName);
 
 var ollama = builder.AddOllama(ResourceNames.OllamaServiceName)
+    .WithImage("ollama/ollama", "0.20.2")
     .WithDataVolume()
     .WithGPUSupport(OllamaGpuVendor.Nvidia)
-    .WithEnvironment(OllamaConfig.ContextSizeKey, OllamaConfig.DefaultContextSize)
+    // .WithEnvironment(OllamaConfig.ContextSizeKey, OllamaConfig.DefaultContextSize)
     .WithEnvironment(OllamaConfig.FlashAttentionKey, "1")
-    .WithEnvironment(OllamaConfig.CacheTypeKey, "q4_0")
+    // .WithEnvironment(OllamaConfig.CacheTypeKey, "q4_0")
     .WithEnvironment(OllamaConfig.DebugKey, "1")
     .WithEndpoint("http", e => e.Port = 11434);
 
-var ollamaModel = ollama.AddModel(AIModels.Qwen3_8B_Q4KM);
+var ollamaModel = ollama.AddModel(AIModels.Gemma4);
 
 var identityApi = builder.AddProject<Projects.IdentityProvider_Api>(ServiceNames.Identity)
     .WithReference(identityDb).WaitFor(identityDb);
@@ -54,23 +57,29 @@ var python = builder.AddPythonApp(ServiceNames.NetworkFilter, "../../services/Ne
 var sentinelApi = builder.AddProject<Projects.Sentinel_Api>(ServiceNames.Sentinel)
     .WithReference(nats).WaitFor(nats);
 
+var watchdogApi = builder.AddProject<Projects.Watchdog_Api>(ServiceNames.Watchdog);
+
 var agentRuntimeApi = builder.AddProject<Projects.AgentRuntime_Api>(ServiceNames.AgentRuntime)
     .WithReference(ollamaModel).WaitFor(ollamaModel)
     .WithReference(nats).WaitFor(nats)
     .WithReference(agentRuntimeDb).WaitFor(agentRuntimeDb)
+    .WithReference(redis).WaitFor(redis)
     .WithEnvironment("AI__ModelName", ollamaModel.Resource.ModelName);
 
 var apiGateway = builder.AddProject<Projects.ApiGateway>(ServiceNames.Gateway)
     .WithReference(identityApi).WaitFor(identityApi)
     .WithReference(sentinelApi).WaitFor(sentinelApi)
+    .WithReference(watchdogApi).WaitFor(watchdogApi)
     .WithReference(agentRuntimeApi).WaitFor(agentRuntimeApi);
 
 var frontend = builder.AddViteApp(ServiceNames.Frontend, "../../frontend")
     .WithReference(apiGateway).WaitFor(apiGateway)
+    .WithEnvironment("VITE_API_BASE", apiGateway.GetEndpoint("https"))
     .WithEndpoint("http", e => e.Port = 5173);
 
 identityApi.WithParentRelationship(apiGateway);
 sentinelApi.WithParentRelationship(apiGateway);
+watchdogApi.WithParentRelationship(apiGateway);
 agentRuntimeApi.WithParentRelationship(apiGateway);
 
 builder.Build().Run();

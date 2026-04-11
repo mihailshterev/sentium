@@ -7,4 +7,5 @@ public static class AIModels
     public const string Qwen3_8B = "qwen3:8b";
     public const string Qwen3_8B_Q4KM = "qwen3:8b-q4_K_M";
     public const string Qwen3_5_9B_Q4KM = "qwen3.5:9b-q4_K_M";
+    public const string Gemma4 = "gemma4:e4b";
 }

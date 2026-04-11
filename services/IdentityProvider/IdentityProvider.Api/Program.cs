@@ -3,6 +3,8 @@ using IdentityProvider.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.AddServiceDefaults();
+
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddProblemDetails();
@@ -29,11 +31,6 @@ if (app.Environment.IsDevelopment())
     logger.LogInformation("Database migrations applied");
 
     app.MapOpenApi();
-}
-
-if (app.Environment.IsProduction())
-{
-    app.UseHttpsRedirection();
 }
 
 app.UseAuthentication();

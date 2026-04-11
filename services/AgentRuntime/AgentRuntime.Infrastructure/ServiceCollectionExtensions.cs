@@ -1,8 +1,12 @@
 using AgentRuntime.Core.Agents;
+using AgentRuntime.Core.Conversations;
 using AgentRuntime.Core.Tools;
+using AgentRuntime.Core.WorkflowManagement;
 using AgentRuntime.Infrastructure.Agents;
+using AgentRuntime.Infrastructure.Conversations;
 using AgentRuntime.Infrastructure.Data;
 using AgentRuntime.Infrastructure.Tools;
+using AgentRuntime.Infrastructure.WorkflowManagement;
 using Infrastructure.Messaging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.AI;
@@ -42,6 +46,8 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<IEventBus, NatsEventBus>();
         services.AddTransient<IAgentManager, AgentManager>();
+        services.AddTransient<IConversationManager, ConversationManager>();
+        services.AddTransient<IWorkflowManager, WorkflowManager>();
 
         return services;
     }

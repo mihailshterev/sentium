@@ -2,19 +2,11 @@ using AgentRuntime.Application;
 using AgentRuntime.Infrastructure;
 using AgentRuntime.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Hybrid;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AgentRuntimePolicy", policy =>
-    {
-        policy.WithOrigins("http://localhost:5173")
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
-    });
-});
+builder.AddServiceDefaults();
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -22,8 +14,37 @@ builder.Services.AddOpenApi();
 builder.Services.AddControllers();
 
 builder.AddNatsClient("nats");
+builder.AddRedisDistributedCache("redis");
 builder.Services.AddAgentRuntimeApplication();
 builder.Services.AddAgentRuntimeInfrastructure(builder.Configuration);
+
+builder.Services.AddHttpClient();
+
+#pragma warning disable EXTEXP0001
+
+builder.Services.AddHttpClient("ollama", client =>
+{
+    client.BaseAddress = new Uri("http://localhost:11434");
+    client.Timeout = TimeSpan.FromMinutes(15);
+})
+.RemoveAllResilienceHandlers()
+.AddStandardResilienceHandler(options =>
+{
+    options.TotalRequestTimeout.Timeout = TimeSpan.FromMinutes(10);
+    options.AttemptTimeout.Timeout = TimeSpan.FromMinutes(3);
+    options.Retry.MaxRetryAttempts = 1;
+    options.CircuitBreaker.SamplingDuration = TimeSpan.FromMinutes(11);
+});
+
+#pragma warning restore EXTEXP0001
+builder.Services.AddHybridCache(options =>
+{
+    options.DefaultEntryOptions = new HybridCacheEntryOptions
+    {
+        Expiration = TimeSpan.FromMinutes(30),
+        LocalCacheExpiration = TimeSpan.FromMinutes(5)
+    };
+});
 
 var app = builder.Build();
 
@@ -41,8 +62,6 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-app.UseCors("AgentRuntimePolicy");
-app.UseHttpsRedirection();
 app.MapControllers();
 
 app.Run();
