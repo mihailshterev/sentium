@@ -4,8 +4,7 @@ import { AlertCircle, ArrowRight, Bot, Lock, Mail, ShieldCheck, Zap } from "luci
 import styles from "./login.module.scss";
 import { AnimatedBg } from "./animated-bg";
 import { useAuthStore } from "../../stores/auth-store";
-
-const API_BASE = import.meta.env.VITE_API_BASE;
+import { API_BASE, BFF_BASE } from "../../utils/constants";
 
 const FEATURES = [
   "Real-time threat detection and autonomous response",
@@ -36,8 +35,7 @@ const Login = () => {
     setError(null);
     setSubmitting(true);
 
-    const endpoint =
-      mode === "login" ? `${API_BASE}/api/identity/account/login` : `${API_BASE}/api/identity/account/register`;
+    const endpoint = mode === "login" ? `${API_BASE}/identity/account/login` : `${API_BASE}/identity/account/register`;
 
     try {
       const res = await fetch(endpoint, {
@@ -55,7 +53,7 @@ const Login = () => {
         return;
       }
 
-      window.location.href = `${API_BASE}/bff/login?returnUrl=${encodeURIComponent(window.location.origin + "/")}`;
+      window.location.href = `${BFF_BASE}/login?returnUrl=${encodeURIComponent(window.location.origin + "/")}`;
     } catch {
       setError("Something went wrong. Please try again.");
       setSubmitting(false);

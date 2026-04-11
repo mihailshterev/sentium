@@ -1,6 +1,6 @@
 export const API_BASE = import.meta.env.VITE_API_BASE + "/api";
 
-export const BFF_BASE = import.meta.env.VITE_API_BASE;
+export const BFF_BASE = import.meta.env.VITE_API_BASE + "/bff";
 
 // will be refactored into separate API utility module and specific services for the different functional areas
 export const apiFetch = (input: string | URL | Request, init?: RequestInit): Promise<Response> =>

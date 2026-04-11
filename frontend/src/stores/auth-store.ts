@@ -17,7 +17,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   checkAuth: async () => {
     set({ status: "checking" });
     try {
-      const res = await fetch(`${BFF_BASE}/bff/user`, {
+      const res = await fetch(`${BFF_BASE}/user`, {
         credentials: "include",
       });
 
@@ -34,12 +34,12 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   login: (returnUrl) => {
     const target = returnUrl ?? window.location.pathname;
-    window.location.href = `${BFF_BASE}/bff/login?returnUrl=${encodeURIComponent(window.location.origin + target)}`;
+    window.location.href = `${BFF_BASE}/login?returnUrl=${encodeURIComponent(window.location.origin + target)}`;
   },
 
   logout: async () => {
     try {
-      await fetch(`${BFF_BASE}/bff/logout`, {
+      await fetch(`${BFF_BASE}/logout`, {
         method: "POST",
         credentials: "include",
       });
