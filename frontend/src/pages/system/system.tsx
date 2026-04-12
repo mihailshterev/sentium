@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import {
   Cpu,
   HardDrive,
@@ -12,10 +12,7 @@ import {
   Database,
 } from "lucide-react";
 import styles from "./system.module.scss";
-import { API_BASE, apiFetch } from "../../utils/constants";
-import type { SystemMetrics } from "../../types/system";
-
-const REFRESH_INTERVAL = 5000;
+import useSystemMetrics from "../../hooks/useSystemMetrics";
 
 function formatUptime(uptime: string): string {
   // .NET TimeSpan comes as "d.hh:mm:ss.fffffff" or "hh:mm:ss.fffffff"
@@ -70,43 +67,24 @@ function getUsageColor(percent: number): string {
 }
 
 const System = () => {
-  const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
+  const { metrics, isLoading, isRefetching, error, refetch } = useSystemMetrics();
+  const [isManualRefetching, setIsManualRefetching] = useState(false);
 
-  const fetchMetrics = useCallback(async (isManual = false) => {
-    if (isManual) {
-      setRefreshing(true);
-    }
-    try {
-      const res = await apiFetch(`${API_BASE}/watchdog/system/metrics`);
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}`);
-      }
-      setMetrics(await res.json());
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch metrics");
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchMetrics();
-    const id = setInterval(() => fetchMetrics(), REFRESH_INTERVAL);
-    return () => clearInterval(id);
-  }, [fetchMetrics]);
+  const handleManualRefresh = async () => {
+    setIsManualRefetching(true);
+    await refetch();
+    setIsManualRefetching(false);
+  };
 
   if (error && !metrics) {
     return (
       <div className={styles.root}>
         <div className={styles.errorState}>
           <AlertCircle size={32} className={styles.errorIcon} />
-          <span className={styles.errorMessage}>Unable to load system metrics: {error}</span>
-          <button className={styles.retryBtn} onClick={() => fetchMetrics(true)}>
+          <span className={styles.errorMessage}>
+            Unable to load system metrics: {error instanceof Error ? error.message : "Unknown error"}
+          </span>
+          <button className={styles.retryBtn} onClick={handleManualRefresh}>
             Retry
           </button>
         </div>
@@ -127,8 +105,8 @@ const System = () => {
             Live
           </div>
           <button
-            className={`${styles.refreshBtn} ${refreshing ? styles.spinning : ""}`}
-            onClick={() => fetchMetrics(true)}
+            className={`${styles.refreshBtn} ${isManualRefetching || isRefetching ? styles.spinning : ""}`}
+            onClick={handleManualRefresh}
           >
             <RefreshCw size={12} />
             Refresh
@@ -137,7 +115,7 @@ const System = () => {
       </div>
 
       <div className={styles.statsRow}>
-        {loading ? (
+        {isLoading ? (
           <>
             <div className={styles.skeletonCard} />
             <div className={styles.skeletonCard} />

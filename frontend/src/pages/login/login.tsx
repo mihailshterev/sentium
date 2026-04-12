@@ -4,7 +4,8 @@ import { AlertCircle, ArrowRight, Bot, Lock, Mail, ShieldCheck, Zap } from "luci
 import styles from "./login.module.scss";
 import { AnimatedBg } from "./animated-bg";
 import { useAuthStore } from "../../stores/auth-store";
-import { API_BASE, BFF_BASE } from "../../utils/constants";
+import { BFF_BASE } from "../../utils/constants";
+import { BASE_URL } from "../../api/client";
 
 const FEATURES = [
   "Real-time threat detection and autonomous response",
@@ -35,7 +36,7 @@ const Login = () => {
     setError(null);
     setSubmitting(true);
 
-    const endpoint = mode === "login" ? `${API_BASE}/identity/account/login` : `${API_BASE}/identity/account/register`;
+    const endpoint = mode === "login" ? `${BASE_URL}/identity/account/login` : `${BASE_URL}/identity/account/register`;
 
     try {
       const res = await fetch(endpoint, {

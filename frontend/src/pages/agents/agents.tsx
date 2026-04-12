@@ -1,161 +1,94 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Bot, Plus, CheckCircle, AlertCircle, Loader, Clock, Pencil, X, Cpu } from "lucide-react";
 import styles from "./agents.module.scss";
-import { API_BASE, apiFetch } from "../../utils/constants";
+import useAgents from "../../hooks/useAgents";
+import useModels from "../../hooks/useModels";
 import type { AgentRecord } from "../../types/agents";
 
 const Agents = () => {
-  const [agents, setAgents] = useState<AgentRecord[]>([]);
-  const [models, setModels] = useState<string[]>([]);
+  const {
+    agents,
+    isLoading,
+    createAgent,
+    isCreatingAgent,
+    isCreateSuccess,
+    isCreateError,
+    createAgentError,
+    resetCreate,
+    updateAgent,
+    isUpdatingAgent,
+    isUpdateSuccess,
+    isUpdateError,
+    updateAgentError,
+    resetUpdate,
+    deleteAgent,
+  } = useAgents();
+  const { models } = useModels();
+
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [model, setModel] = useState("");
-  const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
-  const [errorMsg, setErrorMsg] = useState("");
-  const [loading, setLoading] = useState(true);
 
   const [editAgent, setEditAgent] = useState<AgentRecord | null>(null);
   const [editName, setEditName] = useState("");
   const [editDescription, setEditDescription] = useState("");
   const [editModel, setEditModel] = useState("");
-  const [editStatus, setEditStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
-  const [editErrorMsg, setEditErrorMsg] = useState("");
 
-  const fetchAgents = async () => {
-    try {
-      const res = await apiFetch(`${API_BASE}/agent-runtime/agents`);
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}`);
-      }
-      const data: AgentRecord[] = await res.json();
-      setAgents(data);
-    } catch {
-      // non-blocking
-    } finally {
-      setLoading(false);
-    }
-  };
+  const selectedModel = model || models[0] || "";
 
-  const fetchModels = async () => {
-    try {
-      const res = await apiFetch(`${API_BASE}/agent-runtime/assistant/models`);
-      if (!res.ok) {
-        return;
-      }
-      const data: string[] = await res.json();
-      setModels(data);
-      if (data.length > 0 && !model) {
-        setModel(data[0]);
-      }
-    } catch {
-      // non-blocking
-    }
-  };
-
-  useEffect(() => {
-    fetchAgents();
-    fetchModels();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setStatus("submitting");
-    setErrorMsg("");
-
-    try {
-      const res = await apiFetch(`${API_BASE}/agent-runtime/agents`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: name.trim(),
-          description: description.trim(),
-          model: model.trim(),
-        }),
-      });
-
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || `HTTP ${res.status}`);
-      }
-
-      setStatus("success");
-      setName("");
-      setDescription("");
-      setModel(models[0] ?? "");
-      await fetchAgents();
-      setTimeout(() => setStatus("idle"), 2500);
-    } catch (err: unknown) {
-      setStatus("error");
-      setErrorMsg(err instanceof Error ? err.message : "Unknown error");
-    }
+    createAgent(
+      {
+        name: name.trim(),
+        description: description.trim(),
+        model: selectedModel.trim(),
+      },
+      {
+        onSuccess: () => {
+          setName("");
+          setDescription("");
+          setModel("");
+          setTimeout(() => resetCreate(), 2500);
+        },
+      },
+    );
   };
 
   const openEdit = (agent: AgentRecord) => {
     setEditAgent(agent);
     setEditName(agent.name);
     setEditDescription(agent.description);
-    setEditModel(agent.model || (models[0] ?? ""));
-    setEditStatus("idle");
-    setEditErrorMsg("");
+    setEditModel(agent.model || models[0] || "");
+    resetUpdate();
   };
 
   const closeEdit = () => {
     setEditAgent(null);
-    setEditStatus("idle");
+    resetUpdate();
   };
 
-  const handleEditSubmit = async (e: React.FormEvent) => {
+  const handleEditSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editAgent) {
-      return;
-    }
-    setEditStatus("submitting");
-    setEditErrorMsg("");
-
-    try {
-      const res = await apiFetch(`${API_BASE}/agent-runtime/agents/${editAgent.id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: editAgent.id,
-          name: editName.trim(),
-          description: editDescription.trim(),
-          model: editModel.trim(),
-        }),
-      });
-
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || `HTTP ${res.status}`);
-      }
-
-      setEditStatus("success");
-      await fetchAgents();
-      setTimeout(() => closeEdit(), 1000);
-    } catch (err: unknown) {
-      setEditStatus("error");
-      setEditErrorMsg(err instanceof Error ? err.message : "Unknown error");
-    }
+    if (!editAgent) return;
+    updateAgent(
+      {
+        id: editAgent.id,
+        name: editName.trim(),
+        description: editDescription.trim(),
+        model: editModel.trim(),
+      },
+      {
+        onSuccess: () => setTimeout(() => closeEdit(), 1000),
+      },
+    );
   };
 
-  const handleDelete = async (agentId: string) => {
-    if (!confirm("Are you sure you want to delete this agent?")) {
-      return;
-    }
-
-    try {
-      const res = await apiFetch(`${API_BASE}/agent-runtime/agents/${agentId}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || `HTTP ${res.status}`);
-      }
-      await fetchAgents();
-    } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : "Unknown error");
-    }
+  const handleDelete = (agentId: string) => {
+    if (!confirm("Are you sure you want to delete this agent?")) return;
+    deleteAgent(agentId, {
+      onError: (err) => alert(err instanceof Error ? err.message : "Unknown error"),
+    });
   };
 
   return (
@@ -226,7 +159,7 @@ const Agents = () => {
                 <select
                   id="agent-model"
                   className={styles.fieldInput}
-                  value={model}
+                  value={selectedModel}
                   onChange={(e) => setModel(e.target.value)}
                 >
                   {models.map((m) => (
@@ -240,7 +173,7 @@ const Agents = () => {
                   id="agent-model"
                   className={styles.fieldInput}
                   type="text"
-                  value={model}
+                  value={selectedModel}
                   onChange={(e) => setModel(e.target.value)}
                   placeholder="e.g. gemma3:1b"
                   autoComplete="off"
@@ -250,11 +183,11 @@ const Agents = () => {
             </div>
 
             <button
-              className={`${styles.submitBtn} ${status === "submitting" ? styles.submitting : ""}`}
+              className={`${styles.submitBtn} ${isCreatingAgent ? styles.submitting : ""}`}
               type="submit"
-              disabled={status === "submitting" || !name.trim()}
+              disabled={isCreatingAgent || !name.trim()}
             >
-              {status === "submitting" ? (
+              {isCreatingAgent ? (
                 <>
                   <Loader size={14} className={styles.spinIcon} />
                   Registering...
@@ -267,16 +200,16 @@ const Agents = () => {
               )}
             </button>
 
-            {status === "success" && (
+            {isCreateSuccess && (
               <div className={`${styles.statusMsg} ${styles.success}`}>
                 <CheckCircle size={14} />
                 Agent registered successfully
               </div>
             )}
-            {status === "error" && (
+            {isCreateError && (
               <div className={`${styles.statusMsg} ${styles.error}`}>
                 <AlertCircle size={14} />
-                {errorMsg}
+                {createAgentError?.message ?? "Unknown error"}
               </div>
             )}
           </form>
@@ -290,13 +223,13 @@ const Agents = () => {
           </div>
 
           <div className={styles.agentList}>
-            {loading && (
+            {isLoading && (
               <div className={styles.listPlaceholder}>
                 <Loader size={20} className={styles.spinIcon} />
                 <span>Loading registry...</span>
               </div>
             )}
-            {!loading && agents.length === 0 && (
+            {!isLoading && agents.length === 0 && (
               <div className={styles.listPlaceholder}>
                 <Bot size={32} className={styles.emptyIcon} />
                 <span>No agents registered yet</span>
@@ -429,15 +362,15 @@ const Agents = () => {
               </div>
 
               <button
-                className={`${styles.submitBtn} ${editStatus === "submitting" ? styles.submitting : ""}`}
+                className={`${styles.submitBtn} ${isUpdatingAgent ? styles.submitting : ""}`}
                 type="submit"
-                disabled={editStatus === "submitting" || !editName.trim()}
+                disabled={isUpdatingAgent || !editName.trim()}
               >
-                {editStatus === "submitting" ? (
+                {isUpdatingAgent ? (
                   <>
                     <Loader size={14} className={styles.spinIcon} /> Saving...
                   </>
-                ) : editStatus === "success" ? (
+                ) : isUpdateSuccess ? (
                   <>
                     <CheckCircle size={14} /> Saved
                   </>
@@ -446,10 +379,10 @@ const Agents = () => {
                 )}
               </button>
 
-              {editStatus === "error" && (
+              {isUpdateError && (
                 <div className={`${styles.statusMsg} ${styles.error}`}>
                   <AlertCircle size={14} />
-                  {editErrorMsg}
+                  {updateAgentError?.message ?? "Unknown error"}
                 </div>
               )}
             </form>

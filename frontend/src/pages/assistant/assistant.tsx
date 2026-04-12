@@ -2,7 +2,9 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import styles from "./assistant.module.scss";
 import Markdown from "react-markdown";
 import { Plus, Trash2, MessageSquare, ChevronRight, Cpu } from "lucide-react";
-import { API_BASE, apiFetch } from "../../utils/constants";
+import { fetchConversation, sendChatMessage } from "../../services/agentRuntime.service";
+import useConversations from "../../hooks/useConversations";
+import useModels from "../../hooks/useModels";
 import useConversation from "../../hooks/useConversation";
 import type { ConversationMessage } from "../../providers/conversation-context";
 import type { ConversationSummary } from "../../types/assistant";
@@ -19,11 +21,12 @@ const Assistant = () => {
     clearConversation,
   } = useConversation();
 
+  const { conversations, createConversation, deleteConversation: deleteConversationMutate } = useConversations();
+  const { models } = useModels();
+
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [conversations, setConversations] = useState<ConversationSummary[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [models, setModels] = useState<string[]>([]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -35,47 +38,16 @@ const Assistant = () => {
     scrollToBottom();
   }, [messages, isTyping, scrollToBottom]);
 
-  const fetchConversations = useCallback(async () => {
-    try {
-      const res = await apiFetch(`${API_BASE}/agent-runtime/conversations`);
-      if (!res.ok) {
-        return;
-      }
-      const data: ConversationSummary[] = await res.json();
-      setConversations(data);
-    } catch {
-      // non-blocking
-    }
-  }, []);
-
-  const fetchModels = useCallback(async () => {
-    try {
-      const res = await apiFetch(`${API_BASE}/agent-runtime/assistant/models`);
-      if (!res.ok) {
-        return;
-      }
-      const data: string[] = await res.json();
-      setModels(data);
-      if (data.length > 0 && !model) {
-        setModel(data[0]);
-      }
-    } catch {
-      // non-blocking
-    }
-  }, [model, setModel]);
-
+  // Sync initial model from server when models first load
   useEffect(() => {
-    fetchConversations();
-    fetchModels();
-  }, [fetchConversations, fetchModels]);
+    if (models.length > 0 && !model) {
+      setModel(models[0]);
+    }
+  }, [models, model, setModel]);
 
   const loadConversation = async (conv: ConversationSummary) => {
     try {
-      const res = await apiFetch(`${API_BASE}/agent-runtime/conversations/${conv.id}`);
-      if (!res.ok) {
-        return;
-      }
-      const data = await res.json();
+      const data = await fetchConversation(conv.id);
       const loadedMessages: ConversationMessage[] = (data.messages ?? []).map(
         (m: { id: string; role: "user" | "assistant"; content: string; timestamp: string }) => ({
           id: m.id,
@@ -91,7 +63,7 @@ const Assistant = () => {
     }
   };
 
-  const createNewConversation = async () => {
+  const createNewConversation = async (): Promise<string | null> => {
     const title = `Chat ${new Date().toLocaleString("en-US", {
       month: "short",
       day: "numeric",
@@ -99,34 +71,23 @@ const Assistant = () => {
       minute: "2-digit",
     })}`;
     try {
-      const res = await apiFetch(`${API_BASE}/agent-runtime/conversations`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, model }),
-      });
-      if (!res.ok) {
-        return null;
-      }
-      const data = await res.json();
-      await fetchConversations();
+      const data = await createConversation({ title, model });
       setActiveConversation(data.id, [], model);
-      return data.id as string;
+      return data.id;
     } catch {
       return null;
     }
   };
 
-  const deleteConversation = async (id: string, e: React.MouseEvent) => {
+  const deleteConversation = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    try {
-      await apiFetch(`${API_BASE}/agent-runtime/conversations/${id}`, { method: "DELETE" });
-      await fetchConversations();
-      if (activeConversationId === id) {
-        clearConversation();
-      }
-    } catch {
-      // non-blocking
-    }
+    deleteConversationMutate(id, {
+      onSuccess: () => {
+        if (activeConversationId === id) {
+          clearConversation();
+        }
+      },
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -167,15 +128,11 @@ const Assistant = () => {
     }));
 
     try {
-      const response = await apiFetch(`${API_BASE}/agent-runtime/assistant/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          conversationId: conversationId ?? undefined,
-          model,
-          messages: chatHistory,
-          stream: true,
-        }),
+      const response = await sendChatMessage({
+        conversationId: conversationId ?? undefined,
+        model,
+        messages: chatHistory,
+        stream: true,
       });
 
       if (!response.ok) {
