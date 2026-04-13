@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import styles from "./assistant.module.scss";
 import Markdown from "react-markdown";
-import { Plus, Trash2, MessageSquare, ChevronRight, Cpu } from "lucide-react";
+import { Plus, Trash2, MessageSquare, ChevronRight, Cpu, Loader2 } from "lucide-react";
 import { fetchConversation, sendChatMessage } from "../../services/agentRuntime.service";
 import useConversations from "../../hooks/useConversations";
 import useModels from "../../hooks/useModels";
@@ -20,7 +20,13 @@ const Assistant = () => {
     clearConversation,
   } = useConversationStore();
 
-  const { conversations, createConversation, deleteConversation: deleteConversationMutate } = useConversations();
+  const {
+    conversations,
+    createConversation,
+    deleteConversation: deleteConversationMutate,
+    isCreating,
+  } = useConversations();
+
   const { models } = useModels();
 
   const [input, setInput] = useState("");
@@ -63,12 +69,14 @@ const Assistant = () => {
   };
 
   const createNewConversation = async (): Promise<string | null> => {
+    const uniqueId = Math.random().toString(36).substring(2, 5);
     const title = `Chat ${new Date().toLocaleString("en-US", {
       month: "short",
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
-    })}`;
+      second: "2-digit",
+    })} ${uniqueId}`;
     try {
       const data = await createConversation({ title, model });
       setActiveConversation(data.id, [], model);
@@ -182,8 +190,13 @@ const Assistant = () => {
       <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ""}`}>
         <div className={styles.sidebarHeader}>
           <span className={styles.sidebarTitle}>Conversations</span>
-          <button className={styles.newChatBtn} onClick={createNewConversation} title="New conversation">
-            <Plus size={13} />
+          <button
+            className={styles.newChatBtn}
+            onClick={createNewConversation}
+            title="New conversation"
+            disabled={isCreating}
+          >
+            {isCreating ? <Loader2 /> : <Plus />}
           </button>
         </div>
 

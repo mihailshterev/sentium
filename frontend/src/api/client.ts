@@ -40,7 +40,11 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
     throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
   }
 
-  return response.json() as Promise<T>;
+  if (response.status === 204 || response.headers.get("Content-Length") === "0") {
+    return {} as T;
+  }
+
+  return response.json().catch(() => ({}) as T);
 }
 
 export const client = {
