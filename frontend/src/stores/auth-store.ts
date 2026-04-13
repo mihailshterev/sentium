@@ -1,6 +1,7 @@
 import { create } from "zustand";
-import { BFF_BASE } from "../utils/constants";
 import type { AuthStatus, User } from "../types/auth";
+import { BFF_BASE } from "../api/client";
+import { AUTH_STATUS } from "../utils/constants";
 
 interface AuthState {
   user: User | null;
@@ -12,10 +13,10 @@ interface AuthState {
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
-  status: "idle",
+  status: AUTH_STATUS.IDLE,
 
   checkAuth: async () => {
-    set({ status: "checking" });
+    set({ status: AUTH_STATUS.CHECKING });
     try {
       const res = await fetch(`${BFF_BASE}/user`, {
         credentials: "include",
@@ -23,12 +24,12 @@ export const useAuthStore = create<AuthState>((set) => ({
 
       if (res.ok) {
         const data = await res.json();
-        set({ user: data, status: "authenticated" });
+        set({ user: data, status: AUTH_STATUS.AUTHENTICATED });
       } else {
-        set({ user: null, status: "unauthenticated" });
+        set({ user: null, status: AUTH_STATUS.UNAUTHENTICATED });
       }
     } catch {
-      set({ user: null, status: "unauthenticated" });
+      set({ user: null, status: AUTH_STATUS.UNAUTHENTICATED });
     }
   },
 
@@ -44,7 +45,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         credentials: "include",
       });
     } finally {
-      set({ user: null, status: "unauthenticated" });
+      set({ user: null, status: AUTH_STATUS.UNAUTHENTICATED });
     }
   },
 }));

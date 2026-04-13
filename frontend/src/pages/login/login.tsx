@@ -4,8 +4,8 @@ import { AlertCircle, ArrowRight, Bot, Lock, Mail, ShieldCheck, Zap } from "luci
 import styles from "./login.module.scss";
 import { AnimatedBg } from "./animated-bg";
 import { useAuthStore } from "../../stores/auth-store";
-import { BFF_BASE } from "../../utils/constants";
-import { BASE_URL } from "../../api/client";
+import { BASE_URL, BFF_BASE } from "../../api/client";
+import { AUTH_STATUS } from "../../utils/constants";
 
 const FEATURES = [
   "Real-time threat detection and autonomous response",
@@ -22,7 +22,7 @@ const Login = () => {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  if (status === "authenticated") {
+  if (status === AUTH_STATUS.AUTHENTICATED) {
     return <Navigate to="/" replace />;
   }
 
