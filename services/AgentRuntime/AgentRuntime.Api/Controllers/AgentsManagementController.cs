@@ -1,10 +1,12 @@
 using AgentRuntime.Core.Agents;
 using AgentRuntime.Core.Dtos;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AgentRuntime.Api.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("agents")]
 public sealed class AgentsManagementController(IAgentService agentService) : ControllerBase
 {

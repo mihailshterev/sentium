@@ -1,5 +1,3 @@
-using IdentityProvider.Api.Contracts.Roles;
-using IdentityProvider.Application.Abstractions;
 using Microsoft.AspNetCore.Mvc;
 
 namespace IdentityProvider.Api.Controllers;
@@ -8,5 +6,5 @@ namespace IdentityProvider.Api.Controllers;
 [Route("roles")]
 public sealed class RolesController() : ControllerBase
 {
-
+    // TODO: Implement role management
 }

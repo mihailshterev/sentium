@@ -1,12 +1,13 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { DndContext, closestCenter, type DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Plus, X, GripVertical, Bot, GitBranch, Loader, CheckCircle, AlertCircle, Pencil, Trash2 } from "lucide-react";
 import styles from "./workflows.module.scss";
-import { API_BASE } from "../../utils/constants";
+import useWorkflows from "../../hooks/useWorkflows";
+import useAgents from "../../hooks/useAgents";
 import type { AgentRecord } from "../../types/agents";
-import type { WorkflowRecord } from "../../types/orchestration";
+import type { WorkflowRecord } from "../../types/workflows";
 import type { SortableAgentItem } from "../../types/workflows";
 
 const SortableAgent = ({ item, onRemove }: { item: SortableAgentItem; onRemove: (sortId: string) => void }) => {
@@ -33,48 +34,45 @@ const SortableAgent = ({ item, onRemove }: { item: SortableAgentItem; onRemove: 
 };
 
 const Workflows = () => {
-  const [workflows, setWorkflows] = useState<WorkflowRecord[]>([]);
-  const [agents, setAgents] = useState<AgentRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    workflows,
+    isLoading,
+    createWorkflow,
+    isCreatingWorkflow,
+    isCreateSuccess,
+    isCreateError,
+    createWorkflowError,
+    resetCreate,
+    updateWorkflow,
+    isUpdatingWorkflow,
+    isUpdateSuccess,
+    isUpdateError,
+    updateWorkflowError,
+    resetUpdate,
+    deleteWorkflow,
+  } = useWorkflows();
+  const { agents } = useAgents();
+
   const [selectedWorkflow, setSelectedWorkflow] = useState<WorkflowRecord | null>(null);
   const [isEditing, setIsEditing] = useState(false);
 
   const [formName, setFormName] = useState("");
   const [formDescription, setFormDescription] = useState("");
   const [formAgents, setFormAgents] = useState<SortableAgentItem[]>([]);
-  const [formStatus, setFormStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
-  const [formError, setFormError] = useState("");
 
   const sensors = useSensors(useSensor(PointerSensor));
 
-  const fetchWorkflows = useCallback(async () => {
-    try {
-      const res = await fetch(`${API_BASE}/agent-runtime/workflows`);
-      if (!res.ok) return;
-      const data: WorkflowRecord[] = await res.json();
-      setWorkflows(data);
-    } catch {
-      // non-blocking
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const activeMutation = {
+    isPending: selectedWorkflow ? isUpdatingWorkflow : isCreatingWorkflow,
+    isSuccess: selectedWorkflow ? isUpdateSuccess : isCreateSuccess,
+    isError: selectedWorkflow ? isUpdateError : isCreateError,
+    error: selectedWorkflow ? updateWorkflowError : createWorkflowError,
+  };
 
-  const fetchAgents = useCallback(async () => {
-    try {
-      const res = await fetch(`${API_BASE}/agent-runtime/agents`);
-      if (!res.ok) return;
-      const data: AgentRecord[] = await res.json();
-      setAgents(data);
-    } catch {
-      // non-blocking
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchWorkflows();
-    fetchAgents();
-  }, [fetchWorkflows, fetchAgents]);
+  const resetMutations = () => {
+    resetCreate();
+    resetUpdate();
+  };
 
   const openCreate = () => {
     setSelectedWorkflow(null);
@@ -82,8 +80,7 @@ const Workflows = () => {
     setFormName("");
     setFormDescription("");
     setFormAgents([]);
-    setFormStatus("idle");
-    setFormError("");
+    resetMutations();
   };
 
   const openEdit = (workflow: WorkflowRecord) => {
@@ -98,13 +95,13 @@ const Workflows = () => {
         name: agents.find((ag) => ag.id === a.agentId)?.name ?? a.agentId.slice(0, 8),
       })),
     );
-    setFormStatus("idle");
-    setFormError("");
+    resetMutations();
   };
 
   const closeEdit = () => {
     setIsEditing(false);
     setSelectedWorkflow(null);
+    resetMutations();
   };
 
   const addAgentToForm = (agent: AgentRecord) => {
@@ -133,56 +130,30 @@ const Workflows = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setFormStatus("submitting");
-    setFormError("");
-
     const payload = {
       name: formName.trim(),
       description: formDescription.trim(),
       agents: formAgents.map((a, idx) => ({ agentId: a.agentId, order: idx })),
     };
 
-    try {
-      let res: Response;
-      if (selectedWorkflow) {
-        res = await fetch(`${API_BASE}/agent-runtime/workflows/${selectedWorkflow.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-      } else {
-        res = await fetch(`${API_BASE}/agent-runtime/workflows`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-      }
-
-      if (!res.ok) {
-        const text = await res.text();
-        throw new Error(text || `HTTP ${res.status}`);
-      }
-
-      setFormStatus("success");
-      await fetchWorkflows();
-      setTimeout(() => closeEdit(), 900);
-    } catch (err: unknown) {
-      setFormStatus("error");
-      setFormError(err instanceof Error ? err.message : "Unknown error");
+    if (selectedWorkflow) {
+      updateWorkflow({ id: selectedWorkflow.id, ...payload }, { onSuccess: () => setTimeout(() => closeEdit(), 900) });
+    } else {
+      createWorkflow(payload, {
+        onSuccess: () => setTimeout(() => closeEdit(), 900),
+      });
     }
   };
 
-  const handleDelete = async (workflowId: string) => {
+  const handleDelete = (workflowId: string) => {
     if (!confirm("Delete this workflow?")) return;
-    try {
-      await fetch(`${API_BASE}/agent-runtime/workflows/${workflowId}`, { method: "DELETE" });
-      await fetchWorkflows();
-      if (selectedWorkflow?.id === workflowId) closeEdit();
-    } catch {
-      // non-blocking
-    }
+    deleteWorkflow(workflowId, {
+      onSuccess: () => {
+        if (selectedWorkflow?.id === workflowId) closeEdit();
+      },
+    });
   };
 
   const getAgentName = (agentId: string) => agents.find((a) => a.id === agentId)?.name ?? agentId.slice(0, 8);
@@ -190,9 +161,12 @@ const Workflows = () => {
   return (
     <div className={styles.container}>
       <div className={styles.pageHeader}>
-        <div>
-          <h1 className={styles.pageTitle}>Workflow Builder</h1>
-          <p className={styles.pageSubtitle}>Compose agents into ordered execution pipelines</p>
+        <div className={styles.headerLeft}>
+          <GitBranch size={16} className={styles.headerIcon} />
+          <div>
+            <h2 className={styles.headerTitle}>Workflow Builder</h2>
+            <span className={styles.headerSub}>Compose agents into ordered execution pipelines</span>
+          </div>
         </div>
         <div className={styles.headerRight}>
           <div className={styles.headerBadge}>
@@ -214,13 +188,13 @@ const Workflows = () => {
           </div>
 
           <div className={styles.listScroll}>
-            {loading && (
+            {isLoading && (
               <div className={styles.listPlaceholder}>
                 <Loader size={18} className={styles.spinIcon} />
                 <span>Loading...</span>
               </div>
             )}
-            {!loading && workflows.length === 0 && (
+            {!isLoading && workflows.length === 0 && (
               <div className={styles.listPlaceholder}>
                 <GitBranch size={28} className={styles.emptyIcon} />
                 <span>No workflows yet</span>
@@ -346,14 +320,14 @@ const Workflows = () => {
 
                     <button
                       type="submit"
-                      className={`${styles.submitBtn} ${formStatus === "submitting" ? styles.submitting : ""}`}
-                      disabled={formStatus === "submitting" || !formName.trim()}
+                      className={`${styles.submitBtn} ${activeMutation.isPending ? styles.submitting : ""}`}
+                      disabled={activeMutation.isPending || !formName.trim()}
                     >
-                      {formStatus === "submitting" ? (
+                      {activeMutation.isPending ? (
                         <>
                           <Loader size={14} className={styles.spinIcon} /> Saving...
                         </>
-                      ) : formStatus === "success" ? (
+                      ) : activeMutation.isSuccess ? (
                         <>
                           <CheckCircle size={14} /> Saved
                         </>
@@ -364,10 +338,10 @@ const Workflows = () => {
                       )}
                     </button>
 
-                    {formStatus === "error" && (
+                    {activeMutation.isError && (
                       <div className={styles.errorMsg}>
                         <AlertCircle size={13} />
-                        {formError}
+                        {activeMutation.error?.message ?? "Unknown error"}
                       </div>
                     )}
                   </div>

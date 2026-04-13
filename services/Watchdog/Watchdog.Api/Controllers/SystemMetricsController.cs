@@ -1,9 +1,11 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Watchdog.Core.Metrics;
 
 namespace Watchdog.Api.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("system")]
 public sealed class SystemMetricsController(IWatchdog watchdog) : ControllerBase
 {

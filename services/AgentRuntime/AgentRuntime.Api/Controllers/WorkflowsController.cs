@@ -1,10 +1,12 @@
 using AgentRuntime.Core.Dtos;
 using AgentRuntime.Core.WorkflowManagement;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace AgentRuntime.Api.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("workflows")]
 public sealed class WorkflowsController(IWorkflowService workflowService) : ControllerBase
 {

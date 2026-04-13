@@ -1,4 +1,3 @@
-import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import {
   Activity,
@@ -18,9 +17,8 @@ import {
   Zap,
 } from "lucide-react";
 import styles from "./dashboard.module.scss";
-import { API_BASE } from "../../utils/constants";
-import type { AgentRecord } from "../../types/agents";
-import type { WorkflowRecord } from "../../types/workflows";
+import useAgents from "../../hooks/useAgents";
+import useWorkflows from "../../hooks/useWorkflows";
 
 const MODULES = [
   { key: "agent-runtime", label: "Agent Runtime", icon: Cpu, color: "green" },
@@ -76,31 +74,9 @@ const QUICK_ACCESS = [
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const [agents, setAgents] = useState<AgentRecord[]>([]);
-  const [workflows, setWorkflows] = useState<WorkflowRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [agentsRes, workflowsRes] = await Promise.allSettled([
-          fetch(`${API_BASE}/agent-runtime/agents`),
-          fetch(`${API_BASE}/agent-runtime/workflows`),
-        ]);
-        if (agentsRes.status === "fulfilled" && agentsRes.value.ok) {
-          setAgents(await agentsRes.value.json());
-        }
-        if (workflowsRes.status === "fulfilled" && workflowsRes.value.ok) {
-          setWorkflows(await workflowsRes.value.json());
-        }
-      } catch {
-        // non-blocking
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
+  const { agents, isLoading: agentsLoading } = useAgents();
+  const { workflows, isLoading: workflowsLoading } = useWorkflows();
+  const loading = agentsLoading || workflowsLoading;
 
   return (
     <div className={styles.dashboardRoot}>

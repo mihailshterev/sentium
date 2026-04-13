@@ -90,18 +90,18 @@ $shimmer-gradient: linear-gradient(90deg, var(--bg-elevated) 25%, var(--bg-hover
   font-weight: 600;
   color: var(--text-secondary);
   border: 1px solid var(--border-color);
-  background: var(--bg-surface);
-  padding: 6px 14px;
+  background: var(--bg-elevated);
+  padding: 5px 14px;
   border-radius: 8px;
   cursor: pointer;
   font-family: inherit;
-  transition:
-    border-color 0.15s,
-    background 0.15s;
+  transition: all 160ms ease;
+  letter-spacing: 0.1px;
 
   &:hover {
     border-color: var(--border-strong);
-    background: var(--bg-elevated);
+    background: var(--bg-hover);
+    color: var(--text-primary);
   }
 
   &.spinning svg {
@@ -497,9 +497,11 @@ $shimmer-gradient: linear-gradient(90deg, var(--bg-elevated) 25%, var(--bg-hover
   border-radius: 8px;
   cursor: pointer;
   font-family: inherit;
-  transition: background 0.15s;
+  transition: all 160ms ease;
 
   &:hover {
     background: rgba(59, 130, 246, 0.15);
+    border-color: rgba(59, 130, 246, 0.55);
+    box-shadow: 0 0 16px rgba(59, 130, 246, 0.12);
   }
 }

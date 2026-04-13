@@ -3,12 +3,14 @@ using AgentRuntime.Core.Dtos;
 using AgentRuntime.Core.WorkflowManagement;
 using AgentRuntime.Core.Workflows;
 using Infrastructure.Messaging;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NATS.Client.Serializers.Json;
 
 namespace AgentRuntime.Api.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("agents")]
 public sealed class OrchestrationController(IEventBus eventBus, IWorkflowService workflowService) : ControllerBase
 {

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.Extensions.DependencyInjection;
@@ -123,5 +124,30 @@ public static class Extensions
         }
 
         return app;
+    }
+
+    public static IHostApplicationBuilder AddAuthenticationDefaults(this IHostApplicationBuilder builder)
+    {
+        var identityAuthority = builder.Configuration["Identity:Authority"] ?? throw new InvalidOperationException("Identity authority is not configured.");
+
+        builder.Services.AddHttpClient("IdpClient").AddServiceDiscovery();
+
+        builder.Services.AddAuthentication()
+            .AddJwtBearer(options =>
+            {
+                options.Authority = identityAuthority;
+                options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+                options.TokenValidationParameters.ValidateAudience = false;
+            });
+
+        builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
+            .Configure<IHttpClientFactory>((options, factory) =>
+            {
+                options.Backchannel = factory.CreateClient("IdpClient");
+            });
+
+        builder.Services.AddAuthorization();
+
+        return builder;
     }
 }

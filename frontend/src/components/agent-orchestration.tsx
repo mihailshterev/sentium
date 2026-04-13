@@ -2,9 +2,12 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Markdown from "react-markdown";
 import { Play, Bot, Zap, CheckCircle, Circle, Loader, Terminal, GitBranch } from "lucide-react";
 import styles from "./agent-orchestration.module.scss";
-import { API_BASE } from "../utils/constants";
-import type { Phase, LogEntry, WorkflowRecord } from "../types/orchestration";
-import type { AgentRecord } from "../types/agents";
+import { runPipeline, runWorkflowPipeline } from "../services/agentRuntime.service";
+import useAgents from "../hooks/useAgents";
+import useWorkflows from "../hooks/useWorkflows";
+import type { Phase, LogEntry } from "../types/orchestration";
+import type { WorkflowRecord } from "../types/workflows";
+import { BASE_URL } from "../api/client";
 
 const SCENARIOS = [
   {
@@ -25,10 +28,11 @@ const PHASE_STEPS: { key: Phase; label: string; icon: React.ElementType }[] = [
 const PHASE_ORDER: Phase[] = ["IDLE", "PLANNING", "SQUAD", "VALIDATING", "COMPLETE"];
 
 const AgentOrchestration = () => {
+  const { agents: dbAgents } = useAgents();
+  const { workflows } = useWorkflows();
+
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [phase, setPhase] = useState<Phase>("IDLE");
-  const [dbAgents, setDbAgents] = useState<AgentRecord[]>([]);
-  const [workflows, setWorkflows] = useState<WorkflowRecord[]>([]);
   const [selectedWorkflow, setSelectedWorkflow] = useState<WorkflowRecord | null>(null);
   const [scenarioInput, setScenarioInput] = useState("");
 
@@ -37,16 +41,6 @@ const AgentOrchestration = () => {
   const animationFrameRef = useRef<number | null>(null);
 
   useEffect(() => {
-    fetch(`${API_BASE}/agent-runtime/agents`)
-      .then((r) => (r.ok ? r.json() : []))
-      .then((data: AgentRecord[]) => setDbAgents(data))
-      .catch(() => {});
-
-    fetch(`${API_BASE}/agent-runtime/workflows`)
-      .then((r) => (r.ok ? r.json() : []))
-      .then((data: WorkflowRecord[]) => setWorkflows(data))
-      .catch(() => {});
-
     return () => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
@@ -55,7 +49,9 @@ const AgentOrchestration = () => {
   }, []);
 
   const openStream = useCallback((eventId: string) => {
-    const eventSource = new EventSource(`${API_BASE}/agent-runtime/agents/stream/${eventId}`);
+    const eventSource = new EventSource(`${BASE_URL}/agent-runtime/agents/stream/${eventId}`, {
+      withCredentials: true,
+    });
 
     const syncLogs = () => {
       setLogs([...logsBufferRef.current]);
@@ -112,12 +108,7 @@ const AgentOrchestration = () => {
       setLogs([]);
       setPhase("PLANNING");
 
-      const res = await fetch(`${API_BASE}/agent-runtime/agents/test-pipeline`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(scenarioData ?? { activity: "Manual Scan", user: "root" }),
-      });
-      const { eventId } = await res.json();
+      const { eventId } = await runPipeline(scenarioData ?? { activity: "Manual Scan", user: "root" });
       openStream(eventId);
     },
     [openStream],
@@ -134,12 +125,7 @@ const AgentOrchestration = () => {
     setLogs([]);
     setPhase("PLANNING");
 
-    const res = await fetch(`${API_BASE}/agent-runtime/agents/run-workflow`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ workflowId: selectedWorkflow.id, scenario }),
-    });
-    const { eventId } = await res.json();
+    const { eventId } = await runWorkflowPipeline({ workflowId: selectedWorkflow.id, scenario });
     openStream(eventId);
   }, [selectedWorkflow, scenarioInput, openStream]);
 
