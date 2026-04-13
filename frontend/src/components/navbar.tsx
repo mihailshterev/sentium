@@ -7,6 +7,7 @@ import {
   Cpu,
   GitBranch,
   LayoutDashboard,
+  LogOut,
   Package,
   Settings,
   UsersRound,
@@ -14,6 +15,7 @@ import {
 } from "lucide-react";
 import styles from "./navbar.module.scss";
 import React from "react";
+import { useAuthStore } from "../stores/auth-store";
 
 const NAV_LINKS = [
   // Group: Main
@@ -61,6 +63,7 @@ const NAV_LINKS = [
 const Navbar = () => {
   const getLinkClass = ({ isActive }: { isActive: boolean }) =>
     isActive ? `${styles.navLink} ${styles.active}` : styles.navLink;
+  const logout = useAuthStore((s) => s.logout);
   return (
     <nav className={styles.nav}>
       <div className={styles.navBrand}>
@@ -102,6 +105,11 @@ const Navbar = () => {
               <Settings size={18} className={styles.navIcon} />
               <span>Settings</span>
             </NavLink>
+
+            <button className={styles.logoutBtn} onClick={logout}>
+              <LogOut size={15} className={styles.navIcon} />
+              <span>Log out</span>
+            </button>
           </div>
         </div>
       </div>

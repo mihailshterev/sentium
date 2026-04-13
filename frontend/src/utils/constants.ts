@@ -1,1 +1,6 @@
-export const API_BASE = import.meta.env.VITE_API_BASE + "/api";
+export const AUTH_STATUS = {
+  IDLE: "idle",
+  CHECKING: "checking",
+  AUTHENTICATED: "authenticated",
+  UNAUTHENTICATED: "unauthenticated",
+} as const;

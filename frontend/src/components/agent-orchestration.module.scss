@@ -10,9 +10,10 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 1.75rem;
+  height: 64px;
+  padding: 0 1.75rem;
   border-bottom: 1px solid var(--border-subtle);
-  background-color: var(--bg-surface);
+  background: var(--bg-surface);
   flex-shrink: 0;
   gap: 1rem;
 }
@@ -29,15 +30,15 @@
 }
 
 .headerTitle {
-  font-size: 1rem;
-  font-weight: 650;
+  font-size: 1.05rem;
+  font-weight: 700;
   color: var(--text-primary);
   margin: 0 0 2px;
-  letter-spacing: -0.2px;
+  letter-spacing: -0.3px;
 }
 
 .headerSub {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: var(--text-muted);
 }
 

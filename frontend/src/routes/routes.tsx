@@ -1,4 +1,5 @@
 import Layout from "../components/layout/layout";
+import ProtectedRoute from "../components/protected-route";
 import Dashboard from "../pages/dashboard/dashboard";
 import Assistant from "../pages/assistant/assistant";
 import AgentOrchestration from "../components/agent-orchestration";
@@ -7,11 +8,20 @@ import Workflows from "../pages/workflows/workflows";
 import System from "../pages/system/system";
 import Placeholder from "../pages/placeholder";
 import type { RouteObject } from "react-router";
+import Login from "../pages/login/login";
 
 export const routes: RouteObject[] = [
   {
+    path: "/login",
+    element: <Login />,
+  },
+  {
     path: "/",
-    element: <Layout />,
+    element: (
+      <ProtectedRoute>
+        <Layout />
+      </ProtectedRoute>
+    ),
     children: [
       { index: true, element: <Dashboard /> },
       { path: "sentinel", element: <Placeholder title="Sentinel" /> },
