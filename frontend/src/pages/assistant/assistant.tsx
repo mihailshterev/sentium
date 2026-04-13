@@ -5,9 +5,8 @@ import { Plus, Trash2, MessageSquare, ChevronRight, Cpu } from "lucide-react";
 import { fetchConversation, sendChatMessage } from "../../services/agentRuntime.service";
 import useConversations from "../../hooks/useConversations";
 import useModels from "../../hooks/useModels";
-import useConversation from "../../hooks/useConversation";
-import type { ConversationMessage } from "../../providers/conversation-context";
-import type { ConversationSummary } from "../../types/assistant";
+import type { ConversationMessage, ConversationSummary } from "../../types/assistant";
+import { useConversationStore } from "../../stores/assistant-conversation-store";
 
 const Assistant = () => {
   const {
@@ -19,7 +18,7 @@ const Assistant = () => {
     updateLastMessage,
     setModel,
     clearConversation,
-  } = useConversation();
+  } = useConversationStore();
 
   const { conversations, createConversation, deleteConversation: deleteConversationMutate } = useConversations();
   const { models } = useModels();
