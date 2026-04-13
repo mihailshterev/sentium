@@ -623,6 +623,19 @@
           "Polly.Core": "8.4.2"
         }
       },
+      "Quartz": {
+        "type": "Transitive",
+        "resolved": "3.18.0",
+        "contentHash": "l+PY20yF32ljFkP/OROYc7Z7Wv3rhGARqxGkDMaCwOJ3aGA/94fPSBYtJpZKciLbc/89xfVlpEZbIzIPE0hHHQ=="
+      },
+      "Quartz.Extensions.DependencyInjection": {
+        "type": "Transitive",
+        "resolved": "3.18.0",
+        "contentHash": "YAtrZ+pYtPPnWKKuHII1x16E6HxyT1eHWQCvAR4zkMT8xmfuz1KCRHCg3+b8z/nGXpWyR6WpSoIh7dsR4jI+iA==",
+        "dependencies": {
+          "Quartz": "3.18.0"
+        }
+      },
       "System.ClientModel": {
         "type": "Transitive",
         "resolved": "1.5.1",
@@ -741,7 +754,9 @@
           "Microsoft.EntityFrameworkCore.Design": "[10.0.2, )",
           "Microsoft.EntityFrameworkCore.SqlServer": "[10.0.2, )",
           "OpenIddict.AspNetCore": "[7.2.0, )",
-          "OpenIddict.EntityFrameworkCore": "[7.2.0, )"
+          "OpenIddict.EntityFrameworkCore": "[7.2.0, )",
+          "OpenIddict.Quartz": "[7.2.0, )",
+          "Quartz.Extensions.Hosting": "[3.18.0, )"
         }
       },
       "infrastructure": {
@@ -870,6 +885,16 @@
           "OpenIddict.EntityFrameworkCore.Models": "7.2.0"
         }
       },
+      "OpenIddict.Quartz": {
+        "type": "CentralTransitive",
+        "requested": "[7.2.0, )",
+        "resolved": "7.2.0",
+        "contentHash": "YH3ptVqtIyF+z0kInaLq+i88ZuPD9JEL33mT8gMcCxPMYCOmeWkBU9JLisxwzwKJwJTZ7ZSfz0F4n70k3gbXcQ==",
+        "dependencies": {
+          "OpenIddict.Core": "7.2.0",
+          "Quartz.Extensions.DependencyInjection": "3.15.1"
+        }
+      },
       "OpenTelemetry.Exporter.OpenTelemetryProtocol": {
         "type": "CentralTransitive",
         "requested": "[1.15.0, )",
@@ -913,6 +938,15 @@
         "contentHash": "OOvpqR/j2Pb6+tWhHNODIbSJ53Or/MDtTiXEyrsWI02K2lLAgvBFcxUOrHggS/8015cYR3AdSaXv6NZrkz5yQA==",
         "dependencies": {
           "OpenTelemetry.Api": "[1.15.0, 2.0.0)"
+        }
+      },
+      "Quartz.Extensions.Hosting": {
+        "type": "CentralTransitive",
+        "requested": "[3.18.0, )",
+        "resolved": "3.18.0",
+        "contentHash": "DOIgnLibu9sEYqHAKRQYz+0oWZ5q2LP55oNUtosOygEiIxCvTtHAwkZdf6Ea0VCucZ1oO9SeWLoA4q4WFbZspw==",
+        "dependencies": {
+          "Quartz.Extensions.DependencyInjection": "3.18.0"
         }
       }
     },
