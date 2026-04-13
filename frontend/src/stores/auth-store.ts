@@ -8,7 +8,7 @@ interface AuthState {
   status: AuthStatus;
   checkAuth: () => Promise<void>;
   login: (returnUrl?: string) => void;
-  logout: () => Promise<void>;
+  logout: () => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -38,14 +38,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     window.location.href = `${BFF_BASE}/login?returnUrl=${encodeURIComponent(window.location.origin + target)}`;
   },
 
-  logout: async () => {
-    try {
-      await fetch(`${BFF_BASE}/logout`, {
-        method: "POST",
-        credentials: "include",
-      });
-    } finally {
-      set({ user: null, status: AUTH_STATUS.UNAUTHENTICATED });
-    }
+  logout: () => {
+    set({ user: null, status: AUTH_STATUS.CHECKING });
+    window.location.href = `${BFF_BASE}/logout`;
   },
 }));

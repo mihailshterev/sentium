@@ -1,3 +1,5 @@
+import { useAuthStore } from "../stores/auth-store";
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export const BASE_URL = import.meta.env.VITE_API_BASE + "/api";
 
@@ -22,6 +24,16 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
   }
 
   const response = await fetch(`${BASE_URL}${endpoint}`, config);
+
+  if (response.status === 401) {
+    useAuthStore.getState().logout();
+
+    if (!window.location.pathname.includes("/login")) {
+      window.location.href = `${BFF_BASE}/login?returnUrl=${encodeURIComponent(window.location.pathname)}`;
+    }
+
+    throw new Error("Session expired. Please log in again.");
+  }
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
