@@ -41,14 +41,9 @@ public sealed class OpenIddictWorker(IServiceProvider serviceProvider, IConfigur
     {
         const string clientId = "gateway-bff";
 
-        if (await manager.FindByClientIdAsync(clientId, ct) is not null)
-        {
-            return;
-        }
-
         var gatewaySecret = configuration["Identity:GatewayBffSecret"] ?? throw new InvalidOperationException("Gateway BFF secret is not configured.");
 
-        await manager.CreateAsync(new OpenIddictApplicationDescriptor
+        var descriptor = new OpenIddictApplicationDescriptor
         {
             ClientId = clientId,
             ClientSecret = gatewaySecret,
@@ -58,6 +53,7 @@ public sealed class OpenIddictWorker(IServiceProvider serviceProvider, IConfigur
             {
                 Permissions.Endpoints.Authorization,
                 Permissions.Endpoints.Token,
+                Permissions.Endpoints.EndSession,
                 Permissions.GrantTypes.AuthorizationCode,
                 Permissions.GrantTypes.RefreshToken,
                 Permissions.ResponseTypes.Code,
@@ -66,6 +62,7 @@ public sealed class OpenIddictWorker(IServiceProvider serviceProvider, IConfigur
                 Permissions.Prefixes.Scope + Core.Security.Scopes.Email,
                 Permissions.Prefixes.Scope + Core.Security.Scopes.Api,
                 Permissions.Prefixes.Scope + Core.Security.Scopes.Roles,
+                Permissions.Prefixes.Scope + Core.Security.Scopes.OfflineAccess,
             },
             RedirectUris = { new Uri(configuration["Identity:GatewayRedirectUri"] ?? "https://localhost:7282/bff/callback") },
             PostLogoutRedirectUris = { new Uri(configuration["Identity:GatewayPostLogoutUri"] ?? "https://localhost:7282/bff/logged-out") },
@@ -73,7 +70,17 @@ public sealed class OpenIddictWorker(IServiceProvider serviceProvider, IConfigur
             {
                 Requirements.Features.ProofKeyForCodeExchange
             }
-        }, ct);
+        };
+
+        var existing = await manager.FindByClientIdAsync(clientId, ct);
+        if (existing is null)
+        {
+            await manager.CreateAsync(descriptor, ct);
+        }
+        else
+        {
+            await manager.UpdateAsync(existing, descriptor, ct);
+        }
     }
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;

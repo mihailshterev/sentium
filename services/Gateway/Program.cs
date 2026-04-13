@@ -27,6 +27,7 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddHttpClient("IdpClient").AddServiceDiscovery();
+builder.Services.AddScoped<TokenRefreshService>();
 
 builder.Services.AddAuthentication(options =>
 {
@@ -114,8 +115,18 @@ builder.Services.AddReverseProxy()
     {
         builderContext.AddRequestTransform(async transformContext =>
         {
-            var accessToken = await transformContext.HttpContext.GetTokenAsync("access_token");
+            var httpContext = transformContext.HttpContext;
 
+            var expiresAt = await httpContext.GetTokenAsync("expires_at");
+            if (expiresAt != null &&
+                DateTimeOffset.TryParse(expiresAt, null, System.Globalization.DateTimeStyles.AssumeUniversal, out var tokenExpiry) &&
+                tokenExpiry < DateTimeOffset.UtcNow.AddSeconds(30))
+            {
+                var refreshService = httpContext.RequestServices.GetRequiredService<TokenRefreshService>();
+                await refreshService.TryRefreshAsync(httpContext);
+            }
+
+            var accessToken = await httpContext.GetTokenAsync("access_token");
             if (!string.IsNullOrEmpty(accessToken))
             {
                 transformContext.ProxyRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);

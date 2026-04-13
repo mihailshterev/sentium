@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Quartz;
 
 namespace IdentityProvider.Infrastructure;
 
@@ -36,12 +37,22 @@ public static class ServiceCollectionExtensions
         .AddEntityFrameworkStores<IdentityDbContext>()
         .AddDefaultTokenProviders();
 
+        services.AddQuartz(options =>
+        {
+            options.UseSimpleTypeLoader();
+            options.UseInMemoryStore(); // TODO: Replace with persistent store for production use
+        });
+
+        services.AddQuartzHostedService(options => options.WaitForJobsToComplete = true);
+
         services.AddOpenIddict()
             .AddCore(options =>
             {
                 options.UseEntityFrameworkCore()
                        .UseDbContext<IdentityDbContext>()
                        .ReplaceDefaultEntities<Guid>();
+
+                options.UseQuartz();
             })
             .AddServer(options =>
             {
@@ -50,6 +61,7 @@ public static class ServiceCollectionExtensions
                 options.DisableAccessTokenEncryption();
 
                 options.AllowClientCredentialsFlow();
+
                 options.AllowAuthorizationCodeFlow()
                        .RequireProofKeyForCodeExchange();
 
@@ -61,7 +73,8 @@ public static class ServiceCollectionExtensions
                 options.UseAspNetCore()
                        .DisableTransportSecurityRequirement()
                        .EnableAuthorizationEndpointPassthrough()
-                       .EnableTokenEndpointPassthrough();
+                       .EnableTokenEndpointPassthrough()
+                       .EnableEndSessionEndpointPassthrough();
 
                 options.SetAuthorizationEndpointUris("/connect/authorize")
                        .SetTokenEndpointUris("/connect/token")
@@ -72,8 +85,14 @@ public static class ServiceCollectionExtensions
                     Scopes.Profile,
                     Scopes.Email,
                     Scopes.Api,
-                    Scopes.Roles
+                    Scopes.Roles,
+                    Scopes.OfflineAccess
                 );
+            })
+            .AddValidation(options =>
+            {
+                options.UseLocalServer();
+                options.UseAspNetCore();
             });
 
         services.AddScoped<IUserClaimsService, UserClaimsService>();

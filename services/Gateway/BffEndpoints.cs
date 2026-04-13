@@ -57,11 +57,10 @@ public static class BffEndpoints
             });
         }).AllowAnonymous();
 
-        group.MapPost("/logout", async (HttpContext context) =>
+        group.MapGet("/logout", () =>
         {
-            await context.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            await context.SignOutAsync(OpenIdConnectDefaults.AuthenticationScheme);
-            return Results.Ok();
+            var frontendOrigin = configuration["Frontend:Origin"] ?? "http://localhost:5173";
+            return Results.SignOut(new AuthenticationProperties { RedirectUri = $"{frontendOrigin}/login" }, [CookieAuthenticationDefaults.AuthenticationScheme, OpenIdConnectDefaults.AuthenticationScheme]);
         }).RequireAuthorization("authenticated");
 
         return app;

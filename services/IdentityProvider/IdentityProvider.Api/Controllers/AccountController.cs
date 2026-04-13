@@ -1,6 +1,9 @@
 using IdentityProvider.Application.Abstractions;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
+using OpenIddict.Server.AspNetCore;
 
 namespace IdentityProvider.Api.Controllers;
 
@@ -25,7 +28,7 @@ public sealed class AccountController(IIdentityService identityService) : Contro
     }
 
     [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] LoginRequest request)
+    public async Task<IActionResult> Login([FromBody] LoginRequest request, [FromQuery] string? returnUrl)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -46,6 +49,18 @@ public sealed class AccountController(IIdentityService identityService) : Contro
             return Unauthorized("Invalid login attempt.");
         }
 
+        if (!string.IsNullOrEmpty(returnUrl))
+        {
+            return Ok(new { RedirectUrl = returnUrl });
+        }
+
         return Ok();
+    }
+
+    [HttpGet("~/connect/logout")]
+    public async Task<IActionResult> Logout()
+    {
+        await HttpContext.SignOutAsync(IdentityConstants.ApplicationScheme);
+        return SignOut(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
     }
 }
