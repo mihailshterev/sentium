@@ -2,11 +2,15 @@ using System.Text.Json;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Sentinel.Core.Events;
+using Sentinel.Core.Stores;
 using Infrastructure.Messaging;
 
 namespace Sentinel.Infrastructure.Workers;
 
-public sealed class NetworkSentinelWorker(IEventBus bus, ILogger<NetworkSentinelWorker> logger) : BackgroundService
+public sealed class NetworkSentinelWorker(
+    IEventBus bus,
+    INetworkEventStore eventStore,
+    ILogger<NetworkSentinelWorker> logger) : BackgroundService
 {
     private const string InboundSubject = "traffic.anomaly";
     private const string OutboundSubject = "events.network.scan";
@@ -21,7 +25,7 @@ public sealed class NetworkSentinelWorker(IEventBus bus, ILogger<NetworkSentinel
             {
                 try
                 {
-                    if (msg.Data == null || msg.Data.Length == 0)
+                    if (msg.Data is null || msg.Data.Length == 0)
                     {
                         return;
                     }
@@ -46,6 +50,18 @@ public sealed class NetworkSentinelWorker(IEventBus bus, ILogger<NetworkSentinel
                     );
 
                     logger.LogInformation("SUCCESS: Received Anomaly from Python! Score: {Score:P0}", mlScore);
+
+                    eventStore.Add(new NetworkEventRecord(
+                        Id: Guid.NewGuid(),
+                        Source: sentinelEvent.Source,
+                        Action: sentinelEvent.Action,
+                        Timestamp: sentinelEvent.Timestamp,
+                        OrigH: sentinelEvent.Metadata.GetValueOrDefault("orig_h", "unknown"),
+                        RespH: sentinelEvent.Metadata.GetValueOrDefault("resp_h", "unknown"),
+                        Proto: sentinelEvent.Metadata.GetValueOrDefault("proto", "unknown"),
+                        Service: sentinelEvent.Metadata.GetValueOrDefault("service", "unknown"),
+                        MlScore: sentinelEvent.Metadata.GetValueOrDefault("ml_confidence_score", "0.00%")
+                    ));
 
                     try
                     {
