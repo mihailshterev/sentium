@@ -4,3 +4,5 @@ export const AUTH_STATUS = {
   AUTHENTICATED: "authenticated",
   UNAUTHENTICATED: "unauthenticated",
 } as const;
+
+export const DEFAULT_ASSISTANT_MODEL = "gemma4:e4b";

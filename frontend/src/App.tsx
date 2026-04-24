@@ -1,6 +1,5 @@
 import { useRoutes } from "react-router";
 import { routes } from "./routes/routes";
-import ConversationProvider from "./providers/conversation-provider";
 import { useAuthStore } from "./stores/auth-store";
 import { useEffect } from "react";
 import { AUTH_STATUS } from "./utils/constants";
@@ -30,7 +29,7 @@ const App = () => {
     );
   }
 
-  return <ConversationProvider>{content}</ConversationProvider>;
+  return <>{content}</>;
 };
 
 export default App;

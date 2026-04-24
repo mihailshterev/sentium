@@ -40,17 +40,24 @@ var logsPath = Path.Combine(baseDataDir, "logs");
 Directory.CreateDirectory(capturePath);
 Directory.CreateDirectory(logsPath);
 
+// TODO: Configure host network traffic capturing
 var zeek = builder.AddContainer(ResourceNames.ZeekServiceName, "zeek/zeek")
-    .WithBindMount(capturePath, "/capture")
+    .WithContainerRuntimeArgs("--cap-add", "NET_ADMIN", "--cap-add", "NET_RAW", "--network", "host", "--workdir", "/output")
+    // .WithBindMount(capturePath, "/capture")
     .WithBindMount(logsPath, "/output")
-    .WithEntrypoint("sh")
-    .WithArgs("-c", "cd /output && while true; do for f in /capture/*.pcap; do [ -e \"$f\" ] && zeek -C -r \"$f\" LogAscii::use_json=T local; done; sleep 5; done")
+    .WithEntrypoint("zeek")
+    .WithArgs(
+        "-i", "eth0",
+        "-C",
+        "local",
+        "policy/tuning/json-logs.zeek",
+        "LogAscii::use_json=T"
+    )
     .WithReference(nats)
     .WaitFor(nats);
 
 var python = builder.AddPythonApp(ServiceNames.NetworkFilter, "../../services/NetworkFilter", "main.py")
-    .WithEnvironment("NATS_SUBJECT_IN", "traffic.raw")
-    .WithEnvironment("NATS_SUBJECT_OUT", "traffic.anomaly")
+    .WithEnvironment("ZEEK_LOGS_PATH", logsPath)
     .WithHttpEndpoint(port: 8000, env: "PORT")
     .WithReference(nats).WaitFor(nats)
     .WaitFor(zeek);
@@ -82,6 +89,7 @@ var apiGateway = builder.AddProject<Projects.ApiGateway>(ServiceNames.Gateway)
     .WithEnvironment("Identity__Authority", identityApi.GetEndpoint("http"));
 
 var frontend = builder.AddViteApp(ServiceNames.Frontend, "../../frontend")
+    .WithPnpm()
     .WithReference(apiGateway).WaitFor(apiGateway)
     .WithEnvironment("VITE_API_BASE", apiGateway.GetEndpoint("https"))
     .WithEndpoint("http", e => e.Port = 5173);

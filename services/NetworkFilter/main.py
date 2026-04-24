@@ -2,60 +2,94 @@ import asyncio
 import os
 import json
 import nats
-import numpy as np
+from nats.js.errors import BadRequestError
 
-async def main():
-    nats_url = os.getenv("ConnectionStrings__nats")
+ANOMALY_SUBJECT = "traffic.anomaly"
+ANOMALY_THRESHOLD = 0.80
+
+async def tail_log_and_publish(js, filepath, subject):
+    """Acts as the bridge: safely tails the file and pushes to NATS."""
+    print(f"Waiting for Zeek to create {filepath}...")
     
-    if nats_url and not nats_url.startswith("nats://"):
-        nats_url = f"nats://{nats_url}"
+    while not os.path.exists(filepath):
+        await asyncio.sleep(1)
 
-    print(f"Connecting to NATS at {nats_url}...")
-    nc = await nats.connect(nats_url)
-    js = nc.jetstream()
+    print(f"Found log file. Streaming into NATS...")
 
-    subject_in = os.getenv("NATS_SUBJECT_IN", "traffic.raw")
-    subject_out = os.getenv("NATS_SUBJECT_OUT", "traffic.anomaly")
-    
-    try:
-        await js.add_stream(name="ZEEK_TRAFFIC", subjects=[subject_in, subject_out])
-        print(f"Stream 'ZEEK_TRAFFIC' is ready.")
-    except Exception as e:
-        print(f"Stream info: {e}")
-
-    sub = await js.pull_subscribe(subject_in, "ml-filter-group")
-    print(f"Mock ML Filter started. Watching {subject_in}...")
+    offset = os.path.getsize(filepath)
 
     while True:
         try:
-            msgs = await sub.fetch(10, timeout=1) 
-            
-            for msg in msgs:
-                data = json.loads(msg.data.decode())
-                
-                # --- MOCK ML LOGIC --- WILL BE REPLACED WITH REAL MODEL LATER ---
-                orig_bytes = data.get('orig_bytes', 0)
-                try:
-                    byte_count = int(orig_bytes) if str(orig_bytes).isdigit() else 0
-                except:
-                    byte_count = 0
-
-                if byte_count > 500:
-                    score = 0.99
-                    alert = {
-                        "score": score,
-                        "data": data
-                    }
-                    print(f"Anomaly! {data.get('id.orig_h')} -> {byte_count} bytes")
-                    await js.publish(subject_out, json.dumps(alert).encode('utf-8'))
-                
-                await msg.ack()
-
-        except nats.errors.TimeoutError:
+            with open(filepath, 'r') as f:
+                f.seek(offset)
+                lines = f.readlines()
+                offset = f.tell()
+        except OSError as e:
+            print(f"Could not read log file: {e}")
+            await asyncio.sleep(0.5)
             continue
+
+        for line in lines:
+            raw_line = line.strip()
+            # Only publish valid JSON lines to avoid Zeek startup text
+            if raw_line.startswith('{'):
+                await js.publish(subject, raw_line.encode())
+
+        if not lines:
+            await asyncio.sleep(0.1) 
+
+def compute_anomaly_score(data: dict) -> float:
+    """Compute a heuristic anomaly score (0.0–1.0) from a Zeek conn record."""
+    orig_bytes = int(data.get('orig_bytes', 0) or 0)
+    resp_bytes = int(data.get('resp_bytes', 0) or 0)
+    total_bytes = orig_bytes + resp_bytes
+
+    if total_bytes > 10_000_000:
+        return 0.97
+    if total_bytes > 1_000_000: 
+        return 0.92
+    if orig_bytes > 5_000:
+        return 0.88
+    if orig_bytes > 500:
+        return 0.82
+    return 0.0
+
+async def process_anomalies(nc, js):
+    """Acts as the brain: scores Zeek connections and forwards anomalies to Sentinel."""
+    sub = await js.subscribe("zeek.raw.conn", durable="anomaly-detector")
+    print("Anomaly Detector listening for traffic...")
+
+    async for msg in sub.messages:
+        try:
+            data = json.loads(msg.data.decode())
+            score = compute_anomaly_score(data)
+
+            if score >= ANOMALY_THRESHOLD:
+                # Publish scored anomaly to core NATS for the C# Sentinel worker
+                payload = json.dumps({"score": score, "data": data}).encode()
+                await nc.publish(ANOMALY_SUBJECT, payload)
+                print(f"ANOMALY: {data.get('id.orig_h')} → score={score:.0%}")
         except Exception as e:
-            print(f"Loop error: {e}")
-            await asyncio.sleep(1)
+            print(f"Failed to process message: {e}")
+        finally:
+            await msg.ack()
+
+async def main():
+    nats_url = os.getenv("ConnectionStrings__nats", "nats://localhost:4222")
+    nc = await nats.connect(nats_url)
+    js = nc.jetstream()
+
+    try:
+        await js.add_stream(name="ZEEK_TRAFFIC", subjects=["zeek.raw.conn"])
+    except BadRequestError:
+        await js.update_stream(name="ZEEK_TRAFFIC", subjects=["zeek.raw.conn"])
+
+    log_path = os.path.join(os.getenv("ZEEK_LOGS_PATH", "/output"), "conn.log")
+    
+    await asyncio.gather(
+        tail_log_and_publish(js, log_path, "zeek.raw.conn"),
+        process_anomalies(nc, js)
+    )
 
 if __name__ == "__main__":
     asyncio.run(main())
