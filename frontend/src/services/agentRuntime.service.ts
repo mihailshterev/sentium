@@ -99,6 +99,9 @@ export const runPipeline = (payload: Record<string, string>) =>
 export const runWorkflowPipeline = (payload: RunWorkflowPayload) =>
   client.post<{ eventId: string }>(`${BASE}/agents/run-workflow`, payload);
 
+export const triggerNetworkAnalysis = (event: NetworkEvent): Promise<{ eventId: string }> =>
+  client.post<{ eventId: string }>(`${BASE}/agents/analyze-network-event`, event);
+
 export const sendChatMessage = (payload: ChatPayload): Promise<Response> => {
   return fetch(`${BASE_URL}${BASE}/assistant/chat`, {
     method: "POST",
