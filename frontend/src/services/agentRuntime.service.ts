@@ -1,5 +1,6 @@
 import type { AgentRecord } from "../types/agents";
 import type { WorkflowRecord } from "../types/workflows";
+import type { NetworkEvent } from "../types/sentinel";
 import type { ConversationSummary } from "../types/assistant";
 import { BASE_URL, client } from "../api/client";
 
