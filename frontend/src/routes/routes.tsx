@@ -9,6 +9,7 @@ import System from "../pages/system/system";
 import Placeholder from "../pages/placeholder";
 import type { RouteObject } from "react-router";
 import Login from "../pages/login/login";
+import Sentinel from "../pages/sentinel/sentinel";
 
 export const routes: RouteObject[] = [
   {
@@ -24,7 +25,7 @@ export const routes: RouteObject[] = [
     ),
     children: [
       { index: true, element: <Dashboard /> },
-      { path: "sentinel", element: <Placeholder title="Sentinel" /> },
+      { path: "sentinel", element: <Sentinel /> },
       { path: "watchdog", element: <Placeholder title="Watchdog" /> },
       { path: "assistant", element: <Assistant /> },
       { path: "orchestration", element: <AgentOrchestration /> },
