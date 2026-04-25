@@ -8,13 +8,20 @@ namespace AgentRuntime.Api.Controllers;
 [ApiController]
 [Authorize]
 [Route("workflows")]
-public sealed class WorkflowsController(IWorkflowService workflowService) : ControllerBase
+public sealed class WorkflowsController(IWorkflowService workflowService, IWorkflowRunRepository runRepository) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> GetWorkflows(CancellationToken ct)
     {
         var workflows = await workflowService.GetWorkflowsAsync(ct);
         return Ok(workflows);
+    }
+
+    [HttpGet("runs")]
+    public async Task<IActionResult> GetWorkflowRuns([FromQuery] int count = 20, CancellationToken ct = default)
+    {
+        var runs = await runRepository.GetRecentAsync(Math.Min(count, 100), ct);
+        return Ok(runs);
     }
 
     [HttpGet("{workflowId:guid}")]

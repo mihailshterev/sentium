@@ -48,6 +48,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<IAgentManager, AgentManager>();
         services.AddTransient<IConversationManager, ConversationManager>();
         services.AddTransient<IWorkflowManager, WorkflowManager>();
+        services.AddTransient<IWorkflowRunRepository, WorkflowRunRepository>();
 
         return services;
     }

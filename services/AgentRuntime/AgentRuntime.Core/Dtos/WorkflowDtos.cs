@@ -25,3 +25,13 @@ public sealed record UpdateWorkflowRequest(
 public sealed record RunWorkflowRequest(
     Guid WorkflowId,
     string Scenario);
+
+public sealed record WorkflowRunResponse(
+    Guid Id,
+    string TriggerType,
+    string TriggerPayload,
+    string Explanation,
+    string Risk,
+    string Recommendation,
+    DateTime StartedAt,
+    DateTime CompletedAt);

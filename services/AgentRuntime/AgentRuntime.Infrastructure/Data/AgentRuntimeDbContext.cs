@@ -10,6 +10,7 @@ public sealed class AgentRuntimeDbContext(DbContextOptions<AgentRuntimeDbContext
     public DbSet<Message> Messages { get; set; }
     public DbSet<Workflow> Workflows { get; set; }
     public DbSet<WorkflowAgent> WorkflowAgents { get; set; }
+    public DbSet<WorkflowRun> WorkflowRuns { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -86,6 +87,17 @@ public sealed class AgentRuntimeDbContext(DbContextOptions<AgentRuntimeDbContext
                 .WithMany()
                 .HasForeignKey(e => e.AgentId)
                 .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<WorkflowRun>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.TriggerType).IsRequired().HasMaxLength(255);
+            entity.Property(e => e.TriggerPayload).IsRequired();
+            entity.Property(e => e.Explanation).IsRequired();
+            entity.Property(e => e.Risk).IsRequired();
+            entity.Property(e => e.Recommendation).IsRequired();
+            entity.HasIndex(e => e.StartedAt);
         });
     }
 }

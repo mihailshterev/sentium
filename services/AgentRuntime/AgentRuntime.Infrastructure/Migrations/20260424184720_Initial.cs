@@ -42,6 +42,24 @@ namespace AgentRuntime.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "WorkflowRuns",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    TriggerType = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
+                    TriggerPayload = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Explanation = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Risk = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Recommendation = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    StartedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CompletedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_WorkflowRuns", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Workflows",
                 columns: table => new
                 {
@@ -125,6 +143,11 @@ namespace AgentRuntime.Infrastructure.Migrations
                 column: "AgentId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_WorkflowRuns_StartedAt",
+                table: "WorkflowRuns",
+                column: "StartedAt");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Workflows_Name",
                 table: "Workflows",
                 column: "Name",
@@ -139,6 +162,9 @@ namespace AgentRuntime.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "WorkflowAgents");
+
+            migrationBuilder.DropTable(
+                name: "WorkflowRuns");
 
             migrationBuilder.DropTable(
                 name: "Conversations");
