@@ -1,6 +1,6 @@
 using AgentRuntime.Core.Agents;
 
-namespace AgentRuntime.Infrastructure.Agents;
+namespace AgentRuntime.Application.Agents.Native;
 
 public sealed class PlannerAgent : IAgent
 {

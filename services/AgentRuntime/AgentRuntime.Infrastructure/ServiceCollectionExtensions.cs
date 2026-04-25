@@ -39,15 +39,6 @@ public static class ServiceCollectionExtensions
 
         services.AddTransient<IAgentTool, ThreatIntelTool>();
         services.AddTransient<IAgentTool, FileReadTool>();
-
-        RegisterAgent<GeneralAssistant>(services, AgentRole.GeneralAssistant);
-        RegisterAgent<PlannerAgent>(services, AgentRole.Planner);
-        RegisterAgent<SecurityAnalyst>(services, AgentRole.SecurityAnalyst);
-        RegisterAgent<SummaryAgent>(services, AgentRole.Summarizer);
-        RegisterAgent<ThreatIntelAgent>(services, AgentRole.ThreatIntel);
-        RegisterAgent<ForensicsAgent>(services, AgentRole.Forensics);
-        RegisterAgent<ValidationAgent>(services, AgentRole.Validator);
-
         services.AddSingleton<IAgentRegistry, AgentRegistry>();
         services.AddSingleton<IAgentToolProvider, AgentToolProvider>();
         services.AddSingleton<IEventBus, NatsEventBus>();
@@ -59,11 +50,5 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IWorkflowRunRepository, WorkflowRunRepository>();
 
         return services;
-    }
-
-    private static void RegisterAgent<T>(IServiceCollection services, string name) where T : class, IAgent
-    {
-        services.AddKeyedTransient<IAgent, T>(name);
-        services.AddTransient<IAgent, T>();
     }
 }
