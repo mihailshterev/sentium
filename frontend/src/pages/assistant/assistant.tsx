@@ -152,21 +152,30 @@ const Assistant = () => {
         throw new Error("Failed to read stream");
       }
 
+      let leftover = "";
+
       while (true) {
         const { done, value } = await reader.read();
-        if (done) {
-          break;
-        }
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split("\n").filter(Boolean);
+        if (done) break;
+
+        const chunk = leftover + decoder.decode(value, { stream: true });
+        const lines = chunk.split("\n");
+
+        leftover = lines.pop() || "";
+
         for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed) {
+            continue;
+          }
+
           try {
-            const parsed = JSON.parse(line);
+            const parsed = JSON.parse(trimmed);
             if (parsed.message?.content) {
               updateLastMessage(aiMsgId, parsed.message.content);
             }
-          } catch {
-            // non-JSON line
+          } catch (err) {
+            console.error("Stream parse error:", err, trimmed);
           }
         }
       }
