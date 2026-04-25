@@ -2,6 +2,7 @@ using AgentRuntime.Core.Agents;
 using AgentRuntime.Core.Tools;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AgentRuntime.Infrastructure.Agents;
 
@@ -9,31 +10,15 @@ public sealed class CompositeAgentFactory(
     IAgentRegistry registry,
     IChatClient chatClient,
     IAgentToolProvider agentToolProvider,
-    IAgentManager agentManager) : IAgentFactory
+    IAgentManager agentManager,
+    IServiceProvider serviceProvider) : IAgentFactory
 {
     public async Task<AIAgent> CreateAsync(string agentName, string? overrideInstructions = null, CancellationToken ct = default)
     {
-        IAgent? definition = null;
-
-        var type = registry.GetAgentType(agentName);
-        if (type is not null)
-        {
-            definition = Activator.CreateInstance(type) as IAgent;
-        }
-        else
-        {
-            var dbAgents = await agentManager.GetAgentsAsync(ct);
-            var dbData = dbAgents.FirstOrDefault(a => a.Name.Equals(agentName, StringComparison.OrdinalIgnoreCase));
-
-            if (dbData is not null)
-            {
-                definition = new DynamicCustomAgent(dbData.Name, dbData.Description);
-            }
-        }
-
+        var definition = await ResolveDefinitionAsync(agentName, ct);
         if (definition is null)
         {
-            throw new InvalidOperationException($"Agent '{agentName}' could not be found in Registry or Database.");
+            throw new InvalidOperationException($"Agent '{agentName}' could not be resolved from Registry or Database.");
         }
 
         return new ChatClientAgent(chatClient, new ChatClientAgentOptions
@@ -45,5 +30,23 @@ public sealed class CompositeAgentFactory(
                 Tools = agentToolProvider.GetToolsForAgent(definition.Name, ct)
             }
         });
+    }
+
+    private async Task<IAgent?> ResolveDefinitionAsync(string agentName, CancellationToken ct)
+    {
+        var type = registry.GetAgentType(agentName);
+        if (type is not null)
+        {
+            return ActivatorUtilities.CreateInstance(serviceProvider, type) as IAgent;
+        }
+
+        var dbAgent = await agentManager.GetAgentByNameAsync(agentName, ct);
+
+        if (dbAgent is not null)
+        {
+            return new DynamicCustomAgent(dbAgent.Name, dbAgent.Description);
+        }
+
+        return null;
     }
 }

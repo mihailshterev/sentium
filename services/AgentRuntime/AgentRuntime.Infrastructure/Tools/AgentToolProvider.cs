@@ -6,27 +6,28 @@ namespace AgentRuntime.Infrastructure.Tools;
 
 public sealed class AgentToolProvider : IAgentToolProvider
 {
-    private readonly FrozenDictionary<string, List<IAgentTool>> toolCache;
+    private readonly FrozenDictionary<string, List<AITool>> toolCache;
 
     public AgentToolProvider(IEnumerable<IAgentTool> tools)
     {
         ArgumentNullException.ThrowIfNull(tools);
 
-        var tempMap = new Dictionary<string, List<IAgentTool>>(StringComparer.OrdinalIgnoreCase);
+        var tempMap = new Dictionary<string, List<AITool>>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var tool in tools)
         {
+            var aiTool = AIFunctionAdapter.ToAIFunction(tool);
             var policy = ToolPolicyReader.GetPolicy(tool);
 
             if (policy.AllowedAgents.Length == 0)
             {
-                AddToolToMap(tempMap, "*", tool);
+                AddToolToMap(tempMap, "*", aiTool);
             }
             else
             {
                 foreach (var agent in policy.AllowedAgents)
                 {
-                    AddToolToMap(tempMap, agent, tool);
+                    AddToolToMap(tempMap, agent, aiTool);
                 }
             }
         }
@@ -36,24 +37,27 @@ public sealed class AgentToolProvider : IAgentToolProvider
 
     public List<AITool> GetToolsForAgent(string agentName, CancellationToken ct)
     {
-        var result = new List<IAgentTool>();
+        var hasGlobal = toolCache.TryGetValue("*", out var globalTools);
+        var hasSpecific = toolCache.TryGetValue(agentName, out var specificTools);
 
-        if (toolCache.TryGetValue("*", out var globalTools))
+        var capacity = (hasGlobal ? globalTools!.Count : 0) + (hasSpecific ? specificTools!.Count : 0);
+
+        var result = new List<AITool>(capacity);
+
+        if (hasGlobal)
         {
-            result.AddRange(globalTools);
+            result.AddRange(globalTools!);
         }
 
-        if (toolCache.TryGetValue(agentName, out var specificTools))
+        if (hasSpecific)
         {
-            result.AddRange(specificTools);
+            result.AddRange(specificTools!);
         }
 
-        return result
-            .Select(t => AIFunctionAdapter.ToAIFunction(t, ct))
-            .ToList();
+        return result;
     }
 
-    private static void AddToolToMap(Dictionary<string, List<IAgentTool>> map, string key, IAgentTool tool)
+    private static void AddToolToMap(Dictionary<string, List<AITool>> map, string key, AITool tool)
     {
         if (!map.TryGetValue(key, out var list))
         {
