@@ -11,6 +11,7 @@
     <PackageReference Include="Aspire.NATS.Net" />
     <PackageReference Include="Aspire.StackExchange.Redis.DistributedCaching" />
     <PackageReference Include="Microsoft.Extensions.Caching.Hybrid" />
+    <PackageReference Include="Aspire.Qdrant.Client" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\AgentRuntime.Application\AgentRuntime.Application.csproj" />
