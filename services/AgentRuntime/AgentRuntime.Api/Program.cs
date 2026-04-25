@@ -3,6 +3,7 @@ using AgentRuntime.Infrastructure;
 using AgentRuntime.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Hybrid;
+using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -61,6 +62,13 @@ if (app.Environment.IsDevelopment())
     logger.LogInformation("Database migrations applied");
 
     app.MapOpenApi();
+
+    app.MapScalarApiReference(options =>
+    {
+        options.WithTitle("Sentium Agent Runtime")
+               .WithTheme(ScalarTheme.DeepSpace)
+               .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
+    });
 }
 
 app.UseAuthentication();

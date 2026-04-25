@@ -52,6 +52,12 @@
         "resolved": "10.4.0",
         "contentHash": "4V+aMLQeU/p4VcIWIcvGro0L6HynmL2TrelL04Ce1iotP6T5+kjxuZQvl6P1ObSXIRPCbVXtQSt1NxK0fRIuag=="
       },
+      "Scalar.AspNetCore": {
+        "type": "Direct",
+        "requested": "[2.14.4, )",
+        "resolved": "2.14.4",
+        "contentHash": "PyuqLRi7JXyTJm/rh+IWCA4Fct1SlZuWrdYiui5hiaBuSY88+roc4eWKfYaE6zrupBIwnEP8pJLe4ifvU7HtZA=="
+      },
       "Aspire.StackExchange.Redis": {
         "type": "Transitive",
         "resolved": "13.2.1",

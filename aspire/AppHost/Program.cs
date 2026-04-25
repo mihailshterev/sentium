@@ -86,7 +86,13 @@ var agentRuntimeApi = builder.AddProject<Projects.AgentRuntime_Api>(ServiceNames
     .WithReference(identityApi).WaitFor(identityApi)
     .WithEnvironment("AI__ModelName", ollamaModel.Resource.ModelName)
     .WithEnvironment("Rag__EmbeddingModelName", ollamaEmbeddingModel.Resource.ModelName)
-    .WithEnvironment("Identity__Authority", identityApi.GetEndpoint("http"));
+    .WithEnvironment("Identity__Authority", identityApi.GetEndpoint("http"))
+    .WithExternalHttpEndpoints()
+    .WithUrlForEndpoint("https", url =>
+    {
+        url.DisplayText = "Scalar API (Docs)";
+        url.Url = "/scalar/v1";
+    });
 
 var apiGateway = builder.AddProject<Projects.ApiGateway>(ServiceNames.Gateway)
     .WithReference(identityApi).WaitFor(identityApi)
