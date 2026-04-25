@@ -10,7 +10,6 @@ using Microsoft.Extensions.Logging;
 namespace AgentRuntime.Infrastructure.Agents;
 
 public sealed class CompositeAgentFactory(
-    IAgentRegistry registry,
     IChatClient chatClient,
     IAgentToolProvider agentToolProvider,
     IAgentManager agentManager,
@@ -52,10 +51,10 @@ public sealed class CompositeAgentFactory(
 
     private async Task<IAgent?> ResolveDefinitionAsync(string agentName, CancellationToken ct)
     {
-        var type = registry.GetAgentType(agentName);
-        if (type is not null)
+        var keyedAgent = serviceProvider.GetKeyedService<IAgent>(agentName);
+        if (keyedAgent is not null)
         {
-            return ActivatorUtilities.CreateInstance(serviceProvider, type) as IAgent;
+            return keyedAgent;
         }
 
         var dbAgent = await agentManager.GetAgentByNameAsync(agentName, ct);
