@@ -97,7 +97,7 @@ public sealed class OrchestrationController(
         {
             await foreach (var msg in eventBus.SubscribeStreamAsync($"stream.{eventId}", serializer: NatsJsonSerializer<AgentStreamUpdate>.Default, ct: ct))
             {
-                if (msg.Data is null)
+                if (msg.Data is null || string.IsNullOrWhiteSpace(msg.Data.Text))
                 {
                     continue;
                 }
