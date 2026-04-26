@@ -17,6 +17,8 @@ builder.Services.AddControllers();
 
 builder.AddNatsClient("nats");
 builder.AddRedisDistributedCache("redis");
+builder.AddQdrantClient("qdrant");
+
 builder.Services.AddAgentRuntimeApplication();
 builder.Services.AddAgentRuntimeInfrastructure(builder.Configuration);
 
