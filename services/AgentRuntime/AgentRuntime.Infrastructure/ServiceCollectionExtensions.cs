@@ -36,8 +36,6 @@ public static class ServiceCollectionExtensions
                 .UseOpenTelemetry()
                 .Build();
         });
-
-        services.AddTransient<IAgentTool, ThreatIntelTool>();
         services.AddTransient<IAgentTool, FileReadTool>();
         services.AddSingleton<IAgentRegistry, AgentRegistry>();
         services.AddSingleton<IAgentToolProvider, AgentToolProvider>();
