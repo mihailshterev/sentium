@@ -2,10 +2,23 @@ using AgentRuntime.Core.Agents;
 
 namespace AgentRuntime.Application.Agents.Native;
 
+/// <summary>
+/// A specialized native agent responsible for task decomposition and agent orchestration.
+/// The PlannerAgent analyzes incoming requests to select the most appropriate expert agents
+/// for the given problem domain.
+/// </summary>
 public sealed class PlannerAgent : IAgent
 {
+    /// <inheritdoc />
+    /// <value>"Planner Agent"</value>
     public string Name => "Planner Agent";
 
+    /// <inheritdoc />
+    /// <remarks>
+    /// This agent is strictly constrained to output valid JSON arrays. It serves as the
+    /// "brain" or router of the system, determining the workflow based on the capabilities
+    /// of the available Native agent roles.
+    /// </remarks>
     public string Instructions => @"You are an orchestration agent. Analyze the input and determine which specialized agents are required to resolve the issue.
 
     Available Agents:
