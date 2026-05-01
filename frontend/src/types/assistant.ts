@@ -9,5 +9,7 @@ export interface ConversationMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
+  thought?: string;
+  toolCalls?: string[];
   timestamp: Date;
 }

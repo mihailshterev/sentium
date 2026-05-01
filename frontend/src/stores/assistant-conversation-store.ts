@@ -16,7 +16,7 @@ interface ConversationState {
 
   setActiveConversation: (id: string | null, messages: ConversationMessage[], model: string) => void;
   appendMessage: (message: ConversationMessage) => void;
-  updateLastMessage: (id: string, appendContent: string) => void;
+  updateLastMessage: (id: string, appendContent: string, type?: "content" | "thought" | "tool") => void;
   setModel: (model: string) => void;
   clearConversation: () => void;
 }
@@ -38,9 +38,26 @@ export const useConversationStore = create<ConversationState>((set) => ({
       messages: [...state.messages, message],
     })),
 
-  updateLastMessage: (id, appendContent) =>
+  updateLastMessage: (id, appendContent, type = "content") =>
     set((state) => ({
-      messages: state.messages.map((msg) => (msg.id === id ? { ...msg, content: msg.content + appendContent } : msg)),
+      messages: state.messages.map((msg) => {
+        if (msg.id !== id) {
+          return msg;
+        }
+
+        if (type === "thought") {
+          return { ...msg, thought: (msg.thought || "") + appendContent };
+        }
+
+        if (type === "tool") {
+          return {
+            ...msg,
+            toolCalls: [...(msg.toolCalls || []), appendContent],
+          };
+        }
+
+        return { ...msg, content: msg.content + appendContent };
+      }),
     })),
 
   setModel: (model) => set({ model }),

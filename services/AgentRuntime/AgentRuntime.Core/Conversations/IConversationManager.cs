@@ -8,5 +8,5 @@ public interface IConversationManager
     Task<ConversationResponse> GetConversationAsync(Guid conversationId, CancellationToken ct = default);
     Task<ConversationSummary> CreateConversationAsync(CreateConversationRequest request, CancellationToken ct = default);
     Task DeleteConversationAsync(Guid conversationId, CancellationToken ct = default);
-    Task AddMessageAsync(Guid conversationId, string role, string content, CancellationToken ct = default);
+    Task AddMessageAsync(Guid conversationId, string role, string content, string? thought = null, IReadOnlyList<string>? toolCalls = null, CancellationToken ct = default);
 }

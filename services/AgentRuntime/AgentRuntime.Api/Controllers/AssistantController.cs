@@ -3,6 +3,7 @@ using AgentRuntime.Core.Conversations;
 using AgentRuntime.Core.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.AI;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -14,8 +15,7 @@ namespace AgentRuntime.Api.Controllers;
 [Route("assistant")]
 public sealed class AssistantController(
     IAgentFactory agentFactory,
-    IHttpClientFactory httpClientFactory,
-    IConversationService conversationService) : ControllerBase
+    IHttpClientFactory httpClientFactory) : ControllerBase
 {
     private static readonly Uri OllamaBase = new("http://localhost:11434");
 
@@ -41,44 +41,81 @@ public sealed class AssistantController(
     }
 
     [HttpPost("chat")]
-    public async Task Chat([FromBody] ChatRequest requestBody, CancellationToken ct)
+    public async Task Chat([FromBody] ChatRequest requestBody, [FromServices] IServiceScopeFactory scopeFactory, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(requestBody);
 
-        if (requestBody.Messages is { Count: > 0 })
+        if (requestBody.ConversationId.HasValue && requestBody.Messages.Count > 0)
         {
-            var lastIndex = requestBody.Messages.Count - 1;
-            var lastUserMessage = requestBody.Messages[lastIndex];
-
-            if (requestBody.ConversationId.HasValue && string.Equals(lastUserMessage.Role, "user", StringComparison.OrdinalIgnoreCase))
+            var lastMsg = requestBody.Messages[requestBody.Messages.Count - 1];
+            if (lastMsg.Role.Equals("user", StringComparison.OrdinalIgnoreCase))
             {
-                await conversationService.AddMessageAsync(requestBody.ConversationId.Value, "user", lastUserMessage.Content, ct);
+                using var scope = scopeFactory.CreateScope();
+                var conversationService = scope.ServiceProvider.GetRequiredService<IConversationService>();
+                await conversationService.AddMessageAsync(requestBody.ConversationId.Value, "user", lastMsg.Content, ct: ct);
             }
         }
 
         var agent = await agentFactory.CreateAsync(AgentRole.GeneralAssistant, ct: ct);
+        var session = await agent.CreateSessionAsync(ct);
+
+        var chatMessages = requestBody.Messages.Select(m => new Microsoft.Extensions.AI.ChatMessage(
+            m.Role.Equals("user", StringComparison.OrdinalIgnoreCase) ? ChatRole.User : ChatRole.Assistant,
+            m.Content
+        )).ToList();
 
         Response.ContentType = "text/event-stream";
         var assistantResponse = new StringBuilder();
+        var thoughtBuilder = new StringBuilder();
+        var toolCallLog = new List<string>();
 
-        var userContent = requestBody.Messages[requestBody.Messages.Count - 1].Content;
-        var responseStream = agent.RunStreamingAsync(userContent, cancellationToken: ct);
+        var responseStream = agent.RunStreamingAsync(chatMessages, session, cancellationToken: ct);
 
         await foreach (var update in responseStream)
         {
+            if (update.Contents.OfType<TextReasoningContent>().FirstOrDefault() is { } reasoning)
+            {
+                thoughtBuilder.Append(reasoning.Text);
+                await SendUiUpdate("thought", reasoning.Text, ct);
+            }
+
+            if (update.Contents.OfType<FunctionCallContent>().FirstOrDefault() is { } call)
+            {
+                var toolLabel = $"Calling {call.Name}...";
+                toolCallLog.Add(toolLabel);
+                await SendUiUpdate("tool", toolLabel, ct);
+            }
+
             if (!string.IsNullOrEmpty(update.Text))
             {
                 assistantResponse.Append(update.Text);
-
-                var jsonChunk = $"{{\"message\":{{\"content\":\"{JsonEncodedText.Encode(update.Text)}\"}},\"done\":false}}";
-                await Response.WriteAsync(jsonChunk + "\n", ct);
-                await Response.Body.FlushAsync(ct);
+                await SendUiUpdate("message", update.Text, ct);
             }
         }
 
         if (requestBody.ConversationId.HasValue && assistantResponse.Length > 0)
         {
-            await conversationService.AddMessageAsync(requestBody.ConversationId.Value, "assistant", assistantResponse.ToString(), ct);
+            using var scope = scopeFactory.CreateScope();
+            var conversationService = scope.ServiceProvider.GetRequiredService<IConversationService>();
+            await conversationService.AddMessageAsync(
+                requestBody.ConversationId.Value,
+                "assistant",
+                assistantResponse.ToString(),
+                thoughtBuilder.Length > 0 ? thoughtBuilder.ToString() : null,
+                toolCallLog.Count > 0 ? toolCallLog : null,
+                ct);
         }
+    }
+
+    private async Task SendUiUpdate(string type, string content, CancellationToken ct)
+    {
+        var json = JsonSerializer.Serialize(new
+        {
+            type,
+            message = new { content },
+            done = false
+        });
+        await Response.WriteAsync(json + "\n", ct);
+        await Response.Body.FlushAsync(ct);
     }
 }

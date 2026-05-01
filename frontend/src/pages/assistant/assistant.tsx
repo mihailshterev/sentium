@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import styles from "./assistant.module.scss";
 import Markdown from "react-markdown";
-import { Plus, Trash2, MessageSquare, ChevronRight, Cpu, Loader2 } from "lucide-react";
+import { Plus, Trash2, MessageSquare, ChevronRight, Cpu, Loader2, Brain, Wrench, ChevronDown } from "lucide-react";
 import { fetchConversation, sendChatMessage } from "../../services/agentRuntime.service";
 import useConversations from "../../hooks/useConversations";
 import useModels from "../../hooks/useModels";
@@ -32,6 +32,15 @@ const Assistant = () => {
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [expandedThoughts, setExpandedThoughts] = useState<Set<string>>(new Set());
+
+  const toggleThought = (id: string) =>
+    setExpandedThoughts((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -54,10 +63,19 @@ const Assistant = () => {
     try {
       const data = await fetchConversation(conv.id);
       const loadedMessages: ConversationMessage[] = (data.messages ?? []).map(
-        (m: { id: string; role: "user" | "assistant"; content: string; timestamp: string }) => ({
+        (m: {
+          id: string;
+          role: "user" | "assistant";
+          content: string;
+          timestamp: string;
+          thought?: string;
+          toolCalls?: string[];
+        }) => ({
           id: m.id,
           role: m.role,
           content: m.content,
+          thought: m.thought,
+          toolCalls: m.toolCalls,
           timestamp: new Date(m.timestamp),
         }),
       );
@@ -171,8 +189,15 @@ const Assistant = () => {
 
           try {
             const parsed = JSON.parse(trimmed);
-            if (parsed.message?.content) {
-              updateLastMessage(aiMsgId, parsed.message.content);
+            const content = parsed.message?.content;
+            if (content) {
+              if (parsed.type === "thought") {
+                updateLastMessage(aiMsgId, content, "thought");
+              } else if (parsed.type === "tool") {
+                updateLastMessage(aiMsgId, content, "tool");
+              } else {
+                updateLastMessage(aiMsgId, content, "content");
+              }
             }
           } catch (err) {
             console.error("Stream parse error:", err, trimmed);
@@ -297,9 +322,36 @@ const Assistant = () => {
                   <span className={styles.timestamp}>{formatTime(msg.timestamp)}</span>
                 </div>
 
-                <div className={styles.content}>
-                  <Markdown>{msg.content}</Markdown>
-                </div>
+                {msg.thought !== undefined && msg.role === "assistant" && (
+                  <div className={styles.thoughtBlock}>
+                    <button className={styles.thoughtHeader} onClick={() => toggleThought(msg.id)}>
+                      <Brain size={11} />
+                      <span>Thinking</span>
+                      <ChevronDown
+                        size={11}
+                        className={`${styles.thoughtChevron} ${expandedThoughts.has(msg.id) ? styles.thoughtChevronOpen : ""}`}
+                      />
+                    </button>
+                    {expandedThoughts.has(msg.id) && <div className={styles.thoughtContent}>{msg.thought}</div>}
+                  </div>
+                )}
+
+                {msg.toolCalls && msg.toolCalls.length > 0 && msg.role === "assistant" && (
+                  <div className={styles.toolCallList}>
+                    {msg.toolCalls.map((call, i) => (
+                      <div key={i} className={styles.toolCallRow}>
+                        <Wrench size={10} />
+                        <span>{call}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {msg.content && (
+                  <div className={styles.content}>
+                    <Markdown>{msg.content}</Markdown>
+                  </div>
+                )}
               </div>
             </div>
           ))}

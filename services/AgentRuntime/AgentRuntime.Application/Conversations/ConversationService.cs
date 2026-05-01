@@ -17,6 +17,6 @@ public sealed class ConversationService(IConversationManager manager) : IConvers
     public Task DeleteConversationAsync(Guid conversationId, CancellationToken ct = default)
         => manager.DeleteConversationAsync(conversationId, ct);
 
-    public Task AddMessageAsync(Guid conversationId, string role, string content, CancellationToken ct = default)
-        => manager.AddMessageAsync(conversationId, role, content, ct);
+    public Task AddMessageAsync(Guid conversationId, string role, string content, string? thought = null, IReadOnlyList<string>? toolCalls = null, CancellationToken ct = default)
+        => manager.AddMessageAsync(conversationId, role, content, thought, toolCalls, ct);
 }

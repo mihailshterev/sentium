@@ -544,6 +544,92 @@
   }
 }
 
+.thoughtBlock {
+  border: 1px solid var(--border-subtle);
+  border-left: 2px solid rgba(139, 92, 246, 0.5);
+  border-radius: 6px;
+  overflow: hidden;
+  background: rgba(139, 92, 246, 0.04);
+  margin-bottom: 0.4rem;
+}
+
+.thoughtHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 0.4rem 0.65rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-family: "JetBrains Mono", monospace;
+  letter-spacing: 0.04em;
+  text-align: left;
+  transition: color 0.15s;
+}
+
+.thoughtHeader:hover {
+  color: rgba(167, 139, 250, 0.9);
+}
+
+.thoughtHeader svg:first-child {
+  color: rgba(139, 92, 246, 0.7);
+  flex-shrink: 0;
+}
+
+.thoughtHeader span {
+  flex: 1;
+}
+
+.thoughtChevron {
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.thoughtChevronOpen {
+  transform: rotate(180deg);
+}
+
+.thoughtContent {
+  padding: 0.5rem 0.75rem 0.65rem;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: var(--text-dim);
+  font-style: italic;
+  border-top: 1px solid var(--border-subtle);
+  white-space: pre-wrap;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.toolCallList {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 0.4rem;
+}
+
+.toolCallRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.3rem 0.6rem;
+  background: rgba(251, 191, 36, 0.06);
+  border: 1px solid rgba(251, 191, 36, 0.18);
+  border-radius: 5px;
+  font-size: 0.7rem;
+  font-family: "JetBrains Mono", monospace;
+  color: rgba(251, 191, 36, 0.8);
+  max-width: fit-content;
+}
+
+.toolCallRow svg {
+  flex-shrink: 0;
+  color: rgba(251, 191, 36, 0.6);
+}
+
 .chatArea {
   flex: 1;
   overflow-y: auto;
