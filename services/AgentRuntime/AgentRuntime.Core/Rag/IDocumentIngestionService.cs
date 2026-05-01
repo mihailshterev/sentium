@@ -11,17 +11,17 @@ public interface IDocumentIngestionService
     /// <summary>
     /// Ingests a single document, chunking and embedding it before storage.
     /// </summary>
-    Task IngestAsync(IngestionRequest request, CancellationToken ct = default);
+    Task IngestAsync(IngestionRequest request, string? targetCollection = null, CancellationToken ct = default);
 
     /// <summary>
     /// Ingests a collection of documents sequentially.
     /// Each request is processed independently so a partial failure does not abort the batch.
     /// </summary>
-    Task IngestBatchAsync(IEnumerable<IngestionRequest> requests, CancellationToken ct = default);
+    Task IngestBatchAsync(IEnumerable<IngestionRequest> requests, string? targetCollection = null, CancellationToken ct = default);
 
     /// <summary>
     /// Pulls all documents from a registered <see cref="IIngestionSource"/> and ingests them.
     /// Use this for bulk back-fills or periodic refresh jobs.
     /// </summary>
-    Task IngestFromSourceAsync(IIngestionSource source, CancellationToken ct = default);
+    Task IngestFromSourceAsync(IIngestionSource source, string? targetCollection = null, CancellationToken ct = default);
 }

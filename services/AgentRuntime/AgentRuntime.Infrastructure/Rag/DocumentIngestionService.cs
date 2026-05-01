@@ -24,11 +24,12 @@ public sealed class DocumentIngestionService(
 {
     private readonly RagOptions ragOptions = options.Value;
 
-    public async Task IngestAsync(IngestionRequest request, CancellationToken ct = default)
+    public async Task IngestAsync(IngestionRequest request, string? targetCollection = null, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(request, nameof(request));
 
-        await vectorRepository.EnsureCollectionExistsAsync(ragOptions.CollectionName, ragOptions.VectorSize, ct);
+        var collectionName = targetCollection ?? ragOptions.CollectionName;
+        await vectorRepository.EnsureCollectionExistsAsync(collectionName, ragOptions.VectorSize, ct);
 
         var chunks = TextChunker.Chunk(request.Content, ragOptions.ChunkSize, ragOptions.ChunkOverlap);
 
@@ -49,11 +50,11 @@ public sealed class DocumentIngestionService(
                 Metadata = request.Metadata ?? []
             };
 
-            await vectorRepository.UpsertAsync(ragOptions.CollectionName, chunk, embedding, ct);
+            await vectorRepository.UpsertAsync(collectionName, chunk, embedding, ct);
         }
     }
 
-    public async Task IngestBatchAsync(IEnumerable<IngestionRequest> requests, CancellationToken ct = default)
+    public async Task IngestBatchAsync(IEnumerable<IngestionRequest> requests, string? targetCollection = null, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(requests, nameof(requests));
 
@@ -62,7 +63,7 @@ public sealed class DocumentIngestionService(
             ct.ThrowIfCancellationRequested();
             try
             {
-                await IngestAsync(request, ct);
+                await IngestAsync(request, targetCollection, ct);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
@@ -71,7 +72,7 @@ public sealed class DocumentIngestionService(
         }
     }
 
-    public async Task IngestFromSourceAsync(IIngestionSource source, CancellationToken ct = default)
+    public async Task IngestFromSourceAsync(IIngestionSource source, string? targetCollection = null, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(source, nameof(source));
 
@@ -86,7 +87,7 @@ public sealed class DocumentIngestionService(
             ct.ThrowIfCancellationRequested();
             try
             {
-                await IngestAsync(request, ct);
+                await IngestAsync(request, targetCollection, ct);
                 count++;
             }
             catch (Exception ex) when (ex is not OperationCanceledException)

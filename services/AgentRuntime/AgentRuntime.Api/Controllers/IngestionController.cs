@@ -23,7 +23,7 @@ public sealed class IngestionController(IDocumentIngestionService ingestionServi
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     public async Task<IActionResult> IngestDocument([FromBody] IngestionRequest request, CancellationToken ct)
     {
-        await ingestionService.IngestAsync(request, ct);
+        await ingestionService.IngestAsync(request, ct: ct);
         return Accepted();
     }
 
@@ -35,7 +35,7 @@ public sealed class IngestionController(IDocumentIngestionService ingestionServi
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     public async Task<IActionResult> IngestBatch([FromBody] IEnumerable<IngestionRequest> requests, CancellationToken ct)
     {
-        await ingestionService.IngestBatchAsync(requests, ct);
+        await ingestionService.IngestBatchAsync(requests, ct: ct);
         return Accepted();
     }
 
@@ -56,7 +56,7 @@ public sealed class IngestionController(IDocumentIngestionService ingestionServi
             return NotFound(new { error = $"No registered ingestion source named '{sourceName}'." });
         }
 
-        await ingestionService.IngestFromSourceAsync(source, ct);
+        await ingestionService.IngestFromSourceAsync(source, ct: ct);
         return Accepted();
     }
 
