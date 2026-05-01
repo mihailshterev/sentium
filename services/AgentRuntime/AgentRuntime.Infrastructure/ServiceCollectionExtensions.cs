@@ -52,19 +52,22 @@ public static class ServiceCollectionExtensions
                 .Build();
         });
 
+        services.AddSingleton<IEventBus, NatsEventBus>();
+
         services.AddSingleton<IEmbeddingService, OllamaEmbeddingService>();
         services.AddSingleton<IVectorRepository, QdrantVectorRepository>();
         services.AddScoped<IDocumentIngestionService, DocumentIngestionService>();
 
-        services.AddTransient<IAgentTool, KnowledgeBaseSearchTool>();
-        services.AddTransient<IAgentTool, ReadFileTool>();
-
-        services.AddSingleton<IAgentRegistry, AgentRegistry>();
-        services.AddSingleton<IAgentToolProvider, AgentToolProvider>();
-        services.AddSingleton<IEventBus, NatsEventBus>();
-
+        services.AddScoped<IAgentRegistry, AgentRegistry>();
+        services.AddScoped<IAgentToolProvider, AgentToolProvider>();
         services.AddScoped<IAgentFactory, CompositeAgentFactory>();
         services.AddScoped<IAgentManager, AgentManager>();
+
+        services.AddTransient<IAgentTool, KnowledgeBaseSearchTool>();
+        services.AddTransient<IAgentTool, ReadFileTool>();
+        services.AddTransient<IAgentTool, StoreMemoryTool>();
+        services.AddTransient<IAgentTool, RecallMemoryTool>();
+
         services.AddScoped<IConversationManager, ConversationManager>();
         services.AddScoped<IWorkflowManager, WorkflowManager>();
         services.AddScoped<IWorkflowRunRepository, WorkflowRunRepository>();
