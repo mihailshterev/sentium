@@ -1,12 +1,25 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import styles from "./assistant.module.scss";
 import Markdown from "react-markdown";
-import { Plus, Trash2, MessageSquare, ChevronRight, Cpu, Loader2, Brain, Wrench, ChevronDown } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  MessageSquare,
+  ChevronRight,
+  Cpu,
+  Loader2,
+  Brain,
+  Wrench,
+  ChevronDown,
+  ArrowUp,
+  Shield,
+} from "lucide-react";
 import { fetchConversation, sendChatMessage } from "../../services/agentRuntime.service";
 import useConversations from "../../hooks/useConversations";
 import useModels from "../../hooks/useModels";
 import type { ConversationMessage, ConversationSummary } from "../../types/assistant";
 import { useConversationStore } from "../../stores/assistant-conversation-store";
+import { SUGGESTIONS_POOL } from "../../utils/constants";
 
 const Assistant = () => {
   const {
@@ -42,22 +55,28 @@ const Assistant = () => {
       return next;
     });
 
+  const chatAreaRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = useCallback(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (chatAreaRef.current) {
+      chatAreaRef.current.scrollTop = chatAreaRef.current.scrollHeight;
+    }
   }, []);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages, isTyping, scrollToBottom]);
 
-  // Sync initial model from server when models first load
   useEffect(() => {
     if (models.length > 0 && !model) {
       setModel(models[0]);
     }
   }, [models, model, setModel]);
+
+  const randomizedSuggestions = useMemo(() => {
+    return [...SUGGESTIONS_POOL].sort(() => 0.5 - Math.random()).slice(0, 4);
+  }, []);
 
   const loadConversation = async (conv: ConversationSummary) => {
     try {
@@ -88,12 +107,13 @@ const Assistant = () => {
 
   const createNewConversation = async (): Promise<string | null> => {
     const uniqueId = Math.random().toString(36).substring(2, 5);
-    const title = `Chat ${new Date().toLocaleString("en-US", {
+    const title = `Chat ${new Date().toLocaleString("en-GB", {
       month: "short",
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
       second: "2-digit",
+      hour12: false,
     })} ${uniqueId}`;
     try {
       const data = await createConversation({ title, model });
@@ -205,22 +225,160 @@ const Assistant = () => {
         }
       }
     } catch {
-      updateLastMessage(aiMsgId, "\n\n_Error: Connection to Ollama node failed._");
+      updateLastMessage(aiMsgId, "\n\n_Error: Connection to AI node failed._");
     } finally {
       setIsTyping(false);
     }
   };
 
-  const formatTime = (date: Date) => date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const formatTime = (date: Date) => date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
 
   const formatDate = (dateStr: string) =>
-    new Date(dateStr).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    });
+    new Date(dateStr).toLocaleDateString("en-GB", { month: "short", day: "numeric" });
+
+  const isEmpty = messages.length === 0 && !isTyping;
 
   return (
     <div className={styles.container}>
+      <div className={styles.chatWrapper}>
+        <header className={styles.header}>
+          <div className={styles.headerLeft}>
+            <div className={styles.headerIconWrap}>
+              <Brain size={15} />
+            </div>
+            <span className={styles.headerTitle}>Assistant</span>
+          </div>
+          <div className={styles.headerRight}>
+            <div className={styles.statusBadge}>
+              <span className={styles.statusDot} />
+              <span className={styles.statusText}>{model || "No model selected"}</span>
+            </div>
+            <button
+              className={styles.sidebarToggle}
+              onClick={() => setSidebarOpen((v) => !v)}
+              title="Toggle conversations"
+            >
+              <ChevronRight
+                size={14}
+                style={{
+                  transform: sidebarOpen ? "none" : "rotate(180deg)",
+                  transition: "transform 0.2s",
+                }}
+              />
+            </button>
+          </div>
+        </header>
+
+        <div className={styles.chatArea} ref={chatAreaRef}>
+          {isEmpty ? (
+            <div className={styles.welcomeScreen}>
+              <div className={styles.welcomeIconWrap}>
+                <Shield size={38} />
+              </div>
+              <h1 className={styles.welcomeTitle}>Good to See You!</h1>
+              <h2 className={styles.welcomeSubtitle}>How Can I Assist You Today?</h2>
+              <p className={styles.welcomeMeta}>I'm available 24/7 — ask me anything.</p>
+              <div className={styles.suggestionRow}>
+                {randomizedSuggestions.map((s) => (
+                  <button key={s} className={styles.suggestionChip} onClick={() => setInput(s)}>
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className={styles.messagesArea}>
+              {messages.map((msg) => {
+                const isTypingMsg =
+                  msg.id === messages[messages.length - 1]?.id &&
+                  msg.role === "assistant" &&
+                  msg.content === "" &&
+                  isTyping;
+
+                return (
+                  <div
+                    key={msg.id}
+                    className={`${styles.messageWrapper} ${msg.role === "user" ? styles.wrapperUser : styles.wrapperAi}`}
+                  >
+                    <div className={`${styles.message} ${msg.role === "user" ? styles.messageUser : styles.messageAi}`}>
+                      <div className={styles.messageHeader}>
+                        <span className={styles.sender}>{msg.role === "user" ? "YOU" : "SENTIUM"}</span>
+                        <span className={styles.timestamp}>{formatTime(msg.timestamp)}</span>
+                      </div>
+
+                      {msg.thought !== undefined && msg.role === "assistant" && (
+                        <div className={styles.thoughtBlock}>
+                          <button className={styles.thoughtHeader} onClick={() => toggleThought(msg.id)}>
+                            <Brain size={11} />
+                            <span>Thinking</span>
+                            <ChevronDown
+                              size={11}
+                              className={`${styles.thoughtChevron} ${expandedThoughts.has(msg.id) ? styles.thoughtChevronOpen : ""}`}
+                            />
+                          </button>
+                          {expandedThoughts.has(msg.id) && (
+                            <div className={styles.thoughtContent}>
+                              <Markdown>{msg.thought}</Markdown>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {msg.toolCalls && msg.toolCalls.length > 0 && msg.role === "assistant" && (
+                        <div className={styles.toolCallList}>
+                          {msg.toolCalls.map((call, i) => (
+                            <div key={i} className={styles.toolCallRow}>
+                              <Wrench size={10} />
+                              <span>{call}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {isTypingMsg ? (
+                        <div className={styles.typingIndicator}>
+                          <span></span>
+                          <span></span>
+                          <span></span>
+                        </div>
+                      ) : (
+                        msg.content && (
+                          <div className={styles.content}>
+                            <Markdown>{msg.content}</Markdown>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+              <div ref={messagesEndRef} />
+            </div>
+          )}
+        </div>
+
+        <div className={styles.inputContainer}>
+          <form onSubmit={handleSubmit} className={styles.inputForm}>
+            <button type="button" className={styles.attachBtn} title="Add attachment">
+              <Plus size={16} />
+            </button>
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Ask anything..."
+              className={styles.input}
+              autoComplete="off"
+              disabled={isTyping}
+            />
+            <button type="submit" disabled={!input.trim() || isTyping} className={styles.sendButton}>
+              <ArrowUp size={16} />
+            </button>
+          </form>
+          <div className={styles.inputFooter}>Protected by Sentium Security Protocols</div>
+        </div>
+      </div>
+
       <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ""}`}>
         <div className={styles.sidebarHeader}>
           <span className={styles.sidebarTitle}>Conversations</span>
@@ -230,7 +388,7 @@ const Assistant = () => {
             title="New conversation"
             disabled={isCreating}
           >
-            {isCreating ? <Loader2 /> : <Plus />}
+            {isCreating ? <Loader2 size={13} /> : <Plus size={13} />}
           </button>
         </div>
 
@@ -283,123 +441,6 @@ const Assistant = () => {
           ))}
         </div>
       </aside>
-
-      <div className={styles.chatWrapper}>
-        <header className={styles.header}>
-          <button
-            className={styles.sidebarToggle}
-            onClick={() => setSidebarOpen((v) => !v)}
-            title="Toggle conversations"
-          >
-            <ChevronRight
-              size={15}
-              style={{
-                transform: sidebarOpen ? "rotate(180deg)" : "none",
-                transition: "transform 0.2s",
-              }}
-            />
-          </button>
-          <div className={styles.headerLeft}>
-            <MessageSquare size={16} className={styles.headerIcon} />
-            <div>
-              <h2 className={styles.headerTitle}>Assistant Workspace</h2>
-              <span className={styles.headerSub}>
-                {model} · {activeConversationId ? "conversation active" : "no active conversation"}
-              </span>
-            </div>
-          </div>
-        </header>
-
-        <div className={styles.chatArea}>
-          {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`${styles.messageWrapper} ${msg.role === "user" ? styles.wrapperUser : styles.wrapperAi}`}
-            >
-              <div className={`${styles.message} ${msg.role === "user" ? styles.messageUser : styles.messageAi}`}>
-                <div className={styles.messageHeader}>
-                  <span className={styles.sender}>{msg.role === "user" ? "YOU" : "SYSTEM"}</span>
-                  <span className={styles.timestamp}>{formatTime(msg.timestamp)}</span>
-                </div>
-
-                {msg.thought !== undefined && msg.role === "assistant" && (
-                  <div className={styles.thoughtBlock}>
-                    <button className={styles.thoughtHeader} onClick={() => toggleThought(msg.id)}>
-                      <Brain size={11} />
-                      <span>Thinking</span>
-                      <ChevronDown
-                        size={11}
-                        className={`${styles.thoughtChevron} ${expandedThoughts.has(msg.id) ? styles.thoughtChevronOpen : ""}`}
-                      />
-                    </button>
-                    {expandedThoughts.has(msg.id) && <div className={styles.thoughtContent}>{msg.thought}</div>}
-                  </div>
-                )}
-
-                {msg.toolCalls && msg.toolCalls.length > 0 && msg.role === "assistant" && (
-                  <div className={styles.toolCallList}>
-                    {msg.toolCalls.map((call, i) => (
-                      <div key={i} className={styles.toolCallRow}>
-                        <Wrench size={10} />
-                        <span>{call}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {msg.content && (
-                  <div className={styles.content}>
-                    <Markdown>{msg.content}</Markdown>
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-
-          {isTyping && messages[messages.length - 1]?.content === "" && (
-            <div className={`${styles.messageWrapper} ${styles.wrapperAi}`}>
-              <div className={`${styles.message} ${styles.messageAi}`}>
-                <div className={styles.typingIndicator}>
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                </div>
-              </div>
-            </div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-
-        <div className={styles.inputContainer}>
-          <form onSubmit={handleSubmit} className={styles.inputForm}>
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder={`Query ${model}...`}
-              className={styles.input}
-              autoComplete="off"
-              disabled={isTyping}
-            />
-            <button type="submit" disabled={!input.trim() || isTyping} className={styles.sendButton}>
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <line x1="22" y1="2" x2="11" y2="13"></line>
-                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-              </svg>
-            </button>
-          </form>
-          <div className={styles.inputFooter}>Protected by Sentium Security Protocols</div>
-        </div>
-      </div>
     </div>
   );
 };
