@@ -13,6 +13,7 @@ import {
   ChevronDown,
   ArrowUp,
   Shield,
+  Square,
 } from "lucide-react";
 import { fetchConversation, sendChatMessage } from "../../services/agentRuntime.service";
 import useConversations from "../../hooks/useConversations";
@@ -57,6 +58,7 @@ const Assistant = () => {
 
   const chatAreaRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const scrollToBottom = useCallback(() => {
     if (chatAreaRef.current) {
@@ -135,6 +137,10 @@ const Assistant = () => {
     });
   };
 
+  const handleStop = () => {
+    abortControllerRef.current?.abort();
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!input.trim() || isTyping) {
@@ -172,13 +178,19 @@ const Assistant = () => {
       content: msg.content,
     }));
 
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     try {
-      const response = await sendChatMessage({
-        conversationId: conversationId ?? undefined,
-        model,
-        messages: chatHistory,
-        stream: true,
-      });
+      const response = await sendChatMessage(
+        {
+          conversationId: conversationId ?? undefined,
+          model,
+          messages: chatHistory,
+          stream: true,
+        },
+        controller.signal,
+      );
 
       if (!response.ok) {
         throw new Error("Network response was not ok");
@@ -224,10 +236,15 @@ const Assistant = () => {
           }
         }
       }
-    } catch {
-      updateLastMessage(aiMsgId, "\n\n_Error: Connection to AI node failed._");
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") {
+        // User stopped generation — not an error
+      } else {
+        updateLastMessage(aiMsgId, "\n\n_Error: Connection to AI node failed._");
+      }
     } finally {
       setIsTyping(false);
+      abortControllerRef.current = null;
     }
   };
 
@@ -366,14 +383,20 @@ const Assistant = () => {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask anything..."
+              placeholder={isTyping ? "Generating..." : "Ask anything..."}
               className={styles.input}
               autoComplete="off"
               disabled={isTyping}
             />
-            <button type="submit" disabled={!input.trim() || isTyping} className={styles.sendButton}>
-              <ArrowUp size={16} />
-            </button>
+            {isTyping ? (
+              <button type="button" onClick={handleStop} className={styles.stopButton} title="Stop generation">
+                <Square size={13} fill="currentColor" />
+              </button>
+            ) : (
+              <button type="submit" disabled={!input.trim()} className={styles.sendButton}>
+                <ArrowUp size={16} />
+              </button>
+            )}
           </form>
           <div className={styles.inputFooter}>Protected by Sentium Security Protocols</div>
         </div>

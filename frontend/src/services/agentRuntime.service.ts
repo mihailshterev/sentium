@@ -107,11 +107,12 @@ export const triggerNetworkAnalysis = (event: NetworkEvent): Promise<{ eventId: 
 export const fetchWorkflowRuns = (count = 15): Promise<WorkflowRun[]> =>
   client.get<WorkflowRun[]>(`${BASE}/workflows/runs?count=${count}`);
 
-export const sendChatMessage = (payload: ChatPayload): Promise<Response> => {
+export const sendChatMessage = (payload: ChatPayload, signal?: AbortSignal): Promise<Response> => {
   return fetch(`${BASE_URL}${BASE}/assistant/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
     credentials: "include",
+    signal,
   });
 };
