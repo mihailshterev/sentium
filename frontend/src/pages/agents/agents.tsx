@@ -259,7 +259,7 @@ const Agents = () => {
                     )}
                     <span className={styles.agentMetaItem}>
                       <Clock size={11} />
-                      {new Date(agent.createdAt).toLocaleDateString("en-US", {
+                      {new Date(agent.createdAt).toLocaleDateString("en-GB", {
                         year: "numeric",
                         month: "short",
                         day: "numeric",
