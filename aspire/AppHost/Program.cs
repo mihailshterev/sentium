@@ -26,6 +26,7 @@ var ollama = builder.AddOllama(ResourceNames.OllamaServiceName)
     .WithGPUSupport(OllamaGpuVendor.Nvidia)
     // .WithEnvironment(OllamaConfig.ContextSizeKey, OllamaConfig.DefaultContextSize)
     .WithEnvironment(OllamaConfig.FlashAttentionKey, "1")
+    .WithEnvironment(OllamaConfig.ParallelRequestsKey, "2")
     // .WithEnvironment(OllamaConfig.CacheTypeKey, "q4_0")
     .WithEnvironment(OllamaConfig.DebugKey, "1")
     .WithEndpoint("http", e => e.Port = 11434);
