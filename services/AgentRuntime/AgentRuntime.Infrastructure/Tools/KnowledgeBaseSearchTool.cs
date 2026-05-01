@@ -38,7 +38,7 @@ public sealed class KnowledgeBaseSearchTool(
     /// <inheritdoc />
     public string Description =>
         "Search the local knowledge base for relevant context. " +
-        "Input is a natural-language query string, or a JSON object {\"query\":\"...\",\"topK\":N}. " +
+        "Input is a string containing the search query, or a JSON string with the format {\"input\": \"query text\", \"topK\": 5}." +
         "Returns the most semantically similar document snippets with source citations. " +
         "Use this tool before answering questions that require specific facts about the home network, " +
         "device inventory, security alerts, or recent anomalies.";
