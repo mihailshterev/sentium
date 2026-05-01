@@ -57,6 +57,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IDocumentIngestionService, DocumentIngestionService>();
 
         services.AddTransient<IAgentTool, KnowledgeBaseSearchTool>();
+        services.AddTransient<IAgentTool, ReadFileTool>();
 
         services.AddSingleton<IAgentRegistry, AgentRegistry>();
         services.AddSingleton<IAgentToolProvider, AgentToolProvider>();
