@@ -1,10 +1,12 @@
 using AgentRuntime.Core.Agents;
 using AgentRuntime.Core.Conversations;
+using AgentRuntime.Core.Rag;
 using AgentRuntime.Core.Tools;
 using AgentRuntime.Core.WorkflowManagement;
 using AgentRuntime.Infrastructure.Agents;
 using AgentRuntime.Infrastructure.Conversations;
 using AgentRuntime.Infrastructure.Data;
+using AgentRuntime.Infrastructure.Rag;
 using AgentRuntime.Infrastructure.Tools;
 using AgentRuntime.Infrastructure.WorkflowManagement;
 using Infrastructure.Messaging;
@@ -26,28 +28,46 @@ public static class ServiceCollectionExtensions
             options.UseSqlServer(configuration.GetConnectionString("agentruntimedb"))
         );
 
+        var ollamaUri = new Uri(configuration["AI:OllamaBaseUrl"] ?? "http://localhost:11434");
         var modelName = configuration["AI:ModelName"] ?? "gemma3:1b";
 
         services.AddChatClient(sp =>
         {
-            var client = new OllamaApiClient(new Uri("http://localhost:11434"), modelName);
+            var client = new OllamaApiClient(ollamaUri, modelName);
             return new ChatClientBuilder(client)
                 .UseFunctionInvocation()
                 .UseOpenTelemetry()
                 .Build();
         });
 
-        services.AddSingleton<IAgentTool, ThreatIntelTool>();
-        services.AddSingleton<IAgentTool, FileReadTool>();
+        services.Configure<RagOptions>(configuration.GetSection(RagOptions.SectionName));
+
+        services.AddEmbeddingGenerator(sp =>
+        {
+            var ragOptions = configuration.GetSection(RagOptions.SectionName).Get<RagOptions>() ?? new RagOptions();
+            IEmbeddingGenerator<string, Embedding<float>> generator = new OllamaApiClient(ollamaUri, ragOptions.EmbeddingModelName);
+
+            return new EmbeddingGeneratorBuilder<string, Embedding<float>>(generator)
+                .UseOpenTelemetry()
+                .Build();
+        });
+
+        services.AddSingleton<IEmbeddingService, OllamaEmbeddingService>();
+        services.AddSingleton<IVectorRepository, QdrantVectorRepository>();
+        services.AddScoped<IDocumentIngestionService, DocumentIngestionService>();
+
+        services.AddTransient<IAgentTool, KnowledgeBaseSearchTool>();
+        services.AddTransient<IAgentTool, ReadFileTool>();
 
         services.AddSingleton<IAgentRegistry, AgentRegistry>();
         services.AddSingleton<IAgentToolProvider, AgentToolProvider>();
-        services.AddTransient<IAgentFactory, CompositeAgentFactory>();
-
         services.AddSingleton<IEventBus, NatsEventBus>();
-        services.AddTransient<IAgentManager, AgentManager>();
-        services.AddTransient<IConversationManager, ConversationManager>();
-        services.AddTransient<IWorkflowManager, WorkflowManager>();
+
+        services.AddScoped<IAgentFactory, CompositeAgentFactory>();
+        services.AddScoped<IAgentManager, AgentManager>();
+        services.AddScoped<IConversationManager, ConversationManager>();
+        services.AddScoped<IWorkflowManager, WorkflowManager>();
+        services.AddScoped<IWorkflowRunRepository, WorkflowRunRepository>();
 
         return services;
     }

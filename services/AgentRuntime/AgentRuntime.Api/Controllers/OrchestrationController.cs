@@ -1,3 +1,4 @@
+using System.Text.Json;
 using AgentRuntime.Application.Workflows;
 using AgentRuntime.Core.Dtos;
 using AgentRuntime.Core.WorkflowManagement;
@@ -12,16 +13,25 @@ namespace AgentRuntime.Api.Controllers;
 [ApiController]
 [Authorize]
 [Route("agents")]
-public sealed class OrchestrationController(IEventBus eventBus, IWorkflowService workflowService) : ControllerBase
+public sealed class OrchestrationController(
+    IEventBus eventBus,
+    IWorkflowService workflowService,
+    ILogger<OrchestrationController> logger) : ControllerBase
 {
     [HttpPost("test-pipeline")]
     public async Task<IActionResult> RunPipeline([FromBody] dynamic customInput, CancellationToken ct)
     {
         var payload = customInput ?? new { activity = "Manual trigger", user = "admin" };
-        var jsonPayload = System.Text.Json.JsonSerializer.Serialize(payload);
+        var jsonPayload = JsonSerializer.Serialize(payload);
 
         await eventBus.PublishAsync(WorkflowEvents.Dynamic, jsonPayload, ct: ct);
-        return Ok(new { eventId = WorkflowEvents.Dynamic });
+
+        if (logger.IsEnabled(LogLevel.Information))
+        {
+            logger.LogInformation("Pipeline test triggered by {User}", User.Identity?.Name);
+        }
+
+        return Accepted(new Envelope(WorkflowEvents.Dynamic));
     }
 
     [HttpPost("run-workflow")]
@@ -39,10 +49,10 @@ public sealed class OrchestrationController(IEventBus eventBus, IWorkflowService
             agents = workflow.Agents.Select(a => a.AgentId)
         };
 
-        var jsonPayload = System.Text.Json.JsonSerializer.Serialize(payload);
+        var jsonPayload = JsonSerializer.Serialize(payload);
         await eventBus.PublishAsync(WorkflowEvents.CustomWorkflow, jsonPayload, ct: ct);
 
-        return Ok(new { eventId = WorkflowEvents.CustomWorkflow });
+        return Accepted(new Envelope(WorkflowEvents.CustomWorkflow));
     }
 
     [HttpPost("analyze-network-event")]
@@ -65,10 +75,10 @@ public sealed class OrchestrationController(IEventBus eventBus, IWorkflowService
             timestamp = request.Timestamp
         };
 
-        var jsonPayload = System.Text.Json.JsonSerializer.Serialize(payload);
+        var jsonPayload = JsonSerializer.Serialize(payload);
         await eventBus.PublishAsync(WorkflowEvents.NetworkScan, jsonPayload, ct: ct);
 
-        return Ok(new { eventId = WorkflowEvents.NetworkScan });
+        return Accepted(new Envelope(WorkflowEvents.NetworkScan));
     }
 
     [HttpGet("stream/{eventId}")]
@@ -77,24 +87,48 @@ public sealed class OrchestrationController(IEventBus eventBus, IWorkflowService
         Response.Headers.Append("Content-Type", "text/event-stream");
         Response.Headers.Append("Cache-Control", "no-cache");
         Response.Headers.Append("Connection", "keep-alive");
+        Response.Headers.Append("X-Accel-Buffering", "no");
 
-        var init = System.Text.Json.JsonSerializer.Serialize(new AgentStreamUpdate("System", "Listening for agent telemetry..."));
+        var init = JsonSerializer.Serialize(new AgentStreamUpdate("System", "Listening for agent telemetry..."));
         await Response.WriteAsync($"data: {init}\n\n", ct);
         await Response.Body.FlushAsync(ct);
 
-        await foreach (var msg in eventBus.SubscribeStreamAsync($"stream.{eventId}", serializer: NatsJsonSerializer<AgentStreamUpdate>.Default, ct: ct))
+        try
         {
-            Console.WriteLine($"[STREAM] Received from {msg.Data?.Author}: {msg.Data?.Text}");
-            var json = System.Text.Json.JsonSerializer.Serialize(msg.Data);
+            await foreach (var msg in eventBus.SubscribeStreamAsync($"stream.{eventId}", serializer: NatsJsonSerializer<AgentStreamUpdate>.Default, ct: ct))
+            {
+                if (msg.Data is null || string.IsNullOrWhiteSpace(msg.Data.Text))
+                {
+                    continue;
+                }
 
-            await Response.WriteAsync($"data: {json}\n\n", ct);
+                if (logger.IsEnabled(LogLevel.Information))
+                {
+                    logger.LogInformation("[STREAM:{eventId}] Received from {Author}: {Text}", eventId, msg.Data?.Author, msg.Data?.Text);
+                }
+
+                var json = JsonSerializer.Serialize(msg.Data);
+                await Response.WriteAsync($"data: {json}\n\n", ct);
+                await Response.Body.FlushAsync(ct);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation("Client disconnected from stream {EventId}", eventId);
+            }
+            return;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error while streaming agent execution for event {EventId}: {Message}", eventId, ex.Message);
+            var errorPayload = JsonSerializer.Serialize(new AgentStreamUpdate("System", $"Error: {ex.Message}"));
+            await Response.WriteAsync($"data: {errorPayload}\n\n", ct);
             await Response.Body.FlushAsync(ct);
         }
+
     }
 
-    [HttpGet("health")]
-    public IActionResult AgentHealthCheck()
-    {
-        return Ok("Agent service is healthy.");
-    }
+    public record Envelope(string EventId, string? CorrelationId = null, string Status = "Accepted");
 }

@@ -1,5 +1,7 @@
 using System.Text;
+using AgentRuntime.Core.Entities;
 using AgentRuntime.Core.Orchestration;
+using AgentRuntime.Core.WorkflowManagement;
 using AgentRuntime.Core.Workflows;
 using Infrastructure.Messaging;
 using Microsoft.Extensions.DependencyInjection;
@@ -36,9 +38,31 @@ public sealed class NatsMessageProcessor(
                         Payload = payloadString
                     };
 
+                    var startedAt = DateTime.Now;
                     var result = await orchestrator.RunAsync(trigger, stoppingToken);
+                    var completedAt = DateTime.Now;
 
                     logger.LogInformation("Workflow Complete. Result: {Explanation}", result.Explanation);
+
+                    try
+                    {
+                        var runRepo = scope.ServiceProvider.GetRequiredService<IWorkflowRunRepository>();
+                        await runRepo.AddAsync(new WorkflowRun
+                        {
+                            Id = Guid.NewGuid(),
+                            TriggerType = trigger.TriggerType,
+                            TriggerPayload = payloadString,
+                            Explanation = result.Explanation ?? string.Empty,
+                            Risk = result.Risk?.ToString() ?? string.Empty,
+                            Recommendation = result.Recommendation?.ToString() ?? string.Empty,
+                            StartedAt = startedAt,
+                            CompletedAt = completedAt
+                        }, stoppingToken);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogError(ex, "Failed to persist workflow run result.");
+                    }
                 }
                 catch (Exception ex)
                 {

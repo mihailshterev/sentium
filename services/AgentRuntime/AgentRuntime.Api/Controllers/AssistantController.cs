@@ -1,7 +1,9 @@
+using AgentRuntime.Core.Agents;
 using AgentRuntime.Core.Conversations;
 using AgentRuntime.Core.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.AI;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -11,7 +13,9 @@ namespace AgentRuntime.Api.Controllers;
 [ApiController]
 [Authorize]
 [Route("assistant")]
-public sealed class AssistantController(IHttpClientFactory httpClientFactory, IConversationService conversationService) : ControllerBase
+public sealed class AssistantController(
+    IAgentFactory agentFactory,
+    IHttpClientFactory httpClientFactory) : ControllerBase
 {
     private static readonly Uri OllamaBase = new("http://localhost:11434");
 
@@ -37,85 +41,81 @@ public sealed class AssistantController(IHttpClientFactory httpClientFactory, IC
     }
 
     [HttpPost("chat")]
-    public async Task Chat([FromBody] ChatRequest requestBody, CancellationToken ct)
+    public async Task Chat([FromBody] ChatRequest requestBody, [FromServices] IServiceScopeFactory scopeFactory, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(requestBody);
 
         if (requestBody.ConversationId.HasValue && requestBody.Messages.Count > 0)
         {
-            var lastUser = requestBody.Messages.LastOrDefault(m => string.Equals(m.Role, "user", StringComparison.OrdinalIgnoreCase));
-            if (lastUser is not null)
+            var lastMsg = requestBody.Messages[requestBody.Messages.Count - 1];
+            if (lastMsg.Role.Equals("user", StringComparison.OrdinalIgnoreCase))
             {
-                await conversationService.AddMessageAsync(requestBody.ConversationId.Value, "user", lastUser.Content, ct);
+                using var scope = scopeFactory.CreateScope();
+                var conversationService = scope.ServiceProvider.GetRequiredService<IConversationService>();
+                await conversationService.AddMessageAsync(requestBody.ConversationId.Value, "user", lastMsg.Content, ct: ct);
             }
         }
 
-        using var client = httpClientFactory.CreateClient("ollama");
+        var agent = await agentFactory.CreateAsync(AgentRole.GeneralAssistant, ct: ct);
+        var session = await agent.CreateSessionAsync(ct);
 
-        var ollamaPayload = new
+        var chatMessages = requestBody.Messages.Select(m => new Microsoft.Extensions.AI.ChatMessage(
+            m.Role.Equals("user", StringComparison.OrdinalIgnoreCase) ? ChatRole.User : ChatRole.Assistant,
+            m.Content
+        )).ToList();
+
+        Response.ContentType = "text/event-stream";
+        var assistantResponse = new StringBuilder();
+        var thoughtBuilder = new StringBuilder();
+        var toolCallLog = new List<string>();
+
+        var responseStream = agent.RunStreamingAsync(chatMessages, session, cancellationToken: ct);
+
+        await foreach (var update in responseStream)
         {
-            model = requestBody.Model,
-            messages = requestBody.Messages.Select(m => new
+            if (update.Contents.OfType<TextReasoningContent>().FirstOrDefault() is { } reasoning)
             {
-                role = m.Role,
-                content = m.Content,
-                images = m.Images ?? []
-            }),
-            stream = true
-        };
-
-        var json = JsonSerializer.Serialize(ollamaPayload);
-        using var content = new StringContent(json, Encoding.UTF8, "application/json");
-        using var httpRequest = new HttpRequestMessage(HttpMethod.Post, new Uri(OllamaBase, "/api/chat"))
-        {
-            Content = content
-        };
-
-        using var response = await client.SendAsync(httpRequest, HttpCompletionOption.ResponseHeadersRead, ct);
-
-        Response.ContentType = "application/json";
-        Response.StatusCode = (int)response.StatusCode;
-
-        if (!response.IsSuccessStatusCode)
-        {
-            await response.Content.CopyToAsync(Response.Body, ct);
-            return;
-        }
-
-        var assistantContent = new StringBuilder();
-        using var stream = await response.Content.ReadAsStreamAsync(ct);
-        using var reader = new System.IO.StreamReader(stream);
-
-        string? line;
-        while ((line = await reader.ReadLineAsync(ct)) != null)
-        {
-            if (ct.IsCancellationRequested)
-            {
-                break;
-            }
-            if (string.IsNullOrWhiteSpace(line))
-            {
-                continue;
+                thoughtBuilder.Append(reasoning.Text);
+                await SendUiUpdate("thought", reasoning.Text, ct);
             }
 
-            await Response.WriteAsync(line + "\n", ct);
-            await Response.Body.FlushAsync(ct);
-
-            try
+            if (update.Contents.OfType<FunctionCallContent>().FirstOrDefault() is { } call)
             {
-                var parsed = JsonNode.Parse(line);
-                var token = parsed?["message"]?["content"]?.GetValue<string>();
-                if (!string.IsNullOrEmpty(token))
-                {
-                    assistantContent.Append(token);
-                }
+                var toolLabel = $"Calling {call.Name}...";
+                toolCallLog.Add(toolLabel);
+                await SendUiUpdate("tool", toolLabel, ct);
             }
-            catch { /* non-JSON line — skip */ }
+
+            if (!string.IsNullOrEmpty(update.Text))
+            {
+                assistantResponse.Append(update.Text);
+                await SendUiUpdate("message", update.Text, ct);
+            }
         }
 
-        if (requestBody.ConversationId.HasValue && assistantContent.Length > 0)
+        if (requestBody.ConversationId.HasValue && assistantResponse.Length > 0)
         {
-            await conversationService.AddMessageAsync(requestBody.ConversationId.Value, "assistant", assistantContent.ToString(), ct);
+            using var scope = scopeFactory.CreateScope();
+            var conversationService = scope.ServiceProvider.GetRequiredService<IConversationService>();
+            await conversationService.AddMessageAsync(
+                requestBody.ConversationId.Value,
+                "assistant",
+                assistantResponse.ToString(),
+                thoughtBuilder.Length > 0 ? thoughtBuilder.ToString() : null,
+                toolCallLog.Count > 0 ? toolCallLog : null,
+                ct);
         }
+    }
+
+    private async Task SendUiUpdate(string type, string content, CancellationToken ct)
+    {
+        var json = JsonSerializer.Serialize(new
+        {
+            type,
+            message = new { content },
+            done = false
+        });
+        await Response.WriteAsync(json + "\n", ct);
+        await Response.Body.FlushAsync(ct);
     }
 }

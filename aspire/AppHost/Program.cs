@@ -17,6 +17,9 @@ var sql = builder.AddSqlServer(ResourceNames.SqlServerName, password: sqlPasswor
 var identityDb = sql.AddDatabase(ResourceNames.IdentityDbName);
 var agentRuntimeDb = sql.AddDatabase(ResourceNames.AgentRuntimeDbName);
 
+var qdrant = builder.AddQdrant(ResourceNames.QdrantServiceName)
+    .WithDataVolume();
+
 var ollama = builder.AddOllama(ResourceNames.OllamaServiceName)
     .WithImage("ollama/ollama", "0.20.2")
     .WithDataVolume()
@@ -28,6 +31,7 @@ var ollama = builder.AddOllama(ResourceNames.OllamaServiceName)
     .WithEndpoint("http", e => e.Port = 11434);
 
 var ollamaModel = ollama.AddModel(AIModels.Gemma4);
+var ollamaEmbeddingModel = ollama.AddModel(AIModels.NomicEmbedText);
 
 var identityApi = builder.AddProject<Projects.IdentityProvider_Api>(ServiceNames.Identity)
     .WithReference(identityDb).WaitFor(identityDb)
@@ -74,12 +78,21 @@ var watchdogApi = builder.AddProject<Projects.Watchdog_Api>(ServiceNames.Watchdo
 
 var agentRuntimeApi = builder.AddProject<Projects.AgentRuntime_Api>(ServiceNames.AgentRuntime)
     .WithReference(ollamaModel).WaitFor(ollamaModel)
+    .WithReference(ollamaEmbeddingModel).WaitFor(ollamaEmbeddingModel)
     .WithReference(nats).WaitFor(nats)
     .WithReference(agentRuntimeDb).WaitFor(agentRuntimeDb)
     .WithReference(redis).WaitFor(redis)
+    .WithReference(qdrant).WaitFor(qdrant)
     .WithReference(identityApi).WaitFor(identityApi)
     .WithEnvironment("AI__ModelName", ollamaModel.Resource.ModelName)
-    .WithEnvironment("Identity__Authority", identityApi.GetEndpoint("http"));
+    .WithEnvironment("Rag__EmbeddingModelName", ollamaEmbeddingModel.Resource.ModelName)
+    .WithEnvironment("Identity__Authority", identityApi.GetEndpoint("http"))
+    .WithExternalHttpEndpoints()
+    .WithUrlForEndpoint("https", url =>
+    {
+        url.DisplayText = "Scalar API (Docs)";
+        url.Url = "/scalar/v1";
+    });
 
 var apiGateway = builder.AddProject<Projects.ApiGateway>(ServiceNames.Gateway)
     .WithReference(identityApi).WaitFor(identityApi)

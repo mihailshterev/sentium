@@ -5,11 +5,11 @@ namespace AgentRuntime.Infrastructure.Tools;
 
 public static class AIFunctionAdapter
 {
-    public static AITool ToAIFunction(IAgentTool tool, CancellationToken ct)
+    public static AITool ToAIFunction(IAgentTool tool)
     {
         ArgumentNullException.ThrowIfNull(tool);
 
-        async Task<string> Invoke(string input) => await tool.ExecuteAsync(input, ct);
+        async Task<string> Invoke(string input, CancellationToken runtimeCt) => await tool.ExecuteAsync(input, runtimeCt);
 
         return AIFunctionFactory.Create(
             method: Invoke,

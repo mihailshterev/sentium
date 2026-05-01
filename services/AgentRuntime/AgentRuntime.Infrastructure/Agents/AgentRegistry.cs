@@ -5,39 +5,30 @@ namespace AgentRuntime.Infrastructure.Agents;
 
 public sealed class AgentRegistry : IAgentRegistry
 {
-    private readonly FrozenDictionary<string, Type> Registry;
-    private readonly FrozenDictionary<string, string> Descriptions;
+    private readonly FrozenDictionary<string, Type> agentCache;
+    private readonly FrozenDictionary<string, string> instructionCache;
 
-    public AgentRegistry()
+    public AgentRegistry(IEnumerable<IAgent> systemAgents)
     {
-        var dict = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase)
+        ArgumentNullException.ThrowIfNull(systemAgents);
+
+        var tempMap = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
+        var tempInstructionMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var agent in systemAgents)
         {
-            { AgentRole.Planner, typeof(PlannerAgent) },
-            { AgentRole.SecurityAnalyst, typeof(SecurityAnalyst) },
-            { AgentRole.Summarizer, typeof(SummaryAgent) },
-            { AgentRole.ThreatIntel, typeof(ThreatIntelAgent) },
-            { AgentRole.Forensics, typeof(ForensicsAgent) },
-            { AgentRole.Validator, typeof(ValidationAgent) }
-        };
+            var name = agent.Name;
+            tempMap[name] = agent.GetType();
+            tempInstructionMap[name] = agent.Instructions;
+        }
 
-        Registry = dict.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
-
-        Descriptions = dict.ToDictionary(
-            kvp => kvp.Key,
-            kvp => GetInstructionsFromType(kvp.Value),
-            StringComparer.OrdinalIgnoreCase
-        ).ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
+        agentCache = tempMap.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
+        instructionCache = tempInstructionMap.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
     }
 
-    private static string GetInstructionsFromType(Type type)
-    {
-        var instance = Activator.CreateInstance(type) as IAgent;
-        return instance?.Instructions ?? "Specialized security agent.";
-    }
+    public IEnumerable<string> GetRegisteredNames() => agentCache.Keys;
 
-    public string GetInstructions(string name) => Descriptions.TryGetValue(name, out var desc) ? desc : "Unknown agent.";
+    public string GetInstructions(string name) => instructionCache.GetValueOrDefault(name) ?? "Specialized security agent.";
 
-    public IEnumerable<string> GetRegisteredNames() => Registry.Keys;
-
-    public Type? GetAgentType(string name) => Registry.TryGetValue(name, out var type) ? type : null;
+    public Type? GetAgentType(string name) => agentCache.GetValueOrDefault(name);
 }

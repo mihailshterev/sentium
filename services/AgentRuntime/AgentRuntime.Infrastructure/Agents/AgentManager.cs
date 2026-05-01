@@ -2,6 +2,7 @@ using AgentRuntime.Core.Agents;
 using AgentRuntime.Core.Dtos;
 using AgentRuntime.Core.Entities;
 using AgentRuntime.Infrastructure.Data;
+using AgentRuntime.Infrastructure.Projections;
 using Microsoft.EntityFrameworkCore;
 
 namespace AgentRuntime.Infrastructure.Agents;
@@ -25,7 +26,7 @@ public sealed class AgentManager(AgentRuntimeDbContext context) : IAgentManager
         context.Agents.Add(agent);
         await context.SaveChangesAsync(ct);
 
-        return new AgentResponse(agent.Id, agent.Name, agent.Description, agent.Model, agent.CreatedAt, agent.UpdatedAt);
+        return await GetAgentByIdAsync(agent.Id, ct);
     }
 
     public async Task<IReadOnlyList<AgentResponse>> GetAgentsAsync(CancellationToken ct = default)
@@ -33,8 +34,17 @@ public sealed class AgentManager(AgentRuntimeDbContext context) : IAgentManager
         return await context.Agents
             .AsNoTracking()
             .OrderByDescending(a => a.CreatedAt)
-            .Select(a => new AgentResponse(a.Id, a.Name, a.Description, a.Model, a.CreatedAt, a.UpdatedAt))
+            .Select(AgentProjections.ToResponse())
             .ToListAsync(ct);
+    }
+
+    public async Task<AgentResponse?> GetAgentByNameAsync(string name, CancellationToken ct = default)
+    {
+        return await context.Agents
+            .AsNoTracking()
+            .Where(a => a.Name.ToLower() == name.ToLower())
+            .Select(AgentProjections.ToResponse())
+            .FirstOrDefaultAsync(ct);
     }
 
     public async Task<AgentResponse> GetAgentByIdAsync(Guid agentId, CancellationToken ct = default)
@@ -42,7 +52,7 @@ public sealed class AgentManager(AgentRuntimeDbContext context) : IAgentManager
         var response = await context.Agents
             .AsNoTracking()
             .Where(a => a.Id == agentId)
-            .Select(a => new AgentResponse(a.Id, a.Name, a.Description, a.Model, a.CreatedAt, a.UpdatedAt))
+            .Select(AgentProjections.ToResponse())
             .FirstOrDefaultAsync(ct);
 
         return response ?? throw new KeyNotFoundException($"Agent with ID {agentId} not found.");

@@ -3,6 +3,7 @@ using AgentRuntime.Core.Dtos;
 using AgentRuntime.Core.Entities;
 using AgentRuntime.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace AgentRuntime.Infrastructure.Conversations;
 
@@ -30,7 +31,10 @@ public sealed class ConversationManager(AgentRuntimeDbContext context) : IConver
             conv.Title,
             conv.Model,
             conv.CreatedAt,
-            conv.Messages.Select(m => new MessageResponse(m.Id, m.Role, m.Content, m.Timestamp)).ToList());
+            conv.Messages.Select(m => new MessageResponse(
+                m.Id, m.Role, m.Content, m.Timestamp,
+                m.Thought,
+                m.ToolCalls != null ? JsonSerializer.Deserialize<List<string>>(m.ToolCalls) : null)).ToList());
     }
 
     public async Task<ConversationSummary> CreateConversationAsync(CreateConversationRequest request, CancellationToken ct = default)
@@ -63,7 +67,7 @@ public sealed class ConversationManager(AgentRuntimeDbContext context) : IConver
         }
     }
 
-    public async Task AddMessageAsync(Guid conversationId, string role, string content, CancellationToken ct = default)
+    public async Task AddMessageAsync(Guid conversationId, string role, string content, string? thought = null, IReadOnlyList<string>? toolCalls = null, CancellationToken ct = default)
     {
         var message = new Message
         {
@@ -71,6 +75,8 @@ public sealed class ConversationManager(AgentRuntimeDbContext context) : IConver
             ConversationId = conversationId,
             Role = role,
             Content = content,
+            Thought = thought,
+            ToolCalls = toolCalls != null ? JsonSerializer.Serialize(toolCalls) : null,
             Timestamp = DateTime.UtcNow
         };
 
