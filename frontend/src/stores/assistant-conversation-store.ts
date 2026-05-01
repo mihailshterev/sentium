@@ -2,13 +2,6 @@ import { create } from "zustand";
 import type { ConversationMessage } from "../types/assistant";
 import { DEFAULT_ASSISTANT_MODEL } from "../utils/constants";
 
-export const INITIAL_MESSAGE: ConversationMessage = {
-  id: "init",
-  role: "assistant",
-  content: "Local Ollama node initialized. Awaiting secure input.",
-  timestamp: new Date(),
-};
-
 interface ConversationState {
   activeConversationId: string | null;
   messages: ConversationMessage[];
@@ -23,13 +16,13 @@ interface ConversationState {
 
 export const useConversationStore = create<ConversationState>((set) => ({
   activeConversationId: null,
-  messages: [INITIAL_MESSAGE],
+  messages: [],
   model: DEFAULT_ASSISTANT_MODEL,
 
   setActiveConversation: (id, messages, model) =>
     set({
       activeConversationId: id,
-      messages: messages.length > 0 ? messages : [INITIAL_MESSAGE],
+      messages: messages.length > 0 ? messages : [],
       model,
     }),
 
@@ -65,7 +58,7 @@ export const useConversationStore = create<ConversationState>((set) => ({
   clearConversation: () =>
     set({
       activeConversationId: null,
-      messages: [INITIAL_MESSAGE],
+      messages: [],
       model: DEFAULT_ASSISTANT_MODEL,
     }),
 }));
