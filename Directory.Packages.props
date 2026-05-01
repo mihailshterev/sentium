@@ -45,6 +45,7 @@
     <PackageVersion Include="Microsoft.Agents.AI" Version="1.0.0" />
     <PackageVersion Include="Microsoft.Agents.AI.OpenAI" Version="1.0.0" />
     <PackageVersion Include="Microsoft.Agents.AI.Workflows" Version="1.0.0" />
+    <PackageVersion Include="Microsoft.Extensions.AI" Version="10.5.0" />
     <PackageVersion Include="OllamaSharp" Version="5.4.12" />
     <PackageVersion Include="CommunityToolkit.Aspire.Hosting.Ollama" Version="13.1.1" />
     <PackageVersion Include="NATS.Net" Version="2.7.2" />
