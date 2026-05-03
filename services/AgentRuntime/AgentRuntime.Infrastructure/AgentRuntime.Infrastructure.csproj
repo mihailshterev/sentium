@@ -23,5 +23,7 @@
     <PackageReference Include="NATS.Net" />
     <PackageReference Include="Docker.DotNet" />
     <PackageReference Include="Qdrant.Client" />
+    <PackageReference Include="Aspire.Azure.Storage.Blobs" />
+    <PackageReference Include="Azure.Storage.Blobs" />
   </ItemGroup>
 </Project>

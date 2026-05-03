@@ -16,6 +16,7 @@
     <PackageReference Include="Aspire.Hosting.Redis" />
     <PackageReference Include="CommunityToolkit.Aspire.Hosting.Ollama" />
     <PackageReference Include="Aspire.Hosting.Qdrant" />
+    <PackageReference Include="Aspire.Hosting.Azure.Storage" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\services\AgentRuntime\AgentRuntime.Api\AgentRuntime.Api.csproj" />
