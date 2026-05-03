@@ -1274,6 +1274,9 @@
         "resolved": "16.3.0",
         "contentHash": "SgMOdxbz8X65z8hraIs6hOEdnkH6hESTAIUa7viEngHOYaH+6q5XJmwr1+yb9vJpNQ19hCQY69xbFsLtXpobQA=="
       },
+      "sentium.shared": {
+        "type": "Project"
+      },
       "Azure.Storage.Blobs": {
         "type": "CentralTransitive",
         "requested": "[12.27.0, )",

@@ -1,26 +1,26 @@
-using AppHost.Constants;
 using AppHost.Config;
+using Sentium.Shared.Constants;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
-var nats = builder.AddNats(ResourceNames.NatsServiceName)
+var nats = builder.AddNats(ResourceNames.Nats)
     .WithJetStream()
     .WithDataVolume();
 
-var redis = builder.AddRedis("redis");
+var redis = builder.AddRedis(ResourceNames.Redis);
 
 var sqlPassword = builder.AddParameter("sql-password", secret: true);
 
-var sql = builder.AddSqlServer(ResourceNames.SqlServerName, password: sqlPassword)
+var sql = builder.AddSqlServer(ResourceNames.Sql, password: sqlPassword)
     .WithDataVolume();
 
-var identityDb = sql.AddDatabase(ResourceNames.IdentityDbName);
-var agentRuntimeDb = sql.AddDatabase(ResourceNames.AgentRuntimeDbName);
+var identityDb = sql.AddDatabase(ResourceNames.IdentityDb);
+var agentRuntimeDb = sql.AddDatabase(ResourceNames.AgentRuntimeDb);
 
-var qdrant = builder.AddQdrant(ResourceNames.QdrantServiceName)
+var qdrant = builder.AddQdrant(ResourceNames.Qdrant)
     .WithDataVolume();
 
-var ollama = builder.AddOllama(ResourceNames.OllamaServiceName)
+var ollama = builder.AddOllama(ResourceNames.Ollama)
     .WithImage("ollama/ollama", "0.20.2")
     .WithDataVolume()
     .WithGPUSupport(OllamaGpuVendor.Nvidia)
@@ -46,7 +46,7 @@ Directory.CreateDirectory(capturePath);
 Directory.CreateDirectory(logsPath);
 
 // TODO: Configure host network traffic capturing
-var zeek = builder.AddContainer(ResourceNames.ZeekServiceName, "zeek/zeek")
+var zeek = builder.AddContainer(ResourceNames.Zeek, "zeek/zeek")
     .WithContainerRuntimeArgs("--cap-add", "NET_ADMIN", "--cap-add", "NET_RAW", "--network", "host", "--workdir", "/output")
     // .WithBindMount(capturePath, "/capture")
     .WithBindMount(logsPath, "/output")

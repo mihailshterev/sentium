@@ -1086,6 +1086,9 @@
           "NATS.Net": "[2.7.2, )"
         }
       },
+      "sentium.shared": {
+        "type": "Project"
+      },
       "Microsoft.Extensions.DependencyInjection.Abstractions": {
         "type": "CentralTransitive",
         "requested": "[10.0.6, )",

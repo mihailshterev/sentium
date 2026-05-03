@@ -4,6 +4,7 @@ using AgentRuntime.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Hybrid;
 using Scalar.AspNetCore;
+using Sentium.Shared.Constants;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,9 +16,9 @@ builder.AddAuthenticationDefaults();
 builder.Services.AddOpenApi();
 builder.Services.AddControllers();
 
-builder.AddNatsClient("nats");
-builder.AddRedisDistributedCache("redis");
-builder.AddQdrantClient("qdrant");
+builder.AddNatsClient(ResourceNames.Nats);
+builder.AddRedisDistributedCache(ResourceNames.Redis);
+builder.AddQdrantClient(ResourceNames.Qdrant);
 
 builder.Services.AddAgentRuntimeApplication();
 builder.Services.AddAgentRuntimeInfrastructure(builder.Configuration);
@@ -26,7 +27,7 @@ builder.Services.AddHttpClient();
 
 #pragma warning disable EXTEXP0001
 
-builder.Services.AddHttpClient("ollama", client =>
+builder.Services.AddHttpClient(ResourceNames.Ollama, client =>
 {
     client.BaseAddress = new Uri("http://localhost:11434");
     client.Timeout = TimeSpan.FromMinutes(15);

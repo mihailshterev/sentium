@@ -1,5 +1,6 @@
 using Sentinel.Application;
 using Sentinel.Infrastructure;
+using Sentium.Shared.Constants;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,7 +12,7 @@ builder.AddAuthenticationDefaults();
 builder.Services.AddOpenApi();
 builder.Services.AddControllers();
 
-builder.AddNatsClient("nats");
+builder.AddNatsClient(ResourceNames.Nats);
 
 builder.Services.AddInfrastructure();
 builder.Services.AddApplication();

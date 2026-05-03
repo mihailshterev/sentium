@@ -1,5 +1,6 @@
 using IdentityProvider.Application;
 using IdentityProvider.Infrastructure;
+using Sentium.Shared.Constants;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,7 +12,7 @@ builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi();
 builder.Services.AddControllers();
 
-builder.AddNatsClient("nats");
+builder.AddNatsClient(ResourceNames.Nats);
 
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddIdentityServices(builder.Configuration);

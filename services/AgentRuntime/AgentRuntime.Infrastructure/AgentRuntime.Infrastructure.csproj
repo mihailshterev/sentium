@@ -8,6 +8,7 @@
     <ProjectReference Include="..\AgentRuntime.Core\AgentRuntime.Core.csproj" />
     <ProjectReference Include="..\AgentRuntime.Application\AgentRuntime.Application.csproj" />
     <ProjectReference Include="..\..\..\infrastructure\Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\shared\Sentium.Shared.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore" />

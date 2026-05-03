@@ -737,7 +737,7 @@
           "NATS.Net": "[2.7.2, )",
           "OllamaSharp": "[5.4.12, )",
           "Qdrant.Client": "[1.17.0, )",
-          "UglyToad.PdfPig": "[0.1.9, )"
+          "Sentium.Shared": "[1.0.0, )"
         }
       },
       "infrastructure": {
@@ -745,6 +745,9 @@
         "dependencies": {
           "NATS.Net": "[2.7.2, )"
         }
+      },
+      "sentium.shared": {
+        "type": "Project"
       },
       "servicedefaults": {
         "type": "Project",

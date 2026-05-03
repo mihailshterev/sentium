@@ -11,6 +11,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Quartz;
+using Sentium.Shared.Constants;
 
 namespace IdentityProvider.Infrastructure;
 
@@ -18,7 +19,7 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddDbContext<IdentityDbContext>((options) => options.UseSqlServer(configuration.GetConnectionString("identitydb")));
+        services.AddDbContext<IdentityDbContext>((options) => options.UseSqlServer(configuration.GetConnectionString(ResourceNames.IdentityDb)));
         services.AddSingleton<IEventBus, NatsEventBus>();
 
         return services;

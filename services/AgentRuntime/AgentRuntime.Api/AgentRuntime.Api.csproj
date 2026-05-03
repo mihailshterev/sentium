@@ -18,6 +18,7 @@
     <ProjectReference Include="..\AgentRuntime.Application\AgentRuntime.Application.csproj" />
     <ProjectReference Include="..\AgentRuntime.Infrastructure\AgentRuntime.Infrastructure.csproj" />
     <ProjectReference Include="..\..\..\aspire\ServiceDefaults\ServiceDefaults.csproj" />
+    <ProjectReference Include="..\..\..\shared\Sentium.Shared.csproj" />
   </ItemGroup>
 
 </Project>

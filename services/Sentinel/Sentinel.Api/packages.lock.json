@@ -269,6 +269,9 @@
           "Sentinel.Core": "[1.0.0, )"
         }
       },
+      "sentium.shared": {
+        "type": "Project"
+      },
       "servicedefaults": {
         "type": "Project",
         "dependencies": {

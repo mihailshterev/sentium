@@ -1,4 +1,4 @@
-namespace AppHost.Constants;
+namespace Sentium.Shared.Constants;
 
 public static class ServiceNames
 {

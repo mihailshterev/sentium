@@ -15,6 +15,7 @@ using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using OllamaSharp;
+using Sentium.Shared.Constants;
 
 namespace AgentRuntime.Infrastructure;
 
@@ -25,11 +26,11 @@ public static class ServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(configuration, nameof(configuration));
 
         services.AddDbContext<AgentRuntimeDbContext>(options =>
-            options.UseSqlServer(configuration.GetConnectionString("agentruntimedb"))
+            options.UseSqlServer(configuration.GetConnectionString(ResourceNames.AgentRuntimeDb))
         );
 
         var ollamaUri = new Uri(configuration["AI:OllamaBaseUrl"] ?? "http://localhost:11434");
-        var modelName = configuration["AI:ModelName"] ?? "gemma3:1b";
+        var modelName = configuration["AI:ModelName"] ?? AIModels.Gemma3_1B;
 
         services.AddChatClient(sp =>
         {

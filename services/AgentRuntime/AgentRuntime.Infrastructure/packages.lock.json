@@ -1090,6 +1090,9 @@
           "NATS.Net": "[2.7.2, )"
         }
       },
+      "sentium.shared": {
+        "type": "Project"
+      },
       "Microsoft.Agents.AI.Workflows": {
         "type": "CentralTransitive",
         "requested": "[1.0.0, )",

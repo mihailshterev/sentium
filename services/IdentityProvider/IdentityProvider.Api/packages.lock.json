@@ -751,7 +751,8 @@
           "OpenIddict.AspNetCore": "[7.2.0, )",
           "OpenIddict.EntityFrameworkCore": "[7.2.0, )",
           "OpenIddict.Quartz": "[7.2.0, )",
-          "Quartz.Extensions.Hosting": "[3.18.0, )"
+          "Quartz.Extensions.Hosting": "[3.18.0, )",
+          "Sentium.Shared": "[1.0.0, )"
         }
       },
       "infrastructure": {
@@ -759,6 +760,9 @@
         "dependencies": {
           "NATS.Net": "[2.7.2, )"
         }
+      },
+      "sentium.shared": {
+        "type": "Project"
       },
       "servicedefaults": {
         "type": "Project",
