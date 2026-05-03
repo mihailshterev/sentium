@@ -1,0 +1,12 @@
+using Sentium.AgentRuntime.Core.Dtos;
+
+namespace Sentium.AgentRuntime.Core.WorkflowManagement;
+
+public interface IWorkflowManager
+{
+    Task<IReadOnlyList<WorkflowResponse>> GetWorkflowsAsync(CancellationToken ct = default);
+    Task<WorkflowResponse> GetWorkflowAsync(Guid workflowId, CancellationToken ct = default);
+    Task<WorkflowResponse> CreateWorkflowAsync(CreateWorkflowRequest request, CancellationToken ct = default);
+    Task UpdateWorkflowAsync(Guid workflowId, UpdateWorkflowRequest request, CancellationToken ct = default);
+    Task DeleteWorkflowAsync(Guid workflowId, CancellationToken ct = default);
+}

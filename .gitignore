@@ -11,7 +11,7 @@
 *.sln.docstates
 *.env
 
-/aspire/AppHost/data
+/src/aspire/Sentium.AppHost/data
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
