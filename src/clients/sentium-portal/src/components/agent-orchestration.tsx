@@ -147,7 +147,7 @@ const AgentOrchestration = () => {
     <div className={styles.container}>
       <div className={styles.header}>
         <div className={styles.headerLeft}>
-          <Terminal size={16} className={styles.headerIcon} />
+          <Terminal size={20} className={styles.headerIcon} />
           <div>
             <h2 className={styles.headerTitle}>Orchestration</h2>
             <span className={styles.headerSub}>Real-time multi-agent pipeline</span>

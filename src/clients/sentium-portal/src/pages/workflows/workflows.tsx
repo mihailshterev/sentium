@@ -162,7 +162,7 @@ const Workflows = () => {
     <div className={styles.container}>
       <div className={styles.pageHeader}>
         <div className={styles.headerLeft}>
-          <GitBranch size={16} className={styles.headerIcon} />
+          <GitBranch size={20} className={styles.headerIcon} />
           <div>
             <h2 className={styles.headerTitle}>Workflow Builder</h2>
             <span className={styles.headerSub}>Compose agents into ordered execution pipelines</span>
