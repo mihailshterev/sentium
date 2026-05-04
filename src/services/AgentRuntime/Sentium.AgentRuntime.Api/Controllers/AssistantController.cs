@@ -76,20 +76,20 @@ public sealed class AssistantController(
             if (update.Contents.OfType<TextReasoningContent>().FirstOrDefault() is { } reasoning)
             {
                 thoughtBuilder.Append(reasoning.Text);
-                await SendUiUpdate("thought", reasoning.Text, ct);
+                await SendUiUpdate(AgentUpdateTypes.Thought, reasoning.Text, ct);
             }
 
             if (update.Contents.OfType<FunctionCallContent>().FirstOrDefault() is { } call)
             {
                 var toolLabel = $"Calling {call.Name}...";
                 toolCallLog.Add(toolLabel);
-                await SendUiUpdate("tool", toolLabel, ct);
+                await SendUiUpdate(AgentUpdateTypes.Tool, toolLabel, ct);
             }
 
             if (!string.IsNullOrEmpty(update.Text))
             {
                 assistantResponse.Append(update.Text);
-                await SendUiUpdate("message", update.Text, ct);
+                await SendUiUpdate(AgentUpdateTypes.Message, update.Text, ct);
             }
         }
 
