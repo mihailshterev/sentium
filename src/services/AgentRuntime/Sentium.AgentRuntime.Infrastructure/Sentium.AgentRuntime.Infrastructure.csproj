@@ -17,7 +17,6 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools"/>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Hosting" />
-    <PackageReference Include="Microsoft.Agents.AI.OpenAI" />
     <PackageReference Include="Microsoft.Agents.AI" />
     <PackageReference Include="Microsoft.Extensions.AI" />
     <PackageReference Include="OllamaSharp" />
