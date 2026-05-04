@@ -20,6 +20,11 @@ var agentRuntimeDb = sql.AddDatabase(ResourceNames.AgentRuntimeDb);
 var qdrant = builder.AddQdrant(ResourceNames.Qdrant)
     .WithDataVolume();
 
+var storage = builder.AddAzureStorage(ResourceNames.Storage)
+    .RunAsEmulator(azurite => azurite.WithDataVolume());
+
+var blobs = storage.AddBlobs(ResourceNames.WorkstationBlobs);
+
 var ollama = builder.AddOllama(ResourceNames.Ollama)
     .WithImage("ollama/ollama", "0.20.2")
     .WithDataVolume()
@@ -84,6 +89,7 @@ var agentRuntimeApi = builder.AddProject<Projects.Sentium_AgentRuntime_Api>(Serv
     .WithReference(agentRuntimeDb).WaitFor(agentRuntimeDb)
     .WithReference(redis).WaitFor(redis)
     .WithReference(qdrant).WaitFor(qdrant)
+    .WithReference(blobs).WaitFor(blobs)
     .WithReference(identityApi).WaitFor(identityApi)
     .WithEnvironment("AI__ModelName", ollamaModel.Resource.ModelName)
     .WithEnvironment("Rag__EmbeddingModelName", ollamaEmbeddingModel.Resource.ModelName)

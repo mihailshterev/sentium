@@ -20,6 +20,8 @@ builder.AddNatsClient(ResourceNames.Nats);
 builder.AddRedisDistributedCache(ResourceNames.Redis);
 builder.AddQdrantClient(ResourceNames.Qdrant);
 
+builder.AddAzureBlobServiceClient(ResourceNames.WorkstationBlobs);
+
 builder.Services.AddAgentRuntimeApplication();
 builder.Services.AddAgentRuntimeInfrastructure(builder.Configuration);
 
