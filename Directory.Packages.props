@@ -2,21 +2,22 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+    <AspireVersion>13.2.0</AspireVersion>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="Aspire.Hosting.JavaScript" Version="13.2.0" />
-    <PackageVersion Include="Aspire.Hosting.SqlServer" Version="13.2.0" />
-    <PackageVersion Include="Aspire.Hosting.Nats" Version="13.2.0" />
-    <PackageVersion Include="Aspire.Hosting.Redis" Version="13.2.0" />
-    <PackageVersion Include="Aspire.Hosting.AppHost" Version="13.2.0" />
-    <PackageVersion Include="Aspire.NATS.Net" Version="13.2.0" />
-    <PackageVersion Include="Aspire.Hosting.Python" Version="13.2.0" />
-    <PackageVersion Include="Aspire.Hosting.Qdrant" Version="13.2.2" />
-    <PackageVersion Include="Aspire.Qdrant.Client" Version="13.2.2" />
-    <PackageVersion Include="Aspire.Hosting.Azure.Storage" Version="13.2.0" />
-    <PackageVersion Include="Aspire.Azure.Storage.Blobs" Version="13.2.0" />
+    <PackageVersion Include="Aspire.Hosting.JavaScript" Version="$(AspireVersion)" />
+    <PackageVersion Include="Aspire.Hosting.SqlServer" Version="$(AspireVersion)" />
+    <PackageVersion Include="Aspire.Hosting.Nats" Version="$(AspireVersion)" />
+    <PackageVersion Include="Aspire.Hosting.Redis" Version="$(AspireVersion)" />
+    <PackageVersion Include="Aspire.Hosting.AppHost" Version="$(AspireVersion)" />
+    <PackageVersion Include="Aspire.NATS.Net" Version="$(AspireVersion)" />
+    <PackageVersion Include="Aspire.Hosting.Python" Version="$(AspireVersion)" />
+    <PackageVersion Include="Aspire.Hosting.Qdrant" Version="$(AspireVersion)" />
+    <PackageVersion Include="Aspire.Qdrant.Client" Version="$(AspireVersion)" />
+    <PackageVersion Include="Aspire.Hosting.Azure.Storage" Version="$(AspireVersion)" />
+    <PackageVersion Include="Aspire.Azure.Storage.Blobs" Version="$(AspireVersion)" />
+    <PackageVersion Include="Aspire.StackExchange.Redis.DistributedCaching" Version="$(AspireVersion)" />
     <PackageVersion Include="Azure.Storage.Blobs" Version="12.27.0" />
-    <PackageVersion Include="Aspire.StackExchange.Redis.DistributedCaching" Version="13.2.1" />
     <PackageVersion Include="Yarp.ReverseProxy" Version="2.3.0" />
     <PackageVersion Include="Scalar.AspNetCore" Version="2.14.4" />
     <PackageVersion Include="Microsoft.Extensions.Caching.Hybrid" Version="10.4.0" />
