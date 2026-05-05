@@ -11,6 +11,8 @@ public sealed class AgentRuntimeDbContext(DbContextOptions<AgentRuntimeDbContext
     public DbSet<Workflow> Workflows { get; set; }
     public DbSet<WorkflowAgent> WorkflowAgents { get; set; }
     public DbSet<WorkflowRun> WorkflowRuns { get; set; }
+    public DbSet<ProjectFile> ProjectFiles { get; set; }
+    public DbSet<Workspace> Workspaces { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -97,7 +99,35 @@ public sealed class AgentRuntimeDbContext(DbContextOptions<AgentRuntimeDbContext
             entity.Property(e => e.Explanation).IsRequired();
             entity.Property(e => e.Risk).IsRequired();
             entity.Property(e => e.Recommendation).IsRequired();
+            entity.Property(e => e.LogJson);
             entity.HasIndex(e => e.StartedAt);
+        });
+
+        builder.Entity<ProjectFile>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.FileName).IsRequired().HasMaxLength(512);
+            entity.Property(e => e.BlobName).IsRequired();
+            entity.Property(e => e.Extension).IsRequired().HasMaxLength(32);
+            entity.Property(e => e.SizeBytes).IsRequired();
+            entity.Property(e => e.ProcessingStatus).IsRequired();
+            entity.HasIndex(e => e.WorkspaceId);
+            entity.HasIndex(e => e.CreatedAt);
+            entity.HasOne(e => e.Workspace)
+                .WithMany(w => w.Files)
+                .HasForeignKey(e => e.WorkspaceId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .IsRequired(false);
+        });
+
+        builder.Entity<Workspace>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(255);
+            entity.Property(e => e.Description).HasMaxLength(2000);
+            entity.Property(e => e.CreatedAt).IsRequired();
+            entity.Property(e => e.UpdatedAt).IsRequired();
+            entity.HasIndex(e => e.Name).IsUnique();
         });
     }
 }

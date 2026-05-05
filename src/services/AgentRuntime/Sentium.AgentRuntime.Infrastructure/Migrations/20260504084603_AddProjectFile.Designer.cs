@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Sentium.AgentRuntime.Infrastructure.Data;
 
@@ -11,9 +12,11 @@ using Sentium.AgentRuntime.Infrastructure.Data;
 namespace Sentium.AgentRuntime.Infrastructure.Migrations
 {
     [DbContext(typeof(AgentRuntimeDbContext))]
-    partial class AgentRuntimeDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260504084603_AddProjectFile")]
+    partial class AddProjectFile
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -134,8 +137,8 @@ namespace Sentium.AgentRuntime.Infrastructure.Migrations
 
                     b.Property<string>("Extension")
                         .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("nvarchar(32)");
+                        .HasMaxLength(16)
+                        .HasColumnType("nvarchar(16)");
 
                     b.Property<string>("FileName")
                         .IsRequired()
@@ -221,9 +224,6 @@ namespace Sentium.AgentRuntime.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("LogJson")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Recommendation")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -251,35 +251,6 @@ namespace Sentium.AgentRuntime.Infrastructure.Migrations
                     b.ToTable("WorkflowRuns");
                 });
 
-            modelBuilder.Entity("Sentium.AgentRuntime.Core.Entities.Workspace", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Name")
-                        .IsUnique();
-
-                    b.ToTable("Workspaces");
-                });
-
             modelBuilder.Entity("Sentium.AgentRuntime.Core.Entities.Message", b =>
                 {
                     b.HasOne("Sentium.AgentRuntime.Core.Entities.Conversation", "Conversation")
@@ -289,16 +260,6 @@ namespace Sentium.AgentRuntime.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Conversation");
-                });
-
-            modelBuilder.Entity("Sentium.AgentRuntime.Core.Entities.ProjectFile", b =>
-                {
-                    b.HasOne("Sentium.AgentRuntime.Core.Entities.Workspace", "Workspace")
-                        .WithMany("Files")
-                        .HasForeignKey("WorkspaceId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("Workspace");
                 });
 
             modelBuilder.Entity("Sentium.AgentRuntime.Core.Entities.WorkflowAgent", b =>
@@ -328,11 +289,6 @@ namespace Sentium.AgentRuntime.Infrastructure.Migrations
             modelBuilder.Entity("Sentium.AgentRuntime.Core.Entities.Workflow", b =>
                 {
                     b.Navigation("WorkflowAgents");
-                });
-
-            modelBuilder.Entity("Sentium.AgentRuntime.Core.Entities.Workspace", b =>
-                {
-                    b.Navigation("Files");
                 });
 #pragma warning restore 612, 618
         }
