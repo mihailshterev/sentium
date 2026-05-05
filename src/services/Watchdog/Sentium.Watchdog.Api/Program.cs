@@ -23,3 +23,8 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+namespace Sentium.Watchdog.Api
+{
+    public partial class Program { }
+}

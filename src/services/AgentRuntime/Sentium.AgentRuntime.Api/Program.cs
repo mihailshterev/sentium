@@ -82,3 +82,8 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+namespace Sentium.AgentRuntime.Api
+{
+    public partial class Program { }
+}
