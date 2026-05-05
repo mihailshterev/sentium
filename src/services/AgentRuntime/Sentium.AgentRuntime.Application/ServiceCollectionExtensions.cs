@@ -3,10 +3,12 @@ using Sentium.AgentRuntime.Application.Agents.Native;
 using Sentium.AgentRuntime.Application.Conversations;
 using Sentium.AgentRuntime.Application.Orchestration;
 using Sentium.AgentRuntime.Application.WorkflowManagement;
+using Sentium.AgentRuntime.Application.WorkspaceManagement;
 using Sentium.AgentRuntime.Core.Agents;
 using Sentium.AgentRuntime.Core.Conversations;
 using Sentium.AgentRuntime.Core.Orchestration;
 using Sentium.AgentRuntime.Core.WorkflowManagement;
+using Sentium.AgentRuntime.Core.Workspaces;
 using Sentium.Infrastructure.Messaging;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -21,6 +23,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<IAgentService, AgentService>();
         services.AddTransient<IConversationService, ConversationService>();
         services.AddTransient<IWorkflowService, WorkflowService>();
+        services.AddTransient<IWorkspaceService, WorkspaceService>();
         services.AddTransient<IOrchestrator, WorkflowOrchestrator>();
 
         services.RegisterNativeAgents();
