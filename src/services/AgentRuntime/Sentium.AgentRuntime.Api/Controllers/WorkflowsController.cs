@@ -27,8 +27,15 @@ public sealed class WorkflowsController(IWorkflowService workflowService, IWorkf
     [HttpGet("{workflowId:guid}")]
     public async Task<IActionResult> GetWorkflow(Guid workflowId, CancellationToken ct)
     {
-        var workflow = await workflowService.GetWorkflowAsync(workflowId, ct);
-        return Ok(workflow);
+        try
+        {
+            var workflow = await workflowService.GetWorkflowAsync(workflowId, ct);
+            return Ok(workflow);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
     }
 
     [HttpPost]
