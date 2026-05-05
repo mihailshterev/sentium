@@ -787,3 +787,190 @@
   background: var(--accent-red-subtle);
   color: var(--accent-red);
 }
+
+.wsContextSection {
+  flex-shrink: 0;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.wsContextToggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 0.6rem 1rem;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-family: inherit;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  cursor: pointer;
+  text-align: left;
+  transition: color 0.15s;
+
+  span {
+    flex: 1;
+  }
+
+  &:hover {
+    color: var(--text-secondary);
+  }
+}
+
+.wsChevron {
+  flex-shrink: 0;
+  transition: transform 0.2s;
+}
+
+.wsChevronOpen {
+  transform: rotate(180deg);
+}
+
+.wsContextList {
+  padding: 0 0.5rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.wsContextEmpty {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  padding: 0.5rem 0.5rem;
+  margin: 0;
+}
+
+.wsContextItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wsContextName {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 5px 8px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s;
+  min-width: 0;
+
+  span {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &:hover {
+    background: var(--bg-elevated);
+  }
+}
+
+.wsContextIcon {
+  color: var(--accent-cyan);
+  flex-shrink: 0;
+}
+
+.wsExpandChevron {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: transform 0.2s;
+}
+
+.wsExpandChevronOpen {
+  transform: rotate(90deg);
+}
+
+.wsInjectBtn {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  background: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  align-self: flex-start;
+  margin-left: auto;
+  transition: all 0.15s;
+  line-height: 1;
+  padding: 0;
+
+  &:hover {
+    background: rgba(0, 242, 255, 0.08);
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+  }
+}
+
+.wsFileList {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding-left: 18px;
+}
+
+.wsFileItem {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition:
+    background 0.15s,
+    color 0.15s;
+
+  span:first-of-type {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &:hover:not(:disabled) {
+    background: var(--bg-elevated);
+    color: var(--text-secondary);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  svg {
+    flex-shrink: 0;
+    opacity: 0.7;
+  }
+}
+
+.wsFileStatus {
+  font-size: 0.6rem;
+  color: var(--accent-amber, #f59e0b);
+  font-family: "JetBrains Mono", monospace;
+}

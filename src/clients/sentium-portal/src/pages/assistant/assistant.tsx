@@ -14,13 +14,22 @@ import {
   ArrowUp,
   Shield,
   Square,
+  FolderOpen,
+  FileText,
 } from "lucide-react";
-import { fetchConversation, sendChatMessage } from "../../services/agentRuntime.service";
+import {
+  fetchConversation,
+  sendChatMessage,
+  fetchWorkspaces,
+  fetchWorkspaceFiles,
+} from "../../services/agentRuntime.service";
 import useConversations from "../../hooks/useConversations";
 import useModels from "../../hooks/useModels";
 import type { ConversationMessage, ConversationSummary } from "../../types/assistant";
+import type { Workspace } from "../../types/workspace";
 import { useConversationStore } from "../../stores/assistant-conversation-store";
 import { SUGGESTIONS_POOL } from "../../utils/constants";
+import { useQuery } from "@tanstack/react-query";
 
 const Assistant = () => {
   const {
@@ -47,6 +56,8 @@ const Assistant = () => {
   const [isTyping, setIsTyping] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [expandedThoughts, setExpandedThoughts] = useState<Set<string>>(new Set());
+  const [wsContextOpen, setWsContextOpen] = useState(false);
+  const [expandedWorkspace, setExpandedWorkspace] = useState<string | null>(null);
 
   const toggleThought = (id: string) =>
     setExpandedThoughts((prev) => {
@@ -79,6 +90,32 @@ const Assistant = () => {
   const randomizedSuggestions = useMemo(() => {
     return [...SUGGESTIONS_POOL].sort(() => 0.5 - Math.random()).slice(0, 4);
   }, []);
+
+  const { data: workspaces = [] } = useQuery({
+    queryKey: ["workspaces"],
+    queryFn: fetchWorkspaces,
+    enabled: wsContextOpen,
+  });
+
+  const { data: expandedWorkspaceFiles = [] } = useQuery({
+    queryKey: ["workspaceFiles", expandedWorkspace],
+    queryFn: () => fetchWorkspaceFiles(expandedWorkspace!),
+    enabled: !!expandedWorkspace,
+  });
+
+  const injectWorkspaceContext = (ws: Workspace) => {
+    setInput((prev) => {
+      const ref = `[Workspace: ${ws.name} | ID: ${ws.id}]`;
+      return prev ? `${ref} ${prev}` : ref + " ";
+    });
+  };
+
+  const injectFileContext = (fileName: string, fileId: string) => {
+    setInput((prev) => {
+      const ref = `[File: ${fileName} | ID: ${fileId}]`;
+      return prev ? `${ref} ${prev}` : ref + " ";
+    });
+  };
 
   const loadConversation = async (conv: ConversationSummary) => {
     try {
@@ -462,6 +499,62 @@ const Assistant = () => {
               </button>
             </div>
           ))}
+        </div>
+
+        <div className={styles.wsContextSection}>
+          <button className={styles.wsContextToggle} onClick={() => setWsContextOpen((v) => !v)}>
+            <FolderOpen size={11} />
+            <span>Workspace Context</span>
+            <ChevronDown size={11} className={`${styles.wsChevron} ${wsContextOpen ? styles.wsChevronOpen : ""}`} />
+          </button>
+          {wsContextOpen && (
+            <div className={styles.wsContextList}>
+              {workspaces.length === 0 && <p className={styles.wsContextEmpty}>No workspaces found.</p>}
+              {workspaces.map((ws) => (
+                <div key={ws.id} className={styles.wsContextItem}>
+                  <button
+                    className={styles.wsContextName}
+                    onClick={() => setExpandedWorkspace((v) => (v === ws.id ? null : ws.id))}
+                    title="Expand workspace files"
+                  >
+                    <FolderOpen size={11} className={styles.wsContextIcon} />
+                    <span>{ws.name}</span>
+                    <ChevronRight
+                      size={10}
+                      className={`${styles.wsExpandChevron} ${expandedWorkspace === ws.id ? styles.wsExpandChevronOpen : ""}`}
+                    />
+                  </button>
+                  <button
+                    className={styles.wsInjectBtn}
+                    onClick={() => injectWorkspaceContext(ws)}
+                    title="Insert workspace reference into message"
+                  >
+                    +
+                  </button>
+                  {expandedWorkspace === ws.id && (
+                    <div className={styles.wsFileList}>
+                      {expandedWorkspaceFiles.length === 0 && <p className={styles.wsContextEmpty}>No files.</p>}
+                      {expandedWorkspaceFiles.map((f) => (
+                        <button
+                          key={f.id}
+                          className={styles.wsFileItem}
+                          onClick={() => injectFileContext(f.fileName, f.id)}
+                          title={`Insert file reference: ${f.fileName}`}
+                          disabled={f.processingStatus !== "Completed"}
+                        >
+                          <FileText size={10} />
+                          <span>{f.fileName}</span>
+                          {f.processingStatus !== "Completed" && (
+                            <span className={styles.wsFileStatus}>{f.processingStatus}</span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </aside>
     </div>
