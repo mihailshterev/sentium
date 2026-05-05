@@ -2,7 +2,7 @@ import Layout from "../components/layout/layout";
 import ProtectedRoute from "../components/protected-route";
 import Dashboard from "../pages/dashboard/dashboard";
 import Assistant from "../pages/assistant/assistant";
-import AgentOrchestration from "../components/agent-orchestration";
+import AgentOrchestration from "../pages/orchestration/agent-orchestration";
 import Agents from "../pages/agents/agents";
 import Workflows from "../pages/workflows/workflows";
 import System from "../pages/system/system";

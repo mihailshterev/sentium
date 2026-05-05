@@ -14,15 +14,16 @@ import {
   History,
   FolderOpen,
   Clock,
+  Orbit,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import styles from "./agent-orchestration.module.scss";
-import { runWorkflowPipeline, fetchWorkflowRuns, fetchWorkspaces } from "../services/agentRuntime.service";
-import useWorkflows from "../hooks/useWorkflows";
-import type { Phase, LogEntry } from "../types/orchestration";
-import type { WorkflowRecord } from "../types/workflows";
-import type { WorkflowRun } from "../types/workflowRuns";
-import { BASE_URL } from "../api/client";
+import { runWorkflowPipeline, fetchWorkflowRuns, fetchWorkspaces } from "../../services/agentRuntime.service";
+import useWorkflows from "../../hooks/useWorkflows";
+import type { Phase, LogEntry } from "../../types/orchestration";
+import type { WorkflowRecord } from "../../types/workflows";
+import type { WorkflowRun } from "../../types/workflowRuns";
+import { BASE_URL } from "../../api/client";
 
 const PHASE_STEPS: { key: Phase; label: string; icon: React.ElementType }[] = [
   { key: "PLANNING", label: "Plan", icon: Circle },
@@ -282,7 +283,7 @@ const AgentOrchestration = () => {
     <div className={styles.container}>
       <div className={styles.header}>
         <div className={styles.headerLeft}>
-          <Terminal size={20} className={styles.headerIcon} />
+          <Orbit size={20} className={styles.headerIcon} />
           <div>
             <h2 className={styles.headerTitle}>Orchestration</h2>
             <span className={styles.headerSub}>Real-time multi-agent pipeline</span>
