@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.Testing" />
+    <PackageReference Include="Testcontainers.MsSql" />
+    <PackageReference Include="Testcontainers.Redis" />
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="NSubstitute" />
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\aspire\Sentium.AppHost\Sentium.AppHost.csproj" />
+    <ProjectReference Include="..\..\src\services\Sentinel\Sentium.Sentinel.Api\Sentium.Sentinel.Api.csproj" />
+    <ProjectReference Include="..\..\src\services\Sentinel\Sentium.Sentinel.Infrastructure\Sentium.Sentinel.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\services\Watchdog\Sentium.Watchdog.Api\Sentium.Watchdog.Api.csproj" />
+    <ProjectReference Include="..\..\src\services\AgentRuntime\Sentium.AgentRuntime.Api\Sentium.AgentRuntime.Api.csproj" />
+    <ProjectReference Include="..\..\src\services\AgentRuntime\Sentium.AgentRuntime.Infrastructure\Sentium.AgentRuntime.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

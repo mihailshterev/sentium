@@ -38,6 +38,11 @@
     <Project Path="src/services/Watchdog/Sentium.Watchdog.Application/Sentium.Watchdog.Application.csproj" />
     <Project Path="src/services/Watchdog/Sentium.Watchdog.Core/Sentium.Watchdog.Core.csproj" />
   </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Sentium.Tests.AppHost/Sentium.Tests.AppHost.csproj" />
+    <Project Path="tests/Sentium.Tests.Integration/Sentium.Tests.Integration.csproj" />
+    <Project Path="tests/Sentium.Tests.Unit/Sentium.Tests.Unit.csproj" />
+  </Folder>
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />
     <File Path="Directory.Build.props" />
