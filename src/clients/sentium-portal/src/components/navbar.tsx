@@ -1,6 +1,5 @@
 import { NavLink } from "react-router";
 import {
-  Activity,
   Bot,
   BotMessageSquare,
   BrickWallShield,
@@ -9,6 +8,7 @@ import {
   GitBranch,
   LayoutDashboard,
   LogOut,
+  Orbit,
   Package,
   Settings,
   UsersRound,
@@ -45,7 +45,7 @@ const NAV_LINKS = [
   {
     to: "/orchestration",
     label: "Orchestration",
-    icon: Activity,
+    icon: Orbit,
     group: "ai",
   },
   { to: "/agents", label: "Agents", icon: Bot, group: "ai" },
