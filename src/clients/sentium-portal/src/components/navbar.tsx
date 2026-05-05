@@ -13,59 +13,61 @@ import {
   Settings,
   UsersRound,
   View,
+  type LucideIcon,
 } from "lucide-react";
 import styles from "./navbar.module.scss";
 import React from "react";
 import { useAuthStore } from "../stores/auth-store";
 
-const NAV_LINKS = [
-  // Group: Main
-  {
-    to: "/",
-    label: "Dashboard",
-    icon: LayoutDashboard,
-    end: true,
-    group: "main",
-  },
-  {
-    to: "/sentinel",
-    label: "Sentinel",
-    icon: BrickWallShield,
-    group: "main",
-  },
-  { to: "/watchdog", label: "Watchdog", icon: View, group: "main" },
+interface NavLinkItem {
+  to: string;
+  label: string;
+  icon: LucideIcon;
+  end?: boolean;
+}
 
-  // Group: AI
-  {
-    to: "/assistant",
-    label: "Assistant",
-    icon: BotMessageSquare,
-    group: "ai",
-  },
-  {
-    to: "/orchestration",
-    label: "Orchestration",
-    icon: Orbit,
-    group: "ai",
-  },
-  { to: "/agents", label: "Agents", icon: Bot, group: "ai" },
-  { to: "/workflows", label: "Workflows", icon: GitBranch, group: "ai" },
-  { to: "/workspaces", label: "Workspaces", icon: FolderOpen, group: "ai" },
+interface NavGroup {
+  id: string;
+  links: NavLinkItem[];
+}
 
-  // Group: Management
-  { to: "/users", label: "Users", icon: UsersRound, group: "management" },
+const NAV_GROUPS: NavGroup[] = [
   {
-    to: "/inventory",
-    label: "Assets & Inventory",
-    icon: Package,
-    group: "management",
+    id: "main",
+    links: [{ to: "/", label: "Dashboard", icon: LayoutDashboard, end: true }],
+  },
+  {
+    id: "ai",
+    links: [
+      { to: "/assistant", label: "Assistant", icon: BotMessageSquare },
+      { to: "/orchestration", label: "Orchestration", icon: Orbit },
+      { to: "/workflows", label: "Workflows", icon: GitBranch },
+      { to: "/agents", label: "Agents", icon: Bot },
+    ],
+  },
+  {
+    id: "management",
+    links: [
+      { to: "/workspaces", label: "Workspaces", icon: FolderOpen },
+      { to: "/inventory", label: "Assets & Inventory", icon: Package },
+      { to: "/users", label: "Users", icon: UsersRound },
+    ],
+  },
+  {
+    id: "security",
+    links: [
+      { to: "/sentinel", label: "Sentinel", icon: BrickWallShield },
+      { to: "/watchdog", label: "Watchdog", icon: View },
+    ],
   },
 ];
 
 const Navbar = () => {
+  const logout = useAuthStore((s) => s.logout);
+
   const getLinkClass = ({ isActive }: { isActive: boolean }) =>
     isActive ? `${styles.navLink} ${styles.active}` : styles.navLink;
-  const logout = useAuthStore((s) => s.logout);
+
   return (
     <nav className={styles.nav}>
       <div className={styles.navBrand}>
@@ -83,19 +85,17 @@ const Navbar = () => {
 
       <div className={styles.navSection}>
         <div className={styles.navLinks}>
-          {NAV_LINKS.map(({ to, label, icon: Icon, end, group }, index) => {
-            const isNewGroup = index > 0 && group !== NAV_LINKS[index - 1].group;
-
-            return (
-              <React.Fragment key={to}>
-                {isNewGroup && <div className={styles.navDivider} />}
-                <NavLink to={to} end={end} className={getLinkClass}>
+          {NAV_GROUPS.map((group, groupIdx) => (
+            <React.Fragment key={group.id}>
+              {groupIdx > 0 && <div className={styles.navDivider} />}
+              {group.links.map(({ to, label, icon: Icon, end }) => (
+                <NavLink key={to} to={to} end={end} className={getLinkClass}>
                   <Icon size={15} className={styles.navIcon} />
                   <span>{label}</span>
                 </NavLink>
-              </React.Fragment>
-            );
-          })}
+              ))}
+            </React.Fragment>
+          ))}
           <div className={styles.navSectionBottom}>
             <div className={styles.navDivider} />
             <NavLink to="/system" className={getLinkClass}>
