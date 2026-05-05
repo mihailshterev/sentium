@@ -10,4 +10,5 @@ public sealed class WorkflowRun
     public string Recommendation { get; set; } = null!;
     public DateTime StartedAt { get; set; }
     public DateTime CompletedAt { get; set; }
+    public string? LogJson { get; set; }
 }
