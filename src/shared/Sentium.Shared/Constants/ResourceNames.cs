@@ -11,5 +11,5 @@ public static class ResourceNames
     public const string AgentRuntimeDb = "agentruntimedb";
     public const string Qdrant = "qdrant";
     public const string Storage = "storage";
-    public const string WorkstationBlobs = "workstation-context";
+    public const string WorkspaceBlobs = "workspace-storage";
 }

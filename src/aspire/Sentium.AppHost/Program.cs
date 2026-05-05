@@ -23,7 +23,7 @@ var qdrant = builder.AddQdrant(ResourceNames.Qdrant)
 var storage = builder.AddAzureStorage(ResourceNames.Storage)
     .RunAsEmulator(azurite => azurite.WithDataVolume());
 
-var blobs = storage.AddBlobs(ResourceNames.WorkstationBlobs);
+var blobs = storage.AddBlobs(ResourceNames.WorkspaceBlobs);
 
 var ollama = builder.AddOllama(ResourceNames.Ollama)
     .WithImage("ollama/ollama", "0.20.2")
