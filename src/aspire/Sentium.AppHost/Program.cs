@@ -3,6 +3,8 @@ using Sentium.Shared.Constants;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
+builder.AddDockerComposeEnvironment("env");
+
 var nats = builder.AddNats(ResourceNames.Nats)
     .WithJetStream()
     .WithDataVolume();

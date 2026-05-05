@@ -17,6 +17,7 @@
     <PackageReference Include="CommunityToolkit.Aspire.Hosting.Ollama" />
     <PackageReference Include="Aspire.Hosting.Qdrant" />
     <PackageReference Include="Aspire.Hosting.Azure.Storage" />
+    <PackageReference Include="Aspire.Hosting.Docker" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\shared\Sentium.Shared\Sentium.Shared.csproj" IsAspireProjectResource="false" />
