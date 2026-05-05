@@ -10,6 +10,7 @@ import Placeholder from "../pages/placeholder";
 import type { RouteObject } from "react-router";
 import Login from "../pages/login/login";
 import Sentinel from "../pages/sentinel/sentinel";
+import Workspaces from "../pages/workspaces/workspaces";
 
 export const routes: RouteObject[] = [
   {
@@ -27,6 +28,7 @@ export const routes: RouteObject[] = [
       { index: true, element: <Dashboard /> },
       { path: "sentinel", element: <Sentinel /> },
       { path: "watchdog", element: <Placeholder title="Watchdog" /> },
+      { path: "workspaces", element: <Workspaces /> },
       { path: "assistant", element: <Assistant /> },
       { path: "orchestration", element: <AgentOrchestration /> },
       { path: "agents", element: <Agents /> },

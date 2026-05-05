@@ -5,6 +5,7 @@ import {
   BotMessageSquare,
   BrickWallShield,
   Cpu,
+  FolderOpen,
   GitBranch,
   LayoutDashboard,
   LogOut,
@@ -49,6 +50,7 @@ const NAV_LINKS = [
   },
   { to: "/agents", label: "Agents", icon: Bot, group: "ai" },
   { to: "/workflows", label: "Workflows", icon: GitBranch, group: "ai" },
+  { to: "/workspaces", label: "Workspaces", icon: FolderOpen, group: "ai" },
 
   // Group: Management
   { to: "/users", label: "Users", icon: UsersRound, group: "management" },

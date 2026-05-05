@@ -3,6 +3,7 @@ import type { WorkflowRecord } from "../types/workflows";
 import type { WorkflowRun } from "../types/workflowRuns";
 import type { NetworkEvent } from "../types/sentinel";
 import type { ConversationSummary } from "../types/assistant";
+import type { Workspace, WorkspaceFile, CreateWorkspacePayload, UpdateWorkspacePayload } from "../types/workspace";
 import { BASE_URL, client } from "../api/client";
 
 const BASE = "/agent-runtime";
@@ -115,4 +116,51 @@ export const sendChatMessage = (payload: ChatPayload, signal?: AbortSignal): Pro
     credentials: "include",
     signal,
   });
+};
+
+export const listWorkspaceFiles = (workspaceId?: string): Promise<WorkspaceFile[]> =>
+  client.get<WorkspaceFile[]>(
+    `${BASE}/workspace/files${workspaceId ? `?workspaceId=${encodeURIComponent(workspaceId)}` : ""}`,
+  );
+
+export const deleteWorkspaceFile = (fileId: string): Promise<void> =>
+  client.delete<void>(`${BASE}/workspace/files/${fileId}`);
+
+export const fetchWorkspaces = (): Promise<Workspace[]> => client.get<Workspace[]>(`${BASE}/workspaces`);
+
+export const createWorkspace = (payload: CreateWorkspacePayload): Promise<Workspace> =>
+  client.post<Workspace>(`${BASE}/workspaces`, payload);
+
+export const updateWorkspace = (id: string, payload: UpdateWorkspacePayload): Promise<Workspace> =>
+  client.put<Workspace>(`${BASE}/workspaces/${id}`, payload);
+
+export const deleteWorkspace = (id: string): Promise<void> => client.delete<void>(`${BASE}/workspaces/${id}`);
+
+export const fetchWorkspaceFiles = (workspaceId: string): Promise<WorkspaceFile[]> =>
+  client.get<WorkspaceFile[]>(`${BASE}/workspaces/${workspaceId}/files`);
+
+export const uploadWorkspaceFile = async (file: File, workspaceId?: string): Promise<WorkspaceFile> => {
+  const formData = new FormData();
+  formData.append("file", file);
+  if (workspaceId) {
+    formData.append("workspaceId", workspaceId);
+  }
+
+  const response = await fetch(`${BASE_URL}${BASE}/workspace/files`, {
+    method: "POST",
+    body: formData,
+    credentials: "include",
+  });
+
+  if (response.status === 401) {
+    window.location.href = `${BASE_URL.replace("/api", "")}/bff/login?returnUrl=${encodeURIComponent(window.location.pathname)}`;
+    throw new Error("Session expired.");
+  }
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error((errorData as { error?: string }).error || `Upload failed: ${response.status}`);
+  }
+
+  return response.json() as Promise<WorkspaceFile>;
 };
