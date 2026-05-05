@@ -38,5 +38,10 @@ public enum IngestionSourceType
     /// <summary>
     /// Any other programmatic ingestion source.
     /// </summary>
-    Custom
+    Custom,
+
+    /// <summary>
+    /// Ingestion source is a file uploaded by the user.
+    /// </summary>
+    File
 }
