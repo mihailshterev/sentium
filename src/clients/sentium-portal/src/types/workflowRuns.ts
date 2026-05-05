@@ -1,3 +1,5 @@
+import type { LogEntry } from "./orchestration";
+
 export interface WorkflowRun {
   id: string;
   triggerType: string;
@@ -7,4 +9,5 @@ export interface WorkflowRun {
   recommendation: string;
   startedAt: string;
   completedAt: string;
+  logs: LogEntry[];
 }

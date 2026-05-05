@@ -52,6 +52,7 @@ export interface CreateConversationResult {
 export interface RunWorkflowPayload {
   workflowId: string;
   scenario: string;
+  workspaceId?: string;
 }
 
 export interface ChatMessage {
