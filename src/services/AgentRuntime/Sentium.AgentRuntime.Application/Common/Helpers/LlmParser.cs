@@ -1,6 +1,7 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Sentium.AgentRuntime.Core.Agents;
+using Sentium.AgentRuntime.Core.Dtos;
 using Sentium.AgentRuntime.Core.Workflows;
 
 namespace Sentium.AgentRuntime.Application.Common.Helpers;
@@ -76,7 +77,7 @@ public static partial class LlmParser
         }
     }
 
-    public static WorkflowResult ParseWorkflowResult(string validatorOutput, List<string> roles)
+    public static WorkflowResult ParseWorkflowResult(string validatorOutput, List<string> roles, IReadOnlyList<WorkflowLogEntry>? streamLog = null)
     {
         var riskMatch = RiskRegex().Match(validatorOutput);
         var recMatch = RecommendationRegex().Match(validatorOutput);
@@ -86,7 +87,8 @@ public static partial class LlmParser
             Explanation = validatorOutput,
             Risk = riskMatch.Groups[1].Value.Trim() is { Length: > 0 } r ? r : "Unknown",
             Recommendation = recMatch.Groups[1].Value.Trim() is { Length: > 0 } rec ? rec : "Review squad logs manually.",
-            History = roles.Select(r => ("AgentSelection", r)).ToList()
+            History = roles.Select(r => ("AgentSelection", r)).ToList(),
+            StreamLog = streamLog ?? []
         };
     }
 }

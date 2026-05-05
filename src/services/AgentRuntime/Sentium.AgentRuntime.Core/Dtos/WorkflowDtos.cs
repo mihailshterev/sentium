@@ -24,7 +24,10 @@ public sealed record UpdateWorkflowRequest(
 
 public sealed record RunWorkflowRequest(
     Guid WorkflowId,
-    string Scenario);
+    string Scenario,
+    Guid? WorkspaceId = null);
+
+public sealed record WorkflowLogEntry(string Author, string Text, string Type);
 
 public sealed record WorkflowRunResponse(
     Guid Id,
@@ -34,4 +37,5 @@ public sealed record WorkflowRunResponse(
     string Risk,
     string Recommendation,
     DateTime StartedAt,
-    DateTime CompletedAt);
+    DateTime CompletedAt,
+    IReadOnlyList<WorkflowLogEntry> Logs);

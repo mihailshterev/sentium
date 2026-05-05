@@ -1,4 +1,7 @@
 using System.Text;
+using System.Text.Json;
+using Sentium.AgentRuntime.Application.Extensions;
+using Sentium.AgentRuntime.Core.Agents;
 using Sentium.AgentRuntime.Core.Entities;
 using Sentium.AgentRuntime.Core.Orchestration;
 using Sentium.AgentRuntime.Core.WorkflowManagement;
@@ -23,6 +26,7 @@ public sealed class NatsMessageProcessor(
         {
             await bus.SubscribeAsync<byte[]>(WorkflowEvents.AllEvents, async (msg) =>
             {
+                WorkflowTrigger? trigger = null;
                 try
                 {
                     using var scope = scopeFactory.CreateScope();
@@ -32,7 +36,7 @@ public sealed class NatsMessageProcessor(
 
                     logger.LogInformation("Triggering Workflow for Subject: {Subject}", msg.Subject);
 
-                    var trigger = new WorkflowTrigger
+                    trigger = new WorkflowTrigger
                     {
                         TriggerType = msg.Subject,
                         Payload = payloadString
@@ -56,7 +60,8 @@ public sealed class NatsMessageProcessor(
                             Risk = result.Risk?.ToString() ?? string.Empty,
                             Recommendation = result.Recommendation?.ToString() ?? string.Empty,
                             StartedAt = startedAt,
-                            CompletedAt = completedAt
+                            CompletedAt = completedAt,
+                            LogJson = result.StreamLog.Count > 0 ? JsonSerializer.Serialize(result.StreamLog) : null
                         }, stoppingToken);
                     }
                     catch (Exception ex)
@@ -67,6 +72,20 @@ public sealed class NatsMessageProcessor(
                 catch (Exception ex)
                 {
                     logger.LogError(ex, "Error processing NATS message on {Subject}", msg.Subject);
+                }
+                finally
+                {
+                    if (trigger is not null)
+                    {
+                        try
+                        {
+                            await bus.StreamAgentUpdateAsync(trigger.TriggerType, "System", AgentUpdateTypes.Done, AgentUpdateTypes.Done, stoppingToken);
+                        }
+                        catch (Exception ex)
+                        {
+                            logger.LogWarning(ex, "Failed to publish done signal for {TriggerType}", trigger.TriggerType);
+                        }
+                    }
                 }
             }, stoppingToken);
         }

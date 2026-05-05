@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Sentium.AgentRuntime.Application.Workflows;
+using Sentium.AgentRuntime.Core.Agents;
 using Sentium.AgentRuntime.Core.Dtos;
 using Sentium.AgentRuntime.Core.WorkflowManagement;
 using Sentium.AgentRuntime.Core.Workflows;
@@ -46,7 +47,8 @@ public sealed class OrchestrationController(
             activity = request.Scenario,
             workflowId = workflow.Id,
             workflowName = workflow.Name,
-            agents = workflow.Agents.Select(a => a.AgentId)
+            agents = workflow.Agents.Select(a => a.AgentId),
+            workspaceId = request.WorkspaceId
         };
 
         var jsonPayload = JsonSerializer.Serialize(payload);
@@ -97,14 +99,19 @@ public sealed class OrchestrationController(
         {
             await foreach (var msg in eventBus.SubscribeStreamAsync($"stream.{eventId}", serializer: NatsJsonSerializer<AgentStreamUpdate>.Default, ct: ct))
             {
-                if (msg.Data is null || string.IsNullOrWhiteSpace(msg.Data.Text))
+                if (msg.Data is null)
                 {
                     continue;
                 }
 
-                if (logger.IsEnabled(LogLevel.Information))
+                if (msg.Data.Type == AgentUpdateTypes.Done)
                 {
-                    logger.LogInformation("[STREAM:{eventId}] Received from {Author}: {Text}", eventId, msg.Data?.Author, msg.Data?.Text);
+                    break;
+                }
+
+                if (string.IsNullOrWhiteSpace(msg.Data.Text))
+                {
+                    continue;
                 }
 
                 var json = JsonSerializer.Serialize(msg.Data);

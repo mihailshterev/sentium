@@ -1,8 +1,10 @@
+using Sentium.AgentRuntime.Application.Common.Helpers;
+using Sentium.AgentRuntime.Application.Extensions;
 using Sentium.AgentRuntime.Core.Agents;
 using Sentium.AgentRuntime.Core.Workflows;
 using Sentium.Infrastructure.Messaging;
 using Microsoft.Agents.AI.Workflows;
-using NATS.Client.Serializers.Json;
+using Microsoft.Extensions.AI;
 
 namespace Sentium.AgentRuntime.Application.Workflows;
 
@@ -22,16 +24,29 @@ public sealed class NetworkAnalysisWorkflow(IAgentFactory factory, IEventBus nat
         var workflow = AgentWorkflowBuilder.BuildSequential("deep-analysis", [analyst, forensics, intel, validator]).AsAIAgent();
 
         var session = await workflow.CreateSessionAsync(ct);
+        var streamLog = new StreamLogAccumulator();
 
         await foreach (var update in workflow.RunStreamingAsync(trigger.Payload, session, cancellationToken: ct))
         {
+            var author = update.AuthorName ?? "SecurityAnalyst";
+
+            if (update.Contents.OfType<TextReasoningContent>().FirstOrDefault() is { } reasoning && !string.IsNullOrEmpty(reasoning.Text))
+            {
+                await nats.StreamAgentUpdateAsync(trigger.TriggerType, author, reasoning.Text, AgentUpdateTypes.Thought, ct);
+                streamLog.Add(author, reasoning.Text, AgentUpdateTypes.Thought);
+            }
+
+            foreach (var call in update.Contents.OfType<FunctionCallContent>())
+            {
+                var toolLabel = $"Calling {call.Name}...";
+                await nats.StreamAgentUpdateAsync(trigger.TriggerType, author, toolLabel, AgentUpdateTypes.Tool, ct);
+                streamLog.Add(author, toolLabel, AgentUpdateTypes.Tool);
+            }
+
             if (!string.IsNullOrEmpty(update.Text))
             {
-                var streamPayload = new AgentStreamUpdate(
-                    update.AuthorName ?? "SecurityAnalyst",
-                    update.Text
-                );
-                await nats.PublishAsync($"stream.{trigger.TriggerType}", streamPayload, serializer: NatsJsonSerializer<AgentStreamUpdate>.Default, ct: ct);
+                await nats.StreamAgentUpdateAsync(trigger.TriggerType, author, update.Text, ct);
+                streamLog.Add(author, update.Text, AgentUpdateTypes.Message);
             }
         }
 
@@ -40,9 +55,10 @@ public sealed class NetworkAnalysisWorkflow(IAgentFactory factory, IEventBus nat
             Explanation = "The security analyst identified an anomaly and delegated to the Sentinel agent.",
             Risk = "",
             Recommendation = "Check firewall rules for the source IP.",
-            History = new List<(string Action, string Result)>()
+            History = new List<(string Action, string Result)>(),
+            StreamLog = streamLog.Entries
         };
     }
 }
 
-public record AgentStreamUpdate(string Author, string Text);
+public record AgentStreamUpdate(string Author, string Text, string Type = "message");

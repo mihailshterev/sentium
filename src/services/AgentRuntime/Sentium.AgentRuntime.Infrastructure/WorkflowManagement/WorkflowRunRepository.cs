@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Sentium.AgentRuntime.Core.Dtos;
 using Sentium.AgentRuntime.Core.Entities;
 using Sentium.AgentRuntime.Core.WorkflowManagement;
@@ -16,19 +17,24 @@ public sealed class WorkflowRunRepository(AgentRuntimeDbContext context) : IWork
 
     public async Task<IReadOnlyList<WorkflowRunResponse>> GetRecentAsync(int count = 20, CancellationToken ct = default)
     {
-        return await context.WorkflowRuns
+        var rows = await context.WorkflowRuns
             .AsNoTracking()
             .OrderByDescending(r => r.StartedAt)
             .Take(count)
-            .Select(r => new WorkflowRunResponse(
-                r.Id,
-                r.TriggerType,
-                r.TriggerPayload,
-                r.Explanation,
-                r.Risk,
-                r.Recommendation,
-                r.StartedAt,
-                r.CompletedAt))
+            .Select(r => new { r.Id, r.TriggerType, r.TriggerPayload, r.Explanation, r.Risk, r.Recommendation, r.StartedAt, r.CompletedAt, r.LogJson })
             .ToListAsync(ct);
+
+        return rows.Select(r => new WorkflowRunResponse(
+            r.Id,
+            r.TriggerType,
+            r.TriggerPayload,
+            r.Explanation,
+            r.Risk,
+            r.Recommendation,
+            r.StartedAt,
+            r.CompletedAt,
+            r.LogJson is not null
+                ? JsonSerializer.Deserialize<IReadOnlyList<WorkflowLogEntry>>(r.LogJson) ?? []
+                : [])).ToList();
     }
 }
