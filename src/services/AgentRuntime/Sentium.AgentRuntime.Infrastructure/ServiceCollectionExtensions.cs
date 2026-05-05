@@ -18,6 +18,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using OllamaSharp;
 using Sentium.Shared.Constants;
+using Sentium.AgentRuntime.Infrastructure.Tools.Workspace;
 using Sentium.AgentRuntime.Core.Storage;
 using Sentium.AgentRuntime.Infrastructure.Storage;
 
@@ -76,6 +77,10 @@ public static class ServiceCollectionExtensions
         services.AddTransient<IAgentTool, ReadFileTool>();
         services.AddTransient<IAgentTool, StoreMemoryTool>();
         services.AddTransient<IAgentTool, RecallMemoryTool>();
+        services.AddTransient<IAgentTool, ListWorkspacesTool>();
+        services.AddTransient<IAgentTool, ListWorkspaceFilesTool>();
+        services.AddTransient<IAgentTool, ReadWorkspaceFileContentTool>();
+        services.AddTransient<IAgentTool, WriteWorkspaceFileTool>();
 
         services.AddScoped<IConversationManager, ConversationManager>();
         services.AddScoped<IWorkflowManager, WorkflowManager>();
