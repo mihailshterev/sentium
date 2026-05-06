@@ -3,6 +3,8 @@ using Sentium.Shared.Constants;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
+builder.AddDockerComposeEnvironment("env");
+
 var nats = builder.AddNats(ResourceNames.Nats)
     .WithJetStream()
     .WithDataVolume();
@@ -16,6 +18,7 @@ var sql = builder.AddSqlServer(ResourceNames.Sql, password: sqlPassword)
 
 var identityDb = sql.AddDatabase(ResourceNames.IdentityDb);
 var agentRuntimeDb = sql.AddDatabase(ResourceNames.AgentRuntimeDb);
+var locusDb = sql.AddDatabase(ResourceNames.LocusDb);
 
 var qdrant = builder.AddQdrant(ResourceNames.Qdrant)
     .WithDataVolume();
@@ -101,11 +104,19 @@ var agentRuntimeApi = builder.AddProject<Projects.Sentium_AgentRuntime_Api>(Serv
         url.Url = "/scalar/v1";
     });
 
+var locusApi = builder.AddProject<Projects.Sentium_Locus_Api>(ServiceNames.Locus)
+    .WithReference(locusDb).WaitFor(locusDb)
+    .WithReference(nats).WaitFor(nats)
+    .WithReference(identityApi).WaitFor(identityApi)
+    .WithReference(agentRuntimeApi).WaitFor(agentRuntimeApi)
+    .WithEnvironment("Identity__Authority", identityApi.GetEndpoint("http"));
+
 var apiGateway = builder.AddProject<Projects.Sentium_ApiGateway>(ServiceNames.Gateway)
     .WithReference(identityApi).WaitFor(identityApi)
     .WithReference(sentinelApi).WaitFor(sentinelApi)
     .WithReference(watchdogApi).WaitFor(watchdogApi)
     .WithReference(agentRuntimeApi).WaitFor(agentRuntimeApi)
+    .WithReference(locusApi).WaitFor(locusApi)
     .WithEnvironment("Identity__Authority", identityApi.GetEndpoint("http"));
 
 var frontend = builder.AddViteApp(ServiceNames.Frontend, "../../clients/sentium-portal")
@@ -118,5 +129,6 @@ identityApi.WithParentRelationship(apiGateway);
 sentinelApi.WithParentRelationship(apiGateway);
 watchdogApi.WithParentRelationship(apiGateway);
 agentRuntimeApi.WithParentRelationship(apiGateway);
+locusApi.WithParentRelationship(apiGateway);
 
 builder.Build().Run();

@@ -26,4 +26,10 @@ public interface IVectorRepository
     /// whose score meets or exceeds <paramref name="scoreThreshold"/>.
     /// </summary>
     Task<IReadOnlyList<VectorSearchResult>> SearchAsync(string collectionName, float[] queryEmbedding, int topK = 5, float scoreThreshold = 0.0f, CancellationToken ct = default);
+
+    /// <summary>
+    /// Deletes all points whose <c>source</c> payload field exactly matches <paramref name="source"/>.
+    /// Used to remove all vectors associated with a single document or entity.
+    /// </summary>
+    Task DeleteBySourceAsync(string collectionName, string source, CancellationToken ct = default);
 }

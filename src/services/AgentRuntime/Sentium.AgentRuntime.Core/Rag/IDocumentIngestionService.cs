@@ -24,4 +24,10 @@ public interface IDocumentIngestionService
     /// Use this for bulk back-fills or periodic refresh jobs.
     /// </summary>
     Task IngestFromSourceAsync(IIngestionSource source, string? targetCollection = null, CancellationToken ct = default);
+
+    /// <summary>
+    /// Removes all vector chunks associated with the given <paramref name="source"/> identifier.
+    /// Call this when a document is deleted or its agent-accessibility is revoked.
+    /// </summary>
+    Task RemoveBySourceAsync(string source, string? targetCollection = null, CancellationToken ct = default);
 }

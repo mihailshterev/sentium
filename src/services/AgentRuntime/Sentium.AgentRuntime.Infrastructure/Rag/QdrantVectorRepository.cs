@@ -89,6 +89,21 @@ public sealed class QdrantVectorRepository(QdrantClient qdrantClient, ILogger<Qd
             .ToList();
     }
 
+    public async Task DeleteBySourceAsync(string collectionName, string source, CancellationToken ct = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(source, nameof(source));
+
+        var filter = new Filter();
+        filter.Must.Add(Conditions.MatchKeyword(FieldSource, source));
+
+        await qdrantClient.DeleteAsync(collectionName, filter, cancellationToken: ct);
+
+        if (logger.IsEnabled(LogLevel.Information))
+        {
+            logger.LogInformation("Deleted all vectors with source '{Source}' from collection '{Collection}'", source, collectionName);
+        }
+    }
+
     private static DocumentChunk ReconstructChunk(ScoredPoint hit)
     {
         var payload = hit.Payload;

@@ -9,6 +9,7 @@ public static class ResourceNames
     public const string Redis = "redis";
     public const string IdentityDb = "identitydb";
     public const string AgentRuntimeDb = "agentruntimedb";
+    public const string LocusDb = "locusdb";
     public const string Qdrant = "qdrant";
     public const string Storage = "storage";
     public const string WorkspaceBlobs = "workspace-storage";

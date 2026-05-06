@@ -17,6 +17,7 @@
     <PackageReference Include="CommunityToolkit.Aspire.Hosting.Ollama" />
     <PackageReference Include="Aspire.Hosting.Qdrant" />
     <PackageReference Include="Aspire.Hosting.Azure.Storage" />
+    <PackageReference Include="Aspire.Hosting.Docker" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\shared\Sentium.Shared\Sentium.Shared.csproj" IsAspireProjectResource="false" />
@@ -25,5 +26,6 @@
     <ProjectReference Include="..\..\services\Identity\Sentium.Identity.Api\Sentium.Identity.Api.csproj" />
     <ProjectReference Include="..\..\services\Sentinel\Sentium.Sentinel.Api\Sentium.Sentinel.Api.csproj" />
     <ProjectReference Include="..\..\services\Watchdog\Sentium.Watchdog.Api\Sentium.Watchdog.Api.csproj" />
+    <ProjectReference Include="..\..\services\Locus\Sentium.Locus.Api\Sentium.Locus.Api.csproj" />
   </ItemGroup>
 </Project>
