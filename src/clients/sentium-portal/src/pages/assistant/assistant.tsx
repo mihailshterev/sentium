@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import styles from "./assistant.module.scss";
 import Markdown from "react-markdown";
 import {
@@ -87,9 +87,7 @@ const Assistant = () => {
     }
   }, [models, model, setModel]);
 
-  const randomizedSuggestions = useMemo(() => {
-    return [...SUGGESTIONS_POOL].sort(() => 0.5 - Math.random()).slice(0, 4);
-  }, []);
+  const [randomizedSuggestions] = useState(() => [...SUGGESTIONS_POOL].sort(() => 0.5 - Math.random()).slice(0, 4));
 
   const { data: workspaces = [] } = useQuery({
     queryKey: ["workspaces"],

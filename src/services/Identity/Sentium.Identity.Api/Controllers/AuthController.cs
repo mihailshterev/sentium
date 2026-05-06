@@ -10,13 +10,29 @@ using OpenIddict.Server.AspNetCore;
 
 namespace Sentium.Identity.Api.Controllers;
 
+/// <summary>
+/// The central OpenID Connect server controller handling authorization requests and token exchanges.
+/// </summary>
+/// <remarks>
+/// This controller implements the OpenID Connect protocol via OpenIddict.
+/// Standard protocol endpoints are mapped to custom logic for claim transformation and destination management.
+/// </remarks>
 [ApiController]
 [Route("auth")]
 public sealed class AuthController(
     UserManager<ApplicationUser> userManager,
     IUserClaimsService userClaimsService) : ControllerBase
 {
+    /// <summary>
+    /// Handles the Authorization Request (interactive login).
+    /// </summary>
+    /// <remarks>
+    /// If the user is not logged into the Identity provider, they are challenged via the Application Scheme.
+    /// Once authenticated, an identity is created and returned to the client via a SignIn result.
+    /// </remarks>
     [HttpGet("~/connect/authorize")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status302Found)]
     public IActionResult Authorize()
     {
         var request = HttpContext.GetOpenIddictServerRequest()!;
@@ -49,7 +65,22 @@ public sealed class AuthController(
         return SignIn(principal, OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
     }
 
+    /// <summary>
+    /// Exchanges a grant (code, refresh_token, or client_credentials) for an Access/Identity token.
+    /// </summary>
+    /// <remarks>
+    /// Supports:
+    /// - <c>client_credentials</c>
+    /// - <c>authorization_code</c>
+    /// - <c>refresh_token</c>
+    /// </remarks>
+    /// <response code="200">Returns a JSON object containing the tokens.</response>
+    /// <response code="400">If the grant type is unsupported or the request is malformed.</response>
+    /// <response code="403">If the user or client is no longer valid or authorized.</response>
     [HttpPost("~/connect/token")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> Exchange(CancellationToken ct)
     {
         var request = HttpContext.GetOpenIddictServerRequest()!;

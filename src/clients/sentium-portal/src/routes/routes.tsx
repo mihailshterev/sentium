@@ -12,6 +12,8 @@ import Login from "../pages/login/login";
 import Sentinel from "../pages/sentinel/sentinel";
 import Workspaces from "../pages/workspaces/workspaces";
 import Inventory from "../pages/inventory/inventory";
+import Users from "../pages/users/users";
+import Profile from "../pages/profile/profile";
 
 export const routes: RouteObject[] = [
   {
@@ -27,6 +29,7 @@ export const routes: RouteObject[] = [
     ),
     children: [
       { index: true, element: <Dashboard /> },
+      { path: "profile", element: <Profile /> },
       { path: "sentinel", element: <Sentinel /> },
       { path: "watchdog", element: <Placeholder title="Watchdog" /> },
       { path: "workspaces", element: <Workspaces /> },
@@ -34,7 +37,7 @@ export const routes: RouteObject[] = [
       { path: "orchestration", element: <AgentOrchestration /> },
       { path: "agents", element: <Agents /> },
       { path: "workflows", element: <Workflows /> },
-      { path: "users", element: <Placeholder title="Users" /> },
+      { path: "users", element: <Users /> },
       { path: "inventory", element: <Inventory /> },
       { path: "system", element: <System /> },
       { path: "settings", element: <Placeholder title="Settings" /> },

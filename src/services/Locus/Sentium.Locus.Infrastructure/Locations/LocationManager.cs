@@ -8,6 +8,7 @@ namespace Sentium.Locus.Infrastructure.Locations;
 
 public sealed class LocationManager(LocusDbContext context) : ILocationManager
 {
+    /// <inheritdoc />
     public async Task<IReadOnlyList<LocationDto>> GetLocationsAsync(CancellationToken ct = default)
     {
         return await context.Locations
@@ -26,6 +27,7 @@ public sealed class LocationManager(LocusDbContext context) : ILocationManager
             .ToListAsync(ct);
     }
 
+    /// <inheritdoc />
     public async Task<LocationDto?> GetLocationAsync(Guid id, CancellationToken ct = default)
     {
         return await context.Locations
@@ -44,6 +46,7 @@ public sealed class LocationManager(LocusDbContext context) : ILocationManager
             .FirstOrDefaultAsync(ct);
     }
 
+    /// <inheritdoc />
     public async Task<IReadOnlyList<LocationDto>> GetSubLocationsAsync(Guid parentId, CancellationToken ct = default)
     {
         return await context.Locations
@@ -63,9 +66,11 @@ public sealed class LocationManager(LocusDbContext context) : ILocationManager
             .ToListAsync(ct);
     }
 
+    /// <inheritdoc />
     public async Task<bool> ExistsAsync(Guid id, CancellationToken ct = default)
         => await context.Locations.AnyAsync(l => l.Id == id, ct);
 
+    /// <inheritdoc />
     public async Task<bool> NameExistsAsync(string name, Guid? parentLocationId, Guid? excludeId = null, CancellationToken ct = default)
     {
         var query = context.Locations.AsNoTracking()
@@ -79,6 +84,7 @@ public sealed class LocationManager(LocusDbContext context) : ILocationManager
         return await query.AnyAsync(ct);
     }
 
+    /// <inheritdoc />
     public async Task<LocationDto> CreateLocationAsync(CreateLocationRequest request, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -110,6 +116,7 @@ public sealed class LocationManager(LocusDbContext context) : ILocationManager
             location.UpdatedAt);
     }
 
+    /// <inheritdoc />
     public async Task<LocationDto?> UpdateLocationAsync(Guid id, UpdateLocationRequest request, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -143,6 +150,7 @@ public sealed class LocationManager(LocusDbContext context) : ILocationManager
             location.UpdatedAt);
     }
 
+    /// <inheritdoc />
     public async Task DeleteLocationAsync(Guid id, CancellationToken ct = default)
     {
         await context.Locations.Where(l => l.Id == id).ExecuteDeleteAsync(ct);

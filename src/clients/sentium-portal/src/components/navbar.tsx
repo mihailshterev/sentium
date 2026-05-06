@@ -11,6 +11,7 @@ import {
   Orbit,
   Package,
   Settings,
+  ShieldUser,
   UsersRound,
   View,
   type LucideIcon,
@@ -18,16 +19,19 @@ import {
 import styles from "./navbar.module.scss";
 import React from "react";
 import { useAuthStore } from "../stores/auth-store";
+import { useRole } from "../hooks/useRole";
 
 interface NavLinkItem {
   to: string;
   label: string;
   icon: LucideIcon;
   end?: boolean;
+  sovereignOnly?: boolean;
 }
 
 interface NavGroup {
   id: string;
+  label?: string;
   links: NavLinkItem[];
 }
 
@@ -38,6 +42,7 @@ const NAV_GROUPS: NavGroup[] = [
   },
   {
     id: "ai",
+    label: "AI & Automation",
     links: [
       { to: "/assistant", label: "Assistant", icon: BotMessageSquare },
       { to: "/orchestration", label: "Orchestration", icon: Orbit },
@@ -47,14 +52,16 @@ const NAV_GROUPS: NavGroup[] = [
   },
   {
     id: "management",
+    label: "Management",
     links: [
       { to: "/workspaces", label: "Workspaces", icon: FolderOpen },
       { to: "/inventory", label: "Assets & Inventory", icon: Package },
-      { to: "/users", label: "Users", icon: UsersRound },
+      { to: "/users", label: "Users", icon: UsersRound, sovereignOnly: true },
     ],
   },
   {
     id: "security",
+    label: "Security",
     links: [
       { to: "/sentinel", label: "Sentinel", icon: BrickWallShield },
       { to: "/watchdog", label: "Watchdog", icon: View },
@@ -64,9 +71,13 @@ const NAV_GROUPS: NavGroup[] = [
 
 const Navbar = () => {
   const logout = useAuthStore((s) => s.logout);
+  const user = useAuthStore((s) => s.user);
+  const { isSovereign, highestRole } = useRole();
 
   const getLinkClass = ({ isActive }: { isActive: boolean }) =>
     isActive ? `${styles.navLink} ${styles.active}` : styles.navLink;
+
+  const displayName = user?.name && user.name.trim() !== user.email ? user.name : (user?.email ?? "");
 
   return (
     <nav className={styles.nav}>
@@ -83,19 +94,50 @@ const Navbar = () => {
         </div>
       </div>
 
+      <NavLink
+        to="/profile"
+        className={({ isActive }) => (isActive ? `${styles.userCard} ${styles.userCardActive}` : styles.userCard)}
+      >
+        <div className={styles.userAvatar}>
+          <ShieldUser size={20} />
+        </div>
+        <div className={styles.userInfo}>
+          <span className={styles.userDisplayName}>{displayName}</span>
+          {highestRole && (
+            <span className={`${styles.userRoleBadge} ${styles[`roleColor_${highestRole.toLowerCase()}`]}`}>
+              {highestRole}
+            </span>
+          )}
+        </div>
+      </NavLink>
+
       <div className={styles.navSection}>
         <div className={styles.navLinks}>
-          {NAV_GROUPS.map((group, groupIdx) => (
-            <React.Fragment key={group.id}>
-              {groupIdx > 0 && <div className={styles.navDivider} />}
-              {group.links.map(({ to, label, icon: Icon, end }) => (
-                <NavLink key={to} to={to} end={end} className={getLinkClass}>
-                  <Icon size={15} className={styles.navIcon} />
-                  <span>{label}</span>
-                </NavLink>
-              ))}
-            </React.Fragment>
-          ))}
+          <div className={styles.navDivider} />
+          {NAV_GROUPS.map((group, groupIdx) => {
+            const visibleLinks = group.links.filter((link) => !link.sovereignOnly || isSovereign);
+            if (visibleLinks.length === 0) {
+              return null;
+            }
+
+            return (
+              <React.Fragment key={group.id}>
+                {groupIdx > 0 && (
+                  <>
+                    <div className={styles.navDivider} />
+                    {group.label && <span className={styles.groupLabel}>{group.label}</span>}
+                  </>
+                )}
+                {visibleLinks.map(({ to, label, icon: Icon, end }) => (
+                  <NavLink key={to} to={to} end={end} className={getLinkClass}>
+                    <Icon size={15} className={styles.navIcon} />
+                    <span>{label}</span>
+                  </NavLink>
+                ))}
+              </React.Fragment>
+            );
+          })}
+
           <div className={styles.navSectionBottom}>
             <div className={styles.navDivider} />
             <NavLink to="/system" className={getLinkClass}>

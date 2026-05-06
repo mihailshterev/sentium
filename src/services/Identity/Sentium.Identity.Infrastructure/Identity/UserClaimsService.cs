@@ -9,9 +9,33 @@ namespace Sentium.Identity.Infrastructure.Identity;
 
 public sealed class UserClaimsService(UserManager<ApplicationUser> userManager) : IUserClaimsService
 {
+    /// <inheritdoc />
     public async Task<IReadOnlyCollection<Claim>> GetClaimsAsync(Guid userId, IEnumerable<string> scopes, CancellationToken ct)
     {
         var user = await userManager.FindByIdAsync(userId.ToString()) ?? throw new InvalidOperationException($"User '{userId}' not found.");
+        return await BuildUserClaimsAsync(user, scopes);
+    }
+
+    /// <inheritdoc />
+    public async Task<IDictionary<Guid, IReadOnlyCollection<Claim>>> GetBatchClaimsAsync(IEnumerable<Guid> userIds, IEnumerable<string> scopes, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(userIds);
+        var results = new Dictionary<Guid, IReadOnlyCollection<Claim>>();
+
+        foreach (var id in userIds)
+        {
+            var user = await userManager.FindByIdAsync(id.ToString());
+            if (user is not null)
+            {
+                results[id] = await BuildUserClaimsAsync(user, scopes);
+            }
+        }
+
+        return results;
+    }
+
+    private async Task<IReadOnlyCollection<Claim>> BuildUserClaimsAsync(ApplicationUser user, IEnumerable<string> scopes)
+    {
         var claims = new List<Claim>
         {
             new(OpenIddictConstants.Claims.Subject, user.Id.ToString()),
@@ -40,4 +64,3 @@ public sealed class UserClaimsService(UserManager<ApplicationUser> userManager) 
         return claims;
     }
 }
-

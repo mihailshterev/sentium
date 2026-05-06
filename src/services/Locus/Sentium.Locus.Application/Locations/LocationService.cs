@@ -5,15 +5,19 @@ namespace Sentium.Locus.Application.Locations;
 
 public sealed class LocationService(ILocationManager manager) : ILocationService
 {
+    /// <inheritdoc />
     public Task<IReadOnlyList<LocationDto>> GetLocationsAsync(CancellationToken ct = default)
         => manager.GetLocationsAsync(ct);
 
+    /// <inheritdoc />
     public Task<LocationDto?> GetLocationAsync(Guid id, CancellationToken ct = default)
         => manager.GetLocationAsync(id, ct);
 
+    /// <inheritdoc />
     public Task<IReadOnlyList<LocationDto>> GetSubLocationsAsync(Guid parentId, CancellationToken ct = default)
         => manager.GetSubLocationsAsync(parentId, ct);
 
+    /// <inheritdoc />
     public async Task<LocationDto?> CreateLocationAsync(CreateLocationRequest request, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -26,6 +30,7 @@ public sealed class LocationService(ILocationManager manager) : ILocationService
         return await manager.CreateLocationAsync(request, ct);
     }
 
+    /// <inheritdoc />
     public async Task<LocationDto?> UpdateLocationAsync(Guid id, UpdateLocationRequest request, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -43,6 +48,7 @@ public sealed class LocationService(ILocationManager manager) : ILocationService
         return await manager.UpdateLocationAsync(id, request, ct);
     }
 
+    /// <inheritdoc />
     public async Task<bool> DeleteLocationAsync(Guid id, CancellationToken ct = default)
     {
         if (!await manager.ExistsAsync(id, ct))

@@ -50,8 +50,8 @@
       },
       "Aspire.StackExchange.Redis": {
         "type": "Transitive",
-        "resolved": "13.2.0",
-        "contentHash": "D2Y+vU7jZyaMiv7HStwV7Ml79skFyYTHJFTtlIG1zi/xSoZOWZizogNWqlS3sjP9FZqh0YliKbUQNhVdruhRvg==",
+        "resolved": "13.2.4",
+        "contentHash": "B+bq0PURfF7/D7lzUS+cAnQ1skbMYmmFg4ofPcE551YI3PfaBfWgQ4YC+0qBbXjytBK53qBeXMnE9H1Kk5xhnw==",
         "dependencies": {
           "AspNetCore.HealthChecks.Redis": "9.0.0",
           "Microsoft.Extensions.Configuration.Abstractions": "10.0.5",
@@ -63,7 +63,7 @@
           "Microsoft.Extensions.Logging.Abstractions": "10.0.5",
           "Microsoft.Extensions.Options": "10.0.5",
           "Microsoft.Extensions.Primitives": "10.0.5",
-          "OpenTelemetry.Extensions.Hosting": "1.15.0",
+          "OpenTelemetry.Extensions.Hosting": "1.15.3",
           "StackExchange.Redis": "2.11.0",
           "System.IO.Hashing": "10.0.3"
         }
@@ -1448,9 +1448,9 @@
       "sentium.agentruntime.api": {
         "type": "Project",
         "dependencies": {
-          "Aspire.NATS.Net": "[13.2.0, )",
-          "Aspire.Qdrant.Client": "[13.2.0, )",
-          "Aspire.StackExchange.Redis.DistributedCaching": "[13.2.0, )",
+          "Aspire.NATS.Net": "[13.2.4, )",
+          "Aspire.Qdrant.Client": "[13.2.4, )",
+          "Aspire.StackExchange.Redis.DistributedCaching": "[13.2.4, )",
           "Microsoft.AspNetCore.OpenApi": "[10.0.1, )",
           "Microsoft.Extensions.Caching.Hybrid": "[10.4.0, )",
           "Scalar.AspNetCore": "[2.14.4, )",
@@ -1482,7 +1482,7 @@
       "sentium.agentruntime.infrastructure": {
         "type": "Project",
         "dependencies": {
-          "Aspire.Azure.Storage.Blobs": "[13.2.0, )",
+          "Aspire.Azure.Storage.Blobs": "[13.2.4, )",
           "Azure.Storage.Blobs": "[12.27.0, )",
           "Docker.DotNet": "[3.125.15, )",
           "Microsoft.Agents.AI": "[1.0.0, )",
@@ -1505,7 +1505,7 @@
       "sentium.identity.api": {
         "type": "Project",
         "dependencies": {
-          "Aspire.NATS.Net": "[13.2.0, )",
+          "Aspire.NATS.Net": "[13.2.4, )",
           "Microsoft.AspNetCore.OpenApi": "[10.0.1, )",
           "OpenIddict.AspNetCore": "[7.2.0, )",
           "Sentium.Identity.Application": "[1.0.0, )",
@@ -1554,7 +1554,7 @@
       "sentium.sentinel.api": {
         "type": "Project",
         "dependencies": {
-          "Aspire.NATS.Net": "[13.2.0, )",
+          "Aspire.NATS.Net": "[13.2.4, )",
           "Microsoft.AspNetCore.OpenApi": "[10.0.1, )",
           "Sentium.Sentinel.Application": "[1.0.0, )",
           "Sentium.Sentinel.Infrastructure": "[1.0.0, )",
@@ -1621,9 +1621,9 @@
       },
       "Aspire.Azure.Storage.Blobs": {
         "type": "CentralTransitive",
-        "requested": "[13.2.0, )",
-        "resolved": "13.2.0",
-        "contentHash": "M2z6vdAQqxITMdCi8YCGtt7KUgUPXSHy2yNOlrY4BvtxYdGNc9MqlwJ3JLRVCeeFUA40FyklTVKzivvVFU634A==",
+        "requested": "[13.2.4, )",
+        "resolved": "13.2.4",
+        "contentHash": "AWC9qQKMN7xjdACzNz6TZvjOzu5LmIThAEE71Reut55BbblGaSHgpAri/9EJxu+aKH+Kg/ZHdCqxitZh9vA71Q==",
         "dependencies": {
           "AspNetCore.HealthChecks.Azure.Storage.Blobs": "9.0.0",
           "Azure.Core": "1.51.1",
@@ -1638,15 +1638,15 @@
           "Microsoft.Extensions.Logging.Abstractions": "10.0.5",
           "Microsoft.Extensions.Options": "10.0.5",
           "Microsoft.Extensions.Primitives": "10.0.5",
-          "OpenTelemetry.Extensions.Hosting": "1.15.0",
+          "OpenTelemetry.Extensions.Hosting": "1.15.3",
           "System.IO.Hashing": "10.0.3"
         }
       },
       "Aspire.NATS.Net": {
         "type": "CentralTransitive",
-        "requested": "[13.2.0, )",
-        "resolved": "13.2.0",
-        "contentHash": "5GjaeMmbOh5JNi7tKmZadaPXLqI+GR57KEfTfVF7CTfSOsmhhfkZVmfInJcKfhe7Zi7wlbUkwjn94HIbqYj3nQ==",
+        "requested": "[13.2.4, )",
+        "resolved": "13.2.4",
+        "contentHash": "n7RLqlz4QjM1njXkPEuSbOM9UPAm99pdBxPo9bh1QAvs4j5XNhnPnLX3tYZ8jBS34xJY/nKkY9ycNxXauHl45A==",
         "dependencies": {
           "Microsoft.Extensions.Configuration.Abstractions": "10.0.5",
           "Microsoft.Extensions.Configuration.Binder": "10.0.5",
@@ -1657,14 +1657,14 @@
           "Microsoft.Extensions.Options": "10.0.5",
           "Microsoft.Extensions.Primitives": "10.0.5",
           "NATS.Net": "2.7.2",
-          "OpenTelemetry.Extensions.Hosting": "1.15.0"
+          "OpenTelemetry.Extensions.Hosting": "1.15.3"
         }
       },
       "Aspire.Qdrant.Client": {
         "type": "CentralTransitive",
-        "requested": "[13.2.0, )",
-        "resolved": "13.2.0",
-        "contentHash": "jmY1pV8JK4rX63llHq6NqX2KqqKdOzF0NRcT6zdgy1hJi3bJqRh+GUbAjvfIzzJSdYhV22gUtlmIYAIc8+ly3w==",
+        "requested": "[13.2.4, )",
+        "resolved": "13.2.4",
+        "contentHash": "t5FGh+2GNqZnX+6ezkAKjhFjwNtVqvuZNsBWy22enN3aOeUdy0l2FYNVTPnA36Uqhj9AWJVBLAHbA1/8brOOKQ==",
         "dependencies": {
           "Google.Protobuf": "3.33.5",
           "Microsoft.Extensions.Configuration.Abstractions": "10.0.5",
@@ -1680,12 +1680,12 @@
       },
       "Aspire.StackExchange.Redis.DistributedCaching": {
         "type": "CentralTransitive",
-        "requested": "[13.2.0, )",
-        "resolved": "13.2.0",
-        "contentHash": "yl3yr48JhtSL5MAJ5EFN2UV5welnG7/T+mkF99OJFHXnvIkf6OFNmEfeUt4z5eaGuskuZ1DZbqFI/WVhTTae/Q==",
+        "requested": "[13.2.4, )",
+        "resolved": "13.2.4",
+        "contentHash": "K1JyCL5D1xgzD0e7Hjd0zua9nhp+jrDuDI6DlcAAcS3u1XIkVfObOa+uzNL5JvLH9TodNv8KOlvs8PlvBYrZJg==",
         "dependencies": {
           "AspNetCore.HealthChecks.Redis": "9.0.0",
-          "Aspire.StackExchange.Redis": "13.2.0",
+          "Aspire.StackExchange.Redis": "13.2.4",
           "Microsoft.Extensions.Caching.StackExchangeRedis": "10.0.5",
           "Microsoft.Extensions.Configuration.Abstractions": "10.0.5",
           "Microsoft.Extensions.Configuration.Binder": "10.0.5",
@@ -1696,7 +1696,7 @@
           "Microsoft.Extensions.Logging.Abstractions": "10.0.5",
           "Microsoft.Extensions.Options": "10.0.5",
           "Microsoft.Extensions.Primitives": "10.0.5",
-          "OpenTelemetry.Extensions.Hosting": "1.15.0",
+          "OpenTelemetry.Extensions.Hosting": "1.15.3",
           "StackExchange.Redis": "2.11.0",
           "System.IO.Hashing": "10.0.3"
         }
