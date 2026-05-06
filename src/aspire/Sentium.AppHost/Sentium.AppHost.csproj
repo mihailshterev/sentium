@@ -26,5 +26,6 @@
     <ProjectReference Include="..\..\services\Identity\Sentium.Identity.Api\Sentium.Identity.Api.csproj" />
     <ProjectReference Include="..\..\services\Sentinel\Sentium.Sentinel.Api\Sentium.Sentinel.Api.csproj" />
     <ProjectReference Include="..\..\services\Watchdog\Sentium.Watchdog.Api\Sentium.Watchdog.Api.csproj" />
+    <ProjectReference Include="..\..\services\Locus\Sentium.Locus.Api\Sentium.Locus.Api.csproj" />
   </ItemGroup>
 </Project>
