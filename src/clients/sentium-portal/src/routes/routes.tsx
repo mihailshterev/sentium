@@ -13,6 +13,7 @@ import Sentinel from "../pages/sentinel/sentinel";
 import Workspaces from "../pages/workspaces/workspaces";
 import Inventory from "../pages/inventory/inventory";
 import Users from "../pages/users/users";
+import Profile from "../pages/profile/profile";
 
 export const routes: RouteObject[] = [
   {
@@ -28,6 +29,7 @@ export const routes: RouteObject[] = [
     ),
     children: [
       { index: true, element: <Dashboard /> },
+      { path: "profile", element: <Profile /> },
       { path: "sentinel", element: <Sentinel /> },
       { path: "watchdog", element: <Placeholder title="Watchdog" /> },
       { path: "workspaces", element: <Workspaces /> },
