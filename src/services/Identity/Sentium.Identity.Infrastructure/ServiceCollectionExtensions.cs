@@ -99,6 +99,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IUserClaimsService, UserClaimsService>();
         services.AddScoped<IIdentityService, IdentityService>();
         services.AddScoped<IRoleService, RoleService>();
+        services.AddScoped<IUserManagementService, UserManagementService>();
         services.AddHostedService<OpenIddictWorker>();
 
         return services;

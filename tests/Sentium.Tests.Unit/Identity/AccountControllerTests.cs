@@ -14,11 +14,12 @@ namespace Sentium.Tests.Unit.Identity;
 public sealed class AccountControllerTests
 {
     private readonly IIdentityService _identityService = Substitute.For<IIdentityService>();
+    private readonly IUserManagementService _userManagementService = Substitute.For<IUserManagementService>();
     private readonly AccountController _controller;
 
     public AccountControllerTests()
     {
-        _controller = new AccountController(_identityService)
+        _controller = new AccountController(_identityService, _userManagementService)
         {
             ControllerContext = new ControllerContext
             {
