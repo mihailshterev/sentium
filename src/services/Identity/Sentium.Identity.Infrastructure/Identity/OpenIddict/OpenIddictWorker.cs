@@ -1,9 +1,12 @@
+using Sentium.Identity.Core.Entities;
+using Sentium.Identity.Core.Security;
 using Sentium.Identity.Infrastructure.Data;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using OpenIddict.Abstractions;
-using static OpenIddict.Abstractions.OpenIddictConstants;
+using OidcConstants = OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Sentium.Identity.Infrastructure.Identity.OpenIddict;
 
@@ -27,14 +30,15 @@ public sealed class OpenIddictWorker(IServiceProvider serviceProvider, IConfigur
                 ClientSecret = "dev-secret",
                 Permissions =
                 {
-                    Permissions.Endpoints.Token,
-                    Permissions.GrantTypes.ClientCredentials,
-                    Permissions.Prefixes.Scope + Core.Security.Scopes.Api
+                    OidcConstants.Permissions.Endpoints.Token,
+                    OidcConstants.Permissions.GrantTypes.ClientCredentials,
+                    OidcConstants.Permissions.Prefixes.Scope + Scopes.Api
                 }
             }, cancellationToken);
         }
 
         await SeedGatewayBffClientAsync(manager, cancellationToken);
+        await SeedRolesAsync(scope.ServiceProvider, cancellationToken);
     }
 
     private async Task SeedGatewayBffClientAsync(IOpenIddictApplicationManager manager, CancellationToken ct)
@@ -47,28 +51,28 @@ public sealed class OpenIddictWorker(IServiceProvider serviceProvider, IConfigur
         {
             ClientId = clientId,
             ClientSecret = gatewaySecret,
-            ClientType = ClientTypes.Confidential,
-            ConsentType = ConsentTypes.Implicit,
+            ClientType = OidcConstants.ClientTypes.Confidential,
+            ConsentType = OidcConstants.ConsentTypes.Implicit,
             Permissions =
             {
-                Permissions.Endpoints.Authorization,
-                Permissions.Endpoints.Token,
-                Permissions.Endpoints.EndSession,
-                Permissions.GrantTypes.AuthorizationCode,
-                Permissions.GrantTypes.RefreshToken,
-                Permissions.ResponseTypes.Code,
-                Permissions.Prefixes.Scope + Core.Security.Scopes.OpenId,
-                Permissions.Prefixes.Scope + Core.Security.Scopes.Profile,
-                Permissions.Prefixes.Scope + Core.Security.Scopes.Email,
-                Permissions.Prefixes.Scope + Core.Security.Scopes.Api,
-                Permissions.Prefixes.Scope + Core.Security.Scopes.Roles,
-                Permissions.Prefixes.Scope + Core.Security.Scopes.OfflineAccess,
+                OidcConstants.Permissions.Endpoints.Authorization,
+                OidcConstants.Permissions.Endpoints.Token,
+                OidcConstants.Permissions.Endpoints.EndSession,
+                OidcConstants.Permissions.GrantTypes.AuthorizationCode,
+                OidcConstants.Permissions.GrantTypes.RefreshToken,
+                OidcConstants.Permissions.ResponseTypes.Code,
+                OidcConstants.Permissions.Prefixes.Scope + Scopes.OpenId,
+                OidcConstants.Permissions.Prefixes.Scope + Scopes.Profile,
+                OidcConstants.Permissions.Prefixes.Scope + Scopes.Email,
+                OidcConstants.Permissions.Prefixes.Scope + Scopes.Api,
+                OidcConstants.Permissions.Prefixes.Scope + Scopes.Roles,
+                OidcConstants.Permissions.Prefixes.Scope + Scopes.OfflineAccess,
             },
             RedirectUris = { new Uri(configuration["Identity:GatewayRedirectUri"] ?? "https://localhost:7282/bff/callback") },
             PostLogoutRedirectUris = { new Uri(configuration["Identity:GatewayPostLogoutUri"] ?? "https://localhost:7282/bff/logged-out") },
             Requirements =
             {
-                Requirements.Features.ProofKeyForCodeExchange
+                OidcConstants.Requirements.Features.ProofKeyForCodeExchange
             }
         };
 
@@ -84,4 +88,24 @@ public sealed class OpenIddictWorker(IServiceProvider serviceProvider, IConfigur
     }
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    private static async Task SeedRolesAsync(IServiceProvider services, CancellationToken ct)
+    {
+        var roleManager = services.GetRequiredService<RoleManager<ApplicationRole>>();
+
+        var roleDefs = new[]
+        {
+            Roles.Sovereign,
+            Roles.Member,
+            Roles.Guest,
+        };
+
+        foreach (var name in roleDefs)
+        {
+            if (!await roleManager.RoleExistsAsync(name))
+            {
+                await roleManager.CreateAsync(new ApplicationRole { Name = name });
+            }
+        }
+    }
 }
