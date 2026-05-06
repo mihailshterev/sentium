@@ -101,4 +101,18 @@ public sealed class DocumentIngestionService(
             logger.LogInformation("Completed ingestion from source '{SourceName}': {Count} documents processed", source.SourceName, count);
         }
     }
+
+    public async Task RemoveBySourceAsync(string source, string? targetCollection = null, CancellationToken ct = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(source, nameof(source));
+
+        var collectionName = targetCollection ?? ragOptions.CollectionName;
+
+        if (logger.IsEnabled(LogLevel.Information))
+        {
+            logger.LogInformation("Removing all vectors for source '{Source}' from collection '{Collection}'", source, collectionName);
+        }
+
+        await vectorRepository.DeleteBySourceAsync(collectionName, source, ct);
+    }
 }

@@ -9,9 +9,9 @@ namespace Sentium.AgentRuntime.Api.Controllers;
 /// REST surface for pushing content into the RAG knowledge base.
 /// Downstream services (inventory, Sentinel, Watchdog, etc.) call these endpoints
 /// to contribute their data without requiring direct access to the vector store.
+/// These endpoints are internal-only — external access is gated by the API gateway.
 /// </summary>
 [ApiController]
-[Authorize]
 [Route("ingestion")]
 public sealed class IngestionController(IDocumentIngestionService ingestionService) : ControllerBase
 {
@@ -64,6 +64,7 @@ public sealed class IngestionController(IDocumentIngestionService ingestionServi
     /// Lists all named ingestion sources currently registered in the DI container.
     /// </summary>
     [HttpGet("sources")]
+    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public IActionResult GetSources([FromServices] IEnumerable<IIngestionSource> sources)
     {
@@ -74,5 +75,23 @@ public sealed class IngestionController(IDocumentIngestionService ingestionServi
         });
 
         return Ok(result);
+    }
+
+    /// <summary>
+    /// Removes all vector chunks associated with the given source identifier.
+    /// Called by source services when a document is deleted or its agent-accessibility is revoked.
+    /// </summary>
+    [HttpDelete]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> RemoveBySource([FromQuery] string source, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(source))
+        {
+            return BadRequest(new { error = "A non-empty 'source' query parameter is required." });
+        }
+
+        await ingestionService.RemoveBySourceAsync(source, ct: ct);
+        return NoContent();
     }
 }
