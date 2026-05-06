@@ -4,12 +4,12 @@
     "net10.0": {
       "Aspire.NATS.Net": {
         "type": "Direct",
-        "requested": "[13.2.0, )",
-        "resolved": "13.2.0",
-        "contentHash": "5GjaeMmbOh5JNi7tKmZadaPXLqI+GR57KEfTfVF7CTfSOsmhhfkZVmfInJcKfhe7Zi7wlbUkwjn94HIbqYj3nQ==",
+        "requested": "[13.2.4, )",
+        "resolved": "13.2.4",
+        "contentHash": "n7RLqlz4QjM1njXkPEuSbOM9UPAm99pdBxPo9bh1QAvs4j5XNhnPnLX3tYZ8jBS34xJY/nKkY9ycNxXauHl45A==",
         "dependencies": {
           "NATS.Net": "2.7.2",
-          "OpenTelemetry.Extensions.Hosting": "1.15.0"
+          "OpenTelemetry.Extensions.Hosting": "1.15.3"
         }
       },
       "Microsoft.AspNetCore.OpenApi": {
