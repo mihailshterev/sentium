@@ -29,23 +29,6 @@ builder.AddAgentRuntimeInfrastructure();
 
 builder.Services.AddHttpClient();
 
-#pragma warning disable EXTEXP0001
-
-builder.Services.AddHttpClient(ResourceNames.Ollama, client =>
-{
-    client.BaseAddress = new Uri("http://localhost:11434");
-    client.Timeout = TimeSpan.FromMinutes(15);
-})
-.RemoveAllResilienceHandlers()
-.AddStandardResilienceHandler(options =>
-{
-    options.TotalRequestTimeout.Timeout = TimeSpan.FromMinutes(10);
-    options.AttemptTimeout.Timeout = TimeSpan.FromMinutes(3);
-    options.Retry.MaxRetryAttempts = 1;
-    options.CircuitBreaker.SamplingDuration = TimeSpan.FromMinutes(11);
-});
-
-#pragma warning restore EXTEXP0001
 builder.Services.AddHybridCache(options =>
 {
     options.DefaultEntryOptions = new HybridCacheEntryOptions

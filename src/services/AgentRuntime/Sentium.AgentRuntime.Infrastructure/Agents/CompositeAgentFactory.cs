@@ -6,18 +6,30 @@ using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using OllamaSharp;
+using System.Collections.Concurrent;
+using Sentium.AgentRuntime.Infrastructure.Extensions;
+using Sentium.Shared.Constants;
 
 namespace Sentium.AgentRuntime.Infrastructure.Agents;
 
 public sealed class CompositeAgentFactory(
-    IChatClient chatClient,
+    IChatClient defaultChatClient,
+    OllamaOptions ollamaOptions,
     IAgentToolProvider agentToolProvider,
     IAgentManager agentManager,
     IServiceProvider serviceProvider,
-    ILogger<CompositeAgentFactory> logger) : IAgentFactory
+    IHttpClientFactory httpClientFactory,
+    ILogger<CompositeAgentFactory> logger) : IAgentFactory, IDisposable
 {
-    public async Task<AIAgent> CreateAsync(string agentName, string? overrideInstructions = null, CancellationToken ct = default)
+    private readonly ConcurrentDictionary<string, IChatClient> clientCache = new();
+    private bool defaultInitialized;
+    private readonly Lock syncLock = new();
+
+    public async Task<AIAgent> CreateAsync(string agentName, string? overrideInstructions = null, string? overrideModel = null, CancellationToken ct = default)
     {
+        EnsureDefaultIsHarnessed();
+
         var definition = await ResolveDefinitionAsync(agentName, ct);
         if (definition is null)
         {
@@ -32,9 +44,7 @@ public sealed class CompositeAgentFactory(
             .Cast<AITool>()
             .ToList();
 
-#pragma warning disable CA2000
-        var harnessedClient = new HarnessedChatClient(chatClient, UniversalSystemHarness.Policy);
-#pragma warning restore CA2000
+        var harnessedClient = GetHarnessedClient(overrideModel);
 
         var options = new ChatClientAgentOptions
         {
@@ -65,5 +75,60 @@ public sealed class CompositeAgentFactory(
         }
 
         return null;
+    }
+
+    private void EnsureDefaultIsHarnessed()
+    {
+        if (defaultInitialized)
+        {
+            return;
+        }
+
+        lock (syncLock)
+        {
+            if (defaultInitialized)
+            {
+                return;
+            }
+
+            var harnessedDefault = new HarnessedChatClient(defaultChatClient, UniversalSystemHarness.Policy);
+            clientCache.TryAdd(ollamaOptions.DefaultModel, harnessedDefault);
+            defaultInitialized = true;
+        }
+    }
+
+    private IChatClient GetHarnessedClient(string? model)
+    {
+        var targetModel = !string.IsNullOrWhiteSpace(model) ? model : ollamaOptions.DefaultModel;
+
+        return clientCache.GetOrAdd(targetModel, m =>
+        {
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation("Building harnessed client for model: {Model}", m);
+            }
+
+            var httpClient = httpClientFactory.CreateClient(ResourceNames.Ollama);
+            var ollamaClient = new OllamaApiClient(httpClient)
+            {
+                SelectedModel = m
+            };
+
+            return ollamaClient
+                .AddSentiumPipeline()
+                .AsHarnessed();
+        });
+    }
+
+    public void Dispose()
+    {
+        foreach (var client in clientCache.Values)
+        {
+            if (client is IDisposable disposable)
+            {
+                disposable.Dispose();
+            }
+        }
+        clientCache.Clear();
     }
 }

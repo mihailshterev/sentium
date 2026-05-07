@@ -3,7 +3,6 @@ using System.Text.Json;
 using Sentium.AgentRuntime.Application.Common.Helpers;
 using Sentium.AgentRuntime.Application.Extensions;
 using Sentium.AgentRuntime.Core.Agents;
-using Sentium.AgentRuntime.Core.Dtos;
 using Sentium.AgentRuntime.Core.Workflows;
 using Sentium.Infrastructure.Messaging;
 using Microsoft.Agents.AI;
@@ -41,6 +40,7 @@ public sealed class DynamicDiscoveryWorkflow(
 
         var dbAgents = await agentManager.GetAgentsAsync(ct);
         var dbAgentMap = dbAgents.ToDictionary(a => a.Name, a => a.Description, StringComparer.OrdinalIgnoreCase);
+        var dbAgentModelMap = dbAgents.ToDictionary(a => a.Name, a => a.Model, StringComparer.OrdinalIgnoreCase);
 
         var plannerInstructions = BuildPlannerInstructions(dbAgents);
         var planner = await factory.CreateAsync(AgentRole.Planner, overrideInstructions: plannerInstructions, ct: ct);
@@ -85,7 +85,8 @@ public sealed class DynamicDiscoveryWorkflow(
         foreach (var role in rolesToExecute)
         {
             var overrideInstructions = dbAgentMap.TryGetValue(role, out var desc) ? desc : null;
-            var agent = await factory.CreateAsync(role, overrideInstructions: overrideInstructions, ct: ct);
+            var overrideModel = dbAgentModelMap.TryGetValue(role, out var mdl) && !string.IsNullOrWhiteSpace(mdl) ? mdl : null;
+            var agent = await factory.CreateAsync(role, overrideInstructions: overrideInstructions, overrideModel: overrideModel, ct: ct);
             squadAgents.Add(agent);
         }
 

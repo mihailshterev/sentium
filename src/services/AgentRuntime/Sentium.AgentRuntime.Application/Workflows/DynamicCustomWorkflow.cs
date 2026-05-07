@@ -2,7 +2,6 @@ using System.Text.Json;
 using Sentium.AgentRuntime.Application.Common.Helpers;
 using Sentium.AgentRuntime.Application.Extensions;
 using Sentium.AgentRuntime.Core.Agents;
-using Sentium.AgentRuntime.Core.Dtos;
 using Sentium.AgentRuntime.Core.WorkflowManagement;
 using Sentium.AgentRuntime.Core.Workflows;
 using Sentium.Infrastructure.Messaging;
@@ -56,7 +55,8 @@ public sealed class DynamicCustomWorkflow(
         foreach (var agentRef in orderedRefs)
         {
             var agentDetails = await agentManager.GetAgentByIdAsync(agentRef.AgentId, ct);
-            var agent = await factory.CreateAsync(agentDetails.Name, overrideInstructions: agentDetails.Description, ct: ct);
+            var agentModel = !string.IsNullOrWhiteSpace(agentDetails.Model) ? agentDetails.Model : null;
+            var agent = await factory.CreateAsync(agentDetails.Name, overrideInstructions: agentDetails.Description, overrideModel: agentModel, ct: ct);
             squadAgents.Add(agent);
         }
 

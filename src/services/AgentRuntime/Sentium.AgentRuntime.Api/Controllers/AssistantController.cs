@@ -30,7 +30,7 @@ public sealed class AssistantController(IAgentFactory agentFactory) : Controller
             }
         }
 
-        var agent = await agentFactory.CreateAsync(AgentRole.GeneralAssistant, ct: ct);
+        var agent = await agentFactory.CreateAsync(AgentRole.GeneralAssistant, overrideModel: requestBody.Model, ct: ct);
         var session = await agent.CreateSessionAsync(ct);
 
         var chatMessages = requestBody.Messages.Select(m => new Microsoft.Extensions.AI.ChatMessage(

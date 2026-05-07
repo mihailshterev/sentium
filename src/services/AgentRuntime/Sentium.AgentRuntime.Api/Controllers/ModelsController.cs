@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sentium.AgentRuntime.Core.Agents;
 using Sentium.AgentRuntime.Infrastructure;
+using Sentium.Shared.Constants;
 using System.Text;
 using System.Text.Json;
 
@@ -18,7 +19,7 @@ public sealed class ModelsController(
     IAgentManager agentManager,
     OllamaOptions ollamaOptions) : ControllerBase
 {
-    private static readonly Uri OllamaBase = new("http://localhost:11434");
+    private Uri OllamaBase => ollamaOptions.BaseUrl;
 
     /// <summary>
     /// Retrieves a list of all models currently installed on the local Ollama instance.
@@ -32,7 +33,7 @@ public sealed class ModelsController(
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetModels(CancellationToken ct)
     {
-        using var client = httpClientFactory.CreateClient("ollama");
+        var client = httpClientFactory.CreateClient(ResourceNames.Ollama);
         using var response = await client.GetAsync(new Uri(OllamaBase, "/api/tags"), ct);
 
         if (!response.IsSuccessStatusCode)
@@ -69,7 +70,7 @@ public sealed class ModelsController(
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var ollamaClient = httpClientFactory.CreateClient("ollama");
+        var ollamaClient = httpClientFactory.CreateClient(ResourceNames.Ollama);
 
         Response.ContentType = "application/x-ndjson";
         Response.Headers.CacheControl = "no-cache";
@@ -130,7 +131,7 @@ public sealed class ModelsController(
             return BadRequest("Model name is required.");
         }
 
-        using var ollamaClient = httpClientFactory.CreateClient("ollama");
+        var ollamaClient = httpClientFactory.CreateClient(ResourceNames.Ollama);
 
         var payload = JsonSerializer.Serialize(new { name });
         using var request = new HttpRequestMessage(HttpMethod.Delete, new Uri(OllamaBase, "/api/delete"))
