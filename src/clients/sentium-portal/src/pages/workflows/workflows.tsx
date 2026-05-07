@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, Fragment } from "react";
 import { DndContext, closestCenter, type DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
@@ -181,69 +181,6 @@ const Workflows = () => {
       </div>
 
       <div className={styles.body}>
-        <aside className={styles.workflowList}>
-          <div className={styles.listHeader}>
-            <span className={styles.activeDot} />
-            <span>Defined Workflows</span>
-          </div>
-
-          <div className={styles.listScroll}>
-            {isLoading && (
-              <div className={styles.listPlaceholder}>
-                <Loader size={18} className={styles.spinIcon} />
-                <span>Loading...</span>
-              </div>
-            )}
-            {!isLoading && workflows.length === 0 && (
-              <div className={styles.listPlaceholder}>
-                <GitBranch size={28} className={styles.emptyIcon} />
-                <span>No workflows yet</span>
-              </div>
-            )}
-            {workflows.map((wf) => (
-              <div
-                key={wf.id}
-                className={`${styles.workflowCard} ${selectedWorkflow?.id === wf.id ? styles.workflowCardActive : ""}`}
-                onClick={() => openEdit(wf)}
-              >
-                <div className={styles.workflowCardHeader}>
-                  <GitBranch size={13} className={styles.wfIcon} />
-                  <span className={styles.wfName}>{wf.name}</span>
-                </div>
-                <p className={styles.wfDescription}>{wf.description || "No description"}</p>
-                <div className={styles.wfMeta}>
-                  <span className={styles.wfAgentCount}>
-                    <Bot size={11} />
-                    {wf.agents.length} agent{wf.agents.length !== 1 ? "s" : ""}
-                  </span>
-                  <div className={styles.wfActions}>
-                    <button
-                      className={styles.wfActionBtn}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openEdit(wf);
-                      }}
-                      title="Edit"
-                    >
-                      <Pencil size={11} />
-                    </button>
-                    <button
-                      className={`${styles.wfActionBtn} ${styles.wfActionBtnDanger}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(wf.id);
-                      }}
-                      title="Delete"
-                    >
-                      <Trash2 size={11} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </aside>
-
         <main className={styles.editorPanel}>
           {!isEditing ? (
             <div className={styles.editorEmpty}>
@@ -265,6 +202,67 @@ const Workflows = () => {
 
               <form onSubmit={handleSubmit} className={styles.editorForm}>
                 <div className={styles.editorColumns}>
+                  <div className={styles.pipelineColumn}>
+                    <div className={styles.pipelineBg} aria-hidden="true">
+                      <div className={styles.bgGrid} />
+                      <div className={styles.bgOrb1} />
+                      <div className={styles.bgOrb2} />
+                      <div className={styles.bgOrb3} />
+                    </div>
+                    <div className={styles.pipelineHeader}>
+                      <span>Execution Order</span>
+                      <span className={styles.pipelineCount}>{formAgents.length} agents</span>
+                    </div>
+
+                    {formAgents.length === 0 ? (
+                      <div className={styles.pipelineEmpty}>
+                        <Bot size={24} className={styles.pipelineEmptyIcon} />
+                        <span>Add agents from the list</span>
+                        <span className={styles.pipelineEmptyHint}>Drag to reorder execution sequence</span>
+                      </div>
+                    ) : (
+                      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                        <SortableContext items={formAgents.map((a) => a.sortId)} strategy={verticalListSortingStrategy}>
+                          <div className={styles.sortableList}>
+                            {formAgents.map((item, idx) => (
+                              <Fragment key={item.sortId}>
+                                {idx > 0 && (
+                                  <div className={styles.nodeConnector}>
+                                    <div className={styles.connectorLine}>
+                                      <div
+                                        className={styles.connectorFlow}
+                                        style={{ animationDelay: `${idx * 0.35}s` }}
+                                      />
+                                    </div>
+                                    <div className={styles.connectorArrow} />
+                                  </div>
+                                )}
+                                <div className={styles.sortableRow}>
+                                  <span className={styles.sortableIndex}>{String(idx + 1).padStart(2, "0")}</span>
+                                  <SortableAgent item={item} onRemove={removeAgentFromForm} />
+                                </div>
+                              </Fragment>
+                            ))}
+                          </div>
+                        </SortableContext>
+                      </DndContext>
+                    )}
+
+                    {selectedWorkflow && formAgents.length === 0 && (
+                      <div className={styles.wfAgentPreview}>
+                        {selectedWorkflow.agents
+                          .sort((a, b) => a.order - b.order)
+                          .map((a, idx) => (
+                            <div key={a.agentId} className={styles.previewAgent}>
+                              <span className={styles.previewIndex}>{idx + 1}</span>
+                              <Bot size={12} />
+                              <span>{getAgentName(a.agentId)}</span>
+                            </div>
+                          ))}
+                      </div>
+                    )}
+                  </div>
+
                   <div className={styles.formColumn}>
                     <div className={styles.fieldGroup}>
                       <label className={styles.fieldLabel} htmlFor="wf-name">
@@ -345,53 +343,74 @@ const Workflows = () => {
                       </div>
                     )}
                   </div>
-
-                  <div className={styles.pipelineColumn}>
-                    <div className={styles.pipelineHeader}>
-                      <span>Execution Order</span>
-                      <span className={styles.pipelineCount}>{formAgents.length} agents</span>
-                    </div>
-
-                    {formAgents.length === 0 ? (
-                      <div className={styles.pipelineEmpty}>
-                        <Bot size={24} className={styles.pipelineEmptyIcon} />
-                        <span>Add agents from the list</span>
-                        <span className={styles.pipelineEmptyHint}>Drag to reorder execution sequence</span>
-                      </div>
-                    ) : (
-                      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                        <SortableContext items={formAgents.map((a) => a.sortId)} strategy={verticalListSortingStrategy}>
-                          <div className={styles.sortableList}>
-                            {formAgents.map((item, idx) => (
-                              <div key={item.sortId} className={styles.sortableRow}>
-                                <span className={styles.sortableIndex}>{String(idx + 1).padStart(2, "0")}</span>
-                                <SortableAgent item={item} onRemove={removeAgentFromForm} />
-                              </div>
-                            ))}
-                          </div>
-                        </SortableContext>
-                      </DndContext>
-                    )}
-
-                    {selectedWorkflow && formAgents.length === 0 && (
-                      <div className={styles.wfAgentPreview}>
-                        {selectedWorkflow.agents
-                          .sort((a, b) => a.order - b.order)
-                          .map((a, idx) => (
-                            <div key={a.agentId} className={styles.previewAgent}>
-                              <span className={styles.previewIndex}>{idx + 1}</span>
-                              <Bot size={12} />
-                              <span>{getAgentName(a.agentId)}</span>
-                            </div>
-                          ))}
-                      </div>
-                    )}
-                  </div>
                 </div>
               </form>
             </div>
           )}
         </main>
+
+        <aside className={styles.workflowList}>
+          <div className={styles.listHeader}>
+            <span className={styles.activeDot} />
+            <span>Defined Workflows</span>
+          </div>
+
+          <div className={styles.listScroll}>
+            {isLoading && (
+              <div className={styles.listPlaceholder}>
+                <Loader size={18} className={styles.spinIcon} />
+                <span>Loading...</span>
+              </div>
+            )}
+            {!isLoading && workflows.length === 0 && (
+              <div className={styles.listPlaceholder}>
+                <GitBranch size={28} className={styles.emptyIcon} />
+                <span>No workflows yet</span>
+              </div>
+            )}
+            {workflows.map((wf) => (
+              <div
+                key={wf.id}
+                className={`${styles.workflowCard} ${selectedWorkflow?.id === wf.id ? styles.workflowCardActive : ""}`}
+                onClick={() => openEdit(wf)}
+              >
+                <div className={styles.workflowCardHeader}>
+                  <GitBranch size={13} className={styles.wfIcon} />
+                  <span className={styles.wfName}>{wf.name}</span>
+                </div>
+                <p className={styles.wfDescription}>{wf.description || "No description"}</p>
+                <div className={styles.wfMeta}>
+                  <span className={styles.wfAgentCount}>
+                    <Bot size={11} />
+                    {wf.agents.length} agent{wf.agents.length !== 1 ? "s" : ""}
+                  </span>
+                  <div className={styles.wfActions}>
+                    <button
+                      className={styles.wfActionBtn}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openEdit(wf);
+                      }}
+                      title="Edit"
+                    >
+                      <Pencil size={11} />
+                    </button>
+                    <button
+                      className={`${styles.wfActionBtn} ${styles.wfActionBtnDanger}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(wf.id);
+                      }}
+                      title="Delete"
+                    >
+                      <Trash2 size={11} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </aside>
       </div>
     </div>
   );
