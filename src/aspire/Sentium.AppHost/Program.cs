@@ -28,6 +28,11 @@ var storage = builder.AddAzureStorage(ResourceNames.Storage)
 
 var blobs = storage.AddBlobs(ResourceNames.WorkspaceBlobs);
 
+var seq = builder.AddSeq(ResourceNames.Seq)
+    .ExcludeFromManifest()
+    .WithDataVolume()
+    .WithEnvironment("ACCEPT_EULA", "Y");
+
 var ollama = builder.AddOllama(ResourceNames.Ollama)
     .WithImage("ollama/ollama", "0.20.2")
     .WithDataVolume()
@@ -41,10 +46,6 @@ var ollama = builder.AddOllama(ResourceNames.Ollama)
 
 var ollamaModel = ollama.AddModel(AIModels.Gemma4);
 var ollamaEmbeddingModel = ollama.AddModel(AIModels.NomicEmbedText);
-
-var identityApi = builder.AddProject<Projects.Sentium_Identity_Api>(ServiceNames.Identity)
-    .WithReference(identityDb).WaitFor(identityDb)
-    .WithReference(nats).WaitFor(nats);
 
 var baseDataDir = Path.Combine(builder.Environment.ContentRootPath, "data", "zeek");
 var capturePath = Path.Combine(baseDataDir, "capture");
@@ -75,8 +76,14 @@ var python = builder.AddPythonApp(ServiceNames.NetworkFilter, "../../services/Ne
     .WithReference(nats).WaitFor(nats)
     .WaitFor(zeek);
 
+var identityApi = builder.AddProject<Projects.Sentium_Identity_Api>(ServiceNames.Identity)
+    .WithReference(identityDb).WaitFor(identityDb)
+    .WithReference(nats).WaitFor(nats)
+    .WithReference(seq).WaitFor(seq);
+
 var sentinelApi = builder.AddProject<Projects.Sentium_Sentinel_Api>(ServiceNames.Sentinel)
     .WithReference(nats).WaitFor(nats)
+    .WithReference(seq).WaitFor(seq)
     .WithReference(identityApi).WaitFor(identityApi)
     .WithEnvironment("Identity__Authority", identityApi.GetEndpoint("http"));
 
@@ -84,6 +91,7 @@ var agentRuntimeApi = builder.AddProject<Projects.Sentium_AgentRuntime_Api>(Serv
     .WithReference(ollamaModel).WaitFor(ollamaModel)
     .WithReference(ollamaEmbeddingModel).WaitFor(ollamaEmbeddingModel)
     .WithReference(nats).WaitFor(nats)
+    .WithReference(seq).WaitFor(seq)
     .WithReference(agentRuntimeDb).WaitFor(agentRuntimeDb)
     .WithReference(redis).WaitFor(redis)
     .WithReference(qdrant).WaitFor(qdrant)
@@ -102,12 +110,14 @@ var agentRuntimeApi = builder.AddProject<Projects.Sentium_AgentRuntime_Api>(Serv
 var locusApi = builder.AddProject<Projects.Sentium_Locus_Api>(ServiceNames.Locus)
     .WithReference(locusDb).WaitFor(locusDb)
     .WithReference(nats).WaitFor(nats)
+    .WithReference(seq).WaitFor(seq)
     .WithReference(identityApi).WaitFor(identityApi)
     .WithReference(agentRuntimeApi).WaitFor(agentRuntimeApi)
     .WithEnvironment("Identity__Authority", identityApi.GetEndpoint("http"));
 
 var watchdogApi = builder.AddProject<Projects.Sentium_Watchdog_Api>(ServiceNames.Watchdog)
     .WithReference(nats).WaitFor(nats)
+    .WithReference(seq).WaitFor(seq)
     .WithReference(sql).WaitFor(sql)
     .WithReference(redis).WaitFor(redis)
     .WithReference(identityApi).WaitFor(identityApi)

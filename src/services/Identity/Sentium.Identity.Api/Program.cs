@@ -1,5 +1,6 @@
 using Sentium.Identity.Application;
 using Sentium.Identity.Infrastructure;
+using Sentium.Infrastructure.Extensions;
 using Sentium.Shared.Constants;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,11 +15,14 @@ builder.Services.AddControllers();
 
 builder.AddNatsClient(ResourceNames.Nats);
 
-builder.Services.AddInfrastructure(builder.Configuration);
+builder.AddSentiumAuditLogging();
+builder.AddInfrastructure();
 builder.Services.AddIdentityServices(builder.Configuration);
 builder.Services.AddApplication();
 
 var app = builder.Build();
+
+app.UseSentiumTracing();
 
 // Configure the HTTP request pipeline.
 app.UseExceptionHandler();

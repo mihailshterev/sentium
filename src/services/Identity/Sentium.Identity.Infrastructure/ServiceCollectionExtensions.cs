@@ -12,17 +12,24 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Quartz;
 using Sentium.Shared.Constants;
+using Microsoft.Extensions.Hosting;
+using Sentium.Infrastructure.Extensions;
 
 namespace Sentium.Identity.Infrastructure;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
+    public static IHostApplicationBuilder AddInfrastructure(this IHostApplicationBuilder builder)
     {
-        services.AddDbContext<IdentityDbContext>((options) => options.UseSqlServer(configuration.GetConnectionString(ResourceNames.IdentityDb)));
+        ArgumentNullException.ThrowIfNull(builder);
+
+        builder.AddAuditedDbContext<IdentityDbContext>(ResourceNames.IdentityDb);
+
+        var services = builder.Services;
+
         services.AddSingleton<IEventBus, NatsEventBus>();
 
-        return services;
+        return builder;
     }
 
     public static IServiceCollection AddIdentityServices(this IServiceCollection services, IConfiguration configuration)

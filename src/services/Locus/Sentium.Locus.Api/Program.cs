@@ -4,6 +4,7 @@ using Sentium.Locus.Infrastructure.Data;
 using Sentium.Shared.Constants;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
+using Sentium.Infrastructure.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,9 +17,12 @@ builder.Services.AddControllers();
 builder.AddNatsClient(ResourceNames.Nats);
 
 builder.Services.AddLocusApplication();
-builder.Services.AddLocusInfrastructure(builder.Configuration);
+builder.AddSentiumAuditLogging();
+builder.AddLocusInfrastructure();
 
 var app = builder.Build();
+
+app.UseSentiumTracing();
 
 if (app.Environment.IsDevelopment())
 {

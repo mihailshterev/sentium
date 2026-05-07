@@ -12,7 +12,6 @@ using Sentium.AgentRuntime.Infrastructure.Tools;
 using Sentium.AgentRuntime.Infrastructure.WorkflowManagement;
 using Sentium.AgentRuntime.Infrastructure.WorkspaceManagement;
 using Sentium.Infrastructure.Messaging;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,18 +20,21 @@ using Sentium.Shared.Constants;
 using Sentium.AgentRuntime.Infrastructure.Tools.Workspace;
 using Sentium.AgentRuntime.Core.Storage;
 using Sentium.AgentRuntime.Infrastructure.Storage;
+using Microsoft.Extensions.Hosting;
+using Sentium.Infrastructure.Extensions;
 
 namespace Sentium.AgentRuntime.Infrastructure;
 
 public static class ServiceCollectionExtensions
 {
-    public static IServiceCollection AddAgentRuntimeInfrastructure(this IServiceCollection services, IConfiguration configuration)
+    public static IHostApplicationBuilder AddAgentRuntimeInfrastructure(this IHostApplicationBuilder builder)
     {
-        ArgumentNullException.ThrowIfNull(configuration, nameof(configuration));
+        ArgumentNullException.ThrowIfNull(builder, nameof(builder));
 
-        services.AddDbContext<AgentRuntimeDbContext>(options =>
-            options.UseSqlServer(configuration.GetConnectionString(ResourceNames.AgentRuntimeDb))
-        );
+        builder.AddAuditedDbContext<AgentRuntimeDbContext>(ResourceNames.AgentRuntimeDb);
+
+        var services = builder.Services;
+        var configuration = builder.Configuration;
 
         var ollamaUri = new Uri(configuration["AI:OllamaBaseUrl"] ?? "http://localhost:11434");
         var modelName = configuration["AI:ModelName"] ?? AIModels.Gemma3_1B;
@@ -86,6 +88,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IWorkflowManager, WorkflowManager>();
         services.AddScoped<IWorkflowRunRepository, WorkflowRunRepository>();
 
-        return services;
+        return builder;
     }
 }
