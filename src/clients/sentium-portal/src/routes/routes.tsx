@@ -14,6 +14,7 @@ import Workspaces from "../pages/workspaces/workspaces";
 import Inventory from "../pages/inventory/inventory";
 import Users from "../pages/users/users";
 import Profile from "../pages/profile/profile";
+import Watchdog from "../pages/watchdog/watchdog";
 
 export const routes: RouteObject[] = [
   {
@@ -31,7 +32,7 @@ export const routes: RouteObject[] = [
       { index: true, element: <Dashboard /> },
       { path: "profile", element: <Profile /> },
       { path: "sentinel", element: <Sentinel /> },
-      { path: "watchdog", element: <Placeholder title="Watchdog" /> },
+      { path: "watchdog", element: <Watchdog /> },
       { path: "workspaces", element: <Workspaces /> },
       { path: "assistant", element: <Assistant /> },
       { path: "orchestration", element: <AgentOrchestration /> },

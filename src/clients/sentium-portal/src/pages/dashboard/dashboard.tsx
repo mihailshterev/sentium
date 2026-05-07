@@ -14,16 +14,25 @@ import {
   ShieldCheck,
   TrendingUp,
   View,
+  XCircle,
   Zap,
 } from "lucide-react";
 import styles from "./dashboard.module.scss";
 import useAgents from "../../hooks/useAgents";
 import useWorkflows from "../../hooks/useWorkflows";
+import useServiceHealth from "../../hooks/useServiceHealth";
+
+const MODULE_SERVICE_MAP: Record<string, string> = {
+  "agent-runtime": "Agent Runtime",
+  sentinel: "Sentinel",
+  locus: "Locus",
+  "identity-provider": "Identity",
+};
 
 const MODULES = [
   { key: "agent-runtime", label: "Agent Runtime", icon: Cpu, color: "green" },
   { key: "sentinel", label: "Sentinel", icon: BrickWallShield, color: "blue" },
-  { key: "network-filter", label: "Network Filter", icon: Globe, color: "purple" },
+  { key: "locus", label: "Locus", icon: Package, color: "purple" },
   { key: "identity-provider", label: "Identity Provider", icon: ShieldCheck, color: "amber" },
 ];
 
@@ -76,7 +85,13 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { agents, isLoading: agentsLoading } = useAgents();
   const { workflows, isLoading: workflowsLoading } = useWorkflows();
+  const { services: serviceHealth } = useServiceHealth();
   const loading = agentsLoading || workflowsLoading;
+
+  const getModuleStatus = (moduleKey: string) => {
+    const serviceName = MODULE_SERVICE_MAP[moduleKey];
+    return serviceHealth.find((s) => s.serviceName === serviceName);
+  };
 
   return (
     <div className={styles.dashboardRoot}>
@@ -181,18 +196,23 @@ const Dashboard = () => {
               <span className={styles.sectionTitle}>System Modules</span>
             </div>
             <div className={styles.moduleList}>
-              {MODULES.map((mod) => (
-                <div key={mod.key} className={styles.moduleRow}>
-                  <div className={`${styles.moduleIcon} ${styles[`moduleIcon_${mod.color}`]}`}>
-                    <mod.icon size={14} />
+              {MODULES.map((mod) => {
+                const health = getModuleStatus(mod.key);
+                const isUnhealthy = health?.status === "Unhealthy";
+                const isUnknown = !health;
+                return (
+                  <div key={mod.key} className={styles.moduleRow}>
+                    <div className={`${styles.moduleIcon} ${styles[`moduleIcon_${mod.color}`]}`}>
+                      <mod.icon size={14} />
+                    </div>
+                    <span className={styles.moduleLabel}>{mod.label}</span>
+                    <div className={`${styles.moduleStatus} ${isUnhealthy ? styles.moduleStatusUnhealthy : ""}`}>
+                      {isUnhealthy ? <XCircle size={13} /> : <CheckCircle size={13} />}
+                      <span>{isUnknown ? "Unknown" : isUnhealthy ? "Offline" : "Online"}</span>
+                    </div>
                   </div>
-                  <span className={styles.moduleLabel}>{mod.label}</span>
-                  <div className={styles.moduleStatus}>
-                    <CheckCircle size={13} />
-                    <span>Online</span>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 

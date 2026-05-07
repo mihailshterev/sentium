@@ -30,6 +30,8 @@ if (app.Environment.IsDevelopment())
     await db.Database.MigrateAsync();
 }
 
+app.MapDefaultEndpoints();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
