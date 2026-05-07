@@ -13,4 +13,5 @@ public static class ResourceNames
     public const string Qdrant = "qdrant";
     public const string Storage = "storage";
     public const string WorkspaceBlobs = "workspace-storage";
+    public const string Seq = "seq";
 }
