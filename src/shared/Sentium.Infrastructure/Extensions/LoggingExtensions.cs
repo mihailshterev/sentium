@@ -25,6 +25,7 @@ public static class LoggingExtensions
             cfg.Enrich.FromLogContext()
                .Enrich.WithProperty("Application", builder.Environment.ApplicationName)
                .WriteTo.Console(theme: AnsiConsoleTheme.Code)
+               .WriteTo.Seq(builder.Configuration.GetConnectionString(ResourceNames.Seq) ?? "http://localhost:5341")
                .WriteTo.OpenTelemetry(options =>
                 {
                     options.Endpoint = builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"];
