@@ -76,6 +76,8 @@ if (app.Environment.IsDevelopment())
     });
 }
 
+app.MapDefaultEndpoints();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
