@@ -17,6 +17,7 @@
     <ProjectReference Include="..\Sentium.Locus.Infrastructure\Sentium.Locus.Infrastructure.csproj" />
     <ProjectReference Include="..\..\..\shared\Sentium.ServiceDefaults\Sentium.ServiceDefaults.csproj" />
     <ProjectReference Include="..\..\..\shared\Sentium.Shared\Sentium.Shared.csproj" />
+    <ProjectReference Include="..\..\..\shared\Sentium.Infrastructure\Sentium.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

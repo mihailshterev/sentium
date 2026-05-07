@@ -10,6 +10,7 @@
     <ProjectReference Include="..\Sentium.Locus.Core\Sentium.Locus.Core.csproj" />
     <ProjectReference Include="..\Sentium.Locus.Application\Sentium.Locus.Application.csproj" />
     <ProjectReference Include="..\..\..\shared\Sentium.Shared\Sentium.Shared.csproj" />
+    <ProjectReference Include="..\..\..\shared\Sentium.Infrastructure\Sentium.Infrastructure.csproj" />
   </ItemGroup>
 
   <ItemGroup>
