@@ -1761,6 +1761,7 @@
           "Microsoft.Extensions.AI": "[10.5.0, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.6, )",
           "Microsoft.Extensions.Hosting": "[10.0.5, )",
+          "Microsoft.Extensions.Http.Resilience": "[10.2.0, )",
           "NATS.Net": "[2.7.2, )",
           "OllamaSharp": "[5.4.12, )",
           "Qdrant.Client": "[1.17.0, )",
