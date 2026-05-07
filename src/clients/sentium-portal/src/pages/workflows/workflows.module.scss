@@ -285,7 +285,8 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: var(--bg-base);
+  background: #070b12;
+  position: relative;
 }
 
 .editorEmpty {
@@ -297,6 +298,8 @@
   flex: 1;
   color: var(--text-muted);
   font-size: 0.85rem;
+  position: relative;
+  z-index: 1;
 }
 
 .editorEmptyIcon {
@@ -308,6 +311,8 @@
   flex-direction: column;
   height: 100%;
   overflow: hidden;
+  position: relative;
+  z-index: 1;
 }
 
 .editorHeader {
@@ -352,7 +357,7 @@
 
 .editorColumns {
   display: grid;
-  grid-template-columns: 1fr 380px;
+  grid-template-columns: 1fr 280px;
   height: 100%;
   overflow: hidden;
 }
@@ -364,6 +369,7 @@
   padding: 1.25rem;
   overflow-y: auto;
   border-left: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
 }
 
 .fieldGroup {
@@ -515,7 +521,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: #070b12;
+  background: transparent;
   position: relative;
 }
 
@@ -735,10 +741,50 @@
   cursor: grabbing;
 }
 
+.sortableAgentInfo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.sortableAgentMeta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sortableAgentModel {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.65rem;
+  color: var(--accent-green);
+  opacity: 0.7;
+  background: rgba(34, 197, 94, 0.08);
+  border: 1px solid rgba(34, 197, 94, 0.15);
+  border-radius: 4px;
+  padding: 1px 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.sortableAgentDesc {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-top: 2px;
+}
+
 .sortableAgentIcon {
   color: var(--accent-green);
   flex-shrink: 0;
-  filter: drop-shadow(0 0 4px rgba(34, 197, 94, 0.45));
+  align-self: center;
+  filter: drop-shadow(0 0 6px rgba(34, 197, 94, 0.55));
 }
 
 .sortableAgentName {

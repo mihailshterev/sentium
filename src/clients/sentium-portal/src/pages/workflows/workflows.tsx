@@ -24,8 +24,14 @@ const SortableAgent = ({ item, onRemove }: { item: SortableAgentItem; onRemove: 
       <button type="button" className={styles.dragHandle} {...attributes} {...listeners}>
         <GripVertical size={14} />
       </button>
-      <Bot size={13} className={styles.sortableAgentIcon} />
-      <span className={styles.sortableAgentName}>{item.name}</span>
+      <Bot size={22} className={styles.sortableAgentIcon} />
+      <div className={styles.sortableAgentInfo}>
+        <span className={styles.sortableAgentName}>{item.name}</span>
+        <div className={styles.sortableAgentMeta}>
+          <span className={styles.sortableAgentModel}>{item.model}</span>
+        </div>
+        {item.description && <span className={styles.sortableAgentDesc}>{item.description}</span>}
+      </div>
       <button className={styles.sortableAgentRemove} onClick={() => onRemove(item.sortId)}>
         <X size={12} />
       </button>
@@ -89,11 +95,16 @@ const Workflows = () => {
     setFormName(workflow.name);
     setFormDescription(workflow.description);
     setFormAgents(
-      workflow.agents.map((a) => ({
-        sortId: `${a.agentId}-${a.order}`,
-        agentId: a.agentId,
-        name: agents.find((ag) => ag.id === a.agentId)?.name ?? a.agentId.slice(0, 8),
-      })),
+      workflow.agents.map((a) => {
+        const ag = agents.find((ag) => ag.id === a.agentId);
+        return {
+          sortId: `${a.agentId}-${a.order}`,
+          agentId: a.agentId,
+          name: ag?.name ?? a.agentId.slice(0, 8),
+          model: ag?.model ?? "",
+          description: ag?.description ?? "",
+        };
+      }),
     );
     resetMutations();
   };
@@ -111,6 +122,8 @@ const Workflows = () => {
         sortId: `${agent.id}-${Date.now()}`,
         agentId: agent.id,
         name: agent.name,
+        model: agent.model,
+        description: agent.description,
       },
     ]);
   };
@@ -139,7 +152,10 @@ const Workflows = () => {
     };
 
     if (selectedWorkflow) {
-      updateWorkflow({ id: selectedWorkflow.id, ...payload }, { onSuccess: () => setTimeout(() => closeEdit(), 900) });
+      updateWorkflow(
+        { id: selectedWorkflow.id, ...payload },
+        { onSuccess: () => setTimeout(() => resetUpdate(), 900) },
+      );
     } else {
       createWorkflow(payload, {
         onSuccess: () => setTimeout(() => closeEdit(), 900),
@@ -182,6 +198,12 @@ const Workflows = () => {
 
       <div className={styles.body}>
         <main className={styles.editorPanel}>
+          <div className={styles.pipelineBg} aria-hidden="true">
+            <div className={styles.bgGrid} />
+            <div className={styles.bgOrb1} />
+            <div className={styles.bgOrb2} />
+            <div className={styles.bgOrb3} />
+          </div>
           {!isEditing ? (
             <div className={styles.editorEmpty}>
               <GitBranch size={36} className={styles.editorEmptyIcon} />
@@ -203,12 +225,6 @@ const Workflows = () => {
               <form onSubmit={handleSubmit} className={styles.editorForm}>
                 <div className={styles.editorColumns}>
                   <div className={styles.pipelineColumn}>
-                    <div className={styles.pipelineBg} aria-hidden="true">
-                      <div className={styles.bgGrid} />
-                      <div className={styles.bgOrb1} />
-                      <div className={styles.bgOrb2} />
-                      <div className={styles.bgOrb3} />
-                    </div>
                     <div className={styles.pipelineHeader}>
                       <span>Execution Order</span>
                       <span className={styles.pipelineCount}>{formAgents.length} agents</span>
