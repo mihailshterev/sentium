@@ -6,40 +6,14 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.AI;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Nodes;
 
 namespace Sentium.AgentRuntime.Api.Controllers;
 
 [ApiController]
 [Authorize]
 [Route("assistant")]
-public sealed class AssistantController(
-    IAgentFactory agentFactory,
-    IHttpClientFactory httpClientFactory) : ControllerBase
+public sealed class AssistantController(IAgentFactory agentFactory) : ControllerBase
 {
-    private static readonly Uri OllamaBase = new("http://localhost:11434");
-
-    [HttpGet("models")]
-    public async Task<IActionResult> GetModels(CancellationToken ct)
-    {
-        using var client = httpClientFactory.CreateClient("ollama");
-        using var response = await client.GetAsync(new Uri(OllamaBase, "/api/tags"), ct);
-
-        if (!response.IsSuccessStatusCode)
-        {
-            return StatusCode((int)response.StatusCode);
-        }
-
-        var body = await response.Content.ReadAsStringAsync(ct);
-        var doc = JsonNode.Parse(body);
-        var models = doc?["models"]?.AsArray()
-            .Select(m => m?["name"]?.GetValue<string>() ?? string.Empty)
-            .Where(n => !string.IsNullOrEmpty(n))
-            .ToList() ?? [];
-
-        return Ok(models);
-    }
-
     [HttpPost("chat")]
     public async Task Chat([FromBody] ChatRequest requestBody, [FromServices] IServiceScopeFactory scopeFactory, CancellationToken ct)
     {

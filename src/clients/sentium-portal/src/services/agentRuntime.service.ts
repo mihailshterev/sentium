@@ -77,7 +77,53 @@ export const updateAgent = ({ id, ...payload }: UpdateAgentPayload) =>
 
 export const deleteAgent = (id: string) => client.delete<void>(`${BASE}/agents/${id}`);
 
-export const fetchModels = () => client.get<string[]>(`${BASE}/assistant/models`);
+export const fetchModels = async (): Promise<string[]> => {
+  const models = await client.get<OllamaModel[]>(`${BASE}/models`);
+  return models.map((m) => m.name);
+};
+
+export interface OllamaModelDetails {
+  format: string;
+  family: string;
+  parameter_size: string;
+  quantization_level: string;
+}
+
+export interface OllamaModel {
+  name: string;
+  modified_at: string;
+  size: number;
+  digest: string;
+  details: OllamaModelDetails;
+}
+
+export interface PullProgress {
+  status: string;
+  digest?: string;
+  total?: number;
+  completed?: number;
+}
+
+export const fetchOllamaModels = () => client.get<OllamaModel[]>(`${BASE}/models`);
+
+export const pullModel = (name: string, signal?: AbortSignal): Promise<Response> => {
+  return fetch(`${BASE_URL}${BASE}/models/pull`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+    credentials: "include",
+    signal,
+  });
+};
+
+export interface DeleteModelResult {
+  deletedModel: string;
+  defaultModel: string;
+  agentsReset: number;
+}
+
+export const deleteOllamaModel = (name: string): Promise<DeleteModelResult> =>
+  client.delete<DeleteModelResult>(`${BASE}/models?name=${encodeURIComponent(name)}`);
 
 export const fetchWorkflows = () => client.get<WorkflowRecord[]>(`${BASE}/workflows`);
 

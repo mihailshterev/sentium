@@ -2,6 +2,7 @@ import { NavLink } from "react-router";
 import {
   Bot,
   BotMessageSquare,
+  BrainCircuit,
   BrickWallShield,
   Cpu,
   FolderOpen,
@@ -48,6 +49,7 @@ const NAV_GROUPS: NavGroup[] = [
       { to: "/orchestration", label: "Orchestration", icon: Orbit },
       { to: "/workflows", label: "Workflows", icon: GitBranch },
       { to: "/agents", label: "Agents", icon: Bot },
+      { to: "/models", label: "Models", icon: BrainCircuit },
     ],
   },
   {

@@ -88,4 +88,14 @@ public sealed class AgentManager(AgentRuntimeDbContext context) : IAgentManager
             throw new KeyNotFoundException($"Agent with ID {agentId} not found.");
         }
     }
+
+    public Task<int> ResetAgentsModelAsync(string modelName, string defaultModel, CancellationToken ct = default)
+    {
+        return context.Agents
+            .Where(a => a.Model == modelName)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(a => a.Model, defaultModel)
+                .SetProperty(a => a.UpdatedAt, DateTime.UtcNow),
+            ct);
+    }
 }

@@ -39,6 +39,8 @@ public static class ServiceCollectionExtensions
         var ollamaUri = new Uri(configuration["AI:OllamaBaseUrl"] ?? "http://localhost:11434");
         var modelName = configuration["AI:ModelName"] ?? AIModels.Gemma3_1B;
 
+        services.AddSingleton(new OllamaOptions { BaseUrl = ollamaUri, DefaultModel = modelName });
+
         services.AddChatClient(sp =>
         {
             var client = new OllamaApiClient(ollamaUri, modelName);

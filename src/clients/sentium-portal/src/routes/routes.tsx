@@ -15,6 +15,7 @@ import Inventory from "../pages/inventory/inventory";
 import Users from "../pages/users/users";
 import Profile from "../pages/profile/profile";
 import Watchdog from "../pages/watchdog/watchdog";
+import Models from "../pages/models/models";
 
 export const routes: RouteObject[] = [
   {
@@ -38,6 +39,7 @@ export const routes: RouteObject[] = [
       { path: "orchestration", element: <AgentOrchestration /> },
       { path: "agents", element: <Agents /> },
       { path: "workflows", element: <Workflows /> },
+      { path: "models", element: <Models /> },
       { path: "users", element: <Users /> },
       { path: "inventory", element: <Inventory /> },
       { path: "system", element: <System /> },
