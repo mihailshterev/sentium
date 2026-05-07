@@ -80,11 +80,6 @@ var sentinelApi = builder.AddProject<Projects.Sentium_Sentinel_Api>(ServiceNames
     .WithReference(identityApi).WaitFor(identityApi)
     .WithEnvironment("Identity__Authority", identityApi.GetEndpoint("http"));
 
-var watchdogApi = builder.AddProject<Projects.Sentium_Watchdog_Api>(ServiceNames.Watchdog)
-    .WithReference(nats).WaitFor(nats)
-    .WithReference(identityApi).WaitFor(identityApi)
-    .WithEnvironment("Identity__Authority", identityApi.GetEndpoint("http"));
-
 var agentRuntimeApi = builder.AddProject<Projects.Sentium_AgentRuntime_Api>(ServiceNames.AgentRuntime)
     .WithReference(ollamaModel).WaitFor(ollamaModel)
     .WithReference(ollamaEmbeddingModel).WaitFor(ollamaEmbeddingModel)
@@ -109,6 +104,16 @@ var locusApi = builder.AddProject<Projects.Sentium_Locus_Api>(ServiceNames.Locus
     .WithReference(nats).WaitFor(nats)
     .WithReference(identityApi).WaitFor(identityApi)
     .WithReference(agentRuntimeApi).WaitFor(agentRuntimeApi)
+    .WithEnvironment("Identity__Authority", identityApi.GetEndpoint("http"));
+
+var watchdogApi = builder.AddProject<Projects.Sentium_Watchdog_Api>(ServiceNames.Watchdog)
+    .WithReference(nats).WaitFor(nats)
+    .WithReference(sql).WaitFor(sql)
+    .WithReference(redis).WaitFor(redis)
+    .WithReference(identityApi).WaitFor(identityApi)
+    .WithReference(sentinelApi).WaitFor(sentinelApi)
+    .WithReference(agentRuntimeApi).WaitFor(agentRuntimeApi)
+    .WithReference(locusApi).WaitFor(locusApi)
     .WithEnvironment("Identity__Authority", identityApi.GetEndpoint("http"));
 
 var apiGateway = builder.AddProject<Projects.Sentium_ApiGateway>(ServiceNames.Gateway)
