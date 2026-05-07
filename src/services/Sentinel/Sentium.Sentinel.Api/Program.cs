@@ -1,3 +1,4 @@
+using Sentium.Infrastructure.Extensions;
 using Sentium.Sentinel.Application;
 using Sentium.Sentinel.Infrastructure;
 using Sentium.Shared.Constants;
@@ -14,10 +15,13 @@ builder.Services.AddControllers();
 
 builder.AddNatsClient(ResourceNames.Nats);
 
+builder.AddSentiumAuditLogging();
 builder.Services.AddInfrastructure();
 builder.Services.AddApplication();
 
 var app = builder.Build();
+
+app.UseSentiumTracing();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())

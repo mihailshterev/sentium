@@ -1,5 +1,6 @@
 using Sentium.Watchdog.Application;
 using Sentium.Shared.Constants;
+using Sentium.Infrastructure.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,9 +16,12 @@ builder.Services.AddControllers().AddJsonOptions(options =>
         options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
     });
 
+builder.AddSentiumAuditLogging();
 builder.Services.AddWatchdogApplication();
 
 var app = builder.Build();
+
+app.UseSentiumTracing();
 
 if (app.Environment.IsDevelopment())
 {

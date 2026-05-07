@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Hybrid;
 using Scalar.AspNetCore;
 using Sentium.Shared.Constants;
+using Sentium.Infrastructure.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,7 +24,8 @@ builder.AddQdrantClient(ResourceNames.Qdrant);
 builder.AddAzureBlobServiceClient(ResourceNames.WorkspaceBlobs);
 
 builder.Services.AddAgentRuntimeApplication();
-builder.Services.AddAgentRuntimeInfrastructure(builder.Configuration);
+builder.AddSentiumAuditLogging();
+builder.AddAgentRuntimeInfrastructure();
 
 builder.Services.AddHttpClient();
 
@@ -54,6 +56,8 @@ builder.Services.AddHybridCache(options =>
 });
 
 var app = builder.Build();
+
+app.UseSentiumTracing();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
