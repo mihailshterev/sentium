@@ -37,6 +37,7 @@ public class SentiumWebApplicationFactory<TProgram> : WebApplicationFactory<TPro
         builder.UseSetting($"ConnectionStrings:{ResourceNames.Nats}", "nats://localhost:4222");
         builder.UseSetting($"ConnectionStrings:{ResourceNames.Qdrant}", "Endpoint=http://localhost:6334");
         builder.UseSetting($"ConnectionStrings:{ResourceNames.WorkspaceBlobs}", "UseDevelopmentStorage=true");
+        builder.UseSetting($"ConnectionStrings:{ResourceNames.Seq}", "http://localhost:5341");
 
         builder.ConfigureTestServices(services =>
         {
