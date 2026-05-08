@@ -4,16 +4,59 @@
   height: 100%;
   background-color: var(--bg-base);
   overflow: hidden;
+  position: relative;
+
+  &::before,
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  &::before {
+    background:
+      radial-gradient(ellipse 60% 50% at 80% 60%, rgba(34, 197, 94, 0.07) 0%, transparent 70%),
+      radial-gradient(ellipse 40% 40% at 20% 20%, rgba(59, 130, 246, 0.06) 0%, transparent 65%),
+      radial-gradient(ellipse 35% 35% at 35% 85%, rgba(34, 197, 94, 0.05) 0%, transparent 60%);
+    animation: orbShift 18s ease-in-out infinite alternate;
+  }
+
+  &::after {
+    background:
+      radial-gradient(ellipse 30% 30% at 90% 15%, rgba(59, 130, 246, 0.05) 0%, transparent 60%),
+      radial-gradient(ellipse 25% 25% at 10% 70%, rgba(34, 197, 94, 0.04) 0%, transparent 60%);
+    animation: orbShift 24s ease-in-out infinite alternate-reverse;
+  }
+}
+
+@keyframes orbShift {
+  0% {
+    opacity: 1;
+    transform: scale(1) translate(0, 0);
+  }
+  50% {
+    opacity: 0.75;
+    transform: scale(1.08) translate(-1%, 1.5%);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1.04) translate(1%, -1%);
+  }
 }
 
 .agentsHeader {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
   height: 64px;
   padding: 0 1.75rem;
   border-bottom: 1px solid var(--border-subtle);
-  background: var(--bg-surface);
+  background: rgba(15, 15, 19, 0.85);
+  backdrop-filter: blur(8px);
   flex-shrink: 0;
   gap: 1rem;
 }
@@ -58,8 +101,10 @@
 }
 
 .agentsBody {
+  position: relative;
+  z-index: 1;
   display: grid;
-  grid-template-columns: 380px 1fr;
+  grid-template-columns: 1fr 380px;
   flex: 1;
   overflow: hidden;
 }
@@ -68,15 +113,15 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border-right: 1px solid var(--border-subtle);
-  background: var(--bg-surface);
+  border-left: 1px solid var(--border-subtle);
+  background: rgba(15, 15, 19, 0.88);
 }
 
 .listPanel {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: var(--bg-base);
+  background: transparent;
 }
 
 .panelHeader {

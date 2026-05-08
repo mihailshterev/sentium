@@ -82,16 +82,102 @@ const Models = () => {
             <span className={styles.headerSub}>Manage local Ollama models</span>
           </div>
         </div>
-        <div className={styles.headerBadge}>
-          <HardDrive size={11} />
-          {models.length} installed
+        <div className={styles.headerRight}>
+          <div className={styles.headerBadge}>
+            <HardDrive size={11} />
+            {models.length} installed
+          </div>
+          <button
+            className={styles.refreshBtn}
+            onClick={() => refetch()}
+            disabled={isLoading}
+            title="Refresh model list"
+          >
+            <RefreshCw size={14} className={isLoading ? styles.spinIcon : undefined} />
+          </button>
         </div>
-        <button className={styles.refreshBtn} onClick={() => refetch()} disabled={isLoading} title="Refresh model list">
-          <RefreshCw size={14} className={isLoading ? styles.spinIcon : undefined} />
-        </button>
       </div>
 
       <div className={styles.pageBody}>
+        <div className={styles.listPanel}>
+          <div className={styles.panelHeader}>
+            <span className={styles.panelDot} />
+            Installed Models
+            <span className={styles.countBadge}>{models.length}</span>
+          </div>
+
+          <div className={styles.modelList}>
+            {deleteResult && (
+              <div className={styles.deleteNotice}>
+                <Info size={14} />
+                <span>
+                  <strong>{deleteResult.deletedModel}</strong> deleted.
+                  {deleteResult.agentsReset > 0
+                    ? ` ${deleteResult.agentsReset} agent${deleteResult.agentsReset !== 1 ? "s" : ""} reset to ${deleteResult.defaultModel}.`
+                    : " No agents were affected."}
+                </span>
+                <button className={styles.noticeDismiss} onClick={clearDeleteResult} aria-label="Dismiss">
+                  <X size={12} />
+                </button>
+              </div>
+            )}
+            {isLoading ? (
+              <div className={styles.emptyState}>
+                <Loader size={28} className={`${styles.emptyIcon} ${styles.spinIcon}`} />
+                <span>Loading models…</span>
+              </div>
+            ) : models.length === 0 ? (
+              <div className={styles.emptyState}>
+                <BrainCircuit size={36} className={styles.emptyIcon} />
+                <span>No models installed</span>
+                <span className={styles.emptyHint}>Pull a model using the form on the right to get started.</span>
+              </div>
+            ) : (
+              models.map((model) => (
+                <div key={model.name} className={styles.modelCard}>
+                  <div className={styles.modelIconWrap}>
+                    <Cpu size={16} />
+                  </div>
+
+                  <div className={styles.modelInfo}>
+                    <p className={styles.modelName}>{model.name}</p>
+                    <div className={styles.modelMeta}>
+                      <span className={styles.metaBadgeGreen}>
+                        <HardDrive size={10} />
+                        {formatBytes(model.size)}
+                      </span>
+                      {model.details?.parameter_size && (
+                        <span className={styles.metaBadgeBlue}>
+                          <Hash size={10} />
+                          {model.details.parameter_size}
+                        </span>
+                      )}
+                      {model.details?.quantization_level && (
+                        <span className={styles.metaBadge}>{model.details.quantization_level}</span>
+                      )}
+                      {model.details?.family && <span className={styles.metaBadge}>{model.details.family}</span>}
+                    </div>
+                    <p className={styles.modelDate}>Modified {formatDate(model.modified_at)}</p>
+                  </div>
+
+                  <button
+                    className={styles.deleteBtn}
+                    onClick={() => handleDelete(model.name)}
+                    disabled={deletingModel === model.name}
+                    title={`Delete ${model.name}`}
+                  >
+                    {deletingModel === model.name ? (
+                      <Loader size={14} className={styles.spinIcon} />
+                    ) : (
+                      <Trash2 size={14} />
+                    )}
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
         <div className={styles.sidePanel}>
           <div className={styles.panelHeader}>
             <span className={styles.panelDot} />
@@ -177,85 +263,6 @@ const Models = () => {
               </button>
             )}
           </form>
-        </div>
-
-        <div className={styles.listPanel}>
-          <div className={styles.panelHeader}>
-            <span className={styles.panelDot} />
-            Installed Models
-            <span className={styles.countBadge}>{models.length}</span>
-          </div>
-
-          <div className={styles.modelList}>
-            {deleteResult && (
-              <div className={styles.deleteNotice}>
-                <Info size={14} />
-                <span>
-                  <strong>{deleteResult.deletedModel}</strong> deleted.
-                  {deleteResult.agentsReset > 0
-                    ? ` ${deleteResult.agentsReset} agent${deleteResult.agentsReset !== 1 ? "s" : ""} reset to ${deleteResult.defaultModel}.`
-                    : " No agents were affected."}
-                </span>
-                <button className={styles.noticeDismiss} onClick={clearDeleteResult} aria-label="Dismiss">
-                  <X size={12} />
-                </button>
-              </div>
-            )}
-            {isLoading ? (
-              <div className={styles.emptyState}>
-                <Loader size={28} className={`${styles.emptyIcon} ${styles.spinIcon}`} />
-                <span>Loading models…</span>
-              </div>
-            ) : models.length === 0 ? (
-              <div className={styles.emptyState}>
-                <BrainCircuit size={36} className={styles.emptyIcon} />
-                <span>No models installed</span>
-                <span className={styles.emptyHint}>Pull a model using the form on the left to get started.</span>
-              </div>
-            ) : (
-              models.map((model) => (
-                <div key={model.name} className={styles.modelCard}>
-                  <div className={styles.modelIconWrap}>
-                    <Cpu size={16} />
-                  </div>
-
-                  <div className={styles.modelInfo}>
-                    <p className={styles.modelName}>{model.name}</p>
-                    <div className={styles.modelMeta}>
-                      <span className={styles.metaBadgeGreen}>
-                        <HardDrive size={10} />
-                        {formatBytes(model.size)}
-                      </span>
-                      {model.details?.parameter_size && (
-                        <span className={styles.metaBadgeBlue}>
-                          <Hash size={10} />
-                          {model.details.parameter_size}
-                        </span>
-                      )}
-                      {model.details?.quantization_level && (
-                        <span className={styles.metaBadge}>{model.details.quantization_level}</span>
-                      )}
-                      {model.details?.family && <span className={styles.metaBadge}>{model.details.family}</span>}
-                    </div>
-                    <p className={styles.modelDate}>Modified {formatDate(model.modified_at)}</p>
-                  </div>
-
-                  <button
-                    className={styles.deleteBtn}
-                    onClick={() => handleDelete(model.name)}
-                    disabled={deletingModel === model.name}
-                    title={`Delete ${model.name}`}
-                  >
-                    {deletingModel === model.name ? (
-                      <Loader size={14} className={styles.spinIcon} />
-                    ) : (
-                      <Trash2 size={14} />
-                    )}
-                  </button>
-                </div>
-              ))
-            )}
-          </div>
         </div>
       </div>
     </div>
