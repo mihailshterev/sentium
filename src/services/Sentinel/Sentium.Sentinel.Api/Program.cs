@@ -30,11 +30,11 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 
     app.MapScalarApiReference(options =>
-   {
-       options.WithTitle("Sentium Sentinel")
-              .WithTheme(ScalarTheme.DeepSpace)
-              .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
-   });
+    {
+        options.WithTitle("Sentium Sentinel")
+                .WithTheme(ScalarTheme.DeepSpace)
+                .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
+    });
 }
 
 app.MapDefaultEndpoints();
