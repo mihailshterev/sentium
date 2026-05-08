@@ -1810,6 +1810,7 @@
         "dependencies": {
           "Aspire.NATS.Net": "[13.2.4, )",
           "Microsoft.AspNetCore.OpenApi": "[10.0.1, )",
+          "Scalar.AspNetCore": "[2.14.4, )",
           "Sentium.Sentinel.Application": "[1.0.0, )",
           "Sentium.Sentinel.Infrastructure": "[1.0.0, )",
           "Sentium.ServiceDefaults": "[1.0.0, )",
@@ -1860,6 +1861,7 @@
           "Aspire.NATS.Net": "[13.2.4, )",
           "Aspire.StackExchange.Redis.DistributedCaching": "[13.2.4, )",
           "Microsoft.AspNetCore.OpenApi": "[10.0.1, )",
+          "Scalar.AspNetCore": "[2.14.4, )",
           "Sentium.ServiceDefaults": "[1.0.0, )",
           "Sentium.Watchdog.Application": "[1.0.0, )"
         }

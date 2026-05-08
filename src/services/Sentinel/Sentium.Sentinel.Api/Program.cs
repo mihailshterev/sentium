@@ -1,3 +1,4 @@
+using Scalar.AspNetCore;
 using Sentium.Infrastructure.Extensions;
 using Sentium.Sentinel.Application;
 using Sentium.Sentinel.Infrastructure;
@@ -27,6 +28,13 @@ app.UseSentiumTracing();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+
+    app.MapScalarApiReference(options =>
+   {
+       options.WithTitle("Sentium Sentinel")
+              .WithTheme(ScalarTheme.DeepSpace)
+              .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
+   });
 }
 
 app.MapDefaultEndpoints();
