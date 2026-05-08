@@ -97,8 +97,8 @@ const Agents = () => {
         <div className={styles.headerLeft}>
           <Bot size={20} className={styles.headerIcon} />
           <div>
-            <h2 className={styles.headerTitle}>Agent Registry</h2>
-            <span className={styles.headerSub}>Register and manage autonomous agents in the pipeline</span>
+            <h1 className={styles.headerTitle}>Agent Registry</h1>
+            <p className={styles.headerSub}>Register and manage autonomous agents in the pipeline</p>
           </div>
         </div>
         <div className={styles.headerBadge}>

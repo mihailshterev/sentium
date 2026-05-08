@@ -15,6 +15,7 @@
   border-bottom: 1px solid var(--border-subtle);
   background: var(--bg-surface);
   flex-shrink: 0;
+  gap: 1rem;
 }
 
 .headerLeft {
@@ -33,11 +34,12 @@
   font-weight: 700;
   color: var(--text-primary);
   margin: 0 0 2px;
-  letter-spacing: -0.4px;
+  letter-spacing: -0.3px;
 }
 
 .headerSub {
-  font-size: 0.76rem;
+  display: block;
+  font-size: 0.72rem;
   color: var(--text-muted);
   margin: 0;
 }

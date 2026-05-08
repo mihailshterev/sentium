@@ -38,8 +38,10 @@
 }
 
 .headerSub {
+  display: block;
   font-size: 0.72rem;
   color: var(--text-muted);
+  margin: 0;
 }
 
 .phaseBar {
