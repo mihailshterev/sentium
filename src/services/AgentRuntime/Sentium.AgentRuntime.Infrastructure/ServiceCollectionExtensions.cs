@@ -3,6 +3,7 @@ using Sentium.AgentRuntime.Core.Conversations;
 using Sentium.AgentRuntime.Core.Learnings;
 using Sentium.AgentRuntime.Core.Rag;
 using Sentium.AgentRuntime.Core.Settings;
+using Sentium.AgentRuntime.Core.Skills;
 using Sentium.AgentRuntime.Core.Tools;
 using Sentium.AgentRuntime.Core.WorkflowManagement;
 using Sentium.AgentRuntime.Core.Workspaces;
@@ -12,6 +13,8 @@ using Sentium.AgentRuntime.Infrastructure.Data;
 using Sentium.AgentRuntime.Infrastructure.Learnings;
 using Sentium.AgentRuntime.Infrastructure.Rag;
 using Sentium.AgentRuntime.Infrastructure.Settings;
+using Sentium.AgentRuntime.Infrastructure.Skills;
+using Sentium.AgentRuntime.Infrastructure.Skills.BuiltIn;
 using Sentium.AgentRuntime.Infrastructure.Tools;
 using Sentium.AgentRuntime.Infrastructure.WorkflowManagement;
 using Sentium.AgentRuntime.Infrastructure.WorkspaceManagement;
@@ -103,6 +106,11 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ISystemSettingsService, SystemSettingsService>();
         services.AddScoped<IAgentLearningRepository, AgentLearningRepository>();
         services.AddScoped<IAgentLearningService, AgentLearningService>();
+
+        services.AddSingleton<IBuiltInSkillCatalog, BuiltInSkillCatalog>();
+        services.AddScoped<IAgentSkillRepository, AgentSkillRepository>();
+        services.AddScoped<IAgentSkillService, AgentSkillService>();
+        services.AddScoped<DynamicSkillsProvider>();
 
         services.AddScoped<IAgentRegistry, AgentRegistry>();
         services.AddScoped<IAgentToolProvider, AgentToolProvider>();

@@ -16,6 +16,9 @@ import {
   Square,
   FolderOpen,
   FileText,
+  Copy,
+  Check,
+  X,
 } from "lucide-react";
 import {
   fetchConversation,
@@ -30,6 +33,46 @@ import type { Workspace } from "../../types/workspace";
 import { useConversationStore } from "../../stores/assistant-conversation-store";
 import { SUGGESTIONS_POOL } from "../../utils/constants";
 import { useQuery } from "@tanstack/react-query";
+
+const STATUS_MESSAGES = [
+  "Consulting Sentium nodes...",
+  "Analyzing context...",
+  "Processing your query...",
+  "Synthesizing response...",
+  "Traversing knowledge graph...",
+];
+
+type ContextPill = { type: "workspace" | "file"; id: string; label: string };
+
+const groupConversationsByDate = (convs: ConversationSummary[]) => {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today.getTime() - 86_400_000);
+  const sevenDaysAgo = new Date(today.getTime() - 7 * 86_400_000);
+
+  const groups: { label: string; items: ConversationSummary[] }[] = [
+    { label: "Today", items: [] },
+    { label: "Yesterday", items: [] },
+    { label: "Previous 7 Days", items: [] },
+    { label: "Older", items: [] },
+  ];
+
+  convs.forEach((conv) => {
+    const d = new Date(conv.createdAt);
+    const cd = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    if (cd >= today) {
+      groups[0].items.push(conv);
+    } else if (cd >= yesterday) {
+      groups[1].items.push(conv);
+    } else if (cd >= sevenDaysAgo) {
+      groups[2].items.push(conv);
+    } else {
+      groups[3].items.push(conv);
+    }
+  });
+
+  return groups.filter((g) => g.items.length > 0);
+};
 
 const Assistant = () => {
   const {
@@ -58,18 +101,27 @@ const Assistant = () => {
   const [expandedThoughts, setExpandedThoughts] = useState<Set<string>>(new Set());
   const [wsContextOpen, setWsContextOpen] = useState(false);
   const [expandedWorkspace, setExpandedWorkspace] = useState<string | null>(null);
+  const [contextPills, setContextPills] = useState<ContextPill[]>([]);
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+  const [isAtBottom, setIsAtBottom] = useState(true);
+  const [statusIndex, setStatusIndex] = useState(0);
+  const [statusVisible, setStatusVisible] = useState(true);
 
   const toggleThought = (id: string) =>
     setExpandedThoughts((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
       return next;
     });
 
   const chatAreaRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const scrollToBottom = useCallback(() => {
     if (chatAreaRef.current) {
@@ -77,15 +129,54 @@ const Assistant = () => {
     }
   }, []);
 
+  const handleScroll = useCallback(() => {
+    if (!chatAreaRef.current) {
+      return;
+    }
+    const { scrollTop, scrollHeight, clientHeight } = chatAreaRef.current;
+    setIsAtBottom(scrollHeight - scrollTop - clientHeight < 60);
+  }, []);
+
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, isTyping, scrollToBottom]);
+    const el = chatAreaRef.current;
+    if (!el) {
+      return;
+    }
+    el.addEventListener("scroll", handleScroll);
+    return () => el.removeEventListener("scroll", handleScroll);
+  }, [handleScroll]);
+
+  useEffect(() => {
+    if (isAtBottom) {
+      scrollToBottom();
+    }
+  }, [messages, isTyping, isAtBottom, scrollToBottom]);
 
   useEffect(() => {
     if (models.length > 0 && !model) {
       setModel(models[0]);
     }
   }, [models, model, setModel]);
+
+  useEffect(() => {
+    if (!isTyping) {
+      return;
+    }
+    let cancelled = false;
+    const interval = setInterval(() => {
+      setStatusVisible(false);
+      setTimeout(() => {
+        if (!cancelled) {
+          setStatusIndex((prev) => (prev + 1) % STATUS_MESSAGES.length);
+          setStatusVisible(true);
+        }
+      }, 300);
+    }, 2500);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [isTyping]);
 
   const [randomizedSuggestions] = useState(() => [...SUGGESTIONS_POOL].sort(() => 0.5 - Math.random()).slice(0, 4));
 
@@ -102,17 +193,39 @@ const Assistant = () => {
   });
 
   const injectWorkspaceContext = (ws: Workspace) => {
-    setInput((prev) => {
-      const ref = `[Workspace: ${ws.name} | ID: ${ws.id}]`;
-      return prev ? `${ref} ${prev}` : ref + " ";
+    setContextPills((prev) => {
+      if (prev.some((p) => p.id === ws.id)) {
+        return prev;
+      }
+      return [...prev, { type: "workspace", id: ws.id, label: ws.name }];
     });
   };
 
   const injectFileContext = (fileName: string, fileId: string) => {
-    setInput((prev) => {
-      const ref = `[File: ${fileName} | ID: ${fileId}]`;
-      return prev ? `${ref} ${prev}` : ref + " ";
+    setContextPills((prev) => {
+      if (prev.some((p) => p.id === fileId)) {
+        return prev;
+      }
+      return [...prev, { type: "file", id: fileId, label: fileName }];
     });
+  };
+
+  const removeContextPill = (id: string) => {
+    setContextPills((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  const copyMessage = (content: string, id: string) => {
+    navigator.clipboard.writeText(content).then(() => {
+      setCopiedMessageId(id);
+      setTimeout(() => setCopiedMessageId(null), 2000);
+    });
+  };
+
+  const resizeTextarea = () => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 160) + "px";
+    }
   };
 
   const loadConversation = async (conv: ConversationSummary) => {
@@ -176,9 +289,9 @@ const Assistant = () => {
     abortControllerRef.current?.abort();
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!input.trim() || isTyping) {
+  const submitMessage = async () => {
+    const hasContent = input.trim() || contextPills.length > 0;
+    if (!hasContent || isTyping) {
       return;
     }
 
@@ -187,7 +300,12 @@ const Assistant = () => {
       conversationId = await createNewConversation();
     }
 
-    const userContent = input.trim();
+    const pillPrefix = contextPills
+      .map((p) =>
+        p.type === "workspace" ? `[Workspace: ${p.label} | ID: ${p.id}]` : `[File: ${p.label} | ID: ${p.id}]`,
+      )
+      .join(" ");
+    const userContent = pillPrefix ? (input.trim() ? `${pillPrefix} ${input.trim()}` : pillPrefix) : input.trim();
 
     const userMsg: ConversationMessage = {
       id: Date.now().toString(),
@@ -198,6 +316,12 @@ const Assistant = () => {
 
     appendMessage(userMsg);
     setInput("");
+    setContextPills([]);
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
+    setStatusIndex(0);
+    setStatusVisible(true);
     setIsTyping(true);
 
     const aiMsgId = (Date.now() + 1).toString();
@@ -208,7 +332,7 @@ const Assistant = () => {
       timestamp: new Date(),
     });
 
-    const chatHistory = [...messages, userMsg].map((msg) => ({
+    const chatHistory = [...messages, userMsg].map((msg: ConversationMessage) => ({
       role: msg.role,
       content: msg.content,
     }));
@@ -241,7 +365,9 @@ const Assistant = () => {
 
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
+        if (done) {
+          break;
+        }
 
         const chunk = leftover + decoder.decode(value, { stream: true });
         const lines = chunk.split("\n");
@@ -283,12 +409,32 @@ const Assistant = () => {
     }
   };
 
-  const formatTime = (date: Date) => date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    submitMessage();
+  };
 
-  const formatDate = (dateStr: string) =>
-    new Date(dateStr).toLocaleDateString("en-GB", { month: "short", day: "numeric" });
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      submitMessage();
+    }
+    if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+      e.preventDefault();
+      createNewConversation();
+    }
+    if (e.key === "ArrowUp" && input === "") {
+      const lastUserMsg = [...messages].reverse().find((m) => m.role === "user");
+      if (lastUserMsg) {
+        e.preventDefault();
+        setInput(lastUserMsg.content);
+        setTimeout(() => resizeTextarea(), 0);
+      }
+    }
+  };
 
   const isEmpty = messages.length === 0 && !isTyping;
+  const conversationGroups = groupConversationsByDate(conversations);
 
   return (
     <div className={styles.container}>
@@ -347,16 +493,24 @@ const Assistant = () => {
                   msg.content === "" &&
                   isTyping;
 
+                const showStatusCycler = isTypingMsg && !msg.thought && (!msg.toolCalls || msg.toolCalls.length === 0);
+
                 return (
                   <div
                     key={msg.id}
                     className={`${styles.messageWrapper} ${msg.role === "user" ? styles.wrapperUser : styles.wrapperAi}`}
                   >
-                    <div className={`${styles.message} ${msg.role === "user" ? styles.messageUser : styles.messageAi}`}>
-                      <div className={styles.messageHeader}>
-                        <span className={styles.sender}>{msg.role === "user" ? "YOU" : "SENTIUM"}</span>
-                        <span className={styles.timestamp}>{formatTime(msg.timestamp)}</span>
+                    {msg.role === "assistant" && (
+                      <div className={`${styles.avatar} ${styles.avatarAi}`}>
+                        <Brain size={13} />
                       </div>
+                    )}
+                    <div className={`${styles.message} ${msg.role === "user" ? styles.messageUser : styles.messageAi}`}>
+                      {msg.role === "assistant" && (
+                        <div className={styles.messageHeader}>
+                          <span className={styles.sender}>SENTIUM</span>
+                        </div>
+                      )}
 
                       {msg.thought !== undefined && msg.role === "assistant" && (
                         <div className={styles.thoughtBlock}>
@@ -387,11 +541,22 @@ const Assistant = () => {
                         </div>
                       )}
 
-                      {isTypingMsg ? (
-                        <div className={styles.typingIndicator}>
-                          <span></span>
-                          <span></span>
-                          <span></span>
+                      {showStatusCycler ? (
+                        <div className={styles.typingStatusRow}>
+                          <div className={styles.neuronLoader}>
+                            <div className={styles.neuronNode} />
+                            <div className={styles.neuronLine} />
+                            <div className={styles.neuronNode} />
+                            <div className={styles.neuronLine} />
+                            <div className={styles.neuronNode} />
+                          </div>
+                          <span
+                            className={`${styles.typingStatusText} ${
+                              statusVisible ? styles.statusVisible : styles.statusHidden
+                            }`}
+                          >
+                            {STATUS_MESSAGES[statusIndex]}
+                          </span>
                         </div>
                       ) : (
                         msg.content && (
@@ -399,6 +564,17 @@ const Assistant = () => {
                             <Markdown>{msg.content}</Markdown>
                           </div>
                         )
+                      )}
+                      {msg.role === "assistant" && !isTypingMsg && msg.content && (
+                        <div className={styles.messageFooter}>
+                          <button
+                            className={styles.copyBtn}
+                            onClick={() => copyMessage(msg.content, msg.id)}
+                            title="Copy to clipboard"
+                          >
+                            {copiedMessageId === msg.id ? <Check size={12} /> : <Copy size={12} />}
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -409,31 +585,56 @@ const Assistant = () => {
           )}
         </div>
 
+        {!isAtBottom && (
+          <button className={styles.scrollToBottomBtn} onClick={scrollToBottom} title="Scroll to bottom">
+            <ChevronDown size={14} />
+          </button>
+        )}
+
         <div className={styles.inputContainer}>
           <form onSubmit={handleSubmit} className={styles.inputForm}>
-            <button type="button" className={styles.attachBtn} title="Add attachment">
-              <Plus size={16} />
-            </button>
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder={isTyping ? "Generating..." : "Ask anything..."}
-              className={styles.input}
-              autoComplete="off"
-              disabled={isTyping}
-            />
+            <div className={styles.inputMain}>
+              {contextPills.length > 0 && (
+                <div className={styles.contextPillsRow}>
+                  {contextPills.map((pill) => (
+                    <div key={pill.id} className={styles.contextPill}>
+                      {pill.type === "workspace" ? <FolderOpen size={9} /> : <FileText size={9} />}
+                      <span>{pill.label}</span>
+                      <button type="button" onClick={() => removeContextPill(pill.id)} aria-label="Remove">
+                        <X size={9} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <textarea
+                ref={textareaRef}
+                value={input}
+                onChange={(e) => {
+                  setInput(e.target.value);
+                  resizeTextarea();
+                }}
+                onKeyDown={handleKeyDown}
+                placeholder={isTyping ? "Generating..." : "Ask Sentium Assistant..."}
+                className={styles.textarea}
+                autoComplete="off"
+                disabled={isTyping}
+                rows={1}
+              />
+            </div>
             {isTyping ? (
               <button type="button" onClick={handleStop} className={styles.stopButton} title="Stop generation">
                 <Square size={13} fill="currentColor" />
               </button>
             ) : (
-              <button type="submit" disabled={!input.trim()} className={styles.sendButton}>
+              <button type="submit" disabled={!input.trim() && contextPills.length === 0} className={styles.sendButton}>
                 <ArrowUp size={16} />
               </button>
             )}
           </form>
-          <div className={styles.inputFooter}>Protected by Sentium Security Protocols</div>
+          <div className={styles.inputFooter}>
+            Protected by Sentium Security Protocols &nbsp;·&nbsp; Ctrl+K: New chat
+          </div>
         </div>
       </div>
 
@@ -477,24 +678,28 @@ const Assistant = () => {
               <span>No conversations yet</span>
             </div>
           )}
-          {conversations.map((conv) => (
-            <div
-              key={conv.id}
-              className={`${styles.convItem} ${activeConversationId === conv.id ? styles.convItemActive : ""}`}
-              onClick={() => loadConversation(conv)}
-            >
-              <MessageSquare size={12} className={styles.convIcon} />
-              <div className={styles.convInfo}>
-                <span className={styles.convTitle}>{conv.title}</span>
-                <span className={styles.convDate}>{formatDate(conv.createdAt)}</span>
-              </div>
-              <button
-                className={styles.convDelete}
-                onClick={(e) => deleteConversation(conv.id, e)}
-                title="Delete conversation"
-              >
-                <Trash2 size={11} />
-              </button>
+          {conversationGroups.map((group) => (
+            <div key={group.label}>
+              <div className={styles.convGroupLabel}>{group.label}</div>
+              {group.items.map((conv) => (
+                <div
+                  key={conv.id}
+                  className={`${styles.convItem} ${activeConversationId === conv.id ? styles.convItemActive : ""}`}
+                  onClick={() => loadConversation(conv)}
+                >
+                  <MessageSquare size={12} className={styles.convIcon} />
+                  <div className={styles.convInfo}>
+                    <span className={styles.convTitle}>{conv.title}</span>
+                  </div>
+                  <button
+                    className={styles.convDelete}
+                    onClick={(e) => deleteConversation(conv.id, e)}
+                    title="Delete conversation"
+                  >
+                    <Trash2 size={11} />
+                  </button>
+                </div>
+              ))}
             </div>
           ))}
         </div>

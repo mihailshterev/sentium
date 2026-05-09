@@ -14,6 +14,7 @@ import {
   ShieldUser,
   UsersRound,
   View,
+  Zap,
   type LucideIcon,
 } from "lucide-react";
 import styles from "./navbar.module.scss";
@@ -57,6 +58,7 @@ const NAV_GROUPS: NavGroup[] = [
     links: [
       { to: "/workspaces", label: "Workspaces", icon: FolderOpen },
       { to: "/knowledge-base", label: "Knowledge Base", icon: Database },
+      { to: "/skills", label: "Skills", icon: Zap },
       { to: "/users", label: "Users", icon: UsersRound, sovereignOnly: true },
     ],
   },
