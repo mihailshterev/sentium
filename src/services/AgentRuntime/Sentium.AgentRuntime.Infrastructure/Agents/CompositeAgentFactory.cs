@@ -2,6 +2,7 @@ using Sentium.AgentRuntime.Core.Agents;
 using Sentium.AgentRuntime.Core.Settings;
 using Sentium.AgentRuntime.Core.Tools;
 using Sentium.AgentRuntime.Infrastructure.Tools;
+using Sentium.AgentRuntime.Infrastructure.Skills;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
@@ -21,6 +22,7 @@ public sealed class CompositeAgentFactory(
     ISystemSettingsService systemSettingsService,
     IServiceProvider serviceProvider,
     IHttpClientFactory httpClientFactory,
+    DynamicSkillsProvider dynamicSkillsProvider,
     ILogger<CompositeAgentFactory> logger) : IAgentFactory, IDisposable
 {
     private readonly ConcurrentDictionary<string, IChatClient> clientCache = new();
@@ -34,7 +36,7 @@ public sealed class CompositeAgentFactory(
         var definition = await ResolveDefinitionAsync(agentName, ct);
         if (definition is null)
         {
-            throw new InvalidOperationException($"Agent '{agentName}' could not be resolved from Registry or Database.");
+            throw new InvalidOperationException($"Agent '{agentName}' could not be resolved.");
         }
 
         var tools = agentToolProvider.GetToolsForAgent(definition.Name, ct);
@@ -45,11 +47,14 @@ public sealed class CompositeAgentFactory(
             .Cast<AITool>()
             .ToList();
 
+        var skillsProvider = await dynamicSkillsProvider.BuildAsync(ct);
+
         var harnessedClient = GetHarnessedClient(overrideModel);
 
         var options = new ChatClientAgentOptions
         {
             Name = definition.Name,
+            AIContextProviders = [skillsProvider],
             ChatOptions = new ChatOptions
             {
                 Instructions = overrideInstructions ?? definition.Instructions,

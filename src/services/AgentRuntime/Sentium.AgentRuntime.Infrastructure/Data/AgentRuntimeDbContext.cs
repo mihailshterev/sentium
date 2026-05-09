@@ -15,6 +15,7 @@ public sealed class AgentRuntimeDbContext(DbContextOptions<AgentRuntimeDbContext
     public DbSet<Workspace> Workspaces { get; set; }
     public DbSet<SystemSettings> SystemSettings { get; set; }
     public DbSet<AgentLearning> AgentLearnings { get; set; }
+    public DbSet<AgentSkill> AgentSkills { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -148,6 +149,18 @@ public sealed class AgentRuntimeDbContext(DbContextOptions<AgentRuntimeDbContext
             entity.HasIndex(e => e.AgentName);
             entity.HasIndex(e => e.CapturedAt);
             entity.HasIndex(e => e.IsIngested);
+        });
+
+        builder.Entity<AgentSkill>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(64);
+            entity.Property(e => e.Description).IsRequired().HasMaxLength(1024);
+            entity.Property(e => e.Instructions).IsRequired();
+            entity.Property(e => e.SkillType).IsRequired();
+            entity.Property(e => e.FileName).HasMaxLength(512);
+            entity.HasIndex(e => e.Name).IsUnique();
+            entity.HasIndex(e => e.CreatedAt);
         });
     }
 }
