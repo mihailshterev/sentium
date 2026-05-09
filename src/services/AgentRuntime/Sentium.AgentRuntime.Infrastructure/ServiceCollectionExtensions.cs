@@ -1,5 +1,6 @@
 using Sentium.AgentRuntime.Core.Agents;
 using Sentium.AgentRuntime.Core.Conversations;
+using Sentium.AgentRuntime.Core.Learnings;
 using Sentium.AgentRuntime.Core.Rag;
 using Sentium.AgentRuntime.Core.Settings;
 using Sentium.AgentRuntime.Core.Tools;
@@ -8,6 +9,7 @@ using Sentium.AgentRuntime.Core.Workspaces;
 using Sentium.AgentRuntime.Infrastructure.Agents;
 using Sentium.AgentRuntime.Infrastructure.Conversations;
 using Sentium.AgentRuntime.Infrastructure.Data;
+using Sentium.AgentRuntime.Infrastructure.Learnings;
 using Sentium.AgentRuntime.Infrastructure.Rag;
 using Sentium.AgentRuntime.Infrastructure.Settings;
 using Sentium.AgentRuntime.Infrastructure.Tools;
@@ -99,6 +101,8 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<ISystemSettingsRepository, SystemSettingsRepository>();
         services.AddScoped<ISystemSettingsService, SystemSettingsService>();
+        services.AddScoped<IAgentLearningRepository, AgentLearningRepository>();
+        services.AddScoped<IAgentLearningService, AgentLearningService>();
 
         services.AddScoped<IAgentRegistry, AgentRegistry>();
         services.AddScoped<IAgentToolProvider, AgentToolProvider>();
@@ -114,6 +118,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<IAgentTool, ListWorkspaceFilesTool>();
         services.AddTransient<IAgentTool, ReadWorkspaceFileContentTool>();
         services.AddTransient<IAgentTool, WriteWorkspaceFileTool>();
+        services.AddTransient<IAgentTool, CaptureAgentLearningTool>();
 
         services.AddScoped<IConversationManager, ConversationManager>();
         services.AddScoped<IWorkflowManager, WorkflowManager>();

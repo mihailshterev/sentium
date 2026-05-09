@@ -136,4 +136,24 @@ public sealed class QdrantVectorRepository(QdrantClient qdrantClient, ILogger<Qd
             Metadata = metadata
         };
     }
+
+    public async Task<CollectionStats?> GetCollectionStatsAsync(string collectionName, CancellationToken ct = default)
+    {
+        var exists = await qdrantClient.CollectionExistsAsync(collectionName, ct);
+        if (!exists)
+        {
+            return null;
+        }
+
+        var info = await qdrantClient.GetCollectionInfoAsync(collectionName, ct);
+
+        var vectorSize = info.Config?.Params?.VectorsConfig?.Params?.Size ?? 0;
+        var distance = info.Config?.Params?.VectorsConfig?.Params?.Distance.ToString() ?? "Cosine";
+
+        return new CollectionStats(
+            collectionName,
+            (long)info.PointsCount,
+            (uint)vectorSize,
+            distance);
+    }
 }

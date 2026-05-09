@@ -1,5 +1,5 @@
 using Sentium.AgentRuntime.Core.Agents;
-using Sentium.AgentRuntime.Core.Harness;
+using Sentium.AgentRuntime.Core.Settings;
 using Sentium.AgentRuntime.Core.Tools;
 using Sentium.AgentRuntime.Infrastructure.Tools;
 using Microsoft.Agents.AI;
@@ -18,6 +18,7 @@ public sealed class CompositeAgentFactory(
     OllamaOptions ollamaOptions,
     IAgentToolProvider agentToolProvider,
     IAgentManager agentManager,
+    ISystemSettingsService systemSettingsService,
     IServiceProvider serviceProvider,
     IHttpClientFactory httpClientFactory,
     ILogger<CompositeAgentFactory> logger) : IAgentFactory, IDisposable
@@ -91,7 +92,7 @@ public sealed class CompositeAgentFactory(
                 return;
             }
 
-            var harnessedDefault = new HarnessedChatClient(defaultChatClient, UniversalSystemHarness.Policy);
+            var harnessedDefault = new HarnessedChatClient(defaultChatClient, systemSettingsService);
             clientCache.TryAdd(ollamaOptions.DefaultModel, harnessedDefault);
             defaultInitialized = true;
         }
@@ -116,7 +117,7 @@ public sealed class CompositeAgentFactory(
 
             return ollamaClient
                 .AddSentiumPipeline()
-                .AsHarnessed();
+                .AsHarnessed(systemSettingsService);
         });
     }
 

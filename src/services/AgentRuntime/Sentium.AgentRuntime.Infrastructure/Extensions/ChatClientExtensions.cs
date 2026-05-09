@@ -1,5 +1,5 @@
 using Microsoft.Extensions.AI;
-using Sentium.AgentRuntime.Core.Harness;
+using Sentium.AgentRuntime.Core.Settings;
 using Sentium.AgentRuntime.Infrastructure.Agents;
 
 namespace Sentium.AgentRuntime.Infrastructure.Extensions;
@@ -18,8 +18,8 @@ public static class ChatClientExtensions
     }
 
     /// <summary>
-    /// Wraps the given chat client in a harness using the universal system policy.
+    /// Wraps the given chat client in a harness driven by the dynamic <see cref="ISystemSettingsService"/>.
     /// </summary>
-    public static IChatClient AsHarnessed(this IChatClient client)
-        => new HarnessedChatClient(client, UniversalSystemHarness.Policy);
+    public static IChatClient AsHarnessed(this IChatClient client, ISystemSettingsService systemSettingsService)
+        => new HarnessedChatClient(client, systemSettingsService);
 }
