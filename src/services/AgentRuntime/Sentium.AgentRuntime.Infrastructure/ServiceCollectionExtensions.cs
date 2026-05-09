@@ -1,6 +1,7 @@
 using Sentium.AgentRuntime.Core.Agents;
 using Sentium.AgentRuntime.Core.Conversations;
 using Sentium.AgentRuntime.Core.Rag;
+using Sentium.AgentRuntime.Core.Settings;
 using Sentium.AgentRuntime.Core.Tools;
 using Sentium.AgentRuntime.Core.WorkflowManagement;
 using Sentium.AgentRuntime.Core.Workspaces;
@@ -8,6 +9,7 @@ using Sentium.AgentRuntime.Infrastructure.Agents;
 using Sentium.AgentRuntime.Infrastructure.Conversations;
 using Sentium.AgentRuntime.Infrastructure.Data;
 using Sentium.AgentRuntime.Infrastructure.Rag;
+using Sentium.AgentRuntime.Infrastructure.Settings;
 using Sentium.AgentRuntime.Infrastructure.Tools;
 using Sentium.AgentRuntime.Infrastructure.WorkflowManagement;
 using Sentium.AgentRuntime.Infrastructure.WorkspaceManagement;
@@ -94,6 +96,9 @@ public static class ServiceCollectionExtensions
 
         services.AddScoped<ILocalFileService, LocalFileService>();
         services.AddHostedService<FileIngestionWorker>();
+
+        services.AddScoped<ISystemSettingsRepository, SystemSettingsRepository>();
+        services.AddScoped<ISystemSettingsService, SystemSettingsService>();
 
         services.AddScoped<IAgentRegistry, AgentRegistry>();
         services.AddScoped<IAgentToolProvider, AgentToolProvider>();

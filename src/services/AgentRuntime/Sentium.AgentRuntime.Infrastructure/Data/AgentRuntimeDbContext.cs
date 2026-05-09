@@ -13,6 +13,7 @@ public sealed class AgentRuntimeDbContext(DbContextOptions<AgentRuntimeDbContext
     public DbSet<WorkflowRun> WorkflowRuns { get; set; }
     public DbSet<ProjectFile> ProjectFiles { get; set; }
     public DbSet<Workspace> Workspaces { get; set; }
+    public DbSet<SystemSettings> SystemSettings { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -128,6 +129,13 @@ public sealed class AgentRuntimeDbContext(DbContextOptions<AgentRuntimeDbContext
             entity.Property(e => e.CreatedAt).IsRequired();
             entity.Property(e => e.UpdatedAt).IsRequired();
             entity.HasIndex(e => e.Name).IsUnique();
+        });
+
+        builder.Entity<SystemSettings>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.UserHarnessPrompt).HasMaxLength(16_000);
+            entity.Property(e => e.UpdatedBy).HasMaxLength(512);
         });
     }
 }
