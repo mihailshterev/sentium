@@ -63,5 +63,12 @@ jobs:
       - name: Build
         run: pnpm run build
 
-      # - name: Test
-      #   run: pnpm test
+      - name: Test with Coverage
+        run: pnpm run test:coverage
+
+      - name: Upload Coverage Report
+        if: always()
+        uses: actions/checkout@v4
+        with:
+          name: vitest-coverage-report
+          path: ./src/clients/sentium-portal/coverage
