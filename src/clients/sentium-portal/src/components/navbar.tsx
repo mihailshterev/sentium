@@ -3,14 +3,13 @@ import {
   Bot,
   BotMessageSquare,
   BrainCircuit,
-  BrickWallShield,
   Cpu,
+  Database,
   FolderOpen,
   GitBranch,
   LayoutDashboard,
   LogOut,
   Orbit,
-  Package,
   Settings,
   ShieldUser,
   UsersRound,
@@ -57,17 +56,14 @@ const NAV_GROUPS: NavGroup[] = [
     label: "Management",
     links: [
       { to: "/workspaces", label: "Workspaces", icon: FolderOpen },
-      { to: "/inventory", label: "Assets & Inventory", icon: Package },
+      { to: "/knowledge-base", label: "Knowledge Base", icon: Database },
       { to: "/users", label: "Users", icon: UsersRound, sovereignOnly: true },
     ],
   },
   {
     id: "security",
     label: "Security",
-    links: [
-      { to: "/sentinel", label: "Sentinel", icon: BrickWallShield },
-      { to: "/watchdog", label: "Watchdog", icon: View },
-    ],
+    links: [{ to: "/watchdog", label: "Watchdog", icon: View }],
   },
 ];
 

@@ -6,16 +6,15 @@ import AgentOrchestration from "../pages/orchestration/agent-orchestration";
 import Agents from "../pages/agents/agents";
 import Workflows from "../pages/workflows/workflows";
 import System from "../pages/system/system";
-import Placeholder from "../pages/placeholder";
 import type { RouteObject } from "react-router";
 import Login from "../pages/login/login";
-import Sentinel from "../pages/sentinel/sentinel";
 import Workspaces from "../pages/workspaces/workspaces";
-import Inventory from "../pages/inventory/inventory";
 import Users from "../pages/users/users";
 import Profile from "../pages/profile/profile";
 import Watchdog from "../pages/watchdog/watchdog";
 import Models from "../pages/models/models";
+import SettingsPage from "../pages/settings/settings";
+import KnowledgeBase from "../pages/knowledge-base/knowledge-base";
 
 export const routes: RouteObject[] = [
   {
@@ -32,7 +31,6 @@ export const routes: RouteObject[] = [
     children: [
       { index: true, element: <Dashboard /> },
       { path: "profile", element: <Profile /> },
-      { path: "sentinel", element: <Sentinel /> },
       { path: "watchdog", element: <Watchdog /> },
       { path: "workspaces", element: <Workspaces /> },
       { path: "assistant", element: <Assistant /> },
@@ -41,9 +39,9 @@ export const routes: RouteObject[] = [
       { path: "workflows", element: <Workflows /> },
       { path: "models", element: <Models /> },
       { path: "users", element: <Users /> },
-      { path: "inventory", element: <Inventory /> },
+      { path: "knowledge-base", element: <KnowledgeBase /> },
       { path: "system", element: <System /> },
-      { path: "settings", element: <Placeholder title="Settings" /> },
+      { path: "settings", element: <SettingsPage /> },
     ],
   },
 ];
