@@ -68,7 +68,7 @@ jobs:
 
       - name: Upload Coverage Report
         if: always()
-        uses: actions/checkout@v4
+        uses: actions/upload-artifact@v4
         with:
           name: vitest-coverage-report
           path: ./src/clients/sentium-portal/coverage
