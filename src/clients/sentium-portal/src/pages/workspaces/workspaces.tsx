@@ -300,65 +300,6 @@ const Workspaces = () => {
       </div>
 
       <div className={styles.layout}>
-        <aside className={styles.sidebar}>
-          <p className={styles.sidebarTitle}>Workspaces {workspaces.length > 0 && `· ${workspaces.length}`}</p>
-          {isWorkspacesError && <p className={styles.errorText}>Failed to load workspaces.</p>}
-          {!isWorkspacesError && workspaces.length === 0 && (
-            <div className={styles.emptyState}>
-              <FolderPlus size={28} className={styles.emptyIcon} />
-              <p>No workspaces yet.</p>
-              <button className={styles.emptyAction} onClick={() => setShowCreateForm(true)}>
-                Create one
-              </button>
-            </div>
-          )}
-          <div className={styles.workspaceList}>
-            {workspaces.map((ws) => (
-              <div
-                key={ws.id}
-                className={`${styles.workspaceCard} ${selectedWorkspace?.id === ws.id ? styles.workspaceCardActive : ""}`}
-                onClick={() => setSelectedWorkspace(ws)}
-              >
-                <div className={styles.wsCardMain}>
-                  <FolderOpen size={13} className={styles.wsIcon} />
-                  <div className={styles.wsInfo}>
-                    <span className={styles.wsName}>{ws.name}</span>
-                    {ws.description && <span className={styles.wsDesc}>{ws.description}</span>}
-                  </div>
-                  <ChevronRight size={12} className={styles.wsChevron} />
-                </div>
-                <div className={styles.wsCardMeta}>
-                  <span className={styles.wsFileCount}>
-                    {ws.fileCount} file{ws.fileCount !== 1 ? "s" : ""}
-                  </span>
-                  <div className={styles.wsActions}>
-                    <button
-                      className={styles.iconBtn}
-                      title="Edit workspace"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditingWorkspace(ws);
-                      }}
-                    >
-                      <Pencil size={12} />
-                    </button>
-                    <button
-                      className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
-                      title="Delete workspace"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteWs(ws.id);
-                      }}
-                    >
-                      <Trash2 size={12} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </aside>
-
         <main className={styles.detail}>
           {!selectedWorkspace ? (
             <div className={styles.emptyDetail}>
@@ -380,6 +321,37 @@ const Workspaces = () => {
               </div>
 
               <div className={styles.detailBody}>
+                <div className={styles.filesPanel}>
+                  <p className={styles.panelTitle}>Files {files.length > 0 && `· ${files.length}`}</p>
+                  <div className={styles.filesList}>
+                    {isFilesError && <p className={styles.errorText}>Failed to load files.</p>}
+                    {!isFilesError && files.length === 0 && (
+                      <p className={styles.emptyMessage}>No files yet. Upload one using the panel on the right.</p>
+                    )}
+                    {files.map((f) => (
+                      <div key={f.id} className={styles.fileCard}>
+                        <FileText size={14} className={styles.fileIcon} />
+                        <div className={styles.fileInfo}>
+                          <span className={styles.fileName}>{f.fileName}</span>
+                          <p className={styles.fileMeta}>
+                            {formatBytes(f.sizeBytes)} · {formatDate(f.createdAt)}
+                          </p>
+                        </div>
+                        <span className={`${styles.statusBadge} ${statusClass(f.processingStatus)}`}>
+                          {f.processingStatus}
+                        </span>
+                        <button
+                          className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
+                          title="Delete file"
+                          onClick={() => deleteFile(f.id)}
+                        >
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
                 <form className={styles.uploadPanel} onSubmit={handleUploadSubmit}>
                   <p className={styles.panelTitle}>Upload File</p>
                   <div
@@ -450,41 +422,69 @@ const Workspaces = () => {
                     Upload to {selectedWorkspace.name}
                   </button>
                 </form>
-
-                <div className={styles.filesPanel}>
-                  <p className={styles.panelTitle}>Files {files.length > 0 && `· ${files.length}`}</p>
-                  <div className={styles.filesList}>
-                    {isFilesError && <p className={styles.errorText}>Failed to load files.</p>}
-                    {!isFilesError && files.length === 0 && (
-                      <p className={styles.emptyMessage}>No files yet. Upload one above.</p>
-                    )}
-                    {files.map((f) => (
-                      <div key={f.id} className={styles.fileCard}>
-                        <FileText size={14} className={styles.fileIcon} />
-                        <div className={styles.fileInfo}>
-                          <span className={styles.fileName}>{f.fileName}</span>
-                          <p className={styles.fileMeta}>
-                            {formatBytes(f.sizeBytes)} · {formatDate(f.createdAt)}
-                          </p>
-                        </div>
-                        <span className={`${styles.statusBadge} ${statusClass(f.processingStatus)}`}>
-                          {f.processingStatus}
-                        </span>
-                        <button
-                          className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
-                          title="Delete file"
-                          onClick={() => deleteFile(f.id)}
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
               </div>
             </>
           )}
         </main>
+
+        <aside className={styles.sidebar}>
+          <p className={styles.sidebarTitle}>Workspaces {workspaces.length > 0 && `· ${workspaces.length}`}</p>
+          {isWorkspacesError && <p className={styles.errorText}>Failed to load workspaces.</p>}
+          {!isWorkspacesError && workspaces.length === 0 && (
+            <div className={styles.emptyState}>
+              <FolderPlus size={28} className={styles.emptyIcon} />
+              <p>No workspaces yet.</p>
+              <button className={styles.emptyAction} onClick={() => setShowCreateForm(true)}>
+                Create one
+              </button>
+            </div>
+          )}
+          <div className={styles.workspaceList}>
+            {workspaces.map((ws) => (
+              <div
+                key={ws.id}
+                className={`${styles.workspaceCard} ${selectedWorkspace?.id === ws.id ? styles.workspaceCardActive : ""}`}
+                onClick={() => setSelectedWorkspace(ws)}
+              >
+                <div className={styles.wsCardMain}>
+                  <FolderOpen size={13} className={styles.wsIcon} />
+                  <div className={styles.wsInfo}>
+                    <span className={styles.wsName}>{ws.name}</span>
+                    {ws.description && <span className={styles.wsDesc}>{ws.description}</span>}
+                  </div>
+                  <ChevronRight size={12} className={styles.wsChevron} />
+                </div>
+                <div className={styles.wsCardMeta}>
+                  <span className={styles.wsFileCount}>
+                    {ws.fileCount} file{ws.fileCount !== 1 ? "s" : ""}
+                  </span>
+                  <div className={styles.wsActions}>
+                    <button
+                      className={styles.iconBtn}
+                      title="Edit workspace"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingWorkspace(ws);
+                      }}
+                    >
+                      <Pencil size={12} />
+                    </button>
+                    <button
+                      className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
+                      title="Delete workspace"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteWs(ws.id);
+                      }}
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </aside>
       </div>
 
       {showCreateForm && (

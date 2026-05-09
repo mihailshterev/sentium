@@ -318,6 +318,63 @@ const AgentOrchestration = () => {
       </div>
 
       <div className={styles.body}>
+        <main className={styles.logPanel}>
+          <div className={styles.logPanelHeader}>
+            <span className={`${styles.logDot} ${isRunning ? styles.logDotActive : ""}`} />
+            <span className={styles.logPanelTitle}>
+              {selectedRun ? `Replay — ${formatRunTrigger(selectedRun.triggerType)}` : "Output"}
+            </span>
+            {displayPhase === "COMPLETE" && !isRunning && (
+              <span className={styles.completeBadge}>
+                <CheckCircle size={11} /> Complete
+              </span>
+            )}
+            {selectedRun && (
+              <span className={styles.historyBadge}>
+                <History size={10} /> {formatRunLabel(selectedRun)}
+              </span>
+            )}
+          </div>
+
+          <div className={styles.logWindow} ref={scrollRef}>
+            {displayLogs.length === 0 && !isRunning && !selectedRun && (
+              <div className={styles.logIdle}>
+                <Terminal size={32} className={styles.logIdleIcon} />
+                <p>Select a workflow and execute to start the pipeline</p>
+                <span>Output streams here in real time &bull; History tab shows past runs</span>
+              </div>
+            )}
+
+            {displayLogs.length === 0 && selectedRun && (
+              <div className={styles.logIdle}>
+                <History size={28} className={styles.logIdleIcon} />
+                <p>No log entries recorded for this run</p>
+              </div>
+            )}
+
+            {displayLogs.map((log, i) => {
+              const entryId = `${selectedRun?.id ?? "live"}-${i}`;
+              return (
+                <LogEntryView
+                  key={entryId}
+                  log={log}
+                  entryId={entryId}
+                  expanded={expandedThoughts.has(entryId)}
+                  onToggle={toggleThought}
+                  getRoleClass={getRoleClass}
+                />
+              );
+            })}
+
+            {isRunning && (
+              <div className={styles.streamingIndicator}>
+                <span className={styles.cursor} />
+                <span className={styles.streamingLabel}>Streaming...</span>
+              </div>
+            )}
+          </div>
+        </main>
+
         <aside className={styles.sidebar}>
           <div className={styles.sidebarTabs}>
             <button
@@ -463,63 +520,6 @@ const AgentOrchestration = () => {
             </div>
           </div>
         </aside>
-
-        <main className={styles.logPanel}>
-          <div className={styles.logPanelHeader}>
-            <span className={`${styles.logDot} ${isRunning ? styles.logDotActive : ""}`} />
-            <span className={styles.logPanelTitle}>
-              {selectedRun ? `Replay — ${formatRunTrigger(selectedRun.triggerType)}` : "Output"}
-            </span>
-            {displayPhase === "COMPLETE" && !isRunning && (
-              <span className={styles.completeBadge}>
-                <CheckCircle size={11} /> Complete
-              </span>
-            )}
-            {selectedRun && (
-              <span className={styles.historyBadge}>
-                <History size={10} /> {formatRunLabel(selectedRun)}
-              </span>
-            )}
-          </div>
-
-          <div className={styles.logWindow} ref={scrollRef}>
-            {displayLogs.length === 0 && !isRunning && !selectedRun && (
-              <div className={styles.logIdle}>
-                <Terminal size={32} className={styles.logIdleIcon} />
-                <p>Select a workflow and execute to start the pipeline</p>
-                <span>Output streams here in real time &bull; History tab shows past runs</span>
-              </div>
-            )}
-
-            {displayLogs.length === 0 && selectedRun && (
-              <div className={styles.logIdle}>
-                <History size={28} className={styles.logIdleIcon} />
-                <p>No log entries recorded for this run</p>
-              </div>
-            )}
-
-            {displayLogs.map((log, i) => {
-              const entryId = `${selectedRun?.id ?? "live"}-${i}`;
-              return (
-                <LogEntryView
-                  key={entryId}
-                  log={log}
-                  entryId={entryId}
-                  expanded={expandedThoughts.has(entryId)}
-                  onToggle={toggleThought}
-                  getRoleClass={getRoleClass}
-                />
-              );
-            })}
-
-            {isRunning && (
-              <div className={styles.streamingIndicator}>
-                <span className={styles.cursor} />
-                <span className={styles.streamingLabel}>Streaming...</span>
-              </div>
-            )}
-          </div>
-        </main>
       </div>
     </div>
   );

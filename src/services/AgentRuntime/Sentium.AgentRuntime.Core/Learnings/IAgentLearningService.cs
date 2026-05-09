@@ -1,0 +1,36 @@
+namespace Sentium.AgentRuntime.Core.Learnings;
+
+/// <summary>
+/// Manages the lifecycle of agent learnings: capture, retrieval, deletion and
+/// triggering of the RAG ingestion pipeline so learnings feed back into the
+/// knowledge base for future recall.
+/// </summary>
+public interface IAgentLearningService
+{
+    /// <summary>
+    /// Returns paginated learnings, optionally filtered by agent name.
+    /// Results are ordered newest-first.
+    /// </summary>
+    Task<IReadOnlyList<AgentLearningResponse>> GetLearningsAsync(string? agentName = null, int count = 50, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns aggregate statistics across all learnings.
+    /// </summary>
+    Task<AgentLearningStats> GetStatsAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// Persists a new learning and enqueues it for vector ingestion.
+    /// </summary>
+    Task<AgentLearningResponse> CaptureAsync(CaptureAgentLearningRequest request, CancellationToken ct = default);
+
+    /// <summary>
+    /// Hard-deletes a learning and removes its vectors from the knowledge base.
+    /// </summary>
+    Task DeleteAsync(Guid id, CancellationToken ct = default);
+
+    /// <summary>
+    /// Updates the content and tags of an existing learning.
+    /// The old vectors are removed and the learning is re-ingested with the new content.
+    /// </summary>
+    Task<AgentLearningResponse> UpdateAsync(Guid id, UpdateAgentLearningRequest request, CancellationToken ct = default);
+}

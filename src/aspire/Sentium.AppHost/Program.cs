@@ -79,13 +79,23 @@ var python = builder.AddPythonApp(ServiceNames.NetworkFilter, "../../services/Ne
 var identityApi = builder.AddProject<Projects.Sentium_Identity_Api>(ServiceNames.Identity)
     .WithReference(identityDb).WaitFor(identityDb)
     .WithReference(nats).WaitFor(nats)
-    .WithReference(seq).WaitFor(seq);
+    .WithReference(seq).WaitFor(seq)
+    .WithUrlForEndpoint("https", url =>
+    {
+        url.DisplayText = "Scalar API (Docs)";
+        url.Url = "/scalar/v1";
+    });
 
 var sentinelApi = builder.AddProject<Projects.Sentium_Sentinel_Api>(ServiceNames.Sentinel)
     .WithReference(nats).WaitFor(nats)
     .WithReference(seq).WaitFor(seq)
     .WithReference(identityApi).WaitFor(identityApi)
-    .WithEnvironment("Identity__Authority", identityApi.GetEndpoint("http"));
+    .WithEnvironment("Identity__Authority", identityApi.GetEndpoint("http"))
+    .WithUrlForEndpoint("https", url =>
+    {
+        url.DisplayText = "Scalar API (Docs)";
+        url.Url = "/scalar/v1";
+    });
 
 var agentRuntimeApi = builder.AddProject<Projects.Sentium_AgentRuntime_Api>(ServiceNames.AgentRuntime)
     .WithReference(ollamaModel).WaitFor(ollamaModel)
@@ -113,7 +123,12 @@ var locusApi = builder.AddProject<Projects.Sentium_Locus_Api>(ServiceNames.Locus
     .WithReference(seq).WaitFor(seq)
     .WithReference(identityApi).WaitFor(identityApi)
     .WithReference(agentRuntimeApi).WaitFor(agentRuntimeApi)
-    .WithEnvironment("Identity__Authority", identityApi.GetEndpoint("http"));
+    .WithEnvironment("Identity__Authority", identityApi.GetEndpoint("http"))
+    .WithUrlForEndpoint("https", url =>
+    {
+        url.DisplayText = "Scalar API (Docs)";
+        url.Url = "/scalar/v1";
+    });
 
 var watchdogApi = builder.AddProject<Projects.Sentium_Watchdog_Api>(ServiceNames.Watchdog)
     .WithReference(nats).WaitFor(nats)
@@ -124,7 +139,12 @@ var watchdogApi = builder.AddProject<Projects.Sentium_Watchdog_Api>(ServiceNames
     .WithReference(sentinelApi).WaitFor(sentinelApi)
     .WithReference(agentRuntimeApi).WaitFor(agentRuntimeApi)
     .WithReference(locusApi).WaitFor(locusApi)
-    .WithEnvironment("Identity__Authority", identityApi.GetEndpoint("http"));
+    .WithEnvironment("Identity__Authority", identityApi.GetEndpoint("http"))
+    .WithUrlForEndpoint("https", url =>
+    {
+        url.DisplayText = "Scalar API (Docs)";
+        url.Url = "/scalar/v1";
+    });
 
 var apiGateway = builder.AddProject<Projects.Sentium_ApiGateway>(ServiceNames.Gateway)
     .WithReference(identityApi).WaitFor(identityApi)

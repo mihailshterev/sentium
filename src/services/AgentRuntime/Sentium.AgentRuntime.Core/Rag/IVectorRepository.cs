@@ -32,4 +32,16 @@ public interface IVectorRepository
     /// Used to remove all vectors associated with a single document or entity.
     /// </summary>
     Task DeleteBySourceAsync(string collectionName, string source, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns high-level statistics for the given collection (point count, vector size, etc.).
+    /// Returns <c>null</c> if the collection does not exist.
+    /// </summary>
+    Task<CollectionStats?> GetCollectionStatsAsync(string collectionName, CancellationToken ct = default);
 }
+
+public sealed record CollectionStats(
+    string CollectionName,
+    long PointCount,
+    uint VectorSize,
+    string DistanceMetric);

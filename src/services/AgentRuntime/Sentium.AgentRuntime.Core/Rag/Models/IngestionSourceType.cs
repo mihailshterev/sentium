@@ -43,5 +43,10 @@ public enum IngestionSourceType
     /// <summary>
     /// Ingestion source is a file uploaded by the user.
     /// </summary>
-    File
+    File,
+
+    /// <summary>
+    /// Knowledge captured by an agent during interactions for self-improvement.
+    /// </summary>
+    AgentLearning
 }

@@ -97,8 +97,8 @@ const Agents = () => {
         <div className={styles.headerLeft}>
           <Bot size={20} className={styles.headerIcon} />
           <div>
-            <h2 className={styles.headerTitle}>Agent Registry</h2>
-            <span className={styles.headerSub}>Register and manage autonomous agents in the pipeline</span>
+            <h1 className={styles.headerTitle}>Agent Registry</h1>
+            <p className={styles.headerSub}>Register and manage autonomous agents in the pipeline</p>
           </div>
         </div>
         <div className={styles.headerBadge}>
@@ -108,6 +108,76 @@ const Agents = () => {
       </div>
 
       <div className={styles.agentsBody}>
+        <div className={styles.listPanel}>
+          <div className={styles.panelHeader}>
+            <span className={styles.activeDot}></span>
+            <span>Registered Agents</span>
+            <span className={styles.agentCountBadge}>{agents.length}</span>
+          </div>
+
+          <div className={styles.agentList}>
+            {isLoading && (
+              <div className={styles.listPlaceholder}>
+                <Loader size={20} className={styles.spinIcon} />
+                <span>Loading registry...</span>
+              </div>
+            )}
+            {!isLoading && agents.length === 0 && (
+              <div className={styles.listPlaceholder}>
+                <Bot size={32} className={styles.emptyIcon} />
+                <span>No agents registered yet</span>
+                <span className={styles.emptyHint}>Register your first agent using the form.</span>
+              </div>
+            )}
+            {agents.map((agent, i) => (
+              <div className={styles.agentCard} key={agent.id}>
+                <div className={styles.agentCardLeft}>
+                  <div className={styles.agentAvatar}>
+                    <Bot size={16} />
+                  </div>
+                </div>
+                <div className={styles.agentCardContent}>
+                  <div className={styles.agentCardHeader}>
+                    <span className={styles.agentName}>{agent.name}</span>
+                    <span className={styles.agentIndex}>#{String(i + 1).padStart(2, "0")}</span>
+                    <span className={styles.agentStatusBadge}>Active</span>
+                  </div>
+                  <p className={styles.agentDescription}>{agent.description || "No description provided."}</p>
+                  <div className={styles.agentMeta}>
+                    {agent.model && (
+                      <span className={styles.agentMetaItem}>
+                        <Cpu size={11} />
+                        {agent.model}
+                      </span>
+                    )}
+                    <span className={styles.agentMetaItem}>
+                      <Clock size={11} />
+                      {new Date(agent.createdAt).toLocaleDateString("en-GB", {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                      })}
+                    </span>
+                    <span className={styles.agentMetaItem}>ID: {agent.id.slice(0, 8)}</span>
+                  </div>
+                </div>
+                <div className={styles.agentCardActions}>
+                  <button className={styles.iconBtn} onClick={() => openEdit(agent)} title="Edit agent">
+                    <Pencil size={13} />
+                  </button>
+                  <button
+                    className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
+                    onClick={() => handleDelete(agent.id)}
+                    title="Delete agent"
+                  >
+                    <X size={13} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         <div className={styles.panel}>
           <div className={styles.panelHeader}>
             <Plus size={14} />
@@ -213,76 +283,6 @@ const Agents = () => {
               </div>
             )}
           </form>
-        </div>
-
-        <div className={styles.listPanel}>
-          <div className={styles.panelHeader}>
-            <span className={styles.activeDot}></span>
-            <span>Registered Agents</span>
-            <span className={styles.agentCountBadge}>{agents.length}</span>
-          </div>
-
-          <div className={styles.agentList}>
-            {isLoading && (
-              <div className={styles.listPlaceholder}>
-                <Loader size={20} className={styles.spinIcon} />
-                <span>Loading registry...</span>
-              </div>
-            )}
-            {!isLoading && agents.length === 0 && (
-              <div className={styles.listPlaceholder}>
-                <Bot size={32} className={styles.emptyIcon} />
-                <span>No agents registered yet</span>
-                <span className={styles.emptyHint}>Register your first agent using the form.</span>
-              </div>
-            )}
-            {agents.map((agent, i) => (
-              <div className={styles.agentCard} key={agent.id}>
-                <div className={styles.agentCardLeft}>
-                  <div className={styles.agentAvatar}>
-                    <Bot size={16} />
-                  </div>
-                </div>
-                <div className={styles.agentCardContent}>
-                  <div className={styles.agentCardHeader}>
-                    <span className={styles.agentName}>{agent.name}</span>
-                    <span className={styles.agentIndex}>#{String(i + 1).padStart(2, "0")}</span>
-                    <span className={styles.agentStatusBadge}>Active</span>
-                  </div>
-                  <p className={styles.agentDescription}>{agent.description || "No description provided."}</p>
-                  <div className={styles.agentMeta}>
-                    {agent.model && (
-                      <span className={styles.agentMetaItem}>
-                        <Cpu size={11} />
-                        {agent.model}
-                      </span>
-                    )}
-                    <span className={styles.agentMetaItem}>
-                      <Clock size={11} />
-                      {new Date(agent.createdAt).toLocaleDateString("en-GB", {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </span>
-                    <span className={styles.agentMetaItem}>ID: {agent.id.slice(0, 8)}</span>
-                  </div>
-                </div>
-                <div className={styles.agentCardActions}>
-                  <button className={styles.iconBtn} onClick={() => openEdit(agent)} title="Edit agent">
-                    <Pencil size={13} />
-                  </button>
-                  <button
-                    className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
-                    onClick={() => handleDelete(agent.id)}
-                    title="Delete agent"
-                  >
-                    <X size={13} />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
         </div>
       </div>
 

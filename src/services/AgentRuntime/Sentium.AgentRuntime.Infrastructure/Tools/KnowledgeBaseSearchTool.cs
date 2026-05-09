@@ -38,12 +38,9 @@ public sealed class KnowledgeBaseSearchTool(
     /// <inheritdoc />
     public string Description =>
         "Search the local knowledge base for relevant context. " +
-        "Input is a string containing the search query, or a JSON string with the format {\"input\": \"query text\", \"topK\": 5}." +
-        "Returns the most semantically similar document snippets with source citations. " +
-        "Use this tool before answering questions that require specific facts about the home network, " +
-        "device inventory, security alerts, or recent anomalies.";
+        "Input should be a JSON object with 'query' (the search string) and optional 'topK' (number of results). " +
+        "Example: { \"query\": \"resource lock conflicts\", \"topK\": 5 }";
 
-    /// <inheritdoc />
     public async Task<string> ExecuteAsync(string input, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(input))
@@ -94,7 +91,11 @@ public sealed class KnowledgeBaseSearchTool(
             using var doc = JsonDocument.Parse(trimmed);
             var root = doc.RootElement;
 
-            var query = root.TryGetProperty("query", out var q) ? q.GetString() ?? string.Empty : string.Empty;
+            var query = string.Empty;
+            if (root.TryGetProperty("query", out var q)) query = q.GetString() ?? string.Empty;
+            else if (root.TryGetProperty("input", out var i)) query = i.GetString() ?? string.Empty;
+            else if (root.TryGetProperty("text", out var t)) query = t.GetString() ?? string.Empty;
+
             var topK = root.TryGetProperty("topK", out var k) && k.TryGetInt32(out var n) ? Math.Clamp(n, 1, 20) : ragOptions.DefaultTopK;
 
             return (query, topK);

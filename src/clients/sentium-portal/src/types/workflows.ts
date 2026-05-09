@@ -16,4 +16,6 @@ export interface SortableAgentItem {
   sortId: string; // unique ID for DnD (agentId may repeat if user adds same agent twice)
   agentId: string;
   name: string;
+  model: string;
+  description: string;
 }

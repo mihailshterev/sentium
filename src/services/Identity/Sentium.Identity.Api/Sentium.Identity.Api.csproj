@@ -8,6 +8,7 @@
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
     <PackageReference Include="OpenIddict.AspNetCore" />
     <PackageReference Include="Aspire.NATS.Net" />
+    <PackageReference Include="Scalar.AspNetCore" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\..\shared\Sentium.Shared\Sentium.Shared.csproj" />

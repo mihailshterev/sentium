@@ -4,6 +4,14 @@ import type { WorkflowRun } from "../types/workflowRuns";
 import type { NetworkEvent } from "../types/sentinel";
 import type { ConversationSummary } from "../types/assistant";
 import type { Workspace, WorkspaceFile, CreateWorkspacePayload, UpdateWorkspacePayload } from "../types/workspace";
+import type {
+  SystemSettings,
+  UpdateSystemSettingsPayload,
+  AgentLearning,
+  AgentLearningStats,
+  CaptureAgentLearningPayload,
+  KnowledgeBaseCollectionStats,
+} from "../types/agentConfig";
 import { BASE_URL, client } from "../api/client";
 
 const BASE = "/agent-runtime";
@@ -77,7 +85,53 @@ export const updateAgent = ({ id, ...payload }: UpdateAgentPayload) =>
 
 export const deleteAgent = (id: string) => client.delete<void>(`${BASE}/agents/${id}`);
 
-export const fetchModels = () => client.get<string[]>(`${BASE}/assistant/models`);
+export const fetchModels = async (): Promise<string[]> => {
+  const models = await client.get<OllamaModel[]>(`${BASE}/models`);
+  return models.map((m) => m.name);
+};
+
+export interface OllamaModelDetails {
+  format: string;
+  family: string;
+  parameter_size: string;
+  quantization_level: string;
+}
+
+export interface OllamaModel {
+  name: string;
+  modified_at: string;
+  size: number;
+  digest: string;
+  details: OllamaModelDetails;
+}
+
+export interface PullProgress {
+  status: string;
+  digest?: string;
+  total?: number;
+  completed?: number;
+}
+
+export const fetchOllamaModels = () => client.get<OllamaModel[]>(`${BASE}/models`);
+
+export const pullModel = (name: string, signal?: AbortSignal): Promise<Response> => {
+  return fetch(`${BASE_URL}${BASE}/models/pull`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+    credentials: "include",
+    signal,
+  });
+};
+
+export interface DeleteModelResult {
+  deletedModel: string;
+  defaultModel: string;
+  agentsReset: number;
+}
+
+export const deleteOllamaModel = (name: string): Promise<DeleteModelResult> =>
+  client.delete<DeleteModelResult>(`${BASE}/models?name=${encodeURIComponent(name)}`);
 
 export const fetchWorkflows = () => client.get<WorkflowRecord[]>(`${BASE}/workflows`);
 
@@ -165,3 +219,30 @@ export const uploadWorkspaceFile = async (file: File, workspaceId?: string): Pro
 
   return response.json() as Promise<WorkspaceFile>;
 };
+
+export const fetchSystemSettings = (): Promise<SystemSettings> => client.get<SystemSettings>(`${BASE}/system-settings`);
+
+export const updateSystemSettings = (payload: UpdateSystemSettingsPayload): Promise<SystemSettings> =>
+  client.put<SystemSettings>(`${BASE}/system-settings`, payload);
+
+export const fetchAgentLearnings = (agentName?: string, count = 50): Promise<AgentLearning[]> => {
+  const params = new URLSearchParams({ count: String(count) });
+  if (agentName) {
+    params.set("agentName", agentName);
+  }
+  return client.get<AgentLearning[]>(`${BASE}/agent-learnings?${params}`);
+};
+
+export const fetchAgentLearningStats = (): Promise<AgentLearningStats> =>
+  client.get<AgentLearningStats>(`${BASE}/agent-learnings/stats`);
+
+export const captureAgentLearning = (payload: CaptureAgentLearningPayload): Promise<AgentLearning> =>
+  client.post<AgentLearning>(`${BASE}/agent-learnings`, payload);
+
+export const updateAgentLearning = (id: string, payload: { content: string; tags: string }): Promise<AgentLearning> =>
+  client.put<AgentLearning>(`${BASE}/agent-learnings/${id}`, payload);
+
+export const deleteAgentLearning = (id: string): Promise<void> => client.delete<void>(`${BASE}/agent-learnings/${id}`);
+
+export const fetchKnowledgeBaseStats = (): Promise<KnowledgeBaseCollectionStats[]> =>
+  client.get<KnowledgeBaseCollectionStats[]>(`${BASE}/agent-learnings/knowledge-base/stats`);

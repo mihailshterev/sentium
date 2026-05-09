@@ -1,3 +1,4 @@
+using Scalar.AspNetCore;
 using Sentium.Identity.Application;
 using Sentium.Identity.Infrastructure;
 using Sentium.Infrastructure.Extensions;
@@ -38,6 +39,13 @@ if (app.Environment.IsDevelopment())
     logger.LogInformation("Database migrations applied");
 
     app.MapOpenApi();
+
+    app.MapScalarApiReference(options =>
+    {
+        options.WithTitle("Sentium Identity")
+                .WithTheme(ScalarTheme.DeepSpace)
+                .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
+    });
 }
 
 app.MapDefaultEndpoints();

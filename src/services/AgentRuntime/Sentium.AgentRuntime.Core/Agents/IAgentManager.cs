@@ -10,4 +10,5 @@ public interface IAgentManager
     Task<AgentResponse?> GetAgentByNameAsync(string name, CancellationToken ct = default);
     Task UpdateAgentAsync(Guid agentId, UpdateAgentRequest request, CancellationToken ct = default);
     Task DeleteAgentAsync(Guid agentId, CancellationToken ct = default);
+    Task<int> ResetAgentsModelAsync(string modelName, string defaultModel, CancellationToken ct = default);
 }
