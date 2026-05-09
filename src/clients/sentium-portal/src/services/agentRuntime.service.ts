@@ -12,6 +12,7 @@ import type {
   CaptureAgentLearningPayload,
   KnowledgeBaseCollectionStats,
 } from "../types/agentConfig";
+import type { AgentSkill, BuiltInSkill, CreateSkillPayload, UpdateSkillPayload } from "../types/skills";
 import { BASE_URL, client } from "../api/client";
 
 const BASE = "/agent-runtime";
@@ -246,3 +247,38 @@ export const deleteAgentLearning = (id: string): Promise<void> => client.delete<
 
 export const fetchKnowledgeBaseStats = (): Promise<KnowledgeBaseCollectionStats[]> =>
   client.get<KnowledgeBaseCollectionStats[]>(`${BASE}/agent-learnings/knowledge-base/stats`);
+
+export const fetchBuiltInSkills = (): Promise<BuiltInSkill[]> => client.get<BuiltInSkill[]>(`${BASE}/skills/built-in`);
+
+export const fetchSkills = (): Promise<AgentSkill[]> => client.get<AgentSkill[]>(`${BASE}/skills`);
+
+export const createSkill = (payload: CreateSkillPayload): Promise<AgentSkill> =>
+  client.post<AgentSkill>(`${BASE}/skills`, payload);
+
+export const updateSkill = (id: string, payload: UpdateSkillPayload): Promise<void> =>
+  client.put<void>(`${BASE}/skills/${id}`, payload);
+
+export const deleteSkill = (id: string): Promise<void> => client.delete<void>(`${BASE}/skills/${id}`);
+
+export const uploadSkillFile = async (file: File): Promise<AgentSkill> => {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(`${BASE_URL}${BASE}/skills/upload`, {
+    method: "POST",
+    body: formData,
+    credentials: "include",
+  });
+
+  if (response.status === 401) {
+    window.location.href = `${BASE_URL.replace("/api", "")}/bff/login?returnUrl=${encodeURIComponent(window.location.pathname)}`;
+    throw new Error("Session expired.");
+  }
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error((errorData as { error?: string }).error || `Upload failed: ${response.status}`);
+  }
+
+  return response.json() as Promise<AgentSkill>;
+};

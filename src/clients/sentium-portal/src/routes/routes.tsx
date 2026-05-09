@@ -15,6 +15,7 @@ import Watchdog from "../pages/watchdog/watchdog";
 import Models from "../pages/models/models";
 import SettingsPage from "../pages/settings/settings";
 import KnowledgeBase from "../pages/knowledge-base/knowledge-base";
+import Skills from "../pages/skills/skills";
 
 export const routes: RouteObject[] = [
   {
@@ -40,6 +41,7 @@ export const routes: RouteObject[] = [
       { path: "models", element: <Models /> },
       { path: "users", element: <Users /> },
       { path: "knowledge-base", element: <KnowledgeBase /> },
+      { path: "skills", element: <Skills /> },
       { path: "system", element: <System /> },
       { path: "settings", element: <SettingsPage /> },
     ],
