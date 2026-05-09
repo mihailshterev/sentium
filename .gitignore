@@ -20,6 +20,9 @@
 *.module.d.css.ts
 *.module.d.scss.ts
 
+# Vitest coverage reports
+src/clients/sentium-portal/coverage/
+
 # Mono auto generated files
 mono_crash.*
 
