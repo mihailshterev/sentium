@@ -4,6 +4,7 @@
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
     <AspireVersion>13.2.4</AspireVersion>
     <EntityFrameworkCoreVersion>10.0.5</EntityFrameworkCoreVersion>
+    <AgentFrameworkVersion>1.5.0</AgentFrameworkVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Aspire.Hosting.Docker" Version="$(AspireVersion)" />
@@ -55,9 +56,9 @@
     <PackageVersion Include="OpenIddict.Quartz" Version="7.2.0" />
     <PackageVersion Include="Quartz.Extensions.Hosting" Version="3.18.0" />
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.1" />
-    <PackageVersion Include="Microsoft.Agents.AI" Version="1.0.0" />
-    <PackageVersion Include="Microsoft.Agents.AI.Workflows" Version="1.0.0" />
-    <PackageVersion Include="Microsoft.Extensions.AI" Version="10.5.0" />
+    <PackageVersion Include="Microsoft.Agents.AI" Version="$(AgentFrameworkVersion)" />
+    <PackageVersion Include="Microsoft.Agents.AI.Workflows" Version="$(AgentFrameworkVersion)" />
+    <PackageVersion Include="Microsoft.Extensions.AI" Version="10.5.2" />
     <PackageVersion Include="OllamaSharp" Version="5.4.25" />
     <PackageVersion Include="CommunityToolkit.Aspire.Hosting.Ollama" Version="13.1.1" />
     <PackageVersion Include="NATS.Net" Version="2.7.2" />
