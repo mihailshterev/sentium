@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\shared\Sentium.Infrastructure\Sentium.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\..\shared\Sentium.Shared\Sentium.Shared.csproj" />
     <ProjectReference Include="..\Sentium.Sentinel.Core\Sentium.Sentinel.Core.csproj" />
     <ProjectReference Include="..\Sentium.Sentinel.Application\Sentium.Sentinel.Application.csproj" />
   </ItemGroup>
@@ -9,7 +10,9 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Microsoft.Extensions.AI" />
     <PackageReference Include="NATS.Net" />
+    <PackageReference Include="OllamaSharp" />
   </ItemGroup>
 
   <PropertyGroup>

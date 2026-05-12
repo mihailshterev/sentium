@@ -118,6 +118,11 @@
           "Microsoft.EntityFrameworkCore": "10.0.5"
         }
       },
+      "Microsoft.Extensions.AI.Abstractions": {
+        "type": "Transitive",
+        "resolved": "10.5.2",
+        "contentHash": "Ei+YWV9Ybnps7pR1dgjlG29gelXEwZkhLVAcWmKe6HvXS6LNBYgSdWiY3Hk9OZXYtK34rv/NtLWBQYQGOBQYPQ=="
+      },
       "Microsoft.Extensions.AmbientMetadata.Application": {
         "type": "Transitive",
         "resolved": "10.2.0",
@@ -453,6 +458,11 @@
         "resolved": "10.0.1",
         "contentHash": "BZC4mhdL569AXV56ep9YO6ShjhxFXGP7SwVX0Bc/e0dJPWnS6aBEXZJXqh64RVx8HquqWHkJUINBydLRQ1yq0g=="
       },
+      "System.Numerics.Tensors": {
+        "type": "Transitive",
+        "resolved": "10.0.6",
+        "contentHash": "DOZ8Z8CxHVWU8gSo4ZQ8sCAPIQb+agp56ISuMiu39WWZiV+reZwn9NM1tj4lRDfqLaOAinF6zTi0csmFBQes9Q=="
+      },
       "System.Security.Cryptography.Pkcs": {
         "type": "Transitive",
         "resolved": "10.0.5",
@@ -490,10 +500,13 @@
       "sentium.sentinel.infrastructure": {
         "type": "Project",
         "dependencies": {
+          "Microsoft.Extensions.AI": "[10.5.2, )",
           "NATS.Net": "[2.7.2, )",
+          "OllamaSharp": "[5.4.25, )",
           "Sentium.Infrastructure": "[1.0.0, )",
           "Sentium.Sentinel.Application": "[1.0.0, )",
-          "Sentium.Sentinel.Core": "[1.0.0, )"
+          "Sentium.Sentinel.Core": "[1.0.0, )",
+          "Sentium.Shared": "[1.0.0, )"
         }
       },
       "sentium.servicedefaults": {
@@ -565,6 +578,16 @@
           "Microsoft.EntityFrameworkCore.Relational": "10.0.5"
         }
       },
+      "Microsoft.Extensions.AI": {
+        "type": "CentralTransitive",
+        "requested": "[10.5.2, )",
+        "resolved": "10.5.2",
+        "contentHash": "nmhzep22lJmDvv15wDlM+bwhr3o4G+hTTrIL9veNmXqtsJdpNkh2JAz1UMy72AqVPuysSDMLajuOLsLqSuyH4A==",
+        "dependencies": {
+          "Microsoft.Extensions.AI.Abstractions": "10.5.2",
+          "System.Numerics.Tensors": "10.0.6"
+        }
+      },
       "Microsoft.Extensions.Http.Resilience": {
         "type": "CentralTransitive",
         "requested": "[10.2.0, )",
@@ -604,6 +627,15 @@
           "NATS.Client.Serializers.Json": "2.7.2",
           "NATS.Client.Services": "2.7.2",
           "NATS.Client.Simplified": "2.7.2"
+        }
+      },
+      "OllamaSharp": {
+        "type": "CentralTransitive",
+        "requested": "[5.4.25, )",
+        "resolved": "5.4.25",
+        "contentHash": "EqkPM1gbkE+RbHgKUMzp4lYjpFymWUIgJntx3u4uDXAfAIFUXJ0MGklNFCi/PdCaxNAPRpcf205yx+g6jLLhZg==",
+        "dependencies": {
+          "Microsoft.Extensions.AI.Abstractions": "10.4.1"
         }
       },
       "OpenTelemetry.Api": {

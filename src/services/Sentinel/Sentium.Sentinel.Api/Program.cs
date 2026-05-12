@@ -9,22 +9,19 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 builder.AddAuthenticationDefaults();
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 builder.Services.AddControllers();
 
 builder.AddNatsClient(ResourceNames.Nats);
 
 builder.AddSentiumAuditLogging();
-builder.Services.AddInfrastructure();
-builder.Services.AddApplication();
+builder.AddInfrastructure();
+builder.Services.AddApplication(builder.Configuration);
 
 var app = builder.Build();
 
 app.UseSentiumTracing();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
@@ -46,8 +43,8 @@ app.MapControllers();
 
 app.Run();
 
-
 namespace Sentium.Sentinel.Api
 {
     public partial class Program { }
 }
+
