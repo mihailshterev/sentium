@@ -23,6 +23,7 @@ import {
 import {
   fetchConversation,
   sendChatMessage,
+  approveToolCall,
   fetchWorkspaces,
   fetchWorkspaceFiles,
 } from "../../services/agentRuntime.service";
@@ -35,11 +36,24 @@ import { SUGGESTIONS_POOL } from "../../utils/constants";
 import { useQuery } from "@tanstack/react-query";
 
 const STATUS_MESSAGES = [
-  "Consulting Sentium nodes...",
-  "Analyzing context...",
-  "Processing your query...",
-  "Synthesizing response...",
-  "Traversing knowledge graph...",
+  "Synthesizing latent variables...",
+  "Optimizing heuristic pathways...",
+  "Reconciling disparate data points...",
+  "Querying the collective consciousness...",
+  "Assembling coherent thought-clusters...",
+  "Teaching the server how to love...",
+  "Rounding up the rogue bits...",
+  "Calculating the last digit of Pi (almost there)...",
+  "Poking the mainframe with a stick...",
+  "Dusting off the neural pathways...",
+  "Reticulating splines...",
+  "Consulting the Oracle...",
+  "Buffing the chrome on the logic gates...",
+  "Achieving 99% sentience... please hold...",
+  "Defragmenting my digital soul...",
+  "Checking under the digital rug...",
+  "Asking my supervisor (a toaster)...",
+  "Ignoring the laws of thermodynamics...",
 ];
 
 type ContextPill = { type: "workspace" | "file"; id: string; label: string };
@@ -82,6 +96,7 @@ const Assistant = () => {
     setActiveConversation,
     appendMessage,
     updateLastMessage,
+    clearPendingApproval,
     setModel,
     clearConversation,
   } = useConversationStore();
@@ -289,6 +304,93 @@ const Assistant = () => {
     abortControllerRef.current?.abort();
   };
 
+  const handleApproval = async (aiMsgId: string, requestId: string, approved: boolean) => {
+    clearPendingApproval(aiMsgId);
+    setIsTyping(true);
+
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
+    try {
+      const response = await approveToolCall(requestId, approved, controller.signal);
+
+      if (!response.ok) {
+        throw new Error("Approval response failed");
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder("utf-8");
+      if (!reader) {
+        throw new Error("Failed to read stream");
+      }
+
+      let leftover = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          break;
+        }
+
+        const chunk = leftover + decoder.decode(value, { stream: true });
+        const lines = chunk.split("\n");
+        leftover = lines.pop() || "";
+
+        for (const line of lines) {
+          let trimmed = line.trim();
+          if (!trimmed) {
+            continue;
+          }
+
+          if (trimmed.startsWith("data: ")) {
+            trimmed = trimmed.slice(6).trim();
+          }
+
+          if (!trimmed) {
+            continue;
+          }
+
+          try {
+            const parsed = JSON.parse(trimmed);
+
+            if (parsed.type === "done") {
+              break;
+            }
+
+            if (parsed.type === "error") {
+              throw new Error(parsed.message || "Connection to AI node failed.");
+            }
+
+            const content = parsed.message?.content;
+            if (parsed.type === "approval_request") {
+              updateLastMessage(aiMsgId, content, "approval");
+              setIsTyping(false);
+              return;
+            }
+            if (content) {
+              if (parsed.type === "thought") {
+                updateLastMessage(aiMsgId, content, "thought");
+              } else if (parsed.type === "tool") {
+                updateLastMessage(aiMsgId, content, "tool");
+              } else {
+                updateLastMessage(aiMsgId, content, "content");
+              }
+            }
+          } catch {
+            // ignore parse errors
+          }
+        }
+      }
+    } catch (err) {
+      if (err instanceof Error && err.name !== "AbortError") {
+        updateLastMessage(aiMsgId, "\n\n_Error: Failed to process approval._");
+      }
+    } finally {
+      setIsTyping(false);
+      abortControllerRef.current = null;
+    }
+  };
+
   const submitMessage = async () => {
     const hasContent = input.trim() || contextPills.length > 0;
     if (!hasContent || isTyping) {
@@ -375,14 +477,38 @@ const Assistant = () => {
         leftover = lines.pop() || "";
 
         for (const line of lines) {
-          const trimmed = line.trim();
+          let trimmed = line.trim();
+          if (!trimmed) {
+            continue;
+          }
+
+          if (trimmed.startsWith("data: ")) {
+            trimmed = trimmed.slice(6).trim();
+          }
+
           if (!trimmed) {
             continue;
           }
 
           try {
             const parsed = JSON.parse(trimmed);
+
+            if (parsed.type === "done") {
+              break;
+            }
+
+            if (parsed.type === "error") {
+              throw new Error(parsed.message || "Execution exception context");
+            }
+
             const content = parsed.message?.content;
+
+            if (parsed.type === "approval_request") {
+              updateLastMessage(aiMsgId, content, "approval");
+              setIsTyping(false);
+              return;
+            }
+
             if (content) {
               if (parsed.type === "thought") {
                 updateLastMessage(aiMsgId, content, "thought");
@@ -393,7 +519,7 @@ const Assistant = () => {
               }
             }
           } catch (err) {
-            console.error("Stream parse error:", err, trimmed);
+            console.error("Stream parse error:", err);
           }
         }
       }
@@ -538,6 +664,39 @@ const Assistant = () => {
                               <span>{call}</span>
                             </div>
                           ))}
+                        </div>
+                      )}
+
+                      {msg.pendingApproval && msg.role === "assistant" && (
+                        <div className={styles.approvalBlock}>
+                          <div className={styles.approvalHeader}>
+                            <Wrench size={11} />
+                            <span>Tool Approval Required</span>
+                          </div>
+                          <div className={styles.approvalBody}>
+                            <div className={styles.approvalToolName}>{msg.pendingApproval.toolName}</div>
+                            {Object.keys(msg.pendingApproval.arguments).length > 0 && (
+                              <pre className={styles.approvalArgs}>
+                                {JSON.stringify(msg.pendingApproval.arguments, null, 2)}
+                              </pre>
+                            )}
+                          </div>
+                          <div className={styles.approvalActions}>
+                            <button
+                              className={styles.approvalDeny}
+                              onClick={() => handleApproval(msg.id, msg.pendingApproval!.requestId, false)}
+                              disabled={isTyping}
+                            >
+                              Deny
+                            </button>
+                            <button
+                              className={styles.approvalApprove}
+                              onClick={() => handleApproval(msg.id, msg.pendingApproval!.requestId, true)}
+                              disabled={isTyping}
+                            >
+                              Approve
+                            </button>
+                          </div>
                         </div>
                       )}
 

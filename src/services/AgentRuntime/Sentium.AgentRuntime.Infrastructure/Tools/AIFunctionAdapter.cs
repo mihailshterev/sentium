@@ -30,10 +30,18 @@ public static class AIFunctionAdapter
             return await tool.ExecuteAsync(inputForTool, runtimeCt);
         }
 
-        return AIFunctionFactory.Create(
+        var aiFunction = AIFunctionFactory.Create(
             method: Invoke,
             name: tool.Name,
             description: tool.Description
         );
+
+        var policy = ToolPolicyReader.GetPolicy(tool);
+        if (policy.RequiresApproval)
+        {
+            return new ApprovalRequiredAIFunction(aiFunction);
+        }
+
+        return aiFunction;
     }
 }

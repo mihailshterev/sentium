@@ -61,6 +61,7 @@ var sentinelApi = builder.AddProject<Projects.Sentium_Sentinel_Api>(ServiceNames
     .WithReference(nats).WaitFor(nats)
     .WithReference(seq).WaitFor(seq)
     .WithReference(identityApi).WaitFor(identityApi)
+    .WithReference(ollama).WaitFor(ollama)
     .WithEnvironment("Identity__Authority", identityApi.GetEndpoint("http"))
     .WithUrlForEndpoint("https", url =>
     {
@@ -78,6 +79,7 @@ var agentRuntimeApi = builder.AddProject<Projects.Sentium_AgentRuntime_Api>(Serv
     .WithReference(qdrant).WaitFor(qdrant)
     .WithReference(blobs).WaitFor(blobs)
     .WithReference(identityApi).WaitFor(identityApi)
+    .WithReference(sentinelApi).WaitFor(sentinelApi)
     .WithEnvironment("AI__ModelName", ollamaModel.Resource.ModelName)
     .WithEnvironment("Rag__EmbeddingModelName", ollamaEmbeddingModel.Resource.ModelName)
     .WithEnvironment("Identity__Authority", identityApi.GetEndpoint("http"))
