@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Sentium.AppHost.Config;
 using Sentium.Shared.Constants;
 
@@ -19,6 +20,7 @@ var sql = builder.AddSqlServer(ResourceNames.Sql, password: sqlPassword)
 var identityDb = sql.AddDatabase(ResourceNames.IdentityDb);
 var agentRuntimeDb = sql.AddDatabase(ResourceNames.AgentRuntimeDb);
 var locusDb = sql.AddDatabase(ResourceNames.LocusDb);
+var sandboxDb = sql.AddDatabase(ResourceNames.SandboxDb);
 
 var qdrant = builder.AddQdrant(ResourceNames.Qdrant)
     .WithDataVolume();
@@ -69,6 +71,26 @@ var sentinelApi = builder.AddProject<Projects.Sentium_Sentinel_Api>(ServiceNames
         url.Url = "/scalar/v1";
     });
 
+var dockerHost = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+    ? "npipe://./pipe/docker_engine"
+    : "unix:///var/run/docker.sock";
+
+var sandboxApi = builder.AddProject<Projects.Sentium_Sandbox_Api>(ServiceNames.Sandbox)
+    .WithReference(nats).WaitFor(nats)
+    .WithReference(seq).WaitFor(seq)
+    .WithReference(blobs).WaitFor(blobs)
+    .WithReference(sandboxDb).WaitFor(sandboxDb)
+    .WithReference(sentinelApi).WaitFor(sentinelApi)
+    .WithReference(identityApi).WaitFor(identityApi)
+    .WithEnvironment("Identity__Authority", identityApi.GetEndpoint("http"))
+    // Expose the Docker daemon socket so the service can spawn worker containers.
+    .WithEnvironment("DOCKER_HOST", dockerHost)
+    .WithUrlForEndpoint("https", url =>
+    {
+        url.DisplayText = "Scalar API (Docs)";
+        url.Url = "/scalar/v1";
+    });
+
 var agentRuntimeApi = builder.AddProject<Projects.Sentium_AgentRuntime_Api>(ServiceNames.AgentRuntime)
     .WithReference(ollamaModel).WaitFor(ollamaModel)
     .WithReference(ollamaEmbeddingModel).WaitFor(ollamaEmbeddingModel)
@@ -80,6 +102,7 @@ var agentRuntimeApi = builder.AddProject<Projects.Sentium_AgentRuntime_Api>(Serv
     .WithReference(blobs).WaitFor(blobs)
     .WithReference(identityApi).WaitFor(identityApi)
     .WithReference(sentinelApi).WaitFor(sentinelApi)
+    .WithReference(sandboxApi).WaitFor(sandboxApi)
     .WithEnvironment("AI__ModelName", ollamaModel.Resource.ModelName)
     .WithEnvironment("Rag__EmbeddingModelName", ollamaEmbeddingModel.Resource.ModelName)
     .WithEnvironment("Identity__Authority", identityApi.GetEndpoint("http"))
@@ -125,6 +148,7 @@ var apiGateway = builder.AddProject<Projects.Sentium_ApiGateway>(ServiceNames.Ga
     .WithReference(watchdogApi).WaitFor(watchdogApi)
     .WithReference(agentRuntimeApi).WaitFor(agentRuntimeApi)
     .WithReference(locusApi).WaitFor(locusApi)
+    .WithReference(sandboxApi).WaitFor(sandboxApi)
     .WithEnvironment("Identity__Authority", identityApi.GetEndpoint("http"));
 
 var frontend = builder.AddViteApp(ServiceNames.Frontend, "../../clients/sentium-portal")
@@ -138,5 +162,6 @@ sentinelApi.WithParentRelationship(apiGateway);
 watchdogApi.WithParentRelationship(apiGateway);
 agentRuntimeApi.WithParentRelationship(apiGateway);
 locusApi.WithParentRelationship(apiGateway);
+sandboxApi.WithParentRelationship(apiGateway);
 
 builder.Build().Run();
