@@ -11,6 +11,7 @@ import {
   LogOut,
   Orbit,
   Settings,
+  ShieldCog,
   ShieldUser,
   UsersRound,
   View,
@@ -65,7 +66,10 @@ const NAV_GROUPS: NavGroup[] = [
   {
     id: "security",
     label: "Security",
-    links: [{ to: "/watchdog", label: "Watchdog", icon: View }],
+    links: [
+      { to: "/sentinel", label: "Sentinel", icon: ShieldCog },
+      { to: "/watchdog", label: "Watchdog", icon: View },
+    ],
   },
 ];
 

@@ -9,7 +9,6 @@ import {
   CheckCircle,
   Cpu,
   GitBranch,
-  Globe,
   Package,
   ShieldCheck,
   TrendingUp,
@@ -278,26 +277,6 @@ const Dashboard = () => {
             <span className={styles.securityCardSub}>Threat monitoring active</span>
           </div>
           <button className={styles.securityCardBtn} onClick={() => navigate("/sentinel")}>
-            View <ArrowRight size={12} />
-          </button>
-        </div>
-        <div className={styles.securityCard}>
-          <Globe size={16} />
-          <div className={styles.securityCardContent}>
-            <span className={styles.securityCardLabel}>Network Filter</span>
-            <span className={styles.securityCardSub}>Packet inspection running</span>
-          </div>
-          <button className={styles.securityCardBtn} onClick={() => navigate("/watchdog")}>
-            View <ArrowRight size={12} />
-          </button>
-        </div>
-        <div className={styles.securityCard}>
-          <Package size={16} />
-          <div className={styles.securityCardContent}>
-            <span className={styles.securityCardLabel}>Assets & Inventory</span>
-            <span className={styles.securityCardSub}>Asset tracking placeholder</span>
-          </div>
-          <button className={styles.securityCardBtn} onClick={() => navigate("/inventory")}>
             View <ArrowRight size={12} />
           </button>
         </div>
