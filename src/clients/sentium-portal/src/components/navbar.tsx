@@ -14,6 +14,7 @@ import {
   ShieldCog,
   ShieldUser,
   UsersRound,
+  VectorSquare,
   View,
   Zap,
   type LucideIcon,
@@ -68,6 +69,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: "Security",
     links: [
       { to: "/sentinel", label: "Sentinel", icon: ShieldCog },
+      { to: "/sandbox", label: "Sandbox", icon: VectorSquare },
       { to: "/watchdog", label: "Watchdog", icon: View },
     ],
   },
