@@ -1,7 +1,9 @@
+using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 using Sentium.Infrastructure.Extensions;
 using Sentium.Sentinel.Application;
 using Sentium.Sentinel.Infrastructure;
+using Sentium.Sentinel.Infrastructure.Data;
 using Sentium.Shared.Constants;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -24,6 +26,14 @@ app.UseSentiumTracing();
 
 if (app.Environment.IsDevelopment())
 {
+    using var scope = app.Services.CreateScope();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+    logger.LogInformation("Applying Sentinel database migrations...");
+    var db = scope.ServiceProvider.GetRequiredService<SentinelDbContext>();
+    await db.Database.MigrateAsync();
+    logger.LogInformation("Sentinel database migrations applied");
+
     app.MapOpenApi();
 
     app.MapScalarApiReference(options =>

@@ -21,6 +21,7 @@ var identityDb = sql.AddDatabase(ResourceNames.IdentityDb);
 var agentRuntimeDb = sql.AddDatabase(ResourceNames.AgentRuntimeDb);
 var locusDb = sql.AddDatabase(ResourceNames.LocusDb);
 var sandboxDb = sql.AddDatabase(ResourceNames.SandboxDb);
+var sentinelDb = sql.AddDatabase(ResourceNames.SentinelDb);
 
 var qdrant = builder.AddQdrant(ResourceNames.Qdrant)
     .WithDataVolume();
@@ -62,6 +63,7 @@ var identityApi = builder.AddProject<Projects.Sentium_Identity_Api>(ServiceNames
 var sentinelApi = builder.AddProject<Projects.Sentium_Sentinel_Api>(ServiceNames.Sentinel)
     .WithReference(nats).WaitFor(nats)
     .WithReference(seq).WaitFor(seq)
+    .WithReference(sentinelDb).WaitFor(sentinelDb)
     .WithReference(identityApi).WaitFor(identityApi)
     .WithReference(ollama).WaitFor(ollama)
     .WithEnvironment("Identity__Authority", identityApi.GetEndpoint("http"))

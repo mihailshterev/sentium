@@ -1839,6 +1839,8 @@
       "sentium.sentinel.infrastructure": {
         "type": "Project",
         "dependencies": {
+          "Microsoft.EntityFrameworkCore": "[10.0.5, )",
+          "Microsoft.EntityFrameworkCore.SqlServer": "[10.0.5, )",
           "Microsoft.Extensions.AI": "[10.5.2, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.6, )",
           "Microsoft.Extensions.Hosting": "[10.0.5, )",

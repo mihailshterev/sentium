@@ -14,10 +14,10 @@ public interface IAuditLog
     /// <summary>
     /// Returns the most recent audit records, newest first.
     /// </summary>
-    IReadOnlyList<AuditRecord> GetRecent(int count = 100);
+    Task<IReadOnlyList<AuditRecord>> GetRecentAsync(int count = 100, CancellationToken ct = default);
 
     /// <summary>
     /// Returns audit records for a specific agent, newest first.
     /// </summary>
-    IReadOnlyList<AuditRecord> GetByAgent(string agentId, int count = 50);
+    Task<IReadOnlyList<AuditRecord>> GetByAgentAsync(string agentId, int count = 50, CancellationToken ct = default);
 }

@@ -1,11 +1,9 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Sentium.Sentinel.Application.Audit;
 using Sentium.Sentinel.Application.Engine;
 using Sentium.Sentinel.Application.Engine.Policies;
 using Sentium.Sentinel.Application.Options;
 using Sentium.Sentinel.Application.RateLimiting;
-using Sentium.Sentinel.Core.Audit;
 using Sentium.Sentinel.Core.Policies;
 using Sentium.Sentinel.Core.RateLimiting;
 
@@ -19,9 +17,8 @@ public static class ServiceCollectionExtensions
 
         services.Configure<PdpOptions>(configuration.GetSection(PdpOptions.SectionName));
 
-        services.AddSingleton<SentinelPolicyEngine>();
+        services.AddScoped<SentinelPolicyEngine>();
 
-        services.AddSingleton<IAuditLog, InMemoryAuditLog>();
         services.AddSingleton<IRateLimitStore, InMemoryRateLimitStore>();
 
         services.AddSingleton<IPdpPolicy, InvariantGuardPolicy>();

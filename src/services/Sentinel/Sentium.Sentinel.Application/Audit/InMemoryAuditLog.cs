@@ -45,6 +45,9 @@ public sealed class InMemoryAuditLog : IAuditLog
         }
     }
 
+    public Task<IReadOnlyList<AuditRecord>> GetRecentAsync(int count = 100, CancellationToken ct = default)
+        => Task.FromResult(GetRecent(count));
+
     public IReadOnlyList<AuditRecord> GetByAgent(string agentId, int count = 50)
     {
         lock (_lock)
@@ -55,6 +58,9 @@ public sealed class InMemoryAuditLog : IAuditLog
                 .ToList();
         }
     }
+
+    public Task<IReadOnlyList<AuditRecord>> GetByAgentAsync(string agentId, int count = 50, CancellationToken ct = default)
+        => Task.FromResult(GetByAgent(agentId, count));
 
     public static string HashPrompt(string text)
     {

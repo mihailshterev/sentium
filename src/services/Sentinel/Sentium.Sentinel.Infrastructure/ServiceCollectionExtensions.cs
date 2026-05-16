@@ -4,8 +4,13 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using OllamaSharp;
+using Sentium.Infrastructure.Extensions;
 using Sentium.Infrastructure.Messaging;
 using Sentium.Sentinel.Application.Options;
+using Sentium.Sentinel.Core.Audit;
+using Sentium.Sentinel.Infrastructure.Audit;
+using Sentium.Sentinel.Infrastructure.Data;
+using Sentium.Shared.Constants;
 
 namespace Sentium.Sentinel.Infrastructure;
 
@@ -16,6 +21,10 @@ public static class ServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(builder);
 
         var services = builder.Services;
+
+        builder.AddAuditedDbContext<SentinelDbContext>(ResourceNames.SentinelDb);
+
+        services.AddScoped<IAuditLog, EfCoreAuditLog>();
 
         services.AddSingleton<IEventBus, NatsEventBus>();
 

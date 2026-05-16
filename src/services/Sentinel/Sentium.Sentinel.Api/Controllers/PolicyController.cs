@@ -74,9 +74,9 @@ public sealed class PolicyController(
     [HttpGet("audit")]
     [Authorize]
     [ProducesResponseType<IReadOnlyList<AuditRecord>>(StatusCodes.Status200OK)]
-    public IActionResult GetAudit([FromQuery] int count = 100)
+    public async Task<IActionResult> GetAudit([FromQuery] int count = 100, CancellationToken ct = default)
     {
-        var records = auditLog.GetRecent(Math.Min(count, 500));
+        var records = await auditLog.GetRecentAsync(Math.Min(count, 500), ct);
         return Ok(records);
     }
 
@@ -86,9 +86,9 @@ public sealed class PolicyController(
     [HttpGet("audit/agent/{agentId}")]
     [Authorize]
     [ProducesResponseType<IReadOnlyList<AuditRecord>>(StatusCodes.Status200OK)]
-    public IActionResult GetAuditByAgent(string agentId, [FromQuery] int count = 50)
+    public async Task<IActionResult> GetAuditByAgent(string agentId, [FromQuery] int count = 50, CancellationToken ct = default)
     {
-        var records = auditLog.GetByAgent(agentId, Math.Min(count, 200));
+        var records = await auditLog.GetByAgentAsync(agentId, Math.Min(count, 200), ct);
         return Ok(records);
     }
 
@@ -98,9 +98,9 @@ public sealed class PolicyController(
     [HttpGet("audit/stats")]
     [Authorize]
     [ProducesResponseType<AuditStatsDto>(StatusCodes.Status200OK)]
-    public IActionResult GetAuditStats()
+    public async Task<IActionResult> GetAuditStats(CancellationToken ct = default)
     {
-        var records = auditLog.GetRecent(500);
+        var records = await auditLog.GetRecentAsync(500, ct);
 
         var latestAlignment = records
             .Where(r => r.AlignmentVerdict is not null)
