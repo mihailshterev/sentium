@@ -1,4 +1,5 @@
 using Sentium.Sentinel.Core.Audit;
+using System.Buffers;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -57,7 +58,18 @@ public sealed class InMemoryAuditLog : IAuditLog
 
     public static string HashPrompt(string text)
     {
-        var bytes = SHA256.HashData(Encoding.UTF8.GetBytes(text));
-        return Convert.ToHexStringLower(bytes);
+        var maxByteCount = Encoding.UTF8.GetMaxByteCount(text.Length);
+        var rented = ArrayPool<byte>.Shared.Rent(maxByteCount);
+        try
+        {
+            var written = Encoding.UTF8.GetBytes(text, rented);
+            Span<byte> hashBuffer = stackalloc byte[32];
+            SHA256.HashData(rented.AsSpan(0, written), hashBuffer);
+            return Convert.ToHexStringLower(hashBuffer);
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(rented);
+        }
     }
 }

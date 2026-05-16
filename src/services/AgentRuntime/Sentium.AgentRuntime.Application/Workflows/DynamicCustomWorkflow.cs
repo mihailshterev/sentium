@@ -1,3 +1,4 @@
+using System.Text;
 using System.Text.Json;
 using Sentium.AgentRuntime.Application.Common.Helpers;
 using Sentium.AgentRuntime.Application.Extensions;
@@ -100,9 +101,25 @@ public sealed class DynamicCustomWorkflow(
             }
         }
 
-        var explanation = finalHistory.Count > 0
-            ? string.Join("\n", finalHistory.Select(m => $"{m.Role}: {m.Text}"))
-            : $"Custom workflow '{workflowDef.Name}' completed with no output.";
+        string explanation;
+        if (finalHistory.Count > 0)
+        {
+            var explanationSb = new StringBuilder();
+            foreach (var m in finalHistory)
+            {
+                if (explanationSb.Length > 0)
+                {
+                    explanationSb.Append('\n');
+                }
+
+                explanationSb.Append(m.Role).Append(": ").Append(m.Text);
+            }
+            explanation = explanationSb.ToString();
+        }
+        else
+        {
+            explanation = $"Custom workflow '{workflowDef.Name}' completed with no output.";
+        }
 
         return new WorkflowResult { Explanation = explanation, StreamLog = streamLog.Entries };
     }

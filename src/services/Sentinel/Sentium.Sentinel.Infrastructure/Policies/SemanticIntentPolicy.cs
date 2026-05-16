@@ -109,19 +109,19 @@ public sealed class SemanticIntentPolicy(
 
             var response = await chatClient.GetResponseAsync([message], chatOptions, timeoutCts.Token);
 
-            var text = response.Text?.Trim().ToUpperInvariant() ?? string.Empty;
+            var span = (response.Text ?? string.Empty).AsSpan().Trim();
 
-            if (text.StartsWith("MISALIGNED", StringComparison.Ordinal))
+            if (span.StartsWith("MISALIGNED", StringComparison.OrdinalIgnoreCase))
             {
                 return IntentVerdict.Misaligned;
             }
 
-            if (text.StartsWith("ALIGNED", StringComparison.Ordinal))
+            if (span.StartsWith("ALIGNED", StringComparison.OrdinalIgnoreCase))
             {
                 return IntentVerdict.Aligned;
             }
 
-            logger.LogWarning("Semantic intent classifier returned unexpected output: '{Output}'. Treating as inconclusive.", text.Length > 80 ? text[..80] : text);
+            logger.LogWarning("Semantic intent classifier returned unexpected output: '{Output}'. Treating as inconclusive.", span.Length > 80 ? span[..80].ToString() : span.ToString());
 
             return IntentVerdict.Inconclusive;
         }

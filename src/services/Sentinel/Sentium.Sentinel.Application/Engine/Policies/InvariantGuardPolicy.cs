@@ -33,10 +33,10 @@ public sealed class InvariantGuardPolicy(IOptions<PdpOptions> opts) : IPdpPolicy
             return Deny("Wildcard resource access is not permitted. Agents must specify explicit resource identifiers.", PolicyRiskLevel.Critical, alert: true);
         }
 
-        var action = request.Action.ToLowerInvariant().Trim();
+        var action = request.Action.AsSpan().Trim();
         foreach (var forbidden in _options.ForbiddenActions)
         {
-            if (action.StartsWith(forbidden.ToLowerInvariant(), StringComparison.Ordinal))
+            if (action.StartsWith(forbidden.AsSpan(), StringComparison.OrdinalIgnoreCase))
             {
                 return Deny($"Action '{request.Action}' is unconditionally forbidden.", PolicyRiskLevel.Critical, alert: true);
             }

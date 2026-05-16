@@ -1,7 +1,7 @@
-using Sentium.AgentRuntime.Application.Workflows;
 using Sentium.AgentRuntime.Core.Agents;
 using Sentium.Infrastructure.Messaging;
 using NATS.Client.Serializers.Json;
+using Sentium.AgentRuntime.Core.Workflows;
 
 namespace Sentium.AgentRuntime.Application.Extensions;
 
