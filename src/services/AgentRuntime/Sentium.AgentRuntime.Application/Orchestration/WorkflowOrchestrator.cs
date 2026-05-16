@@ -19,7 +19,6 @@ public sealed class WorkflowOrchestrator(
         ArgumentNullException.ThrowIfNull(trigger);
         IAgentWorkflow workflow = trigger.TriggerType switch
         {
-            WorkflowEvents.NetworkScan => new NetworkAnalysisWorkflow(factory, nats),
             WorkflowEvents.CustomWorkflow => new DynamicCustomWorkflow(factory, agentManager, workflowService, nats),
             _ => new DynamicDiscoveryWorkflow(factory, registry, agentManager, nats)
         };

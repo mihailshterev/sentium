@@ -16,6 +16,8 @@ import Models from "../pages/models/models";
 import SettingsPage from "../pages/settings/settings";
 import KnowledgeBase from "../pages/knowledge-base/knowledge-base";
 import Skills from "../pages/skills/skills";
+import Sentinel from "../pages/sentinel/sentinel";
+import Sandbox from "../pages/sandbox/sandbox";
 
 export const routes: RouteObject[] = [
   {
@@ -42,6 +44,8 @@ export const routes: RouteObject[] = [
       { path: "users", element: <Users /> },
       { path: "knowledge-base", element: <KnowledgeBase /> },
       { path: "skills", element: <Skills /> },
+      { path: "sentinel", element: <Sentinel /> },
+      { path: "sandbox", element: <Sandbox /> },
       { path: "system", element: <System /> },
       { path: "settings", element: <SettingsPage /> },
     ],

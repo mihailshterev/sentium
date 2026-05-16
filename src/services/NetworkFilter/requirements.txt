@@ -1,4 +1,0 @@
-nats-py==2.9.0
-onnxruntime==1.24.4
-numpy==1.26.4
-orjson==3.11.8

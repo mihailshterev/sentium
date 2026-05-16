@@ -1,5 +1,6 @@
 using Sentium.AgentRuntime.Core.Agents;
 using Sentium.AgentRuntime.Core.Dtos;
+using System.Text;
 
 namespace Sentium.AgentRuntime.Application.Common.Helpers;
 
@@ -11,20 +12,41 @@ public sealed class StreamLogAccumulator
 {
     private readonly List<WorkflowLogEntry> _entries = [];
 
-    public IReadOnlyList<WorkflowLogEntry> Entries => _entries;
+    private readonly StringBuilder _activeBuffer = new();
+
+    public IReadOnlyList<WorkflowLogEntry> Entries
+    {
+        get
+        {
+            SyncActiveEntry();
+            return _entries;
+        }
+    }
 
     public void Add(string author, string text, string type)
     {
-        if ((type == AgentUpdateTypes.Message || type == AgentUpdateTypes.Thought)
-            && _entries.Count > 0
-            && _entries[^1].Author == author
-            && _entries[^1].Type == type)
+        var isMergeable = type == AgentUpdateTypes.Message || type == AgentUpdateTypes.Thought;
+
+        if (isMergeable && _entries.Count > 0 && _entries[^1].Author == author && _entries[^1].Type == type)
         {
-            _entries[^1] = _entries[^1] with { Text = _entries[^1].Text + text };
+            _activeBuffer.Append(text);
         }
         else
         {
+            SyncActiveEntry();
+
+            _activeBuffer.Clear();
+            _activeBuffer.Append(text);
+
             _entries.Add(new WorkflowLogEntry(author, text, type));
+        }
+    }
+
+    private void SyncActiveEntry()
+    {
+        if (_entries.Count > 0 && _activeBuffer.Length > _entries[^1].Text.Length)
+        {
+            _entries[^1] = _entries[^1] with { Text = _activeBuffer.ToString() };
         }
     }
 }

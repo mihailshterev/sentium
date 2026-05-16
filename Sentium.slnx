@@ -27,6 +27,12 @@
     <Project Path="src/services/Identity/Sentium.Identity.Core/Sentium.Identity.Core.csproj" />
     <Project Path="src/services/Identity/Sentium.Identity.Infrastructure/Sentium.Identity.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/src/services/Sandbox/">
+    <Project Path="src/services/Sandbox/Sentium.Sandbox.Api/Sentium.Sandbox.Api.csproj" />
+    <Project Path="src/services/Sandbox/Sentium.Sandbox.Application/Sentium.Sandbox.Application.csproj" />
+    <Project Path="src/services/Sandbox/Sentium.Sandbox.Core/Sentium.Sandbox.Core.csproj" />
+    <Project Path="src/services/Sandbox/Sentium.Sandbox.Infrastructure/Sentium.Sandbox.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/src/services/Sentinel/">
     <Project Path="src/services/Sentinel/Sentium.Sentinel.Api/Sentium.Sentinel.Api.csproj" />
     <Project Path="src/services/Sentinel/Sentium.Sentinel.Application/Sentium.Sentinel.Application.csproj" />

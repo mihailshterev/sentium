@@ -544,6 +544,102 @@
   color: rgba(251, 191, 36, 0.6);
 }
 
+.approvalBlock {
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-left: 2px solid rgba(239, 68, 68, 0.6);
+  border-radius: 6px;
+  overflow: hidden;
+  background: rgba(239, 68, 68, 0.04);
+  margin-bottom: 0.4rem;
+}
+
+.approvalHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.4rem 0.65rem;
+  color: rgba(239, 68, 68, 0.85);
+  font-size: 0.7rem;
+  font-family: "JetBrains Mono", monospace;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid rgba(239, 68, 68, 0.15);
+
+  svg {
+    flex-shrink: 0;
+  }
+}
+
+.approvalBody {
+  padding: 0.5rem 0.75rem;
+}
+
+.approvalToolName {
+  font-size: 0.75rem;
+  font-family: "JetBrains Mono", monospace;
+  color: var(--text-primary);
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+}
+
+.approvalArgs {
+  font-size: 0.7rem;
+  font-family: "JetBrains Mono", monospace;
+  color: var(--text-muted);
+  background: rgba(0, 0, 0, 0.15);
+  border: 1px solid var(--border-subtle);
+  border-radius: 4px;
+  padding: 0.4rem 0.6rem;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 120px;
+  overflow-y: auto;
+}
+
+.approvalActions {
+  display: flex;
+  gap: 6px;
+  padding: 0.45rem 0.65rem;
+  border-top: 1px solid rgba(239, 68, 68, 0.12);
+  justify-content: flex-end;
+}
+
+.approvalDeny,
+.approvalApprove {
+  padding: 0.3rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-family: "JetBrains Mono", monospace;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: opacity 0.15s;
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.approvalDeny {
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: rgba(239, 68, 68, 0.85);
+
+  &:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.15);
+  }
+}
+
+.approvalApprove {
+  background: rgba(34, 197, 94, 0.08);
+  border-color: rgba(34, 197, 94, 0.3);
+  color: rgba(34, 197, 94, 0.85);
+
+  &:hover:not(:disabled) {
+    background: rgba(34, 197, 94, 0.15);
+  }
+}
+
 .typingIndicator {
   display: flex;
   align-items: center;

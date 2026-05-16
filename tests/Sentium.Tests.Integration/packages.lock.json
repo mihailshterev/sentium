@@ -1839,12 +1839,17 @@
       "sentium.sentinel.infrastructure": {
         "type": "Project",
         "dependencies": {
+          "Microsoft.EntityFrameworkCore": "[10.0.5, )",
+          "Microsoft.EntityFrameworkCore.SqlServer": "[10.0.5, )",
+          "Microsoft.Extensions.AI": "[10.5.2, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.6, )",
           "Microsoft.Extensions.Hosting": "[10.0.5, )",
           "NATS.Net": "[2.7.2, )",
+          "OllamaSharp": "[5.4.25, )",
           "Sentium.Infrastructure": "[1.0.0, )",
           "Sentium.Sentinel.Application": "[1.0.0, )",
-          "Sentium.Sentinel.Core": "[1.0.0, )"
+          "Sentium.Sentinel.Core": "[1.0.0, )",
+          "Sentium.Shared": "[1.0.0, )"
         }
       },
       "sentium.servicedefaults": {

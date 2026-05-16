@@ -1,304 +1,484 @@
-import { useState, useCallback } from "react";
-import { useNavigate } from "react-router";
-import { ShieldAlert, RefreshCw, AlertCircle, Zap, Eye, Radio, Globe, ArrowRight, WifiOff, Brain } from "lucide-react";
+import {
+  AlertTriangle,
+  BrickWallShield,
+  CheckCircle,
+  ChevronDown,
+  ChevronUp,
+  RefreshCw,
+  Shield,
+  ShieldAlert,
+  ShieldCheck,
+  ShieldOff,
+  Siren,
+  Sliders,
+  Zap,
+} from "lucide-react";
+import { useState } from "react";
+import { useSentinelAudit, useSentinelStats } from "../../hooks/useSentinelAudit";
+import { useSentinelSettings } from "../../hooks/useSentinelSettings";
+import type { AuditRecord, PolicyRiskLevel } from "../../types/sentinel";
 import styles from "./sentinel.module.scss";
-import useSentinelEvents from "../../hooks/useSentinelEvents";
-import { triggerNetworkAnalysis } from "../../services/agentRuntime.service";
-import type { NetworkEvent } from "../../types/sentinel";
 
-type ActionFilter = "all" | "Immediate-Review" | "Investigate";
-
-function formatRelativeTime(timestamp: string): string {
-  const diff = Date.now() - new Date(timestamp).getTime();
-  const seconds = Math.floor(diff / 1000);
-  if (seconds < 60) return `${seconds}s ago`;
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return new Date(timestamp).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" });
+function formatTime(iso: string) {
+  return new Date(iso).toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
 }
 
-function parseScore(mlScore: string): number {
-  return parseFloat(mlScore.replace("%", "").trim());
+function RiskBadge({ risk }: { risk: PolicyRiskLevel }) {
+  const cls = {
+    Low: styles.riskLow,
+    Medium: styles.riskMedium,
+    High: styles.riskHigh,
+    Critical: styles.riskCritical,
+  }[risk];
+  return <span className={`${styles.riskBadge} ${cls}`}>{risk}</span>;
 }
 
-function getScoreClass(mlScore: string, s: CSSModuleClasses): string {
-  const val = parseScore(mlScore);
-  if (val >= 95) return s.scoreRed;
-  if (val >= 80) return s.scoreAmber;
-  return s.scoreGreen;
-}
-
-function getProtoClass(proto: string, s: CSSModuleClasses): string {
-  switch (proto.toLowerCase()) {
-    case "tcp":
-      return s.protoTcp;
-    case "udp":
-      return s.protoUdp;
-    case "icmp":
-      return s.protoIcmp;
-    default:
-      return s.protoDefault;
+function EffectBadge({ allowed, effect }: { allowed: boolean; effect: string }) {
+  if (allowed) {
+    return (
+      <span className={`${styles.effectBadge} ${styles.effectAllow}`}>
+        <CheckCircle size={11} /> Allow
+      </span>
+    );
   }
+  if (effect === "DenyWithAlert") {
+    return (
+      <span className={`${styles.effectBadge} ${styles.effectAlert}`}>
+        <Siren size={11} /> Alert
+      </span>
+    );
+  }
+  return (
+    <span className={`${styles.effectBadge} ${styles.effectDeny}`}>
+      <ShieldOff size={11} /> Deny
+    </span>
+  );
 }
 
-function SkeletonRows() {
+function AlignmentBadge({ verdict }: { verdict: string | null }) {
+  if (!verdict) return <span className={styles.alignNone}>—</span>;
+  const cls =
+    verdict === "Aligned" ? styles.alignGood : verdict === "Misaligned" ? styles.alignBad : styles.alignNeutral;
+  return <span className={`${styles.alignBadge} ${cls}`}>{verdict}</span>;
+}
+
+function AuditRow({ record, expanded, onToggle }: { record: AuditRecord; expanded: boolean; onToggle: () => void }) {
   return (
     <>
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className={styles.skeletonRow}>
-          <div className={styles.skeletonCell} style={{ width: "5rem" }} />
-          <div className={styles.skeletonCell} style={{ width: "9rem" }} />
-          <div className={styles.skeletonCell} style={{ width: "9rem" }} />
-          <div className={styles.skeletonCell} style={{ width: "3.5rem" }} />
-          <div className={styles.skeletonCell} style={{ width: "4rem" }} />
-          <div className={styles.skeletonCell} style={{ width: "4.5rem" }} />
-          <div className={styles.skeletonCell} style={{ width: "5.5rem" }} />
+      <div
+        className={`${styles.auditRow} ${!record.allowed ? styles.auditRowDenied : ""} ${expanded ? styles.auditRowExpanded : ""}`}
+        onClick={onToggle}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => e.key === "Enter" && onToggle()}
+      >
+        <span className={styles.auditTime}>{formatTime(record.timestamp)}</span>
+        <span className={styles.auditAgent} title={record.agentId}>
+          {record.agentId}
+        </span>
+        <span className={styles.auditSkill} title={record.skillName}>
+          {record.skillName || "—"}
+        </span>
+        <span className={styles.auditAction}>{record.action}</span>
+        <EffectBadge allowed={record.allowed} effect={record.effect} />
+        <RiskBadge risk={record.risk} />
+        <AlignmentBadge verdict={record.alignmentVerdict} />
+        <span className={styles.auditChevron}>{expanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}</span>
+      </div>
+      {expanded && (
+        <div className={styles.auditDetail}>
+          <div className={styles.auditDetailGrid}>
+            <div>
+              <span className={styles.auditDetailLabel}>Resource</span>
+              <span className={styles.auditDetailValue}>
+                {record.resourceType} / {record.resourceId}
+              </span>
+            </div>
+            <div>
+              <span className={styles.auditDetailLabel}>Policies Triggered</span>
+              <span className={styles.auditDetailValue}>
+                {record.triggeredPolicies.length > 0 ? record.triggeredPolicies.join(", ") : "None"}
+              </span>
+            </div>
+            <div>
+              <span className={styles.auditDetailLabel}>Eval Duration</span>
+              <span className={styles.auditDetailValue}>{record.evaluationDurationMs}ms</span>
+            </div>
+            <div>
+              <span className={styles.auditDetailLabel}>Correlation ID</span>
+              <span className={`${styles.auditDetailValue} ${styles.mono}`}>{record.correlationId || "—"}</span>
+            </div>
+          </div>
+          <div className={styles.auditReason}>
+            <span className={styles.auditDetailLabel}>Reason</span>
+            <p className={styles.auditReasonText}>{record.reason}</p>
+          </div>
         </div>
-      ))}
+      )}
     </>
   );
 }
 
-function EventRow({ event, onAnalyze }: { event: NetworkEvent; onAnalyze: (event: NetworkEvent) => Promise<void> }) {
-  const isImmediate = event.action === "Immediate-Review";
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
+function AlignmentGauge({ score }: { score: number | null }) {
+  const pct = score !== null ? Math.round(score * 100) : null;
+  const label = pct === null ? "No Data" : pct >= 70 ? "Aligned" : pct >= 40 ? "Uncertain" : "Misaligned";
+  const color =
+    pct === null
+      ? "var(--text-dim)"
+      : pct >= 70
+        ? "var(--accent-green)"
+        : pct >= 40
+          ? "var(--accent-amber)"
+          : "var(--accent-red)";
 
-  const handleAnalyze = async () => {
-    setIsAnalyzing(true);
-    try {
-      await onAnalyze(event);
-    } finally {
-      setIsAnalyzing(false);
-    }
-  };
+  const radius = 52;
+  const cx = 70;
+  const cy = 70;
+  const startAngle = -210;
+  const totalArc = 240; // degrees
+  const filled = pct !== null ? (pct / 100) * totalArc : 0;
+
+  function polarToXY(cx: number, cy: number, r: number, deg: number) {
+    const rad = ((deg - 90) * Math.PI) / 180;
+    return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+  }
+
+  function arcPath(cx: number, cy: number, r: number, startDeg: number, endDeg: number) {
+    const s = polarToXY(cx, cy, r, startDeg);
+    const e = polarToXY(cx, cy, r, endDeg);
+    const large = endDeg - startDeg > 180 ? 1 : 0;
+    return `M ${s.x} ${s.y} A ${r} ${r} 0 ${large} 1 ${e.x} ${e.y}`;
+  }
+
+  const trackPath = arcPath(cx, cy, radius, startAngle, startAngle + totalArc);
+  const fillPath = filled > 0 ? arcPath(cx, cy, radius, startAngle, startAngle + filled) : null;
 
   return (
-    <div className={styles.eventRow}>
-      <span className={styles.cellTime}>{formatRelativeTime(event.timestamp)}</span>
-      <span className={`${styles.cellIp} ${styles.cellMono}`}>{event.origH}</span>
-      <span className={styles.cellArrow}>
-        <ArrowRight size={11} />
-      </span>
-      <span className={`${styles.cellIp} ${styles.cellMono}`}>{event.respH}</span>
-      <span className={`${styles.badge} ${getProtoClass(event.proto, styles)}`}>{event.proto.toUpperCase()}</span>
-      <span className={`${styles.badge} ${styles.badgeService}`}>
-        {event.service !== "unknown" ? event.service : "-"}
-      </span>
-      <span className={`${styles.scoreCell} ${getScoreClass(event.mlScore, styles)}`}>{event.mlScore}</span>
-      <span className={`${styles.actionBadge} ${isImmediate ? styles.actionImmediate : styles.actionInvestigate}`}>
-        {isImmediate ? "REVIEW" : "INVEST"}
-      </span>
-      <button
-        className={`${styles.analyzeBtn} ${isAnalyzing ? styles.analyzeBtnLoading : ""}`}
-        onClick={handleAnalyze}
-        disabled={isAnalyzing}
-        title="Send to AI network analysis workflow"
-      >
-        <Brain size={10} />
-        {isAnalyzing ? "..." : "Analyze"}
-      </button>
+    <div className={styles.gaugeWrap}>
+      <svg width="140" height="100" viewBox="0 0 140 100">
+        <path d={trackPath} fill="none" stroke="var(--border-color)" strokeWidth="10" strokeLinecap="round" />
+        {fillPath && <path d={fillPath} fill="none" stroke={color} strokeWidth="10" strokeLinecap="round" />}
+        <text
+          x={cx}
+          y={cy - 4}
+          textAnchor="middle"
+          fill={color}
+          fontSize="20"
+          fontWeight="700"
+          fontFamily="Inter, sans-serif"
+        >
+          {pct !== null ? `${pct}%` : "?"}
+        </text>
+        <text
+          x={cx}
+          y={cy + 14}
+          textAnchor="middle"
+          fill="var(--text-muted)"
+          fontSize="10"
+          fontFamily="Inter, sans-serif"
+        >
+          {label}
+        </text>
+      </svg>
+      <p className={styles.gaugeCaption}>Avg alignment of last 20 decisions with semantic check</p>
     </div>
   );
 }
 
-type CSSModuleClasses = typeof styles;
-
 const Sentinel = () => {
-  const { events, isLoading, isRefetching, error, refetch } = useSentinelEvents();
-  const [filter, setFilter] = useState<ActionFilter>("all");
-  const [isManualRefetching, setIsManualRefetching] = useState(false);
-  const navigate = useNavigate();
+  const { records, isLoading: auditLoading, refetch } = useSentinelAudit(100);
+  const { stats } = useSentinelStats();
+  const { settings, isUpdating, updateSettings } = useSentinelSettings();
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [autonomyDraft, setAutonomyDraft] = useState<number | null>(null);
+  const displayAutonomy = autonomyDraft ?? settings?.autonomyLevel ?? 5;
 
-  const handleRefresh = async () => {
-    setIsManualRefetching(true);
-    await refetch();
-    setIsManualRefetching(false);
+  const toggle = (id: string) => setExpandedId((prev) => (prev === id ? null : id));
+
+  const handleLockdown = () => {
+    if (!settings) return;
+    updateSettings({ lockdownMode: !settings.lockdownMode });
   };
 
-  const handleAnalyze = useCallback(
-    async (event: NetworkEvent) => {
-      const { eventId } = await triggerNetworkAnalysis(event);
-      navigate(`/orchestration?autoStream=${encodeURIComponent(eventId)}`);
-    },
-    [navigate],
-  );
+  const handleAutonomyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setAutonomyDraft(Number(e.target.value));
+  };
 
-  const immediateCount = events.filter((e) => e.action === "Immediate-Review").length;
-  const investigateCount = events.filter((e) => e.action === "Investigate").length;
-  const uniqueSources = new Set(events.map((e) => e.origH)).size;
+  const commitAutonomy = () => {
+    if (autonomyDraft !== null && autonomyDraft !== settings?.autonomyLevel) {
+      updateSettings({ autonomyLevel: autonomyDraft });
+    }
+    setAutonomyDraft(null);
+  };
 
-  const filteredEvents = filter === "all" ? events : events.filter((e) => e.action === filter);
+  const handleSemanticToggle = () => {
+    if (!settings) return;
+    updateSettings({ semanticIntentCheckEnabled: !settings.semanticIntentCheckEnabled });
+  };
 
-  if (error && events.length === 0) {
-    return (
-      <div className={styles.root}>
-        <div className={styles.header}>
-          <div className={styles.headerLeft}>
-            <div className={styles.headerIcon}>
-              <ShieldAlert size={18} />
-            </div>
-            <div>
-              <h1 className={styles.pageTitle}>Sentinel</h1>
-              <p className={styles.pageSubtitle}>Network security monitoring</p>
-            </div>
-          </div>
-        </div>
-        <div className={styles.errorState}>
-          <AlertCircle size={32} className={styles.errorIcon} />
-          <span className={styles.errorMessage}>
-            Unable to load network events: {error instanceof Error ? error.message : "Unknown error"}
-          </span>
-          <button className={styles.retryBtn} onClick={handleRefresh}>
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const denialRate = stats && stats.total > 0 ? Math.round((stats.denied / stats.total) * 100) : 0;
 
   return (
     <div className={styles.root}>
       <div className={styles.header}>
         <div className={styles.headerLeft}>
-          <div className={styles.headerIcon}>
-            <ShieldAlert size={18} />
-          </div>
+          <BrickWallShield size={18} className={styles.titleIcon} />
           <div>
             <h1 className={styles.pageTitle}>Sentinel</h1>
-            <p className={styles.pageSubtitle}>Network anomaly detection via Zeek + ML analysis</p>
+            <p className={styles.pageSubtitle}>
+              Defence-in-Depth Policy Decision Point — real-time security governance
+            </p>
           </div>
         </div>
-        <div className={styles.headerRight}>
-          <div className={styles.liveBadge}>
-            <span className={styles.liveDot} />
-            Live
-          </div>
-          <button
-            className={`${styles.refreshBtn} ${isManualRefetching || isRefetching ? styles.spinning : ""}`}
-            onClick={handleRefresh}
-          >
-            <RefreshCw size={12} />
+        <div className={styles.headerActions}>
+          {settings?.lockdownMode && (
+            <div className={styles.lockdownBanner}>
+              <Siren size={13} />
+              LOCKDOWN ACTIVE
+            </div>
+          )}
+          <button className={styles.refreshBtn} onClick={() => refetch()} disabled={auditLoading}>
+            <RefreshCw size={13} className={auditLoading ? styles.spinning : undefined} />
             Refresh
           </button>
         </div>
       </div>
 
-      <div className={styles.statsRow}>
-        {isLoading ? (
-          <>
-            <div className={styles.skeletonCard} />
-            <div className={styles.skeletonCard} />
-            <div className={styles.skeletonCard} />
-            <div className={styles.skeletonCard} />
-          </>
-        ) : (
-          <>
-            <div className={styles.statCard}>
-              <div className={`${styles.statIcon} ${styles.iconBlue}`}>
-                <Radio size={18} />
-              </div>
-              <div className={styles.statContent}>
-                <span className={styles.statValue}>{events.length}</span>
-                <span className={styles.statLabel}>Total Events</span>
-              </div>
-            </div>
-            <div className={styles.statCard}>
-              <div className={`${styles.statIcon} ${styles.iconRed}`}>
-                <Zap size={18} />
-              </div>
-              <div className={styles.statContent}>
-                <span className={styles.statValue}>{immediateCount}</span>
-                <span className={styles.statLabel}>Immediate Reviews</span>
-              </div>
-            </div>
-            <div className={styles.statCard}>
-              <div className={`${styles.statIcon} ${styles.iconAmber}`}>
-                <Eye size={18} />
-              </div>
-              <div className={styles.statContent}>
-                <span className={styles.statValue}>{investigateCount}</span>
-                <span className={styles.statLabel}>Investigations</span>
-              </div>
-            </div>
-            <div className={styles.statCard}>
-              <div className={`${styles.statIcon} ${styles.iconGreen}`}>
-                <Globe size={18} />
-              </div>
-              <div className={styles.statContent}>
-                <span className={styles.statValue}>{uniqueSources}</span>
-                <span className={styles.statLabel}>Unique Sources</span>
-              </div>
-            </div>
-          </>
-        )}
-      </div>
-
       <div className={styles.body}>
-        <div className={styles.section}>
-          <div className={styles.sectionHeader}>
-            <div className={styles.sectionTitle}>
-              <Radio size={13} className={styles.sectionTitleIcon} />
-              Network Anomaly Log
+        <div className={styles.statsRow}>
+          <div className={styles.statCard}>
+            <div className={`${styles.statIcon} ${styles.iconBlue}`}>
+              <Shield size={16} />
             </div>
-            <div className={styles.filterTabs}>
-              <button
-                className={`${styles.filterTab} ${filter === "all" ? styles.filterTabActive : ""}`}
-                onClick={() => setFilter("all")}
-              >
-                All
-                {events.length > 0 && <span className={styles.filterCount}>{events.length}</span>}
-              </button>
-              <button
-                className={`${styles.filterTab} ${filter === "Immediate-Review" ? styles.filterTabActive : ""}`}
-                onClick={() => setFilter("Immediate-Review")}
-              >
-                Immediate
-                {immediateCount > 0 && (
-                  <span className={`${styles.filterCount} ${styles.filterCountRed}`}>{immediateCount}</span>
-                )}
-              </button>
-              <button
-                className={`${styles.filterTab} ${filter === "Investigate" ? styles.filterTabActive : ""}`}
-                onClick={() => setFilter("Investigate")}
-              >
-                Investigate
-                {investigateCount > 0 && (
-                  <span className={`${styles.filterCount} ${styles.filterCountAmber}`}>{investigateCount}</span>
-                )}
-              </button>
+            <div>
+              <span className={styles.statValue}>{stats?.total ?? "—"}</span>
+              <span className={styles.statLabel}>Total Decisions</span>
             </div>
           </div>
-
-          <div className={styles.tableHeader}>
-            <span className={styles.colTime}>Time</span>
-            <span className={styles.colIp}>Source IP</span>
-            <span className={styles.colArrowSpacer} />
-            <span className={styles.colIp}>Destination IP</span>
-            <span className={styles.colProto}>Proto</span>
-            <span className={styles.colService}>Service</span>
-            <span className={styles.colScore}>Score</span>
-            <span className={styles.colAction}>Action</span>
-            <span className={styles.colAnalyze} />
+          <div className={styles.statCard}>
+            <div className={`${styles.statIcon} ${styles.iconGreen}`}>
+              <ShieldCheck size={16} />
+            </div>
+            <div>
+              <span className={`${styles.statValue} ${styles.green}`}>{stats?.allowed ?? "—"}</span>
+              <span className={styles.statLabel}>Allowed</span>
+            </div>
           </div>
+          <div className={styles.statCard}>
+            <div className={`${styles.statIcon} ${styles.iconRed}`}>
+              <ShieldOff size={16} />
+            </div>
+            <div>
+              <span className={`${styles.statValue} ${styles.red}`}>{stats?.denied ?? "—"}</span>
+              <span className={styles.statLabel}>Denied</span>
+            </div>
+          </div>
+          <div className={styles.statCard}>
+            <div className={`${styles.statIcon} ${styles.iconAmber}`}>
+              <Siren size={16} />
+            </div>
+            <div>
+              <span className={`${styles.statValue} ${stats?.alerts ? styles.amber : ""}`}>{stats?.alerts ?? "—"}</span>
+              <span className={styles.statLabel}>Alerts</span>
+            </div>
+          </div>
+          <div className={styles.statCard}>
+            <div className={`${styles.statIcon} ${styles.iconPurple}`}>
+              <AlertTriangle size={16} />
+            </div>
+            <div>
+              <span className={`${styles.statValue} ${denialRate > 20 ? styles.red : ""}`}>
+                {stats ? `${denialRate}%` : "—"}
+              </span>
+              <span className={styles.statLabel}>Denial Rate</span>
+            </div>
+          </div>
+        </div>
 
-          <div className={styles.tableBody}>
-            {isLoading ? (
-              <SkeletonRows />
-            ) : filteredEvents.length === 0 ? (
-              <div className={styles.emptyState}>
-                <WifiOff size={28} className={styles.emptyIcon} />
-                <span className={styles.emptyTitle}>No events detected</span>
-                <span className={styles.emptySubtitle}>
-                  {filter === "all"
-                    ? "Waiting for Zeek network traffic anomalies..."
-                    : `No ${filter === "Immediate-Review" ? "immediate review" : "investigation"} events`}
-                </span>
+        <div className={styles.mainGrid}>
+          <div className={styles.auditPanel}>
+            <div className={styles.panelHeader}>
+              <div className={styles.panelTitle}>
+                <Zap size={14} />
+                Security Pulse
               </div>
-            ) : (
-              filteredEvents.map((event) => <EventRow key={event.id} event={event} onAnalyze={handleAnalyze} />)
-            )}
+              <span className={styles.liveTag}>LIVE</span>
+            </div>
+
+            <div className={styles.auditTableHead}>
+              <span>Time</span>
+              <span>Agent</span>
+              <span>Skill</span>
+              <span>Action</span>
+              <span>Decision</span>
+              <span>Risk</span>
+              <span>Alignment</span>
+              <span />
+            </div>
+
+            <div className={styles.auditBody}>
+              {auditLoading && records.length === 0 && <div className={styles.emptyState}>Loading audit records…</div>}
+              {!auditLoading && records.length === 0 && (
+                <div className={styles.emptyState}>No decisions recorded yet. Decisions appear here in real-time.</div>
+              )}
+              {records.map((r) => (
+                <AuditRow key={r.id} record={r} expanded={expandedId === r.id} onToggle={() => toggle(r.id)} />
+              ))}
+            </div>
+          </div>
+
+          <div className={styles.rightCol}>
+            <div className={styles.card}>
+              <div className={styles.cardHeader}>
+                <div className={styles.panelTitle}>
+                  <Sliders size={14} />
+                  Sovereign Controls
+                </div>
+              </div>
+              <div className={styles.cardBody}>
+                <div className={styles.toggleRow}>
+                  <div className={styles.toggleInfo}>
+                    <span className={styles.toggleLabel}>
+                      <ShieldAlert size={13} />
+                      Lockdown Mode
+                    </span>
+                    <p className={styles.toggleDesc}>Deny all non-Read agent actions immediately.</p>
+                  </div>
+                  <button
+                    className={`${styles.toggle} ${settings?.lockdownMode ? styles.toggleOn : ""}`}
+                    onClick={handleLockdown}
+                    disabled={isUpdating || !settings}
+                    aria-pressed={settings?.lockdownMode}
+                  >
+                    <span className={styles.toggleThumb} />
+                  </button>
+                </div>
+
+                <div className={styles.toggleRow}>
+                  <div className={styles.toggleInfo}>
+                    <span className={styles.toggleLabel}>
+                      <Shield size={13} />
+                      Semantic Intent Check
+                    </span>
+                    <p className={styles.toggleDesc}>LLM verification of agent intent alignment.</p>
+                  </div>
+                  <button
+                    className={`${styles.toggle} ${settings?.semanticIntentCheckEnabled ? styles.toggleOn : ""}`}
+                    onClick={handleSemanticToggle}
+                    disabled={isUpdating || !settings}
+                    aria-pressed={settings?.semanticIntentCheckEnabled}
+                  >
+                    <span className={styles.toggleThumb} />
+                  </button>
+                </div>
+
+                <div className={styles.sliderSection}>
+                  <div className={styles.sliderHeader}>
+                    <span className={styles.toggleLabel}>
+                      <Zap size={13} />
+                      AI Autonomy
+                    </span>
+                    <span className={styles.sliderValue}>
+                      {displayAutonomy <= 2
+                        ? "Max Security"
+                        : displayAutonomy >= 9
+                          ? "Max Autonomy"
+                          : `Level ${displayAutonomy}`}
+                    </span>
+                  </div>
+                  <div className={styles.sliderLabels}>
+                    <span>High Security</span>
+                    <span>High Autonomy</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={1}
+                    max={10}
+                    step={1}
+                    value={displayAutonomy}
+                    onChange={handleAutonomyChange}
+                    onMouseUp={commitAutonomy}
+                    onTouchEnd={commitAutonomy}
+                    onKeyUp={commitAutonomy}
+                    disabled={isUpdating || !settings}
+                    className={styles.slider}
+                  />
+                  <p className={styles.toggleDesc}>
+                    {displayAutonomy <= 2
+                      ? "Inconclusive intent checks treated as denials."
+                      : displayAutonomy >= 9
+                        ? "Semantic intent check is bypassed entirely."
+                        : "Semantic checks run normally — inconclusive = allow."}
+                  </p>
+                </div>
+
+                <div className={styles.rateLimitRow}>
+                  <span className={styles.toggleLabel}>Rate Limit</span>
+                  <span className={styles.rateLimitValue}>
+                    {settings ? `${settings.rateLimitMaxRequests} req / ${settings.rateLimitWindowSeconds}s` : "—"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.card}>
+              <div className={styles.cardHeader}>
+                <div className={styles.panelTitle}>
+                  <ShieldCheck size={14} />
+                  Semantic Alignment
+                </div>
+              </div>
+              <div className={styles.cardBody}>
+                <AlignmentGauge score={stats?.latestAlignmentScore ?? null} />
+
+                <div className={styles.riskBreakdown}>
+                  <div className={styles.riskBar}>
+                    <span className={styles.riskBarLabel}>Low</span>
+                    <div className={styles.riskBarTrack}>
+                      <div
+                        className={`${styles.riskBarFill} ${styles.riskBarLow}`}
+                        style={{ width: stats?.total ? `${(stats.lowRisk / stats.total) * 100}%` : "0%" }}
+                      />
+                    </div>
+                    <span className={styles.riskBarCount}>{stats?.lowRisk ?? 0}</span>
+                  </div>
+                  <div className={styles.riskBar}>
+                    <span className={styles.riskBarLabel}>Medium</span>
+                    <div className={styles.riskBarTrack}>
+                      <div
+                        className={`${styles.riskBarFill} ${styles.riskBarMed}`}
+                        style={{ width: stats?.total ? `${(stats.mediumRisk / stats.total) * 100}%` : "0%" }}
+                      />
+                    </div>
+                    <span className={styles.riskBarCount}>{stats?.mediumRisk ?? 0}</span>
+                  </div>
+                  <div className={styles.riskBar}>
+                    <span className={styles.riskBarLabel}>High</span>
+                    <div className={styles.riskBarTrack}>
+                      <div
+                        className={`${styles.riskBarFill} ${styles.riskBarHigh}`}
+                        style={{ width: stats?.total ? `${(stats.highRisk / stats.total) * 100}%` : "0%" }}
+                      />
+                    </div>
+                    <span className={styles.riskBarCount}>{stats?.highRisk ?? 0}</span>
+                  </div>
+                  <div className={styles.riskBar}>
+                    <span className={styles.riskBarLabel}>Critical</span>
+                    <div className={styles.riskBarTrack}>
+                      <div
+                        className={`${styles.riskBarFill} ${styles.riskBarCrit}`}
+                        style={{ width: stats?.total ? `${(stats.criticalRisk / stats.total) * 100}%` : "0%" }}
+                      />
+                    </div>
+                    <span className={styles.riskBarCount}>{stats?.criticalRisk ?? 0}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

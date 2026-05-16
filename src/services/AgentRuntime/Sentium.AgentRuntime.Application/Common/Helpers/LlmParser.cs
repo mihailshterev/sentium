@@ -48,13 +48,14 @@ public static partial class LlmParser
 
             var registeredNames = registry.GetRegisteredNames();
 
+            var resolvedSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var resolved = new List<string>();
             foreach (var p in parsed)
             {
-                var dbMatch = dbAgentMap.Keys.FirstOrDefault(k => string.Equals(k.Replace(" ", string.Empty), p.Replace(" ", string.Empty), StringComparison.OrdinalIgnoreCase));
+                var dbMatch = dbAgentMap.Keys.FirstOrDefault(k => EqualsIgnoringSpaces(k.AsSpan(), p.AsSpan()));
                 if (dbMatch is not null)
                 {
-                    if (!resolved.Contains(dbMatch, StringComparer.OrdinalIgnoreCase))
+                    if (resolvedSet.Add(dbMatch))
                     {
                         resolved.Add(dbMatch);
                     }
@@ -62,8 +63,8 @@ public static partial class LlmParser
                     continue;
                 }
 
-                var registryMatch = registeredNames.FirstOrDefault(r => string.Equals(r.Replace(" ", string.Empty), p.Replace(" ", string.Empty), StringComparison.OrdinalIgnoreCase));
-                if (registryMatch is not null && !resolved.Contains(registryMatch, StringComparer.OrdinalIgnoreCase))
+                var registryMatch = registeredNames.FirstOrDefault(r => EqualsIgnoringSpaces(r.AsSpan(), p.AsSpan()));
+                if (registryMatch is not null && resolvedSet.Add(registryMatch))
                 {
                     resolved.Add(registryMatch);
                 }
@@ -75,6 +76,46 @@ public static partial class LlmParser
         {
             return [];
         }
+    }
+
+    private static bool EqualsIgnoringSpaces(ReadOnlySpan<char> a, ReadOnlySpan<char> b)
+    {
+        int ia = 0, ib = 0;
+        while (ia < a.Length && ib < b.Length)
+        {
+            while (ia < a.Length && a[ia] == ' ')
+            {
+                ia++;
+            }
+
+            while (ib < b.Length && b[ib] == ' ')
+            {
+                ib++;
+            }
+
+            if (ia >= a.Length || ib >= b.Length)
+            {
+                break;
+            }
+
+            if (char.ToUpperInvariant(a[ia]) != char.ToUpperInvariant(b[ib]))
+            {
+                return false;
+            }
+
+            ia++; ib++;
+        }
+        while (ia < a.Length && a[ia] == ' ')
+        {
+            ia++;
+        }
+
+        while (ib < b.Length && b[ib] == ' ')
+        {
+            ib++;
+        }
+
+        return ia == a.Length && ib == b.Length;
     }
 
     public static WorkflowResult ParseWorkflowResult(string validatorOutput, List<string> roles, IReadOnlyList<WorkflowLogEntry>? streamLog = null)

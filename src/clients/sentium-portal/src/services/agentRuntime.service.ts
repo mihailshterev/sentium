@@ -174,6 +174,16 @@ export const sendChatMessage = (payload: ChatPayload, signal?: AbortSignal): Pro
   });
 };
 
+export const approveToolCall = (requestId: string, approved: boolean, signal?: AbortSignal): Promise<Response> => {
+  return fetch(`${BASE_URL}${BASE}/assistant/chat/approve`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ requestId, approved }),
+    credentials: "include",
+    signal,
+  });
+};
+
 export const listWorkspaceFiles = (workspaceId?: string): Promise<WorkspaceFile[]> =>
   client.get<WorkspaceFile[]>(
     `${BASE}/workspace/files${workspaceId ? `?workspaceId=${encodeURIComponent(workspaceId)}` : ""}`,

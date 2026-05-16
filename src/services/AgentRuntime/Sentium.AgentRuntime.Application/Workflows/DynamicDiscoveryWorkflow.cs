@@ -47,7 +47,7 @@ public sealed class DynamicDiscoveryWorkflow(
         var plannerSession = await planner.CreateSessionAsync(ct);
 
         var streamLog = new StreamLogAccumulator();
-        var rawPlan = string.Empty;
+        var rawPlanBuilder = new StringBuilder();
         var plannerInput = workspaceContext is not null
             ? $"{trigger.Payload}\n\n[Workspace context: ID = {workspaceContext}. Use list_workspaces and list_workspace_files tools to explore available files.]"
             : trigger.Payload;
@@ -69,13 +69,13 @@ public sealed class DynamicDiscoveryWorkflow(
 
             if (!string.IsNullOrEmpty(update.Text))
             {
-                rawPlan += update.Text;
+                rawPlanBuilder.Append(update.Text);
                 await nats.StreamAgentUpdateAsync(trigger.TriggerType, AgentRole.Planner, update.Text, ct);
                 streamLog.Add(AgentRole.Planner, update.Text, AgentUpdateTypes.Message);
             }
         }
 
-        var rolesToExecute = LlmParser.ParseAgentRoles(rawPlan, dbAgentMap, registry);
+        var rolesToExecute = LlmParser.ParseAgentRoles(rawPlanBuilder.ToString(), dbAgentMap, registry);
         if (rolesToExecute.Count == 0)
         {
             return new WorkflowResult { Explanation = "Planner failed to identify required agents.", StreamLog = streamLog.Entries };
@@ -134,8 +134,17 @@ public sealed class DynamicDiscoveryWorkflow(
         var validator = await factory.CreateAsync(AgentRole.Validator, ct: ct);
         var validatorSession = await validator.CreateSessionAsync(ct);
 
-        var squadFindings = string.Join("\n", finalHistory.Select(m => $"{m.Role}: {m.Text}"));
-        var validationInput = $"Original Request: {trigger.Payload}\n\nSquad Findings:\n{squadFindings}";
+        var squadFindingsSb = new StringBuilder();
+        foreach (var m in finalHistory)
+        {
+            if (squadFindingsSb.Length > 0)
+            {
+                squadFindingsSb.Append('\n');
+            }
+
+            squadFindingsSb.Append(m.Role).Append(": ").Append(m.Text);
+        }
+        var validationInput = $"Original Request: {trigger.Payload}\n\nSquad Findings:\n{squadFindingsSb}";
         var finalFullResponse = new StringBuilder();
 
         await foreach (var update in validator.RunStreamingAsync(validationInput, validatorSession, cancellationToken: ct))

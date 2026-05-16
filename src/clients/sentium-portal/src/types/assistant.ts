@@ -5,6 +5,12 @@ export interface ConversationSummary {
   createdAt: string;
 }
 
+export interface PendingApproval {
+  requestId: string;
+  toolName: string;
+  arguments: Record<string, unknown>;
+}
+
 export interface ConversationMessage {
   id: string;
   role: "user" | "assistant";
@@ -12,4 +18,5 @@ export interface ConversationMessage {
   thought?: string;
   toolCalls?: string[];
   timestamp: Date;
+  pendingApproval?: PendingApproval;
 }

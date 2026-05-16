@@ -1,3 +1,5 @@
+using System.Buffers;
+
 namespace Sentium.AgentRuntime.Infrastructure.Rag;
 
 /// <summary>
@@ -7,6 +9,8 @@ namespace Sentium.AgentRuntime.Infrastructure.Rag;
 /// </summary>
 public static class TextChunker
 {
+    private static readonly SearchValues<char> BoundaryChars = SearchValues.Create(['.', '!', '?', '\n']);
+
     /// <summary>
     /// Returns an ordered list of chunks produced from <paramref name="text"/>.
     /// </summary>
@@ -21,6 +25,11 @@ public static class TextChunker
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(chunkSize);
         ArgumentOutOfRangeException.ThrowIfNegative(overlap);
 
+        if (overlap >= chunkSize)
+        {
+            throw new ArgumentException("Overlap must be less than chunk size.", nameof(overlap));
+        }
+
         if (string.IsNullOrWhiteSpace(text))
         {
             return [];
@@ -33,21 +42,22 @@ public static class TextChunker
 
         var chunks = new List<string>();
         var start = 0;
+        var textLength = text.Length;
 
-        while (start < text.Length)
+        while (start < textLength)
         {
-            var end = Math.Min(start + chunkSize, text.Length);
+            var end = Math.Min(start + chunkSize, textLength);
 
-            if (end < text.Length)
+            if (end < textLength)
             {
-                var breakIdx = text.LastIndexOfAny(['.', '!', '?', '\n'], end - 1, end - start);
-                if (breakIdx > start)
+                var breakIdx = text.AsSpan(start, end - start).LastIndexOfAny(BoundaryChars);
+                if (breakIdx >= 0)
                 {
-                    end = breakIdx + 1;
+                    end = start + breakIdx + 1;
                 }
             }
 
-            var chunk = text[start..end].Trim();
+            var chunk = text.AsSpan(start, end - start).Trim().ToString();
             if (chunk.Length > 0)
             {
                 chunks.Add(chunk);
@@ -56,7 +66,7 @@ public static class TextChunker
             var nextStart = end - overlap;
             if (nextStart <= start)
             {
-                nextStart = start + 1;
+                nextStart = end;
             }
 
             start = nextStart;

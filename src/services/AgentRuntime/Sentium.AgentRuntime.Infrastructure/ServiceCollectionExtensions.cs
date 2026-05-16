@@ -13,6 +13,7 @@ using Sentium.AgentRuntime.Infrastructure.Data;
 using Sentium.AgentRuntime.Infrastructure.Learnings;
 using Sentium.AgentRuntime.Infrastructure.Rag;
 using Sentium.AgentRuntime.Infrastructure.Settings;
+using Sentium.AgentRuntime.Infrastructure.Sentinel;
 using Sentium.AgentRuntime.Infrastructure.Skills;
 using Sentium.AgentRuntime.Infrastructure.Skills.BuiltIn;
 using Sentium.AgentRuntime.Infrastructure.Tools;
@@ -112,6 +113,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAgentSkillService, AgentSkillService>();
         services.AddScoped<DynamicSkillsProvider>();
 
+        services.AddSingleton<IPendingApprovalStore, PendingApprovalStore>();
+
         services.AddScoped<IAgentRegistry, AgentRegistry>();
         services.AddScoped<IAgentToolProvider, AgentToolProvider>();
         services.AddScoped<IAgentFactory, CompositeAgentFactory>();
@@ -119,6 +122,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IWorkspaceManager, WorkspaceManager>();
 
         services.AddTransient<IAgentTool, KnowledgeBaseSearchTool>();
+        services.AddTransient<IAgentTool, CodeExecutionSandboxTool>();
         services.AddTransient<IAgentTool, ReadFileTool>();
         services.AddTransient<IAgentTool, StoreMemoryTool>();
         services.AddTransient<IAgentTool, RecallMemoryTool>();
@@ -131,6 +135,20 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IConversationManager, ConversationManager>();
         services.AddScoped<IWorkflowManager, WorkflowManager>();
         services.AddScoped<IWorkflowRunRepository, WorkflowRunRepository>();
+
+        services.AddHttpClient<SentinelClient>(client =>
+        {
+            client.BaseAddress = new Uri($"https+http://{ServiceNames.Sentinel}");
+            client.Timeout = TimeSpan.FromSeconds(10);
+        });
+
+        services.AddHttpClient("SandboxService", client =>
+        {
+            client.BaseAddress = new Uri($"https+http://{ServiceNames.Sandbox}");
+            client.Timeout = TimeSpan.FromSeconds(120);
+        }).AddStandardResilienceHandler();
+
+        services.AddScoped<IPdpContextAccessor, PdpContextAccessor>();
 
         return builder;
     }

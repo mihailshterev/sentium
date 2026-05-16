@@ -3,6 +3,7 @@ using Sentium.AgentRuntime.Core.Settings;
 using Sentium.AgentRuntime.Core.Tools;
 using Sentium.AgentRuntime.Infrastructure.Tools;
 using Sentium.AgentRuntime.Infrastructure.Skills;
+using Sentium.AgentRuntime.Infrastructure.Sentinel;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,6 +24,8 @@ public sealed class CompositeAgentFactory(
     IServiceProvider serviceProvider,
     IHttpClientFactory httpClientFactory,
     DynamicSkillsProvider dynamicSkillsProvider,
+    SentinelClient sentinelClient,
+    IPdpContextAccessor pdpContext,
     ILogger<CompositeAgentFactory> logger) : IAgentFactory, IDisposable
 {
     private readonly ConcurrentDictionary<string, IChatClient> clientCache = new();
@@ -43,7 +46,19 @@ public sealed class CompositeAgentFactory(
 
         var instrumentedTools = tools
             .OfType<AIFunction>()
-            .Select(func => new DiagnosticToolDecorator(func, logger))
+            .Select(func =>
+            {
+                AIFunction current = new DiagnosticToolDecorator(func, logger);
+
+                current = new SentinelGuardedAIFunction(current, sentinelClient, pdpContext, definition.Name, logger);
+
+                if (func is ApprovalRequiredAIFunction)
+                {
+                    return new ApprovalRequiredAIFunction(current);
+                }
+
+                return current;
+            })
             .Cast<AITool>()
             .ToList();
 
