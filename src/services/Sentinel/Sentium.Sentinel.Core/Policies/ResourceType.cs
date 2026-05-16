@@ -7,5 +7,6 @@ public enum ResourceType
     Workflow,
     Memory,
     External,
+    Code,
     Any
 }

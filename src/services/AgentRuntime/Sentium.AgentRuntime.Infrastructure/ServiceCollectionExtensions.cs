@@ -122,6 +122,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IWorkspaceManager, WorkspaceManager>();
 
         services.AddTransient<IAgentTool, KnowledgeBaseSearchTool>();
+        services.AddTransient<IAgentTool, CodeExecutionSandboxTool>();
         services.AddTransient<IAgentTool, ReadFileTool>();
         services.AddTransient<IAgentTool, StoreMemoryTool>();
         services.AddTransient<IAgentTool, RecallMemoryTool>();
@@ -140,6 +141,12 @@ public static class ServiceCollectionExtensions
             client.BaseAddress = new Uri($"https+http://{ServiceNames.Sentinel}");
             client.Timeout = TimeSpan.FromSeconds(10);
         });
+
+        services.AddHttpClient("SandboxService", client =>
+        {
+            client.BaseAddress = new Uri($"https+http://{ServiceNames.Sandbox}");
+            client.Timeout = TimeSpan.FromSeconds(120);
+        }).AddStandardResilienceHandler();
 
         services.AddScoped<IPdpContextAccessor, PdpContextAccessor>();
 
