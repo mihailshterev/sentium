@@ -1,6 +1,5 @@
 using System.Text;
 using System.Text.Json;
-using System.Net.Http;
 using System.Net.Http.Json;
 using Microsoft.Extensions.Logging;
 using Sentium.AgentRuntime.Core.Tools;
@@ -10,7 +9,7 @@ using Sentium.AgentRuntime.Infrastructure.Sentinel;
 namespace Sentium.AgentRuntime.Infrastructure.Tools;
 
 /// <summary>
-/// Autonomous execution gateway that links the AI Agent session to your hardened isolation sandboxes.
+/// Autonomous execution gateway that links the AI Agent session to the Sandbox service isolation sandboxes.
 /// This tool forces code execution requests to clear the Sentinel PDP guard rails and user approvals
 /// before hitting the backend endpoint.
 /// </summary>

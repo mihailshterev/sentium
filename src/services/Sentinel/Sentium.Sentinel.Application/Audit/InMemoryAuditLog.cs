@@ -7,7 +7,6 @@ namespace Sentium.Sentinel.Application.Audit;
 
 /// <summary>
 /// Thread-safe, bounded in-memory audit log (circular buffer).
-/// For production deployments replace with a durable implementation (SQL, Seq, etc.).
 /// </summary>
 public sealed class InMemoryAuditLog : IAuditLog
 {
