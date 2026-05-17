@@ -50,14 +50,14 @@ describe("Login initial render", () => {
 
   it("renders all feature list items", () => {
     renderLogin();
-    expect(screen.getByText(/real-time threat detection/i)).toBeInTheDocument();
+    expect(screen.getByText(/local llm execution/i)).toBeInTheDocument();
   });
 
   it("renders stats on the left panel", () => {
     renderLogin();
-    expect(screen.getByText("99.9%")).toBeInTheDocument();
-    expect(screen.getByText("<50ms")).toBeInTheDocument();
-    expect(screen.getByText("24/7")).toBeInTheDocument();
+    expect(screen.getByText("100%")).toBeInTheDocument();
+    expect(screen.getByText("<10ms")).toBeInTheDocument();
+    expect(screen.getByText("Zero")).toBeInTheDocument();
   });
 });
 

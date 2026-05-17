@@ -327,7 +327,7 @@ const LearningCard = ({ learning: l, isSaving, isDeleting, onSave, onDelete, for
             type="text"
             value={editTags}
             onChange={(e) => setEditTags(e.target.value)}
-            placeholder="e.g. network, anomaly, threat"
+            placeholder="e.g. workflow, memory, agent"
           />
           <div className={styles.editActions}>
             <button className={styles.btnSecondary} onClick={handleCancel}>

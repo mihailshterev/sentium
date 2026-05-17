@@ -290,7 +290,7 @@ const Workflows = () => {
                         type="text"
                         value={formName}
                         onChange={(e) => setFormName(e.target.value)}
-                        placeholder="e.g. Threat Response Pipeline"
+                        placeholder="e.g. Local AI Inference Pipeline"
                         maxLength={255}
                         required
                         autoComplete="off"

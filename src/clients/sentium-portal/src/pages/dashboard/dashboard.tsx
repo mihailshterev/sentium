@@ -64,14 +64,14 @@ const QUICK_ACCESS = [
   {
     to: "/sentinel",
     label: "Sentinel",
-    description: "Threat detection and security event monitoring",
+    description: "Real-time security governance and policy enforcement",
     icon: BrickWallShield,
     color: "amber",
   },
   {
     to: "/watchdog",
     label: "Watchdog",
-    description: "Network traffic inspection and analysis",
+    description: "Service health monitoring and system diagnostics",
     icon: View,
     color: "red",
   },
@@ -141,7 +141,7 @@ const Dashboard = () => {
           </div>
           <div className={styles.statContent}>
             <span className={styles.statValue}>0</span>
-            <span className={styles.statLabel}>Active Threats</span>
+            <span className={styles.statLabel}>Policy Violations</span>
           </div>
           <span className={styles.statChip} data-variant="green">
             Clear
@@ -271,7 +271,7 @@ const Dashboard = () => {
           <BrickWallShield size={16} />
           <div className={styles.securityCardContent}>
             <span className={styles.securityCardLabel}>Sentinel</span>
-            <span className={styles.securityCardSub}>Threat monitoring active</span>
+            <span className={styles.securityCardSub}>Agent security guardrails active</span>
           </div>
           <button className={styles.securityCardBtn} onClick={() => navigate("/sentinel")}>
             View <ArrowRight size={12} />

@@ -16,7 +16,7 @@ const SettingsPage = () => {
             <Settings size={18} className={styles.titleIcon} />
             <div>
               <h1 className={styles.pageTitle}>Settings</h1>
-              <p className={styles.pageSubtitle}>System configuration and global agent behaviour</p>
+              <p className={styles.pageSubtitle}>System configuration and global agent behavior</p>
             </div>
           </div>
         </div>
@@ -139,7 +139,7 @@ const SettingsEditor = ({
             <div className={styles.cardHeaderLeft}>
               <Zap size={15} className={styles.cardIconAmber} />
               <div>
-                <p className={styles.cardTitle}>User-Defined Global Behaviour</p>
+                <p className={styles.cardTitle}>User-Defined Global Behavior</p>
                 <p className={styles.cardSubtitle}>
                   Injected into every agent alongside the built-in harness. Define personas, tone, domain focus, or
                   operational constraints.
@@ -154,7 +154,7 @@ const SettingsEditor = ({
               className={styles.promptTextarea}
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder={`Define global agent behaviour in plain text or markdown.\n\nExamples:\n- "Always respond in a professional, concise tone."\n- "You are a security-focused AI. Prioritise threat identification."\n- "When uncertain, ask clarifying questions before acting."`}
+              placeholder={`Define global agent behavior in plain text or markdown.\n\nExamples:\n- "Always respond in a professional, concise tone."\n- "You are a local AI orchestrator. Prioritize efficient workflow execution."\n- "When uncertain, ask clarifying questions before acting."`}
               spellCheck={false}
             />
             <p className={`${styles.charCount} ${isOverLimit || isNearLimit ? styles.charCountWarn : ""}`}>

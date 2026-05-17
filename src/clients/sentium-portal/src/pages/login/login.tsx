@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Navigate } from "react-router";
-import { AlertCircle, ArrowRight, Bot, Lock, Mail, ShieldCheck, Zap } from "lucide-react";
+import { AlertCircle, ArrowRight, Bot, Cpu, Lock, Mail, Zap } from "lucide-react";
 import styles from "./login.module.scss";
 import { AnimatedBg } from "./animated-bg";
 import { useAuthStore } from "../../stores/auth-store";
@@ -8,9 +8,9 @@ import { BASE_URL, BFF_BASE } from "../../api/client";
 import { AUTH_STATUS } from "../../utils/constants";
 
 const FEATURES = [
-  "Real-time threat detection and autonomous response",
-  "AI-powered agent orchestration across your network",
-  "Zero-trust identity enforcement at every layer",
+  "Local LLM execution with complete data privacy",
+  "Autonomous multi-agent orchestration & execution",
+  "Zero-trust policy sandboxing & security guardrails",
 ];
 
 const Login = () => {
@@ -71,22 +71,22 @@ const Login = () => {
 
         <div className={styles.leftTop}>
           <div className={styles.leftBrandIcon}>
-            <ShieldCheck size={18} strokeWidth={2} />
+            <Cpu size={18} strokeWidth={2} />
           </div>
           <span className={styles.leftBrandName}>Sentium</span>
         </div>
 
         <div className={styles.leftCenter}>
           <h1 className={styles.headline}>
-            Intelligent Security,
+            Local AI Workflows,
             <br />
             <span>Autonomously</span>
             <br />
-            Enforced.
+            Orchestrated.
           </h1>
           <p className={styles.descriptor}>
-            Sentium unifies AI-driven threat detection, autonomous agent orchestration, and zero-trust identity
-            enforcement into a single cohesive platform.
+            Sentium unifies local private AI execution, autonomous multi-agent orchestration, and secure zero-trust
+            policy sandboxing into a premium cohesive platform.
           </p>
           <ul className={styles.featureList}>
             {FEATURES.map((f) => (
@@ -101,16 +101,16 @@ const Login = () => {
         <div className={styles.leftBottom}>
           <div className={styles.statsRow}>
             <div className={styles.stat}>
-              <span className={styles.statValue}>99.9%</span>
-              <span className={styles.statLabel}>Uptime</span>
+              <span className={styles.statValue}>100%</span>
+              <span className={styles.statLabel}>Local &amp; Private</span>
             </div>
             <div className={styles.stat}>
-              <span className={styles.statValue}>&lt;50ms</span>
-              <span className={styles.statLabel}>Response</span>
+              <span className={styles.statValue}>&lt;10ms</span>
+              <span className={styles.statLabel}>Agent Latency</span>
             </div>
             <div className={styles.stat}>
-              <span className={styles.statValue}>24/7</span>
-              <span className={styles.statLabel}>Monitoring</span>
+              <span className={styles.statValue}>Zero</span>
+              <span className={styles.statLabel}>Cloud Dependency</span>
             </div>
           </div>
           <div className={styles.statusRow}>
@@ -236,7 +236,7 @@ const Login = () => {
 
           <p className={styles.footerNote}>
             <Zap size={11} style={{ display: "inline", verticalAlign: "middle", marginRight: 4 }} />
-            Secured by Sentium Identity &amp; zero-trust enforcement
+            Powered by Sentium local AI runtime &amp; policy sandboxing
           </p>
         </div>
       </div>
