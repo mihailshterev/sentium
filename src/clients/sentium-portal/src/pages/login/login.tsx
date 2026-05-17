@@ -11,7 +11,6 @@ const FEATURES = [
   "Real-time threat detection and autonomous response",
   "AI-powered agent orchestration across your network",
   "Zero-trust identity enforcement at every layer",
-  "Continuous behavioral analysis and anomaly detection",
 ];
 
 const Login = () => {

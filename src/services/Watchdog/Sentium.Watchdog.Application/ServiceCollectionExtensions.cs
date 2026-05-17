@@ -33,8 +33,7 @@ public static class ServiceCollectionExtensions
         {
             ServiceNames.Identity,
             ServiceNames.Sentinel,
-            ServiceNames.AgentRuntime,
-            ServiceNames.Locus,
+            ServiceNames.AgentRuntime
         })
         {
             services.AddHttpClient(name, client =>

@@ -13,7 +13,7 @@ namespace Sentium.AgentRuntime.Infrastructure.Tools;
 /// and returns formatted snippets with source citations.
 /// <para>
 /// Registered globally (no <c>AllowedAgents</c> restriction) so every agent can autonomously
-/// call this tool when it needs factual context — inventory data, anomaly logs, network events, etc.
+/// call this tool when it needs factual context.
 /// </para>
 /// <para>
 /// The LLM may pass either a plain-text query string, or a JSON object with optional <c>topK</c>:

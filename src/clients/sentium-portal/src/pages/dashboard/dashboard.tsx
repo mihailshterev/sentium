@@ -9,7 +9,6 @@ import {
   CheckCircle,
   Cpu,
   GitBranch,
-  Package,
   ShieldCheck,
   TrendingUp,
   View,
@@ -24,14 +23,12 @@ import useServiceHealth from "../../hooks/useServiceHealth";
 const MODULE_SERVICE_MAP: Record<string, string> = {
   "agent-runtime": "Agent Runtime",
   sentinel: "Sentinel",
-  locus: "Locus",
   "identity-provider": "Identity",
 };
 
 const MODULES = [
   { key: "agent-runtime", label: "Agent Runtime", icon: Cpu, color: "green" },
   { key: "sentinel", label: "Sentinel", icon: BrickWallShield, color: "blue" },
-  { key: "locus", label: "Locus", icon: Package, color: "purple" },
   { key: "identity-provider", label: "Identity Provider", icon: ShieldCheck, color: "amber" },
 ];
 

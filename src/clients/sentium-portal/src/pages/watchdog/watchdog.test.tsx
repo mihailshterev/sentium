@@ -24,14 +24,6 @@ const mockUnhealthy: ServiceHealthStatus = {
   details: "Connection timeout",
 };
 
-const mockUnknown: ServiceHealthStatus = {
-  serviceName: "Locus",
-  status: "Unknown",
-  latencyMs: 200,
-  checkedAt: "2025-01-01T12:00:00Z",
-  details: null,
-};
-
 const mockMetrics: SystemMetrics = {
   host: {
     machineName: "server-01",

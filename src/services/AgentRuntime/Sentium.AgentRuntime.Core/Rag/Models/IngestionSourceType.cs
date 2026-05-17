@@ -11,11 +11,6 @@ namespace Sentium.AgentRuntime.Core.Rag.Models;
 public enum IngestionSourceType
 {
     /// <summary>
-    /// Home inventory service (devices, assets, network topology).
-    /// </summary>
-    InventoryService,
-
-    /// <summary>
     /// Anomaly and alert logs from the Sentinel service.
     /// </summary>
     SentinelLogs,
@@ -24,11 +19,6 @@ public enum IngestionSourceType
     /// Health and threshold alerts from the Watchdog service.
     /// </summary>
     WatchdogAlerts,
-
-    /// <summary>
-    /// Raw network event data from Zeek / NetworkFilter.
-    /// </summary>
-    NetworkEvents,
 
     /// <summary>
     /// Context or notes provided interactively by the user.

@@ -9,7 +9,7 @@ namespace Sentium.AgentRuntime.Infrastructure.Rag;
 /// Orchestrates the full ingestion pipeline for a single document or batch:
 /// text chunking → embedding generation → vector upsert.
 /// <para>
-/// New ingestion sources (inventory service, log exporters, etc.) should either:
+/// New ingestion sources should either:
 /// <list type="bullet">
 ///   <item>Call <see cref="IngestAsync"/> or <see cref="IngestBatchAsync"/> directly via the REST API, or</item>
 ///   <item>Implement <see cref="IIngestionSource"/> and call <see cref="IngestFromSourceAsync"/>.</item>

@@ -19,7 +19,6 @@ var sql = builder.AddSqlServer(ResourceNames.Sql, password: sqlPassword)
 
 var identityDb = sql.AddDatabase(ResourceNames.IdentityDb);
 var agentRuntimeDb = sql.AddDatabase(ResourceNames.AgentRuntimeDb);
-var locusDb = sql.AddDatabase(ResourceNames.LocusDb);
 var sandboxDb = sql.AddDatabase(ResourceNames.SandboxDb);
 var sentinelDb = sql.AddDatabase(ResourceNames.SentinelDb);
 
@@ -115,19 +114,6 @@ var agentRuntimeApi = builder.AddProject<Projects.Sentium_AgentRuntime_Api>(Serv
         url.Url = "/scalar/v1";
     });
 
-var locusApi = builder.AddProject<Projects.Sentium_Locus_Api>(ServiceNames.Locus)
-    .WithReference(locusDb).WaitFor(locusDb)
-    .WithReference(nats).WaitFor(nats)
-    .WithReference(seq).WaitFor(seq)
-    .WithReference(identityApi).WaitFor(identityApi)
-    .WithReference(agentRuntimeApi).WaitFor(agentRuntimeApi)
-    .WithEnvironment("Identity__Authority", identityApi.GetEndpoint("http"))
-    .WithUrlForEndpoint("https", url =>
-    {
-        url.DisplayText = "Scalar API (Docs)";
-        url.Url = "/scalar/v1";
-    });
-
 var watchdogApi = builder.AddProject<Projects.Sentium_Watchdog_Api>(ServiceNames.Watchdog)
     .WithReference(nats).WaitFor(nats)
     .WithReference(seq).WaitFor(seq)
@@ -136,7 +122,6 @@ var watchdogApi = builder.AddProject<Projects.Sentium_Watchdog_Api>(ServiceNames
     .WithReference(identityApi).WaitFor(identityApi)
     .WithReference(sentinelApi).WaitFor(sentinelApi)
     .WithReference(agentRuntimeApi).WaitFor(agentRuntimeApi)
-    .WithReference(locusApi).WaitFor(locusApi)
     .WithEnvironment("Identity__Authority", identityApi.GetEndpoint("http"))
     .WithUrlForEndpoint("https", url =>
     {
@@ -149,7 +134,6 @@ var apiGateway = builder.AddProject<Projects.Sentium_ApiGateway>(ServiceNames.Ga
     .WithReference(sentinelApi).WaitFor(sentinelApi)
     .WithReference(watchdogApi).WaitFor(watchdogApi)
     .WithReference(agentRuntimeApi).WaitFor(agentRuntimeApi)
-    .WithReference(locusApi).WaitFor(locusApi)
     .WithReference(sandboxApi).WaitFor(sandboxApi)
     .WithEnvironment("Identity__Authority", identityApi.GetEndpoint("http"));
 
@@ -163,7 +147,6 @@ identityApi.WithParentRelationship(apiGateway);
 sentinelApi.WithParentRelationship(apiGateway);
 watchdogApi.WithParentRelationship(apiGateway);
 agentRuntimeApi.WithParentRelationship(apiGateway);
-locusApi.WithParentRelationship(apiGateway);
 sandboxApi.WithParentRelationship(apiGateway);
 
 builder.Build().Run();

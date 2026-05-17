@@ -49,13 +49,3 @@ export interface AuditStats {
   criticalRisk: number;
   latestAlignmentScore: number | null;
 }
-
-export interface NetworkEvent {
-  id: string;
-  timestamp: string;
-  type: string;
-  severity: string;
-  source: string;
-  destination?: string;
-  description: string;
-}
