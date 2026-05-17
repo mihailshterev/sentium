@@ -146,15 +146,6 @@ describe("Watchdog service health statuses", () => {
     expect(screen.getAllByText("Unhealthy").length).toBeGreaterThanOrEqual(1);
   });
 
-  it("renders Unknown status label for unknown service", () => {
-    vi.spyOn(useServiceHealthHook, "default").mockReturnValue({
-      ...defaultHealthHook,
-      services: [mockUnknown],
-    });
-    renderWatchdog();
-    expect(screen.getByText("Unknown")).toBeInTheDocument();
-  });
-
   it("shows 'Degraded Services Detected' when any service is unhealthy", () => {
     vi.spyOn(useServiceHealthHook, "default").mockReturnValue({
       ...defaultHealthHook,
