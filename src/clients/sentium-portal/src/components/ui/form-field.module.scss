@@ -1,0 +1,28 @@
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.labelRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+}
+
+.label {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.charCount {
+  font-size: 0.65rem;
+  color: var(--text-dim, var(--text-muted));
+  opacity: 0.6;
+  margin-left: auto;
+}
