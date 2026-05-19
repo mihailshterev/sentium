@@ -21,26 +21,7 @@ import styles from "./sandbox.module.scss";
 import { useSandboxExecutions } from "../../hooks/useSandboxExecutions";
 import { getArtifactUrl } from "../../services/sandbox.service";
 import type { ArtifactDto, SandboxExecutionLog } from "../../types/sandbox";
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) {
-    return `${bytes} B`;
-  }
-
-  if (bytes < 1024 * 1024) {
-    return `${(bytes / 1024).toFixed(1)} KB`;
-  }
-
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-}
+import { formatBytesToMb, formatTimeHms } from "../../utils/formatters";
 
 function isImageMime(mime: string) {
   return mime.startsWith("image/");
@@ -71,7 +52,7 @@ function ArtifactCard({ artifact }: { artifact: ArtifactDto }) {
           {shortName}
         </span>
         <span className={styles.artifactMeta}>
-          {artifact.mimeType} · {formatBytes(artifact.sizeBytes)}
+          {artifact.mimeType} · {formatBytesToMb(artifact.sizeBytes)}
         </span>
       </div>
       <div className={styles.artifactActions}>
@@ -358,7 +339,7 @@ const Sandbox = () => {
                       tabIndex={0}
                       onKeyDown={(ev) => ev.key === "Enter" && setSelectedId(e.jobId)}
                     >
-                      <span className={styles.historyTime}>{formatTime(e.executedAt)}</span>
+                      <span className={styles.historyTime}>{formatTimeHms(e.executedAt)}</span>
                       <span className={styles.historyAgent}>{e.agentId}</span>
                       <span
                         className={`${styles.langChip} ${e.language === "Python" ? styles.langPython : styles.langNode}`}

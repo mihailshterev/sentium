@@ -18,14 +18,7 @@ import { useSentinelAudit, useSentinelStats } from "../../hooks/useSentinelAudit
 import { useSentinelSettings } from "../../hooks/useSentinelSettings";
 import type { AuditRecord, PolicyRiskLevel } from "../../types/sentinel";
 import styles from "./sentinel.module.scss";
-
-function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString("en-GB", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-}
+import { formatTimeHms } from "../../utils/formatters";
 
 function RiskBadge({ risk }: { risk: PolicyRiskLevel }) {
   const cls = {
@@ -76,7 +69,7 @@ function AuditRow({ record, expanded, onToggle }: { record: AuditRecord; expande
         tabIndex={0}
         onKeyDown={(e) => e.key === "Enter" && onToggle()}
       >
-        <span className={styles.auditTime}>{formatTime(record.timestamp)}</span>
+        <span className={styles.auditTime}>{formatTimeHms(record.timestamp)}</span>
         <span className={styles.auditAgent} title={record.agentId}>
           {record.agentId}
         </span>

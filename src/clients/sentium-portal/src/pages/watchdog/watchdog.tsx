@@ -3,6 +3,7 @@ import styles from "./watchdog.module.scss";
 import useServiceHealth from "../../hooks/useServiceHealth";
 import useSystemMetrics from "../../hooks/useSystemMetrics";
 import type { ServiceHealthStatus, ServiceStatus } from "../../types/serviceHealth";
+import { formatTimeHms } from "../../utils/formatters";
 
 function StatusIcon({ status }: { status: ServiceStatus }) {
   if (status === "Healthy") {
@@ -24,11 +25,6 @@ function LatencyBar({ latencyMs }: { latencyMs: number }) {
       <div className={`${styles.latencyBar} ${styles[`latencyBar_${color}`]}`} style={{ width: `${pct}%` }} />
     </div>
   );
-}
-
-function formatTime(iso: string) {
-  const d = new Date(iso);
-  return d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
 }
 
 function ServiceRow({ service }: { service: ServiceHealthStatus }) {
@@ -58,7 +54,7 @@ function ServiceRow({ service }: { service: ServiceHealthStatus }) {
 
       <div className={styles.checkedCell}>
         <Clock size={11} />
-        <span>{service.checkedAt ? formatTime(service.checkedAt) : "—"}</span>
+        <span>{service.checkedAt ? formatTimeHms(service.checkedAt) : "—"}</span>
       </div>
 
       {service.details && <span className={styles.detailsCell}>{service.details}</span>}

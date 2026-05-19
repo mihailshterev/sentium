@@ -25,6 +25,7 @@ import {
   deleteWorkspaceFile,
 } from "../../services/agentRuntime.service";
 import type { Workspace, WorkspaceFile } from "../../types/workspace";
+import { formatBytesToMb, formatDateTimeShort } from "../../utils/formatters";
 
 const STATUS_POLL_INTERVAL_MS = 4000;
 
@@ -56,22 +57,6 @@ const ALLOWED_EXTENSIONS = [
   ".conf",
   ".cfg",
 ];
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024) {
-    return `${bytes} B`;
-  }
-
-  if (bytes < 1024 * 1024) {
-    return `${(bytes / 1024).toFixed(1)} KB`;
-  }
-
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, { dateStyle: "short", timeStyle: "short" });
-}
 
 const hasPending = (files: WorkspaceFile[]) =>
   files.some((f) => f.processingStatus === "Pending" || f.processingStatus === "Processing");
@@ -334,7 +319,7 @@ const Workspaces = () => {
                         <div className={styles.fileInfo}>
                           <span className={styles.fileName}>{f.fileName}</span>
                           <p className={styles.fileMeta}>
-                            {formatBytes(f.sizeBytes)} · {formatDate(f.createdAt)}
+                            {formatBytesToMb(f.sizeBytes)} · {formatDateTimeShort(f.createdAt)}
                           </p>
                         </div>
                         <span className={`${styles.statusBadge} ${statusClass(f.processingStatus)}`}>
@@ -368,7 +353,7 @@ const Workspaces = () => {
                     {selectedFile ? (
                       <>
                         <span className={styles.uploadText}>{selectedFile.name}</span>
-                        <span className={styles.uploadHint}>{formatBytes(selectedFile.size)}</span>
+                        <span className={styles.uploadHint}>{formatBytesToMb(selectedFile.size)}</span>
                       </>
                     ) : (
                       <>
