@@ -125,7 +125,7 @@ csharp_space_before_comma = false
 csharp_space_before_dot = false
 csharp_space_after_comment_slash = true
 
-[*.{js,jsx,ts,tsx,json,css,html}]
+[*.{js,jsx,ts,tsx,json,css,scss,html}]
 indent_style = space
 indent_size = 2
 end_of_line = lf
