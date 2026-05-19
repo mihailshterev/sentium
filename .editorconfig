@@ -124,3 +124,11 @@ csharp_space_before_colon_in_inheritance_clause = true
 csharp_space_before_comma = false
 csharp_space_before_dot = false
 csharp_space_after_comment_slash = true
+
+[*.{js,jsx,ts,tsx,json,css,html}]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+trim_trailing_whitespace = true
+insert_final_newline = true
+charset = utf-8
