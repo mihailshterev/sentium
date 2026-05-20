@@ -57,41 +57,9 @@
   z-index: 1;
 }
 
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 64px;
-  padding: 0 1.75rem;
-  border-bottom: 1px solid var(--border-subtle);
-  background: var(--bg-surface);
-  flex-shrink: 0;
-}
-
-.headerLeft {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.headerIconWrap {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  background: var(--accent-green-subtle);
-  border: 1px solid rgba(34, 197, 94, 0.2);
-  border-radius: 8px;
+.headerIcon {
   color: var(--accent-green);
-}
-
-.headerTitle {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin: 0 0 2px;
-  letter-spacing: -0.3px;
+  flex-shrink: 0;
 }
 
 .headerRight {

@@ -1,25 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import styles from "./assistant.module.scss";
-import Markdown from "react-markdown";
-import {
-  Plus,
-  Trash2,
-  MessageSquare,
-  ChevronRight,
-  Cpu,
-  Loader2,
-  Brain,
-  Wrench,
-  ChevronDown,
-  ArrowUp,
-  Shield,
-  Square,
-  FolderOpen,
-  FileText,
-  Copy,
-  Check,
-  X,
-} from "lucide-react";
+import { ChevronRight, Brain, ChevronDown } from "lucide-react";
 import {
   fetchConversation,
   sendChatMessage,
@@ -34,27 +15,11 @@ import type { Workspace } from "../../types/workspace";
 import { useConversationStore } from "../../stores/assistant-conversation-store";
 import { SUGGESTIONS_POOL } from "../../utils/constants";
 import { useQuery } from "@tanstack/react-query";
-
-const STATUS_MESSAGES = [
-  "Synthesizing latent variables...",
-  "Optimizing heuristic pathways...",
-  "Reconciling disparate data points...",
-  "Querying the collective consciousness...",
-  "Assembling coherent thought-clusters...",
-  "Teaching the server how to love...",
-  "Rounding up the rogue bits...",
-  "Calculating the last digit of Pi (almost there)...",
-  "Poking the mainframe with a stick...",
-  "Dusting off the neural pathways...",
-  "Reticulating splines...",
-  "Consulting the Oracle...",
-  "Buffing the chrome on the logic gates...",
-  "Achieving 99% sentience... please hold...",
-  "Defragmenting my digital soul...",
-  "Checking under the digital rug...",
-  "Asking my supervisor (a toaster)...",
-  "Ignoring the laws of thermodynamics...",
-];
+import PageHeader from "../../components/ui/page-header";
+import MessageBubble, { STATUS_MESSAGES } from "./components/message-bubble";
+import WelcomeScreen from "./components/welcome-screen";
+import ChatInputBar from "./components/chat-input-bar";
+import ConversationSidebar from "./components/conversation-sidebar";
 
 type ContextPill = { type: "workspace" | "file"; id: string; label: string };
 
@@ -562,183 +527,63 @@ const Assistant = () => {
   const isEmpty = messages.length === 0 && !isTyping;
   const conversationGroups = groupConversationsByDate(conversations);
 
+  const resizeTextareaOnInput = (value: string) => {
+    setInput(value);
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 160) + "px";
+    }
+  };
+
   return (
     <div className={styles.container}>
       <div className={styles.chatWrapper}>
-        <header className={styles.header}>
-          <div className={styles.headerLeft}>
-            <div className={styles.headerIconWrap}>
-              <Brain size={15} />
+        <PageHeader
+          icon={<Brain size={20} className={styles.headerIcon} />}
+          title="Assistant"
+          subtitle="Chat with the Sentium assistant"
+          right={
+            <div className={styles.headerRight}>
+              <div className={styles.statusBadge}>
+                <span className={styles.statusDot} />
+                <span className={styles.statusText}>{model || "No model selected"}</span>
+              </div>
+              <button
+                className={styles.sidebarToggle}
+                onClick={() => setSidebarOpen((v) => !v)}
+                title="Toggle conversations"
+              >
+                <ChevronRight
+                  size={14}
+                  style={{
+                    transform: sidebarOpen ? "none" : "rotate(180deg)",
+                    transition: "transform 0.2s",
+                  }}
+                />
+              </button>
             </div>
-            <span className={styles.headerTitle}>Assistant</span>
-          </div>
-          <div className={styles.headerRight}>
-            <div className={styles.statusBadge}>
-              <span className={styles.statusDot} />
-              <span className={styles.statusText}>{model || "No model selected"}</span>
-            </div>
-            <button
-              className={styles.sidebarToggle}
-              onClick={() => setSidebarOpen((v) => !v)}
-              title="Toggle conversations"
-            >
-              <ChevronRight
-                size={14}
-                style={{
-                  transform: sidebarOpen ? "none" : "rotate(180deg)",
-                  transition: "transform 0.2s",
-                }}
-              />
-            </button>
-          </div>
-        </header>
+          }
+        />
 
         <div className={styles.chatArea} ref={chatAreaRef}>
           {isEmpty ? (
-            <div className={styles.welcomeScreen}>
-              <div className={styles.welcomeIconWrap}>
-                <Shield size={38} />
-              </div>
-              <h1 className={styles.welcomeTitle}>Good to See You!</h1>
-              <h2 className={styles.welcomeSubtitle}>How Can I Assist You Today?</h2>
-              <p className={styles.welcomeMeta}>I'm available 24/7 — ask me anything.</p>
-              <div className={styles.suggestionRow}>
-                {randomizedSuggestions.map((s) => (
-                  <button key={s} className={styles.suggestionChip} onClick={() => setInput(s)}>
-                    {s}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <WelcomeScreen suggestions={randomizedSuggestions} onSelectSuggestion={(s) => setInput(s)} />
           ) : (
             <div className={styles.messagesArea}>
-              {messages.map((msg) => {
-                const isTypingMsg =
-                  msg.id === messages[messages.length - 1]?.id &&
-                  msg.role === "assistant" &&
-                  msg.content === "" &&
-                  isTyping;
-
-                const showStatusCycler = isTypingMsg && !msg.thought && (!msg.toolCalls || msg.toolCalls.length === 0);
-
-                return (
-                  <div
-                    key={msg.id}
-                    className={`${styles.messageWrapper} ${msg.role === "user" ? styles.wrapperUser : styles.wrapperAi}`}
-                  >
-                    {msg.role === "assistant" && (
-                      <div className={`${styles.avatar} ${styles.avatarAi}`}>
-                        <Brain size={13} />
-                      </div>
-                    )}
-                    <div className={`${styles.message} ${msg.role === "user" ? styles.messageUser : styles.messageAi}`}>
-                      {msg.role === "assistant" && (
-                        <div className={styles.messageHeader}>
-                          <span className={styles.sender}>SENTIUM</span>
-                        </div>
-                      )}
-
-                      {msg.thought !== undefined && msg.role === "assistant" && (
-                        <div className={styles.thoughtBlock}>
-                          <button className={styles.thoughtHeader} onClick={() => toggleThought(msg.id)}>
-                            <Brain size={11} />
-                            <span>Thinking</span>
-                            <ChevronDown
-                              size={11}
-                              className={`${styles.thoughtChevron} ${expandedThoughts.has(msg.id) ? styles.thoughtChevronOpen : ""}`}
-                            />
-                          </button>
-                          {expandedThoughts.has(msg.id) && (
-                            <div className={styles.thoughtContent}>
-                              <Markdown>{msg.thought}</Markdown>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {msg.toolCalls && msg.toolCalls.length > 0 && msg.role === "assistant" && (
-                        <div className={styles.toolCallList}>
-                          {msg.toolCalls.map((call, i) => (
-                            <div key={i} className={styles.toolCallRow}>
-                              <Wrench size={10} />
-                              <span>{call}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {msg.pendingApproval && msg.role === "assistant" && (
-                        <div className={styles.approvalBlock}>
-                          <div className={styles.approvalHeader}>
-                            <Wrench size={11} />
-                            <span>Tool Approval Required</span>
-                          </div>
-                          <div className={styles.approvalBody}>
-                            <div className={styles.approvalToolName}>{msg.pendingApproval.toolName}</div>
-                            {Object.keys(msg.pendingApproval.arguments).length > 0 && (
-                              <pre className={styles.approvalArgs}>
-                                {JSON.stringify(msg.pendingApproval.arguments, null, 2)}
-                              </pre>
-                            )}
-                          </div>
-                          <div className={styles.approvalActions}>
-                            <button
-                              className={styles.approvalDeny}
-                              onClick={() => handleApproval(msg.id, msg.pendingApproval!.requestId, false)}
-                              disabled={isTyping}
-                            >
-                              Deny
-                            </button>
-                            <button
-                              className={styles.approvalApprove}
-                              onClick={() => handleApproval(msg.id, msg.pendingApproval!.requestId, true)}
-                              disabled={isTyping}
-                            >
-                              Approve
-                            </button>
-                          </div>
-                        </div>
-                      )}
-
-                      {showStatusCycler ? (
-                        <div className={styles.typingStatusRow}>
-                          <div className={styles.neuronLoader}>
-                            <div className={styles.neuronNode} />
-                            <div className={styles.neuronLine} />
-                            <div className={styles.neuronNode} />
-                            <div className={styles.neuronLine} />
-                            <div className={styles.neuronNode} />
-                          </div>
-                          <span
-                            className={`${styles.typingStatusText} ${
-                              statusVisible ? styles.statusVisible : styles.statusHidden
-                            }`}
-                          >
-                            {STATUS_MESSAGES[statusIndex]}
-                          </span>
-                        </div>
-                      ) : (
-                        msg.content && (
-                          <div className={styles.content}>
-                            <Markdown>{msg.content}</Markdown>
-                          </div>
-                        )
-                      )}
-                      {msg.role === "assistant" && !isTypingMsg && msg.content && (
-                        <div className={styles.messageFooter}>
-                          <button
-                            className={styles.copyBtn}
-                            onClick={() => copyMessage(msg.content, msg.id)}
-                            title="Copy to clipboard"
-                          >
-                            {copiedMessageId === msg.id ? <Check size={12} /> : <Copy size={12} />}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
+              {messages.map((msg) => (
+                <MessageBubble
+                  key={msg.id}
+                  msg={msg}
+                  isTyping={isTyping}
+                  expandedThoughts={expandedThoughts}
+                  statusIndex={statusIndex}
+                  statusVisible={statusVisible}
+                  copiedMessageId={copiedMessageId}
+                  onToggleThought={toggleThought}
+                  onCopyMessage={copyMessage}
+                  onApproval={handleApproval}
+                />
+              ))}
               <div ref={messagesEndRef} />
             </div>
           )}
@@ -750,175 +595,40 @@ const Assistant = () => {
           </button>
         )}
 
-        <div className={styles.inputContainer}>
-          <form onSubmit={handleSubmit} className={styles.inputForm}>
-            <div className={styles.inputMain}>
-              {contextPills.length > 0 && (
-                <div className={styles.contextPillsRow}>
-                  {contextPills.map((pill) => (
-                    <div key={pill.id} className={styles.contextPill}>
-                      {pill.type === "workspace" ? <FolderOpen size={9} /> : <FileText size={9} />}
-                      <span>{pill.label}</span>
-                      <button type="button" onClick={() => removeContextPill(pill.id)} aria-label="Remove">
-                        <X size={9} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              <textarea
-                ref={textareaRef}
-                value={input}
-                onChange={(e) => {
-                  setInput(e.target.value);
-                  resizeTextarea();
-                }}
-                onKeyDown={handleKeyDown}
-                placeholder={isTyping ? "Generating..." : "Ask Sentium Assistant..."}
-                className={styles.textarea}
-                autoComplete="off"
-                disabled={isTyping}
-                rows={1}
-              />
-            </div>
-            {isTyping ? (
-              <button type="button" onClick={handleStop} className={styles.stopButton} title="Stop generation">
-                <Square size={13} fill="currentColor" />
-              </button>
-            ) : (
-              <button type="submit" disabled={!input.trim() && contextPills.length === 0} className={styles.sendButton}>
-                <ArrowUp size={16} />
-              </button>
-            )}
-          </form>
-          <div className={styles.inputFooter}>
-            Protected by Sentium Security Protocols &nbsp;·&nbsp; Ctrl+K: New chat
-          </div>
-        </div>
+        <ChatInputBar
+          input={input}
+          isTyping={isTyping}
+          contextPills={contextPills}
+          onInputChange={resizeTextareaOnInput}
+          onKeyDown={handleKeyDown}
+          onSubmit={handleSubmit}
+          onStop={handleStop}
+          onRemoveContextPill={removeContextPill}
+          textareaRef={textareaRef}
+        />
       </div>
 
-      <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : ""}`}>
-        <div className={styles.sidebarHeader}>
-          <span className={styles.sidebarTitle}>Conversations</span>
-          <button
-            className={styles.newChatBtn}
-            onClick={createNewConversation}
-            title="New conversation"
-            disabled={isCreating}
-          >
-            {isCreating ? <Loader2 size={13} /> : <Plus size={13} />}
-          </button>
-        </div>
-
-        <div className={styles.modelSelector}>
-          <Cpu size={12} />
-          {models.length > 0 ? (
-            <select className={styles.modelSelect} value={model} onChange={(e) => setModel(e.target.value)}>
-              {models.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <input
-              className={styles.modelInput}
-              value={model}
-              onChange={(e) => setModel(e.target.value)}
-              placeholder="model name..."
-            />
-          )}
-        </div>
-
-        <div className={styles.convList}>
-          {conversations.length === 0 && (
-            <div className={styles.convEmpty}>
-              <MessageSquare size={22} className={styles.convEmptyIcon} />
-              <span>No conversations yet</span>
-            </div>
-          )}
-          {conversationGroups.map((group) => (
-            <div key={group.label}>
-              <div className={styles.convGroupLabel}>{group.label}</div>
-              {group.items.map((conv) => (
-                <div
-                  key={conv.id}
-                  className={`${styles.convItem} ${activeConversationId === conv.id ? styles.convItemActive : ""}`}
-                  onClick={() => loadConversation(conv)}
-                >
-                  <MessageSquare size={12} className={styles.convIcon} />
-                  <div className={styles.convInfo}>
-                    <span className={styles.convTitle}>{conv.title}</span>
-                  </div>
-                  <button
-                    className={styles.convDelete}
-                    onClick={(e) => deleteConversation(conv.id, e)}
-                    title="Delete conversation"
-                  >
-                    <Trash2 size={11} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          ))}
-        </div>
-
-        <div className={styles.wsContextSection}>
-          <button className={styles.wsContextToggle} onClick={() => setWsContextOpen((v) => !v)}>
-            <FolderOpen size={11} />
-            <span>Workspace Context</span>
-            <ChevronDown size={11} className={`${styles.wsChevron} ${wsContextOpen ? styles.wsChevronOpen : ""}`} />
-          </button>
-          {wsContextOpen && (
-            <div className={styles.wsContextList}>
-              {workspaces.length === 0 && <p className={styles.wsContextEmpty}>No workspaces found.</p>}
-              {workspaces.map((ws) => (
-                <div key={ws.id} className={styles.wsContextItem}>
-                  <button
-                    className={styles.wsContextName}
-                    onClick={() => setExpandedWorkspace((v) => (v === ws.id ? null : ws.id))}
-                    title="Expand workspace files"
-                  >
-                    <FolderOpen size={11} className={styles.wsContextIcon} />
-                    <span>{ws.name}</span>
-                    <ChevronRight
-                      size={10}
-                      className={`${styles.wsExpandChevron} ${expandedWorkspace === ws.id ? styles.wsExpandChevronOpen : ""}`}
-                    />
-                  </button>
-                  <button
-                    className={styles.wsInjectBtn}
-                    onClick={() => injectWorkspaceContext(ws)}
-                    title="Insert workspace reference into message"
-                  >
-                    +
-                  </button>
-                  {expandedWorkspace === ws.id && (
-                    <div className={styles.wsFileList}>
-                      {expandedWorkspaceFiles.length === 0 && <p className={styles.wsContextEmpty}>No files.</p>}
-                      {expandedWorkspaceFiles.map((f) => (
-                        <button
-                          key={f.id}
-                          className={styles.wsFileItem}
-                          onClick={() => injectFileContext(f.fileName, f.id)}
-                          title={`Insert file reference: ${f.fileName}`}
-                          disabled={f.processingStatus !== "Completed"}
-                        >
-                          <FileText size={10} />
-                          <span>{f.fileName}</span>
-                          {f.processingStatus !== "Completed" && (
-                            <span className={styles.wsFileStatus}>{f.processingStatus}</span>
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </aside>
+      <ConversationSidebar
+        isOpen={sidebarOpen}
+        conversations={conversations}
+        conversationGroups={conversationGroups}
+        activeConversationId={activeConversationId}
+        model={model}
+        models={models}
+        isCreating={isCreating}
+        wsContextOpen={wsContextOpen}
+        workspaces={workspaces}
+        expandedWorkspace={expandedWorkspace}
+        expandedWorkspaceFiles={expandedWorkspaceFiles}
+        onNewConversation={createNewConversation}
+        onLoadConversation={loadConversation}
+        onDeleteConversation={deleteConversation}
+        onSetModel={setModel}
+        onToggleWsContext={() => setWsContextOpen((v) => !v)}
+        onToggleExpandWorkspace={(wsId) => setExpandedWorkspace((v) => (v === wsId ? null : wsId))}
+        onInjectWorkspaceContext={injectWorkspaceContext}
+        onInjectFileContext={injectFileContext}
+      />
     </div>
   );
 };
