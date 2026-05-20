@@ -1,43 +1,13 @@
-import { useState, Fragment } from "react";
-import { DndContext, closestCenter, type DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
-import { Plus, X, GripVertical, Bot, GitBranch, Loader, CheckCircle, AlertCircle, Pencil, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { Plus, GitBranch, Loader } from "lucide-react";
 import styles from "./workflows.module.scss";
 import useWorkflows from "../../hooks/useWorkflows";
 import useAgents from "../../hooks/useAgents";
-import type { AgentRecord } from "../../types/agents";
-import type { WorkflowRecord } from "../../types/workflows";
-import type { SortableAgentItem } from "../../types/workflows";
-
-const SortableAgent = ({ item, onRemove }: { item: SortableAgentItem; onRemove: (sortId: string) => void }) => {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.sortId });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
-
-  return (
-    <div ref={setNodeRef} style={style} className={styles.sortableAgent}>
-      <button type="button" className={styles.dragHandle} {...attributes} {...listeners}>
-        <GripVertical size={14} />
-      </button>
-      <Bot size={22} className={styles.sortableAgentIcon} />
-      <div className={styles.sortableAgentInfo}>
-        <span className={styles.sortableAgentName}>{item.name}</span>
-        <div className={styles.sortableAgentMeta}>
-          <span className={styles.sortableAgentModel}>{item.model}</span>
-        </div>
-        {item.description && <span className={styles.sortableAgentDesc}>{item.description}</span>}
-      </div>
-      <button className={styles.sortableAgentRemove} onClick={() => onRemove(item.sortId)}>
-        <X size={12} />
-      </button>
-    </div>
-  );
-};
+import type { WorkflowRecord, SortableAgentItem } from "../../types/workflows";
+import PageHeader from "../../components/ui/page-header";
+import EmptyState from "../../components/ui/empty-state";
+import WorkflowCard from "./components/workflow-card";
+import WorkflowEditor from "./components/workflow-editor";
 
 const Workflows = () => {
   const {
@@ -61,19 +31,10 @@ const Workflows = () => {
 
   const [selectedWorkflow, setSelectedWorkflow] = useState<WorkflowRecord | null>(null);
   const [isEditing, setIsEditing] = useState(false);
-
-  const [formName, setFormName] = useState("");
-  const [formDescription, setFormDescription] = useState("");
-  const [formAgents, setFormAgents] = useState<SortableAgentItem[]>([]);
-
-  const sensors = useSensors(useSensor(PointerSensor));
-
-  const activeMutation = {
-    isPending: selectedWorkflow ? isUpdatingWorkflow : isCreatingWorkflow,
-    isSuccess: selectedWorkflow ? isUpdateSuccess : isCreateSuccess,
-    isError: selectedWorkflow ? isUpdateError : isCreateError,
-    error: selectedWorkflow ? updateWorkflowError : createWorkflowError,
-  };
+  const [editorKey, setEditorKey] = useState(0);
+  const [initialName, setInitialName] = useState("");
+  const [initialDescription, setInitialDescription] = useState("");
+  const [initialFormAgents, setInitialFormAgents] = useState<SortableAgentItem[]>([]);
 
   const resetMutations = () => {
     resetCreate();
@@ -82,19 +43,19 @@ const Workflows = () => {
 
   const openCreate = () => {
     setSelectedWorkflow(null);
+    setInitialName("");
+    setInitialDescription("");
+    setInitialFormAgents([]);
     setIsEditing(true);
-    setFormName("");
-    setFormDescription("");
-    setFormAgents([]);
+    setEditorKey((k) => k + 1);
     resetMutations();
   };
 
   const openEdit = (workflow: WorkflowRecord) => {
     setSelectedWorkflow(workflow);
-    setIsEditing(true);
-    setFormName(workflow.name);
-    setFormDescription(workflow.description);
-    setFormAgents(
+    setInitialName(workflow.name);
+    setInitialDescription(workflow.description);
+    setInitialFormAgents(
       workflow.agents.map((a) => {
         const ag = agents.find((ag) => ag.id === a.agentId);
         return {
@@ -106,6 +67,8 @@ const Workflows = () => {
         };
       }),
     );
+    setIsEditing(true);
+    setEditorKey((k) => k + 1);
     resetMutations();
   };
 
@@ -115,49 +78,11 @@ const Workflows = () => {
     resetMutations();
   };
 
-  const addAgentToForm = (agent: AgentRecord) => {
-    setFormAgents((prev) => [
-      ...prev,
-      {
-        sortId: `${agent.id}-${Date.now()}`,
-        agentId: agent.id,
-        name: agent.name,
-        model: agent.model,
-        description: agent.description,
-      },
-    ]);
-  };
-
-  const removeAgentFromForm = (sortId: string) => {
-    setFormAgents((prev) => prev.filter((a) => a.sortId !== sortId));
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (over && active.id !== over.id) {
-      setFormAgents((items) => {
-        const oldIndex = items.findIndex((i) => i.sortId === active.id);
-        const newIndex = items.findIndex((i) => i.sortId === over.id);
-        return arrayMove(items, oldIndex, newIndex);
-      });
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const payload = {
-      name: formName.trim(),
-      description: formDescription.trim(),
-      agents: formAgents.map((a, idx) => ({ agentId: a.agentId, order: idx })),
-    };
-
+  const handleSubmit = (data: { name: string; description: string; agents: { agentId: string; order: number }[] }) => {
     if (selectedWorkflow) {
-      updateWorkflow(
-        { id: selectedWorkflow.id, ...payload },
-        { onSuccess: () => setTimeout(() => resetUpdate(), 900) },
-      );
+      updateWorkflow({ id: selectedWorkflow.id, ...data }, { onSuccess: () => setTimeout(() => resetUpdate(), 900) });
     } else {
-      createWorkflow(payload, {
+      createWorkflow(data, {
         onSuccess: () => setTimeout(() => closeEdit(), 900),
       });
     }
@@ -176,25 +101,23 @@ const Workflows = () => {
 
   return (
     <div className={styles.container}>
-      <div className={styles.pageHeader}>
-        <div className={styles.headerLeft}>
-          <GitBranch size={20} className={styles.headerIcon} />
-          <div>
-            <h2 className={styles.headerTitle}>Workflow Builder</h2>
-            <span className={styles.headerSub}>Compose agents into ordered execution pipelines</span>
+      <PageHeader
+        icon={<GitBranch size={20} className={styles.headerIcon} />}
+        title="Workflow Builder"
+        subtitle="Compose agents into ordered execution pipelines"
+        right={
+          <div className={styles.headerRight}>
+            <div className={styles.headerBadge}>
+              <GitBranch size={13} />
+              <span>{workflows.length} workflows</span>
+            </div>
+            <button className={styles.createBtn} onClick={openCreate}>
+              <Plus size={14} />
+              New Workflow
+            </button>
           </div>
-        </div>
-        <div className={styles.headerRight}>
-          <div className={styles.headerBadge}>
-            <GitBranch size={13} />
-            <span>{workflows.length} workflows</span>
-          </div>
-          <button className={styles.createBtn} onClick={openCreate}>
-            <Plus size={14} />
-            New Workflow
-          </button>
-        </div>
-      </div>
+        }
+      />
 
       <div className={styles.body}>
         <main className={styles.editorPanel}>
@@ -214,154 +137,25 @@ const Workflows = () => {
               </button>
             </div>
           ) : (
-            <div className={styles.editorContent}>
-              <div className={styles.editorHeader}>
-                <span className={styles.editorTitle}>{selectedWorkflow ? "Edit Workflow" : "New Workflow"}</span>
-                <button className={styles.closeBtn} onClick={closeEdit}>
-                  <X size={14} />
-                </button>
-              </div>
-
-              <form onSubmit={handleSubmit} className={styles.editorForm}>
-                <div className={styles.editorColumns}>
-                  <div className={styles.pipelineColumn}>
-                    <div className={styles.pipelineHeader}>
-                      <span>Execution Order</span>
-                      <span className={styles.pipelineCount}>{formAgents.length} agents</span>
-                    </div>
-
-                    {formAgents.length === 0 ? (
-                      <div className={styles.pipelineEmpty}>
-                        <Bot size={24} className={styles.pipelineEmptyIcon} />
-                        <span>Add agents from the list</span>
-                        <span className={styles.pipelineEmptyHint}>Drag to reorder execution sequence</span>
-                      </div>
-                    ) : (
-                      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                        <SortableContext items={formAgents.map((a) => a.sortId)} strategy={verticalListSortingStrategy}>
-                          <div className={styles.sortableList}>
-                            {formAgents.map((item, idx) => (
-                              <Fragment key={item.sortId}>
-                                {idx > 0 && (
-                                  <div className={styles.nodeConnector}>
-                                    <div className={styles.connectorLine}>
-                                      <div
-                                        className={styles.connectorFlow}
-                                        style={{ animationDelay: `${idx * 0.35}s` }}
-                                      />
-                                    </div>
-                                    <div className={styles.connectorArrow} />
-                                  </div>
-                                )}
-                                <div className={styles.sortableRow}>
-                                  <span className={styles.sortableIndex}>{String(idx + 1).padStart(2, "0")}</span>
-                                  <SortableAgent item={item} onRemove={removeAgentFromForm} />
-                                </div>
-                              </Fragment>
-                            ))}
-                          </div>
-                        </SortableContext>
-                      </DndContext>
-                    )}
-
-                    {selectedWorkflow && formAgents.length === 0 && (
-                      <div className={styles.wfAgentPreview}>
-                        {selectedWorkflow.agents
-                          .sort((a, b) => a.order - b.order)
-                          .map((a, idx) => (
-                            <div key={a.agentId} className={styles.previewAgent}>
-                              <span className={styles.previewIndex}>{idx + 1}</span>
-                              <Bot size={12} />
-                              <span>{getAgentName(a.agentId)}</span>
-                            </div>
-                          ))}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className={styles.formColumn}>
-                    <div className={styles.fieldGroup}>
-                      <label className={styles.fieldLabel} htmlFor="wf-name">
-                        Name
-                      </label>
-                      <input
-                        id="wf-name"
-                        className={styles.fieldInput}
-                        type="text"
-                        value={formName}
-                        onChange={(e) => setFormName(e.target.value)}
-                        placeholder="e.g. Local AI Inference Pipeline"
-                        maxLength={255}
-                        required
-                        autoComplete="off"
-                      />
-                    </div>
-
-                    <div className={styles.fieldGroup}>
-                      <label className={styles.fieldLabel} htmlFor="wf-desc">
-                        Description
-                        <span className={styles.charCount}>{formDescription.length}/4000</span>
-                      </label>
-                      <textarea
-                        id="wf-desc"
-                        className={`${styles.fieldInput} ${styles.fieldTextarea}`}
-                        value={formDescription}
-                        onChange={(e) => setFormDescription(e.target.value)}
-                        placeholder="Describe what this workflow does..."
-                        maxLength={4000}
-                        rows={4}
-                      />
-                    </div>
-
-                    <div className={styles.fieldGroup}>
-                      <label className={styles.fieldLabel}>Add Agents</label>
-                      <div className={styles.agentPicker}>
-                        {agents.length === 0 && <span className={styles.pickerEmpty}>No agents registered yet</span>}
-                        {agents.map((agent) => (
-                          <button
-                            key={agent.id}
-                            type="button"
-                            className={styles.agentPickerItem}
-                            onClick={() => addAgentToForm(agent)}
-                          >
-                            <Bot size={12} />
-                            <span>{agent.name}</span>
-                            <Plus size={11} className={styles.addIcon} />
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <button
-                      type="submit"
-                      className={`${styles.submitBtn} ${activeMutation.isPending ? styles.submitting : ""}`}
-                      disabled={activeMutation.isPending || !formName.trim()}
-                    >
-                      {activeMutation.isPending ? (
-                        <>
-                          <Loader size={14} className={styles.spinIcon} /> Saving...
-                        </>
-                      ) : activeMutation.isSuccess ? (
-                        <>
-                          <CheckCircle size={14} /> Saved
-                        </>
-                      ) : selectedWorkflow ? (
-                        "Save Changes"
-                      ) : (
-                        "Create Workflow"
-                      )}
-                    </button>
-
-                    {activeMutation.isError && (
-                      <div className={styles.errorMsg}>
-                        <AlertCircle size={13} />
-                        {activeMutation.error?.message ?? "Unknown error"}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </form>
-            </div>
+            <WorkflowEditor
+              key={editorKey}
+              selectedWorkflow={selectedWorkflow}
+              agents={agents}
+              isCreatingWorkflow={isCreatingWorkflow}
+              isUpdatingWorkflow={isUpdatingWorkflow}
+              isCreateSuccess={isCreateSuccess}
+              isUpdateSuccess={isUpdateSuccess}
+              isCreateError={isCreateError}
+              isUpdateError={isUpdateError}
+              createWorkflowError={createWorkflowError}
+              updateWorkflowError={updateWorkflowError}
+              onClose={closeEdit}
+              onSubmit={handleSubmit}
+              getAgentName={getAgentName}
+              initialFormAgents={initialFormAgents}
+              initialName={initialName}
+              initialDescription={initialDescription}
+            />
           )}
         </main>
 
@@ -372,58 +166,19 @@ const Workflows = () => {
           </div>
 
           <div className={styles.listScroll}>
-            {isLoading && (
-              <div className={styles.listPlaceholder}>
-                <Loader size={18} className={styles.spinIcon} />
-                <span>Loading...</span>
-              </div>
-            )}
+            {isLoading && <EmptyState icon={<Loader size={18} className={styles.spinIcon} />} title="Loading..." />}
             {!isLoading && workflows.length === 0 && (
-              <div className={styles.listPlaceholder}>
-                <GitBranch size={28} className={styles.emptyIcon} />
-                <span>No workflows yet</span>
-              </div>
+              <EmptyState icon={<GitBranch size={28} />} title="No workflows yet" />
             )}
             {workflows.map((wf) => (
-              <div
+              <WorkflowCard
                 key={wf.id}
-                className={`${styles.workflowCard} ${selectedWorkflow?.id === wf.id ? styles.workflowCardActive : ""}`}
-                onClick={() => openEdit(wf)}
-              >
-                <div className={styles.workflowCardHeader}>
-                  <GitBranch size={13} className={styles.wfIcon} />
-                  <span className={styles.wfName}>{wf.name}</span>
-                </div>
-                <p className={styles.wfDescription}>{wf.description || "No description"}</p>
-                <div className={styles.wfMeta}>
-                  <span className={styles.wfAgentCount}>
-                    <Bot size={11} />
-                    {wf.agents.length} agent{wf.agents.length !== 1 ? "s" : ""}
-                  </span>
-                  <div className={styles.wfActions}>
-                    <button
-                      className={styles.wfActionBtn}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openEdit(wf);
-                      }}
-                      title="Edit"
-                    >
-                      <Pencil size={11} />
-                    </button>
-                    <button
-                      className={`${styles.wfActionBtn} ${styles.wfActionBtnDanger}`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(wf.id);
-                      }}
-                      title="Delete"
-                    >
-                      <Trash2 size={11} />
-                    </button>
-                  </div>
-                </div>
-              </div>
+                workflow={wf}
+                isActive={selectedWorkflow?.id === wf.id}
+                onSelect={openEdit}
+                onEdit={openEdit}
+                onDelete={handleDelete}
+              />
             ))}
           </div>
         </aside>
