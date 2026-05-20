@@ -1,19 +1,6 @@
 import { useRef, useState, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  FolderOpen,
-  FolderPlus,
-  UploadCloud,
-  CheckCircle,
-  AlertCircle,
-  Loader2,
-  FileText,
-  Pencil,
-  Trash2,
-  Plus,
-  ChevronRight,
-  X,
-} from "lucide-react";
+import { FolderOpen, Plus } from "lucide-react";
 import styles from "./workspaces.module.scss";
 import {
   fetchWorkspaces,
@@ -25,7 +12,11 @@ import {
   deleteWorkspaceFile,
 } from "../../services/agentRuntime.service";
 import type { Workspace, WorkspaceFile } from "../../types/workspace";
-import { formatBytesToMb, formatDateTimeShort } from "../../utils/formatters";
+import PageHeader from "../../components/ui/page-header";
+import WorkspaceForm from "./components/workspace-form";
+import WorkspaceFileCard from "./components/workspace-file-card";
+import UploadPanel from "./components/upload-panel";
+import WorkspaceSidebar from "./components/workspace-sidebar";
 
 const STATUS_POLL_INTERVAL_MS = 4000;
 
@@ -60,90 +51,6 @@ const ALLOWED_EXTENSIONS = [
 
 const hasPending = (files: WorkspaceFile[]) =>
   files.some((f) => f.processingStatus === "Pending" || f.processingStatus === "Processing");
-
-const statusClass = (status: WorkspaceFile["processingStatus"]) => {
-  switch (status) {
-    case "Pending":
-      return styles.pending;
-    case "Processing":
-      return styles.processing;
-    case "Completed":
-      return styles.completed;
-    case "Failed":
-      return styles.failed;
-  }
-};
-
-interface WorkspaceFormProps {
-  initial?: { name: string; description: string };
-  onSubmit: (name: string, description: string) => void;
-  onCancel: () => void;
-  isPending: boolean;
-  title: string;
-}
-
-const WorkspaceForm = ({ initial, onSubmit, onCancel, isPending, title }: WorkspaceFormProps) => {
-  const [name, setName] = useState(initial?.name ?? "");
-  const [description, setDescription] = useState(initial?.description ?? "");
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (name.trim()) {
-      onSubmit(name.trim(), description.trim());
-    }
-  };
-
-  return (
-    <div className={styles.modalOverlay} onClick={onCancel}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.modalHeader}>
-          <span className={styles.modalTitle}>{title}</span>
-          <button className={styles.modalClose} onClick={onCancel}>
-            <X size={14} />
-          </button>
-        </div>
-        <form onSubmit={handleSubmit} className={styles.modalForm}>
-          <div className={styles.formGroup}>
-            <label className={styles.label} htmlFor="ws-name">
-              Name
-            </label>
-            <input
-              id="ws-name"
-              className={styles.input}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. incident-2026"
-              autoFocus
-              required
-            />
-          </div>
-          <div className={styles.formGroup}>
-            <label className={styles.label} htmlFor="ws-desc">
-              Description
-            </label>
-            <textarea
-              id="ws-desc"
-              className={`${styles.input} ${styles.textarea}`}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Optional description…"
-              rows={3}
-            />
-          </div>
-          <div className={styles.modalActions}>
-            <button type="button" className={styles.cancelButton} onClick={onCancel}>
-              Cancel
-            </button>
-            <button type="submit" className={styles.submitButton} disabled={!name.trim() || isPending}>
-              {isPending ? <Loader2 size={14} className={styles.spin} /> : null}
-              {title}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-};
 
 const Workspaces = () => {
   const queryClient = useQueryClient();
@@ -270,19 +177,17 @@ const Workspaces = () => {
 
   return (
     <div className={styles.root}>
-      <div className={styles.header}>
-        <div className={styles.headerLeft}>
-          <FolderOpen size={20} className={styles.titleIcon} />
-          <div>
-            <h2 className={styles.pageTitle}>Workspaces</h2>
-            <span className={styles.pageSubtitle}>Organize files for agent access, RAG indexing, and analysis</span>
-          </div>
-        </div>
-        <button className={styles.newButton} onClick={() => setShowCreateForm(true)}>
-          <Plus size={14} />
-          New Workspace
-        </button>
-      </div>
+      <PageHeader
+        icon={<FolderOpen size={20} className={styles.titleIcon} />}
+        title="Workspaces"
+        subtitle="Organize files for agent access, RAG indexing, and analysis"
+        right={
+          <button className={styles.newButton} onClick={() => setShowCreateForm(true)}>
+            <Plus size={14} />
+            New Workspace
+          </button>
+        }
+      />
 
       <div className={styles.layout}>
         <main className={styles.detail}>
@@ -314,162 +219,42 @@ const Workspaces = () => {
                       <p className={styles.emptyMessage}>No files yet. Upload one using the panel on the right.</p>
                     )}
                     {files.map((f) => (
-                      <div key={f.id} className={styles.fileCard}>
-                        <FileText size={14} className={styles.fileIcon} />
-                        <div className={styles.fileInfo}>
-                          <span className={styles.fileName}>{f.fileName}</span>
-                          <p className={styles.fileMeta}>
-                            {formatBytesToMb(f.sizeBytes)} · {formatDateTimeShort(f.createdAt)}
-                          </p>
-                        </div>
-                        <span className={`${styles.statusBadge} ${statusClass(f.processingStatus)}`}>
-                          {f.processingStatus}
-                        </span>
-                        <button
-                          className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
-                          title="Delete file"
-                          onClick={() => deleteFile(f.id)}
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      </div>
+                      <WorkspaceFileCard key={f.id} file={f} onDelete={(id) => deleteFile(id)} />
                     ))}
                   </div>
                 </div>
 
-                <form className={styles.uploadPanel} onSubmit={handleUploadSubmit}>
-                  <p className={styles.panelTitle}>Upload File</p>
-                  <div
-                    className={`${styles.uploadArea} ${dragActive ? styles.uploadAreaActive : ""}`}
-                    onClick={() => fileInputRef.current?.click()}
-                    onDrop={handleDrop}
-                    onDragOver={handleDragOver}
-                    onDragLeave={handleDragLeave}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => e.key === "Enter" && fileInputRef.current?.click()}
-                  >
-                    <UploadCloud size={28} className={styles.uploadIcon} />
-                    {selectedFile ? (
-                      <>
-                        <span className={styles.uploadText}>{selectedFile.name}</span>
-                        <span className={styles.uploadHint}>{formatBytesToMb(selectedFile.size)}</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className={styles.uploadText}>Drop a file or click to browse</span>
-                        <span className={styles.uploadHint}>
-                          Text files up to 100 MB — .txt .md .json .csv .yaml .py .ts …
-                        </span>
-                      </>
-                    )}
-                  </div>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    className={styles.fileInput}
-                    onChange={handleInputChange}
-                    accept={ALLOWED_EXTENSIONS.join(",")}
-                  />
-
-                  {fileTypeError && (
-                    <div className={`${styles.statusBox} ${styles["status-error"]}`}>
-                      <AlertCircle size={14} className={styles.statusIcon} />
-                      <span className={styles.statusMessage}>{fileTypeError}</span>
-                    </div>
-                  )}
-
-                  {isUploading && (
-                    <div className={`${styles.statusBox} ${styles["status-loading"]}`}>
-                      <Loader2 size={14} className={`${styles.statusIcon} ${styles.spin}`} />
-                      <span className={styles.statusMessage}>Uploading…</span>
-                    </div>
-                  )}
-
-                  {isUploadSuccess && (
-                    <div className={`${styles.statusBox} ${styles["status-success"]}`}>
-                      <CheckCircle size={14} className={styles.statusIcon} />
-                      <span className={styles.statusMessage}>File uploaded — indexing in background.</span>
-                    </div>
-                  )}
-
-                  {isUploadError && (
-                    <div className={`${styles.statusBox} ${styles["status-error"]}`}>
-                      <AlertCircle size={14} className={styles.statusIcon} />
-                      <span className={styles.statusMessage}>
-                        {uploadError instanceof Error ? uploadError.message : "Upload failed."}
-                      </span>
-                    </div>
-                  )}
-
-                  <button type="submit" className={styles.submitButton} disabled={!selectedFile || isUploading}>
-                    {isUploading ? <Loader2 size={14} className={styles.spin} /> : <UploadCloud size={14} />}
-                    Upload to {selectedWorkspace.name}
-                  </button>
-                </form>
+                <UploadPanel
+                  workspaceName={selectedWorkspace.name}
+                  selectedFile={selectedFile}
+                  dragActive={dragActive}
+                  fileTypeError={fileTypeError}
+                  isUploading={isUploading}
+                  isUploadSuccess={isUploadSuccess}
+                  isUploadError={isUploadError}
+                  uploadError={uploadError instanceof Error ? uploadError : null}
+                  acceptedExtensions={ALLOWED_EXTENSIONS.join(",")}
+                  onDrop={handleDrop}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onInputChange={handleInputChange}
+                  onSubmit={handleUploadSubmit}
+                  fileInputRef={fileInputRef}
+                />
               </div>
             </>
           )}
         </main>
 
-        <aside className={styles.sidebar}>
-          <p className={styles.sidebarTitle}>Workspaces {workspaces.length > 0 && `· ${workspaces.length}`}</p>
-          {isWorkspacesError && <p className={styles.errorText}>Failed to load workspaces.</p>}
-          {!isWorkspacesError && workspaces.length === 0 && (
-            <div className={styles.emptyState}>
-              <FolderPlus size={28} className={styles.emptyIcon} />
-              <p>No workspaces yet.</p>
-              <button className={styles.emptyAction} onClick={() => setShowCreateForm(true)}>
-                Create one
-              </button>
-            </div>
-          )}
-          <div className={styles.workspaceList}>
-            {workspaces.map((ws) => (
-              <div
-                key={ws.id}
-                className={`${styles.workspaceCard} ${selectedWorkspace?.id === ws.id ? styles.workspaceCardActive : ""}`}
-                onClick={() => setSelectedWorkspace(ws)}
-              >
-                <div className={styles.wsCardMain}>
-                  <FolderOpen size={13} className={styles.wsIcon} />
-                  <div className={styles.wsInfo}>
-                    <span className={styles.wsName}>{ws.name}</span>
-                    {ws.description && <span className={styles.wsDesc}>{ws.description}</span>}
-                  </div>
-                  <ChevronRight size={12} className={styles.wsChevron} />
-                </div>
-                <div className={styles.wsCardMeta}>
-                  <span className={styles.wsFileCount}>
-                    {ws.fileCount} file{ws.fileCount !== 1 ? "s" : ""}
-                  </span>
-                  <div className={styles.wsActions}>
-                    <button
-                      className={styles.iconBtn}
-                      title="Edit workspace"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditingWorkspace(ws);
-                      }}
-                    >
-                      <Pencil size={12} />
-                    </button>
-                    <button
-                      className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
-                      title="Delete workspace"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteWs(ws.id);
-                      }}
-                    >
-                      <Trash2 size={12} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </aside>
+        <WorkspaceSidebar
+          workspaces={workspaces}
+          selectedWorkspace={selectedWorkspace}
+          isWorkspacesError={isWorkspacesError}
+          onSelect={setSelectedWorkspace}
+          onEdit={setEditingWorkspace}
+          onDelete={(id) => deleteWs(id)}
+          onCreateNew={() => setShowCreateForm(true)}
+        />
       </div>
 
       {showCreateForm && (
