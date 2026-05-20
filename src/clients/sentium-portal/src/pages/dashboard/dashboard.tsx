@@ -1,81 +1,15 @@
 import { useNavigate } from "react-router";
-import {
-  Activity,
-  AlertTriangle,
-  ArrowRight,
-  Bot,
-  BotMessageSquare,
-  BrickWallShield,
-  CheckCircle,
-  Cpu,
-  GitBranch,
-  ShieldCheck,
-  TrendingUp,
-  View,
-  XCircle,
-  Zap,
-} from "lucide-react";
+import { TrendingUp } from "lucide-react";
 import styles from "./dashboard.module.scss";
 import useAgents from "../../hooks/useAgents";
 import useWorkflows from "../../hooks/useWorkflows";
 import useServiceHealth from "../../hooks/useServiceHealth";
-
-const MODULE_SERVICE_MAP: Record<string, string> = {
-  "agent-runtime": "Agent Runtime",
-  sentinel: "Sentinel",
-  "identity-provider": "Identity",
-};
-
-const MODULES = [
-  { key: "agent-runtime", label: "Agent Runtime", icon: Cpu, color: "green" },
-  { key: "sentinel", label: "Sentinel", icon: BrickWallShield, color: "blue" },
-  { key: "identity-provider", label: "Identity Provider", icon: ShieldCheck, color: "amber" },
-];
-
-const QUICK_ACCESS = [
-  {
-    to: "/orchestration",
-    label: "Orchestration",
-    description: "Launch and monitor multi-agent pipelines",
-    icon: Activity,
-    color: "green",
-  },
-  {
-    to: "/assistant",
-    label: "AI Assistant",
-    description: "Interactive AI-powered analysis and queries",
-    icon: BotMessageSquare,
-    color: "blue",
-  },
-  {
-    to: "/agents",
-    label: "Agents",
-    description: "Create and manage AI agent configurations",
-    icon: Bot,
-    color: "purple",
-  },
-  {
-    to: "/workflows",
-    label: "Workflows",
-    description: "Design and run automated agent workflows",
-    icon: GitBranch,
-    color: "cyan",
-  },
-  {
-    to: "/sentinel",
-    label: "Sentinel",
-    description: "Real-time security governance and policy enforcement",
-    icon: BrickWallShield,
-    color: "amber",
-  },
-  {
-    to: "/watchdog",
-    label: "Watchdog",
-    description: "Service health monitoring and system diagnostics",
-    icon: View,
-    color: "red",
-  },
-];
+import PageHeader from "../../components/ui/page-header";
+import StatCardsRow from "./components/stat-cards-row";
+import QuickAccessGrid from "./components/quick-access-grid";
+import SystemModules from "./components/system-modules";
+import ActivityFeed from "./components/activity-feed";
+import SecurityRow from "./components/security-row";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -84,106 +18,33 @@ const Dashboard = () => {
   const { services: serviceHealth } = useServiceHealth();
   const loading = agentsLoading || workflowsLoading;
 
-  const getModuleStatus = (moduleKey: string) => {
-    const serviceName = MODULE_SERVICE_MAP[moduleKey];
-    return serviceHealth.find((s) => s.serviceName === serviceName);
-  };
-
   return (
     <div className={styles.dashboardRoot}>
-      <div className={styles.dashboardHeader}>
-        <div className={styles.headerLeft}>
-          <h1 className={styles.pageTitle}>Dashboard</h1>
-          <p className={styles.pageSubtitle}>System overview and quick access</p>
-        </div>
-        <div className={styles.headerRight}>
-          <div className={styles.statusBadge}>
-            <span className="status-dot"></span>
-            All Systems Operational
+      <PageHeader
+        title="Dashboard"
+        subtitle="System overview and quick access"
+        right={
+          <div className={styles.headerRight}>
+            <div className={styles.statusBadge}>
+              <span className="status-dot"></span>
+              All Systems Operational
+            </div>
+            <div className={styles.headerMeta}>
+              <TrendingUp size={12} />
+              <span>Updated just now</span>
+            </div>
           </div>
-          <div className={styles.headerMeta}>
-            <TrendingUp size={12} />
-            <span>Updated just now</span> {/* Placeholder - ideally would show actual last update time */}
-          </div>
-        </div>
-      </div>
+        }
+      />
 
-      <div className={styles.statsRow}>
-        <div className={styles.statCard}>
-          <div className={`${styles.statIcon} ${styles.iconGreen}`}>
-            <Bot size={18} />
-          </div>
-          <div className={styles.statContent}>
-            {loading ? (
-              <span className={styles.skeletonValue} />
-            ) : (
-              <span className={styles.statValue}>{agents.length}</span>
-            )}
-            <span className={styles.statLabel}>Agents Configured</span>
-          </div>
-        </div>
-        <div className={styles.statCard}>
-          <div className={`${styles.statIcon} ${styles.iconBlue}`}>
-            <GitBranch size={18} />
-          </div>
-          <div className={styles.statContent}>
-            {loading ? (
-              <span className={styles.skeletonValue} />
-            ) : (
-              <span className={styles.statValue}>{workflows.length}</span>
-            )}
-            <span className={styles.statLabel}>Workflows Defined</span>
-          </div>
-        </div>
-        <div className={styles.statCard}>
-          <div className={`${styles.statIcon} ${styles.iconAmber}`}>
-            <AlertTriangle size={18} />
-          </div>
-          <div className={styles.statContent}>
-            <span className={styles.statValue}>0</span>
-            <span className={styles.statLabel}>Policy Violations</span>
-          </div>
-          <span className={styles.statChip} data-variant="green">
-            Clear
-          </span>
-        </div>
-        <div className={styles.statCard}>
-          <div className={`${styles.statIcon} ${styles.iconPurple}`}>
-            <Zap size={18} />
-          </div>
-          <div className={styles.statContent}>
-            <span className={styles.statValue}>Nominal</span>
-            <span className={styles.statLabel}>System Health</span>
-          </div>
-          <span className={styles.statChip} data-variant="green">
-            Healthy
-          </span>
-        </div>
-      </div>
+      <StatCardsRow loading={loading} agentsCount={agents.length} workflowsCount={workflows.length} />
 
       <div className={styles.mainGrid}>
         <div className={styles.section}>
           <div className={styles.sectionHeader}>
             <span className={styles.sectionTitle}>Quick Access</span>
           </div>
-          <div className={styles.quickGrid}>
-            {QUICK_ACCESS.map((item) => (
-              <button
-                key={item.to}
-                className={`${styles.quickCard} ${styles[`quick_${item.color}`]}`}
-                onClick={() => navigate(item.to)}
-              >
-                <div className={styles.quickCardIcon}>
-                  <item.icon size={20} />
-                </div>
-                <div className={styles.quickCardBody}>
-                  <span className={styles.quickCardLabel}>{item.label}</span>
-                  <span className={styles.quickCardDesc}>{item.description}</span>
-                </div>
-                <ArrowRight size={14} className={styles.quickCardArrow} />
-              </button>
-            ))}
-          </div>
+          <QuickAccessGrid onNavigate={navigate} />
         </div>
 
         <div className={styles.rightColumn}>
@@ -191,25 +52,7 @@ const Dashboard = () => {
             <div className={styles.sectionHeader}>
               <span className={styles.sectionTitle}>System Modules</span>
             </div>
-            <div className={styles.moduleList}>
-              {MODULES.map((mod) => {
-                const health = getModuleStatus(mod.key);
-                const isUnhealthy = health?.status === "Unhealthy";
-                const isUnknown = !health;
-                return (
-                  <div key={mod.key} className={styles.moduleRow}>
-                    <div className={`${styles.moduleIcon} ${styles[`moduleIcon_${mod.color}`]}`}>
-                      <mod.icon size={14} />
-                    </div>
-                    <span className={styles.moduleLabel}>{mod.label}</span>
-                    <div className={`${styles.moduleStatus} ${isUnhealthy ? styles.moduleStatusUnhealthy : ""}`}>
-                      {isUnhealthy ? <XCircle size={13} /> : <CheckCircle size={13} />}
-                      <span>{isUnknown ? "Unknown" : isUnhealthy ? "Offline" : "Online"}</span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+            <SystemModules services={serviceHealth} />
           </div>
 
           <div className={styles.section}>
@@ -217,67 +60,12 @@ const Dashboard = () => {
               <span className={styles.sectionTitle}>Recent Activity</span>
               <span className={styles.sectionTag}>Live</span>
             </div>
-            <div className={styles.activityFeed}>
-              {loading ? (
-                [0, 1, 2].map((i) => (
-                  <div key={i} className={styles.activityRow}>
-                    <div className={`${styles.activityDot} ${styles.skeletonDot}`} />
-                    <div className={styles.activityText}>
-                      <span className={`${styles.skeletonLine} ${styles.skeletonLineLong}`} />
-                      <span className={`${styles.skeletonLine} ${styles.skeletonLineShort}`} />
-                    </div>
-                  </div>
-                ))
-              ) : agents.length === 0 && workflows.length === 0 ? (
-                <div className={styles.emptyState}>
-                  <Activity size={20} />
-                  <span>No recent activity</span>
-                </div>
-              ) : (
-                <>
-                  {workflows.slice(0, 3).map((wf) => (
-                    <div key={wf.id} className={styles.activityRow}>
-                      <div className={`${styles.activityDot} ${styles.dotBlue}`} />
-                      <div className={styles.activityText}>
-                        <span className={styles.activityMain}>
-                          Workflow <strong>{wf.name}</strong> registered
-                        </span>
-                        <span className={styles.activityTime}>
-                          {wf.agents.length} agent{wf.agents.length !== 1 ? "s" : ""}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                  {agents.slice(0, 3).map((ag) => (
-                    <div key={ag.id} className={styles.activityRow}>
-                      <div className={`${styles.activityDot} ${styles.dotGreen}`} />
-                      <div className={styles.activityText}>
-                        <span className={styles.activityMain}>
-                          Agent <strong>{ag.name}</strong> available
-                        </span>
-                        <span className={styles.activityTime}>{ag.model}</span>
-                      </div>
-                    </div>
-                  ))}
-                </>
-              )}
-            </div>
+            <ActivityFeed loading={loading} agents={agents} workflows={workflows} />
           </div>
         </div>
       </div>
 
-      <div className={styles.securityRow}>
-        <div className={styles.securityCard}>
-          <BrickWallShield size={16} />
-          <div className={styles.securityCardContent}>
-            <span className={styles.securityCardLabel}>Sentinel</span>
-            <span className={styles.securityCardSub}>Agent security guardrails active</span>
-          </div>
-          <button className={styles.securityCardBtn} onClick={() => navigate("/sentinel")}>
-            View <ArrowRight size={12} />
-          </button>
-        </div>
-      </div>
+      <SecurityRow onNavigate={navigate} />
     </div>
   );
 };
