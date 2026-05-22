@@ -1,9 +1,12 @@
-import { useState } from "react";
+import { useForm, Controller, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Loader, Cpu } from "lucide-react";
 import styles from "../agents.module.scss";
 import ModelSelector from "../../../components/ui/model-selector";
 import FormField from "../../../components/ui/form-field";
 import StatusMessage from "../../../components/ui/status-message";
+import { agentCreateSchema, type AgentCreateFormData } from "../../../schemas/agent.create";
+import { useEffect } from "react";
 
 interface AgentCreateFormProps {
   models: string[];
@@ -22,51 +25,65 @@ const AgentCreateForm = ({
   createAgentError,
   onSubmit,
 }: AgentCreateFormProps) => {
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [model, setModel] = useState("");
+  const defaultModel = models[0] ?? "";
 
-  const selectedModel = model || models[0] || "";
+  const {
+    register,
+    handleSubmit,
+    reset,
+    control,
+    formState: { errors },
+  } = useForm<AgentCreateFormData>({
+    resolver: zodResolver(agentCreateSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      model: "",
+    },
+  });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit({
-      name: name.trim(),
-      description: description.trim(),
-      model: selectedModel.trim(),
-    });
-    setName("");
-    setDescription("");
-    setModel("");
+  useEffect(() => {
+    if (models.length > 0) {
+      reset({
+        name: "",
+        description: "",
+        model: models[0],
+      });
+    }
+  }, [models, reset]);
+
+  const descriptionValue = useWatch({
+    control,
+    name: "description",
+  });
+
+  const handleFormSubmit = (data: AgentCreateFormData) => {
+    onSubmit({ name: data.name, description: data.description, model: data.model });
+    reset({ name: "", description: "", model: defaultModel });
   };
 
   return (
-    <form className={styles.createForm} onSubmit={handleSubmit}>
+    <form className={styles.createForm} onSubmit={handleSubmit(handleFormSubmit)}>
       <FormField id="agent-name" label="Agent Name">
         <input
           id="agent-name"
           className={styles.fieldInput}
           type="text"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
           placeholder="e.g. ForensicsAgent"
-          maxLength={255}
-          required
           autoComplete="off"
           spellCheck={false}
+          {...register("name")}
         />
       </FormField>
 
-      <FormField id="agent-description" label="Description" charCount={{ current: description.length, max: 1000 }}>
+      <FormField id="agent-description" label="Description" charCount={{ current: descriptionValue.length, max: 1000 }}>
         <textarea
           id="agent-description"
           className={`${styles.fieldInput} ${styles.fieldTextarea}`}
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
           placeholder="Describe this agent's capabilities and role in the pipeline..."
-          maxLength={1000}
           rows={4}
           spellCheck={false}
+          {...register("description")}
         />
       </FormField>
 
@@ -78,20 +95,26 @@ const AgentCreateForm = ({
           </>
         }
       >
-        <ModelSelector
-          id="agent-model"
-          className={styles.fieldInput}
-          models={models}
-          value={selectedModel}
-          onChange={setModel}
-          placeholder="e.g. gemma3:1b"
+        <Controller
+          name="model"
+          control={control}
+          render={({ field }) => (
+            <ModelSelector
+              id="agent-model"
+              className={styles.fieldInput}
+              models={models}
+              value={field.value}
+              onChange={field.onChange}
+              placeholder="e.g. gemma3:1b"
+            />
+          )}
         />
       </FormField>
 
       <button
         className={`${styles.submitBtn} ${isCreatingAgent ? styles.submitting : ""}`}
         type="submit"
-        disabled={isCreatingAgent || !name.trim()}
+        disabled={isCreatingAgent}
       >
         {isCreatingAgent ? (
           <>
@@ -106,6 +129,7 @@ const AgentCreateForm = ({
         )}
       </button>
 
+      {errors.name && <StatusMessage variant="error" message={errors.name.message ?? "Invalid name"} />}
       {isCreateSuccess && <StatusMessage variant="success" message="Agent registered successfully" />}
       {isCreateError && <StatusMessage variant="error" message={createAgentError?.message ?? "Unknown error"} />}
     </form>

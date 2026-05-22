@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { BrainCircuit, RefreshCw, HardDrive, Info, X, Loader } from "lucide-react";
 import styles from "./models.module.scss";
 import useOllamaModels from "../../hooks/useOllamaModels";
@@ -22,16 +21,10 @@ const Models = () => {
     clearDeleteResult,
   } = useOllamaModels();
 
-  const [modelName, setModelName] = useState("");
   const isPulling = pullState !== null && !pullState.done;
 
-  const handlePull = (e: React.FormEvent) => {
-    e.preventDefault();
-    const name = modelName.trim();
-    if (!name) {
-      return;
-    }
-    pull(name);
+  const handlePull = (modelName: string) => {
+    pull(modelName);
   };
 
   const handleDelete = (name: string) => {
@@ -119,9 +112,7 @@ const Models = () => {
           <PullModelForm
             pullState={pullState}
             isPulling={isPulling}
-            modelName={modelName}
-            setModelName={setModelName}
-            onPull={handlePull}
+            onSubmit={handlePull}
             onCancelPull={cancelPull}
             onResetPull={resetPull}
             getPullPercent={getPullPercent}

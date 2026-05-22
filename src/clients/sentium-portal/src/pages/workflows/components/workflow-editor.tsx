@@ -1,4 +1,6 @@
 import { Fragment, useState } from "react";
+import { useForm, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { DndContext, closestCenter, type DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { Plus, X, Bot, Loader, CheckCircle, AlertCircle } from "lucide-react";
@@ -6,6 +8,7 @@ import styles from "../workflows.module.scss";
 import SortableAgent from "./sortable-agent";
 import type { AgentRecord } from "../../../types/agents";
 import type { WorkflowRecord, SortableAgentItem } from "../../../types/workflows";
+import { workflowEditorSchema, type WorkflowEditorFormData } from "../../../schemas/workflow.editor";
 
 interface WorkflowEditorProps {
   selectedWorkflow: WorkflowRecord | null;
@@ -44,9 +47,17 @@ const WorkflowEditor = ({
   initialName,
   initialDescription,
 }: WorkflowEditorProps) => {
-  const [formName, setFormName] = useState(initialName);
-  const [formDescription, setFormDescription] = useState(initialDescription);
   const [formAgents, setFormAgents] = useState<SortableAgentItem[]>(initialFormAgents);
+
+  const { register, handleSubmit, control } = useForm<WorkflowEditorFormData>({
+    resolver: zodResolver(workflowEditorSchema),
+    defaultValues: { name: initialName, description: initialDescription },
+  });
+
+  const formDescription = useWatch({
+    control,
+    name: "description",
+  });
 
   const sensors = useSensors(useSensor(PointerSensor));
 
@@ -83,11 +94,10 @@ const WorkflowEditor = ({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleFormSubmit = (data: WorkflowEditorFormData) => {
     onSubmit({
-      name: formName.trim(),
-      description: formDescription.trim(),
+      name: data.name,
+      description: data.description,
       agents: formAgents.map((a, idx) => ({ agentId: a.agentId, order: idx })),
     });
   };
@@ -101,7 +111,7 @@ const WorkflowEditor = ({
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className={styles.editorForm}>
+      <form onSubmit={handleSubmit(handleFormSubmit)} className={styles.editorForm}>
         <div className={styles.editorColumns}>
           <div className={styles.pipelineColumn}>
             <div className={styles.pipelineHeader}>
@@ -164,12 +174,9 @@ const WorkflowEditor = ({
                 id="wf-name"
                 className={styles.fieldInput}
                 type="text"
-                value={formName}
-                onChange={(e) => setFormName(e.target.value)}
                 placeholder="e.g. Local AI Inference Pipeline"
-                maxLength={255}
-                required
                 autoComplete="off"
+                {...register("name")}
               />
             </div>
 
@@ -181,11 +188,9 @@ const WorkflowEditor = ({
               <textarea
                 id="wf-desc"
                 className={`${styles.fieldInput} ${styles.fieldTextarea}`}
-                value={formDescription}
-                onChange={(e) => setFormDescription(e.target.value)}
                 placeholder="Describe what this workflow does..."
-                maxLength={4000}
                 rows={4}
+                {...register("description")}
               />
             </div>
 
@@ -211,7 +216,7 @@ const WorkflowEditor = ({
             <button
               type="submit"
               className={`${styles.submitBtn} ${isPending ? styles.submitting : ""}`}
-              disabled={isPending || !formName.trim()}
+              disabled={isPending}
             >
               {isPending ? (
                 <>

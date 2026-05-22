@@ -1,8 +1,11 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertCircle, CheckCircle2, Mail, Save, UserRound } from "lucide-react";
 import styles from "../profile.module.scss";
 import type { UserProfile } from "../../../services/identity.service";
 import StatusMessage from "../../../components/ui/status-message";
+import { userProfileSchema, type UserProfileFormData } from "../../../schemas/user.profile";
 
 type UpdateProfilePayload = { firstName: string; lastName?: string | null; email: string };
 
@@ -23,9 +26,14 @@ const ProfileEditForm = ({
   isSaveSuccess,
   resetSave,
 }: ProfileEditFormProps) => {
-  const [firstName, setFirstName] = useState(profile.firstName);
-  const [lastName, setLastName] = useState(profile.lastName ?? "");
-  const [email, setEmail] = useState(profile.email);
+  const { register, handleSubmit } = useForm<UserProfileFormData>({
+    resolver: zodResolver(userProfileSchema),
+    defaultValues: {
+      firstName: profile.firstName,
+      lastName: profile.lastName ?? "",
+      email: profile.email,
+    },
+  });
 
   useEffect(() => {
     if (isSaveSuccess) {
@@ -34,13 +42,12 @@ const ProfileEditForm = ({
     }
   }, [isSaveSuccess, resetSave]);
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (data: UserProfileFormData) => {
     try {
       await updateProfile({
-        firstName: firstName.trim(),
-        lastName: lastName.trim() || null,
-        email: email.trim(),
+        firstName: data.firstName,
+        lastName: data.lastName || null,
+        email: data.email,
       });
     } catch {
       // error surfaced via saveError
@@ -48,7 +55,7 @@ const ProfileEditForm = ({
   };
 
   return (
-    <form onSubmit={handleSave} className={styles.form}>
+    <form onSubmit={handleSubmit(onSubmit)} className={styles.form}>
       <div className={styles.formRow}>
         <div className={styles.field}>
           <label htmlFor="firstName" className={styles.label}>
@@ -59,11 +66,8 @@ const ProfileEditForm = ({
             id="firstName"
             type="text"
             className={styles.input}
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
-            required
-            maxLength={100}
             placeholder="First name"
+            {...register("firstName")}
           />
         </div>
         <div className={styles.field}>
@@ -75,10 +79,8 @@ const ProfileEditForm = ({
             id="lastName"
             type="text"
             className={styles.input}
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
-            maxLength={100}
             placeholder="Last name (optional)"
+            {...register("lastName")}
           />
         </div>
       </div>
@@ -92,11 +94,8 @@ const ProfileEditForm = ({
           id="email"
           type="email"
           className={styles.input}
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          maxLength={256}
           placeholder="email@example.com"
+          {...register("email")}
         />
       </div>
 

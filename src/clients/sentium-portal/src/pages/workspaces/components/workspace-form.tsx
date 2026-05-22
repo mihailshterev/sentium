@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { X, Loader2 } from "lucide-react";
 import styles from "../workspaces.module.scss";
+import { workspaceFormSchema, type WorkspaceFormData } from "../../../schemas/workspace.form";
 
 interface WorkspaceFormProps {
   initial?: { name: string; description: string };
@@ -11,14 +13,13 @@ interface WorkspaceFormProps {
 }
 
 const WorkspaceForm = ({ initial, onSubmit, onCancel, isPending, title }: WorkspaceFormProps) => {
-  const [name, setName] = useState(initial?.name ?? "");
-  const [description, setDescription] = useState(initial?.description ?? "");
+  const { register, handleSubmit } = useForm<WorkspaceFormData>({
+    resolver: zodResolver(workspaceFormSchema),
+    defaultValues: { name: initial?.name ?? "", description: initial?.description ?? "" },
+  });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (name.trim()) {
-      onSubmit(name.trim(), description.trim());
-    }
+  const handleFormSubmit = (data: WorkspaceFormData) => {
+    onSubmit(data.name, data.description);
   };
 
   return (
@@ -30,7 +31,7 @@ const WorkspaceForm = ({ initial, onSubmit, onCancel, isPending, title }: Worksp
             <X size={14} />
           </button>
         </div>
-        <form onSubmit={handleSubmit} className={styles.modalForm}>
+        <form onSubmit={handleSubmit(handleFormSubmit)} className={styles.modalForm}>
           <div className={styles.formGroup}>
             <label className={styles.label} htmlFor="ws-name">
               Name
@@ -38,11 +39,9 @@ const WorkspaceForm = ({ initial, onSubmit, onCancel, isPending, title }: Worksp
             <input
               id="ws-name"
               className={styles.input}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
               placeholder="e.g. incident-2026"
               autoFocus
-              required
+              {...register("name")}
             />
           </div>
           <div className={styles.formGroup}>
@@ -52,17 +51,16 @@ const WorkspaceForm = ({ initial, onSubmit, onCancel, isPending, title }: Worksp
             <textarea
               id="ws-desc"
               className={`${styles.input} ${styles.textarea}`}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
               placeholder="Optional description…"
               rows={3}
+              {...register("description")}
             />
           </div>
           <div className={styles.modalActions}>
             <button type="button" className={styles.cancelButton} onClick={onCancel}>
               Cancel
             </button>
-            <button type="submit" className={styles.submitButton} disabled={!name.trim() || isPending}>
+            <button type="submit" className={styles.submitButton} disabled={isPending}>
               {isPending ? <Loader2 size={14} className={styles.spin} /> : null}
               {title}
             </button>

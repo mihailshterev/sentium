@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useForm, Controller, useWatch } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { X, Loader, CheckCircle, Cpu } from "lucide-react";
 import styles from "../agents.module.scss";
 import ModelSelector from "../../../components/ui/model-selector";
 import FormField from "../../../components/ui/form-field";
 import StatusMessage from "../../../components/ui/status-message";
 import type { AgentRecord } from "../../../types/agents";
+import { agentCreateSchema, type AgentCreateFormData } from "../../../schemas/agent.create";
 
 interface AgentEditModalProps {
   agent: AgentRecord;
@@ -27,18 +29,27 @@ const AgentEditModal = ({
   onSubmit,
   onClose,
 }: AgentEditModalProps) => {
-  const [editName, setEditName] = useState(agent.name);
-  const [editDescription, setEditDescription] = useState(agent.description);
-  const [editModel, setEditModel] = useState(agent.model || models[0] || "");
+  const {
+    register,
+    handleSubmit,
+    control,
+    formState: { errors },
+  } = useForm<AgentCreateFormData>({
+    resolver: zodResolver(agentCreateSchema),
+    defaultValues: {
+      name: agent.name,
+      description: agent.description,
+      model: agent.model || models[0] || "",
+    },
+  });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSubmit({
-      id: agent.id,
-      name: editName.trim(),
-      description: editDescription.trim(),
-      model: editModel.trim(),
-    });
+  const descriptionValue = useWatch({
+    control,
+    name: "description",
+  });
+
+  const handleFormSubmit = (data: AgentCreateFormData) => {
+    onSubmit({ id: agent.id, name: data.name, description: data.description, model: data.model });
   };
 
   return (
@@ -50,34 +61,29 @@ const AgentEditModal = ({
             <X size={14} />
           </button>
         </div>
-        <form onSubmit={handleSubmit} className={styles.createForm}>
+        <form onSubmit={handleSubmit(handleFormSubmit)} className={styles.createForm}>
           <FormField id="edit-name" label="Agent Name">
             <input
               id="edit-name"
               className={styles.fieldInput}
               type="text"
-              value={editName}
-              onChange={(e) => setEditName(e.target.value)}
-              maxLength={255}
-              required
               autoComplete="off"
               spellCheck={false}
+              {...register("name")}
             />
           </FormField>
 
           <FormField
             id="edit-description"
             label="Description"
-            charCount={{ current: editDescription.length, max: 1000 }}
+            charCount={{ current: descriptionValue.length, max: 1000 }}
           >
             <textarea
               id="edit-description"
               className={`${styles.fieldInput} ${styles.fieldTextarea}`}
-              value={editDescription}
-              onChange={(e) => setEditDescription(e.target.value)}
-              maxLength={1000}
               rows={4}
               spellCheck={false}
+              {...register("description")}
             />
           </FormField>
 
@@ -89,20 +95,26 @@ const AgentEditModal = ({
               </>
             }
           >
-            <ModelSelector
-              id="edit-model"
-              className={styles.fieldInput}
-              models={models}
-              value={editModel}
-              onChange={setEditModel}
-              placeholder="e.g. gemma3:1b"
+            <Controller
+              name="model"
+              control={control}
+              render={({ field }) => (
+                <ModelSelector
+                  id="edit-model"
+                  className={styles.fieldInput}
+                  models={models}
+                  value={field.value}
+                  onChange={field.onChange}
+                  placeholder="e.g. gemma3:1b"
+                />
+              )}
             />
           </FormField>
 
           <button
             className={`${styles.submitBtn} ${isUpdatingAgent ? styles.submitting : ""}`}
             type="submit"
-            disabled={isUpdatingAgent || !editName.trim()}
+            disabled={isUpdatingAgent}
           >
             {isUpdatingAgent ? (
               <>
@@ -117,6 +129,7 @@ const AgentEditModal = ({
             )}
           </button>
 
+          {errors.name && <StatusMessage variant="error" message={errors.name.message ?? "Invalid name"} />}
           {isUpdateError && <StatusMessage variant="error" message={updateAgentError?.message ?? "Unknown error"} />}
         </form>
       </div>
