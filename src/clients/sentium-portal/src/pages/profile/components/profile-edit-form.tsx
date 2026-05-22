@@ -45,9 +45,9 @@ const ProfileEditForm = ({
   const onSubmit = async (data: UserProfileFormData) => {
     try {
       await updateProfile({
-        firstName: data.firstName,
-        lastName: data.lastName || null,
-        email: data.email,
+        firstName: data.firstName.trim(),
+        lastName: data.lastName?.trim() || null,
+        email: data.email.trim(),
       });
     } catch {
       // error surfaced via saveError

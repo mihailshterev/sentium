@@ -1,4 +1,4 @@
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Download, X, Loader, CheckCircle, AlertCircle } from "lucide-react";
 import styles from "../models.module.scss";
@@ -32,9 +32,14 @@ const PullModelForm = ({
   onResetPull,
   getPullPercent,
 }: PullModelFormProps) => {
-  const { register, handleSubmit } = useForm<ModelPullFormData>({
+  const { register, handleSubmit, control } = useForm<ModelPullFormData>({
     resolver: zodResolver(modelPullSchema),
     defaultValues: { modelName: "" },
+  });
+
+  const modelName = useWatch({
+    control,
+    name: "modelName",
   });
 
   const handleFormSubmit = (data: ModelPullFormData) => {
@@ -60,7 +65,7 @@ const PullModelForm = ({
       </div>
 
       {!isPulling && (
-        <button type="submit" className={styles.pullBtn} disabled={isPulling}>
+        <button type="submit" className={styles.pullBtn} disabled={isPulling || !modelName.trim()}>
           <Download size={14} />
           Pull Model
         </button>

@@ -59,6 +59,11 @@ const WorkflowEditor = ({
     name: "description",
   });
 
+  const formName = useWatch({
+    control,
+    name: "name",
+  });
+
   const sensors = useSensors(useSensor(PointerSensor));
 
   const isPending = selectedWorkflow ? isUpdatingWorkflow : isCreatingWorkflow;
@@ -216,7 +221,7 @@ const WorkflowEditor = ({
             <button
               type="submit"
               className={`${styles.submitBtn} ${isPending ? styles.submitting : ""}`}
-              disabled={isPending}
+              disabled={isPending || !formName.trim()}
             >
               {isPending ? (
                 <>

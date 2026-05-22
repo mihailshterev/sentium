@@ -57,6 +57,11 @@ const AgentCreateForm = ({
     name: "description",
   });
 
+  const nameValue = useWatch({
+    control,
+    name: "name",
+  });
+
   const handleFormSubmit = (data: AgentCreateFormData) => {
     onSubmit({ name: data.name, description: data.description, model: data.model });
     reset({ name: "", description: "", model: defaultModel });
@@ -114,7 +119,7 @@ const AgentCreateForm = ({
       <button
         className={`${styles.submitBtn} ${isCreatingAgent ? styles.submitting : ""}`}
         type="submit"
-        disabled={isCreatingAgent}
+        disabled={isCreatingAgent || !nameValue.trim()}
       >
         {isCreatingAgent ? (
           <>

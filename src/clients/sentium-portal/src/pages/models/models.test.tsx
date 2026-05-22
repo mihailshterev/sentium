@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Models from "./models";
@@ -175,13 +175,13 @@ describe("Models pull flow", () => {
     expect(screen.getByRole("button", { name: /pull model/i })).not.toBeDisabled();
   });
 
-  it("calls pull when form is submitted with a model name", () => {
+  it("calls pull when form is submitted with a model name", async () => {
     const pull = vi.fn();
     vi.spyOn(useOllamaModelsHook, "default").mockReturnValue({ ...defaultHook, pull });
     renderModels();
     fireEvent.change(screen.getByLabelText(/model name/i), { target: { value: "mistral" } });
     fireEvent.click(screen.getByRole("button", { name: /pull model/i }));
-    expect(pull).toHaveBeenCalledWith("mistral");
+    await waitFor(() => expect(pull).toHaveBeenCalledWith("mistral"));
   });
 
   it("shows Cancel button when pulling is in progress", () => {

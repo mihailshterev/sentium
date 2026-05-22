@@ -30,7 +30,12 @@ const SettingsEditor = ({
   saveError,
   resetSave,
 }: SettingsEditorProps) => {
-  const { register, handleSubmit, control } = useForm<SettingsEditorFormData>({
+  const {
+    register,
+    handleSubmit,
+    control,
+    formState: { isDirty },
+  } = useForm<SettingsEditorFormData>({
     resolver: zodResolver(settingsEditorSchema),
     defaultValues: { prompt: initialPrompt, builtInEnabled: initialBuiltIn },
   });
@@ -118,6 +123,8 @@ const SettingsEditor = ({
 
           <div className={styles.cardBody}>
             <FormField label="Global Prompt" charCount={{ current: prompt.length, max: 16000 }}>
+              {isOverLimit && <span>{Math.abs(charsRemaining)} characters over limit</span>}
+              {isNearLimit && <span>{charsRemaining} characters remaining</span>}
               <textarea
                 className={`${styles.promptTextarea} ${isOverLimit || isNearLimit ? styles.promptTextareaWarn : ""}`}
                 placeholder={`Define global agent behavior in plain text or markdown.\n\nExamples:\n- "Always respond in a professional, concise tone."\n- "You are a local AI orchestrator. Prioritize efficient workflow execution."\n- "When uncertain, ask clarifying questions before acting."`}
@@ -143,7 +150,7 @@ const SettingsEditor = ({
             )}
 
             <div className={styles.actionRow}>
-              <button type="submit" className={styles.btnPrimary} disabled={isSaving || isOverLimit}>
+              <button type="submit" className={styles.btnPrimary} disabled={isSaving || isOverLimit || !isDirty}>
                 {isSaving ? <Loader size={13} /> : <CheckCircle size={13} />}
                 {isSaving ? "Saving…" : "Save Changes"}
               </button>
