@@ -1,60 +1,13 @@
 import { useState } from "react";
-import {
-  Cpu,
-  HardDrive,
-  MemoryStick,
-  Monitor,
-  RefreshCw,
-  Server,
-  Activity,
-  Clock,
-  AlertCircle,
-  Database,
-} from "lucide-react";
+import { Cpu, HardDrive, MemoryStick, Monitor, RefreshCw, Server, Activity, Clock, AlertCircle } from "lucide-react";
 import styles from "./system.module.scss";
 import useSystemMetrics from "../../hooks/useSystemMetrics";
-
-function formatUptime(uptime: string): string {
-  // .NET TimeSpan comes as "d.hh:mm:ss.fffffff" or "hh:mm:ss.fffffff"
-  const parts = uptime.split(":");
-  if (parts.length < 3) {
-    return uptime;
-  }
-
-  let days = 0;
-  let hours = parseInt(parts[0], 10);
-  const minutes = parseInt(parts[1], 10);
-
-  if (parts[0].includes(".")) {
-    const dp = parts[0].split(".");
-    days = parseInt(dp[0], 10);
-    hours = parseInt(dp[1], 10);
-  }
-
-  const segments: string[] = [];
-  if (days > 0) {
-    segments.push(`${days}d`);
-  }
-  if (hours > 0) {
-    segments.push(`${hours}h`);
-  }
-  segments.push(`${minutes}m`);
-  return segments.join(" ");
-}
-
-function formatMb(mb: number): string {
-  if (mb >= 1024) {
-    return `${(mb / 1024).toFixed(1)} GB`;
-  }
-  return `${mb.toFixed(0)} MB`;
-}
-
-function formatGb(gb: number): string {
-  if (gb >= 1024) {
-    return `${(gb / 1024).toFixed(1)} TB`;
-  }
-  return `${gb.toFixed(1)} GB`;
-}
+import { formatUptime, formatMb } from "./system-utils";
+import PageHeader from "../../components/ui/page-header";
+import StatCard from "../../components/ui/stat-card";
+import ProgressGroup from "./components/progress-group";
+import GcBadges from "./components/gc-badges";
+import DiskCard from "./components/disk-card";
 
 function getUsageColor(percent: number): string {
   if (percent < 50) {
@@ -94,25 +47,25 @@ const System = () => {
 
   return (
     <div className={styles.root}>
-      <div className={styles.header}>
-        <div className={styles.headerLeft}>
-          <h1 className={styles.pageTitle}>System</h1>
-          <p className={styles.pageSubtitle}>Host resource usage and runtime diagnostics</p>
-        </div>
-        <div className={styles.headerRight}>
-          <div className={styles.liveBadge}>
-            <span className={styles.liveDot} />
-            Live
+      <PageHeader
+        title="System"
+        subtitle="Host resource usage and runtime diagnostics"
+        right={
+          <div className={styles.headerRight}>
+            <div className={styles.liveBadge}>
+              <span className={styles.liveDot} />
+              Live
+            </div>
+            <button
+              className={`${styles.refreshBtn} ${isManualRefetching || isRefetching ? styles.spinning : ""}`}
+              onClick={handleManualRefresh}
+            >
+              <RefreshCw size={12} />
+              Refresh
+            </button>
           </div>
-          <button
-            className={`${styles.refreshBtn} ${isManualRefetching || isRefetching ? styles.spinning : ""}`}
-            onClick={handleManualRefresh}
-          >
-            <RefreshCw size={12} />
-            Refresh
-          </button>
-        </div>
-      </div>
+        }
+      />
 
       <div className={styles.statsRow}>
         {isLoading ? (
@@ -124,42 +77,30 @@ const System = () => {
           </>
         ) : metrics ? (
           <>
-            <div className={styles.statCard}>
-              <div className={`${styles.statIcon} ${styles.iconBlue}`}>
-                <Cpu size={18} />
-              </div>
-              <div className={styles.statContent}>
-                <span className={styles.statValue}>{metrics.cpu.processCpuPercent}%</span>
-                <span className={styles.statLabel}>CPU (Process)</span>
-              </div>
-            </div>
-            <div className={styles.statCard}>
-              <div className={`${styles.statIcon} ${styles.iconPurple}`}>
-                <MemoryStick size={18} />
-              </div>
-              <div className={styles.statContent}>
-                <span className={styles.statValue}>{metrics.memory.memoryLoadPercent.toFixed(1)}%</span>
-                <span className={styles.statLabel}>Memory Usage</span>
-              </div>
-            </div>
-            <div className={styles.statCard}>
-              <div className={`${styles.statIcon} ${styles.iconGreen}`}>
-                <Monitor size={18} />
-              </div>
-              <div className={styles.statContent}>
-                <span className={styles.statValue}>{metrics.cpu.processorCount}</span>
-                <span className={styles.statLabel}>Logical Cores</span>
-              </div>
-            </div>
-            <div className={styles.statCard}>
-              <div className={`${styles.statIcon} ${styles.iconAmber}`}>
-                <Clock size={18} />
-              </div>
-              <div className={styles.statContent}>
-                <span className={styles.statValue}>{formatUptime(metrics.host.uptime)}</span>
-                <span className={styles.statLabel}>System Uptime</span>
-              </div>
-            </div>
+            <StatCard
+              icon={<Cpu size={18} />}
+              value={`${metrics.cpu.processCpuPercent}%`}
+              label="CPU (Process)"
+              iconColor="blue"
+            />
+            <StatCard
+              icon={<MemoryStick size={18} />}
+              value={`${metrics.memory.memoryLoadPercent.toFixed(1)}%`}
+              label="Memory Usage"
+              iconColor="purple"
+            />
+            <StatCard
+              icon={<Monitor size={18} />}
+              value={metrics.cpu.processorCount}
+              label="Logical Cores"
+              iconColor="green"
+            />
+            <StatCard
+              icon={<Clock size={18} />}
+              value={formatUptime(metrics.host.uptime)}
+              label="System Uptime"
+              iconColor="amber"
+            />
           </>
         ) : null}
       </div>
@@ -177,49 +118,23 @@ const System = () => {
               </span>
             </div>
             <div className={styles.sectionBody}>
-              <div className={styles.progressGroup}>
-                <div className={styles.progressLabel}>
-                  <span className={styles.progressName}>System Memory</span>
-                  <span className={styles.progressValue}>{metrics.memory.memoryLoadPercent.toFixed(1)}%</span>
-                </div>
-                <div className={styles.progressTrack}>
-                  <div
-                    className={`${styles.progressFill} ${getUsageColor(metrics.memory.memoryLoadPercent)}`}
-                    style={{ width: `${Math.min(metrics.memory.memoryLoadPercent, 100)}%` }}
-                  />
-                </div>
-              </div>
-              <div className={styles.progressGroup}>
-                <div className={styles.progressLabel}>
-                  <span className={styles.progressName}>GC Heap</span>
-                  <span className={styles.progressValue}>{formatMb(metrics.memory.gcHeapSizeMb)}</span>
-                </div>
-                <div className={styles.progressTrack}>
-                  <div
-                    className={`${styles.progressFill} ${styles.fillPurple}`}
-                    style={{
-                      width: `${Math.min(
-                        metrics.memory.totalMb > 0 ? (metrics.memory.gcHeapSizeMb / metrics.memory.totalMb) * 100 : 0,
-                        100,
-                      )}%`,
-                    }}
-                  />
-                </div>
-              </div>
-              <div className={styles.gcRow}>
-                <div className={styles.gcBadge}>
-                  <span className={styles.gcBadgeValue}>{metrics.memory.gcGen0Collections}</span>
-                  <span className={styles.gcBadgeLabel}>Gen 0</span>
-                </div>
-                <div className={styles.gcBadge}>
-                  <span className={styles.gcBadgeValue}>{metrics.memory.gcGen1Collections}</span>
-                  <span className={styles.gcBadgeLabel}>Gen 1</span>
-                </div>
-                <div className={styles.gcBadge}>
-                  <span className={styles.gcBadgeValue}>{metrics.memory.gcGen2Collections}</span>
-                  <span className={styles.gcBadgeLabel}>Gen 2</span>
-                </div>
-              </div>
+              <ProgressGroup
+                name="System Memory"
+                value={`${metrics.memory.memoryLoadPercent.toFixed(1)}%`}
+                percent={metrics.memory.memoryLoadPercent}
+                fillClass={getUsageColor(metrics.memory.memoryLoadPercent)}
+              />
+              <ProgressGroup
+                name="GC Heap"
+                value={formatMb(metrics.memory.gcHeapSizeMb)}
+                percent={metrics.memory.totalMb > 0 ? (metrics.memory.gcHeapSizeMb / metrics.memory.totalMb) * 100 : 0}
+                fillClass={styles.fillPurple}
+              />
+              <GcBadges
+                gen0={metrics.memory.gcGen0Collections}
+                gen1={metrics.memory.gcGen1Collections}
+                gen2={metrics.memory.gcGen2Collections}
+              />
             </div>
           </div>
 
@@ -232,35 +147,18 @@ const System = () => {
               <span style={{ fontSize: "0.68rem", color: "var(--text-muted)" }}>PID {metrics.process.id}</span>
             </div>
             <div className={styles.sectionBody}>
-              <div className={styles.progressGroup}>
-                <div className={styles.progressLabel}>
-                  <span className={styles.progressName}>CPU Time</span>
-                  <span className={styles.progressValue}>{metrics.cpu.processCpuPercent}%</span>
-                </div>
-                <div className={styles.progressTrack}>
-                  <div
-                    className={`${styles.progressFill} ${getUsageColor(metrics.cpu.processCpuPercent)}`}
-                    style={{ width: `${Math.min(metrics.cpu.processCpuPercent, 100)}%` }}
-                  />
-                </div>
-              </div>
-              <div className={styles.progressGroup}>
-                <div className={styles.progressLabel}>
-                  <span className={styles.progressName}>Working Set</span>
-                  <span className={styles.progressValue}>{formatMb(metrics.process.workingSetMb)}</span>
-                </div>
-                <div className={styles.progressTrack}>
-                  <div
-                    className={`${styles.progressFill} ${styles.fillBlue}`}
-                    style={{
-                      width: `${Math.min(
-                        metrics.memory.totalMb > 0 ? (metrics.process.workingSetMb / metrics.memory.totalMb) * 100 : 0,
-                        100,
-                      )}%`,
-                    }}
-                  />
-                </div>
-              </div>
+              <ProgressGroup
+                name="CPU Time"
+                value={`${metrics.cpu.processCpuPercent}%`}
+                percent={metrics.cpu.processCpuPercent}
+                fillClass={getUsageColor(metrics.cpu.processCpuPercent)}
+              />
+              <ProgressGroup
+                name="Working Set"
+                value={formatMb(metrics.process.workingSetMb)}
+                percent={metrics.memory.totalMb > 0 ? (metrics.process.workingSetMb / metrics.memory.totalMb) * 100 : 0}
+                fillClass={styles.fillBlue}
+              />
               <div className={styles.gcRow}>
                 <div className={styles.gcBadge}>
                   <span className={styles.gcBadgeValue}>{metrics.process.threadCount}</span>
@@ -287,30 +185,7 @@ const System = () => {
             <div className={styles.sectionBody}>
               <div className={styles.diskGrid}>
                 {metrics.disks.map((disk) => (
-                  <div key={disk.name} className={styles.diskCard}>
-                    <div className={styles.diskHeader}>
-                      <span className={styles.diskName}>
-                        <Database size={13} />
-                        {disk.name}
-                      </span>
-                      <span className={styles.diskLabel}>{disk.label || disk.fileSystem}</span>
-                    </div>
-                    <div className={styles.progressGroup}>
-                      <div className={styles.progressLabel}>
-                        <span className={styles.progressName}>{formatGb(disk.usedGb)} used</span>
-                        <span className={styles.progressValue}>{disk.usagePercent.toFixed(1)}%</span>
-                      </div>
-                      <div className={styles.progressTrack}>
-                        <div
-                          className={`${styles.progressFill} ${getUsageColor(disk.usagePercent)}`}
-                          style={{ width: `${Math.min(disk.usagePercent, 100)}%` }}
-                        />
-                      </div>
-                    </div>
-                    <span className={styles.diskMeta}>
-                      {formatGb(disk.availableGb)} free of {formatGb(disk.totalGb)}
-                    </span>
-                  </div>
+                  <DiskCard key={disk.name} disk={disk} />
                 ))}
               </div>
             </div>

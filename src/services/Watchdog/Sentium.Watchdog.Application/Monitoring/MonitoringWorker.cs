@@ -19,8 +19,7 @@ public sealed class MonitoringWorker(
     [
         ("Identity",       ServiceNames.Identity),
         ("Sentinel",       ServiceNames.Sentinel),
-        ("Agent Runtime",  ServiceNames.AgentRuntime),
-        ("Locus",          ServiceNames.Locus),
+        ("Agent Runtime",  ServiceNames.AgentRuntime)
     ];
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

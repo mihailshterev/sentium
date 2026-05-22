@@ -56,32 +56,6 @@ public sealed class OrchestrationController(
         return Accepted(new Envelope(WorkflowEvents.CustomWorkflow));
     }
 
-    [HttpPost("analyze-network-event")]
-    public async Task<IActionResult> AnalyzeNetworkEvent([FromBody] NetworkEventAnalysisRequest request, CancellationToken ct)
-    {
-        ArgumentNullException.ThrowIfNull(request);
-
-        var payload = new
-        {
-            activity = $"Network anomaly detected: {request.OrigH} \u2192 {request.RespH} via {request.Proto.ToUpperInvariant()}. " +
-                       $"ML confidence: {request.MlScore}. Recommended action: {request.Action}. Service: {request.Service}. " +
-                       $"Timestamp: {request.Timestamp}. Investigate source IP {request.OrigH} and determine if this traffic is malicious.",
-            source = request.Source,
-            origH = request.OrigH,
-            respH = request.RespH,
-            proto = request.Proto,
-            service = request.Service,
-            mlScore = request.MlScore,
-            action = request.Action,
-            timestamp = request.Timestamp
-        };
-
-        var jsonPayload = JsonSerializer.Serialize(payload);
-        await eventBus.PublishAsync(WorkflowEvents.NetworkScan, jsonPayload, ct: ct);
-
-        return Accepted(new Envelope(WorkflowEvents.NetworkScan));
-    }
-
     [HttpGet("stream/{eventId}")]
     public async Task StreamAgentExecution(string eventId, CancellationToken ct)
     {

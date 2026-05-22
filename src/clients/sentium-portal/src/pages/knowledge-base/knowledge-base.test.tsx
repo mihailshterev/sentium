@@ -251,7 +251,7 @@ describe("KnowledgeBase Learning card edit", () => {
 
   it("opens edit mode when Edit learning button is clicked", () => {
     fireEvent.click(screen.getByTitle("Edit learning"));
-    expect(screen.getByPlaceholderText(/e.g. network, anomaly, threat/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/e.g. workflow, memory, agent/i)).toBeInTheDocument();
   });
 
   it("shows Cancel and Save buttons in edit mode", () => {
@@ -263,7 +263,7 @@ describe("KnowledgeBase Learning card edit", () => {
   it("cancels edit when Cancel is clicked", () => {
     fireEvent.click(screen.getByTitle("Edit learning"));
     fireEvent.click(screen.getByTitle("Cancel"));
-    expect(screen.queryByPlaceholderText(/e.g. network, anomaly, threat/i)).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText(/e.g. workflow, memory, agent/i)).not.toBeInTheDocument();
   });
 
   it("editing content populates textarea with existing content", () => {
@@ -281,7 +281,7 @@ describe("KnowledgeBase Learning card edit", () => {
 
   it("can change tags in edit input", () => {
     fireEvent.click(screen.getByTitle("Edit learning"));
-    const tagsInput = screen.getByPlaceholderText(/e.g. network, anomaly, threat/i) as HTMLInputElement;
+    const tagsInput = screen.getByPlaceholderText(/e.g. workflow, memory, agent/i) as HTMLInputElement;
     fireEvent.change(tagsInput, { target: { value: "new, tags" } });
     expect(tagsInput.value).toBe("new, tags");
   });

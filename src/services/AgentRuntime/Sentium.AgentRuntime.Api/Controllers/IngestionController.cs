@@ -7,7 +7,7 @@ namespace Sentium.AgentRuntime.Api.Controllers;
 
 /// <summary>
 /// REST surface for pushing content into the RAG knowledge base.
-/// Downstream services (inventory, Sentinel, Watchdog, etc.) call these endpoints
+/// Downstream services (Sentinel, Watchdog, etc.) call these endpoints
 /// to contribute their data without requiring direct access to the vector store.
 /// These endpoints are internal-only — external access is gated by the API gateway.
 /// </summary>

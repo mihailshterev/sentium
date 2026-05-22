@@ -1,0 +1,54 @@
+.header {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+  padding: 0 1.75rem;
+  border-bottom: 1px solid var(--border-subtle);
+  background: rgba(15, 15, 19, 0.85);
+  backdrop-filter: blur(8px);
+  flex-shrink: 0;
+  gap: 1rem;
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.iconWrap {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+}
+
+.title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 2px;
+  letter-spacing: -0.3px;
+  line-height: 1.25;
+}
+
+.subtitle {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}

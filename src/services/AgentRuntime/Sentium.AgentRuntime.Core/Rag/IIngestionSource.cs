@@ -5,7 +5,7 @@ namespace Sentium.AgentRuntime.Core.Rag;
 /// <summary>
 /// Pluggable contract for any external data source that can push content into the knowledge base.
 /// <para>
-/// Implement this interface for each new data origin (e.g. inventory service, Zeek log exporter)
+/// Implement this interface for each new data origin
 /// and register it with the DI container. The <see cref="IDocumentIngestionService"/> can then
 /// drive all registered sources via <c>IngestFromSourceAsync</c>.
 /// </para>
@@ -19,7 +19,7 @@ namespace Sentium.AgentRuntime.Core.Rag;
 public interface IIngestionSource
 {
     /// <summary>
-    /// Stable, human-readable name used in source citations (e.g. "inventory-service").
+    /// Stable, human-readable name used in source citations.
     /// </summary>
     string SourceName { get; }
 

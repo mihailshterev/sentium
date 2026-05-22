@@ -107,7 +107,6 @@ describe("Dashboard initial render", () => {
     renderDashboard();
     expect(screen.getAllByText("Agent Runtime").length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText("Sentinel").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText("Locus")).toBeInTheDocument();
     expect(screen.getByText("Identity Provider")).toBeInTheDocument();
   });
 });

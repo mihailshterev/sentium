@@ -19,7 +19,6 @@ var sql = builder.AddSqlServer(ResourceNames.Sql, password: sqlPassword)
 
 var identityDb = sql.AddDatabase(ResourceNames.IdentityDb);
 var agentRuntimeDb = sql.AddDatabase(ResourceNames.AgentRuntimeDb);
-var locusDb = sql.AddDatabase(ResourceNames.LocusDb);
 var sandboxDb = sql.AddDatabase(ResourceNames.SandboxDb);
 var sentinelDb = sql.AddDatabase(ResourceNames.SentinelDb);
 
@@ -34,7 +33,7 @@ var blobs = storage.AddBlobs(ResourceNames.WorkspaceBlobs);
 var seq = builder.AddSeq(ResourceNames.Seq)
     .ExcludeFromManifest()
     .WithDataVolume()
-    .WithEnvironment("ACCEPT_EULA", "Y");
+    .WithEnvironment(EnvConfig.Keys.AcceptEula, EnvConfig.Values.Yes);
 
 var ollama = builder.AddOllama(ResourceNames.Ollama)
     .WithImage("ollama/ollama", "0.20.2")
@@ -66,7 +65,7 @@ var sentinelApi = builder.AddProject<Projects.Sentium_Sentinel_Api>(ServiceNames
     .WithReference(sentinelDb).WaitFor(sentinelDb)
     .WithReference(identityApi).WaitFor(identityApi)
     .WithReference(ollama).WaitFor(ollama)
-    .WithEnvironment("Identity__Authority", identityApi.GetEndpoint("http"))
+    .WithEnvironment(EnvConfig.Keys.IdentityAuthority, identityApi.GetEndpoint("http"))
     .WithUrlForEndpoint("https", url =>
     {
         url.DisplayText = "Scalar API (Docs)";
@@ -74,8 +73,8 @@ var sentinelApi = builder.AddProject<Projects.Sentium_Sentinel_Api>(ServiceNames
     });
 
 var dockerHost = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-    ? "npipe://./pipe/docker_engine"
-    : "unix:///var/run/docker.sock";
+    ? EnvConfig.Values.DockerSockets.Windows
+    : EnvConfig.Values.DockerSockets.LinuxMac;
 
 var sandboxApi = builder.AddProject<Projects.Sentium_Sandbox_Api>(ServiceNames.Sandbox)
     .WithReference(nats).WaitFor(nats)
@@ -84,9 +83,8 @@ var sandboxApi = builder.AddProject<Projects.Sentium_Sandbox_Api>(ServiceNames.S
     .WithReference(sandboxDb).WaitFor(sandboxDb)
     .WithReference(sentinelApi).WaitFor(sentinelApi)
     .WithReference(identityApi).WaitFor(identityApi)
-    .WithEnvironment("Identity__Authority", identityApi.GetEndpoint("http"))
-    // Expose the Docker daemon socket so the service can spawn worker containers.
-    .WithEnvironment("DOCKER_HOST", dockerHost)
+    .WithEnvironment(EnvConfig.Keys.IdentityAuthority, identityApi.GetEndpoint("http"))
+    .WithEnvironment(EnvConfig.Keys.DockerHost, dockerHost)
     .WithUrlForEndpoint("https", url =>
     {
         url.DisplayText = "Scalar API (Docs)";
@@ -105,23 +103,10 @@ var agentRuntimeApi = builder.AddProject<Projects.Sentium_AgentRuntime_Api>(Serv
     .WithReference(identityApi).WaitFor(identityApi)
     .WithReference(sentinelApi).WaitFor(sentinelApi)
     .WithReference(sandboxApi).WaitFor(sandboxApi)
-    .WithEnvironment("AI__ModelName", ollamaModel.Resource.ModelName)
-    .WithEnvironment("Rag__EmbeddingModelName", ollamaEmbeddingModel.Resource.ModelName)
-    .WithEnvironment("Identity__Authority", identityApi.GetEndpoint("http"))
+    .WithEnvironment(EnvConfig.Keys.AI.ModelName, ollamaModel.Resource.ModelName)
+    .WithEnvironment(EnvConfig.Keys.AI.EmbeddingModelName, ollamaEmbeddingModel.Resource.ModelName)
+    .WithEnvironment(EnvConfig.Keys.IdentityAuthority, identityApi.GetEndpoint("http"))
     .WithExternalHttpEndpoints()
-    .WithUrlForEndpoint("https", url =>
-    {
-        url.DisplayText = "Scalar API (Docs)";
-        url.Url = "/scalar/v1";
-    });
-
-var locusApi = builder.AddProject<Projects.Sentium_Locus_Api>(ServiceNames.Locus)
-    .WithReference(locusDb).WaitFor(locusDb)
-    .WithReference(nats).WaitFor(nats)
-    .WithReference(seq).WaitFor(seq)
-    .WithReference(identityApi).WaitFor(identityApi)
-    .WithReference(agentRuntimeApi).WaitFor(agentRuntimeApi)
-    .WithEnvironment("Identity__Authority", identityApi.GetEndpoint("http"))
     .WithUrlForEndpoint("https", url =>
     {
         url.DisplayText = "Scalar API (Docs)";
@@ -136,8 +121,7 @@ var watchdogApi = builder.AddProject<Projects.Sentium_Watchdog_Api>(ServiceNames
     .WithReference(identityApi).WaitFor(identityApi)
     .WithReference(sentinelApi).WaitFor(sentinelApi)
     .WithReference(agentRuntimeApi).WaitFor(agentRuntimeApi)
-    .WithReference(locusApi).WaitFor(locusApi)
-    .WithEnvironment("Identity__Authority", identityApi.GetEndpoint("http"))
+    .WithEnvironment(EnvConfig.Keys.IdentityAuthority, identityApi.GetEndpoint("http"))
     .WithUrlForEndpoint("https", url =>
     {
         url.DisplayText = "Scalar API (Docs)";
@@ -149,21 +133,19 @@ var apiGateway = builder.AddProject<Projects.Sentium_ApiGateway>(ServiceNames.Ga
     .WithReference(sentinelApi).WaitFor(sentinelApi)
     .WithReference(watchdogApi).WaitFor(watchdogApi)
     .WithReference(agentRuntimeApi).WaitFor(agentRuntimeApi)
-    .WithReference(locusApi).WaitFor(locusApi)
     .WithReference(sandboxApi).WaitFor(sandboxApi)
-    .WithEnvironment("Identity__Authority", identityApi.GetEndpoint("http"));
+    .WithEnvironment(EnvConfig.Keys.IdentityAuthority, identityApi.GetEndpoint("http"));
 
 var frontend = builder.AddViteApp(ServiceNames.Frontend, "../../clients/sentium-portal")
     .WithPnpm()
     .WithReference(apiGateway).WaitFor(apiGateway)
-    .WithEnvironment("VITE_API_BASE", apiGateway.GetEndpoint("https"))
+    .WithEnvironment(EnvConfig.Keys.Frontend.ViteApiBase, apiGateway.GetEndpoint("https"))
     .WithEndpoint("http", e => e.Port = 5173);
 
 identityApi.WithParentRelationship(apiGateway);
 sentinelApi.WithParentRelationship(apiGateway);
 watchdogApi.WithParentRelationship(apiGateway);
 agentRuntimeApi.WithParentRelationship(apiGateway);
-locusApi.WithParentRelationship(apiGateway);
 sandboxApi.WithParentRelationship(apiGateway);
 
 builder.Build().Run();

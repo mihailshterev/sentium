@@ -44,12 +44,6 @@
     <Project Path="src/services/Watchdog/Sentium.Watchdog.Application/Sentium.Watchdog.Application.csproj" />
     <Project Path="src/services/Watchdog/Sentium.Watchdog.Core/Sentium.Watchdog.Core.csproj" />
   </Folder>
-  <Folder Name="/src/services/Locus/">
-    <Project Path="src/services/Locus/Sentium.Locus.Api/Sentium.Locus.Api.csproj" />
-    <Project Path="src/services/Locus/Sentium.Locus.Application/Sentium.Locus.Application.csproj" />
-    <Project Path="src/services/Locus/Sentium.Locus.Core/Sentium.Locus.Core.csproj" />
-    <Project Path="src/services/Locus/Sentium.Locus.Infrastructure/Sentium.Locus.Infrastructure.csproj" />
-  </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Sentium.Tests.AppHost/Sentium.Tests.AppHost.csproj" />
     <Project Path="tests/Sentium.Tests.Integration/Sentium.Tests.Integration.csproj" />

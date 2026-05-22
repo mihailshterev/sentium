@@ -1,7 +1,6 @@
 import type { AgentRecord } from "../types/agents";
 import type { WorkflowRecord } from "../types/workflows";
 import type { WorkflowRun } from "../types/workflowRuns";
-import type { NetworkEvent } from "../types/sentinel";
 import type { ConversationSummary } from "../types/assistant";
 import type { Workspace, WorkspaceFile, CreateWorkspacePayload, UpdateWorkspacePayload } from "../types/workspace";
 import type {
@@ -157,9 +156,6 @@ export const runPipeline = (payload: Record<string, string>) =>
 
 export const runWorkflowPipeline = (payload: RunWorkflowPayload) =>
   client.post<{ eventId: string }>(`${BASE}/agents/run-workflow`, payload);
-
-export const triggerNetworkAnalysis = (event: NetworkEvent): Promise<{ eventId: string }> =>
-  client.post<{ eventId: string }>(`${BASE}/agents/analyze-network-event`, event);
 
 export const fetchWorkflowRuns = (count = 15): Promise<WorkflowRun[]> =>
   client.get<WorkflowRun[]>(`${BASE}/workflows/runs?count=${count}`);

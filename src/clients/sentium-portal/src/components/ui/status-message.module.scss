@@ -1,0 +1,28 @@
+.msg {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.7rem;
+  padding: 0.45rem 0.65rem;
+  border-radius: 0.35rem;
+  border: 1px solid transparent;
+  line-height: 1.4;
+}
+
+.success {
+  background: rgba(34, 197, 94, 0.08);
+  color: var(--accent-green);
+  border-color: rgba(34, 197, 94, 0.2);
+}
+
+.error {
+  background: rgba(239, 68, 68, 0.08);
+  color: var(--accent-red);
+  border-color: rgba(239, 68, 68, 0.2);
+}
+
+.loading {
+  background: rgba(59, 130, 246, 0.08);
+  color: var(--accent-blue);
+  border-color: rgba(59, 130, 246, 0.2);
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import SettingsPage from "./settings";
@@ -113,16 +113,18 @@ describe("Settings editing interactions", () => {
     expect(screen.getByRole("button", { name: /save changes/i })).not.toBeDisabled();
   });
 
-  it("calls save with correct payload when Save Changes is clicked", () => {
+  it("calls save with correct payload when Save Changes is clicked", async () => {
     const save = vi.fn();
     vi.spyOn(useSystemSettingsHook, "useSystemSettings").mockReturnValue({ ...defaultHook, save });
     renderSettings();
     fireEvent.change(screen.getByRole("textbox"), { target: { value: "Updated prompt." } });
     fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
-    expect(save).toHaveBeenCalledWith({
-      userHarnessPrompt: "Updated prompt.",
-      isBuiltInHarnessEnabled: true,
-    });
+    await waitFor(() =>
+      expect(save).toHaveBeenCalledWith({
+        userHarnessPrompt: "Updated prompt.",
+        isBuiltInHarnessEnabled: true,
+      }),
+    );
   });
 
   it("shows isSaving state on the save button", () => {

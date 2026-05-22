@@ -1,32 +1,16 @@
 import { useState } from "react";
-import { UsersRound, Trash2, ShieldMinus, RefreshCw, AlertCircle, UserX } from "lucide-react";
+import { UsersRound, RefreshCw, AlertCircle, UserX } from "lucide-react";
 import styles from "./users.module.scss";
 import { ROLE_HIERARCHY, type Role } from "../../utils/roles";
 import { useRole } from "../../hooks/useRole";
 import { useAuthStore } from "../../stores/auth-store";
 import useUsers from "../../hooks/useUsers";
+import PageHeader from "../../components/ui/page-header";
+import EmptyState from "../../components/ui/empty-state";
+import SkeletonRows from "./components/skeleton-rows";
+import UserRow from "./components/user-row";
 
 const ROLE_OPTIONS = ROLE_HIERARCHY as readonly Role[];
-
-function RoleBadge({ role }: { role: string }) {
-  return <span className={`${styles.roleBadge} ${styles[`role_${role.toLowerCase()}`]}`}>{role}</span>;
-}
-
-function SkeletonRows() {
-  return (
-    <>
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className={styles.skeletonRow}>
-          <div className={styles.skeletonCell} style={{ width: "7rem" }} />
-          <div className={styles.skeletonCell} style={{ width: "11rem" }} />
-          <div className={styles.skeletonCell} style={{ width: "6rem" }} />
-          <div className={styles.skeletonCell} style={{ width: "9rem" }} />
-          <div className={styles.skeletonCell} style={{ width: "2rem" }} />
-        </div>
-      ))}
-    </>
-  );
-}
 
 export default function Users() {
   const [actionError, setActionError] = useState<string | null>(null);
@@ -79,36 +63,32 @@ export default function Users() {
 
   return (
     <div className={styles.root}>
-      <div className={styles.header}>
-        <div className={styles.headerLeft}>
-          <div className={styles.headerIcon}>
-            <UsersRound size={18} />
+      <PageHeader
+        icon={<UsersRound size={18} />}
+        title="User Management"
+        subtitle="Manage system users and role assignments"
+        right={
+          <div className={styles.headerRight}>
+            {actionError && (
+              <div className={styles.errorInline}>
+                <AlertCircle size={12} />
+                <span>{actionError}</span>
+                <button onClick={() => setActionError(null)} className={styles.errorDismiss}>
+                  ✕
+                </button>
+              </div>
+            )}
+            <button
+              className={`${styles.refreshBtn} ${isFetching ? styles.spinning : ""}`}
+              onClick={() => refetch()}
+              disabled={isFetching}
+            >
+              <RefreshCw size={12} />
+              Refresh
+            </button>
           </div>
-          <div>
-            <h1 className={styles.pageTitle}>User Management</h1>
-            <p className={styles.pageSubtitle}>Manage system users and role assignments</p>
-          </div>
-        </div>
-        <div className={styles.headerRight}>
-          {actionError && (
-            <div className={styles.errorInline}>
-              <AlertCircle size={12} />
-              <span>{actionError}</span>
-              <button onClick={() => setActionError(null)} className={styles.errorDismiss}>
-                ✕
-              </button>
-            </div>
-          )}
-          <button
-            className={`${styles.refreshBtn} ${isFetching ? styles.spinning : ""}`}
-            onClick={() => refetch()}
-            disabled={isFetching}
-          >
-            <RefreshCw size={12} />
-            Refresh
-          </button>
-        </div>
-      </div>
+        }
+      />
 
       <div className={styles.body}>
         <div className={styles.section}>
@@ -134,87 +114,22 @@ export default function Users() {
             {isLoading ? (
               <SkeletonRows />
             ) : error ? (
-              <div className={styles.emptyState}>
-                <AlertCircle size={28} className={styles.emptyIcon} />
-                <span className={styles.emptyTitle}>Failed to load users</span>
-                <span className={styles.emptySubtitle}>{error.message}</span>
-              </div>
+              <EmptyState icon={<AlertCircle size={28} />} title="Failed to load users" hint={error.message} />
             ) : users.length === 0 ? (
-              <div className={styles.emptyState}>
-                <UserX size={28} className={styles.emptyIcon} />
-                <span className={styles.emptyTitle}>No users found</span>
-              </div>
+              <EmptyState icon={<UserX size={28} />} title="No users found" />
             ) : (
               users.map((user) => (
-                <div key={user.id} className={`${styles.userRow} ${pendingUserId === user.id ? styles.pending : ""}`}>
-                  <span className={styles.colName}>
-                    <span className={styles.nameText}>
-                      {user.firstName || user.lastName ? `${user.firstName} ${user.lastName ?? ""}`.trim() : "—"}
-                    </span>
-                    {isSelf(user.id) && <span className={styles.selfTag}>you</span>}
-                    {user.isLockedOut && <span className={styles.lockedTag}>locked</span>}
-                  </span>
-
-                  <span className={styles.colEmail}>
-                    <span className={styles.emailText}>{user.email}</span>
-                  </span>
-
-                  <span className={styles.colRoles}>
-                    {user.roles.length > 0 ? (
-                      user.roles.map((r) => <RoleBadge key={r} role={r} />)
-                    ) : (
-                      <span className={styles.noRole}>—</span>
-                    )}
-                  </span>
-
-                  {isSovereign && (
-                    <span className={styles.colAssign}>
-                      <select
-                        className={styles.roleSelect}
-                        defaultValue=""
-                        disabled={pendingUserId === user.id}
-                        onChange={(e) => {
-                          if (e.target.value) handleAssignRole(user.id, e.target.value as Role);
-                          e.target.value = "";
-                        }}
-                      >
-                        <option value="" disabled>
-                          Add role…
-                        </option>
-                        {ROLE_OPTIONS.filter((r) => !user.roles.includes(r)).map((r) => (
-                          <option key={r} value={r}>
-                            {r}
-                          </option>
-                        ))}
-                      </select>
-                      {user.roles.map((r) => (
-                        <button
-                          key={r}
-                          className={styles.removeRoleBtn}
-                          title={`Remove ${r}`}
-                          disabled={pendingUserId === user.id}
-                          onClick={() => handleRemoveRole(user.id, r)}
-                        >
-                          <ShieldMinus size={11} />
-                          {r}
-                        </button>
-                      ))}
-                    </span>
-                  )}
-
-                  {isSovereign && (
-                    <span className={styles.colActions}>
-                      <button
-                        className={styles.deleteBtn}
-                        title="Delete user"
-                        disabled={isSelf(user.id) || pendingUserId === user.id}
-                        onClick={() => handleDeleteUser(user.id)}
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </span>
-                  )}
-                </div>
+                <UserRow
+                  key={user.id}
+                  user={user}
+                  isSelf={isSelf(user.id)}
+                  isSovereign={isSovereign}
+                  isPending={pendingUserId === user.id}
+                  roleOptions={ROLE_OPTIONS}
+                  onAssignRole={handleAssignRole}
+                  onRemoveRole={handleRemoveRole}
+                  onDeleteUser={handleDeleteUser}
+                />
               ))
             )}
           </div>

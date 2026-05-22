@@ -152,16 +152,18 @@ describe("Agents create form", () => {
     expect(screen.getByRole("button", { name: /register agent/i })).not.toBeDisabled();
   });
 
-  it("calls createAgent with correct payload when form is submitted", () => {
+  it("calls createAgent with correct payload when form is submitted", async () => {
     const createAgent = vi.fn();
     vi.spyOn(useAgentsHook, "default").mockReturnValue({ ...defaultAgentsHook, createAgent });
     renderAgents();
     fireEvent.change(screen.getByLabelText(/agent name/i), { target: { value: "MyAgent" } });
     fireEvent.change(screen.getByLabelText(/description/i), { target: { value: "Test desc" } });
     fireEvent.click(screen.getByRole("button", { name: /register agent/i }));
-    expect(createAgent).toHaveBeenCalledWith(
-      expect.objectContaining({ name: "MyAgent", description: "Test desc" }),
-      expect.any(Object),
+    await waitFor(() =>
+      expect(createAgent).toHaveBeenCalledWith(
+        expect.objectContaining({ name: "MyAgent", description: "Test desc" }),
+        expect.any(Object),
+      ),
     );
   });
 

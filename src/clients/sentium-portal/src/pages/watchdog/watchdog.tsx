@@ -1,70 +1,10 @@
-import { RefreshCw, Activity, CheckCircle, XCircle, AlertCircle, Clock, Zap, Server } from "lucide-react";
+import { RefreshCw, Activity, Zap, Server } from "lucide-react";
 import styles from "./watchdog.module.scss";
 import useServiceHealth from "../../hooks/useServiceHealth";
 import useSystemMetrics from "../../hooks/useSystemMetrics";
-import type { ServiceHealthStatus, ServiceStatus } from "../../types/serviceHealth";
-
-function StatusIcon({ status }: { status: ServiceStatus }) {
-  if (status === "Healthy") {
-    return <CheckCircle size={14} className={styles.iconHealthy} />;
-  }
-
-  if (status === "Unhealthy") {
-    return <XCircle size={14} className={styles.iconUnhealthy} />;
-  }
-
-  return <AlertCircle size={14} className={styles.iconUnknown} />;
-}
-
-function LatencyBar({ latencyMs }: { latencyMs: number }) {
-  const pct = Math.min((latencyMs / 1000) * 100, 100);
-  const color = latencyMs < 100 ? "green" : latencyMs < 400 ? "amber" : "red";
-  return (
-    <div className={styles.latencyBarWrap}>
-      <div className={`${styles.latencyBar} ${styles[`latencyBar_${color}`]}`} style={{ width: `${pct}%` }} />
-    </div>
-  );
-}
-
-function formatTime(iso: string) {
-  const d = new Date(iso);
-  return d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-}
-
-function ServiceRow({ service }: { service: ServiceHealthStatus }) {
-  return (
-    <div className={`${styles.serviceRow} ${service.status === "Unhealthy" ? styles.serviceRowUnhealthy : ""}`}>
-      <div className={styles.serviceRowStatus}>
-        <StatusIcon status={service.status} />
-        <span
-          className={`${styles.statusLabel} ${
-            service.status === "Healthy"
-              ? styles.statusLabelHealthy
-              : service.status === "Unhealthy"
-                ? styles.statusLabelUnhealthy
-                : styles.statusLabelUnknown
-          }`}
-        >
-          {service.status}
-        </span>
-      </div>
-
-      <span className={styles.serviceName}>{service.serviceName}</span>
-
-      <div className={styles.latencyCell}>
-        <span className={styles.latencyValue}>{service.latencyMs.toFixed(0)}ms</span>
-        <LatencyBar latencyMs={service.latencyMs} />
-      </div>
-
-      <div className={styles.checkedCell}>
-        <Clock size={11} />
-        <span>{service.checkedAt ? formatTime(service.checkedAt) : "—"}</span>
-      </div>
-
-      {service.details && <span className={styles.detailsCell}>{service.details}</span>}
-    </div>
-  );
-}
+import PageHeader from "../../components/ui/page-header";
+import ServiceRow from "./components/service-row";
+import SummaryStats from "./components/summary-stats";
 
 const Watchdog = () => {
   const { services, isLoading: healthLoading, refetch } = useServiceHealth();
@@ -76,46 +16,23 @@ const Watchdog = () => {
 
   return (
     <div className={styles.root}>
-      <div className={styles.header}>
-        <div>
-          <h1 className={styles.title}>Watchdog</h1>
-          <p className={styles.subtitle}>Service health monitoring and system diagnostics</p>
-        </div>
-        <button className={styles.refreshBtn} onClick={() => refetch()} disabled={healthLoading}>
-          <RefreshCw size={14} className={healthLoading ? styles.spinning : undefined} />
-          Refresh
-        </button>
-      </div>
+      <PageHeader
+        title="Watchdog"
+        subtitle="Service health monitoring and system diagnostics"
+        right={
+          <button className={styles.refreshBtn} onClick={() => refetch()} disabled={healthLoading}>
+            <RefreshCw size={14} className={healthLoading ? styles.spinning : undefined} />
+            Refresh
+          </button>
+        }
+      />
 
-      <div className={styles.summaryRow}>
-        <div className={styles.summaryCard}>
-          <Activity size={16} className={styles.summaryIcon} />
-          <div>
-            <span className={styles.summaryValue}>{services.length}</span>
-            <span className={styles.summaryLabel}>Monitored</span>
-          </div>
-        </div>
-        <div className={styles.summaryCard}>
-          <CheckCircle size={16} className={`${styles.summaryIcon} ${styles.summaryIconGreen}`} />
-          <div>
-            <span className={`${styles.summaryValue} ${styles.summaryValueGreen}`}>{healthyCount}</span>
-            <span className={styles.summaryLabel}>Healthy</span>
-          </div>
-        </div>
-        <div className={styles.summaryCard}>
-          <XCircle size={16} className={`${styles.summaryIcon} ${unhealthyCount > 0 ? styles.summaryIconRed : ""}`} />
-          <div>
-            <span className={`${styles.summaryValue} ${unhealthyCount > 0 ? styles.summaryValueRed : ""}`}>
-              {unhealthyCount}
-            </span>
-            <span className={styles.summaryLabel}>Unhealthy</span>
-          </div>
-        </div>
-        <div className={`${styles.overallBadge} ${allHealthy ? styles.overallBadgeGreen : styles.overallBadgeRed}`}>
-          {allHealthy ? <CheckCircle size={13} /> : <XCircle size={13} />}
-          <span>{allHealthy ? "All Systems Operational" : "Degraded Services Detected"}</span>
-        </div>
-      </div>
+      <SummaryStats
+        services={services}
+        healthyCount={healthyCount}
+        unhealthyCount={unhealthyCount}
+        allHealthy={allHealthy}
+      />
 
       <div className={styles.mainGrid}>
         <section className={styles.card}>

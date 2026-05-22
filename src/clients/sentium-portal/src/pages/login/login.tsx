@@ -1,26 +1,36 @@
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Navigate } from "react-router";
-import { AlertCircle, ArrowRight, Bot, Lock, Mail, ShieldCheck, Zap } from "lucide-react";
+import { AlertCircle, ArrowRight, Bot, Cpu, Lock, Mail, Zap } from "lucide-react";
 import styles from "./login.module.scss";
 import { AnimatedBg } from "./animated-bg";
 import { useAuthStore } from "../../stores/auth-store";
 import { BASE_URL, BFF_BASE } from "../../api/client";
 import { AUTH_STATUS } from "../../utils/constants";
+import { loginSchema, type LoginFormData } from "../../schemas/auth.login";
+import { registerSchema } from "../../schemas/auth.register";
 
 const FEATURES = [
-  "Real-time threat detection and autonomous response",
-  "AI-powered agent orchestration across your network",
-  "Zero-trust identity enforcement at every layer",
-  "Continuous behavioral analysis and anomaly detection",
+  "Local LLM execution with complete data privacy",
+  "Autonomous multi-agent orchestration & execution",
+  "Zero-trust policy sandboxing & security guardrails",
 ];
 
 const Login = () => {
   const status = useAuthStore((state) => state.status);
   const [mode, setMode] = useState<"login" | "register">("login");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors },
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(mode === "login" ? loginSchema : registerSchema),
+  });
 
   if (status === AUTH_STATUS.AUTHENTICATED) {
     return <Navigate to="/" replace />;
@@ -29,10 +39,10 @@ const Login = () => {
   const switchMode = (next: "login" | "register") => {
     setMode(next);
     setError(null);
+    reset();
   };
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (data: LoginFormData) => {
     setError(null);
     setSubmitting(true);
 
@@ -43,7 +53,7 @@ const Login = () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: data.email, password: data.password }),
       });
 
       if (!res.ok) {
@@ -57,7 +67,9 @@ const Login = () => {
       const params = new URLSearchParams(window.location.search);
       const redirectTarget = params.get("returnUrl") || "/";
 
-      window.location.href = `${BFF_BASE}/login?returnUrl=${encodeURIComponent(window.location.origin + redirectTarget)}`;
+      window.location.assign(
+        `${BFF_BASE}/login?returnUrl=${encodeURIComponent(window.location.origin + redirectTarget)}`,
+      );
     } catch {
       setError("Something went wrong. Please try again.");
       setSubmitting(false);
@@ -72,22 +84,22 @@ const Login = () => {
 
         <div className={styles.leftTop}>
           <div className={styles.leftBrandIcon}>
-            <ShieldCheck size={18} strokeWidth={2} />
+            <Cpu size={18} strokeWidth={2} />
           </div>
           <span className={styles.leftBrandName}>Sentium</span>
         </div>
 
         <div className={styles.leftCenter}>
           <h1 className={styles.headline}>
-            Intelligent Security,
+            Local AI Workflows,
             <br />
             <span>Autonomously</span>
             <br />
-            Enforced.
+            Orchestrated.
           </h1>
           <p className={styles.descriptor}>
-            Sentium unifies AI-driven threat detection, autonomous agent orchestration, and zero-trust identity
-            enforcement into a single cohesive platform.
+            Sentium unifies local private AI execution, autonomous multi-agent orchestration, and secure zero-trust
+            policy sandboxing into a premium cohesive platform.
           </p>
           <ul className={styles.featureList}>
             {FEATURES.map((f) => (
@@ -102,16 +114,16 @@ const Login = () => {
         <div className={styles.leftBottom}>
           <div className={styles.statsRow}>
             <div className={styles.stat}>
-              <span className={styles.statValue}>99.9%</span>
-              <span className={styles.statLabel}>Uptime</span>
+              <span className={styles.statValue}>100%</span>
+              <span className={styles.statLabel}>Local &amp; Private</span>
             </div>
             <div className={styles.stat}>
-              <span className={styles.statValue}>&lt;50ms</span>
-              <span className={styles.statLabel}>Response</span>
+              <span className={styles.statValue}>&lt;10ms</span>
+              <span className={styles.statLabel}>Agent Latency</span>
             </div>
             <div className={styles.stat}>
-              <span className={styles.statValue}>24/7</span>
-              <span className={styles.statLabel}>Monitoring</span>
+              <span className={styles.statValue}>Zero</span>
+              <span className={styles.statLabel}>Cloud Dependency</span>
             </div>
           </div>
           <div className={styles.statusRow}>
@@ -150,7 +162,7 @@ const Login = () => {
             </button>
           </div>
 
-          <form className={styles.form} onSubmit={handleSubmit}>
+          <form className={styles.form} onSubmit={handleSubmit(onSubmit)}>
             <div className={styles.field}>
               <label className={styles.label} htmlFor="email">
                 Email address
@@ -163,13 +175,17 @@ const Login = () => {
                   id="email"
                   className={styles.input}
                   type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
-                  required
                   autoComplete="email"
+                  {...register("email")}
                 />
               </div>
+              {errors.email && (
+                <div className={styles.error}>
+                  <AlertCircle size={14} strokeWidth={2} className={styles.errorIcon} />
+                  {errors.email.message}
+                </div>
+              )}
             </div>
 
             <div className={styles.field}>
@@ -184,13 +200,17 @@ const Login = () => {
                   id="password"
                   className={styles.input}
                   type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
                   placeholder={mode === "login" ? "Your password" : "Create a password"}
-                  required
                   autoComplete={mode === "login" ? "current-password" : "new-password"}
+                  {...register("password")}
                 />
               </div>
+              {errors.password && (
+                <div className={styles.error}>
+                  <AlertCircle size={14} strokeWidth={2} className={styles.errorIcon} />
+                  {errors.password.message}
+                </div>
+              )}
             </div>
 
             {error && (
@@ -237,7 +257,7 @@ const Login = () => {
 
           <p className={styles.footerNote}>
             <Zap size={11} style={{ display: "inline", verticalAlign: "middle", marginRight: 4 }} />
-            Secured by Sentium Identity &amp; zero-trust enforcement
+            Powered by Sentium local AI runtime &amp; policy sandboxing
           </p>
         </div>
       </div>
