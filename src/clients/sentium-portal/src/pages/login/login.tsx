@@ -67,7 +67,9 @@ const Login = () => {
       const params = new URLSearchParams(window.location.search);
       const redirectTarget = params.get("returnUrl") || "/";
 
-      window.location.href = `${BFF_BASE}/login?returnUrl=${encodeURIComponent(window.location.origin + redirectTarget)}`;
+      window.location.assign(
+        `${BFF_BASE}/login?returnUrl=${encodeURIComponent(window.location.origin + redirectTarget)}`,
+      );
     } catch {
       setError("Something went wrong. Please try again.");
       setSubmitting(false);
