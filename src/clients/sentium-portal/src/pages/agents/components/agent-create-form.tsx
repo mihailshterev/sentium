@@ -32,6 +32,7 @@ const AgentCreateForm = ({
     handleSubmit,
     reset,
     control,
+    setValue,
     formState: { errors },
   } = useForm<AgentCreateFormData>({
     resolver: zodResolver(agentCreateSchema),
@@ -44,13 +45,9 @@ const AgentCreateForm = ({
 
   useEffect(() => {
     if (models.length > 0) {
-      reset({
-        name: "",
-        description: "",
-        model: models[0],
-      });
+      setValue("model", models[0]);
     }
-  }, [models, reset]);
+  }, [models, setValue]);
 
   const descriptionValue = useWatch({
     control,
