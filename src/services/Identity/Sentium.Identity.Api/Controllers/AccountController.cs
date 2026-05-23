@@ -75,12 +75,8 @@ public sealed class AccountController(
             return Unauthorized("Invalid login attempt.");
         }
 
-        if (!string.IsNullOrEmpty(returnUrl))
-        {
-            return Ok(new { RedirectUrl = returnUrl });
-        }
-
-        return Ok();
+        var redirectTo = (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl)) ? returnUrl : "/";
+        return Ok(new { RedirectUrl = redirectTo });
     }
 
     /// <summary>

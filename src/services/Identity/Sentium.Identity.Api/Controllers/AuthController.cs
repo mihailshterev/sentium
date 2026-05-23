@@ -21,7 +21,8 @@ namespace Sentium.Identity.Api.Controllers;
 [Route("auth")]
 public sealed class AuthController(
     UserManager<ApplicationUser> userManager,
-    IUserClaimsService userClaimsService) : ControllerBase
+    IUserClaimsService userClaimsService,
+    IConfiguration configuration) : ControllerBase
 {
     /// <summary>
     /// Handles the Authorization Request (interactive login).
@@ -39,7 +40,9 @@ public sealed class AuthController(
 
         if (!User.Identity!.IsAuthenticated)
         {
-            return Challenge(IdentityConstants.ApplicationScheme);
+            var loginPath = configuration["Identity:LoginPath"] ?? "/login";
+            var authorizeUri = HttpContext.Request.Path + HttpContext.Request.QueryString;
+            return Redirect($"{loginPath}?returnUrl={Uri.EscapeDataString(authorizeUri)}");
         }
 
         var identity = new ClaimsIdentity(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
@@ -140,25 +143,12 @@ public sealed class AuthController(
         switch (claim.Type)
         {
             case ClaimTypes.NameIdentifier:
-                yield return OpenIddictConstants.Destinations.AccessToken;
-                yield return OpenIddictConstants.Destinations.IdentityToken;
-                break;
-
             case ClaimTypes.Email:
-                yield return OpenIddictConstants.Destinations.AccessToken;
-                yield return OpenIddictConstants.Destinations.IdentityToken;
-                break;
-
             case ClaimTypes.Name:
-                yield return OpenIddictConstants.Destinations.AccessToken;
-                yield return OpenIddictConstants.Destinations.IdentityToken;
-                break;
-
             case ClaimTypes.Role:
                 yield return OpenIddictConstants.Destinations.AccessToken;
                 yield return OpenIddictConstants.Destinations.IdentityToken;
                 break;
-
             default:
                 yield return OpenIddictConstants.Destinations.AccessToken;
                 break;

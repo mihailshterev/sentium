@@ -59,6 +59,14 @@ var identityApi = builder.AddProject<Projects.Sentium_Identity_Api>(ServiceNames
         url.Url = "/scalar/v1";
     });
 
+var identityUi = builder.AddViteApp(ServiceNames.IdentityUi, "../../clients/sentium-identity-ui")
+    .WithPnpm()
+    .WithReference(identityApi).WaitFor(identityApi)
+    .WithEnvironment(EnvConfig.Keys.Frontend.ViteIdentityApiBase, identityApi.GetEndpoint("https"))
+    .WithEndpoint("http", e => e.Port = 5174);
+
+identityUi.WithParentRelationship(identityApi);
+
 var sentinelApi = builder.AddProject<Projects.Sentium_Sentinel_Api>(ServiceNames.Sentinel)
     .WithReference(nats).WaitFor(nats)
     .WithReference(seq).WaitFor(seq)

@@ -17,6 +17,7 @@ public static class EnvConfig
         public static class Frontend
         {
             public const string ViteApiBase = "VITE_API_BASE";
+            public const string ViteIdentityApiBase = "VITE_IDENTITY_API_BASE";
         }
     }
 

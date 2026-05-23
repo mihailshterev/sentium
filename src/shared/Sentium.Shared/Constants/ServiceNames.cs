@@ -9,4 +9,5 @@ public static class ServiceNames
     public const string AgentRuntime = "agent-runtime";
     public const string Sandbox = "sandbox";
     public const string Frontend = "frontend";
+    public const string IdentityUi = "identity-ui";
 }
