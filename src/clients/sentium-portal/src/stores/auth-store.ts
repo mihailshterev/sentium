@@ -38,8 +38,21 @@ export const useAuthStore = create<AuthState>((set) => ({
     window.location.href = `${BFF_BASE}/login?returnUrl=${encodeURIComponent(window.location.origin + target)}`;
   },
 
-  logout: () => {
+  logout: async () => {
     set({ user: null, status: AUTH_STATUS.CHECKING });
-    window.location.href = `${BFF_BASE}/logout`;
+    try {
+      const res = await fetch(`${BFF_BASE}/logout`, {
+        method: "POST",
+        credentials: "include",
+      });
+
+      if (res.ok) {
+        window.location.href = res.url;
+      } else {
+        set({ user: null, status: AUTH_STATUS.UNAUTHENTICATED });
+      }
+    } catch {
+      set({ user: null, status: AUTH_STATUS.UNAUTHENTICATED });
+    }
   },
 }));

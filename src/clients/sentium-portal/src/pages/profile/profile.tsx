@@ -1,7 +1,7 @@
 import { ShieldUser } from "lucide-react";
 import styles from "./profile.module.scss";
 import { useRole } from "../../hooks/useRole";
-import { AnimatedBg } from "../login/animated-bg";
+import { AnimatedBg } from "../../components/ui/animated-bg";
 import useProfile from "../../hooks/useProfile";
 import ProfileEditForm from "./components/profile-edit-form";
 

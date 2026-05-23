@@ -7,7 +7,6 @@ import Agents from "../pages/agents/agents";
 import Workflows from "../pages/workflows/workflows";
 import System from "../pages/system/system";
 import type { RouteObject } from "react-router";
-import Login from "../pages/login/login";
 import Workspaces from "../pages/workspaces/workspaces";
 import Users from "../pages/users/users";
 import Profile from "../pages/profile/profile";
@@ -20,10 +19,6 @@ import Sentinel from "../pages/sentinel/sentinel";
 import Sandbox from "../pages/sandbox/sandbox";
 
 export const routes: RouteObject[] = [
-  {
-    path: "/login",
-    element: <Login />,
-  },
   {
     path: "/",
     element: (
