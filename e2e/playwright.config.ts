@@ -10,7 +10,6 @@ export default defineConfig({
   retries: process.env.CI ? 1 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: process.env.CI ? [["html", { open: "never" }], ["github"]] : [["html", { open: "on-failure" }]],
-  globalSetup: "./global-setup.ts",
 
   use: {
     baseURL: "http://localhost:5173",
@@ -19,6 +18,7 @@ export default defineConfig({
     screenshot: "only-on-failure",
     video: "on-first-retry",
     headless: true,
+    ignoreHTTPSErrors: true,
     actionTimeout: 15_000,
     navigationTimeout: 30_000,
   },
@@ -26,7 +26,7 @@ export default defineConfig({
   projects: [
     {
       name: "auth-setup",
-      testMatch: /auth\.spec\.ts/,
+      testMatch: /.*auth\.setup\.ts/,
       use: {
         ...devices["Desktop Chrome"],
         storageState: undefined,
@@ -34,7 +34,7 @@ export default defineConfig({
     },
     {
       name: "chromium",
-      testIgnore: /auth\.spec\.ts/,
+      dependencies: ["auth-setup"],
       use: {
         ...devices["Desktop Chrome"],
         storageState: AUTH_FILE,
@@ -42,7 +42,7 @@ export default defineConfig({
     },
     {
       name: "firefox",
-      testIgnore: /auth\.spec\.ts/,
+      dependencies: ["auth-setup"],
       use: {
         ...devices["Desktop Firefox"],
         storageState: AUTH_FILE,
@@ -50,7 +50,7 @@ export default defineConfig({
     },
     {
       name: "webkit",
-      testIgnore: /auth\.spec\.ts/,
+      dependencies: ["auth-setup"],
       use: {
         ...devices["Desktop Safari"],
         storageState: AUTH_FILE,
