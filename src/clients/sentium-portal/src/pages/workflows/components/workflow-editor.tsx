@@ -1,5 +1,5 @@
 import { Fragment, useState } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { DndContext, closestCenter, type DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
@@ -53,22 +53,16 @@ const WorkflowEditor = ({
   const {
     register,
     handleSubmit,
-    control,
+    watch,
     formState: { errors },
   } = useForm<WorkflowEditorFormData>({
     resolver: zodResolver(workflowEditorSchema),
     defaultValues: { name: initialName, description: initialDescription },
   });
 
-  const formDescription = useWatch({
-    control,
-    name: "description",
-  });
-
-  const formName = useWatch({
-    control,
-    name: "name",
-  });
+  // eslint-disable-next-line react-hooks/incompatible-library
+  const formDescription = watch("description") ?? "";
+  const formName = watch("name") ?? "";
 
   const sensors = useSensors(useSensor(PointerSensor));
 

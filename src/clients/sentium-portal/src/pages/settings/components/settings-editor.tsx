@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { useForm, Controller, useWatch } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CheckCircle, Loader, Shield, X, Zap } from "lucide-react";
 import styles from "../settings.module.scss";
@@ -34,16 +34,15 @@ const SettingsEditor = ({
     register,
     handleSubmit,
     control,
+    watch,
     formState: { isDirty },
   } = useForm<SettingsEditorFormData>({
     resolver: zodResolver(settingsEditorSchema),
     defaultValues: { prompt: initialPrompt, builtInEnabled: initialBuiltIn },
   });
 
-  const prompt = useWatch({
-    control,
-    name: "prompt",
-  });
+  // eslint-disable-next-line react-hooks/incompatible-library
+  const prompt = watch("prompt") ?? "";
 
   const successTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
