@@ -25,6 +25,7 @@ import type {
 import type { DeleteModelResult, OllamaModel } from "../types/models";
 import type { AgentSkill, BuiltInSkill, CreateSkillPayload, UpdateSkillPayload } from "../types/skills";
 import { BASE_URL, client } from "../api/client";
+import type { KnowledgeMapResponse, KnowledgeMapSearchResponse } from "../types/knowledge-map";
 
 const BASE = "/agent-runtime";
 
@@ -216,3 +217,12 @@ export const uploadSkillFile = async (file: File): Promise<AgentSkill> => {
 
   return response.json() as Promise<AgentSkill>;
 };
+
+export const fetchKnowledgeMapNodes = (limit = 300, collection?: string): Promise<KnowledgeMapResponse> => {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (collection) params.set("collection", collection);
+  return client.get<KnowledgeMapResponse>(`${BASE}/knowledge-map/nodes?${params}`);
+};
+
+export const searchKnowledgeMap = (query: string, topK = 20): Promise<KnowledgeMapSearchResponse> =>
+  client.post<KnowledgeMapSearchResponse>(`${BASE}/knowledge-map/search`, { query, topK });

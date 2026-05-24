@@ -9,6 +9,7 @@ import {
   GitBranch,
   LayoutDashboard,
   LogOut,
+  Waypoints,
   Orbit,
   Settings,
   ShieldCog,
@@ -52,6 +53,7 @@ const NAV_GROUPS: NavGroup[] = [
       { to: "/workflows", label: "Workflows", icon: GitBranch },
       { to: "/agents", label: "Agents", icon: Bot },
       { to: "/models", label: "Models", icon: BrainCircuit },
+      { to: "/skills", label: "Skills", icon: Zap },
     ],
   },
   {
@@ -60,7 +62,7 @@ const NAV_GROUPS: NavGroup[] = [
     links: [
       { to: "/workspaces", label: "Workspaces", icon: FolderOpen },
       { to: "/knowledge-base", label: "Knowledge Base", icon: Database },
-      { to: "/skills", label: "Skills", icon: Zap },
+      { to: "/semantic-map", label: "Semantic Map", icon: Waypoints },
       { to: "/users", label: "Users", icon: UsersRound, sovereignOnly: true },
     ],
   },

@@ -17,6 +17,7 @@ import KnowledgeBase from "../pages/knowledge-base/knowledge-base";
 import Skills from "../pages/skills/skills";
 import Sentinel from "../pages/sentinel/sentinel";
 import Sandbox from "../pages/sandbox/sandbox";
+import SemanticMap from "../pages/semantic-map/semantic-map";
 
 export const routes: RouteObject[] = [
   {
@@ -38,6 +39,7 @@ export const routes: RouteObject[] = [
       { path: "models", element: <Models /> },
       { path: "users", element: <Users /> },
       { path: "knowledge-base", element: <KnowledgeBase /> },
+      { path: "semantic-map", element: <SemanticMap /> },
       { path: "skills", element: <Skills /> },
       { path: "sentinel", element: <Sentinel /> },
       { path: "sandbox", element: <Sandbox /> },
