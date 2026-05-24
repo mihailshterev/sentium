@@ -12,6 +12,7 @@
 *.env
 
 /src/aspire/Sentium.AppHost/data
+/src/services/Identity/Sentium.Identity.Api/wwwroot
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs

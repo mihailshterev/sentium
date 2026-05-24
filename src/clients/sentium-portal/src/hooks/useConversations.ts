@@ -1,10 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  fetchConversations,
-  createConversation,
-  deleteConversation,
-  type CreateConversationPayload,
-} from "../services/agentRuntime.service";
+import { fetchConversations, createConversation, deleteConversation } from "../services/agentRuntime.service";
+import type { CreateConversationPayload } from "../types/assistant";
 
 const CONVERSATIONS_KEY = ["conversations"] as const;
 

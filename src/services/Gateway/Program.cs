@@ -39,7 +39,7 @@ builder.Services.AddAuthentication(options =>
     options.Cookie.Name = "Sentium.Auth";
     options.Cookie.HttpOnly = true;
     options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-    options.Cookie.SameSite = SameSiteMode.Strict;
+    options.Cookie.SameSite = builder.Environment.IsProduction() ? SameSiteMode.Strict : SameSiteMode.None;
     options.ExpireTimeSpan = TimeSpan.FromDays(7);
     options.SlidingExpiration = true;
     options.Events.OnRedirectToLogin = context =>

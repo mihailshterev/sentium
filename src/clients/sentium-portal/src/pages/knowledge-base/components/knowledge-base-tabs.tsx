@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bot, BrainCircuit, Database, FlaskConical, RefreshCw, X } from "lucide-react";
+import { Bot, BrainCircuit, Database, FlaskConical, RefreshCw, Trash2, X } from "lucide-react";
 import styles from "../knowledge-base.module.scss";
 import { useAgentLearnings } from "../../../hooks/useAgentLearnings";
 import { useKnowledgeBaseStats } from "../../../hooks/useKnowledgeBaseStats";
@@ -16,10 +16,16 @@ const formatDate = (iso: string) => {
 };
 
 export const GlobalContextTab = () => {
-  const { collections, isLoading, error, refetch } = useKnowledgeBaseStats();
+  const { collections, isLoading, error, refetch, deleteCollection, isDeleting } = useKnowledgeBaseStats();
   const { stats, isStatsLoading } = useAgentLearnings();
 
   const totalVectors = collections.reduce((sum, c) => sum + c.pointCount, 0);
+
+  const handleDelete = (name: string) => {
+    if (confirm(`Are you sure you want to delete the collection "${name}"? This action cannot be undone.`)) {
+      deleteCollection(name);
+    }
+  };
 
   return (
     <>
@@ -85,6 +91,14 @@ export const GlobalContextTab = () => {
                         <span className={c.pointCount > 0 ? styles.pillGreen : styles.pillAmber}>
                           {c.pointCount > 0 ? "Active" : "Empty"}
                         </span>
+                        <button
+                          className={styles.deleteBtn}
+                          onClick={() => handleDelete(c.collectionName)}
+                          disabled={isDeleting}
+                          title="Delete Collection"
+                        >
+                          <Trash2 size={14} />
+                        </button>
                       </div>
                     </div>
                   ))}

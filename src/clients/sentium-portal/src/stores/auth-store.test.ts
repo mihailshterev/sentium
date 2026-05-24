@@ -110,7 +110,12 @@ describe("login()", () => {
 });
 
 describe("logout()", () => {
-  it("clears user and sets status to CHECKING then redirects", () => {
+  it("clears user and sets status to CHECKING then redirects", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      url: "/bff/logout",
+    } as Response);
+
     act(() => {
       useAuthStore.setState({
         user: { sub: "u1", email: "alice@example.com", name: "Alice", roles: [] },
@@ -119,10 +124,12 @@ describe("logout()", () => {
     });
 
     const { result } = renderHook(() => useAuthStore());
-    act(() => result.current.logout());
+
+    await act(async () => {
+      await result.current.logout();
+    });
 
     expect(result.current.user).toBeNull();
     expect(result.current.status).toBe(AUTH_STATUS.CHECKING);
-    expect(window.location.href).toContain("/bff/logout");
   });
 });

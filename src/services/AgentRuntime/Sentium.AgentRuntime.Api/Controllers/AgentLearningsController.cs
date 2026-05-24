@@ -12,10 +12,7 @@ namespace Sentium.AgentRuntime.Api.Controllers;
 [ApiController]
 [Authorize]
 [Route("agent-learnings")]
-public sealed class AgentLearningsController(
-    IAgentLearningService learningService,
-    IVectorRepository vectorRepository,
-    IOptions<RagOptions> ragOptions) : ControllerBase
+public sealed class AgentLearningsController(IAgentLearningService learningService) : ControllerBase
 {
     /// <summary>
     /// Returns captured learnings. Optionally filter by agent name.
@@ -36,38 +33,6 @@ public sealed class AgentLearningsController(
     public async Task<IActionResult> GetStats(CancellationToken ct)
     {
         var stats = await learningService.GetStatsAsync(ct);
-        return Ok(stats);
-    }
-
-    /// <summary>
-    /// Returns knowledge-base collection statistics from the vector store.
-    /// Returns an array — one entry per tracked collection.
-    /// </summary>
-    [HttpGet("knowledge-base/stats")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetKnowledgeBaseStats(CancellationToken ct)
-    {
-        var collections = new[]
-        {
-            ragOptions.Value.CollectionName,
-            "agent_learnings",
-            "user_memories"
-        };
-
-        var tasks = collections.Select(c => vectorRepository.GetCollectionStatsAsync(c, ct));
-        var results = await Task.WhenAll(tasks);
-
-        var stats = results
-            .Where(r => r is not null)
-            .Select(r => new
-            {
-                collectionName = r!.CollectionName,
-                pointCount = r.PointCount,
-                vectorSize = r.VectorSize,
-                distanceMetric = r.DistanceMetric
-            })
-            .ToList();
-
         return Ok(stats);
     }
 

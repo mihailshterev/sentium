@@ -20,3 +20,31 @@ export interface ConversationMessage {
   timestamp: Date;
   pendingApproval?: PendingApproval;
 }
+
+export interface ConversationDetail {
+  id: string;
+  title: string;
+  model: string;
+  messages: { id: string; role: "user" | "assistant"; content: string; timestamp: string }[];
+}
+
+export interface CreateConversationPayload {
+  title: string;
+  model: string;
+}
+
+export interface CreateConversationResult {
+  id: string;
+}
+
+export interface ChatMessage {
+  role: string;
+  content: string;
+}
+
+export interface ChatPayload {
+  conversationId?: string;
+  model: string;
+  messages: ChatMessage[];
+  stream: boolean;
+}

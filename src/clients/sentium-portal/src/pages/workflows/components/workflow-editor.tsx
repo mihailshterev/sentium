@@ -5,6 +5,7 @@ import { DndContext, closestCenter, type DragEndEvent, PointerSensor, useSensor,
 import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { Plus, X, Bot, Loader, CheckCircle, AlertCircle } from "lucide-react";
 import styles from "../workflows.module.scss";
+import StatusMessage from "../../../components/ui/status-message";
 import SortableAgent from "./sortable-agent";
 import type { AgentRecord } from "../../../types/agents";
 import type { WorkflowRecord, SortableAgentItem } from "../../../types/workflows";
@@ -49,7 +50,12 @@ const WorkflowEditor = ({
 }: WorkflowEditorProps) => {
   const [formAgents, setFormAgents] = useState<SortableAgentItem[]>(initialFormAgents);
 
-  const { register, handleSubmit, control } = useForm<WorkflowEditorFormData>({
+  const {
+    register,
+    handleSubmit,
+    control,
+    formState: { errors },
+  } = useForm<WorkflowEditorFormData>({
     resolver: zodResolver(workflowEditorSchema),
     defaultValues: { name: initialName, description: initialDescription },
   });
@@ -111,7 +117,7 @@ const WorkflowEditor = ({
     <div className={styles.editorContent}>
       <div className={styles.editorHeader}>
         <span className={styles.editorTitle}>{selectedWorkflow ? "Edit Workflow" : "New Workflow"}</span>
-        <button className={styles.closeBtn} onClick={onClose}>
+        <button className={styles.closeBtn} onClick={onClose} title="Close">
           <X size={14} />
         </button>
       </div>
@@ -183,6 +189,7 @@ const WorkflowEditor = ({
                 autoComplete="off"
                 {...register("name")}
               />
+              {errors.name && <StatusMessage variant="error" message={errors.name.message ?? "Invalid name"} />}
             </div>
 
             <div className={styles.fieldGroup}>

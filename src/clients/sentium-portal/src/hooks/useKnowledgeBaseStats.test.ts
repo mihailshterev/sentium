@@ -6,9 +6,13 @@ import { useKnowledgeBaseStats } from "./useKnowledgeBaseStats";
 import * as agentRuntimeService from "../services/agentRuntime.service";
 import type { KnowledgeBaseCollectionStats } from "../types/agentConfig";
 
-vi.mock("../services/agentRuntime.service", () => ({
-  fetchKnowledgeBaseStats: vi.fn(),
-}));
+vi.mock("../services/agentRuntime.service", async () => {
+  const actual = await vi.importActual("../services/agentRuntime.service");
+  return {
+    ...actual,
+    fetchKnowledgeBaseStats: vi.fn(),
+  };
+});
 
 const createWrapper = () => {
   const qc = new QueryClient({

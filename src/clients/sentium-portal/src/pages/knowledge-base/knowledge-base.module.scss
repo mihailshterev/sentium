@@ -655,3 +655,28 @@
   border: 1px solid rgba(239, 68, 68, 0.25);
   color: var(--accent-red);
 }
+
+.deleteBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 1px solid transparent;
+  color: var(--text-dim);
+  padding: 5px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all 150ms ease;
+  flex-shrink: 0;
+}
+
+.deleteBtn:hover:not(:disabled) {
+  background: var(--accent-red-subtle);
+  border-color: rgba(239, 68, 68, 0.25);
+  color: var(--accent-red);
+}
+
+.deleteBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

@@ -7,7 +7,6 @@ import Agents from "../pages/agents/agents";
 import Workflows from "../pages/workflows/workflows";
 import System from "../pages/system/system";
 import type { RouteObject } from "react-router";
-import Login from "../pages/login/login";
 import Workspaces from "../pages/workspaces/workspaces";
 import Users from "../pages/users/users";
 import Profile from "../pages/profile/profile";
@@ -18,12 +17,9 @@ import KnowledgeBase from "../pages/knowledge-base/knowledge-base";
 import Skills from "../pages/skills/skills";
 import Sentinel from "../pages/sentinel/sentinel";
 import Sandbox from "../pages/sandbox/sandbox";
+import SemanticMap from "../pages/semantic-map/semantic-map";
 
 export const routes: RouteObject[] = [
-  {
-    path: "/login",
-    element: <Login />,
-  },
   {
     path: "/",
     element: (
@@ -43,6 +39,7 @@ export const routes: RouteObject[] = [
       { path: "models", element: <Models /> },
       { path: "users", element: <Users /> },
       { path: "knowledge-base", element: <KnowledgeBase /> },
+      { path: "semantic-map", element: <SemanticMap /> },
       { path: "skills", element: <Skills /> },
       { path: "sentinel", element: <Sentinel /> },
       { path: "sandbox", element: <Sandbox /> },

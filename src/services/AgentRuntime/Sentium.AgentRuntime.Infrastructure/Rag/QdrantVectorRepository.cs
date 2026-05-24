@@ -156,4 +156,72 @@ public sealed class QdrantVectorRepository(QdrantClient qdrantClient, ILogger<Qd
             (uint)vectorSize,
             distance);
     }
+
+    public async Task DeleteCollectionAsync(string collectionName, CancellationToken ct = default)
+    {
+        var exists = await qdrantClient.CollectionExistsAsync(collectionName, ct);
+        if (!exists)
+        {
+            return;
+        }
+
+        await qdrantClient.DeleteCollectionAsync(collectionName, cancellationToken: ct);
+
+        if (logger.IsEnabled(LogLevel.Warning))
+        {
+            logger.LogWarning("Deleted Qdrant collection '{Collection}'", collectionName);
+        }
+    }
+
+    public async Task<IReadOnlyList<DocumentChunk>> GetPageAsync(string collectionName, ulong limit = 200, ulong? offset = null, CancellationToken ct = default)
+    {
+        var exists = await qdrantClient.CollectionExistsAsync(collectionName, ct);
+        if (!exists)
+        {
+            return [];
+        }
+
+        var offsetId = offset.HasValue ? new PointId { Num = offset.Value } : null;
+
+        var result = await qdrantClient.ScrollAsync(
+            collectionName,
+            null,
+            (uint)limit,
+            offsetId,
+            true,
+            false,
+            cancellationToken: ct);
+
+        return result.Result
+            .Select(point =>
+            {
+                var payload = point.Payload;
+                var id = point.Id.HasUuid ? Guid.Parse(point.Id.Uuid) : Guid.Empty;
+
+                var metadata = payload
+                    .Where(kvp => kvp.Key.StartsWith(MetadataPrefix, StringComparison.Ordinal))
+                    .ToDictionary(kvp => kvp.Key[MetadataPrefix.Length..], kvp => kvp.Value.StringValue);
+
+                var sourceType = payload.TryGetValue(FieldSourceType, out var stVal)
+                    && Enum.TryParse<IngestionSourceType>(stVal.StringValue, out var parsed)
+                    ? parsed
+                    : IngestionSourceType.Custom;
+
+                var createdAt = payload.TryGetValue(FieldCreatedAt, out var dtVal)
+                    && DateTimeOffset.TryParse(dtVal.StringValue, out var parsedDt)
+                    ? parsedDt
+                    : DateTimeOffset.UtcNow;
+
+                return new DocumentChunk
+                {
+                    Id = id,
+                    Content = payload.TryGetValue(FieldContent, out var c) ? c.StringValue : string.Empty,
+                    Source = payload.TryGetValue(FieldSource, out var s) ? s.StringValue : string.Empty,
+                    SourceType = sourceType,
+                    CreatedAt = createdAt,
+                    Metadata = metadata
+                };
+            })
+            .ToList();
+    }
 }

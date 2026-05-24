@@ -4,8 +4,8 @@ import { MemoryRouter } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Models from "./models";
 import * as useOllamaModelsHook from "../../hooks/useOllamaModels";
-import type { OllamaModel, DeleteModelResult } from "../../services/agentRuntime.service";
 import type { PullState } from "../../hooks/useOllamaModels";
+import type { OllamaModel, DeleteModelResult } from "../../types/models";
 
 const mockModel: OllamaModel = {
   name: "llama3.2",

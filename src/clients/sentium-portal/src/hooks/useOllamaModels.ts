@@ -1,13 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  fetchOllamaModels,
-  pullModel,
-  deleteOllamaModel,
-  type OllamaModel,
-  type PullProgress,
-  type DeleteModelResult,
-} from "../services/agentRuntime.service";
+import { fetchOllamaModels, pullModel, deleteOllamaModel } from "../services/agentRuntime.service";
+import type { OllamaModel, DeleteModelResult, PullProgress } from "../types/models";
 
 export interface PullState {
   status: string;

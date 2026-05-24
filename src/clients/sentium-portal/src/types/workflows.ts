@@ -1,7 +1,4 @@
-export interface WorkflowAgentRef {
-  agentId: string;
-  order: number;
-}
+import type { LogEntry } from "./orchestration";
 
 export interface WorkflowRecord {
   id: string;
@@ -9,7 +6,7 @@ export interface WorkflowRecord {
   description: string;
   createdAt: string;
   updatedAt: string;
-  agents: WorkflowAgentRef[];
+  agents: WorkflowAgentEntry[];
 }
 
 export interface SortableAgentItem {
@@ -18,4 +15,37 @@ export interface SortableAgentItem {
   name: string;
   model: string;
   description: string;
+}
+
+export interface WorkflowAgentEntry {
+  agentId: string;
+  order: number;
+}
+
+export interface WorkflowPayload {
+  name: string;
+  description: string;
+  agents: WorkflowAgentEntry[];
+}
+
+export interface UpdateWorkflowPayload extends WorkflowPayload {
+  id: string;
+}
+
+export interface RunWorkflowPayload {
+  workflowId: string;
+  scenario: string;
+  workspaceId?: string;
+}
+
+export interface WorkflowRun {
+  id: string;
+  triggerType: string;
+  triggerPayload: string;
+  explanation: string;
+  risk: string;
+  recommendation: string;
+  startedAt: string;
+  completedAt: string;
+  logs: LogEntry[];
 }

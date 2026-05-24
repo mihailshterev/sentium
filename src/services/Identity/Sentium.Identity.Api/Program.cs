@@ -23,6 +23,9 @@ builder.Services.AddApplication();
 
 var app = builder.Build();
 
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
 app.UseSentiumTracing();
 
 // Configure the HTTP request pipeline.
@@ -54,5 +57,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+app.MapFallbackToFile("index.html");
 
 app.Run();

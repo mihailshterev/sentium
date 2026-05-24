@@ -6,7 +6,7 @@ import AgentOrchestration from "./agent-orchestration";
 import * as useWorkflowsHook from "../../hooks/useWorkflows";
 import * as agentRuntimeService from "../../services/agentRuntime.service";
 import type { WorkflowRecord } from "../../types/workflows";
-import type { WorkflowRun } from "../../types/workflowRuns";
+import type { WorkflowRun } from "../../types/workflows";
 
 vi.mock("../../services/agentRuntime.service", async (importOriginal) => {
   const actual = await importOriginal<typeof agentRuntimeService>();

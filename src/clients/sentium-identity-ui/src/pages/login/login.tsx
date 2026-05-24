@@ -1,15 +1,11 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Navigate } from "react-router";
 import { AlertCircle, ArrowRight, Bot, Cpu, Lock, Mail, Zap } from "lucide-react";
 import styles from "./login.module.scss";
-import { AnimatedBg } from "./animated-bg";
-import { useAuthStore } from "../../stores/auth-store";
-import { BASE_URL, BFF_BASE } from "../../api/client";
-import { AUTH_STATUS } from "../../utils/constants";
-import { loginSchema, type LoginFormData } from "../../schemas/auth.login";
 import { registerSchema } from "../../schemas/auth.register";
+import { AnimatedBg } from "../../components/animated-bg";
+import { loginSchema, type LoginFormData } from "../../schemas/auth.login";
 
 const FEATURES = [
   "Local LLM execution with complete data privacy",
@@ -18,7 +14,6 @@ const FEATURES = [
 ];
 
 const Login = () => {
-  const status = useAuthStore((state) => state.status);
   const [mode, setMode] = useState<"login" | "register">("login");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -32,44 +27,62 @@ const Login = () => {
     resolver: zodResolver(mode === "login" ? loginSchema : registerSchema),
   });
 
-  if (status === AUTH_STATUS.AUTHENTICATED) {
-    return <Navigate to="/" replace />;
-  }
-
   const switchMode = (next: "login" | "register") => {
     setMode(next);
     setError(null);
     reset();
   };
 
+  const getReturnUrl = () => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("returnUrl") ?? "/";
+  };
+
   const onSubmit = async (data: LoginFormData) => {
     setError(null);
     setSubmitting(true);
 
-    const endpoint = mode === "login" ? `${BASE_URL}/identity/account/login` : `${BASE_URL}/identity/account/register`;
+    const returnUrl = getReturnUrl();
 
     try {
-      const res = await fetch(endpoint, {
+      if (mode === "register") {
+        const regRes = await fetch("/account/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ email: data.email, password: data.password }),
+        });
+
+        if (!regRes.ok) {
+          setError("Registration failed. The email may already be in use.");
+          setSubmitting(false);
+          return;
+        }
+      }
+
+      const loginRes = await fetch(`/account/login?returnUrl=${encodeURIComponent(returnUrl)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({ email: data.email, password: data.password }),
       });
 
-      if (!res.ok) {
-        setError(
-          mode === "login" ? "Invalid email or password." : "Registration failed. The email may already be in use.",
-        );
+      if (!loginRes.ok) {
+        if (loginRes.status === 423) {
+          setError("Account is locked due to too many failed attempts.");
+        } else {
+          setError(
+            mode === "login"
+              ? "Invalid email or password."
+              : "Account created but sign-in failed. Please try logging in.",
+          );
+        }
         setSubmitting(false);
         return;
       }
 
-      const params = new URLSearchParams(window.location.search);
-      const redirectTarget = params.get("returnUrl") || "/";
-
-      window.location.assign(
-        `${BFF_BASE}/login?returnUrl=${encodeURIComponent(window.location.origin + redirectTarget)}`,
-      );
+      const result = await loginRes.json();
+      window.location.assign(result.redirectUrl ?? returnUrl);
     } catch {
       setError("Something went wrong. Please try again.");
       setSubmitting(false);
