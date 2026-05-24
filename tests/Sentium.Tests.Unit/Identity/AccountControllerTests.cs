@@ -71,7 +71,7 @@ public sealed class AccountControllerTests
         var result = await _controller.Login(request, returnUrl: null);
 
         // Assert
-        result.Should().BeOfType<OkResult>();
+        result.Should().BeOfType<OkObjectResult>();
     }
 
     [Fact]
