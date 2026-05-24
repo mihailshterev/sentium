@@ -1416,6 +1416,24 @@
           "System.Threading.RateLimiting": "8.0.0"
         }
       },
+      "Quartz": {
+        "type": "Transitive",
+        "resolved": "3.18.0",
+        "contentHash": "l+PY20yF32ljFkP/OROYc7Z7Wv3rhGARqxGkDMaCwOJ3aGA/94fPSBYtJpZKciLbc/89xfVlpEZbIzIPE0hHHQ==",
+        "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "2.1.1"
+        }
+      },
+      "Quartz.Extensions.DependencyInjection": {
+        "type": "Transitive",
+        "resolved": "3.18.0",
+        "contentHash": "YAtrZ+pYtPPnWKKuHII1x16E6HxyT1eHWQCvAR4zkMT8xmfuz1KCRHCg3+b8z/nGXpWyR6WpSoIh7dsR4jI+iA==",
+        "dependencies": {
+          "Microsoft.Extensions.Configuration.Abstractions": "10.0.0",
+          "Microsoft.Extensions.Options": "10.0.0",
+          "Quartz": "3.18.0"
+        }
+      },
       "Semver": {
         "type": "Transitive",
         "resolved": "3.0.0",
@@ -1773,6 +1791,7 @@
           "NATS.Net": "[2.7.2, )",
           "OllamaSharp": "[5.4.25, )",
           "Qdrant.Client": "[1.17.0, )",
+          "Quartz.Extensions.Hosting": "[3.18.0, )",
           "Sentium.AgentRuntime.Application": "[1.0.0, )",
           "Sentium.AgentRuntime.Core": "[1.0.0, )",
           "Sentium.Infrastructure": "[1.0.0, )",
@@ -2702,6 +2721,16 @@
         "dependencies": {
           "Google.Protobuf": "3.31.0",
           "Grpc.Net.Client": "2.71.0"
+        }
+      },
+      "Quartz.Extensions.Hosting": {
+        "type": "CentralTransitive",
+        "requested": "[3.18.0, )",
+        "resolved": "3.18.0",
+        "contentHash": "DOIgnLibu9sEYqHAKRQYz+0oWZ5q2LP55oNUtosOygEiIxCvTtHAwkZdf6Ea0VCucZ1oO9SeWLoA4q4WFbZspw==",
+        "dependencies": {
+          "Microsoft.Extensions.Hosting.Abstractions": "10.0.0",
+          "Quartz.Extensions.DependencyInjection": "3.18.0"
         }
       },
       "Scalar.AspNetCore": {

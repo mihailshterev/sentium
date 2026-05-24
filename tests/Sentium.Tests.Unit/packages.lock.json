@@ -1571,6 +1571,7 @@
           "NATS.Net": "[2.7.2, )",
           "OllamaSharp": "[5.4.25, )",
           "Qdrant.Client": "[1.17.0, )",
+          "Quartz.Extensions.Hosting": "[3.18.0, )",
           "Sentium.AgentRuntime.Application": "[1.0.0, )",
           "Sentium.AgentRuntime.Core": "[1.0.0, )",
           "Sentium.Infrastructure": "[1.0.0, )",
