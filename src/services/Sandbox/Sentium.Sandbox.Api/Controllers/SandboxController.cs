@@ -126,7 +126,7 @@ public sealed class SandboxController(
             }
         }
 
-        var correlationId = HttpContext.Request.Headers[HeaderNames.CorrelationId].FirstOrDefault() ?? Guid.NewGuid().ToString();
+        var correlationId = HttpContext.Request.Headers[CommonHeaderNames.CorrelationId].FirstOrDefault() ?? Guid.NewGuid().ToString();
 
         var request = new ExecutionRequest
         {
