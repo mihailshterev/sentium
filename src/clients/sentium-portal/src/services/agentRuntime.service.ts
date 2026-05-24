@@ -1,7 +1,18 @@
-import type { AgentRecord } from "../types/agents";
-import type { WorkflowRecord } from "../types/workflows";
-import type { WorkflowRun } from "../types/workflowRuns";
-import type { ConversationSummary } from "../types/assistant";
+import type { AgentRecord, CreateAgentPayload, UpdateAgentPayload } from "../types/agents";
+import type {
+  RunWorkflowPayload,
+  UpdateWorkflowPayload,
+  WorkflowPayload,
+  WorkflowRecord,
+  WorkflowRun,
+} from "../types/workflows";
+import type {
+  ChatPayload,
+  ConversationDetail,
+  ConversationSummary,
+  CreateConversationPayload,
+  CreateConversationResult,
+} from "../types/assistant";
 import type { Workspace, WorkspaceFile, CreateWorkspacePayload, UpdateWorkspacePayload } from "../types/workspace";
 import type {
   SystemSettings,
@@ -11,69 +22,11 @@ import type {
   CaptureAgentLearningPayload,
   KnowledgeBaseCollectionStats,
 } from "../types/agentConfig";
+import type { DeleteModelResult, OllamaModel } from "../types/models";
 import type { AgentSkill, BuiltInSkill, CreateSkillPayload, UpdateSkillPayload } from "../types/skills";
 import { BASE_URL, client } from "../api/client";
 
 const BASE = "/agent-runtime";
-
-export interface CreateAgentPayload {
-  name: string;
-  description: string;
-  model: string;
-}
-
-export interface UpdateAgentPayload extends CreateAgentPayload {
-  id: string;
-}
-
-export interface WorkflowAgentEntry {
-  agentId: string;
-  order: number;
-}
-
-export interface WorkflowPayload {
-  name: string;
-  description: string;
-  agents: WorkflowAgentEntry[];
-}
-
-export interface UpdateWorkflowPayload extends WorkflowPayload {
-  id: string;
-}
-
-export interface ConversationDetail {
-  id: string;
-  title: string;
-  model: string;
-  messages: { id: string; role: "user" | "assistant"; content: string; timestamp: string }[];
-}
-
-export interface CreateConversationPayload {
-  title: string;
-  model: string;
-}
-
-export interface CreateConversationResult {
-  id: string;
-}
-
-export interface RunWorkflowPayload {
-  workflowId: string;
-  scenario: string;
-  workspaceId?: string;
-}
-
-export interface ChatMessage {
-  role: string;
-  content: string;
-}
-
-export interface ChatPayload {
-  conversationId?: string;
-  model: string;
-  messages: ChatMessage[];
-  stream: boolean;
-}
 
 // TODO: Reorganize
 export const fetchAgents = () => client.get<AgentRecord[]>(`${BASE}/agents`);
@@ -90,28 +43,6 @@ export const fetchModels = async (): Promise<string[]> => {
   return models.map((m) => m.name);
 };
 
-export interface OllamaModelDetails {
-  format: string;
-  family: string;
-  parameter_size: string;
-  quantization_level: string;
-}
-
-export interface OllamaModel {
-  name: string;
-  modified_at: string;
-  size: number;
-  digest: string;
-  details: OllamaModelDetails;
-}
-
-export interface PullProgress {
-  status: string;
-  digest?: string;
-  total?: number;
-  completed?: number;
-}
-
 export const fetchOllamaModels = () => client.get<OllamaModel[]>(`${BASE}/models`);
 
 export const pullModel = (name: string, signal?: AbortSignal): Promise<Response> => {
@@ -123,12 +54,6 @@ export const pullModel = (name: string, signal?: AbortSignal): Promise<Response>
     signal,
   });
 };
-
-export interface DeleteModelResult {
-  deletedModel: string;
-  defaultModel: string;
-  agentsReset: number;
-}
 
 export const deleteOllamaModel = (name: string): Promise<DeleteModelResult> =>
   client.delete<DeleteModelResult>(`${BASE}/models?name=${encodeURIComponent(name)}`);

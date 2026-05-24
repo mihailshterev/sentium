@@ -6,3 +6,13 @@ export interface AgentRecord {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface CreateAgentPayload {
+  name: string;
+  description: string;
+  model: string;
+}
+
+export interface UpdateAgentPayload extends CreateAgentPayload {
+  id: string;
+}
