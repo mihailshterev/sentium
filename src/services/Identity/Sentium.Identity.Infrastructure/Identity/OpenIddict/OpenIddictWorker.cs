@@ -39,6 +39,7 @@ public sealed class OpenIddictWorker(IServiceProvider serviceProvider, IConfigur
 
         await SeedGatewayBffClientAsync(manager, cancellationToken);
         await SeedRolesAsync(scope.ServiceProvider, cancellationToken);
+        await SeedTestUserAsync(scope.ServiceProvider, cancellationToken);
     }
 
     private async Task SeedGatewayBffClientAsync(IOpenIddictApplicationManager manager, CancellationToken ct)
@@ -107,5 +108,47 @@ public sealed class OpenIddictWorker(IServiceProvider serviceProvider, IConfigur
                 await roleManager.CreateAsync(new ApplicationRole { Name = name });
             }
         }
+    }
+
+    private async Task SeedTestUserAsync(IServiceProvider services, CancellationToken ct)
+    {
+        var shouldSeed = configuration.GetValue<bool>("E2E:SeedTestUser");
+        if (!shouldSeed)
+        {
+            return;
+        }
+
+        var testEmail = configuration["E2E:UserEmail"];
+        var testPassword = configuration["E2E:UserPassword"];
+
+        if (string.IsNullOrWhiteSpace(testEmail) || string.IsNullOrWhiteSpace(testPassword))
+        {
+            throw new InvalidOperationException("E2E seeding is enabled but credentials are missing.");
+        }
+
+        var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+
+        var existing = await userManager.FindByEmailAsync(testEmail);
+        if (existing is not null)
+        {
+            return;
+        }
+
+        var user = new ApplicationUser
+        {
+            UserName = testEmail,
+            Email = testEmail,
+            EmailConfirmed = true,
+            FirstName = "E2E",
+            LastName = "Test",
+        };
+
+        var result = await userManager.CreateAsync(user, testPassword);
+        if (!result.Succeeded)
+        {
+            throw new InvalidOperationException($"Failed to seed E2E test user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+        }
+
+        await userManager.AddToRoleAsync(user, Roles.Member);
     }
 }
