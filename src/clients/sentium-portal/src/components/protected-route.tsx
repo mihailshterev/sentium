@@ -11,7 +11,7 @@ const ProtectedRoute = ({ children }: { children: ReactNode }) => {
     }
   }, [status, login]);
 
-  if (status === AUTH_STATUS.UNAUTHENTICATED) {
+  if (status === AUTH_STATUS.UNAUTHENTICATED || status === AUTH_STATUS.IDLE || status === AUTH_STATUS.CHECKING) {
     return null;
   }
 

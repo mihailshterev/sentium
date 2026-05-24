@@ -196,7 +196,7 @@ describe("agentRuntime.service agent learnings", () => {
   it("fetchKnowledgeBaseStats calls correct endpoint", async () => {
     vi.mocked(client.get).mockResolvedValueOnce([]);
     await service.fetchKnowledgeBaseStats();
-    expect(client.get).toHaveBeenCalledWith("/agent-runtime/agent-learnings/knowledge-base/stats");
+    expect(client.get).toHaveBeenCalledWith("/agent-runtime/knowledge-base/stats");
   });
 });
 
