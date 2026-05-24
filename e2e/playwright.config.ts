@@ -2,6 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 import path from "path";
 
 const AUTH_FILE = path.join("playwright", ".auth", "user.json");
+const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:5173";
 
 export default defineConfig({
   testDir: "./tests",
@@ -12,7 +13,7 @@ export default defineConfig({
   reporter: process.env.CI ? [["html", { open: "never" }], ["github"]] : [["html", { open: "on-failure" }]],
 
   use: {
-    baseURL: "http://localhost:5173",
+    baseURL: BASE_URL,
     storageState: AUTH_FILE,
     trace: "on-first-retry",
     screenshot: "only-on-failure",
@@ -60,14 +61,15 @@ export default defineConfig({
 
   webServer: {
     command: "dotnet run --project ../src/aspire/Sentium.AppHost/Sentium.AppHost.csproj",
-    url: "http://localhost:5173",
+    url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 300 * 1000,
     env: {
-      DOTNET_ASPIRE_SHOW_DASHBOARD: "false",
+      DOTNET_ENVIRONMENT: "Testing",
       ASPNETCORE_ENVIRONMENT: "Testing",
+      DOTNET_ASPIRE_SHOW_DASHBOARD: "false",
     },
-    stdout: "pipe",
-    stderr: "pipe",
+    stdout: !process.env.CI ? "pipe" : "ignore",
+    stderr: !process.env.CI ? "pipe" : "ignore",
   },
 });
