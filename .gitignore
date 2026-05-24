@@ -11,7 +11,8 @@
 *.sln.docstates
 *.env
 
-/aspire/AppHost/data
+/src/aspire/Sentium.AppHost/data
+/src/services/Identity/Sentium.Identity.Api/wwwroot
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
@@ -19,6 +20,9 @@
 # Ignore CSS module type definitions
 *.module.d.css.ts
 *.module.d.scss.ts
+
+# Vitest coverage reports
+src/clients/sentium-portal/coverage/
 
 # Mono auto generated files
 mono_crash.*
@@ -79,6 +83,13 @@ BenchmarkDotNet.Artifacts/
 project.lock.json
 project.fragment.lock.json
 artifacts/
+
+# ==========================================
+# Sentium Custom Overrides
+# ==========================================
+# Do not ignore the Sandbox project's source Artifacts namespace
+!**/Sentium.Sandbox.*/**/[Aa]rtifacts/
+!**/Sentium.Sandbox.*/**/[Aa]rtifacts/*
 
 # ASP.NET Scaffolding
 ScaffoldingReadMe.txt

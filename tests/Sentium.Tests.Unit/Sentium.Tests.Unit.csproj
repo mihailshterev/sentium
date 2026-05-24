@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <OutputType>Exe</OutputType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="NSubstitute" />
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\services\Sentinel\Sentium.Sentinel.Application\Sentium.Sentinel.Application.csproj" />
+    <ProjectReference Include="..\..\src\services\Sentinel\Sentium.Sentinel.Infrastructure\Sentium.Sentinel.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\services\Sentinel\Sentium.Sentinel.Api\Sentium.Sentinel.Api.csproj" />
+    <ProjectReference Include="..\..\src\services\Watchdog\Sentium.Watchdog.Application\Sentium.Watchdog.Application.csproj" />
+    <ProjectReference Include="..\..\src\services\Watchdog\Sentium.Watchdog.Api\Sentium.Watchdog.Api.csproj" />
+    <ProjectReference Include="..\..\src\services\Identity\Sentium.Identity.Application\Sentium.Identity.Application.csproj" />
+    <ProjectReference Include="..\..\src\services\Identity\Sentium.Identity.Infrastructure\Sentium.Identity.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\services\Identity\Sentium.Identity.Api\Sentium.Identity.Api.csproj" />
+    <ProjectReference Include="..\..\src\services\AgentRuntime\Sentium.AgentRuntime.Application\Sentium.AgentRuntime.Application.csproj" />
+    <ProjectReference Include="..\..\src\services\AgentRuntime\Sentium.AgentRuntime.Api\Sentium.AgentRuntime.Api.csproj" />
+  </ItemGroup>
+
+</Project>

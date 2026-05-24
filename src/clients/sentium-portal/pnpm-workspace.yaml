@@ -1,0 +1,11 @@
+minimumReleaseAge: 10080
+blockExoticSubdeps: true
+
+trustPolicy: no-downgrade
+trustPolicyIgnoreAfter: 129600
+
+overrides:
+  vite-plugin-sass-dts>vite: "$vite"
+
+allowBuilds:
+  "@parcel/watcher": false

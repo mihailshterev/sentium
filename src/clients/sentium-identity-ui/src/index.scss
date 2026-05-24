@@ -1,0 +1,119 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap");
+
+:root {
+  --bg-base: #08080a;
+  --bg-surface: #0f0f13;
+  --bg-elevated: #141418;
+  --bg-hover: #1a1a20;
+  --terminal-bg: #08080a;
+  --bg-dark: #050507;
+  --card-bg: #0f0f13;
+
+  --border-subtle: #1c1c22;
+  --border-color: #222228;
+  --border-strong: #2e2e36;
+
+  --text-primary: #f0f0f4;
+  --text-secondary: #a0a0b0;
+  --text-muted: #606070;
+  --text-dim: #3a3a48;
+
+  --accent-green: #22c55e;
+  --accent-green-glow: rgba(34, 197, 94, 0.35);
+  --accent-green-subtle: rgba(34, 197, 94, 0.08);
+  --terminal-accent: #22c55e;
+  --terminal-accent-glow: rgba(34, 197, 94, 0.35);
+
+  --accent-blue: #3b82f6;
+  --accent-blue-glow: rgba(59, 130, 246, 0.35);
+  --accent-blue-subtle: rgba(59, 130, 246, 0.08);
+
+  --accent-purple: #a855f7;
+  --accent-purple-glow: rgba(168, 85, 247, 0.35);
+  --accent-purple-subtle: rgba(168, 85, 247, 0.08);
+
+  --accent-amber: #f59e0b;
+  --accent-amber-glow: rgba(245, 158, 11, 0.35);
+
+  --accent-red: #ef4444;
+  --accent-red-glow: rgba(239, 68, 68, 0.35);
+  --accent-red-subtle: rgba(239, 68, 68, 0.08);
+
+  --accent-cyan: #06b6d4;
+  --accent-cyan-subtle: rgba(6, 182, 212, 0.08);
+
+  --glass-bg: rgba(15, 15, 19, 0.88);
+  --transition-base: 155ms ease;
+  --radius-sm: 7px;
+  --radius-md: 11px;
+  --radius-lg: 14px;
+  --radius-full: 9999px;
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35);
+
+  --role-width: 160px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: var(--bg-base);
+  font-family:
+    "Inter",
+    system-ui,
+    -apple-system,
+    sans-serif;
+  overflow: hidden;
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+*::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 99px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: #3e3e50;
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  background: var(--accent-green);
+  border-radius: 50%;
+  box-shadow: 0 0 6px var(--accent-green-glow);
+  animation: statusPulse 3s ease-in-out infinite;
+}
+
+@keyframes statusPulse {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 6px var(--accent-green-glow);
+  }
+  50% {
+    opacity: 0.7;
+    box-shadow: 0 0 12px var(--accent-green-glow);
+  }
+}

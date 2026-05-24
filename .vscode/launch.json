@@ -4,7 +4,7 @@
       "type": "aspire",
       "request": "launch",
       "name": "Aspire: Launch Default AppHost",
-      "program": "${workspaceFolder}/aspire/AppHost/AppHost.csproj"
+      "program": "${workspaceFolder}/src/aspire/Sentium.AppHost/Sentium.AppHost.csproj"
     }
   ]
 }

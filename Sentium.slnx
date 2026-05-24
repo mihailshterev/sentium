@@ -4,39 +4,50 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Folder Name="/aspire/">
-    <Project Path="aspire/AppHost/AppHost.csproj" />
-    <Project Path="aspire/ServiceDefaults/ServiceDefaults.csproj" />
+  <Folder Name="/src/aspire/">
+    <Project Path="src/aspire/Sentium.AppHost/Sentium.AppHost.csproj" />
   </Folder>
-  <Folder Name="/infrastructure/">
-    <Project Path="infrastructure/Infrastructure.csproj" />
+  <Folder Name="/src/shared/">
+    <Project Path="src/shared/Sentium.ServiceDefaults/Sentium.ServiceDefaults.csproj" />
+    <Project Path="src/shared/Sentium.Infrastructure/Sentium.Infrastructure.csproj" />
+    <Project Path="src/shared/Sentium.Shared/Sentium.Shared.csproj" />
   </Folder>
-  <Folder Name="/services/" />
-  <Folder Name="/services/AgentRuntime/">
-    <Project Path="services/AgentRuntime/AgentRuntime.Api/AgentRuntime.Api.csproj" />
-    <Project Path="services/AgentRuntime/AgentRuntime.Application/AgentRuntime.Application.csproj" />
-    <Project Path="services/AgentRuntime/AgentRuntime.Core/AgentRuntime.Core.csproj" />
-    <Project Path="services/AgentRuntime/AgentRuntime.Infrastructure/AgentRuntime.Infrastructure.csproj" />
+  <Folder Name="/src/services/AgentRuntime/">
+    <Project Path="src/services/AgentRuntime/Sentium.AgentRuntime.Api/Sentium.AgentRuntime.Api.csproj" />
+    <Project Path="src/services/AgentRuntime/Sentium.AgentRuntime.Application/Sentium.AgentRuntime.Application.csproj" />
+    <Project Path="src/services/AgentRuntime/Sentium.AgentRuntime.Core/Sentium.AgentRuntime.Core.csproj" />
+    <Project Path="src/services/AgentRuntime/Sentium.AgentRuntime.Infrastructure/Sentium.AgentRuntime.Infrastructure.csproj" />
   </Folder>
-  <Folder Name="/services/Gateway/">
-    <Project Path="services/Gateway/ApiGateway.csproj" />
+  <Folder Name="/src/services/Gateway/">
+    <Project Path="src/services/Gateway/Sentium.ApiGateway.csproj" />
   </Folder>
-  <Folder Name="/services/IdentityProvider/">
-    <Project Path="services/IdentityProvider/IdentityProvider.Api/IdentityProvider.Api.csproj" />
-    <Project Path="services/IdentityProvider/IdentityProvider.Application/IdentityProvider.Application.csproj" />
-    <Project Path="services/IdentityProvider/IdentityProvider.Core/IdentityProvider.Core.csproj" />
-    <Project Path="services/IdentityProvider/IdentityProvider.Infrastructure/IdentityProvider.Infrastructure.csproj" />
+  <Folder Name="/src/services/Identity/">
+    <Project Path="src/services/Identity/Sentium.Identity.Api/Sentium.Identity.Api.csproj" />
+    <Project Path="src/services/Identity/Sentium.Identity.Application/Sentium.Identity.Application.csproj" />
+    <Project Path="src/services/Identity/Sentium.Identity.Core/Sentium.Identity.Core.csproj" />
+    <Project Path="src/services/Identity/Sentium.Identity.Infrastructure/Sentium.Identity.Infrastructure.csproj" />
   </Folder>
-  <Folder Name="/services/Sentinel/">
-    <Project Path="services/Sentinel/Sentinel.Api/Sentinel.Api.csproj" />
-    <Project Path="services/Sentinel/Sentinel.Application/Sentinel.Application.csproj" />
-    <Project Path="services/Sentinel/Sentinel.Core/Sentinel.Core.csproj" />
-    <Project Path="services/Sentinel/Sentinel.Infrastructure/Sentinel.Infrastructure.csproj" />
+  <Folder Name="/src/services/Sandbox/">
+    <Project Path="src/services/Sandbox/Sentium.Sandbox.Api/Sentium.Sandbox.Api.csproj" />
+    <Project Path="src/services/Sandbox/Sentium.Sandbox.Application/Sentium.Sandbox.Application.csproj" />
+    <Project Path="src/services/Sandbox/Sentium.Sandbox.Core/Sentium.Sandbox.Core.csproj" />
+    <Project Path="src/services/Sandbox/Sentium.Sandbox.Infrastructure/Sentium.Sandbox.Infrastructure.csproj" />
   </Folder>
-  <Folder Name="/services/Watchdog/">
-    <Project Path="services/Watchdog/Watchdog.Api/Watchdog.Api.csproj" />
-    <Project Path="services/Watchdog/Watchdog.Application/Watchdog.Application.csproj" />
-    <Project Path="services/Watchdog/Watchdog.Core/Watchdog.Core.csproj" />
+  <Folder Name="/src/services/Sentinel/">
+    <Project Path="src/services/Sentinel/Sentium.Sentinel.Api/Sentium.Sentinel.Api.csproj" />
+    <Project Path="src/services/Sentinel/Sentium.Sentinel.Application/Sentium.Sentinel.Application.csproj" />
+    <Project Path="src/services/Sentinel/Sentium.Sentinel.Core/Sentium.Sentinel.Core.csproj" />
+    <Project Path="src/services/Sentinel/Sentium.Sentinel.Infrastructure/Sentium.Sentinel.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/src/services/Watchdog/">
+    <Project Path="src/services/Watchdog/Sentium.Watchdog.Api/Sentium.Watchdog.Api.csproj" />
+    <Project Path="src/services/Watchdog/Sentium.Watchdog.Application/Sentium.Watchdog.Application.csproj" />
+    <Project Path="src/services/Watchdog/Sentium.Watchdog.Core/Sentium.Watchdog.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Sentium.Tests.AppHost/Sentium.Tests.AppHost.csproj" />
+    <Project Path="tests/Sentium.Tests.Integration/Sentium.Tests.Integration.csproj" />
+    <Project Path="tests/Sentium.Tests.Unit/Sentium.Tests.Unit.csproj" />
   </Folder>
   <Folder Name="/Solution Items/">
     <File Path=".editorconfig" />
