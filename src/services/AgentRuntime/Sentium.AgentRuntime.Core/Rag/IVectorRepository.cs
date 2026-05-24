@@ -38,6 +38,20 @@ public interface IVectorRepository
     /// Returns <c>null</c> if the collection does not exist.
     /// </summary>
     Task<CollectionStats?> GetCollectionStatsAsync(string collectionName, CancellationToken ct = default);
+
+    /// <summary>
+    /// Deletes the entire collection and all its points. Use with caution!
+    /// </summary>
+    /// <param name="collectionName">The name of the collection to delete.</param>
+    /// <param name="ct">A cancellation token.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    Task DeleteCollectionAsync(string collectionName, CancellationToken ct = default);
+
+    /// <summary>
+    /// Retrieves a page of document chunks from a collection using Qdrant scroll.
+    /// Returns up to <paramref name="limit"/> chunks, starting after <paramref name="offset"/>.
+    /// </summary>
+    Task<IReadOnlyList<DocumentChunk>> GetPageAsync(string collectionName, ulong limit = 200, ulong? offset = null, CancellationToken ct = default);
 }
 
 public sealed record CollectionStats(
