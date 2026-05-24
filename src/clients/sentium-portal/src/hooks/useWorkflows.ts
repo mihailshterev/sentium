@@ -1,12 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import {
-  fetchWorkflows,
-  createWorkflow,
-  updateWorkflow,
-  deleteWorkflow,
-  type WorkflowPayload,
-  type UpdateWorkflowPayload,
-} from "../services/agentRuntime.service";
+import { fetchWorkflows, createWorkflow, updateWorkflow, deleteWorkflow } from "../services/agentRuntime.service";
+import type { WorkflowPayload, UpdateWorkflowPayload } from "../types/workflows";
 
 const WORKFLOWS_KEY = ["workflows"] as const;
 

@@ -1,7 +1,7 @@
 import { Play, GitBranch, FolderOpen, Loader, History } from "lucide-react";
 import styles from "../agent-orchestration.module.scss";
 import type { WorkflowRecord } from "../../../types/workflows";
-import type { WorkflowRun } from "../../../types/workflowRuns";
+import type { WorkflowRun } from "../../../types/workflows";
 import type { Phase } from "../../../types/orchestration";
 
 interface Workspace {

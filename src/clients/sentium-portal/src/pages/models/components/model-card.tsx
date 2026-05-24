@@ -1,6 +1,6 @@
 import { Cpu, HardDrive, Hash, Trash2, Loader } from "lucide-react";
 import styles from "../models.module.scss";
-import type { OllamaModel } from "../../../services/agentRuntime.service";
+import type { OllamaModel } from "../../../types/models";
 
 function formatBytes(bytes: number): string {
   if (bytes === 0) {

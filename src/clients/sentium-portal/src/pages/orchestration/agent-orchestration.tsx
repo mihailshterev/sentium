@@ -6,7 +6,7 @@ import { runWorkflowPipeline, fetchWorkflowRuns, fetchWorkspaces } from "../../s
 import useWorkflows from "../../hooks/useWorkflows";
 import type { Phase, LogEntry } from "../../types/orchestration";
 import type { WorkflowRecord } from "../../types/workflows";
-import type { WorkflowRun } from "../../types/workflowRuns";
+import type { WorkflowRun } from "../../types/workflows";
 import { BASE_URL } from "../../api/client";
 import PageHeader from "../../components/ui/page-header";
 import LogEntryView from "./components/log-entry-view";

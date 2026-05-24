@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import useOllamaModels from "./useOllamaModels";
 import * as agentRuntimeService from "../services/agentRuntime.service";
-import type { OllamaModel } from "../services/agentRuntime.service";
+import type { OllamaModel } from "../types/models";
 
 const createWrapper = () => {
   const qc = new QueryClient({

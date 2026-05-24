@@ -35,6 +35,8 @@ const defaultKbHook = {
   isLoading: false,
   error: null,
   refetch: vi.fn(),
+  deleteCollection: vi.fn(),
+  isDeleting: false,
 };
 
 const defaultLearningsHook = {

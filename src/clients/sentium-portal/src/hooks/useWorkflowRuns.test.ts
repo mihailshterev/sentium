@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import useWorkflowRuns from "./useWorkflowRuns";
 import * as agentRuntimeService from "../services/agentRuntime.service";
-import type { WorkflowRun } from "../types/workflowRuns";
+import type { WorkflowRun } from "../types/workflows";
 
 vi.mock("../services/agentRuntime.service", () => ({
   fetchWorkflowRuns: vi.fn(),
