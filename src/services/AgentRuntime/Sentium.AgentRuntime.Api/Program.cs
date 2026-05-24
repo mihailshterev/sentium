@@ -6,6 +6,7 @@ using Microsoft.Extensions.Caching.Hybrid;
 using Scalar.AspNetCore;
 using Sentium.Shared.Constants;
 using Sentium.Infrastructure.Extensions;
+using Sentium.AgentRuntime.Api.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -38,6 +39,9 @@ builder.Services.AddHybridCache(options =>
     };
 });
 
+builder.Services.AddProblemDetails();
+builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
 var app = builder.Build();
 
 app.UseSentiumTracing();
@@ -62,6 +66,8 @@ if (app.Environment.IsDevelopment())
                .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
     });
 }
+
+app.UseExceptionHandler();
 
 app.MapDefaultEndpoints();
 
