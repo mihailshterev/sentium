@@ -19,6 +19,7 @@ import {
   View,
   Zap,
   type LucideIcon,
+  CalendarClock,
 } from "lucide-react";
 import styles from "./navbar.module.scss";
 import React from "react";
@@ -63,6 +64,7 @@ const NAV_GROUPS: NavGroup[] = [
       { to: "/workspaces", label: "Workspaces", icon: FolderOpen },
       { to: "/knowledge-base", label: "Knowledge Base", icon: Database },
       { to: "/semantic-map", label: "Semantic Map", icon: Waypoints },
+      { to: "/scheduler", label: "Scheduled Jobs", icon: CalendarClock },
       { to: "/users", label: "Users", icon: UsersRound, sovereignOnly: true },
     ],
   },

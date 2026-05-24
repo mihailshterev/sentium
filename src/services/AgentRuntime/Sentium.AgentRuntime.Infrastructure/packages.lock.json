@@ -211,6 +211,16 @@
           "Grpc.Net.Client": "2.71.0"
         }
       },
+      "Quartz.Extensions.Hosting": {
+        "type": "Direct",
+        "requested": "[3.18.0, )",
+        "resolved": "3.18.0",
+        "contentHash": "DOIgnLibu9sEYqHAKRQYz+0oWZ5q2LP55oNUtosOygEiIxCvTtHAwkZdf6Ea0VCucZ1oO9SeWLoA4q4WFbZspw==",
+        "dependencies": {
+          "Microsoft.Extensions.Hosting.Abstractions": "10.0.0",
+          "Quartz.Extensions.DependencyInjection": "3.18.0"
+        }
+      },
       "AspNetCore.HealthChecks.Azure.Storage.Blobs": {
         "type": "Transitive",
         "resolved": "9.0.0",
@@ -1049,6 +1059,24 @@
         "dependencies": {
           "Polly.Core": "8.4.2",
           "System.Threading.RateLimiting": "8.0.0"
+        }
+      },
+      "Quartz": {
+        "type": "Transitive",
+        "resolved": "3.18.0",
+        "contentHash": "l+PY20yF32ljFkP/OROYc7Z7Wv3rhGARqxGkDMaCwOJ3aGA/94fPSBYtJpZKciLbc/89xfVlpEZbIzIPE0hHHQ==",
+        "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "2.1.1"
+        }
+      },
+      "Quartz.Extensions.DependencyInjection": {
+        "type": "Transitive",
+        "resolved": "3.18.0",
+        "contentHash": "YAtrZ+pYtPPnWKKuHII1x16E6HxyT1eHWQCvAR4zkMT8xmfuz1KCRHCg3+b8z/nGXpWyR6WpSoIh7dsR4jI+iA==",
+        "dependencies": {
+          "Microsoft.Extensions.Configuration.Abstractions": "10.0.0",
+          "Microsoft.Extensions.Options": "10.0.0",
+          "Quartz": "3.18.0"
         }
       },
       "Serilog": {

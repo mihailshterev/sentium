@@ -31,6 +31,7 @@ using Sentium.AgentRuntime.Infrastructure.Storage;
 using Microsoft.Extensions.Hosting;
 using Sentium.Infrastructure.Extensions;
 using Sentium.AgentRuntime.Infrastructure.Extensions;
+using Quartz;
 
 namespace Sentium.AgentRuntime.Infrastructure;
 
@@ -131,10 +132,29 @@ public static class ServiceCollectionExtensions
         services.AddTransient<IAgentTool, ReadWorkspaceFileContentTool>();
         services.AddTransient<IAgentTool, WriteWorkspaceFileTool>();
         services.AddTransient<IAgentTool, CaptureAgentLearningTool>();
+        services.AddTransient<IAgentTool, ScheduleTaskTool>();
 
         services.AddScoped<IConversationManager, ConversationManager>();
         services.AddScoped<IWorkflowManager, WorkflowManager>();
         services.AddScoped<IWorkflowRunRepository, WorkflowRunRepository>();
+
+        builder.Services.AddQuartz(q =>
+        {
+            // TODO: Enable persistent store
+            // q.UsePersistentStore(s =>
+            // {
+            //     s.UseSqlServer(builder.Configuration.GetConnectionString(ResourceNames.AgentRuntimeDb)!);
+            //     s.UseNewtonsoftJsonSerializer();
+            //     s.UseClustering(cluster =>
+            //     {
+            //         cluster.CheckinInterval = TimeSpan.FromSeconds(20);
+            //         cluster.CheckinMisfireThreshold = TimeSpan.FromSeconds(60);
+            //     });
+            // });
+            q.UseInMemoryStore();
+        });
+
+        builder.Services.AddQuartzHostedService(options => options.WaitForJobsToComplete = true);
 
         services.AddHttpClient<SentinelClient>(client =>
         {
@@ -142,7 +162,7 @@ public static class ServiceCollectionExtensions
             client.Timeout = TimeSpan.FromSeconds(10);
         });
 
-        services.AddHttpClient("SandboxService", client =>
+        services.AddHttpClient(ServiceNames.Sandbox, client =>
         {
             client.BaseAddress = new Uri($"https+http://{ServiceNames.Sandbox}");
             client.Timeout = TimeSpan.FromSeconds(120);
