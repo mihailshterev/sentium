@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Sentium.AgentRuntime.Core.Tools;
 using Sentium.AgentRuntime.Core.Tools.Attributes;
 using Sentium.AgentRuntime.Infrastructure.Sentinel;
+using Sentium.Shared.Constants;
 
 namespace Sentium.AgentRuntime.Infrastructure.Tools;
 
@@ -56,7 +57,7 @@ public sealed class CodeExecutionSandboxTool(
 
         try
         {
-            var client = _httpClientFactory.CreateClient("SandboxService");
+            var client = _httpClientFactory.CreateClient(ServiceNames.Sandbox);
 
             var requestPayload = new
             {
