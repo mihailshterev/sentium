@@ -14,6 +14,9 @@ using System.Buffers;
 
 namespace Sentium.AgentRuntime.Api.Controllers;
 
+/// <summary>
+/// Controller for handling interactions with the general assistant agent.
+/// </summary>
 [ApiController]
 [Authorize]
 [Route("assistant")]
@@ -26,7 +29,18 @@ public sealed class AssistantController(
     private static readonly byte[] DataPrefix = "data: "u8.ToArray();
     private static readonly byte[] SseDelimiter = "\n\n"u8.ToArray();
 
+    /// <summary>
+    /// Handles a chat message to the assistant agent and streams back responses using Server-Sent Events (SSE).
+    /// The request can include an optional conversation ID to link messages to an existing conversation.
+    /// If the agent triggers a tool call that requires approval, the stream will send an approval request message and pause
+    /// until approval is granted via the /assistant/chat/approve endpoint.
+    /// </summary>
+    /// <param name="requestBody">The chat request containing messages and optional conversation ID.</param>
+    /// <param name="scopeFactory">Service scope factory for creating scoped services during the request.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>A streaming response with assistant messages, thoughts, tool call logs, and approval requests.</returns>
     [HttpPost("chat")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task Chat([FromBody] ChatRequest requestBody, [FromServices] IServiceScopeFactory scopeFactory, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(requestBody);
@@ -34,11 +48,11 @@ public sealed class AssistantController(
 
         ConfigureSseResponse();
 
-        var lastUserMessage = requestBody.Messages.LastOrDefault(m => m.Role.Equals("user", StringComparison.OrdinalIgnoreCase));
+        var lastUserMessage = requestBody.Messages.LastOrDefault(m => m.Role.Equals(ChatRole.User.ToString(), StringComparison.OrdinalIgnoreCase));
 
         pdpContext.OriginalUserPrompt = lastUserMessage?.Content ?? string.Empty;
 
-        pdpContext.CorrelationId = Request.Headers.TryGetValue(HeaderNames.CorrelationId, out var hdr)
+        pdpContext.CorrelationId = Request.Headers.TryGetValue(CommonHeaderNames.CorrelationId, out var hdr)
             ? hdr.ToString()
             : Guid.NewGuid().ToString();
 
@@ -46,21 +60,31 @@ public sealed class AssistantController(
         {
             using var scope = scopeFactory.CreateScope();
             var conversationService = scope.ServiceProvider.GetRequiredService<IConversationService>();
-            await conversationService.AddMessageAsync(requestBody.ConversationId.Value, "user", lastUserMessage.Content, ct: ct);
+            await conversationService.AddMessageAsync(requestBody.ConversationId.Value, ChatRole.User.ToString(), lastUserMessage.Content, ct: ct);
         }
 
         var agent = await agentFactory.CreateAsync(AgentRole.GeneralAssistant, overrideModel: requestBody.Model, ct: ct);
         var session = await agent.CreateSessionAsync(ct);
 
         var chatMessages = requestBody.Messages.Select(m => new ChatMessage(
-            m.Role.Equals("user", StringComparison.OrdinalIgnoreCase) ? ChatRole.User : ChatRole.Assistant,
+            m.Role.Equals(ChatRole.User.ToString(), StringComparison.OrdinalIgnoreCase) ? ChatRole.User : ChatRole.Assistant,
             m.Content
         )).ToList();
 
         await RunStreamingAsync(agent, session, chatMessages, requestBody.ConversationId, requestBody.Model, scopeFactory, ct);
     }
 
+    /// <summary>
+    /// Handles approval of a pending tool call that was triggered during an assistant chat session.
+    /// This endpoint is called by the client when the user approves or rejects a tool call.
+    /// </summary>
+    /// <param name="requestBody">The approval request containing the request ID and approval decision.</param>
+    /// <param name="scopeFactory">Service scope factory for creating scoped services during the request.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>A streaming response with assistant messages, thoughts, tool call logs, and approval requests.</returns>
     [HttpPost("chat/approve")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task ApproveToolCall([FromBody] ApproveToolCallRequest requestBody, [FromServices] IServiceScopeFactory scopeFactory, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(requestBody);
@@ -85,14 +109,6 @@ public sealed class AssistantController(
         };
 
         await RunStreamingAsync(pending.Agent, pending.Session, restoredHistory, pending.ConversationId, pending.Model, scopeFactory, ct);
-    }
-
-    private void ConfigureSseResponse()
-    {
-        Response.ContentType = "text/event-stream";
-        Response.Headers.CacheControl = "no-cache";
-        Response.Headers.Connection = "keep-alive";
-        Response.Headers.Append("X-Accel-Buffering", "no");
     }
 
     private async Task RunStreamingAsync(
@@ -173,11 +189,12 @@ public sealed class AssistantController(
 
                 await conversationService.AddMessageAsync(
                     conversationId.Value,
-                    "assistant",
+                    ChatRole.Assistant.ToString(),
                     assistantResponse.ToString(),
                     thoughtBuilder.Length > 0 ? thoughtBuilder.ToString() : null,
                     toolCallLog.Count > 0 ? toolCallLog : null,
-                    ct);
+                    ct
+                );
             }
 
             var completeJson = JsonSerializer.Serialize(new { type = "done", done = true });
@@ -237,5 +254,13 @@ public sealed class AssistantController(
         pipeWriter.Write(SseDelimiter);
 
         await pipeWriter.FlushAsync(ct);
+    }
+
+    private void ConfigureSseResponse()
+    {
+        Response.ContentType = "text/event-stream";
+        Response.Headers.CacheControl = "no-cache";
+        Response.Headers.Connection = "keep-alive";
+        Response.Headers.Append(CommonHeaderNames.AccelBuffering, "no");
     }
 }

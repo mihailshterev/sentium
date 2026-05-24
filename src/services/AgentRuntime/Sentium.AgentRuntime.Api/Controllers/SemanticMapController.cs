@@ -24,9 +24,16 @@ public sealed class SemanticMapController(
     /// Returns a page of nodes from the specified collections for graph rendering.
     /// Each node represents a document chunk with its source metadata.
     /// </summary>
+    /// <param name="limit">The maximum number of nodes to return (default 300, max 500).</param>
+    /// <param name="collection">Optional specific collection to query; if not provided, queries all tracked collections.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>A list of knowledge map nodes with their metadata.</returns>
     [HttpGet("nodes")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetNodes([FromQuery] int limit = 300, [FromQuery] string? collection = null, CancellationToken ct = default)
+    public async Task<ActionResult<KnowledgeMapResponse>> GetNodes(
+        [FromQuery] int limit = 300,
+        [FromQuery] string? collection = null,
+        CancellationToken ct = default)
     {
         var collections = collection is not null ? [collection] : TrackedCollections;
 
@@ -63,11 +70,17 @@ public sealed class SemanticMapController(
     /// Performs a semantic search across all tracked collections and returns
     /// ranked results for query-traversal visualization.
     /// </summary>
+    /// <param name="request">The search request containing the query and top-K parameter.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>A list of search results with their scores and metadata.</returns>
     [HttpPost("search")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Search([FromBody] KnowledgeMapSearchRequest request, CancellationToken ct)
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+    public async Task<ActionResult<KnowledgeMapSearchResponse>> Search([FromBody] KnowledgeMapSearchRequest request, CancellationToken ct)
     {
+        ArgumentNullException.ThrowIfNull(request);
+
         if (string.IsNullOrWhiteSpace(request.Query))
         {
             return BadRequest(new { error = "Query must not be empty." });

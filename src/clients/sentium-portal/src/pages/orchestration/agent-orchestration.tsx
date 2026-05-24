@@ -87,7 +87,7 @@ const AgentOrchestration = () => {
 
   const openStream = useCallback(
     (eventId: string) => {
-      const eventSource = new EventSource(`${BASE_URL}/agent-runtime/agents/stream/${eventId}`, {
+      const eventSource = new EventSource(`${BASE_URL}/agent-runtime/orchestration/stream/${eventId}`, {
         withCredentials: true,
       });
 

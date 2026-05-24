@@ -7,35 +7,56 @@ using Sentium.Infrastructure.Messaging;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NATS.Client.Serializers.Json;
+using Sentium.Shared.Constants;
 
 namespace Sentium.AgentRuntime.Api.Controllers;
 
+/// <summary>
+/// Controller responsible for orchestrating agent workflows and streaming execution updates.
+/// </summary>
 [ApiController]
 [Authorize]
-[Route("agents")]
+[Route("orchestration")]
 public sealed class OrchestrationController(
     IEventBus eventBus,
     IWorkflowService workflowService,
     ILogger<OrchestrationController> logger) : ControllerBase
 {
-    [HttpPost("test-pipeline")]
-    public async Task<IActionResult> RunPipeline([FromBody] dynamic customInput, CancellationToken ct)
+    /// <summary>
+    /// Endpoint to trigger a dynamic workflow run with custom input. Useful for ad-hoc scenarios where the workflow definition is not known in advance.
+    /// The input is expected to be a JSON object, which will be serialized and published as an event for downstream processing.
+    /// </summary>
+    /// <param name="customInput">The custom input for the dynamic workflow.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>An accepted response indicating the workflow has been triggered.</returns>
+    [HttpPost("run-dynamic-workflow")]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    public async Task<ActionResult<Envelope>> RunDynamicWorkflow([FromBody] dynamic customInput, CancellationToken ct)
     {
-        var payload = customInput ?? new { activity = "Manual trigger", user = "admin" };
+        var user = User.Identity?.Name ?? "Unknown";
+
+        var payload = customInput ?? new { activity = "Manual trigger", user = user };
         var jsonPayload = JsonSerializer.Serialize(payload);
 
         await eventBus.PublishAsync(WorkflowEvents.Dynamic, jsonPayload, ct: ct);
 
         if (logger.IsEnabled(LogLevel.Information))
         {
-            logger.LogInformation("Pipeline test triggered by {User}", User.Identity?.Name);
+            logger.LogInformation("Dynamic workflow triggered by {User}", user);
         }
 
         return Accepted(new Envelope(WorkflowEvents.Dynamic));
     }
 
+    /// <summary>
+    /// Endpoint to trigger a predefined workflow run based on a registered workflow ID.
+    /// </summary>
+    /// <param name="request">The request containing the workflow ID, scenario name, and parameters.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>An accepted response indicating the workflow has been triggered.</returns>
     [HttpPost("run-workflow")]
-    public async Task<IActionResult> RunWorkflow([FromBody] RunWorkflowRequest request, CancellationToken ct)
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    public async Task<ActionResult<Envelope>> RunWorkflow([FromBody] RunWorkflowRequest request, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -56,13 +77,20 @@ public sealed class OrchestrationController(
         return Accepted(new Envelope(WorkflowEvents.CustomWorkflow));
     }
 
+    /// <summary>
+    /// Endpoint to stream real-time updates for an agent execution based on a unique event ID.
+    /// </summary>
+    /// <param name="eventId">The unique identifier for the agent execution event.</param>
+    /// <param name="ct">The cancellation token.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
     [HttpGet("stream/{eventId}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task StreamAgentExecution(string eventId, CancellationToken ct)
     {
-        Response.Headers.Append("Content-Type", "text/event-stream");
-        Response.Headers.Append("Cache-Control", "no-cache");
-        Response.Headers.Append("Connection", "keep-alive");
-        Response.Headers.Append("X-Accel-Buffering", "no");
+        Response.Headers.Append(CommonHeaderNames.ContentType, "text/event-stream");
+        Response.Headers.Append(CommonHeaderNames.CacheControl, "no-cache");
+        Response.Headers.Append(CommonHeaderNames.Connection, "keep-alive");
+        Response.Headers.Append(CommonHeaderNames.AccelBuffering, "no");
 
         var init = JsonSerializer.Serialize(new AgentStreamUpdate("System", "Listening for agent telemetry..."));
         await Response.WriteAsync($"data: {init}\n\n", ct);

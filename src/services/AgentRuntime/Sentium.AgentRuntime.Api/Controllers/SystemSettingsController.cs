@@ -15,9 +15,11 @@ public sealed class SystemSettingsController(ISystemSettingsService systemSettin
     /// <summary>
     /// Returns the current system settings.
     /// </summary>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>The current system settings.</returns>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetSettings(CancellationToken ct)
+    public async Task<ActionResult<SystemSettingsDto>> GetSettings(CancellationToken ct)
     {
         var settings = await systemSettingsService.GetAsync(ct);
         return Ok(settings);
@@ -26,10 +28,13 @@ public sealed class SystemSettingsController(ISystemSettingsService systemSettin
     /// <summary>
     /// Persists updated system settings.
     /// </summary>
+    /// <param name="request">The updated settings to persist.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>The updated system settings.</returns>
     [HttpPut]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> UpdateSettings([FromBody] UpdateSystemSettingsRequest request, CancellationToken ct)
+    public async Task<ActionResult<SystemSettingsDto>> UpdateSettings([FromBody] UpdateSystemSettingsRequest request, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(request);
 

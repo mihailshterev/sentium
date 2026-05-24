@@ -77,11 +77,11 @@ export const createConversation = (payload: CreateConversationPayload) =>
 
 export const deleteConversation = (id: string) => client.delete<void>(`${BASE}/conversations/${id}`);
 
-export const runPipeline = (payload: Record<string, string>) =>
-  client.post<{ eventId: string }>(`${BASE}/agents/test-pipeline`, payload);
+export const runDynamicWorkflow = (payload: Record<string, string>) =>
+  client.post<{ eventId: string }>(`${BASE}/orchestration/run-dynamic-workflow`, payload);
 
 export const runWorkflowPipeline = (payload: RunWorkflowPayload) =>
-  client.post<{ eventId: string }>(`${BASE}/agents/run-workflow`, payload);
+  client.post<{ eventId: string }>(`${BASE}/orchestration/run-workflow`, payload);
 
 export const fetchWorkflowRuns = (count = 15): Promise<WorkflowRun[]> =>
   client.get<WorkflowRun[]>(`${BASE}/workflows/runs?count=${count}`);
@@ -108,11 +108,11 @@ export const approveToolCall = (requestId: string, approved: boolean, signal?: A
 
 export const listWorkspaceFiles = (workspaceId?: string): Promise<WorkspaceFile[]> =>
   client.get<WorkspaceFile[]>(
-    `${BASE}/workspace/files${workspaceId ? `?workspaceId=${encodeURIComponent(workspaceId)}` : ""}`,
+    `${BASE}/workspaces/files${workspaceId ? `?workspaceId=${encodeURIComponent(workspaceId)}` : ""}`,
   );
 
 export const deleteWorkspaceFile = (fileId: string): Promise<void> =>
-  client.delete<void>(`${BASE}/workspace/files/${fileId}`);
+  client.delete<void>(`${BASE}/workspaces/files/${fileId}`);
 
 export const fetchWorkspaces = (): Promise<Workspace[]> => client.get<Workspace[]>(`${BASE}/workspaces`);
 
@@ -134,7 +134,7 @@ export const uploadWorkspaceFile = async (file: File, workspaceId?: string): Pro
     formData.append("workspaceId", workspaceId);
   }
 
-  const response = await fetch(`${BASE_URL}${BASE}/workspace/files`, {
+  const response = await fetch(`${BASE_URL}${BASE}/workspaces/files`, {
     method: "POST",
     body: formData,
     credentials: "include",

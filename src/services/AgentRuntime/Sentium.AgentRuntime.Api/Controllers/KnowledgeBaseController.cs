@@ -19,9 +19,11 @@ public sealed class KnowledgeBaseController(IVectorRepository vectorRepository, 
     /// Returns knowledge-base collection statistics from the vector store.
     /// Returns an array — one entry per tracked collection.
     /// </summary>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>Knowledge-base collection statistics.</returns>
     [HttpGet("stats")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetKnowledgeBaseStats(CancellationToken ct)
+    public async Task<ActionResult<CollectionStats>> GetKnowledgeBaseStats(CancellationToken ct)
     {
         var collections = new[]
         {
@@ -50,6 +52,9 @@ public sealed class KnowledgeBaseController(IVectorRepository vectorRepository, 
     /// <summary>
     /// Deletes an entire collection from the vector store.
     /// </summary>
+    /// <param name="collection">The name of the collection to delete.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>No content if deletion is successful.</returns>
     [HttpDelete("collections/{collection}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
