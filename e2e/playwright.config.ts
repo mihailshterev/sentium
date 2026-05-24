@@ -60,7 +60,7 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: "dotnet run --project ../src/aspire/Sentium.AppHost/Sentium.AppHost.csproj",
+    command: "dotnet run --project ../src/aspire/Sentium.AppHost/Sentium.AppHost.csproj -- --TestRun=true",
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 300 * 1000,
