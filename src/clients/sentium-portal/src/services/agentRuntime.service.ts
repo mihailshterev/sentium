@@ -252,7 +252,10 @@ export const updateAgentLearning = (id: string, payload: { content: string; tags
 export const deleteAgentLearning = (id: string): Promise<void> => client.delete<void>(`${BASE}/agent-learnings/${id}`);
 
 export const fetchKnowledgeBaseStats = (): Promise<KnowledgeBaseCollectionStats[]> =>
-  client.get<KnowledgeBaseCollectionStats[]>(`${BASE}/agent-learnings/knowledge-base/stats`);
+  client.get<KnowledgeBaseCollectionStats[]>(`${BASE}/knowledge-base/stats`);
+
+export const deleteKnowledgeMapCollection = (collection: string): Promise<void> =>
+  client.delete<void>(`${BASE}/knowledge-base/collections/${encodeURIComponent(collection)}`);
 
 export const fetchBuiltInSkills = (): Promise<BuiltInSkill[]> => client.get<BuiltInSkill[]>(`${BASE}/skills/built-in`);
 
