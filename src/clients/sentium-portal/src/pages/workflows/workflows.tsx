@@ -8,6 +8,7 @@ import PageHeader from "../../components/ui/page-header";
 import EmptyState from "../../components/ui/empty-state";
 import WorkflowCard from "./components/workflow-card";
 import WorkflowEditor from "./components/workflow-editor";
+import ConfirmDialog from "../../components/ui/confirm-dialog";
 
 const Workflows = () => {
   const {
@@ -35,6 +36,7 @@ const Workflows = () => {
   const [initialName, setInitialName] = useState("");
   const [initialDescription, setInitialDescription] = useState("");
   const [initialFormAgents, setInitialFormAgents] = useState<SortableAgentItem[]>([]);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   const resetMutations = () => {
     resetCreate();
@@ -89,12 +91,21 @@ const Workflows = () => {
   };
 
   const handleDelete = (workflowId: string) => {
-    if (!confirm("Delete this workflow?")) return;
-    deleteWorkflow(workflowId, {
+    setPendingDeleteId(workflowId);
+  };
+
+  const confirmDelete = () => {
+    if (!pendingDeleteId) {
+      return;
+    }
+    deleteWorkflow(pendingDeleteId, {
       onSuccess: () => {
-        if (selectedWorkflow?.id === workflowId) closeEdit();
+        if (selectedWorkflow?.id === pendingDeleteId) {
+          closeEdit();
+        }
       },
     });
+    setPendingDeleteId(null);
   };
 
   const getAgentName = (agentId: string) => agents.find((a) => a.id === agentId)?.name ?? agentId.slice(0, 8);
@@ -183,6 +194,16 @@ const Workflows = () => {
           </div>
         </aside>
       </div>
+
+      <ConfirmDialog
+        open={pendingDeleteId !== null}
+        variant="danger"
+        title="Delete workflow?"
+        description="This will permanently remove the workflow and its pipeline configuration. This action cannot be undone."
+        confirmLabel="Delete workflow"
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDeleteId(null)}
+      />
     </div>
   );
 };

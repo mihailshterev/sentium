@@ -5,6 +5,7 @@ import { useSkills } from "../../../hooks/useSkills";
 import type { AgentSkill, UpdateSkillPayload } from "../../../types/skills";
 import EmptyState from "../../../components/ui/empty-state";
 import SkillCard from "./skill-card";
+import ConfirmDialog from "../../../components/ui/confirm-dialog"; // Added import
 
 const CustomTab = () => {
   const {
@@ -25,6 +26,9 @@ const CustomTab = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", description: "", instructions: "" });
+
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [skillToDelete, setSkillToDelete] = useState<{ id: string; name: string } | null>(null);
 
   const resetForm = () => {
     setForm({ name: "", description: "", instructions: "" });
@@ -58,6 +62,30 @@ const CustomTab = () => {
       });
     }
     resetForm();
+  };
+
+  const handleOpenDeleteConfirm = (skill: AgentSkill) => {
+    setSkillToDelete({ id: skill.id, name: skill.name });
+    setIsConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!skillToDelete) {
+      return;
+    }
+    try {
+      await deleteSkill(skillToDelete.id);
+    } catch (error) {
+      console.error("Failed to delete skill:", error);
+    } finally {
+      setIsConfirmOpen(false);
+      setSkillToDelete(null);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setIsConfirmOpen(false);
+    setSkillToDelete(null);
   };
 
   return (
@@ -145,7 +173,7 @@ const CustomTab = () => {
               expanded={expanded === skill.id}
               onToggle={() => setExpanded(expanded === skill.id ? null : skill.id)}
               onEdit={() => handleEdit(skill)}
-              onDelete={() => void deleteSkill(skill.id)}
+              onDelete={() => handleOpenDeleteConfirm(skill)}
               isDeleting={isDeleting && deletingId === skill.id}
               isUpdating={isUpdating && updatingId === skill.id}
               pill="custom"
@@ -154,6 +182,17 @@ const CustomTab = () => {
           ))}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={isConfirmOpen}
+        variant="danger"
+        title="Delete Custom Skill"
+        description={`Are you sure you want to delete the skill "${skillToDelete?.name || ""}"? Agents will immediately lose access to this configuration.`}
+        confirmLabel="Delete Skill"
+        cancelLabel="Cancel"
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+      />
     </div>
   );
 };

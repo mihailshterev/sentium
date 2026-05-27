@@ -20,6 +20,7 @@ import MessageBubble, { STATUS_MESSAGES } from "./components/message-bubble";
 import WelcomeScreen from "./components/welcome-screen";
 import ChatInputBar from "./components/chat-input-bar";
 import ConversationSidebar from "./components/conversation-sidebar";
+import ConfirmDialog from "../../components/ui/confirm-dialog";
 
 type ContextPill = { type: "workspace" | "file"; id: string; label: string };
 
@@ -86,6 +87,9 @@ const Assistant = () => {
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [statusIndex, setStatusIndex] = useState(0);
   const [statusVisible, setStatusVisible] = useState(true);
+
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [conversationToDelete, setConversationToDelete] = useState<string | null>(null);
 
   const toggleThought = (id: string) =>
     setExpandedThoughts((prev) => {
@@ -256,13 +260,31 @@ const Assistant = () => {
 
   const deleteConversation = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    deleteConversationMutate(id, {
+    setConversationToDelete(id);
+    setIsConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!conversationToDelete) return;
+
+    deleteConversationMutate(conversationToDelete, {
       onSuccess: () => {
-        if (activeConversationId === id) {
+        if (activeConversationId === conversationToDelete) {
           clearConversation();
         }
+        setIsConfirmOpen(false);
+        setConversationToDelete(null);
+      },
+      onError: () => {
+        setIsConfirmOpen(false);
+        setConversationToDelete(null);
       },
     });
+  };
+
+  const handleCancelDelete = () => {
+    setIsConfirmOpen(false);
+    setConversationToDelete(null);
   };
 
   const handleStop = () => {
@@ -628,6 +650,17 @@ const Assistant = () => {
         onToggleExpandWorkspace={(wsId) => setExpandedWorkspace((v) => (v === wsId ? null : wsId))}
         onInjectWorkspaceContext={injectWorkspaceContext}
         onInjectFileContext={injectFileContext}
+      />
+
+      <ConfirmDialog
+        open={isConfirmOpen}
+        variant="danger"
+        title="Delete Conversation"
+        description="Are you sure you want to delete this conversation? This action cannot be undone."
+        confirmLabel="Delete Chat"
+        cancelLabel="Cancel"
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
       />
     </div>
   );

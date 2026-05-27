@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Check, Loader, Pencil, Trash2, X } from "lucide-react";
 import styles from "../knowledge-base.module.scss";
+import ConfirmDialog from "../../../components/ui/confirm-dialog";
 
 interface LearningCardProps {
   learning: {
@@ -23,6 +24,8 @@ const LearningCard = ({ learning: l, isSaving, isDeleting, onSave, onDelete, for
   const [editContent, setEditContent] = useState(l.content);
   const [editTags, setEditTags] = useState(l.tags);
 
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+
   const handleEdit = () => {
     setEditContent(l.content);
     setEditTags(l.tags);
@@ -37,6 +40,11 @@ const LearningCard = ({ learning: l, isSaving, isDeleting, onSave, onDelete, for
     }
     onSave(editContent.trim(), editTags.trim());
     setEditing(false);
+  };
+
+  const handleConfirmDelete = () => {
+    setIsConfirmOpen(false);
+    onDelete();
   };
 
   return (
@@ -72,10 +80,10 @@ const LearningCard = ({ learning: l, isSaving, isDeleting, onSave, onDelete, for
           <button
             className={`${styles.btnIcon} ${styles.btnIconDanger}`}
             disabled={isDeleting || isSaving}
-            onClick={onDelete}
+            onClick={() => setIsConfirmOpen(true)}
             title="Delete learning"
           >
-            <Trash2 size={13} />
+            {isDeleting ? <Loader size={13} className={styles.spin} /> : <Trash2 size={13} />}
           </button>
         </div>
       </div>
@@ -110,6 +118,17 @@ const LearningCard = ({ learning: l, isSaving, isDeleting, onSave, onDelete, for
       ) : (
         <div className={styles.learningContent}>{l.content}</div>
       )}
+
+      <ConfirmDialog
+        open={isConfirmOpen}
+        variant="danger"
+        title="Delete Knowledge Record"
+        description="Are you sure you want to delete this captured memory item? This cannot be undone and will remove it from the agent's contextual knowledge base."
+        confirmLabel="Delete Item"
+        cancelLabel="Cancel"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setIsConfirmOpen(false)}
+      />
     </div>
   );
 };
