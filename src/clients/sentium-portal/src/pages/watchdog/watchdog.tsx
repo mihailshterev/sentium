@@ -27,111 +27,113 @@ const Watchdog = () => {
         }
       />
 
-      <SummaryStats
-        services={services}
-        healthyCount={healthyCount}
-        unhealthyCount={unhealthyCount}
-        allHealthy={allHealthy}
-      />
+      <div className={styles.content}>
+        <SummaryStats
+          services={services}
+          healthyCount={healthyCount}
+          unhealthyCount={unhealthyCount}
+          allHealthy={allHealthy}
+        />
 
-      <div className={styles.mainGrid}>
-        <section className={styles.card}>
-          <div className={styles.cardHeader}>
-            <span className={styles.cardTitle}>Service Health</span>
-            <span className={styles.liveTag}>Live</span>
-          </div>
+        <div className={styles.mainGrid}>
+          <section className={styles.card}>
+            <div className={styles.cardHeader}>
+              <span className={styles.cardTitle}>Service Health</span>
+              <span className={styles.liveTag}>Live</span>
+            </div>
 
-          <div className={styles.tableHead}>
-            <span>Status</span>
-            <span>Service</span>
-            <span>Latency</span>
-            <span>Last Checked</span>
-          </div>
+            <div className={styles.tableHead}>
+              <span>Status</span>
+              <span>Service</span>
+              <span>Latency</span>
+              <span>Last Checked</span>
+            </div>
 
-          <div className={styles.tableBody}>
-            {healthLoading ? (
-              [0, 1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className={styles.skeletonRow}>
-                  <span className={styles.skeletonBlock} style={{ width: 60 }} />
-                  <span className={styles.skeletonBlock} style={{ width: 100 }} />
-                  <span className={styles.skeletonBlock} style={{ width: 80 }} />
-                  <span className={styles.skeletonBlock} style={{ width: 70 }} />
+            <div className={styles.tableBody}>
+              {healthLoading ? (
+                [0, 1, 2, 3, 4, 5].map((i) => (
+                  <div key={i} className={styles.skeletonRow}>
+                    <span className={styles.skeletonBlock} style={{ width: 60 }} />
+                    <span className={styles.skeletonBlock} style={{ width: 100 }} />
+                    <span className={styles.skeletonBlock} style={{ width: 80 }} />
+                    <span className={styles.skeletonBlock} style={{ width: 70 }} />
+                  </div>
+                ))
+              ) : services.length === 0 ? (
+                <div className={styles.emptyState}>
+                  <Activity size={20} />
+                  <span>No health data yet — monitoring will begin shortly</span>
                 </div>
-              ))
-            ) : services.length === 0 ? (
-              <div className={styles.emptyState}>
-                <Activity size={20} />
-                <span>No health data yet — monitoring will begin shortly</span>
+              ) : (
+                services.map((s) => <ServiceRow key={s.serviceName} service={s} />)
+              )}
+            </div>
+          </section>
+
+          <section className={styles.card}>
+            <div className={styles.cardHeader}>
+              <span className={styles.cardTitle}>Host Metrics</span>
+              {isRefetching && <RefreshCw size={12} className={styles.spinning} />}
+            </div>
+
+            {metricsLoading || !metrics ? (
+              <div className={styles.metricsLoading}>
+                {[0, 1, 2, 3].map((i) => (
+                  <div key={i} className={styles.metricSkeletonRow}>
+                    <span className={styles.skeletonBlock} style={{ width: 90 }} />
+                    <span className={styles.skeletonBlock} style={{ width: 60 }} />
+                  </div>
+                ))}
               </div>
             ) : (
-              services.map((s) => <ServiceRow key={s.serviceName} service={s} />)
-            )}
-          </div>
-        </section>
-
-        <section className={styles.card}>
-          <div className={styles.cardHeader}>
-            <span className={styles.cardTitle}>Host Metrics</span>
-            {isRefetching && <RefreshCw size={12} className={styles.spinning} />}
-          </div>
-
-          {metricsLoading || !metrics ? (
-            <div className={styles.metricsLoading}>
-              {[0, 1, 2, 3].map((i) => (
-                <div key={i} className={styles.metricSkeletonRow}>
-                  <span className={styles.skeletonBlock} style={{ width: 90 }} />
-                  <span className={styles.skeletonBlock} style={{ width: 60 }} />
+              <div className={styles.metricsList}>
+                <div className={styles.metricRow}>
+                  <Server size={13} className={styles.metricIcon} />
+                  <span className={styles.metricLabel}>Hostname</span>
+                  <span className={styles.metricValue}>{metrics.host.machineName}</span>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className={styles.metricsList}>
-              <div className={styles.metricRow}>
-                <Server size={13} className={styles.metricIcon} />
-                <span className={styles.metricLabel}>Hostname</span>
-                <span className={styles.metricValue}>{metrics.host.machineName}</span>
+                <div className={styles.metricRow}>
+                  <Zap size={13} className={styles.metricIcon} />
+                  <span className={styles.metricLabel}>CPU Cores</span>
+                  <span className={styles.metricValue}>{metrics.host.processorCount}</span>
+                </div>
+                <div className={styles.metricRow}>
+                  <Activity size={13} className={styles.metricIcon} />
+                  <span className={styles.metricLabel}>CPU Usage</span>
+                  <span className={styles.metricValue}>{metrics.cpu.processCpuPercent.toFixed(1)}%</span>
+                </div>
+                <div className={styles.metricRow}>
+                  <span className={styles.metricLabel} style={{ gridColumn: "2 / span 2", fontStyle: "italic" }}>
+                    Memory
+                  </span>
+                </div>
+                <div className={styles.metricRow}>
+                  <span className={styles.metricLabelIndent}>Total</span>
+                  <span className={styles.metricValue}>{metrics.memory.totalMb.toFixed(0)} MB</span>
+                </div>
+                <div className={styles.metricRow}>
+                  <span className={styles.metricLabelIndent}>Used</span>
+                  <span className={styles.metricValue}>{metrics.memory.usedMb.toFixed(0)} MB</span>
+                </div>
+                <div className={styles.metricRow}>
+                  <span className={styles.metricLabelIndent}>Load</span>
+                  <span className={styles.metricValue}>{metrics.memory.memoryLoadPercent.toFixed(1)}%</span>
+                </div>
+                <div className={styles.metricRow}>
+                  <Activity size={13} className={styles.metricIcon} />
+                  <span className={styles.metricLabel}>Uptime</span>
+                  <span className={styles.metricValue}>{metrics.host.uptime.split(".")[0]}</span>
+                </div>
+                <div className={styles.metricRow}>
+                  <span className={styles.metricLabel}>Runtime</span>
+                  <span className={styles.metricValue} style={{ fontSize: "0.68rem" }}>
+                    {metrics.host.runtimeVersion}
+                  </span>
+                </div>
               </div>
-              <div className={styles.metricRow}>
-                <Zap size={13} className={styles.metricIcon} />
-                <span className={styles.metricLabel}>CPU Cores</span>
-                <span className={styles.metricValue}>{metrics.host.processorCount}</span>
-              </div>
-              <div className={styles.metricRow}>
-                <Activity size={13} className={styles.metricIcon} />
-                <span className={styles.metricLabel}>CPU Usage</span>
-                <span className={styles.metricValue}>{metrics.cpu.processCpuPercent.toFixed(1)}%</span>
-              </div>
-              <div className={styles.metricRow}>
-                <span className={styles.metricLabel} style={{ gridColumn: "2 / span 2", fontStyle: "italic" }}>
-                  Memory
-                </span>
-              </div>
-              <div className={styles.metricRow}>
-                <span className={styles.metricLabelIndent}>Total</span>
-                <span className={styles.metricValue}>{metrics.memory.totalMb.toFixed(0)} MB</span>
-              </div>
-              <div className={styles.metricRow}>
-                <span className={styles.metricLabelIndent}>Used</span>
-                <span className={styles.metricValue}>{metrics.memory.usedMb.toFixed(0)} MB</span>
-              </div>
-              <div className={styles.metricRow}>
-                <span className={styles.metricLabelIndent}>Load</span>
-                <span className={styles.metricValue}>{metrics.memory.memoryLoadPercent.toFixed(1)}%</span>
-              </div>
-              <div className={styles.metricRow}>
-                <Activity size={13} className={styles.metricIcon} />
-                <span className={styles.metricLabel}>Uptime</span>
-                <span className={styles.metricValue}>{metrics.host.uptime.split(".")[0]}</span>
-              </div>
-              <div className={styles.metricRow}>
-                <span className={styles.metricLabel}>Runtime</span>
-                <span className={styles.metricValue} style={{ fontSize: "0.68rem" }}>
-                  {metrics.host.runtimeVersion}
-                </span>
-              </div>
-            </div>
-          )}
-        </section>
+            )}
+          </section>
+        </div>
       </div>
     </div>
   );

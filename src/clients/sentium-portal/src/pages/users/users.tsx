@@ -128,8 +128,8 @@ export default function Users() {
           </div>
 
           <div className={styles.tableHeader}>
-            <span className={styles.colName}>Name</span>
-            <span className={styles.colEmail}>Email</span>
+            <span className={styles.colAvatar} />
+            <span className={styles.colUser}>User</span>
             <span className={styles.colRoles}>Roles</span>
             {isSovereign && <span className={styles.colAssign}>Assign / Remove</span>}
             {isSovereign && <span className={styles.colActions} />}

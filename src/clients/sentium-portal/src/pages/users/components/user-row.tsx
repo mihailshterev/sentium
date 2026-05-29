@@ -15,6 +15,18 @@ interface UserRowProps {
   onDeleteUser: (userId: string) => void;
 }
 
+const AVATAR_COLORS = ["avatarBlue", "avatarPurple", "avatarGreen", "avatarAmber", "avatarCyan"] as const;
+
+function getInitials(user: UserListItem): string {
+  const first = user.firstName?.[0] ?? "";
+  const last = user.lastName?.[0] ?? "";
+  return (first + last).toUpperCase() || user.email[0].toUpperCase();
+}
+
+function getAvatarColor(id: string): string {
+  return styles[AVATAR_COLORS[id.charCodeAt(0) % AVATAR_COLORS.length]];
+}
+
 const UserRow = ({
   user,
   isSelf,
@@ -26,17 +38,18 @@ const UserRow = ({
   onDeleteUser,
 }: UserRowProps) => (
   <div className={`${styles.userRow} ${isPending ? styles.pending : ""}`}>
-    <span className={styles.colName}>
-      <span className={styles.nameText}>
-        {user.firstName || user.lastName ? `${user.firstName} ${user.lastName ?? ""}`.trim() : "—"}
-      </span>
-      {isSelf && <span className={styles.selfTag}>you</span>}
-      {user.isLockedOut && <span className={styles.lockedTag}>locked</span>}
-    </span>
+    <div className={`${styles.userAvatar} ${getAvatarColor(user.id)}`}>{getInitials(user)}</div>
 
-    <span className={styles.colEmail}>
+    <div className={styles.colUser}>
+      <div className={styles.nameRow}>
+        <span className={styles.nameText}>
+          {user.firstName || user.lastName ? `${user.firstName} ${user.lastName ?? ""}`.trim() : "—"}
+        </span>
+        {isSelf && <span className={styles.selfTag}>you</span>}
+        {user.isLockedOut && <span className={styles.lockedTag}>locked</span>}
+      </div>
       <span className={styles.emailText}>{user.email}</span>
-    </span>
+    </div>
 
     <span className={styles.colRoles}>
       {user.roles.length > 0 ? (

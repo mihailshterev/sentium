@@ -37,35 +37,37 @@ const Dashboard = () => {
         }
       />
 
-      <StatCardsRow loading={loading} agentsCount={agents.length} workflowsCount={workflows.length} />
+      <div className={styles.content}>
+        <StatCardsRow loading={loading} agentsCount={agents.length} workflowsCount={workflows.length} />
 
-      <div className={styles.mainGrid}>
-        <div className={styles.section}>
-          <div className={styles.sectionHeader}>
-            <span className={styles.sectionTitle}>Quick Access</span>
-          </div>
-          <QuickAccessGrid onNavigate={navigate} />
-        </div>
-
-        <div className={styles.rightColumn}>
+        <div className={styles.mainGrid}>
           <div className={styles.section}>
             <div className={styles.sectionHeader}>
-              <span className={styles.sectionTitle}>System Modules</span>
+              <span className={styles.sectionTitle}>Quick Access</span>
             </div>
-            <SystemModules services={serviceHealth} />
+            <QuickAccessGrid onNavigate={navigate} />
           </div>
 
-          <div className={styles.section}>
-            <div className={styles.sectionHeader}>
-              <span className={styles.sectionTitle}>Recent Activity</span>
-              <span className={styles.sectionTag}>Live</span>
+          <div className={styles.rightColumn}>
+            <div className={styles.section}>
+              <div className={styles.sectionHeader}>
+                <span className={styles.sectionTitle}>System Modules</span>
+              </div>
+              <SystemModules services={serviceHealth} />
             </div>
-            <ActivityFeed loading={loading} agents={agents} workflows={workflows} />
+
+            <div className={styles.section}>
+              <div className={styles.sectionHeader}>
+                <span className={styles.sectionTitle}>Recent Activity</span>
+                <span className={styles.sectionTag}>Live</span>
+              </div>
+              <ActivityFeed loading={loading} agents={agents} workflows={workflows} />
+            </div>
           </div>
         </div>
+
+        <SecurityRow onNavigate={navigate} />
       </div>
-
-      <SecurityRow onNavigate={navigate} />
     </div>
   );
 };
