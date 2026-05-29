@@ -21,6 +21,7 @@ var identityDb = sql.AddDatabase(ResourceNames.IdentityDb);
 var agentRuntimeDb = sql.AddDatabase(ResourceNames.AgentRuntimeDb);
 var sandboxDb = sql.AddDatabase(ResourceNames.SandboxDb);
 var sentinelDb = sql.AddDatabase(ResourceNames.SentinelDb);
+var registryDb = sql.AddDatabase(ResourceNames.RegistryDb);
 
 var qdrant = builder.AddQdrant(ResourceNames.Qdrant)
     .WithDataVolume();
@@ -99,6 +100,19 @@ var sandboxApi = builder.AddProject<Projects.Sentium_Sandbox_Api>(ServiceNames.S
         url.Url = "/scalar/v1";
     });
 
+var registryApi = builder.AddProject<Projects.Sentium_Registry_Api>(ServiceNames.Registry)
+    .WithReference(registryDb).WaitFor(registryDb)
+    .WithReference(nats).WaitFor(nats)
+    .WithReference(redis).WaitFor(redis)
+    .WithReference(seq).WaitFor(seq)
+    .WithReference(identityApi).WaitFor(identityApi)
+    .WithEnvironment(EnvConfig.Keys.IdentityAuthority, identityApi.GetEndpoint("http"))
+    .WithUrlForEndpoint("https", url =>
+    {
+        url.DisplayText = "Scalar API (Docs)";
+        url.Url = "/scalar/v1";
+    });
+
 var agentRuntimeApi = builder.AddProject<Projects.Sentium_AgentRuntime_Api>(ServiceNames.AgentRuntime)
     .WithReference(ollamaModel).WaitFor(ollamaModel)
     .WithReference(ollamaEmbeddingModel).WaitFor(ollamaEmbeddingModel)
@@ -111,6 +125,7 @@ var agentRuntimeApi = builder.AddProject<Projects.Sentium_AgentRuntime_Api>(Serv
     .WithReference(identityApi).WaitFor(identityApi)
     .WithReference(sentinelApi).WaitFor(sentinelApi)
     .WithReference(sandboxApi).WaitFor(sandboxApi)
+    .WithReference(registryApi).WaitFor(registryApi)
     .WithEnvironment(EnvConfig.Keys.AI.ModelName, ollamaModel.Resource.ModelName)
     .WithEnvironment(EnvConfig.Keys.AI.EmbeddingModelName, ollamaEmbeddingModel.Resource.ModelName)
     .WithEnvironment(EnvConfig.Keys.IdentityAuthority, identityApi.GetEndpoint("http"))
@@ -142,6 +157,7 @@ var apiGateway = builder.AddProject<Projects.Sentium_ApiGateway>(ServiceNames.Ga
     .WithReference(watchdogApi).WaitFor(watchdogApi)
     .WithReference(agentRuntimeApi).WaitFor(agentRuntimeApi)
     .WithReference(sandboxApi).WaitFor(sandboxApi)
+    .WithReference(registryApi).WaitFor(registryApi)
     .WithEnvironment(EnvConfig.Keys.IdentityAuthority, identityApi.GetEndpoint("http"));
 
 var frontend = builder.AddViteApp(ServiceNames.Frontend, "../../clients/sentium-portal")
@@ -155,5 +171,6 @@ sentinelApi.WithParentRelationship(apiGateway);
 watchdogApi.WithParentRelationship(apiGateway);
 agentRuntimeApi.WithParentRelationship(apiGateway);
 sandboxApi.WithParentRelationship(apiGateway);
+registryApi.WithParentRelationship(apiGateway);
 
 builder.Build().Run();

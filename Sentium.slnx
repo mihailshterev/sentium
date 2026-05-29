@@ -18,6 +18,12 @@
     <Project Path="src/services/AgentRuntime/Sentium.AgentRuntime.Core/Sentium.AgentRuntime.Core.csproj" />
     <Project Path="src/services/AgentRuntime/Sentium.AgentRuntime.Infrastructure/Sentium.AgentRuntime.Infrastructure.csproj" />
   </Folder>
+  <Folder Name="/src/services/Registry/">
+    <Project Path="src/services/Registry/Sentium.Registry.Api/Sentium.Registry.Api.csproj" />
+    <Project Path="src/services/Registry/Sentium.Registry.Application/Sentium.Registry.Application.csproj" />
+    <Project Path="src/services/Registry/Sentium.Registry.Core/Sentium.Registry.Core.csproj" />
+    <Project Path="src/services/Registry/Sentium.Registry.Infrastructure/Sentium.Registry.Infrastructure.csproj" />
+  </Folder>
   <Folder Name="/src/services/Gateway/">
     <Project Path="src/services/Gateway/Sentium.ApiGateway.csproj" />
   </Folder>

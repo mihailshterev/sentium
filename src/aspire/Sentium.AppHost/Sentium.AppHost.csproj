@@ -28,5 +28,6 @@
     <ProjectReference Include="..\..\services\Sentinel\Sentium.Sentinel.Api\Sentium.Sentinel.Api.csproj" />
     <ProjectReference Include="..\..\services\Watchdog\Sentium.Watchdog.Api\Sentium.Watchdog.Api.csproj" />
     <ProjectReference Include="..\..\services\Sandbox\Sentium.Sandbox.Api\Sentium.Sandbox.Api.csproj" />
+    <ProjectReference Include="..\..\services\Registry\Sentium.Registry.Api\Sentium.Registry.Api.csproj" />
   </ItemGroup>
 </Project>
