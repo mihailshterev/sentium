@@ -2,7 +2,7 @@ using Sentium.AgentRuntime.Core.Agents;
 using Sentium.AgentRuntime.Core.Conversations;
 using Sentium.AgentRuntime.Core.Learnings;
 using Sentium.AgentRuntime.Core.Rag;
-using Sentium.AgentRuntime.Core.Settings;
+using Sentium.AgentRuntime.Core.Registry;
 using Sentium.AgentRuntime.Core.Skills;
 using Sentium.AgentRuntime.Core.Tools;
 using Sentium.AgentRuntime.Core.WorkflowManagement;
@@ -12,7 +12,7 @@ using Sentium.AgentRuntime.Infrastructure.Conversations;
 using Sentium.AgentRuntime.Infrastructure.Data;
 using Sentium.AgentRuntime.Infrastructure.Learnings;
 using Sentium.AgentRuntime.Infrastructure.Rag;
-using Sentium.AgentRuntime.Infrastructure.Settings;
+using Sentium.AgentRuntime.Infrastructure.Registry;
 using Sentium.AgentRuntime.Infrastructure.Sentinel;
 using Sentium.AgentRuntime.Infrastructure.Skills;
 using Sentium.AgentRuntime.Infrastructure.Skills.BuiltIn;
@@ -97,6 +97,15 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<IEventBus, NatsEventBus>();
 
+        services.AddHttpClient<IRegistryClient, RegistryClient>(client =>
+        {
+            client.BaseAddress = new Uri($"https+http://{ServiceNames.Registry}");
+            client.Timeout = TimeSpan.FromSeconds(10);
+        }).AddStandardResilienceHandler();
+
+        services.AddScoped<IRegistrySettingsService, RegistrySettingsService>();
+        services.AddHostedService<SettingsSyncWorker>();
+
         services.AddSingleton<IEmbeddingService, OllamaEmbeddingService>();
         services.AddSingleton<IVectorRepository, QdrantVectorRepository>();
         services.AddScoped<IDocumentIngestionService, DocumentIngestionService>();
@@ -104,8 +113,6 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ILocalFileService, LocalFileService>();
         services.AddHostedService<FileIngestionWorker>();
 
-        services.AddScoped<ISystemSettingsRepository, SystemSettingsRepository>();
-        services.AddScoped<ISystemSettingsService, SystemSettingsService>();
         services.AddScoped<IAgentLearningRepository, AgentLearningRepository>();
         services.AddScoped<IAgentLearningService, AgentLearningService>();
 
