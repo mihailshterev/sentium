@@ -30,9 +30,9 @@ const SettingsPage = () => {
         subtitle="System configuration and global agent behaviour"
       />
       <SettingsEditor
-        key={`${settings.updatedAt}`}
-        initialPrompt={settings.userHarnessPrompt}
-        initialBuiltIn={settings.isBuiltInHarnessEnabled}
+        key={settings.updatedAt}
+        initialPrompt={settings.harness.userHarnessPrompt}
+        initialBuiltIn={settings.harness.isBuiltInHarnessEnabled}
         updatedBy={settings.updatedBy ?? null}
         save={save}
         isSaving={isSaving}

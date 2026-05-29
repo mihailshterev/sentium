@@ -15,8 +15,6 @@ import type {
 } from "../types/assistant";
 import type { Workspace, WorkspaceFile, CreateWorkspacePayload, UpdateWorkspacePayload } from "../types/workspace";
 import type {
-  SystemSettings,
-  UpdateSystemSettingsPayload,
   AgentLearning,
   AgentLearningStats,
   CaptureAgentLearningPayload,
@@ -152,11 +150,6 @@ export const uploadWorkspaceFile = async (file: File, workspaceId?: string): Pro
 
   return response.json() as Promise<WorkspaceFile>;
 };
-
-export const fetchSystemSettings = (): Promise<SystemSettings> => client.get<SystemSettings>(`${BASE}/system-settings`);
-
-export const updateSystemSettings = (payload: UpdateSystemSettingsPayload): Promise<SystemSettings> =>
-  client.put<SystemSettings>(`${BASE}/system-settings`, payload);
 
 export const fetchAgentLearnings = (agentName?: string, count = 50): Promise<AgentLearning[]> => {
   const params = new URLSearchParams({ count: String(count) });

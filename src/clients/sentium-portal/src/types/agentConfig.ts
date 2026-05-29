@@ -1,13 +1,16 @@
-export interface SystemSettings {
+export interface HarnessSettings {
   userHarnessPrompt: string;
   isBuiltInHarnessEnabled: boolean;
+}
+
+export interface Settings {
+  harness: HarnessSettings;
   updatedAt: string;
   updatedBy: string | null;
 }
 
-export interface UpdateSystemSettingsPayload {
-  userHarnessPrompt: string;
-  isBuiltInHarnessEnabled: boolean;
+export interface UpdateSettingsPayload {
+  harness: HarnessSettings;
 }
 
 export interface AgentLearning {
