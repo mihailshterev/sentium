@@ -104,6 +104,7 @@ public sealed class AssistantController(
         pdpContext.OriginalUserPrompt = pending.OriginalUserPrompt;
         pdpContext.CorrelationId = pending.CorrelationId;
         pdpContext.UserId = pending.UserId;
+        pdpContext.AgentName = pending.AgentName;
 
         var approvalResponseMessage = new ChatMessage(ChatRole.User, [pending.ApprovalRequest.CreateResponse(requestBody.Approved)]);
 
@@ -155,7 +156,8 @@ public sealed class AssistantController(
                         chatHistorySnapshot,
                         OriginalUserPrompt: pdpContext.OriginalUserPrompt,
                         CorrelationId: pdpContext.CorrelationId,
-                        UserId: pdpContext.UserId
+                        UserId: pdpContext.UserId,
+                        AgentName: pdpContext.AgentName
                     );
 
                     approvalStore.Add(approvalRequest.RequestId, approval);
