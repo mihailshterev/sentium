@@ -1,16 +1,23 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useCallback, useRef } from "react";
+import { useParams, useNavigate } from "react-router";
 import { Zap, CheckCircle, Circle, Loader, Terminal, History, Orbit } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import styles from "./agent-orchestration.module.scss";
-import { runWorkflowPipeline, fetchWorkflowRuns, fetchWorkspaces } from "../../services/agentRuntime.service";
+import {
+  runWorkflowPipeline,
+  runDynamicWorkflow,
+  fetchWorkflowRuns,
+  fetchWorkspaces,
+} from "../../services/agentRuntime.service";
 import useWorkflows from "../../hooks/useWorkflows";
+import { useWorkflowRun } from "../../hooks/useWorkflowRuns";
 import type { Phase, LogEntry } from "../../types/orchestration";
 import type { WorkflowRecord } from "../../types/workflows";
 import type { WorkflowRun } from "../../types/workflows";
 import { BASE_URL } from "../../api/client";
 import PageHeader from "../../components/ui/page-header";
 import LogEntryView from "./components/log-entry-view";
-import ExecuteSidebar from "./components/execute-sidebar";
+import ExecuteSidebar, { type ExecuteMode } from "./components/execute-sidebar";
 
 const PHASE_STEPS: { key: Phase; label: string; icon: React.ElementType }[] = [
   { key: "PLANNING", label: "Plan", icon: Circle },
@@ -40,19 +47,21 @@ function coalesceLog(entries: LogEntry[]): LogEntry[] {
 
 const AgentOrchestration = () => {
   const { workflows } = useWorkflows();
+  const { runId } = useParams<{ runId?: string }>();
+  const navigate = useNavigate();
 
-  const [sidebarView, setSidebarView] = useState<"execute" | "history">("execute");
+  const [sidebarView, setSidebarView] = useState<"execute" | "history">(runId ? "history" : "execute");
+  const [executeMode, setExecuteMode] = useState<ExecuteMode>("predefined");
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [phase, setPhase] = useState<Phase>("IDLE");
   const [selectedWorkflow, setSelectedWorkflow] = useState<WorkflowRecord | null>(null);
   const [scenarioInput, setScenarioInput] = useState("");
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string>("");
-  const [selectedRun, setSelectedRun] = useState<WorkflowRun | null>(null);
   const [expandedThoughts, setExpandedThoughts] = useState<Set<string>>(new Set());
 
-  const logsBufferRef = useRef<LogEntry[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const animationFrameRef = useRef<number | null>(null);
+
+  const { run: selectedRun, isLoading: runLoading, error: runError } = useWorkflowRun(runId);
 
   const { data: workspaces = [] } = useQuery({
     queryKey: ["workspaces"],
@@ -65,14 +74,6 @@ const AgentOrchestration = () => {
     enabled: sidebarView === "history",
     refetchInterval: sidebarView === "history" ? 15_000 : false,
   });
-
-  useEffect(() => {
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, []);
 
   const toggleThought = (id: string) =>
     setExpandedThoughts((prev) => {
@@ -90,12 +91,6 @@ const AgentOrchestration = () => {
       const eventSource = new EventSource(`${BASE_URL}/agent-runtime/orchestration/stream/${eventId}`, {
         withCredentials: true,
       });
-
-      const syncLogs = () => {
-        setLogs([...logsBufferRef.current]);
-        animationFrameRef.current = requestAnimationFrame(syncLogs);
-      };
-      animationFrameRef.current = requestAnimationFrame(syncLogs);
 
       eventSource.onmessage = (e) => {
         if (!e.data || e.data === "null") {
@@ -126,18 +121,20 @@ const AgentOrchestration = () => {
           }
 
           if (text) {
-            const current = logsBufferRef.current;
-            const last = current.length - 1;
-            if (
-              (type === "message" || type === "thought") &&
-              last >= 0 &&
-              current[last].author === author &&
-              current[last].type === type
-            ) {
-              current[last].text += text;
-            } else {
-              current.push({ author, text, type });
-            }
+            setLogs((prev) => {
+              const last = prev.length - 1;
+              if (
+                (type === "message" || type === "thought") &&
+                last >= 0 &&
+                prev[last].author === author &&
+                prev[last].type === type
+              ) {
+                const updated = [...prev];
+                updated[last] = { ...prev[last], text: prev[last].text + text };
+                return updated;
+              }
+              return [...prev, { author, text, type }];
+            });
           }
         } catch (err) {
           console.error("Stream error:", err);
@@ -146,10 +143,6 @@ const AgentOrchestration = () => {
 
       eventSource.onerror = () => {
         eventSource.close();
-        if (animationFrameRef.current) {
-          cancelAnimationFrame(animationFrameRef.current);
-        }
-        setLogs([...logsBufferRef.current]);
         setPhase("COMPLETE");
         void refetchRuns();
       };
@@ -157,30 +150,45 @@ const AgentOrchestration = () => {
     [refetchRuns],
   );
 
+  const startLiveRun = useCallback(() => {
+    setLogs([]);
+    setPhase("PLANNING");
+    setSidebarView("execute");
+    if (runId) {
+      navigate("/orchestration");
+    }
+  }, [runId, navigate]);
+
   const runWorkflow = useCallback(async () => {
     if (!selectedWorkflow) {
       return;
     }
     const scenario = scenarioInput.trim() || `Execute workflow: ${selectedWorkflow.name}`;
-    logsBufferRef.current = [];
-    setLogs([]);
-    setSelectedRun(null);
-    setPhase("PLANNING");
-    setSidebarView("execute");
+    startLiveRun();
     const { eventId } = await runWorkflowPipeline({
       workflowId: selectedWorkflow.id,
       scenario,
       ...(selectedWorkspaceId && { workspaceId: selectedWorkspaceId }),
     });
     openStream(eventId);
-  }, [selectedWorkflow, scenarioInput, selectedWorkspaceId, openStream]);
+  }, [selectedWorkflow, scenarioInput, selectedWorkspaceId, openStream, startLiveRun]);
+
+  const runDynamic = useCallback(async () => {
+    const scenario = scenarioInput.trim();
+    if (!scenario) {
+      return;
+    }
+    startLiveRun();
+    const { eventId } = await runDynamicWorkflow({
+      activity: scenario,
+      ...(selectedWorkspaceId && { workspaceId: selectedWorkspaceId }),
+    });
+    openStream(eventId);
+  }, [scenarioInput, selectedWorkspaceId, openStream, startLiveRun]);
 
   const loadRun = (run: WorkflowRun) => {
-    setSelectedRun(run);
-    setLogs([]);
-    logsBufferRef.current = [];
-    setPhase("COMPLETE");
     setExpandedThoughts(new Set());
+    navigate(`/orchestration/runs/${run.id}`);
   };
 
   const getRoleClass = (author: string) => {
@@ -194,9 +202,10 @@ const AgentOrchestration = () => {
     return "roleSquad";
   };
 
-  const isRunning = phase !== "IDLE" && phase !== "COMPLETE";
-  const displayLogs = selectedRun ? coalesceLog(selectedRun.logs) : logs;
-  const displayPhase: Phase = selectedRun ? "COMPLETE" : phase;
+  const viewingRun = !!runId;
+  const isRunning = !viewingRun && phase !== "IDLE" && phase !== "COMPLETE";
+  const displayLogs = viewingRun && selectedRun ? coalesceLog(selectedRun.logs) : logs;
+  const displayPhase: Phase = viewingRun ? "COMPLETE" : phase;
   const displayPhaseIndex = PHASE_ORDER.indexOf(displayPhase);
 
   const formatRunLabel = (run: WorkflowRun) => {
@@ -248,7 +257,7 @@ const AgentOrchestration = () => {
             <span className={styles.logPanelTitle}>
               {selectedRun ? `Replay — ${formatRunTrigger(selectedRun.triggerType)}` : "Output"}
             </span>
-            {displayPhase === "COMPLETE" && !isRunning && (
+            {displayPhase === "COMPLETE" && !isRunning && !viewingRun && (
               <span className={styles.completeBadge}>
                 <CheckCircle size={11} /> Complete
               </span>
@@ -261,21 +270,34 @@ const AgentOrchestration = () => {
           </div>
 
           <div className={styles.logWindow} ref={scrollRef}>
-            {displayLogs.length === 0 && !isRunning && !selectedRun && (
+            {displayLogs.length === 0 && !isRunning && !viewingRun && (
               <div className={styles.logIdle}>
                 <Terminal size={32} className={styles.logIdleIcon} />
                 <p>Select a workflow and execute to start the pipeline</p>
                 <span>Output streams here in real time &bull; History tab shows past runs</span>
               </div>
             )}
-            {displayLogs.length === 0 && selectedRun && (
+            {viewingRun && runLoading && (
+              <div className={styles.logIdle}>
+                <Loader size={28} className={`${styles.logIdleIcon} ${styles.spinIcon}`} />
+                <p>Loading run…</p>
+              </div>
+            )}
+            {viewingRun && !runLoading && (runError || !selectedRun) && (
+              <div className={styles.logIdle}>
+                <History size={28} className={styles.logIdleIcon} />
+                <p>Run not found</p>
+                <span>It may have been removed or never existed</span>
+              </div>
+            )}
+            {displayLogs.length === 0 && viewingRun && !runLoading && selectedRun && (
               <div className={styles.logIdle}>
                 <History size={28} className={styles.logIdleIcon} />
                 <p>No log entries recorded for this run</p>
               </div>
             )}
             {displayLogs.map((log, i) => {
-              const entryId = `${selectedRun?.id ?? "live"}-${i}`;
+              const entryId = `${runId ?? "live"}-${i}`;
               return (
                 <LogEntryView
                   key={entryId}
@@ -298,20 +320,23 @@ const AgentOrchestration = () => {
 
         <ExecuteSidebar
           sidebarView={sidebarView}
+          executeMode={executeMode}
           workflows={workflows}
           workspaces={workspaces}
           workflowRuns={workflowRuns}
           selectedWorkflow={selectedWorkflow}
           selectedWorkspaceId={selectedWorkspaceId}
           scenarioInput={scenarioInput}
-          selectedRun={selectedRun}
+          activeRunId={runId}
           isRunning={isRunning}
           phase={phase}
           onSetSidebarView={setSidebarView}
+          onSetExecuteMode={setExecuteMode}
           onSelectWorkflow={setSelectedWorkflow}
           onSetWorkspaceId={setSelectedWorkspaceId}
           onSetScenarioInput={setScenarioInput}
           onRunWorkflow={runWorkflow}
+          onRunDynamic={runDynamic}
           onLoadRun={loadRun}
           formatRunLabel={formatRunLabel}
           formatRunTrigger={formatRunTrigger}

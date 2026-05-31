@@ -3,11 +3,13 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import useWorkflowRuns from "./useWorkflowRuns";
+import { useWorkflowRun } from "./useWorkflowRuns";
 import * as agentRuntimeService from "../services/agentRuntime.service";
 import type { WorkflowRun } from "../types/workflows";
 
 vi.mock("../services/agentRuntime.service", () => ({
   fetchWorkflowRuns: vi.fn(),
+  fetchWorkflowRun: vi.fn(),
 }));
 
 const createWrapper = () => {
@@ -32,6 +34,7 @@ const mockRun: WorkflowRun = {
 
 beforeEach(() => {
   vi.mocked(agentRuntimeService.fetchWorkflowRuns).mockResolvedValue([mockRun]);
+  vi.mocked(agentRuntimeService.fetchWorkflowRun).mockResolvedValue(mockRun);
 });
 
 describe("useWorkflowRuns fetching", () => {
@@ -66,5 +69,23 @@ describe("useWorkflowRuns fetching", () => {
     const { result } = renderHook(() => useWorkflowRuns(), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.runs).toEqual([]);
+  });
+});
+
+describe("useWorkflowRun fetching", () => {
+  it("does not fetch when runId is undefined", async () => {
+    const spy = vi.spyOn(agentRuntimeService, "fetchWorkflowRun");
+    const { result } = renderHook(() => useWorkflowRun(undefined), { wrapper: createWrapper() });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(result.current.run).toBeUndefined();
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it("fetches and returns run when runId is provided", async () => {
+    const spy = vi.spyOn(agentRuntimeService, "fetchWorkflowRun");
+    const { result } = renderHook(() => useWorkflowRun("run-1"), { wrapper: createWrapper() });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+    expect(spy).toHaveBeenCalledWith("run-1");
+    expect(result.current.run).toEqual(mockRun);
   });
 });

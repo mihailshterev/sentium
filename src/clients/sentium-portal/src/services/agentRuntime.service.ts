@@ -84,6 +84,9 @@ export const runWorkflowPipeline = (payload: RunWorkflowPayload) =>
 export const fetchWorkflowRuns = (count = 15): Promise<WorkflowRun[]> =>
   client.get<WorkflowRun[]>(`${BASE}/workflows/runs?count=${count}`);
 
+export const fetchWorkflowRun = (runId: string): Promise<WorkflowRun> =>
+  client.get<WorkflowRun>(`${BASE}/workflows/runs/${runId}`);
+
 export const sendChatMessage = (payload: ChatPayload, signal?: AbortSignal): Promise<Response> => {
   return fetch(`${BASE_URL}${BASE}/assistant/chat`, {
     method: "POST",

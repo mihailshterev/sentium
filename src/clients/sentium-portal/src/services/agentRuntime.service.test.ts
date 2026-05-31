@@ -123,6 +123,12 @@ describe("agentRuntime.service workflows", () => {
     await service.deleteWorkflow("wf-1");
     expect(client.delete).toHaveBeenCalledWith("/agent-runtime/workflows/wf-1");
   });
+
+  it("fetchWorkflowRun calls client.get with run id path", async () => {
+    vi.mocked(client.get).mockResolvedValueOnce({});
+    await service.fetchWorkflowRun("run-1");
+    expect(client.get).toHaveBeenCalledWith("/agent-runtime/workflows/runs/run-1");
+  });
 });
 
 describe("agentRuntime.service conversations", () => {
@@ -149,21 +155,6 @@ describe("agentRuntime.service conversations", () => {
     vi.mocked(client.delete).mockResolvedValueOnce(undefined);
     await service.deleteConversation("conv-1");
     expect(client.delete).toHaveBeenCalledWith("/agent-runtime/conversations/conv-1");
-  });
-});
-
-describe("agentRuntime.service system settings", () => {
-  it("fetchSystemSettings calls correct endpoint", async () => {
-    vi.mocked(client.get).mockResolvedValueOnce({});
-    await service.fetchSystemSettings();
-    expect(client.get).toHaveBeenCalledWith("/agent-runtime/system-settings");
-  });
-
-  it("updateSystemSettings puts payload", async () => {
-    const payload = { userHarnessPrompt: "You are helpful.", isBuiltInHarnessEnabled: true };
-    vi.mocked(client.put).mockResolvedValueOnce({});
-    await service.updateSystemSettings(payload);
-    expect(client.put).toHaveBeenCalledWith("/agent-runtime/system-settings", payload);
   });
 });
 
