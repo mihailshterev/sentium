@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Sentium.Infrastructure.Security;
@@ -8,9 +8,9 @@ namespace Sentium.Infrastructure.Extensions;
 public static class InternalApiExtensions
 {
     /// <summary>
-    /// Registers the <c>SystemCaller</c> authorization policy and the supporting handler so
-    /// that any endpoint decorated with <see cref="AuthorizeSystemCallerAttribute"/> validates
-    /// the <c>X-Internal-Token</c> header.
+    /// Registers the <c>InternalApiKey</c> authentication scheme and the <c>SystemCaller</c>
+    /// authorization policy so that endpoints decorated with <see cref="AuthorizeSystemAttribute"/>
+    /// accept only internal service-to-service calls authenticated via <c>X-Internal-Token</c>.
     /// </summary>
     public static IHostApplicationBuilder AddInternalApiSecurity(this IHostApplicationBuilder builder)
     {
@@ -19,11 +19,14 @@ public static class InternalApiExtensions
         builder.Services.Configure<InternalApiOptions>(
             builder.Configuration.GetSection(InternalApiOptions.SectionName));
 
-        builder.Services.AddSingleton<IAuthorizationHandler, SystemCallerAuthorizationHandler>();
+        builder.Services.AddAuthentication()
+            .AddScheme<AuthenticationSchemeOptions, InternalApiKeyAuthenticationHandler>(
+                InternalApiKeyDefaults.AuthenticationScheme, _ => { });
 
         builder.Services.AddAuthorizationBuilder()
             .AddPolicy(Policies.SystemCaller, policy =>
-                policy.AddRequirements(new SystemCallerRequirement()));
+                policy.AddAuthenticationSchemes(InternalApiKeyDefaults.AuthenticationScheme)
+                      .RequireAuthenticatedUser());
 
         return builder;
     }

@@ -8,6 +8,13 @@ public static class EnvConfig
         public const string DockerHost = "DOCKER_HOST";
         public const string AcceptEula = "ACCEPT_EULA";
 
+        /// <summary>
+        /// Injects the pre-shared internal API key into all services so they can authenticate
+        /// service-to-service calls via the <c>X-Internal-Token</c> header.
+        /// Maps to <c>InternalApi:ApiKey</c> in service configuration.
+        /// </summary>
+        public const string InternalApiKey = "InternalApi__ApiKey";
+
         public static class AI
         {
             public const string ModelName = "AI__ModelName";

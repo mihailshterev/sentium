@@ -9,5 +9,8 @@ namespace Sentium.Infrastructure.Security;
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method, AllowMultiple = false)]
 public sealed class AuthorizeSystemAttribute : AuthorizeAttribute
 {
-    public AuthorizeSystemAttribute() : base(Policies.SystemCaller) { }
+    public AuthorizeSystemAttribute() : base(Policies.SystemCaller)
+    {
+        AuthenticationSchemes = InternalApiKeyDefaults.AuthenticationScheme;
+    }
 }

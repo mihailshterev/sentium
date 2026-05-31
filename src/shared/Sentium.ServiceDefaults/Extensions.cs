@@ -132,7 +132,7 @@ public static class Extensions
 
         builder.Services.AddHttpClient("IdpClient").AddServiceDiscovery();
 
-        builder.Services.AddAuthentication()
+        builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>
             {
                 options.Authority = identityAuthority;

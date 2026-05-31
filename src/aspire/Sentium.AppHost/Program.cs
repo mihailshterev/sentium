@@ -13,6 +13,7 @@ var nats = builder.AddNats(ResourceNames.Nats)
 var redis = builder.AddRedis(ResourceNames.Redis);
 
 var sqlPassword = builder.AddParameter("sql-password", secret: true);
+var internalApiKey = builder.AddParameter("internal-api-key", secret: true);
 
 var sql = builder.AddSqlServer(ResourceNames.Sql, password: sqlPassword)
     .WithDataVolume();
@@ -75,6 +76,7 @@ var sentinelApi = builder.AddProject<Projects.Sentium_Sentinel_Api>(ServiceNames
     .WithReference(identityApi).WaitFor(identityApi)
     .WithReference(ollama).WaitFor(ollama)
     .WithEnvironment(EnvConfig.Keys.IdentityAuthority, identityApi.GetEndpoint("http"))
+    .WithEnvironment(EnvConfig.Keys.InternalApiKey, internalApiKey)
     .WithUrlForEndpoint("https", url =>
     {
         url.DisplayText = "Scalar API (Docs)";
@@ -94,6 +96,7 @@ var sandboxApi = builder.AddProject<Projects.Sentium_Sandbox_Api>(ServiceNames.S
     .WithReference(identityApi).WaitFor(identityApi)
     .WithEnvironment(EnvConfig.Keys.IdentityAuthority, identityApi.GetEndpoint("http"))
     .WithEnvironment(EnvConfig.Keys.DockerHost, dockerHost)
+    .WithEnvironment(EnvConfig.Keys.InternalApiKey, internalApiKey)
     .WithUrlForEndpoint("https", url =>
     {
         url.DisplayText = "Scalar API (Docs)";
@@ -129,6 +132,7 @@ var agentRuntimeApi = builder.AddProject<Projects.Sentium_AgentRuntime_Api>(Serv
     .WithEnvironment(EnvConfig.Keys.AI.ModelName, ollamaModel.Resource.ModelName)
     .WithEnvironment(EnvConfig.Keys.AI.EmbeddingModelName, ollamaEmbeddingModel.Resource.ModelName)
     .WithEnvironment(EnvConfig.Keys.IdentityAuthority, identityApi.GetEndpoint("http"))
+    .WithEnvironment(EnvConfig.Keys.InternalApiKey, internalApiKey)
     .WithExternalHttpEndpoints()
     .WithUrlForEndpoint("https", url =>
     {
