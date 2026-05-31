@@ -16,6 +16,7 @@ public sealed class WorkflowManager(AgentRuntimeDbContext context) : IWorkflowMa
             .OrderByDescending(w => w.CreatedAt)
             .Select(w => new WorkflowResponse(
                 w.Id,
+                w.UserId,
                 w.Name,
                 w.Description,
                 w.CreatedAt,
@@ -37,6 +38,7 @@ public sealed class WorkflowManager(AgentRuntimeDbContext context) : IWorkflowMa
 
         return new WorkflowResponse(
             workflow.Id,
+            workflow.UserId,
             workflow.Name,
             workflow.Description,
             workflow.CreatedAt,
@@ -68,6 +70,7 @@ public sealed class WorkflowManager(AgentRuntimeDbContext context) : IWorkflowMa
 
         return new WorkflowResponse(
             workflow.Id,
+            workflow.UserId,
             workflow.Name,
             workflow.Description,
             workflow.CreatedAt,

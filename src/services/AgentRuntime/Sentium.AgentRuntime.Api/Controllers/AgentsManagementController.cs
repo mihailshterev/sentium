@@ -5,40 +5,78 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Sentium.AgentRuntime.Api.Controllers;
 
+/// <summary>
+/// Controller for managing agents.
+/// </summary>
 [ApiController]
 [Authorize]
 [Route("agents")]
 public sealed class AgentsManagementController(IAgentService agentService) : ControllerBase
 {
+    /// <summary>
+    /// Returns a list of all agents
+    /// </summary>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>List of agents</returns>
     [HttpGet]
-    public async ValueTask<IActionResult> GetAgents(CancellationToken ct)
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async ValueTask<ActionResult<IReadOnlyList<AgentResponse>>> GetAgents(CancellationToken ct)
     {
         var agents = await agentService.GetAgentsAsync(ct);
         return Ok(agents);
     }
 
+    /// <summary>
+    /// Returns an agent by its ID
+    /// </summary>
+    /// <param name="agentId">Agent ID</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>Agent details</returns>
     [HttpGet("{agentId:guid}")]
-    public async ValueTask<IActionResult> GetAgentById(Guid agentId, CancellationToken ct)
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async ValueTask<ActionResult<AgentResponse>> GetAgentById(Guid agentId, CancellationToken ct)
     {
         var agent = await agentService.GetAgentByIdAsync(agentId, ct);
         return Ok(agent);
     }
 
+    /// <summary>
+    /// Creates a new agent based on the provided configuration
+    /// </summary>
+    /// <param name="request">Agent creation request</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>Created agent details</returns>
     [HttpPost]
-    public async ValueTask<IActionResult> CreateAgent([FromBody] CreateAgentRequest request, CancellationToken ct)
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    public async ValueTask<ActionResult<AgentResponse>> CreateAgent([FromBody] CreateAgentRequest request, CancellationToken ct)
     {
         var result = await agentService.CreateAgentAsync(request, ct);
         return CreatedAtAction(nameof(GetAgentById), new { agentId = result.Id }, result);
     }
 
+    /// <summary>
+    /// Updates an existing agent based on the provided configuration
+    /// </summary>
+    /// <param name="agentId">Agent ID</param>
+    /// <param name="request">Agent update request</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>No content</returns>
     [HttpPut("{agentId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async ValueTask<IActionResult> UpdateAgent(Guid agentId, [FromBody] UpdateAgentRequest request, CancellationToken ct)
     {
         await agentService.UpdateAgentAsync(agentId, request, ct);
         return NoContent();
     }
 
+    /// <summary>
+    /// Deletes an agent by its ID. This will remove the agent and all its associated data, including sessions and learnings.
+    /// </summary>
+    /// <param name="agentId">Agent ID</param>
+    /// <param name="ct">Cancellation token</param>
+    /// <returns>No content</returns>
     [HttpDelete("{agentId:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async ValueTask<IActionResult> DeleteAgent(Guid agentId, CancellationToken ct)
     {
         await agentService.DeleteAgentAsync(agentId, ct);

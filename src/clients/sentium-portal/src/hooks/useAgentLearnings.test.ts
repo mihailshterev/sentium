@@ -9,7 +9,6 @@ import type { AgentLearning, AgentLearningStats } from "../types/agentConfig";
 vi.mock("../services/agentRuntime.service", () => ({
   fetchAgentLearnings: vi.fn(),
   fetchAgentLearningStats: vi.fn(),
-  captureAgentLearning: vi.fn(),
   updateAgentLearning: vi.fn(),
   deleteAgentLearning: vi.fn(),
 }));
@@ -30,18 +29,19 @@ const mockLearning: AgentLearning = {
   conversationId: null,
   capturedAt: "2025-01-01T00:00:00Z",
   isIngested: false,
+  isGlobal: false,
 };
 
 const mockStats: AgentLearningStats = {
   totalLearnings: 5,
   pendingIngestion: 2,
   learningsByAgent: { SecurityAnalyst: 3, Planner: 2 },
+  globalLearnings: 1,
 };
 
 beforeEach(() => {
   vi.mocked(agentRuntimeService.fetchAgentLearnings).mockResolvedValue([mockLearning]);
   vi.mocked(agentRuntimeService.fetchAgentLearningStats).mockResolvedValue(mockStats);
-  vi.mocked(agentRuntimeService.captureAgentLearning).mockResolvedValue(mockLearning);
   vi.mocked(agentRuntimeService.updateAgentLearning).mockResolvedValue(mockLearning);
   vi.mocked(agentRuntimeService.deleteAgentLearning).mockResolvedValue(undefined);
 });
@@ -81,11 +81,6 @@ describe("useAgentLearnings fetching", () => {
 });
 
 describe("useAgentLearnings mutation state", () => {
-  it("isCapturing is false initially", () => {
-    const { result } = renderHook(() => useAgentLearnings(), { wrapper: createWrapper() });
-    expect(result.current.isCapturing).toBe(false);
-  });
-
   it("isUpdating is false initially", () => {
     const { result } = renderHook(() => useAgentLearnings(), { wrapper: createWrapper() });
     expect(result.current.isUpdating).toBe(false);
@@ -94,24 +89,6 @@ describe("useAgentLearnings mutation state", () => {
   it("isDeleting is false initially", () => {
     const { result } = renderHook(() => useAgentLearnings(), { wrapper: createWrapper() });
     expect(result.current.isDeleting).toBe(false);
-  });
-
-  it("capture is a function", () => {
-    const { result } = renderHook(() => useAgentLearnings(), { wrapper: createWrapper() });
-    expect(typeof result.current.capture).toBe("function");
-  });
-});
-
-describe("useAgentLearnings capture()", () => {
-  it("calls captureAgentLearning with the correct payload", async () => {
-    const { result } = renderHook(() => useAgentLearnings(), { wrapper: createWrapper() });
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-
-    const payload = { agentName: "SecurityAnalyst", content: "New insight", tags: "threat" };
-    act(() => {
-      result.current.capture(payload);
-    });
-    await waitFor(() => expect(agentRuntimeService.captureAgentLearning).toHaveBeenCalledWith(payload));
   });
 });
 

@@ -57,7 +57,7 @@ public sealed class DynamicCustomWorkflow(
         {
             var agentDetails = await agentManager.GetAgentByIdAsync(agentRef.AgentId, ct);
             var agentModel = !string.IsNullOrWhiteSpace(agentDetails.Model) ? agentDetails.Model : null;
-            var agent = await factory.CreateAsync(agentDetails.Name, overrideInstructions: agentDetails.Description, overrideModel: agentModel, ct: ct);
+            var agent = await factory.CreateAsync(agentDetails.Name, overrideInstructions: agentDetails.Description, overrideModel: agentModel, actingUserId: trigger.UserId, ct: ct);
             squadAgents.Add(agent);
         }
 
@@ -121,6 +121,12 @@ public sealed class DynamicCustomWorkflow(
             explanation = $"Custom workflow '{workflowDef.Name}' completed with no output.";
         }
 
-        return new WorkflowResult { Explanation = explanation, StreamLog = streamLog.Entries };
+        return new WorkflowResult
+        {
+            Explanation = explanation,
+            StreamLog = streamLog.Entries,
+            WorkflowId = workflowId,
+            UserId = workflowDef.UserId
+        };
     }
 }

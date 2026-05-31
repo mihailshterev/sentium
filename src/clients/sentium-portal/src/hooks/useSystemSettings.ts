@@ -1,21 +1,21 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchSystemSettings, updateSystemSettings } from "../services/agentRuntime.service";
-import type { UpdateSystemSettingsPayload } from "../types/agentConfig";
+import { fetchSettings, updateSettings } from "../services/registry.service";
+import type { UpdateSettingsPayload } from "../types/agentConfig";
 
-const SETTINGS_KEY = ["system-settings"] as const;
+const SETTINGS_KEY = ["app-settings"] as const;
 
 export const useSystemSettings = () => {
   const qc = useQueryClient();
 
   const query = useQuery({
     queryKey: SETTINGS_KEY,
-    queryFn: fetchSystemSettings,
+    queryFn: fetchSettings,
     staleTime: 30_000,
     retry: 1,
   });
 
   const mutation = useMutation({
-    mutationFn: (payload: UpdateSystemSettingsPayload) => updateSystemSettings(payload),
+    mutationFn: (payload: UpdateSettingsPayload) => updateSettings(payload),
     onSuccess: (updated) => {
       qc.setQueryData(SETTINGS_KEY, updated);
     },

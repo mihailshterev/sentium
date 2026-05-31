@@ -25,6 +25,8 @@ public sealed class SentinelGuardedAIFunction(
     {
         ArgumentNullException.ThrowIfNull(arguments);
 
+        pdpContext.AgentName = agentName;
+
         var request = new PdpRequest
         {
             AgentId = agentName,

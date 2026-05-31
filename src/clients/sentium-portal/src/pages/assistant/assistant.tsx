@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
+import { useParams, useNavigate } from "react-router";
 import styles from "./assistant.module.scss";
-import { ChevronRight, Brain, ChevronDown } from "lucide-react";
+import { ChevronRight, ChevronDown, BotMessageSquare, Loader } from "lucide-react";
 import {
   fetchConversation,
   sendChatMessage,
@@ -20,6 +21,7 @@ import MessageBubble, { STATUS_MESSAGES } from "./components/message-bubble";
 import WelcomeScreen from "./components/welcome-screen";
 import ChatInputBar from "./components/chat-input-bar";
 import ConversationSidebar from "./components/conversation-sidebar";
+import ConfirmDialog from "../../components/ui/confirm-dialog";
 
 type ContextPill = { type: "workspace" | "file"; id: string; label: string };
 
@@ -75,6 +77,9 @@ const Assistant = () => {
 
   const { models } = useModels();
 
+  const { conversationId: routeConversationId } = useParams<{ conversationId?: string }>();
+  const navigate = useNavigate();
+
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -86,6 +91,9 @@ const Assistant = () => {
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [statusIndex, setStatusIndex] = useState(0);
   const [statusVisible, setStatusVisible] = useState(true);
+
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [conversationToDelete, setConversationToDelete] = useState<string | null>(null);
 
   const toggleThought = (id: string) =>
     setExpandedThoughts((prev) => {
@@ -137,6 +145,51 @@ const Assistant = () => {
       setModel(models[0]);
     }
   }, [models, model, setModel]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (routeConversationId) {
+      if (routeConversationId === activeConversationId) {
+        return;
+      }
+      fetchConversation(routeConversationId)
+        .then((data) => {
+          if (cancelled) {
+            return;
+          }
+          const loadedMessages: ConversationMessage[] = (data.messages ?? []).map(
+            (m: {
+              id: string;
+              role: "user" | "assistant";
+              content: string;
+              timestamp: string;
+              thought?: string;
+              toolCalls?: string[];
+            }) => ({
+              id: m.id,
+              role: m.role,
+              content: m.content,
+              thought: m.thought,
+              toolCalls: m.toolCalls,
+              timestamp: new Date(m.timestamp),
+            }),
+          );
+          setActiveConversation(routeConversationId, loadedMessages, data.model);
+          setModel(data.model);
+        })
+        .catch(() => {
+          if (!cancelled) {
+            navigate("/assistant", { replace: true });
+          }
+        });
+    } else if (activeConversationId) {
+      clearConversation();
+    }
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routeConversationId]);
 
   useEffect(() => {
     if (!isTyping) {
@@ -208,30 +261,9 @@ const Assistant = () => {
     }
   };
 
-  const loadConversation = async (conv: ConversationSummary) => {
-    try {
-      const data = await fetchConversation(conv.id);
-      const loadedMessages: ConversationMessage[] = (data.messages ?? []).map(
-        (m: {
-          id: string;
-          role: "user" | "assistant";
-          content: string;
-          timestamp: string;
-          thought?: string;
-          toolCalls?: string[];
-        }) => ({
-          id: m.id,
-          role: m.role,
-          content: m.content,
-          thought: m.thought,
-          toolCalls: m.toolCalls,
-          timestamp: new Date(m.timestamp),
-        }),
-      );
-      setActiveConversation(conv.id, loadedMessages, conv.model);
-      setModel(conv.model);
-    } catch {
-      // non-blocking
+  const loadConversation = (conv: ConversationSummary) => {
+    if (conv.id !== activeConversationId) {
+      navigate(`/assistant/${conv.id}`);
     }
   };
 
@@ -248,6 +280,7 @@ const Assistant = () => {
     try {
       const data = await createConversation({ title, model });
       setActiveConversation(data.id, [], model);
+      navigate(`/assistant/${data.id}`);
       return data.id;
     } catch {
       return null;
@@ -256,13 +289,31 @@ const Assistant = () => {
 
   const deleteConversation = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    deleteConversationMutate(id, {
+    setConversationToDelete(id);
+    setIsConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!conversationToDelete) return;
+
+    deleteConversationMutate(conversationToDelete, {
       onSuccess: () => {
-        if (activeConversationId === id) {
-          clearConversation();
+        if (activeConversationId === conversationToDelete) {
+          navigate("/assistant");
         }
+        setIsConfirmOpen(false);
+        setConversationToDelete(null);
+      },
+      onError: () => {
+        setIsConfirmOpen(false);
+        setConversationToDelete(null);
       },
     });
+  };
+
+  const handleCancelDelete = () => {
+    setIsConfirmOpen(false);
+    setConversationToDelete(null);
   };
 
   const handleStop = () => {
@@ -525,6 +576,7 @@ const Assistant = () => {
   };
 
   const isEmpty = messages.length === 0 && !isTyping;
+  const isLoadingConversation = !!routeConversationId && routeConversationId !== activeConversationId;
   const conversationGroups = groupConversationsByDate(conversations);
 
   const resizeTextareaOnInput = (value: string) => {
@@ -539,7 +591,7 @@ const Assistant = () => {
     <div className={styles.container}>
       <div className={styles.chatWrapper}>
         <PageHeader
-          icon={<Brain size={20} className={styles.headerIcon} />}
+          icon={<BotMessageSquare size={20} className={styles.headerIcon} />}
           title="Assistant"
           subtitle="Chat with the Sentium assistant"
           right={
@@ -566,7 +618,12 @@ const Assistant = () => {
         />
 
         <div className={styles.chatArea} ref={chatAreaRef}>
-          {isEmpty ? (
+          {isLoadingConversation ? (
+            <div className={styles.loadingConversation}>
+              <Loader size={22} className={styles.statusSpinner} />
+              <span>Loading conversation…</span>
+            </div>
+          ) : isEmpty ? (
             <WelcomeScreen suggestions={randomizedSuggestions} onSelectSuggestion={(s) => setInput(s)} />
           ) : (
             <div className={styles.messagesArea}>
@@ -612,7 +669,7 @@ const Assistant = () => {
         isOpen={sidebarOpen}
         conversations={conversations}
         conversationGroups={conversationGroups}
-        activeConversationId={activeConversationId}
+        activeConversationId={routeConversationId ?? activeConversationId}
         model={model}
         models={models}
         isCreating={isCreating}
@@ -628,6 +685,17 @@ const Assistant = () => {
         onToggleExpandWorkspace={(wsId) => setExpandedWorkspace((v) => (v === wsId ? null : wsId))}
         onInjectWorkspaceContext={injectWorkspaceContext}
         onInjectFileContext={injectFileContext}
+      />
+
+      <ConfirmDialog
+        open={isConfirmOpen}
+        variant="danger"
+        title="Delete Conversation"
+        description="Are you sure you want to delete this conversation? This action cannot be undone."
+        confirmLabel="Delete Chat"
+        cancelLabel="Cancel"
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
       />
     </div>
   );

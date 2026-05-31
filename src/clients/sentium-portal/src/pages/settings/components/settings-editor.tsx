@@ -1,17 +1,18 @@
 import { useEffect, useRef } from "react";
-import { useForm, Controller, useWatch } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CheckCircle, Loader, Shield, X, Zap } from "lucide-react";
 import styles from "../settings.module.scss";
 import StatusMessage from "../../../components/ui/status-message";
 import FormField from "../../../components/ui/form-field";
 import { settingsEditorSchema, type SettingsEditorFormData } from "../../../schemas/settings.editor";
+import type { UpdateSettingsPayload } from "../../../types/agentConfig";
 
 interface SettingsEditorProps {
   initialPrompt: string;
   initialBuiltIn: boolean;
   updatedBy: string | null;
-  save: (payload: { userHarnessPrompt: string; isBuiltInHarnessEnabled: boolean }) => void;
+  save: (payload: UpdateSettingsPayload) => void;
   isSaving: boolean;
   isSaveSuccess: boolean;
   isSaveError: boolean;
@@ -34,16 +35,15 @@ const SettingsEditor = ({
     register,
     handleSubmit,
     control,
+    watch,
     formState: { isDirty },
   } = useForm<SettingsEditorFormData>({
     resolver: zodResolver(settingsEditorSchema),
     defaultValues: { prompt: initialPrompt, builtInEnabled: initialBuiltIn },
   });
 
-  const prompt = useWatch({
-    control,
-    name: "prompt",
-  });
+  // eslint-disable-next-line react-hooks/incompatible-library
+  const prompt = watch("prompt") ?? "";
 
   const successTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -59,7 +59,12 @@ const SettingsEditor = ({
   }, [isSaveSuccess, resetSave]);
 
   const onSubmit = (data: SettingsEditorFormData) => {
-    save({ userHarnessPrompt: data.prompt, isBuiltInHarnessEnabled: data.builtInEnabled });
+    save({
+      harness: {
+        userHarnessPrompt: data.prompt,
+        isBuiltInHarnessEnabled: data.builtInEnabled,
+      },
+    });
   };
 
   const charsRemaining = 16000 - prompt.length;
@@ -137,7 +142,7 @@ const SettingsEditor = ({
               <StatusMessage
                 variant="success"
                 icon={<CheckCircle size={14} />}
-                message="Settings saved. Changes will take effect within 30 seconds."
+                message="Settings saved. Changes will take effect on the next agent interaction."
               />
             )}
 

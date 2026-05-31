@@ -1,56 +1,12 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap");
+@use "./styles/tokens";
+@use "./styles/animations";
+@use "./styles/glass";
 
 :root {
-  --bg-base: #08080a;
-  --bg-surface: #0f0f13;
-  --bg-elevated: #141418;
-  --bg-hover: #1a1a20;
-  --terminal-bg: #08080a;
-  --bg-dark: #050507;
-  --card-bg: #0f0f13;
-
-  --border-subtle: #1c1c22;
-  --border-color: #222228;
-  --border-strong: #2e2e36;
-
-  --text-primary: #f0f0f4;
-  --text-secondary: #a0a0b0;
-  --text-muted: #606070;
-  --text-dim: #3a3a48;
-
-  --accent-green: #22c55e;
-  --accent-green-glow: rgba(34, 197, 94, 0.35);
-  --accent-green-subtle: rgba(34, 197, 94, 0.08);
-  --terminal-accent: #22c55e;
-  --terminal-accent-glow: rgba(34, 197, 94, 0.35);
-
-  --accent-blue: #3b82f6;
-  --accent-blue-glow: rgba(59, 130, 246, 0.35);
-  --accent-blue-subtle: rgba(59, 130, 246, 0.08);
-
-  --accent-purple: #a855f7;
-  --accent-purple-glow: rgba(168, 85, 247, 0.35);
-  --accent-purple-subtle: rgba(168, 85, 247, 0.08);
-
-  --accent-amber: #f59e0b;
-  --accent-amber-glow: rgba(245, 158, 11, 0.35);
-
-  --accent-red: #ef4444;
-  --accent-red-glow: rgba(239, 68, 68, 0.35);
-  --accent-red-subtle: rgba(239, 68, 68, 0.08);
-
-  --accent-cyan: #06b6d4;
-  --accent-cyan-subtle: rgba(6, 182, 212, 0.08);
-
-  --glass-bg: rgba(15, 15, 19, 0.88);
-  --transition-base: 155ms ease;
-  --radius-sm: 7px;
-  --radius-md: 11px;
-  --radius-lg: 14px;
-  --radius-full: 9999px;
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35);
-
-  --role-width: 160px;
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  color-scheme: light;
 }
 
 *,
@@ -67,46 +23,66 @@ body,
   width: 100vw;
   height: 100vh;
   background-color: var(--bg-base);
-  font-family:
-    "Inter",
-    system-ui,
-    -apple-system,
-    sans-serif;
+  font-family: var(--font-sans);
   overflow: hidden;
   color: var(--text-primary);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition:
+    background-color var(--transition-base),
+    color var(--transition-base);
 }
 
-/* Scrollbar */
+#root {
+  background-color: transparent;
+}
+
+body {
+  font-size: var(--text-base);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--border-strong) transparent;
 }
 *::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
 }
 *::-webkit-scrollbar-track {
   background: transparent;
 }
 *::-webkit-scrollbar-thumb {
   background: var(--border-strong);
-  border-radius: 99px;
+  border-radius: var(--radius-full);
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: #3e3e50;
+  background: var(--text-dim);
+}
+
+.status-dot {
+  width: 7px;
+  height: 7px;
+  background: var(--accent);
+  border-radius: 50%;
+  box-shadow: 0 0 6px var(--accent-glow);
+  animation: statusPulse 3s ease-in-out infinite;
 }
 
 .roleSecurity {
   color: var(--accent-blue);
-  border-color: rgba(59, 130, 246, 0.4);
+  border-color: var(--accent-blue-border);
   background: var(--accent-blue-subtle);
 }
 .roleSummarizer {
   color: var(--accent-amber);
-  border-color: rgba(245, 158, 11, 0.4);
-  background: rgba(245, 158, 11, 0.08);
+  border-color: var(--accent-amber-border);
+  background: var(--accent-amber-subtle);
 }
 .roleSystem {
   color: var(--text-muted);
@@ -115,47 +91,26 @@ body,
 }
 .roleForensics {
   color: var(--accent-purple);
-  border-color: rgba(168, 85, 247, 0.4);
+  border-color: var(--accent-purple-border);
   background: var(--accent-purple-subtle);
 }
 .roleIntel {
-  color: #f43f5e;
-  border-color: rgba(244, 63, 94, 0.4);
-  background: rgba(244, 63, 94, 0.08);
+  color: var(--accent-red);
+  border-color: var(--accent-red-border);
+  background: var(--accent-red-subtle);
 }
 .rolePlanner {
   color: var(--accent-purple);
-  border-color: rgba(168, 85, 247, 0.4);
+  border-color: var(--accent-purple-border);
   background: var(--accent-purple-subtle);
 }
 .roleValidator {
   color: var(--accent-green);
-  border-color: rgba(34, 197, 94, 0.4);
+  border-color: var(--accent-green-border);
   background: var(--accent-green-subtle);
 }
 .roleSquad {
   color: var(--accent-blue);
-  border-color: rgba(59, 130, 246, 0.4);
+  border-color: var(--accent-blue-border);
   background: var(--accent-blue-subtle);
-}
-
-.status-dot {
-  width: 7px;
-  height: 7px;
-  background: var(--accent-green);
-  border-radius: 50%;
-  box-shadow: 0 0 6px var(--accent-green-glow);
-  animation: statusPulse 3s ease-in-out infinite;
-}
-
-@keyframes statusPulse {
-  0%,
-  100% {
-    opacity: 1;
-    box-shadow: 0 0 6px var(--accent-green-glow);
-  }
-  50% {
-    opacity: 0.7;
-    box-shadow: 0 0 12px var(--accent-green-glow);
-  }
 }

@@ -1,12 +1,15 @@
 .layoutWrapper {
+  position: relative;
   display: flex;
   flex-direction: row;
   height: 100vh;
   overflow: hidden;
-  background-color: var(--bg-base);
+  background-color: transparent;
 }
 
 .contentArea {
+  position: relative;
+  z-index: var(--z-base);
   flex: 1;
   min-width: 0;
   display: flex;

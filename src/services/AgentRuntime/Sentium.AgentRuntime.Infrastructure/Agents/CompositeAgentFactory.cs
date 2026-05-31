@@ -1,5 +1,5 @@
 using Sentium.AgentRuntime.Core.Agents;
-using Sentium.AgentRuntime.Core.Settings;
+using Sentium.AgentRuntime.Core.Registry;
 using Sentium.AgentRuntime.Core.Tools;
 using Sentium.AgentRuntime.Infrastructure.Tools;
 using Sentium.AgentRuntime.Infrastructure.Skills;
@@ -20,7 +20,7 @@ public sealed class CompositeAgentFactory(
     OllamaOptions ollamaOptions,
     IAgentToolProvider agentToolProvider,
     IAgentManager agentManager,
-    ISystemSettingsService systemSettingsService,
+    IRegistrySettingsService registrySettingsService,
     IServiceProvider serviceProvider,
     IHttpClientFactory httpClientFactory,
     DynamicSkillsProvider dynamicSkillsProvider,
@@ -32,7 +32,7 @@ public sealed class CompositeAgentFactory(
     private bool defaultInitialized;
     private readonly Lock syncLock = new();
 
-    public async Task<AIAgent> CreateAsync(string agentName, string? overrideInstructions = null, string? overrideModel = null, CancellationToken ct = default)
+    public async Task<AIAgent> CreateAsync(string agentName, string? overrideInstructions = null, string? overrideModel = null, Guid? actingUserId = null, CancellationToken ct = default)
     {
         EnsureDefaultIsHarnessed();
 
@@ -40,6 +40,13 @@ public sealed class CompositeAgentFactory(
         if (definition is null)
         {
             throw new InvalidOperationException($"Agent '{agentName}' could not be resolved.");
+        }
+
+        pdpContext.AgentName = definition.Name;
+
+        if (actingUserId is { } uid)
+        {
+            pdpContext.UserId = uid;
         }
 
         var tools = agentToolProvider.GetToolsForAgent(definition.Name, ct);
@@ -112,7 +119,7 @@ public sealed class CompositeAgentFactory(
                 return;
             }
 
-            var harnessedDefault = new HarnessedChatClient(defaultChatClient, systemSettingsService);
+            var harnessedDefault = new HarnessedChatClient(defaultChatClient, registrySettingsService);
             clientCache.TryAdd(ollamaOptions.DefaultModel, harnessedDefault);
             defaultInitialized = true;
         }
@@ -137,7 +144,7 @@ public sealed class CompositeAgentFactory(
 
             return ollamaClient
                 .AddSentiumPipeline()
-                .AsHarnessed(systemSettingsService);
+                .AsHarnessed(registrySettingsService);
         });
     }
 

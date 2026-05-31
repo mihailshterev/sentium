@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { BrainCircuit, RefreshCw, HardDrive, Info, X, Loader } from "lucide-react";
 import styles from "./models.module.scss";
 import useOllamaModels from "../../hooks/useOllamaModels";
@@ -5,6 +6,7 @@ import PageHeader from "../../components/ui/page-header";
 import EmptyState from "../../components/ui/empty-state";
 import ModelCard from "./components/model-card";
 import PullModelForm from "./components/pull-model-form";
+import ConfirmDialog from "../../components/ui/confirm-dialog";
 
 const Models = () => {
   const {
@@ -21,17 +23,20 @@ const Models = () => {
     clearDeleteResult,
   } = useOllamaModels();
 
+  const [pendingDeleteName, setPendingDeleteName] = useState<string | null>(null);
+
   const isPulling = pullState !== null && !pullState.done;
 
-  const handlePull = (modelName: string) => {
-    pull(modelName);
-  };
+  const handlePull = (modelName: string) => pull(modelName);
 
-  const handleDelete = (name: string) => {
-    if (!confirm(`Delete model "${name}"? This cannot be undone.`)) {
+  const handleDelete = (name: string) => setPendingDeleteName(name);
+
+  const confirmDelete = () => {
+    if (!pendingDeleteName) {
       return;
     }
-    deleteModel(name);
+    deleteModel(pendingDeleteName);
+    setPendingDeleteName(null);
   };
 
   const getPullPercent = (): number | null => {
@@ -119,6 +124,17 @@ const Models = () => {
           />
         </div>
       </div>
+
+      <ConfirmDialog
+        open={pendingDeleteName !== null}
+        variant="danger"
+        title="Delete model?"
+        description={`"${pendingDeleteName}" will be removed from Ollama. Any agents using it will be reset to the default model.`}
+        confirmLabel="Delete model"
+        confirmWord={pendingDeleteName ?? undefined}
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDeleteName(null)}
+      />
     </div>
   );
 };

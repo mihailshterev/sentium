@@ -3,8 +3,8 @@ import { renderHook, act, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import { useSystemSettings } from "./useSystemSettings";
-import * as agentRuntimeService from "../services/agentRuntime.service";
-import type { SystemSettings } from "../types/agentConfig";
+import * as registryService from "../services/registry.service";
+import type { Settings } from "../types/agentConfig";
 
 const createWrapper = () => {
   const qc = new QueryClient({
@@ -14,18 +14,20 @@ const createWrapper = () => {
     React.createElement(QueryClientProvider, { client: qc }, children);
 };
 
-const mockSettings: SystemSettings = {
-  userHarnessPrompt: "You are a helpful assistant.",
-  isBuiltInHarnessEnabled: true,
+const mockSettings: Settings = {
+  harness: {
+    userHarnessPrompt: "You are a helpful assistant.",
+    isBuiltInHarnessEnabled: true,
+  },
   updatedAt: "2025-01-01T00:00:00Z",
   updatedBy: null,
 };
 
 beforeEach(() => {
-  vi.spyOn(agentRuntimeService, "fetchSystemSettings").mockResolvedValue(mockSettings);
-  vi.spyOn(agentRuntimeService, "updateSystemSettings").mockResolvedValue({
+  vi.spyOn(registryService, "fetchSettings").mockResolvedValue(mockSettings);
+  vi.spyOn(registryService, "updateSettings").mockResolvedValue({
     ...mockSettings,
-    userHarnessPrompt: "Updated prompt",
+    harness: { ...mockSettings.harness, userHarnessPrompt: "Updated prompt" },
   });
 });
 
@@ -43,7 +45,7 @@ describe("useSystemSettings fetching", () => {
   });
 
   it("exposes error when fetch fails (query settles to error state)", async () => {
-    vi.spyOn(agentRuntimeService, "fetchSystemSettings").mockRejectedValue(new Error("Server error"));
+    vi.spyOn(registryService, "fetchSettings").mockRejectedValue(new Error("Server error"));
     const { result } = renderHook(() => useSystemSettings(), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.error).not.toBeNull(), { timeout: 5000 });
     expect(result.current.error).toBeTruthy();
@@ -82,23 +84,21 @@ describe("useSystemSettings save mutation", () => {
   });
 
   it("updates cache after successful save via setQueryData", async () => {
-    const spy = vi.spyOn(agentRuntimeService, "updateSystemSettings");
+    const spy = vi.spyOn(registryService, "updateSettings");
     const { result } = renderHook(() => useSystemSettings(), { wrapper: createWrapper() });
 
     await waitFor(() => expect(result.current.settings).toEqual(mockSettings));
 
     act(() => {
       result.current.save({
-        userHarnessPrompt: "Updated prompt",
-        isBuiltInHarnessEnabled: false,
+        harness: { userHarnessPrompt: "Updated prompt", isBuiltInHarnessEnabled: true },
       });
     });
 
     await waitFor(() => expect(result.current.isSaveSuccess).toBe(true));
     expect(spy).toHaveBeenCalledWith({
-      userHarnessPrompt: "Updated prompt",
-      isBuiltInHarnessEnabled: false,
+      harness: { userHarnessPrompt: "Updated prompt", isBuiltInHarnessEnabled: true },
     });
-    expect(result.current.settings?.userHarnessPrompt).toBe("Updated prompt");
+    expect(result.current.settings?.harness.userHarnessPrompt).toBe("Updated prompt");
   });
 });

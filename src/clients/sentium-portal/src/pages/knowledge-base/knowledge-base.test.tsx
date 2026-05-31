@@ -18,6 +18,7 @@ const mockStats: AgentLearningStats = {
   totalLearnings: 42,
   pendingIngestion: 3,
   learningsByAgent: { ReconAgent: 20, AnalysisAgent: 22 },
+  globalLearnings: 5,
 };
 
 const mockLearning: AgentLearning = {
@@ -28,6 +29,7 @@ const mockLearning: AgentLearning = {
   conversationId: null,
   capturedAt: "2025-01-01T10:00:00Z",
   isIngested: true,
+  isGlobal: false,
 };
 
 const defaultKbHook = {

@@ -48,7 +48,7 @@ public sealed class ExecuteJob(IHttpClientFactory httpClientFactory, ILogger<Exe
             };
 
             var correlationId = $"cron-{context.Trigger.Key.Name}";
-            requestMessage.Headers.Add(HeaderNames.CorrelationId, correlationId);
+            requestMessage.Headers.Add(CommonHeaderNames.CorrelationId, correlationId);
 
             var response = await client.SendAsync(requestMessage, context.CancellationToken);
 

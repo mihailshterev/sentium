@@ -2,7 +2,7 @@ using Sentium.AgentRuntime.Core.Agents;
 using Sentium.AgentRuntime.Core.Conversations;
 using Sentium.AgentRuntime.Core.Learnings;
 using Sentium.AgentRuntime.Core.Rag;
-using Sentium.AgentRuntime.Core.Settings;
+using Sentium.AgentRuntime.Core.Registry;
 using Sentium.AgentRuntime.Core.Skills;
 using Sentium.AgentRuntime.Core.Tools;
 using Sentium.AgentRuntime.Core.WorkflowManagement;
@@ -12,7 +12,7 @@ using Sentium.AgentRuntime.Infrastructure.Conversations;
 using Sentium.AgentRuntime.Infrastructure.Data;
 using Sentium.AgentRuntime.Infrastructure.Learnings;
 using Sentium.AgentRuntime.Infrastructure.Rag;
-using Sentium.AgentRuntime.Infrastructure.Settings;
+using Sentium.AgentRuntime.Infrastructure.Registry;
 using Sentium.AgentRuntime.Infrastructure.Sentinel;
 using Sentium.AgentRuntime.Infrastructure.Skills;
 using Sentium.AgentRuntime.Infrastructure.Skills.BuiltIn;
@@ -20,6 +20,7 @@ using Sentium.AgentRuntime.Infrastructure.Tools;
 using Sentium.AgentRuntime.Infrastructure.WorkflowManagement;
 using Sentium.AgentRuntime.Infrastructure.WorkspaceManagement;
 using Sentium.Infrastructure.Messaging;
+using Sentium.Infrastructure.Security;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -97,6 +98,15 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<IEventBus, NatsEventBus>();
 
+        services.AddHttpClient<IRegistryClient, RegistryClient>(client =>
+        {
+            client.BaseAddress = new Uri($"https+http://{ServiceNames.Registry}");
+            client.Timeout = TimeSpan.FromSeconds(10);
+        }).AddStandardResilienceHandler();
+
+        services.AddScoped<IRegistrySettingsService, RegistrySettingsService>();
+        services.AddHostedService<SettingsSyncWorker>();
+
         services.AddSingleton<IEmbeddingService, OllamaEmbeddingService>();
         services.AddSingleton<IVectorRepository, QdrantVectorRepository>();
         services.AddScoped<IDocumentIngestionService, DocumentIngestionService>();
@@ -104,9 +114,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ILocalFileService, LocalFileService>();
         services.AddHostedService<FileIngestionWorker>();
 
-        services.AddScoped<ISystemSettingsRepository, SystemSettingsRepository>();
-        services.AddScoped<ISystemSettingsService, SystemSettingsService>();
         services.AddScoped<IAgentLearningRepository, AgentLearningRepository>();
+        services.AddScoped<ILearningSanitizationPipeline, LearningSanitizationPipeline>();
         services.AddScoped<IAgentLearningService, AgentLearningService>();
 
         services.AddSingleton<IBuiltInSkillCatalog, BuiltInSkillCatalog>();
@@ -156,19 +165,27 @@ public static class ServiceCollectionExtensions
 
         builder.Services.AddQuartzHostedService(options => options.WaitForJobsToComplete = true);
 
+        services.Configure<InternalApiOptions>(builder.Configuration.GetSection(InternalApiOptions.SectionName));
+
+        services.AddTransient<InternalApiKeyDelegatingHandler>();
+
         services.AddHttpClient<SentinelClient>(client =>
         {
             client.BaseAddress = new Uri($"https+http://{ServiceNames.Sentinel}");
             client.Timeout = TimeSpan.FromSeconds(10);
-        });
+        }).AddHttpMessageHandler<InternalApiKeyDelegatingHandler>();
 
         services.AddHttpClient(ServiceNames.Sandbox, client =>
         {
             client.BaseAddress = new Uri($"https+http://{ServiceNames.Sandbox}");
             client.Timeout = TimeSpan.FromSeconds(120);
-        }).AddStandardResilienceHandler();
+        }).AddHttpMessageHandler<InternalApiKeyDelegatingHandler>().AddStandardResilienceHandler();
 
         services.AddScoped<IPdpContextAccessor, PdpContextAccessor>();
+
+        services.AddHttpContextAccessor();
+        services.AddScoped<SystemScopeContext>();
+        services.AddScoped<ICurrentUser, CurrentUser>();
 
         return builder;
     }

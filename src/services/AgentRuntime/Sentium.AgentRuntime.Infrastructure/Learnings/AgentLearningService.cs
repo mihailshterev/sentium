@@ -10,6 +10,7 @@ public sealed class AgentLearningService(
     IAgentLearningRepository repository,
     IDocumentIngestionService ingestionService,
     IVectorRepository vectorRepository,
+    ILearningSanitizationPipeline sanitizationPipeline,
     ILogger<AgentLearningService> logger) : IAgentLearningService
 {
     private const string LearningsCollection = "agent_learnings";
@@ -28,11 +29,36 @@ public sealed class AgentLearningService(
     {
         ArgumentNullException.ThrowIfNull(request);
 
+        var content = request.Content;
+        var isGlobal = false;
+
+        if (request.RequestGlobal)
+        {
+            var verdict = await sanitizationPipeline.EvaluateForGlobalAsync(request.Content, request.Tags, request.AgentName, ct);
+
+            if (verdict.DuplicateOfId is { } duplicateId)
+            {
+                logger.LogInformation("Skipped global capture for agent {AgentName}: equivalent global learning {LearningId} already exists.", request.AgentName, duplicateId);
+
+                return new AgentLearningResponse(duplicateId, request.AgentName, verdict.SanitizedContent, request.Tags, request.ConversationId, DateTimeOffset.UtcNow, IsIngested: true, IsGlobal: true);
+            }
+
+            isGlobal = verdict.Approved;
+            content = verdict.Approved ? verdict.SanitizedContent : request.Content;
+
+            if (!verdict.Approved)
+            {
+                logger.LogInformation("Global capture for agent {AgentName} kept private: {Reason}", request.AgentName, verdict.Reason);
+            }
+        }
+
         var entity = new AgentLearning
         {
             Id = Guid.NewGuid(),
+            UserId = request.UserId,
+            IsGlobal = isGlobal,
             AgentName = request.AgentName,
-            Content = request.Content,
+            Content = content,
             Tags = request.Tags,
             ConversationId = request.ConversationId,
             CapturedAt = DateTimeOffset.UtcNow,
@@ -45,7 +71,7 @@ public sealed class AgentLearningService(
 
         return new AgentLearningResponse(
             entity.Id, entity.AgentName, entity.Content, entity.Tags,
-            entity.ConversationId, entity.CapturedAt, entity.IsIngested);
+            entity.ConversationId, entity.CapturedAt, entity.IsIngested, entity.IsGlobal);
     }
 
     public async Task DeleteAsync(Guid id, CancellationToken ct = default)
@@ -79,11 +105,17 @@ public sealed class AgentLearningService(
 
         return new AgentLearningResponse(
             entity.Id, entity.AgentName, entity.Content, entity.Tags,
-            entity.ConversationId, entity.CapturedAt, entity.IsIngested);
+            entity.ConversationId, entity.CapturedAt, entity.IsIngested, entity.IsGlobal);
     }
 
     private async Task IngestLearningAsync(AgentLearning entity, CancellationToken ct)
     {
+        if (!entity.IsGlobal && entity.UserId is null)
+        {
+            logger.LogInformation("Skipping vector ingestion for ownerless, non-global learning {LearningId} — no retrieval scope.", entity.Id);
+            return;
+        }
+
         try
         {
             var markdownContent = FormatAsMarkdown(entity);
@@ -93,12 +125,15 @@ public sealed class AgentLearningService(
                 Content = markdownContent,
                 Source = $"{SourcePrefix}{entity.Id}",
                 SourceType = IngestionSourceType.AgentLearning,
+                Scope = entity.IsGlobal ? KnowledgeScope.Shared : KnowledgeScope.User,
+                UserId = entity.IsGlobal ? null : entity.UserId,
                 Metadata = new Dictionary<string, string>
                 {
                     { "agent_name", entity.AgentName },
                     { "tags", entity.Tags },
                     { "captured_at", entity.CapturedAt.ToString("O") },
-                    { "learning_id", entity.Id.ToString() }
+                    { "learning_id", entity.Id.ToString() },
+                    { "origin_user_id", entity.UserId?.ToString() ?? string.Empty }
                 }
             };
 

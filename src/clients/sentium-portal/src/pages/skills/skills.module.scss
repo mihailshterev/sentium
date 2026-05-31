@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  background-color: var(--bg-base);
+  background-color: transparent;
   color: var(--text-primary);
   overflow: hidden;
   position: relative;
@@ -55,8 +55,9 @@
   height: 64px;
   padding: 0 1.75rem;
   border-bottom: 1px solid var(--border-subtle);
-  background: rgba(15, 15, 19, 0.85);
-  backdrop-filter: blur(8px);
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(var(--blur-md)) saturate(140%);
+  -webkit-backdrop-filter: blur(var(--blur-md)) saturate(140%);
   flex-shrink: 0;
   gap: 1rem;
 }
@@ -92,9 +93,10 @@
   display: flex;
   gap: 2px;
   padding: 0 1.75rem;
-  border-bottom: 1px solid var(--border-subtle);
-  background: rgba(15, 15, 19, 0.7);
-  backdrop-filter: blur(6px);
+  border-bottom: 1px solid var(--glass-border);
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(var(--blur-md)) saturate(140%);
+  -webkit-backdrop-filter: blur(var(--blur-md)) saturate(140%);
   flex-shrink: 0;
 }
 
@@ -138,11 +140,12 @@
 }
 
 .card {
-  background: rgba(15, 15, 19, 0.82);
+  background: var(--glass-bg-strong);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  backdrop-filter: blur(6px);
+  backdrop-filter: blur(var(--blur-sm));
+  -webkit-backdrop-filter: blur(var(--blur-sm));
 }
 
 .cardHeader {
@@ -206,7 +209,7 @@
 }
 
 .skillRow {
-  background: rgba(8, 8, 10, 0.6);
+  background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   padding: 0.875rem 1rem;
@@ -258,7 +261,7 @@
 .instructions {
   margin: 4px 0 0;
   padding: 0.75rem 1rem;
-  background: rgba(0, 0, 0, 0.4);
+  background: var(--bg-elevated);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
   font-size: 0.74rem;
@@ -313,7 +316,7 @@
 }
 
 .formCard {
-  background: rgba(8, 8, 10, 0.8);
+  background: var(--bg-surface);
   border: 1px solid var(--accent-purple);
   border-radius: var(--radius-md);
   padding: 1.25rem;
@@ -347,7 +350,7 @@
 .input,
 .textarea {
   padding: 8px 12px;
-  background: rgba(8, 8, 10, 0.9);
+  background: var(--bg-surface);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
   color: var(--text-primary);
@@ -496,9 +499,13 @@
 }
 
 .loadingText {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: 0.8rem;
   color: var(--text-muted);
   margin: 0;
+  padding: 1rem 0;
 }
 
 .errorText {

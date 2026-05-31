@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchWorkflowRuns } from "../services/agentRuntime.service";
+import { fetchWorkflowRuns, fetchWorkflowRun } from "../services/agentRuntime.service";
 import type { WorkflowRun } from "../types/workflows";
 
 export default function useWorkflowRuns(count = 15) {
@@ -13,4 +13,15 @@ export default function useWorkflowRuns(count = 15) {
     runs: data ?? [],
     isLoading,
   };
+}
+
+export function useWorkflowRun(runId: string | undefined) {
+  const { data, isLoading, error } = useQuery<WorkflowRun>({
+    queryKey: ["workflow-run", runId],
+    queryFn: () => fetchWorkflowRun(runId as string),
+    enabled: !!runId,
+    retry: false,
+  });
+
+  return { run: data, isLoading, error };
 }

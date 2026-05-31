@@ -43,7 +43,7 @@ public sealed class DynamicDiscoveryWorkflow(
         var dbAgentModelMap = dbAgents.ToDictionary(a => a.Name, a => a.Model, StringComparer.OrdinalIgnoreCase);
 
         var plannerInstructions = BuildPlannerInstructions(dbAgents);
-        var planner = await factory.CreateAsync(AgentRole.Planner, overrideInstructions: plannerInstructions, ct: ct);
+        var planner = await factory.CreateAsync(AgentRole.Planner, overrideInstructions: plannerInstructions, actingUserId: trigger.UserId, ct: ct);
         var plannerSession = await planner.CreateSessionAsync(ct);
 
         var streamLog = new StreamLogAccumulator();
@@ -78,7 +78,7 @@ public sealed class DynamicDiscoveryWorkflow(
         var rolesToExecute = LlmParser.ParseAgentRoles(rawPlanBuilder.ToString(), dbAgentMap, registry);
         if (rolesToExecute.Count == 0)
         {
-            return new WorkflowResult { Explanation = "Planner failed to identify required agents.", StreamLog = streamLog.Entries };
+            return new WorkflowResult { Explanation = "Planner failed to identify required agents.", StreamLog = streamLog.Entries, UserId = trigger.UserId };
         }
 
         var squadAgents = new List<AIAgent>();
@@ -86,7 +86,7 @@ public sealed class DynamicDiscoveryWorkflow(
         {
             var overrideInstructions = dbAgentMap.TryGetValue(role, out var desc) ? desc : null;
             var overrideModel = dbAgentModelMap.TryGetValue(role, out var mdl) && !string.IsNullOrWhiteSpace(mdl) ? mdl : null;
-            var agent = await factory.CreateAsync(role, overrideInstructions: overrideInstructions, overrideModel: overrideModel, ct: ct);
+            var agent = await factory.CreateAsync(role, overrideInstructions: overrideInstructions, overrideModel: overrideModel, actingUserId: trigger.UserId, ct: ct);
             squadAgents.Add(agent);
         }
 
@@ -131,7 +131,7 @@ public sealed class DynamicDiscoveryWorkflow(
             }
         }
 
-        var validator = await factory.CreateAsync(AgentRole.Validator, ct: ct);
+        var validator = await factory.CreateAsync(AgentRole.Validator, actingUserId: trigger.UserId, ct: ct);
         var validatorSession = await validator.CreateSessionAsync(ct);
 
         var squadFindingsSb = new StringBuilder();
@@ -170,7 +170,7 @@ public sealed class DynamicDiscoveryWorkflow(
             }
         }
 
-        return LlmParser.ParseWorkflowResult(finalFullResponse.ToString(), rolesToExecute, streamLog.Entries);
+        return LlmParser.ParseWorkflowResult(finalFullResponse.ToString(), rolesToExecute, streamLog.Entries, trigger.UserId);
     }
 
     private string BuildPlannerInstructions(IReadOnlyList<Core.Dtos.AgentResponse> dbAgents)

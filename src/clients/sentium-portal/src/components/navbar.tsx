@@ -25,6 +25,7 @@ import styles from "./navbar.module.scss";
 import React from "react";
 import { useAuthStore } from "../stores/auth-store";
 import { useRole } from "../hooks/useRole";
+import ThemeToggle from "./ui/theme-toggle";
 
 interface NavLinkItem {
   to: string;
@@ -173,6 +174,7 @@ const Navbar = () => {
           <span className={styles.buildDot}></span>
           <span>v0.1.0-alpha</span>
         </div>
+        <ThemeToggle />
       </div>
     </nav>
   );

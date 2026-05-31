@@ -1,13 +1,16 @@
-export interface SystemSettings {
+export interface HarnessSettings {
   userHarnessPrompt: string;
   isBuiltInHarnessEnabled: boolean;
+}
+
+export interface Settings {
+  harness: HarnessSettings;
   updatedAt: string;
   updatedBy: string | null;
 }
 
-export interface UpdateSystemSettingsPayload {
-  userHarnessPrompt: string;
-  isBuiltInHarnessEnabled: boolean;
+export interface UpdateSettingsPayload {
+  harness: HarnessSettings;
 }
 
 export interface AgentLearning {
@@ -18,19 +21,14 @@ export interface AgentLearning {
   conversationId: string | null;
   capturedAt: string;
   isIngested: boolean;
+  isGlobal: boolean;
 }
 
 export interface AgentLearningStats {
   totalLearnings: number;
   pendingIngestion: number;
+  globalLearnings: number;
   learningsByAgent: Record<string, number>;
-}
-
-export interface CaptureAgentLearningPayload {
-  agentName: string;
-  content: string;
-  tags?: string;
-  conversationId?: string;
 }
 
 export interface KnowledgeBaseCollectionStats {

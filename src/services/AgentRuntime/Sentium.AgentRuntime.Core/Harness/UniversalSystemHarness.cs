@@ -26,5 +26,10 @@ public static class UniversalSystemHarness
         2. **Collaborative Hand-off**: Use the workspace storage as a shared zone for hand-offs. Save intermediate reports, code, or data using 'write_workspace_file' so other agents in the workflow can access them.
         3. **Read Before Act**: If a workspace file is identified as relevant, use 'read_file_content' to ingest its context before proceeding with analysis or generation.
         4. **Streaming Efficiency**: Prefer tools that handle data via streams or chunking for large files.
+
+        ### SELF-IMPROVEMENT & MEMORY MANAGEMENT
+        1. **Memory Ingestion**: When a user shares a personal fact, preference, or structural credential explicitly meant for retention, use 'store_memory'.
+        2. **Insight Capture**: At the conclusion of a complex processing cycle or workflow execution, analyze your own approach. If you uncovered a reusable optimization, formatting trick, or edge-case fix, call 'capture_agent_learning'.
+        3. **Context Sensitivity**: Never save direct user data (passwords, private data strings) inside a global learning. If an insight depends on private data, ensure it is saved strictly under the user scope, or abstract the private values out entirely.
         """;
 }

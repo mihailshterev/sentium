@@ -1,6 +1,5 @@
-import { Brain } from "lucide-react";
 import Markdown from "react-markdown";
-import { ChevronDown, Wrench, Check, Copy } from "lucide-react";
+import { ChevronDown, Wrench, Check, Copy, BotMessageSquare, Brain } from "lucide-react";
 import styles from "../assistant.module.scss";
 import type { ConversationMessage } from "../../../types/assistant";
 
@@ -58,7 +57,7 @@ const MessageBubble = ({
     <div className={`${styles.messageWrapper} ${msg.role === "user" ? styles.wrapperUser : styles.wrapperAi}`}>
       {msg.role === "assistant" && (
         <div className={`${styles.avatar} ${styles.avatarAi}`}>
-          <Brain size={13} />
+          <BotMessageSquare size={13} />
         </div>
       )}
       <div className={`${styles.message} ${msg.role === "user" ? styles.messageUser : styles.messageAi}`}>

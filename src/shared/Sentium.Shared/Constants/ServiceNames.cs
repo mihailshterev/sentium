@@ -10,4 +10,5 @@ public static class ServiceNames
     public const string Sandbox = "sandbox";
     public const string Frontend = "frontend";
     public const string IdentityUi = "identity-ui";
+    public const string Registry = "registry";
 }

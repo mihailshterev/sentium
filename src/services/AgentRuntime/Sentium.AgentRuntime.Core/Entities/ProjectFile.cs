@@ -10,12 +10,17 @@ namespace Sentium.AgentRuntime.Core.Entities;
 /// Files go through an ingestion pipeline (<see cref="FileProcessingStatus"/>) for RAG vectorization
 /// and semantic search integration.
 /// </remarks>
-public sealed class ProjectFile
+public sealed class ProjectFile : IUserOwned
 {
     /// <summary>
     /// Gets or sets the unique identifier for this project file.
     /// </summary>
     public Guid Id { get; set; }
+
+    /// <summary>
+    /// Gets or sets the id of the user who owns this file.
+    /// </summary>
+    public Guid UserId { get; set; }
 
     /// <summary>
     /// Gets or sets the identifier of the workspace this file belongs to.

@@ -1,4 +1,4 @@
-import { useForm, useWatch } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Download, X, Loader, CheckCircle, AlertCircle } from "lucide-react";
 import styles from "../models.module.scss";
@@ -32,15 +32,13 @@ const PullModelForm = ({
   onResetPull,
   getPullPercent,
 }: PullModelFormProps) => {
-  const { register, handleSubmit, control } = useForm<ModelPullFormData>({
+  const { register, handleSubmit, watch } = useForm<ModelPullFormData>({
     resolver: zodResolver(modelPullSchema),
     defaultValues: { modelName: "" },
   });
 
-  const modelName = useWatch({
-    control,
-    name: "modelName",
-  });
+  // eslint-disable-next-line react-hooks/incompatible-library
+  const modelName = watch("modelName") ?? "";
 
   const handleFormSubmit = (data: ModelPullFormData) => {
     onSubmit(data.modelName.trim());

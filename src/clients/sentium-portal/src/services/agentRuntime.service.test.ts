@@ -123,6 +123,12 @@ describe("agentRuntime.service workflows", () => {
     await service.deleteWorkflow("wf-1");
     expect(client.delete).toHaveBeenCalledWith("/agent-runtime/workflows/wf-1");
   });
+
+  it("fetchWorkflowRun calls client.get with run id path", async () => {
+    vi.mocked(client.get).mockResolvedValueOnce({});
+    await service.fetchWorkflowRun("run-1");
+    expect(client.get).toHaveBeenCalledWith("/agent-runtime/workflows/runs/run-1");
+  });
 });
 
 describe("agentRuntime.service conversations", () => {
@@ -152,21 +158,6 @@ describe("agentRuntime.service conversations", () => {
   });
 });
 
-describe("agentRuntime.service system settings", () => {
-  it("fetchSystemSettings calls correct endpoint", async () => {
-    vi.mocked(client.get).mockResolvedValueOnce({});
-    await service.fetchSystemSettings();
-    expect(client.get).toHaveBeenCalledWith("/agent-runtime/system-settings");
-  });
-
-  it("updateSystemSettings puts payload", async () => {
-    const payload = { userHarnessPrompt: "You are helpful.", isBuiltInHarnessEnabled: true };
-    vi.mocked(client.put).mockResolvedValueOnce({});
-    await service.updateSystemSettings(payload);
-    expect(client.put).toHaveBeenCalledWith("/agent-runtime/system-settings", payload);
-  });
-});
-
 describe("agentRuntime.service agent learnings", () => {
   it("fetchAgentLearnings calls correct endpoint without agentName filter", async () => {
     vi.mocked(client.get).mockResolvedValueOnce([]);
@@ -178,13 +169,6 @@ describe("agentRuntime.service agent learnings", () => {
     vi.mocked(client.get).mockResolvedValueOnce([]);
     await service.fetchAgentLearnings("MyAgent");
     expect(client.get).toHaveBeenCalledWith(expect.stringContaining("agentName=MyAgent"));
-  });
-
-  it("captureAgentLearning posts payload to correct endpoint", async () => {
-    const payload = { agentName: "Bot", content: "I learned X", tags: "knowledge" };
-    vi.mocked(client.post).mockResolvedValueOnce({});
-    await service.captureAgentLearning(payload);
-    expect(client.post).toHaveBeenCalledWith("/agent-runtime/agent-learnings", payload);
   });
 
   it("deleteAgentLearning deletes by id", async () => {

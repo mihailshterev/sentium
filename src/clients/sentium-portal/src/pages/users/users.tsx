@@ -9,12 +9,16 @@ import PageHeader from "../../components/ui/page-header";
 import EmptyState from "../../components/ui/empty-state";
 import SkeletonRows from "./components/skeleton-rows";
 import UserRow from "./components/user-row";
+import ConfirmDialog from "../../components/ui/confirm-dialog"; // Added import
 
 const ROLE_OPTIONS = ROLE_HIERARCHY as readonly Role[];
 
 export default function Users() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
+
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<{ id: string; identifier: string } | null>(null);
 
   const { isSovereign } = useRole();
   const currentUser = useAuthStore((s) => s.user);
@@ -44,19 +48,40 @@ export default function Users() {
     }
   };
 
-  const handleDeleteUser = async (userId: string) => {
-    if (!window.confirm("Are you sure you want to permanently delete this user?")) {
+  const handleDeleteUser = (userId: string) => {
+    const targetUser = users.find((u) => u.id === userId);
+    const fullName = targetUser ? `${targetUser.firstName} ${targetUser.lastName || ""}`.trim() : "";
+
+    const identifier = fullName || targetUser?.email || "this user";
+
+    setUserToDelete({ id: userId, identifier });
+    setIsConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!userToDelete) {
       return;
     }
+
     setActionError(null);
-    setPendingUserId(userId);
+    setPendingUserId(userToDelete.id);
+    const targetId = userToDelete.id;
+
+    setIsConfirmOpen(false);
+    setUserToDelete(null);
+
     try {
-      await deleteUser(userId);
+      await deleteUser(targetId);
     } catch (err: unknown) {
       setActionError(err instanceof Error ? err.message : "Failed to delete user.");
     } finally {
       setPendingUserId(null);
     }
+  };
+
+  const handleCancelDelete = () => {
+    setIsConfirmOpen(false);
+    setUserToDelete(null);
   };
 
   const isSelf = (userId: string) => currentUser?.sub === userId;
@@ -103,8 +128,8 @@ export default function Users() {
           </div>
 
           <div className={styles.tableHeader}>
-            <span className={styles.colName}>Name</span>
-            <span className={styles.colEmail}>Email</span>
+            <span className={styles.colAvatar} />
+            <span className={styles.colUser}>User</span>
             <span className={styles.colRoles}>Roles</span>
             {isSovereign && <span className={styles.colAssign}>Assign / Remove</span>}
             {isSovereign && <span className={styles.colActions} />}
@@ -135,6 +160,18 @@ export default function Users() {
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={isConfirmOpen}
+        variant="danger"
+        title="Permanently Delete User"
+        description={`Are you sure you want to permanently delete "${userToDelete?.identifier || ""}"? This user will immediately lose access and all related configurations will be lost.`}
+        confirmLabel="Delete User"
+        cancelLabel="Cancel"
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+        confirmWord={userToDelete?.identifier ?? undefined}
+      />
     </div>
   );
 }

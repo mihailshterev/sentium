@@ -21,7 +21,6 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<IRateLimitStore, InMemoryRateLimitStore>();
 
-        services.AddSingleton<IPdpPolicy, InvariantGuardPolicy>();
         services.AddSingleton<IPdpPolicy, RateLimitingPolicy>();
 
         return services;

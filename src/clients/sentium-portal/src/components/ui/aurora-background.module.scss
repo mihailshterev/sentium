@@ -1,0 +1,52 @@
+.aurora {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-aurora);
+  overflow: hidden;
+  pointer-events: none;
+  background: var(--bg-base);
+  transition: background var(--transition-base);
+}
+
+.blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  will-change: transform;
+}
+
+.blob1 {
+  width: 48vw;
+  height: 48vw;
+  top: -14vw;
+  left: -10vw;
+  background: radial-gradient(circle, var(--aurora-1), transparent 70%);
+  animation: auroraDrift 26s ease-in-out infinite;
+}
+
+.blob2 {
+  width: 42vw;
+  height: 42vw;
+  top: -8vw;
+  right: -12vw;
+  background: radial-gradient(circle, var(--aurora-2), transparent 70%);
+  animation: auroraDrift 33s ease-in-out infinite reverse;
+}
+
+.blob3 {
+  width: 46vw;
+  height: 46vw;
+  bottom: -18vw;
+  left: 8vw;
+  background: radial-gradient(circle, var(--aurora-3), transparent 70%);
+  animation: auroraDrift 30s ease-in-out infinite;
+}
+
+.blob4 {
+  width: 34vw;
+  height: 34vw;
+  bottom: -12vw;
+  right: 2vw;
+  background: radial-gradient(circle, var(--aurora-4), transparent 70%);
+  animation: auroraDrift 37s ease-in-out infinite reverse;
+}

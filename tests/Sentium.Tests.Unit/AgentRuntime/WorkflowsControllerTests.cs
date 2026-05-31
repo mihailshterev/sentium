@@ -20,7 +20,7 @@ public sealed class WorkflowsControllerTests
     }
 
     private static WorkflowResponse MakeResponse(Guid? id = null) =>
-        new(id ?? Guid.NewGuid(), "WF", "desc", DateTime.UtcNow, DateTime.UtcNow, []);
+        new(id ?? Guid.NewGuid(), Guid.NewGuid(), "WF", "desc", DateTime.UtcNow, DateTime.UtcNow, []);
 
     [Fact]
     public async Task GetWorkflows_ReturnsOkWithList()

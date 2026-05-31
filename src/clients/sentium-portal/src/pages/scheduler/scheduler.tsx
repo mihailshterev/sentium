@@ -3,23 +3,30 @@ import { useState } from "react";
 import { useSchedulerJobs, useDeleteJobMutation } from "../../hooks/useScheduler";
 import styles from "./scheduler.module.scss";
 import PageHeader from "../../components/ui/page-header";
+import ConfirmDialog from "../../components/ui/confirm-dialog";
+
+type PendingDelete = { agentId: string; jobId: string } | null;
 
 const Scheduler = () => {
   const { jobs, isLoading, refetch } = useSchedulerJobs();
   const deleteMutation = useDeleteJobMutation();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<PendingDelete>(null);
 
   const toggleRow = (id: string) => setExpandedId((prev) => (prev === id ? null : id));
 
-  const handleDeleteJob = async (e: React.MouseEvent, agentId: string, jobId: string) => {
+  const handleDeleteJob = (e: React.MouseEvent, agentId: string, jobId: string) => {
     e.stopPropagation();
+    setPendingDelete({ agentId, jobId });
+  };
 
-    if (window.confirm(`Are you sure you want to terminate background job: ${jobId}?`)) {
-      try {
-        await deleteMutation.mutateAsync({ agentId, jobId });
-      } catch (err) {
-        console.error("Failed to delete scheduled job from cluster context:", err);
-      }
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    setPendingDelete(null);
+    try {
+      await deleteMutation.mutateAsync(pendingDelete);
+    } catch (err) {
+      console.error("Failed to delete scheduled job from cluster context:", err);
     }
   };
 
@@ -169,6 +176,16 @@ const Scheduler = () => {
           </div>
         </div>
       </div>
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        variant="danger"
+        title="Terminate scheduled job?"
+        description={`Job "${pendingDelete?.jobId}" will be halted and removed from the cluster. All cron loops tied to it will stop immediately across all pods.`}
+        confirmLabel="Terminate job"
+        onConfirm={confirmDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
     </div>
   );
 };

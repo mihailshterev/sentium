@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Sentium.Infrastructure.Extensions;
+using Sentium.Infrastructure.Security;
 using Sentium.Sandbox.Application.Artifacts;
 using Sentium.Sandbox.Application.Options;
 using Sentium.Sandbox.Application.Sentinel;
@@ -21,6 +22,8 @@ public static class ServiceCollectionExtensions
     public static IHostApplicationBuilder AddSandboxInfrastructure(this IHostApplicationBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
+
+        builder.AddInternalApiSecurity();
 
         var services = builder.Services;
 
@@ -51,10 +54,14 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IJobDirectoryService, JobDirectoryService>();
         services.AddSingleton<ISandboxRunner, DockerSandboxRunner>();
 
+        services.AddHttpContextAccessor();
+
+        services.AddTransient<InternalApiKeyDelegatingHandler>();
+
         services.AddHttpClient<ISentinelGateway, HttpSentinelGateway>(client =>
         {
             client.BaseAddress = new Uri($"https+http://{ServiceNames.Sentinel}");
-        }).AddStandardResilienceHandler();
+        }).AddHttpMessageHandler<InternalApiKeyDelegatingHandler>().AddStandardResilienceHandler();
 
         return builder;
     }
