@@ -3,6 +3,7 @@ using NSubstitute;
 using Sentium.AgentRuntime.Application.Agents;
 using Sentium.AgentRuntime.Core.Agents;
 using Sentium.AgentRuntime.Core.Dtos;
+using Sentium.Infrastructure.Security;
 using Xunit;
 
 namespace Sentium.Tests.Unit.AgentRuntime;
@@ -10,11 +11,13 @@ namespace Sentium.Tests.Unit.AgentRuntime;
 public sealed class AgentServiceTests
 {
     private readonly IAgentManager _manager = Substitute.For<IAgentManager>();
+    private readonly ICurrentUser _currentUser = Substitute.For<ICurrentUser>();
     private readonly AgentService _service;
 
     public AgentServiceTests()
     {
-        _service = new AgentService(_manager, new PassThroughHybridCache());
+        _currentUser.UserId.Returns(Guid.NewGuid());
+        _service = new AgentService(_manager, new PassThroughHybridCache(), _currentUser);
     }
 
     private static AgentResponse MakeResponse(Guid? id = null, string name = "TestAgent") =>

@@ -18,7 +18,7 @@ public sealed class WorkflowServiceTests
     }
 
     private static WorkflowResponse MakeResponse(Guid? id = null) =>
-        new(id ?? Guid.NewGuid(), "WF-1", "Test workflow",
+        new(id ?? Guid.NewGuid(), Guid.NewGuid(), "WF-1", "Test workflow",
             DateTime.UtcNow, DateTime.UtcNow, []);
 
     [Fact]
