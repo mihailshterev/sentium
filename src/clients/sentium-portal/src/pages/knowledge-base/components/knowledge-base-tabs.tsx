@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bot, BrainCircuit, Database, FlaskConical, RefreshCw, Trash2, X } from "lucide-react";
+import { Bot, BrainCircuit, Database, FlaskConical, Loader, RefreshCw, Trash2, X } from "lucide-react";
 import styles from "../knowledge-base.module.scss";
 import { useAgentLearnings } from "../../../hooks/useAgentLearnings";
 import { useKnowledgeBaseStats } from "../../../hooks/useKnowledgeBaseStats";
@@ -45,7 +45,12 @@ export const GlobalContextTab = () => {
         </div>
 
         <div className={styles.cardBody}>
-          {isLoading && <p className={styles.loadingText}>Querying vector store…</p>}
+          {isLoading && (
+            <p className={styles.loadingText}>
+              <Loader size={14} className="animate-spin" />
+              Querying vector store…
+            </p>
+          )}
 
           {error && (
             <div className={styles.alertError}>
@@ -193,7 +198,12 @@ export const AgentLearningsTab = () => {
           </select>
         </div>
 
-        {isLoading && <p className={styles.loadingText}>Loading learnings…</p>}
+        {isLoading && (
+          <p className={styles.loadingText}>
+            <Loader size={14} className="animate-spin" />
+            Loading learnings…
+          </p>
+        )}
 
         {!isLoading && filteredLearnings.length === 0 && (
           <EmptyState

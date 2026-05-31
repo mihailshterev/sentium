@@ -79,6 +79,7 @@ const WorkspaceDetail = () => {
 
   const {
     files,
+    isFilesLoading,
     isFilesError,
     uploadFile,
     isUploading,
@@ -186,9 +187,14 @@ const WorkspaceDetail = () => {
           </div>
 
           <div className={styles.fileTreeScroll}>
+            {isFilesLoading && (
+              <div className={styles.fileTreeEmpty}>
+                <Loader2 size={22} className={styles.spin} />
+              </div>
+            )}
             {isFilesError && <p className={styles.fileTreeError}>Failed to load files.</p>}
 
-            {!isFilesError && files.length === 0 && (
+            {!isFilesLoading && !isFilesError && files.length === 0 && (
               <div className={styles.fileTreeEmpty}>
                 <FileText size={32} className={styles.fileTreeEmptyIcon} />
                 <p>No files yet</p>

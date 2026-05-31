@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, ChevronUp, Cpu } from "lucide-react";
+import { ChevronDown, ChevronUp, Cpu, Loader } from "lucide-react";
 import styles from "../skills.module.scss";
 import { useSkills } from "../../../hooks/useSkills";
 import type { BuiltInSkill } from "../../../types/skills";
@@ -23,7 +23,12 @@ const BuiltInTab = () => {
       </div>
 
       <div className={styles.cardBody}>
-        {isBuiltInLoading && <p className={styles.loadingText}>Loading skills…</p>}
+        {isBuiltInLoading && (
+          <p className={styles.loadingText}>
+            <Loader size={14} className="animate-spin" />
+            Loading skills…
+          </p>
+        )}
 
         {!isBuiltInLoading && builtInSkills.length === 0 && (
           <EmptyState icon={<Cpu size={32} />} title="No built-in skills found" />

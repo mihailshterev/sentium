@@ -107,7 +107,12 @@ const CustomTab = () => {
       </div>
 
       <div className={styles.cardBody}>
-        {isLoading && <p className={styles.loadingText}>Loading skills…</p>}
+        {isLoading && (
+          <p className={styles.loadingText}>
+            <Loader size={14} className="animate-spin" />
+            Loading skills…
+          </p>
+        )}
 
         {showForm && (
           <div className={styles.formCard}>

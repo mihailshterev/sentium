@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Activity, Code2, File, RefreshCw, ShieldOff, Terminal, XCircle } from "lucide-react";
+import { Activity, Code2, File, Loader, RefreshCw, ShieldOff, Terminal, XCircle } from "lucide-react";
 import styles from "./sandbox.module.scss";
 import { useSandboxExecutions } from "../../hooks/useSandboxExecutions";
 import { formatTimeHms } from "../../utils/formatters";
@@ -59,6 +59,11 @@ const Sandbox = () => {
                 </span>
               </div>
               <div className={styles.historyList}>
+                {isLoading && executions.length === 0 && (
+                  <div className={styles.historyEmpty}>
+                    <Loader size={18} className={styles.spinning} />
+                  </div>
+                )}
                 {executions.length === 0 && !isLoading && (
                   <p className={styles.historyEmpty}>
                     No executions recorded yet. They appear here as agents run code.

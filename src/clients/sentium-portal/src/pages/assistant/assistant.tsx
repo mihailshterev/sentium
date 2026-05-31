@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router";
 import styles from "./assistant.module.scss";
-import { ChevronRight, ChevronDown, BotMessageSquare } from "lucide-react";
+import { ChevronRight, ChevronDown, BotMessageSquare, Loader } from "lucide-react";
 import {
   fetchConversation,
   sendChatMessage,
@@ -576,6 +576,7 @@ const Assistant = () => {
   };
 
   const isEmpty = messages.length === 0 && !isTyping;
+  const isLoadingConversation = !!routeConversationId && routeConversationId !== activeConversationId;
   const conversationGroups = groupConversationsByDate(conversations);
 
   const resizeTextareaOnInput = (value: string) => {
@@ -617,7 +618,12 @@ const Assistant = () => {
         />
 
         <div className={styles.chatArea} ref={chatAreaRef}>
-          {isEmpty ? (
+          {isLoadingConversation ? (
+            <div className={styles.loadingConversation}>
+              <Loader size={22} className={styles.statusSpinner} />
+              <span>Loading conversation…</span>
+            </div>
+          ) : isEmpty ? (
             <WelcomeScreen suggestions={randomizedSuggestions} onSelectSuggestion={(s) => setInput(s)} />
           ) : (
             <div className={styles.messagesArea}>

@@ -358,8 +358,11 @@
 }
 
 .loadingText {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   font-size: 0.78rem;
   color: var(--text-muted);
   padding: 2rem;
-  text-align: center;
 }

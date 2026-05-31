@@ -13,7 +13,11 @@ const workspacesKey = ["workspaces"] as const;
 const useWorkspaceFiles = (workspaceId: string | undefined) => {
   const queryClient = useQueryClient();
 
-  const { data: files = [], isError: isFilesError } = useQuery({
+  const {
+    data: files = [],
+    isLoading: isFilesLoading,
+    isError: isFilesError,
+  } = useQuery({
     queryKey: filesKey(workspaceId),
     queryFn: () => fetchWorkspaceFiles(workspaceId!),
     enabled: !!workspaceId,
@@ -38,6 +42,7 @@ const useWorkspaceFiles = (workspaceId: string | undefined) => {
 
   return {
     files,
+    isFilesLoading,
     isFilesError,
     uploadFile: uploadMutation.mutate,
     isUploading: uploadMutation.isPending,

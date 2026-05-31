@@ -89,7 +89,12 @@ const UploadedTab = () => {
       </div>
 
       <div className={styles.cardBody}>
-        {isLoading && <p className={styles.loadingText}>Loading skills…</p>}
+        {isLoading && (
+          <p className={styles.loadingText}>
+            <Loader size={14} className="animate-spin" />
+            Loading skills…
+          </p>
+        )}
 
         {!isLoading && uploadedSkills.length === 0 && (
           <EmptyState
