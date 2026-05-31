@@ -3,7 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { DndContext, closestCenter, type DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
-import { Plus, X, Bot, Loader, CheckCircle, AlertCircle } from "lucide-react";
+import { Plus, Bot, Loader, CheckCircle, AlertCircle, Search } from "lucide-react";
 import styles from "../workflows.module.scss";
 import StatusMessage from "../../../components/ui/status-message";
 import SortableAgent from "./sortable-agent";
@@ -22,7 +22,6 @@ interface WorkflowEditorProps {
   isUpdateError: boolean;
   createWorkflowError: Error | null | undefined;
   updateWorkflowError: Error | null | undefined;
-  onClose: () => void;
   onSubmit: (data: { name: string; description: string; agents: { agentId: string; order: number }[] }) => void;
   getAgentName: (agentId: string) => string;
   initialFormAgents: SortableAgentItem[];
@@ -41,7 +40,6 @@ const WorkflowEditor = ({
   isUpdateError,
   createWorkflowError,
   updateWorkflowError,
-  onClose,
   onSubmit,
   getAgentName,
   initialFormAgents,
@@ -49,6 +47,7 @@ const WorkflowEditor = ({
   initialDescription,
 }: WorkflowEditorProps) => {
   const [formAgents, setFormAgents] = useState<SortableAgentItem[]>(initialFormAgents);
+  const [agentSearch, setAgentSearch] = useState("");
 
   const {
     register,
@@ -70,6 +69,16 @@ const WorkflowEditor = ({
   const isSuccess = selectedWorkflow ? isUpdateSuccess : isCreateSuccess;
   const isError = selectedWorkflow ? isUpdateError : isCreateError;
   const mutationError = selectedWorkflow ? updateWorkflowError : createWorkflowError;
+
+  const filteredAgents = agents.filter((a) => {
+    const q = agentSearch.trim().toLowerCase();
+    if (!q) {
+      return true;
+    }
+    return (
+      a.name.toLowerCase().includes(q) || a.model.toLowerCase().includes(q) || a.description.toLowerCase().includes(q)
+    );
+  });
 
   const addAgentToForm = (agent: AgentRecord) => {
     setFormAgents((prev) => [
@@ -109,13 +118,6 @@ const WorkflowEditor = ({
 
   return (
     <div className={styles.editorContent}>
-      <div className={styles.editorHeader}>
-        <span className={styles.editorTitle}>{selectedWorkflow ? "Edit Workflow" : "New Workflow"}</span>
-        <button className={styles.closeBtn} onClick={onClose} title="Close">
-          <X size={14} />
-        </button>
-      </div>
-
       <form onSubmit={handleSubmit(handleFormSubmit)} className={styles.editorForm}>
         <div className={styles.editorColumns}>
           <div className={styles.pipelineColumn}>
@@ -179,7 +181,7 @@ const WorkflowEditor = ({
                 id="wf-name"
                 className={styles.fieldInput}
                 type="text"
-                placeholder="e.g. Local AI Inference Pipeline"
+                placeholder="Workflow name..."
                 autoComplete="off"
                 {...register("name")}
               />
@@ -195,27 +197,58 @@ const WorkflowEditor = ({
                 id="wf-desc"
                 className={`${styles.fieldInput} ${styles.fieldTextarea}`}
                 placeholder="Describe what this workflow does..."
-                rows={4}
+                rows={3}
                 {...register("description")}
               />
             </div>
 
             <div className={styles.fieldGroup}>
-              <label className={styles.fieldLabel}>Add Agents</label>
+              <div className={styles.agentPickerHeader}>
+                <label className={styles.fieldLabel} style={{ margin: 0 }}>
+                  Add Agents
+                </label>
+                <span className={styles.agentPickerCount}>{agents.length} available</span>
+              </div>
+
+              {agents.length > 0 && (
+                <div className={styles.agentSearch}>
+                  <Search size={13} className={styles.agentSearchIcon} />
+                  <input
+                    className={styles.agentSearchInput}
+                    placeholder="Search agents..."
+                    value={agentSearch}
+                    onChange={(e) => setAgentSearch(e.target.value)}
+                  />
+                </div>
+              )}
+
               <div className={styles.agentPicker}>
-                {agents.length === 0 && <span className={styles.pickerEmpty}>No agents registered yet</span>}
-                {agents.map((agent) => (
-                  <button
-                    key={agent.id}
-                    type="button"
-                    className={styles.agentPickerItem}
-                    onClick={() => addAgentToForm(agent)}
-                  >
-                    <Bot size={12} />
-                    <span>{agent.name}</span>
-                    <Plus size={11} className={styles.addIcon} />
-                  </button>
-                ))}
+                {agents.length === 0 ? (
+                  <span className={styles.agentPickerEmpty}>No agents registered yet</span>
+                ) : filteredAgents.length === 0 ? (
+                  <span className={styles.agentPickerEmpty}>No agents match &ldquo;{agentSearch}&rdquo;</span>
+                ) : (
+                  filteredAgents.map((agent) => (
+                    <button
+                      key={agent.id}
+                      type="button"
+                      className={styles.agentPickerItem}
+                      onClick={() => addAgentToForm(agent)}
+                    >
+                      <div className={styles.agentPickerIconBox}>
+                        <Bot size={14} />
+                      </div>
+                      <div className={styles.agentPickerInfo}>
+                        <div className={styles.agentPickerTopRow}>
+                          <span className={styles.agentPickerName}>{agent.name}</span>
+                          {agent.model && <span className={styles.agentPickerModelBadge}>{agent.model}</span>}
+                        </div>
+                        {agent.description && <span className={styles.agentPickerDesc}>{agent.description}</span>}
+                      </div>
+                      <Plus size={13} className={styles.addIcon} />
+                    </button>
+                  ))
+                )}
               </div>
             </div>
 
