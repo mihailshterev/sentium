@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Sentium.AgentRuntime.Infrastructure.Data;
 
@@ -11,9 +12,11 @@ using Sentium.AgentRuntime.Infrastructure.Data;
 namespace Sentium.AgentRuntime.Infrastructure.Migrations
 {
     [DbContext(typeof(AgentRuntimeDbContext))]
-    partial class AgentRuntimeDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260530211647_WorkflowRunLogsNativeJson")]
+    partial class WorkflowRunLogsNativeJson
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -83,9 +86,6 @@ namespace Sentium.AgentRuntime.Infrastructure.Migrations
                     b.Property<Guid?>("ConversationId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<bool>("IsGlobal")
-                        .HasColumnType("bit");
-
                     b.Property<bool>("IsIngested")
                         .HasColumnType("bit");
 
@@ -94,20 +94,13 @@ namespace Sentium.AgentRuntime.Infrastructure.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
-                    b.Property<Guid?>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.HasKey("Id");
 
                     b.HasIndex("AgentName");
 
                     b.HasIndex("CapturedAt");
 
-                    b.HasIndex("IsGlobal");
-
                     b.HasIndex("IsIngested");
-
-                    b.HasIndex("UserId");
 
                     b.ToTable("AgentLearnings");
                 });
@@ -351,10 +344,7 @@ namespace Sentium.AgentRuntime.Infrastructure.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
-                    b.Property<Guid?>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid?>("WorkflowId")
+                    b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
@@ -362,8 +352,6 @@ namespace Sentium.AgentRuntime.Infrastructure.Migrations
                     b.HasIndex("StartedAt");
 
                     b.HasIndex("UserId");
-
-                    b.HasIndex("WorkflowId");
 
                     b.ToTable("WorkflowRuns");
                 });
@@ -442,11 +430,6 @@ namespace Sentium.AgentRuntime.Infrastructure.Migrations
 
             modelBuilder.Entity("Sentium.AgentRuntime.Core.Entities.WorkflowRun", b =>
                 {
-                    b.HasOne("Sentium.AgentRuntime.Core.Entities.Workflow", "Workflow")
-                        .WithMany()
-                        .HasForeignKey("WorkflowId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.OwnsMany("Sentium.AgentRuntime.Core.Dtos.WorkflowLogEntry", "Logs", b1 =>
                         {
                             b1.Property<Guid>("WorkflowRunId");
@@ -476,8 +459,6 @@ namespace Sentium.AgentRuntime.Infrastructure.Migrations
                         });
 
                     b.Navigation("Logs");
-
-                    b.Navigation("Workflow");
                 });
 
             modelBuilder.Entity("Sentium.AgentRuntime.Core.Entities.Conversation", b =>

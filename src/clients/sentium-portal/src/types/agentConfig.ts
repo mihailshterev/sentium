@@ -21,6 +21,7 @@ export interface AgentLearning {
   conversationId: string | null;
   capturedAt: string;
   isIngested: boolean;
+  isGlobal: boolean;
 }
 
 export interface AgentLearningStats {

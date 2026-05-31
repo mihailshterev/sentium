@@ -26,4 +26,15 @@ public sealed class IngestionRequest
     /// Useful for device IDs, log file paths, timestamps, etc.
     /// </summary>
     public Dictionary<string, string>? Metadata { get; init; }
+
+    /// <summary>
+    /// Visibility scope for the resulting chunks. Defaults to <see cref="KnowledgeScope.Shared"/>;
+    /// set to <see cref="KnowledgeScope.User"/> together with <see cref="UserId"/> for private content.
+    /// </summary>
+    public string Scope { get; init; } = KnowledgeScope.Shared;
+
+    /// <summary>
+    /// The owning user when <see cref="Scope"/> is <see cref="KnowledgeScope.User"/>.
+    /// </summary>
+    public Guid? UserId { get; init; }
 }

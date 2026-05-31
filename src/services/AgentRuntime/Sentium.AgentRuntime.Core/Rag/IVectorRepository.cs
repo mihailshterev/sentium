@@ -25,7 +25,14 @@ public interface IVectorRepository
     /// Performs a cosine-similarity search and returns the top-<paramref name="topK"/> results
     /// whose score meets or exceeds <paramref name="scoreThreshold"/>.
     /// </summary>
-    Task<IReadOnlyList<VectorSearchResult>> SearchAsync(string collectionName, float[] queryEmbedding, int topK = 5, float scoreThreshold = 0.0f, CancellationToken ct = default);
+    /// <param name="scope">
+    /// Optional per-user visibility filter. When non-null, results are restricted to shared entries
+    /// plus the given user's own entries; a filter with a <c>null</c> <see cref="KnowledgeScopeFilter.UserId"/>
+    /// narrows this to shared/global entries only. When <c>null</c> (default), no scope filtering is
+    /// applied — but all current collections (knowledge_base, agent_learnings, user_memories) pass a
+    /// non-null filter, so the unfiltered branch is effectively unused.
+    /// </param>
+    Task<IReadOnlyList<VectorSearchResult>> SearchAsync(string collectionName, float[] queryEmbedding, int topK = 5, float scoreThreshold = 0.0f, KnowledgeScopeFilter? scope = null, CancellationToken ct = default);
 
     /// <summary>
     /// Deletes all points whose <c>source</c> payload field exactly matches <paramref name="source"/>.
@@ -51,11 +58,9 @@ public interface IVectorRepository
     /// Retrieves a page of document chunks from a collection using Qdrant scroll.
     /// Returns up to <paramref name="limit"/> chunks, starting after <paramref name="offset"/>.
     /// </summary>
-    Task<IReadOnlyList<DocumentChunk>> GetPageAsync(string collectionName, ulong limit = 200, ulong? offset = null, CancellationToken ct = default);
+    /// <param name="scope">
+    /// Optional per-user visibility filter (same semantics as <see cref="SearchAsync"/>).
+    /// When <c>null</c>, no scope filtering is applied.
+    /// </param>
+    Task<IReadOnlyList<DocumentChunk>> GetPageAsync(string collectionName, ulong limit = 200, ulong? offset = null, KnowledgeScopeFilter? scope = null, CancellationToken ct = default);
 }
-
-public sealed record CollectionStats(
-    string CollectionName,
-    long PointCount,
-    uint VectorSize,
-    string DistanceMetric);

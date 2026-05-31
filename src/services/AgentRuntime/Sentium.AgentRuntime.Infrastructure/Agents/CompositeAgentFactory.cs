@@ -32,7 +32,7 @@ public sealed class CompositeAgentFactory(
     private bool defaultInitialized;
     private readonly Lock syncLock = new();
 
-    public async Task<AIAgent> CreateAsync(string agentName, string? overrideInstructions = null, string? overrideModel = null, CancellationToken ct = default)
+    public async Task<AIAgent> CreateAsync(string agentName, string? overrideInstructions = null, string? overrideModel = null, Guid? actingUserId = null, CancellationToken ct = default)
     {
         EnsureDefaultIsHarnessed();
 
@@ -40,6 +40,13 @@ public sealed class CompositeAgentFactory(
         if (definition is null)
         {
             throw new InvalidOperationException($"Agent '{agentName}' could not be resolved.");
+        }
+
+        pdpContext.AgentName = definition.Name;
+
+        if (actingUserId is { } uid)
+        {
+            pdpContext.UserId = uid;
         }
 
         var tools = agentToolProvider.GetToolsForAgent(definition.Name, ct);

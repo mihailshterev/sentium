@@ -2,6 +2,7 @@ using Sentium.AgentRuntime.Core.Agents;
 using Sentium.AgentRuntime.Core.Conversations;
 using Sentium.AgentRuntime.Core.Dtos;
 using Sentium.AgentRuntime.Infrastructure.Sentinel;
+using Sentium.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.AI;
@@ -24,6 +25,7 @@ public sealed class AssistantController(
     IAgentFactory agentFactory,
     IPendingApprovalStore approvalStore,
     IPdpContextAccessor pdpContext,
+    ICurrentUser currentUser,
     ILogger<AssistantController> logger) : ControllerBase
 {
     private static readonly byte[] DataPrefix = "data: "u8.ToArray();
@@ -51,6 +53,7 @@ public sealed class AssistantController(
         var lastUserMessage = requestBody.Messages.LastOrDefault(m => m.Role.Equals(ChatRole.User.ToString(), StringComparison.OrdinalIgnoreCase));
 
         pdpContext.OriginalUserPrompt = lastUserMessage?.Content ?? string.Empty;
+        pdpContext.UserId = currentUser.UserId;
 
         pdpContext.CorrelationId = Request.Headers.TryGetValue(CommonHeaderNames.CorrelationId, out var hdr)
             ? hdr.ToString()
@@ -100,6 +103,7 @@ public sealed class AssistantController(
 
         pdpContext.OriginalUserPrompt = pending.OriginalUserPrompt;
         pdpContext.CorrelationId = pending.CorrelationId;
+        pdpContext.UserId = pending.UserId;
 
         var approvalResponseMessage = new ChatMessage(ChatRole.User, [pending.ApprovalRequest.CreateResponse(requestBody.Approved)]);
 
@@ -150,7 +154,8 @@ public sealed class AssistantController(
                         model,
                         chatHistorySnapshot,
                         OriginalUserPrompt: pdpContext.OriginalUserPrompt,
-                        CorrelationId: pdpContext.CorrelationId
+                        CorrelationId: pdpContext.CorrelationId,
+                        UserId: pdpContext.UserId
                     );
 
                     approvalStore.Add(approvalRequest.RequestId, approval);

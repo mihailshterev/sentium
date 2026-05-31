@@ -1,8 +1,11 @@
+using Sentium.AgentRuntime.Core.Skills;
+
 namespace Sentium.AgentRuntime.Core.Entities;
 
-public sealed class AgentSkill
+public sealed class AgentSkill : IUserOwned
 {
     public Guid Id { get; set; }
+    public Guid UserId { get; set; }
     public string Name { get; set; } = null!;
     public string Description { get; set; } = null!;
     public string Instructions { get; set; } = null!;
@@ -10,10 +13,4 @@ public sealed class AgentSkill
     public string? FileName { get; set; }
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
-}
-
-public enum AgentSkillType
-{
-    Custom = 0,
-    Uploaded = 1,
 }

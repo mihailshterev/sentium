@@ -7,6 +7,7 @@ using Sentium.AgentRuntime.Core.Orchestration;
 using Sentium.AgentRuntime.Core.WorkflowManagement;
 using Sentium.AgentRuntime.Core.Workflows;
 using Sentium.Infrastructure.Messaging;
+using Sentium.Infrastructure.Security;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -30,6 +31,7 @@ public sealed class NatsMessageProcessor(
                 try
                 {
                     using var scope = scopeFactory.CreateScope();
+                    scope.ServiceProvider.GetRequiredService<SystemScopeContext>().Activate();
                     var orchestrator = scope.ServiceProvider.GetRequiredService<IOrchestrator>();
 
                     var payloadString = Encoding.UTF8.GetString(msg.Data!);
@@ -39,7 +41,8 @@ public sealed class NatsMessageProcessor(
                     trigger = new WorkflowTrigger
                     {
                         TriggerType = msg.Subject,
-                        Payload = payloadString
+                        Payload = payloadString,
+                        UserId = TryParseUserId(payloadString)
                     };
 
                     var startedAt = DateTime.Now;
@@ -54,6 +57,8 @@ public sealed class NatsMessageProcessor(
                         await runRepo.AddAsync(new WorkflowRun
                         {
                             Id = Guid.NewGuid(),
+                            UserId = result.UserId,
+                            WorkflowId = result.WorkflowId,
                             TriggerType = trigger.TriggerType,
                             TriggerPayload = payloadString,
                             Explanation = result.Explanation ?? string.Empty,
@@ -61,7 +66,7 @@ public sealed class NatsMessageProcessor(
                             Recommendation = result.Recommendation?.ToString() ?? string.Empty,
                             StartedAt = startedAt,
                             CompletedAt = completedAt,
-                            LogJson = result.StreamLog.Count > 0 ? JsonSerializer.Serialize(result.StreamLog) : null
+                            Logs = [.. result.StreamLog]
                         }, stoppingToken);
                     }
                     catch (Exception ex)
@@ -97,5 +102,20 @@ public sealed class NatsMessageProcessor(
         {
             logger.LogCritical(ex, "NATS Message Processor encountered a fatal error.");
         }
+    }
+
+    private static Guid? TryParseUserId(string payload)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(payload);
+            if (doc.RootElement.TryGetProperty("userId", out var prop) && prop.TryGetGuid(out var id))
+            {
+                return id;
+            }
+        }
+        catch { }
+
+        return null;
     }
 }

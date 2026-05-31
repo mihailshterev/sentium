@@ -1,12 +1,14 @@
 using Microsoft.Extensions.Caching.Hybrid;
 using Sentium.AgentRuntime.Core.Agents;
 using Sentium.AgentRuntime.Core.Dtos;
+using Sentium.Infrastructure.Security;
 
 namespace Sentium.AgentRuntime.Application.Agents;
 
-public sealed class AgentService(IAgentManager manager, HybridCache cache) : IAgentService
+public sealed class AgentService(IAgentManager manager, HybridCache cache, ICurrentUser currentUser) : IAgentService
 {
     private const string CacheTag = "agents";
+    private string Scope => currentUser.IsSovereign ? "sovereign" : currentUser.UserId?.ToString() ?? "anon";
 
     public async ValueTask<AgentResponse> CreateAgentAsync(CreateAgentRequest request, CancellationToken ct = default)
     {
@@ -19,7 +21,7 @@ public sealed class AgentService(IAgentManager manager, HybridCache cache) : IAg
 
     public async ValueTask<IReadOnlyList<AgentResponse>> GetAgentsAsync(CancellationToken ct = default)
     {
-        var cacheKey = $"{CacheTag}:all";
+        var cacheKey = $"{CacheTag}:all:{Scope}";
 
         return await cache.GetOrCreateAsync(
             cacheKey,
@@ -31,7 +33,7 @@ public sealed class AgentService(IAgentManager manager, HybridCache cache) : IAg
 
     public async ValueTask<AgentResponse> GetAgentByIdAsync(Guid agentId, CancellationToken ct = default)
     {
-        var cacheKey = $"{CacheTag}:{agentId}";
+        var cacheKey = $"{CacheTag}:{agentId}:{Scope}";
 
         return await cache.GetOrCreateAsync(
             cacheKey,

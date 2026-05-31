@@ -1,4 +1,6 @@
 using Sentium.AgentRuntime.Core.Rag;
+using Sentium.AgentRuntime.Core.Rag.Models;
+using Sentium.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -16,9 +18,11 @@ namespace Sentium.AgentRuntime.Api.Controllers;
 public sealed class SemanticMapController(
     IVectorRepository vectorRepository,
     IEmbeddingService embeddingService,
-    IOptions<RagOptions> ragOptions) : ControllerBase
+    IOptions<RagOptions> ragOptions,
+    ICurrentUser currentUser) : ControllerBase
 {
     private static readonly string[] TrackedCollections = ["knowledge_base", "agent_learnings", "user_memories"];
+    private static readonly HashSet<string> ScopedCollections = ["knowledge_base", "agent_learnings", "user_memories"];
 
     /// <summary>
     /// Returns a page of nodes from the specified collections for graph rendering.
@@ -41,9 +45,12 @@ public sealed class SemanticMapController(
 
         var allNodes = new List<KnowledgeMapNode>();
 
+        var userScope = new KnowledgeScopeFilter(currentUser.UserId);
+
         foreach (var col in collections)
         {
-            var chunks = await vectorRepository.GetPageAsync(col, (ulong)safeLimit, ct: ct);
+            var scope = ScopedCollections.Contains(col) ? userScope : null;
+            var chunks = await vectorRepository.GetPageAsync(col, (ulong)safeLimit, scope: scope, ct: ct);
 
             allNodes.AddRange(chunks.Select(chunk => new KnowledgeMapNode
             {
@@ -101,9 +108,12 @@ public sealed class SemanticMapController(
 
         var allResults = new List<KnowledgeMapSearchResult>();
 
+        var userScope = new KnowledgeScopeFilter(currentUser.UserId);
+
         foreach (var col in TrackedCollections)
         {
-            var hits = await vectorRepository.SearchAsync(col, embedding, topK, threshold, ct);
+            var scope = ScopedCollections.Contains(col) ? userScope : null;
+            var hits = await vectorRepository.SearchAsync(col, embedding, topK, threshold, scope: scope, ct: ct);
 
             allResults.AddRange(hits.Select(hit => new KnowledgeMapSearchResult
             {

@@ -21,7 +21,7 @@ public sealed class AgentLearningRepository(AgentRuntimeDbContext context) : IAg
             .Take(count)
             .Select(l => new AgentLearningResponse(
                 l.Id, l.AgentName, l.Content, l.Tags,
-                l.ConversationId, l.CapturedAt, l.IsIngested))
+                l.ConversationId, l.CapturedAt, l.IsIngested, l.IsGlobal))
             .ToListAsync(ct);
     }
 

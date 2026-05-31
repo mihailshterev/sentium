@@ -117,7 +117,7 @@ public sealed class SkillsController(
             Name: skillName,
             Description: $"Uploaded skill from {file.FileName}",
             Instructions: content,
-            SkillType: Core.Entities.AgentSkillType.Uploaded,
+            SkillType: AgentSkillType.Uploaded,
             FileName: file.FileName);
 
         var result = await skillService.CreateAsync(request, ct);

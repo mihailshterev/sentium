@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Sentium.AgentRuntime.Infrastructure.Data;
 
@@ -11,9 +12,11 @@ using Sentium.AgentRuntime.Infrastructure.Data;
 namespace Sentium.AgentRuntime.Infrastructure.Migrations
 {
     [DbContext(typeof(AgentRuntimeDbContext))]
-    partial class AgentRuntimeDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260531123619_AddIsGlobalToAgentLearnings")]
+    partial class AddIsGlobalToAgentLearnings
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

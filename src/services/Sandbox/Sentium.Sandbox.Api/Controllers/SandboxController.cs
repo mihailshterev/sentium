@@ -1,6 +1,7 @@
 using Azure.Storage.Blobs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Sentium.Infrastructure.Security;
 using Microsoft.Extensions.Options;
 using Sentium.Sandbox.Api.Dtos;
 using Sentium.Sandbox.Application;
@@ -12,7 +13,7 @@ using Sentium.Shared.Constants;
 namespace Sentium.Sandbox.Api.Controllers;
 
 [ApiController]
-[AllowAnonymous] // temp
+[Authorize]
 [Route("sandbox")]
 public sealed class SandboxController(
     SandboxOrchestrator orchestrator,
@@ -74,6 +75,7 @@ public sealed class SandboxController(
     /// The container runs with NetworkDisabled, ReadonlyRootfs, CapDrop=ALL and CPU/memory/PID hard limits.
     /// </summary>
     [HttpPost("execute")]
+    [AuthorizeSystem]
     [ProducesResponseType<SandboxExecutionResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]

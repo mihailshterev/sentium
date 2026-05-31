@@ -47,7 +47,9 @@ public sealed class DocumentIngestionService(
                 Content = chunkText,
                 Source = request.Source,
                 SourceType = request.SourceType,
-                Metadata = request.Metadata ?? []
+                Metadata = request.Metadata ?? [],
+                Scope = request.Scope,
+                UserId = request.UserId
             };
 
             await vectorRepository.UpsertAsync(collectionName, chunk, embedding, ct);

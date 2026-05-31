@@ -2,6 +2,7 @@ using Sentium.AgentRuntime.Core.Rag;
 using Sentium.AgentRuntime.Core.Rag.Models;
 using Sentium.AgentRuntime.Core.Tools;
 using Sentium.AgentRuntime.Core.Tools.Attributes;
+using Sentium.AgentRuntime.Infrastructure.Sentinel;
 using Microsoft.Extensions.Logging;
 
 namespace Sentium.AgentRuntime.Infrastructure.Tools;
@@ -16,6 +17,7 @@ namespace Sentium.AgentRuntime.Infrastructure.Tools;
     RequiresApproval = false)]
 public sealed class StoreMemoryTool(
     IDocumentIngestionService ingestionService,
+    IPdpContextAccessor pdpContext,
     ILogger<StoreMemoryTool> logger) : IAgentTool
 {
     public string Name => "store_memory";
@@ -34,11 +36,16 @@ public sealed class StoreMemoryTool(
 
         try
         {
+            var userId = pdpContext.UserId;
+            var scope = userId.HasValue ? KnowledgeScope.User : KnowledgeScope.Shared;
+
             var request = new IngestionRequest
             {
                 Content = input,
                 Source = "Agent_Self_Memory",
                 SourceType = IngestionSourceType.Custom,
+                Scope = scope,
+                UserId = userId,
                 Metadata = new Dictionary<string, string>
                 {
                     { "memory_type", "long_term_recall" },

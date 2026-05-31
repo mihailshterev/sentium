@@ -1,10 +1,22 @@
 using Microsoft.EntityFrameworkCore;
 using Sentium.AgentRuntime.Core.Entities;
+using Sentium.Infrastructure.Security;
 
 namespace Sentium.AgentRuntime.Infrastructure.Data;
 
-public sealed class AgentRuntimeDbContext(DbContextOptions<AgentRuntimeDbContext> options) : DbContext(options)
+public sealed class AgentRuntimeDbContext : DbContext
 {
+    private Guid ScopeUserId { get; }
+    private bool BypassUserScope { get; }
+
+    public AgentRuntimeDbContext(DbContextOptions<AgentRuntimeDbContext> options, ICurrentUser currentUser) : base(options)
+    {
+        ArgumentNullException.ThrowIfNull(currentUser);
+
+        ScopeUserId = currentUser.UserId ?? Guid.Empty;
+        BypassUserScope = currentUser.IsSovereign || currentUser.IsSystem;
+    }
+
     public DbSet<Agent> Agents { get; set; }
     public DbSet<Conversation> Conversations { get; set; }
     public DbSet<Message> Messages { get; set; }
@@ -32,8 +44,9 @@ public sealed class AgentRuntimeDbContext(DbContextOptions<AgentRuntimeDbContext
             entity.Property(e => e.Model)
                 .HasMaxLength(255)
                 .HasDefaultValue(string.Empty);
-            entity.HasIndex(e => e.Name)
+            entity.HasIndex(e => new { e.UserId, e.Name })
                 .IsUnique();
+            entity.HasQueryFilter(e => BypassUserScope || e.UserId == ScopeUserId);
         });
 
         builder.Entity<Conversation>(entity =>
@@ -42,7 +55,7 @@ public sealed class AgentRuntimeDbContext(DbContextOptions<AgentRuntimeDbContext
             entity.Property(e => e.Title)
                 .IsRequired()
                 .HasMaxLength(255);
-            entity.HasIndex(e => e.Title)
+            entity.HasIndex(e => new { e.UserId, e.Title })
                 .IsUnique();
             entity.Property(e => e.Model)
                 .IsRequired()
@@ -51,6 +64,7 @@ public sealed class AgentRuntimeDbContext(DbContextOptions<AgentRuntimeDbContext
                 .WithOne(m => m.Conversation)
                 .HasForeignKey(m => m.ConversationId)
                 .OnDelete(DeleteBehavior.Cascade);
+            entity.HasQueryFilter(e => BypassUserScope || e.UserId == ScopeUserId);
         });
 
         builder.Entity<Message>(entity =>
@@ -65,6 +79,7 @@ public sealed class AgentRuntimeDbContext(DbContextOptions<AgentRuntimeDbContext
                 .WithMany(c => c.Messages)
                 .HasForeignKey(e => e.ConversationId)
                 .OnDelete(DeleteBehavior.Cascade);
+            entity.HasQueryFilter(e => BypassUserScope || e.Conversation.UserId == ScopeUserId);
         });
 
         builder.Entity<Workflow>(entity =>
@@ -75,8 +90,9 @@ public sealed class AgentRuntimeDbContext(DbContextOptions<AgentRuntimeDbContext
                 .HasMaxLength(255);
             entity.Property(e => e.Description)
                 .HasMaxLength(4000);
-            entity.HasIndex(e => e.Name)
+            entity.HasIndex(e => new { e.UserId, e.Name })
                 .IsUnique();
+            entity.HasQueryFilter(e => BypassUserScope || e.UserId == ScopeUserId);
         });
 
         builder.Entity<WorkflowAgent>(entity =>
@@ -91,6 +107,7 @@ public sealed class AgentRuntimeDbContext(DbContextOptions<AgentRuntimeDbContext
                 .WithMany()
                 .HasForeignKey(e => e.AgentId)
                 .OnDelete(DeleteBehavior.Cascade);
+            entity.HasQueryFilter(e => BypassUserScope || e.Workflow.UserId == ScopeUserId);
         });
 
         builder.Entity<WorkflowRun>(entity =>
@@ -101,8 +118,16 @@ public sealed class AgentRuntimeDbContext(DbContextOptions<AgentRuntimeDbContext
             entity.Property(e => e.Explanation).IsRequired();
             entity.Property(e => e.Risk).IsRequired();
             entity.Property(e => e.Recommendation).IsRequired();
-            entity.Property(e => e.LogJson);
+            entity.OwnsMany(e => e.Logs, b => b.ToJson("LogJson"));
             entity.HasIndex(e => e.StartedAt);
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.WorkflowId);
+            entity.HasOne(e => e.Workflow)
+                .WithMany()
+                .HasForeignKey(e => e.WorkflowId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.SetNull);
+            entity.HasQueryFilter(e => BypassUserScope || e.UserId == ScopeUserId);
         });
 
         builder.Entity<ProjectFile>(entity =>
@@ -115,11 +140,13 @@ public sealed class AgentRuntimeDbContext(DbContextOptions<AgentRuntimeDbContext
             entity.Property(e => e.ProcessingStatus).IsRequired();
             entity.HasIndex(e => e.WorkspaceId);
             entity.HasIndex(e => e.CreatedAt);
+            entity.HasIndex(e => e.UserId);
             entity.HasOne(e => e.Workspace)
                 .WithMany(w => w.Files)
                 .HasForeignKey(e => e.WorkspaceId)
                 .OnDelete(DeleteBehavior.SetNull)
                 .IsRequired(false);
+            entity.HasQueryFilter(e => BypassUserScope || e.UserId == ScopeUserId);
         });
 
         builder.Entity<Workspace>(entity =>
@@ -129,7 +156,8 @@ public sealed class AgentRuntimeDbContext(DbContextOptions<AgentRuntimeDbContext
             entity.Property(e => e.Description).HasMaxLength(2000);
             entity.Property(e => e.CreatedAt).IsRequired();
             entity.Property(e => e.UpdatedAt).IsRequired();
-            entity.HasIndex(e => e.Name).IsUnique();
+            entity.HasIndex(e => new { e.UserId, e.Name }).IsUnique();
+            entity.HasQueryFilter(e => BypassUserScope || e.UserId == ScopeUserId);
         });
 
         builder.Entity<AgentLearning>(entity =>
@@ -141,6 +169,9 @@ public sealed class AgentRuntimeDbContext(DbContextOptions<AgentRuntimeDbContext
             entity.HasIndex(e => e.AgentName);
             entity.HasIndex(e => e.CapturedAt);
             entity.HasIndex(e => e.IsIngested);
+            entity.HasIndex(e => e.UserId);
+            entity.HasIndex(e => e.IsGlobal);
+            entity.HasQueryFilter(e => BypassUserScope || e.IsGlobal || e.UserId == ScopeUserId);
         });
 
         builder.Entity<AgentSkill>(entity =>
@@ -151,8 +182,45 @@ public sealed class AgentRuntimeDbContext(DbContextOptions<AgentRuntimeDbContext
             entity.Property(e => e.Instructions).IsRequired();
             entity.Property(e => e.SkillType).IsRequired();
             entity.Property(e => e.FileName).HasMaxLength(512);
-            entity.HasIndex(e => e.Name).IsUnique();
+            entity.HasIndex(e => new { e.UserId, e.Name }).IsUnique();
             entity.HasIndex(e => e.CreatedAt);
+            entity.HasQueryFilter(e => BypassUserScope || e.UserId == ScopeUserId);
         });
+    }
+
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        StampUserOwnership();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
+
+    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        StampUserOwnership();
+        return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+    }
+
+    private void StampUserOwnership()
+    {
+        if (ScopeUserId == Guid.Empty)
+        {
+            return;
+        }
+
+        foreach (var entry in ChangeTracker.Entries<IUserOwned>())
+        {
+            if (entry.State == EntityState.Added && entry.Entity.UserId == Guid.Empty)
+            {
+                entry.Entity.UserId = ScopeUserId;
+            }
+        }
+
+        foreach (var entry in ChangeTracker.Entries<AgentLearning>())
+        {
+            if (entry.State == EntityState.Added && entry.Entity.UserId is null && !BypassUserScope)
+            {
+                entry.Entity.UserId = ScopeUserId;
+            }
+        }
     }
 }

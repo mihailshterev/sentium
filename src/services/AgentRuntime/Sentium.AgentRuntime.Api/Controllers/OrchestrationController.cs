@@ -1,9 +1,11 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Sentium.AgentRuntime.Core.Agents;
 using Sentium.AgentRuntime.Core.Dtos;
 using Sentium.AgentRuntime.Core.WorkflowManagement;
 using Sentium.AgentRuntime.Core.Workflows;
 using Sentium.Infrastructure.Messaging;
+using Sentium.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using NATS.Client.Serializers.Json;
@@ -20,6 +22,7 @@ namespace Sentium.AgentRuntime.Api.Controllers;
 public sealed class OrchestrationController(
     IEventBus eventBus,
     IWorkflowService workflowService,
+    ICurrentUser currentUser,
     ILogger<OrchestrationController> logger) : ControllerBase
 {
     /// <summary>
@@ -36,7 +39,9 @@ public sealed class OrchestrationController(
         var user = User.Identity?.Name ?? "Unknown";
 
         var payload = customInput ?? new { activity = "Manual trigger", user = user };
-        var jsonPayload = JsonSerializer.Serialize(payload);
+        var payloadNode = JsonNode.Parse(JsonSerializer.Serialize(payload))?.AsObject() ?? new JsonObject();
+        payloadNode["userId"] = currentUser.UserId?.ToString();
+        var jsonPayload = payloadNode.ToJsonString();
 
         await eventBus.PublishAsync(WorkflowEvents.Dynamic, jsonPayload, ct: ct);
 
@@ -68,7 +73,8 @@ public sealed class OrchestrationController(
             workflowId = workflow.Id,
             workflowName = workflow.Name,
             agents = workflow.Agents.Select(a => a.AgentId),
-            workspaceId = request.WorkspaceId
+            workspaceId = request.WorkspaceId,
+            userId = currentUser.UserId
         };
 
         var jsonPayload = JsonSerializer.Serialize(payload);

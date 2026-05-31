@@ -1,6 +1,8 @@
 using Sentium.AgentRuntime.Core.Rag;
+using Sentium.AgentRuntime.Core.Rag.Models;
 using Sentium.AgentRuntime.Core.Tools;
 using Sentium.AgentRuntime.Core.Tools.Attributes;
+using Sentium.AgentRuntime.Infrastructure.Sentinel;
 
 namespace Sentium.AgentRuntime.Infrastructure.Tools;
 
@@ -10,7 +12,8 @@ namespace Sentium.AgentRuntime.Infrastructure.Tools;
 [AgentToolPolicy(RiskLevel = ToolRiskLevel.Low, RequiresApproval = false)]
 public sealed class RecallMemoryTool(
     IEmbeddingService embeddingService,
-    IVectorRepository vectorRepository) : IAgentTool
+    IVectorRepository vectorRepository,
+    IPdpContextAccessor pdpContext) : IAgentTool
 {
     public string Name => "recall_memory";
 
@@ -32,6 +35,7 @@ public sealed class RecallMemoryTool(
             queryEmbedding,
             topK: 3,
             scoreThreshold: 0.7f,
+            scope: new KnowledgeScopeFilter(pdpContext.UserId),
             ct: ct
         );
 

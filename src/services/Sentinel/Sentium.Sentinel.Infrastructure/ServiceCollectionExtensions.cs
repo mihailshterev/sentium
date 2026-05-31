@@ -21,6 +21,9 @@ public static class ServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(builder);
 
         var services = builder.Services;
+        services.AddHttpContextAccessor();
+
+        builder.AddInternalApiSecurity();
 
         builder.AddAuditedDbContext<SentinelDbContext>(ResourceNames.SentinelDb);
 

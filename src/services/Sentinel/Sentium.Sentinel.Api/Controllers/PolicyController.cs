@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using Sentium.Infrastructure.Security;
 using Sentium.Sentinel.Application.Engine;
 using Sentium.Sentinel.Application.Options;
 using Sentium.Sentinel.Core.Audit;
@@ -11,12 +12,6 @@ namespace Sentium.Sentinel.Api.Controllers;
 
 /// <summary>
 /// Policy Decision Point (PDP) API.
-/// <para>
-/// <c>POST /policy/evaluate</c> is intentionally <see cref="AllowAnonymousAttribute"/> because it
-/// receives direct service-to-service calls from AgentRuntime (and future Sandbox) over the
-/// internal Aspire network — those callers have no user JWT to forward.
-/// The audit endpoints remain protected for human operators only.
-/// </para>
 /// </summary>
 [ApiController]
 [Route("policy")]
@@ -27,10 +22,10 @@ public sealed class PolicyController(
 {
     /// <summary>
     /// Evaluates a policy request and returns an authorization decision.
-    /// Open to internal service callers — protected at the network layer by Aspire.
+    /// Restricted to internal service callers via the <c>SystemCaller</c> authorization policy.
     /// </summary>
     [HttpPost("evaluate")]
-    [AllowAnonymous]
+    [AuthorizeSystem]
     [ProducesResponseType<PolicyEvaluationResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> EvaluateAsync([FromBody] PolicyEvaluationRequest body, CancellationToken ct)

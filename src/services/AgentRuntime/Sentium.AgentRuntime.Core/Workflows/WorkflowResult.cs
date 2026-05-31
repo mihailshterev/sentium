@@ -9,4 +9,6 @@ public sealed class WorkflowResult
     public IEnumerable<(string Action, string Result)> History { get; init; } = [];
     public object Recommendation { get; init; } = default!;
     public IReadOnlyList<WorkflowLogEntry> StreamLog { get; init; } = [];
+    public Guid? WorkflowId { get; init; }
+    public Guid? UserId { get; init; }
 }

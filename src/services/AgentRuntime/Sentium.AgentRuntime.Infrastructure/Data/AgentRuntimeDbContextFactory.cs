@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
+using Sentium.Infrastructure.Security;
 using Sentium.Shared.Constants;
 
 namespace Sentium.AgentRuntime.Infrastructure.Data;
@@ -20,6 +21,14 @@ public sealed class AgentRuntimeDbContextFactory : IDesignTimeDbContextFactory<A
 
         optionsBuilder.UseSqlServer(connectionString);
 
-        return new AgentRuntimeDbContext(optionsBuilder.Options);
+        return new AgentRuntimeDbContext(optionsBuilder.Options, new DesignTimeCurrentUser());
+    }
+
+    private sealed class DesignTimeCurrentUser : ICurrentUser
+    {
+        public Guid? UserId => null;
+        public bool IsAuthenticated => false;
+        public bool IsSovereign => false;
+        public bool IsSystem => true;
     }
 }

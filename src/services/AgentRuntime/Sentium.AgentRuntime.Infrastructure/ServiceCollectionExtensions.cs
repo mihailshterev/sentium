@@ -20,6 +20,7 @@ using Sentium.AgentRuntime.Infrastructure.Tools;
 using Sentium.AgentRuntime.Infrastructure.WorkflowManagement;
 using Sentium.AgentRuntime.Infrastructure.WorkspaceManagement;
 using Sentium.Infrastructure.Messaging;
+using Sentium.Infrastructure.Security;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -114,6 +115,7 @@ public static class ServiceCollectionExtensions
         services.AddHostedService<FileIngestionWorker>();
 
         services.AddScoped<IAgentLearningRepository, AgentLearningRepository>();
+        services.AddScoped<ILearningSanitizationPipeline, LearningSanitizationPipeline>();
         services.AddScoped<IAgentLearningService, AgentLearningService>();
 
         services.AddSingleton<IBuiltInSkillCatalog, BuiltInSkillCatalog>();
@@ -163,19 +165,27 @@ public static class ServiceCollectionExtensions
 
         builder.Services.AddQuartzHostedService(options => options.WaitForJobsToComplete = true);
 
+        services.Configure<InternalApiOptions>(builder.Configuration.GetSection(InternalApiOptions.SectionName));
+
+        services.AddTransient<InternalApiKeyDelegatingHandler>();
+
         services.AddHttpClient<SentinelClient>(client =>
         {
             client.BaseAddress = new Uri($"https+http://{ServiceNames.Sentinel}");
             client.Timeout = TimeSpan.FromSeconds(10);
-        });
+        }).AddHttpMessageHandler<InternalApiKeyDelegatingHandler>();
 
         services.AddHttpClient(ServiceNames.Sandbox, client =>
         {
             client.BaseAddress = new Uri($"https+http://{ServiceNames.Sandbox}");
             client.Timeout = TimeSpan.FromSeconds(120);
-        }).AddStandardResilienceHandler();
+        }).AddHttpMessageHandler<InternalApiKeyDelegatingHandler>().AddStandardResilienceHandler();
 
         services.AddScoped<IPdpContextAccessor, PdpContextAccessor>();
+
+        services.AddHttpContextAccessor();
+        services.AddScoped<SystemScopeContext>();
+        services.AddScoped<ICurrentUser, CurrentUser>();
 
         return builder;
     }

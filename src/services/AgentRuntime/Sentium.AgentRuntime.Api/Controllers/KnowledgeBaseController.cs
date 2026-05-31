@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Sentium.AgentRuntime.Core.Rag;
+using Sentium.AgentRuntime.Core.Rag.Models;
 
 namespace Sentium.AgentRuntime.Api.Controllers;
 

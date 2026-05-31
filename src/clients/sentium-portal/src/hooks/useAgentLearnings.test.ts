@@ -29,6 +29,7 @@ const mockLearning: AgentLearning = {
   conversationId: null,
   capturedAt: "2025-01-01T00:00:00Z",
   isIngested: false,
+  isGlobal: false,
 };
 
 const mockStats: AgentLearningStats = {
