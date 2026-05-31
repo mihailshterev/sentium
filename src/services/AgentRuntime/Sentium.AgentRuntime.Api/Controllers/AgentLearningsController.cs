@@ -44,28 +44,6 @@ public sealed class AgentLearningsController(IAgentLearningService learningServi
     }
 
     /// <summary>
-    /// Manually captures a learning (useful for testing or admin backfills).
-    /// </summary>
-    /// <param name="request">The learning capture request.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>The captured learning.</returns>
-    [HttpPost]
-    [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<AgentLearningResponse>> CaptureLearning([FromBody] CaptureAgentLearningRequest request, CancellationToken ct)
-    {
-        ArgumentNullException.ThrowIfNull(request);
-
-        if (string.IsNullOrWhiteSpace(request.Content))
-        {
-            return BadRequest(new { error = "Content is required." });
-        }
-
-        var result = await learningService.CaptureAsync(request, ct);
-        return CreatedAtAction(nameof(GetLearnings), new { }, result);
-    }
-
-    /// <summary>
     /// Deletes a learning and removes its vectors from the knowledge base.
     /// </summary>
     /// <param name="id">The ID of the learning to delete.</param>

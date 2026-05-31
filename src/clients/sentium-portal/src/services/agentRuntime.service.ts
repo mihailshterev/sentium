@@ -14,12 +14,7 @@ import type {
   CreateConversationResult,
 } from "../types/assistant";
 import type { Workspace, WorkspaceFile, CreateWorkspacePayload, UpdateWorkspacePayload } from "../types/workspace";
-import type {
-  AgentLearning,
-  AgentLearningStats,
-  CaptureAgentLearningPayload,
-  KnowledgeBaseCollectionStats,
-} from "../types/agentConfig";
+import type { AgentLearning, AgentLearningStats, KnowledgeBaseCollectionStats } from "../types/agentConfig";
 import type { DeleteModelResult, OllamaModel } from "../types/models";
 import type { AgentSkill, BuiltInSkill, CreateSkillPayload, UpdateSkillPayload } from "../types/skills";
 import { BASE_URL, client } from "../api/client";
@@ -164,9 +159,6 @@ export const fetchAgentLearnings = (agentName?: string, count = 50): Promise<Age
 
 export const fetchAgentLearningStats = (): Promise<AgentLearningStats> =>
   client.get<AgentLearningStats>(`${BASE}/agent-learnings/stats`);
-
-export const captureAgentLearning = (payload: CaptureAgentLearningPayload): Promise<AgentLearning> =>
-  client.post<AgentLearning>(`${BASE}/agent-learnings`, payload);
 
 export const updateAgentLearning = (id: string, payload: { content: string; tags: string }): Promise<AgentLearning> =>
   client.put<AgentLearning>(`${BASE}/agent-learnings/${id}`, payload);

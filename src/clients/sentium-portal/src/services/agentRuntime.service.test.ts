@@ -171,13 +171,6 @@ describe("agentRuntime.service agent learnings", () => {
     expect(client.get).toHaveBeenCalledWith(expect.stringContaining("agentName=MyAgent"));
   });
 
-  it("captureAgentLearning posts payload to correct endpoint", async () => {
-    const payload = { agentName: "Bot", content: "I learned X", tags: "knowledge" };
-    vi.mocked(client.post).mockResolvedValueOnce({});
-    await service.captureAgentLearning(payload);
-    expect(client.post).toHaveBeenCalledWith("/agent-runtime/agent-learnings", payload);
-  });
-
   it("deleteAgentLearning deletes by id", async () => {
     vi.mocked(client.delete).mockResolvedValueOnce(undefined);
     await service.deleteAgentLearning("learn-1");

@@ -29,13 +29,6 @@ export interface AgentLearningStats {
   learningsByAgent: Record<string, number>;
 }
 
-export interface CaptureAgentLearningPayload {
-  agentName: string;
-  content: string;
-  tags?: string;
-  conversationId?: string;
-}
-
 export interface KnowledgeBaseCollectionStats {
   collectionName: string;
   pointCount: number;
