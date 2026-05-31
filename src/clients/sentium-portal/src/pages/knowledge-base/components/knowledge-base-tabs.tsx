@@ -3,6 +3,7 @@ import { Bot, BrainCircuit, Database, FlaskConical, Loader, RefreshCw, Trash2, X
 import styles from "../knowledge-base.module.scss";
 import { useAgentLearnings } from "../../../hooks/useAgentLearnings";
 import { useKnowledgeBaseStats } from "../../../hooks/useKnowledgeBaseStats";
+import ConfirmDialog from "../../../components/ui/confirm-dialog";
 import EmptyState from "../../../components/ui/empty-state";
 import LearningCard from "./learning-card";
 
@@ -18,14 +19,9 @@ const formatDate = (iso: string) => {
 export const GlobalContextTab = () => {
   const { collections, isLoading, error, refetch, deleteCollection, isDeleting } = useKnowledgeBaseStats();
   const { stats, isStatsLoading } = useAgentLearnings();
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
 
   const totalVectors = collections.reduce((sum, c) => sum + c.pointCount, 0);
-
-  const handleDelete = (name: string) => {
-    if (confirm(`Are you sure you want to delete the collection "${name}"? This action cannot be undone.`)) {
-      deleteCollection(name);
-    }
-  };
 
   return (
     <>
@@ -102,7 +98,7 @@ export const GlobalContextTab = () => {
                         </span>
                         <button
                           className={styles.deleteBtn}
-                          onClick={() => handleDelete(c.collectionName)}
+                          onClick={() => setPendingDelete(c.collectionName)}
                           disabled={isDeleting}
                           title="Delete Collection"
                         >
@@ -123,6 +119,21 @@ export const GlobalContextTab = () => {
           )}
         </div>
       </div>
+
+      {pendingDelete && (
+        <ConfirmDialog
+          open
+          variant="danger"
+          title="Delete collection?"
+          description={`This will permanently delete the collection "${pendingDelete}" and all its vectors. This action cannot be undone.`}
+          confirmLabel="Delete collection"
+          onConfirm={() => {
+            deleteCollection(pendingDelete);
+            setPendingDelete(null);
+          }}
+          onCancel={() => setPendingDelete(null)}
+        />
+      )}
 
       {!isStatsLoading && stats && Object.keys(stats.learningsByAgent).length > 0 && (
         <div className={styles.card}>
