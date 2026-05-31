@@ -36,6 +36,7 @@ const mockStats: AgentLearningStats = {
   totalLearnings: 5,
   pendingIngestion: 2,
   learningsByAgent: { SecurityAnalyst: 3, Planner: 2 },
+  globalLearnings: 1,
 };
 
 beforeEach(() => {
