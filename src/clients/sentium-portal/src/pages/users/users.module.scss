@@ -148,8 +148,6 @@ $shimmer-gradient: linear-gradient(90deg, var(--bg-elevated) 25%, var(--bg-hover
   overflow-y: auto;
 }
 
-// ── Column widths ──────────────────────────────────────────────
-
 .colAvatar {
   width: 40px;
   flex-shrink: 0;
@@ -188,8 +186,6 @@ $shimmer-gradient: linear-gradient(90deg, var(--bg-elevated) 25%, var(--bg-hover
   justify-content: center;
 }
 
-// ── User rows ──────────────────────────────────────────────────
-
 .userRow {
   display: flex;
   align-items: center;
@@ -211,8 +207,6 @@ $shimmer-gradient: linear-gradient(90deg, var(--bg-elevated) 25%, var(--bg-hover
     pointer-events: none;
   }
 }
-
-// ── Avatar ──────────────────────────────────────────────────────
 
 .userAvatar {
   width: 32px;
@@ -256,8 +250,6 @@ $shimmer-gradient: linear-gradient(90deg, var(--bg-elevated) 25%, var(--bg-hover
   color: var(--accent-cyan);
   border: 1px solid rgba(6, 182, 212, 0.25);
 }
-
-// ── User identity ───────────────────────────────────────────────
 
 .nameRow {
   display: flex;
@@ -305,8 +297,6 @@ $shimmer-gradient: linear-gradient(90deg, var(--bg-elevated) 25%, var(--bg-hover
   display: block;
 }
 
-// ── Role badges ─────────────────────────────────────────────────
-
 .roleBadge {
   display: inline-flex;
   align-items: center;
@@ -342,8 +332,6 @@ $shimmer-gradient: linear-gradient(90deg, var(--bg-elevated) 25%, var(--bg-hover
   font-size: 0.75rem;
   color: var(--text-dim);
 }
-
-// ── Assign controls ─────────────────────────────────────────────
 
 .roleSelect {
   background: var(--bg-elevated);
@@ -392,8 +380,6 @@ $shimmer-gradient: linear-gradient(90deg, var(--bg-elevated) 25%, var(--bg-hover
   }
 }
 
-// ── Delete button ───────────────────────────────────────────────
-
 .deleteBtn {
   display: flex;
   align-items: center;
@@ -418,8 +404,6 @@ $shimmer-gradient: linear-gradient(90deg, var(--bg-elevated) 25%, var(--bg-hover
     cursor: not-allowed;
   }
 }
-
-// ── Header actions ───────────────────────────────────────────────
 
 .headerRight {
   display: flex;
@@ -490,8 +474,6 @@ $shimmer-gradient: linear-gradient(90deg, var(--bg-elevated) 25%, var(--bg-hover
 .spinning svg {
   animation: spin 0.7s linear infinite;
 }
-
-// ── Skeleton ────────────────────────────────────────────────────
 
 .skeletonRow {
   display: flex;
