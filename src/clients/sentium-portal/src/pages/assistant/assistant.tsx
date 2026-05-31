@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
+import { useParams, useNavigate } from "react-router";
 import styles from "./assistant.module.scss";
-import { ChevronRight, Brain, ChevronDown } from "lucide-react";
+import { ChevronRight, ChevronDown, BotMessageSquare } from "lucide-react";
 import {
   fetchConversation,
   sendChatMessage,
@@ -76,6 +77,9 @@ const Assistant = () => {
 
   const { models } = useModels();
 
+  const { conversationId: routeConversationId } = useParams<{ conversationId?: string }>();
+  const navigate = useNavigate();
+
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -141,6 +145,51 @@ const Assistant = () => {
       setModel(models[0]);
     }
   }, [models, model, setModel]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (routeConversationId) {
+      if (routeConversationId === activeConversationId) {
+        return;
+      }
+      fetchConversation(routeConversationId)
+        .then((data) => {
+          if (cancelled) {
+            return;
+          }
+          const loadedMessages: ConversationMessage[] = (data.messages ?? []).map(
+            (m: {
+              id: string;
+              role: "user" | "assistant";
+              content: string;
+              timestamp: string;
+              thought?: string;
+              toolCalls?: string[];
+            }) => ({
+              id: m.id,
+              role: m.role,
+              content: m.content,
+              thought: m.thought,
+              toolCalls: m.toolCalls,
+              timestamp: new Date(m.timestamp),
+            }),
+          );
+          setActiveConversation(routeConversationId, loadedMessages, data.model);
+          setModel(data.model);
+        })
+        .catch(() => {
+          if (!cancelled) {
+            navigate("/assistant", { replace: true });
+          }
+        });
+    } else if (activeConversationId) {
+      clearConversation();
+    }
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routeConversationId]);
 
   useEffect(() => {
     if (!isTyping) {
@@ -212,30 +261,9 @@ const Assistant = () => {
     }
   };
 
-  const loadConversation = async (conv: ConversationSummary) => {
-    try {
-      const data = await fetchConversation(conv.id);
-      const loadedMessages: ConversationMessage[] = (data.messages ?? []).map(
-        (m: {
-          id: string;
-          role: "user" | "assistant";
-          content: string;
-          timestamp: string;
-          thought?: string;
-          toolCalls?: string[];
-        }) => ({
-          id: m.id,
-          role: m.role,
-          content: m.content,
-          thought: m.thought,
-          toolCalls: m.toolCalls,
-          timestamp: new Date(m.timestamp),
-        }),
-      );
-      setActiveConversation(conv.id, loadedMessages, conv.model);
-      setModel(conv.model);
-    } catch {
-      // non-blocking
+  const loadConversation = (conv: ConversationSummary) => {
+    if (conv.id !== activeConversationId) {
+      navigate(`/assistant/${conv.id}`);
     }
   };
 
@@ -252,6 +280,7 @@ const Assistant = () => {
     try {
       const data = await createConversation({ title, model });
       setActiveConversation(data.id, [], model);
+      navigate(`/assistant/${data.id}`);
       return data.id;
     } catch {
       return null;
@@ -270,7 +299,7 @@ const Assistant = () => {
     deleteConversationMutate(conversationToDelete, {
       onSuccess: () => {
         if (activeConversationId === conversationToDelete) {
-          clearConversation();
+          navigate("/assistant");
         }
         setIsConfirmOpen(false);
         setConversationToDelete(null);
@@ -561,7 +590,7 @@ const Assistant = () => {
     <div className={styles.container}>
       <div className={styles.chatWrapper}>
         <PageHeader
-          icon={<Brain size={20} className={styles.headerIcon} />}
+          icon={<BotMessageSquare size={20} className={styles.headerIcon} />}
           title="Assistant"
           subtitle="Chat with the Sentium assistant"
           right={
@@ -634,7 +663,7 @@ const Assistant = () => {
         isOpen={sidebarOpen}
         conversations={conversations}
         conversationGroups={conversationGroups}
-        activeConversationId={activeConversationId}
+        activeConversationId={routeConversationId ?? activeConversationId}
         model={model}
         models={models}
         isCreating={isCreating}
