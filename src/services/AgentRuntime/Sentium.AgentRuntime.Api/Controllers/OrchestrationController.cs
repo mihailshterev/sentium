@@ -110,7 +110,7 @@ public sealed class OrchestrationController(
                     break;
                 }
 
-                if (string.IsNullOrWhiteSpace(msg.Data.Text))
+                if (string.IsNullOrEmpty(msg.Data.Text))
                 {
                     continue;
                 }
