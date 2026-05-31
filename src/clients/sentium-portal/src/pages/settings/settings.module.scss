@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  background-color: var(--bg-base);
+  background-color: transparent;
   color: var(--text-primary);
   overflow: hidden;
   position: relative;
@@ -56,8 +56,9 @@
   height: 64px;
   padding: 0 1.75rem;
   border-bottom: 1px solid var(--border-subtle);
-  background: rgba(15, 15, 19, 0.85);
-  backdrop-filter: blur(8px);
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(var(--blur-md)) saturate(140%);
+  -webkit-backdrop-filter: blur(var(--blur-md)) saturate(140%);
   flex-shrink: 0;
   gap: 1rem;
 }
@@ -102,11 +103,12 @@
 }
 
 .card {
-  background: rgba(15, 15, 19, 0.82);
-  border: 1px solid var(--border-subtle);
+  background: var(--glass-bg-strong);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  backdrop-filter: blur(6px);
+  backdrop-filter: blur(var(--blur-sm));
+  -webkit-backdrop-filter: blur(var(--blur-sm));
   margin-bottom: 1rem;
 }
 
@@ -235,7 +237,7 @@
   width: 100%;
   min-height: 300px;
   padding: 0.875rem 1rem;
-  background: rgba(8, 8, 10, 0.9);
+  background: var(--bg-surface);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   color: var(--text-primary);

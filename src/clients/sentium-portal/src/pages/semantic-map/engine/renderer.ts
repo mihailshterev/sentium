@@ -73,6 +73,7 @@ export class UniverseRenderer {
   private waveLayer: Container;
   private ringLayer: Container;
   private nebulaLayer: Container;
+  private gridLayer: Container;
   private world: Container;
   private nodeTextures = new Map<string, Texture>();
   private glowTexture!: Texture;
@@ -106,6 +107,7 @@ export class UniverseRenderer {
     this.app = new Application();
     this.world = new Container();
     this.bgLayer = new Container();
+    this.gridLayer = new Container();
     this.edgeLayer = new Container();
     this.glowLayer = new Container();
     this.nodeLayer = new Container();
@@ -132,6 +134,7 @@ export class UniverseRenderer {
     });
 
     this.app.stage.addChild(this.bgLayer);
+    this.world.addChild(this.gridLayer);
     this.world.addChild(this.nebulaLayer);
     this.world.addChild(this.waveLayer);
     this.world.addChild(this.edgeLayer);
@@ -161,6 +164,7 @@ export class UniverseRenderer {
 
     this.createStarfield(width, height);
     this.createNebula(width, height);
+    this.initGrid(width, height);
 
     this.app.stage.eventMode = "static";
     this.app.stage.hitArea = this.app.screen;
@@ -195,17 +199,10 @@ export class UniverseRenderer {
   }
 
   private createNebula(width: number, height: number) {
-    const blobs: Array<{ x: number; y: number; color: number; scale: number; alpha: number }> = [
-      { x: width * 0.35, y: height * 0.4, color: 0x06b6d4, scale: 11, alpha: 0.18 },
-      { x: width * 0.3, y: height * 0.35, color: 0x0891b2, scale: 8, alpha: 0.12 },
-      { x: width * 0.4, y: height * 0.45, color: 0x22d3ee, scale: 6, alpha: 0.09 },
-      { x: width * 0.65, y: height * 0.4, color: 0xa855f7, scale: 10, alpha: 0.15 },
-      { x: width * 0.7, y: height * 0.35, color: 0x7c3aed, scale: 7, alpha: 0.1 },
-      { x: width * 0.5, y: height * 0.7, color: 0xf59e0b, scale: 9, alpha: 0.13 },
-      { x: width * 0.55, y: height * 0.65, color: 0xd97706, scale: 6, alpha: 0.08 },
-      { x: width * 0.48, y: height * 0.48, color: 0x0d1b4b, scale: 18, alpha: 0.2 },
+    const blobs = [
+      { x: width * 0.5, y: height * 0.5, color: 0x061428, scale: 22, alpha: 0.9 },
+      { x: width * 0.5, y: height * 0.5, color: 0x0d2244, scale: 14, alpha: 0.5 },
     ];
-
     for (const b of blobs) {
       const sprite = new Sprite(this.glowTexture);
       sprite.anchor.set(0.5);
@@ -216,6 +213,55 @@ export class UniverseRenderer {
       sprite.scale.set(b.scale);
       this.nebulaLayer.addChild(sprite);
     }
+  }
+
+  private initGrid(width: number, height: number) {
+    const g = new Graphics();
+    const extent = 4000;
+    const minorSize = 100;
+    const majorSize = 500;
+
+    for (let x = -extent; x <= extent; x += minorSize) {
+      const isMajor = x % majorSize === 0;
+      g.moveTo(x, -extent);
+      g.lineTo(x, extent);
+      g.stroke({ color: 0x0d1f3c, alpha: isMajor ? 0.5 : 0.18, width: isMajor ? 0.8 : 0.35 });
+    }
+    for (let y = -extent; y <= extent; y += minorSize) {
+      const isMajor = y % majorSize === 0;
+      g.moveTo(-extent, y);
+      g.lineTo(extent, y);
+      g.stroke({ color: 0x0d1f3c, alpha: isMajor ? 0.5 : 0.18, width: isMajor ? 0.8 : 0.35 });
+    }
+
+    for (let x = -extent; x <= extent; x += majorSize) {
+      for (let y = -extent; y <= extent; y += majorSize) {
+        g.circle(x, y, 1.5);
+        g.fill({ color: 0x1a3a6c, alpha: 0.7 });
+      }
+    }
+
+    const zones = [
+      { x: width * 0.35, y: height * 0.4, r: 190, color: 0x06b6d4 },
+      { x: width * 0.65, y: height * 0.4, r: 175, color: 0xa855f7 },
+      { x: width * 0.5, y: height * 0.7, r: 160, color: 0xf59e0b },
+    ];
+    for (const z of zones) {
+      g.circle(z.x, z.y, z.r);
+      g.stroke({ color: z.color, alpha: 0.09, width: 1 });
+      g.circle(z.x, z.y, z.r * 0.55);
+      g.stroke({ color: z.color, alpha: 0.05, width: 0.5 });
+      const ch = 10;
+      g.moveTo(z.x - ch, z.y);
+      g.lineTo(z.x + ch, z.y);
+      g.moveTo(z.x, z.y - ch);
+      g.lineTo(z.x, z.y + ch);
+      g.stroke({ color: z.color, alpha: 0.22, width: 0.7 });
+      g.circle(z.x, z.y, 2);
+      g.fill({ color: z.color, alpha: 0.35 });
+    }
+
+    this.gridLayer.addChild(g);
   }
 
   setGraph(nodes: GraphNode[], links: GraphLink[]) {
@@ -486,14 +532,27 @@ export class UniverseRenderer {
       const isSelected = node.id === this._selectedId;
 
       if (isSelected) {
+        const bSize = node.radius + 11;
+        const bracketLen = bSize * 0.48;
+        const corners: Array<{ x: number; y: number; dx: number; dy: number }> = [
+          { x: nx - bSize, y: ny - bSize, dx: 1, dy: 1 },
+          { x: nx + bSize, y: ny - bSize, dx: -1, dy: 1 },
+          { x: nx + bSize, y: ny + bSize, dx: -1, dy: -1 },
+          { x: nx - bSize, y: ny + bSize, dx: 1, dy: -1 },
+        ];
+        for (const c of corners) {
+          this.ringGraphics.moveTo(c.x, c.y);
+          this.ringGraphics.lineTo(c.x + c.dx * bracketLen, c.y);
+          this.ringGraphics.moveTo(c.x, c.y);
+          this.ringGraphics.lineTo(c.x, c.y + c.dy * bracketLen);
+        }
+        this.ringGraphics.stroke({ color: node.color, alpha: 0.9, width: 1.5 });
         const phase = (Math.sin(this._tick * 0.04) + 1) / 2;
-        this.ringGraphics.circle(nx, ny, node.radius + 5 + phase * 3);
-        this.ringGraphics.stroke({ color: 0xffffff, alpha: 0.7 + phase * 0.2, width: 1.5 });
-        this.ringGraphics.circle(nx, ny, node.radius + 2);
-        this.ringGraphics.stroke({ color: node.color, alpha: 0.9, width: 1 });
+        this.ringGraphics.circle(nx, ny, node.radius + 2 + phase * 2);
+        this.ringGraphics.stroke({ color: 0xffffff, alpha: 0.45 + phase * 0.2, width: 1 });
       } else if (isHovered) {
-        this.ringGraphics.circle(nx, ny, node.radius + 4);
-        this.ringGraphics.stroke({ color: 0xffffff, alpha: 0.45, width: 1 });
+        this.ringGraphics.circle(nx, ny, node.radius + 5);
+        this.ringGraphics.stroke({ color: node.color, alpha: 0.85, width: 1.5 });
       }
     }
 

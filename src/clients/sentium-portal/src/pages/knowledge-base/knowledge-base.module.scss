@@ -2,7 +2,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  background-color: var(--bg-base);
+  background-color: transparent;
   color: var(--text-primary);
   overflow: hidden;
   position: relative;
@@ -56,8 +56,9 @@
   height: 64px;
   padding: 0 1.75rem;
   border-bottom: 1px solid var(--border-subtle);
-  background: rgba(15, 15, 19, 0.85);
-  backdrop-filter: blur(8px);
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(var(--blur-md)) saturate(140%);
+  -webkit-backdrop-filter: blur(var(--blur-md)) saturate(140%);
   flex-shrink: 0;
   gap: 1rem;
 }
@@ -94,8 +95,9 @@
   gap: 2px;
   padding: 0 1.75rem;
   border-bottom: 1px solid var(--border-subtle);
-  background: rgba(15, 15, 19, 0.7);
-  backdrop-filter: blur(6px);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--blur-sm));
+  -webkit-backdrop-filter: blur(var(--blur-sm));
   flex-shrink: 0;
 }
 
@@ -139,11 +141,12 @@
 }
 
 .card {
-  background: rgba(15, 15, 19, 0.82);
+  background: var(--glass-bg);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  backdrop-filter: blur(6px);
+  backdrop-filter: blur(var(--blur-sm));
+  -webkit-backdrop-filter: blur(var(--blur-sm));
 }
 
 .cardHeader {
@@ -201,7 +204,7 @@
 }
 
 .statCard {
-  background: rgba(8, 8, 10, 0.7);
+  background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   padding: 1rem 1.1rem;
@@ -236,7 +239,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 0.75rem 1rem;
-  background: rgba(8, 8, 10, 0.6);
+  background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   gap: 1rem;
@@ -310,7 +313,7 @@
 
 .filterSelect {
   padding: 5px 10px;
-  background: rgba(8, 8, 10, 0.8);
+  background: var(--bg-surface);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
   color: var(--text-secondary);
@@ -330,7 +333,7 @@
 }
 
 .learningCard {
-  background: rgba(8, 8, 10, 0.6);
+  background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
   overflow: hidden;
@@ -390,7 +393,7 @@
   font-size: 0.65rem;
   padding: 1px 6px;
   border-radius: var(--radius-full);
-  background: rgba(8, 8, 10, 0.8);
+  background: var(--bg-surface);
   border: 1px solid var(--border-color);
   color: var(--text-muted);
 }
@@ -420,7 +423,7 @@
     left: 0;
     right: 0;
     height: 32px;
-    background: linear-gradient(transparent, rgba(8, 8, 10, 0.6));
+    background: linear-gradient(transparent, var(--bg-surface));
     pointer-events: none;
   }
 }
@@ -446,7 +449,7 @@
   width: 100%;
   min-height: 160px;
   padding: 0.75rem;
-  background: rgba(8, 8, 10, 0.9);
+  background: var(--bg-surface);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-md);
   color: var(--text-primary);
@@ -465,7 +468,7 @@
 .editTagsInput {
   width: 100%;
   padding: 6px 10px;
-  background: rgba(8, 8, 10, 0.9);
+  background: var(--bg-surface);
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
   color: var(--text-primary);

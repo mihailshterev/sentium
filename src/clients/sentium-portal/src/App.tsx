@@ -21,10 +21,10 @@ const App = () => {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#0a0a0a",
+          background: "var(--bg-base)",
         }}
       >
-        <Loader2 className="animate-spin" size={48} color="#00f2ff" />
+        <Loader2 className="animate-spin" size={48} color="var(--accent)" />
       </div>
     );
   }
