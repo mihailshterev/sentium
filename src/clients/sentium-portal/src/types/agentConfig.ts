@@ -27,6 +27,7 @@ export interface AgentLearning {
 export interface AgentLearningStats {
   totalLearnings: number;
   pendingIngestion: number;
+  globalLearnings: number;
   learningsByAgent: Record<string, number>;
 }
 

@@ -304,6 +304,43 @@
   color: var(--accent-purple);
 }
 
+.pillCyan {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px;
+  border-radius: var(--radius-full);
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: rgba(6, 182, 212, 0.1);
+  color: var(--accent-cyan);
+}
+
+.pillMuted {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px;
+  border-radius: var(--radius-full);
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+}
+
+.statValueCyan {
+  color: var(--accent-cyan);
+}
+
+.learningCardGlobal {
+  border-color: rgba(6, 182, 212, 0.3);
+
+  &:hover {
+    border-color: rgba(6, 182, 212, 0.5);
+  }
+}
+
 .filterRow {
   display: flex;
   align-items: center;

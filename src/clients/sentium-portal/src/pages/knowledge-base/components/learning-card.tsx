@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Check, Loader, Pencil, Trash2, X } from "lucide-react";
+import { Check, Globe, Loader, Lock, Pencil, Trash2, X } from "lucide-react";
 import styles from "../knowledge-base.module.scss";
 import ConfirmDialog from "../../../components/ui/confirm-dialog";
 
@@ -11,6 +11,7 @@ interface LearningCardProps {
     tags: string;
     capturedAt: string;
     isIngested: boolean;
+    isGlobal: boolean;
   };
   isSaving: boolean;
   isDeleting: boolean;
@@ -48,7 +49,9 @@ const LearningCard = ({ learning: l, isSaving, isDeleting, onSave, onDelete, for
   };
 
   return (
-    <div className={`${styles.learningCard} ${editing ? styles.learningCardEditing : ""}`}>
+    <div
+      className={`${styles.learningCard} ${editing ? styles.learningCardEditing : ""} ${l.isGlobal ? styles.learningCardGlobal : ""}`}
+    >
       <div className={styles.learningCardHeader}>
         <div className={styles.learningMeta}>
           <span className={styles.agentBadge}>{l.agentName}</span>
@@ -62,6 +65,13 @@ const LearningCard = ({ learning: l, isSaving, isDeleting, onSave, onDelete, for
                   {tag.trim()}
                 </span>
               ))}
+          <span
+            className={l.isGlobal ? styles.pillCyan : styles.pillMuted}
+            title={l.isGlobal ? "Validated and shared with all users' agents" : "Private to your agents"}
+          >
+            {l.isGlobal ? <Globe size={10} /> : <Lock size={10} />}
+            {l.isGlobal ? "Global" : "Private"}
+          </span>
           <span className={l.isIngested ? styles.pillGreen : styles.pillAmber}>
             {l.isIngested ? "Indexed" : "Pending"}
           </span>

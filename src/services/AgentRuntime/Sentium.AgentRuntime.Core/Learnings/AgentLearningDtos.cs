@@ -25,4 +25,5 @@ public sealed record UpdateAgentLearningRequest(
 public sealed record AgentLearningStats(
     int TotalLearnings,
     int PendingIngestion,
+    int GlobalLearnings,
     IReadOnlyDictionary<string, int> LearningsByAgent);
