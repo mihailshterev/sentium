@@ -7,4 +7,5 @@ public static class CommonHeaderNames
     public const string ContentType = "Content-Type";
     public const string CacheControl = "Cache-Control";
     public const string Connection = "Connection";
+    public const string InternalToken = "X-Internal-Token";
 }
