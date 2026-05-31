@@ -41,6 +41,21 @@ public sealed class WorkflowsController(IWorkflowService workflowService, IWorkf
     }
 
     /// <summary>
+    /// Returns a single workflow run by its ID, including its full log history.
+    /// </summary>
+    /// <param name="runId">The ID of the workflow run to retrieve.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>The workflow run if found; otherwise, a 404 Not Found response.</returns>
+    [HttpGet("runs/{runId:guid}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<WorkflowRunResponse>> GetWorkflowRun(Guid runId, CancellationToken ct = default)
+    {
+        var run = await runRepository.GetByIdAsync(runId, ct);
+        return run is null ? NotFound() : Ok(run);
+    }
+
+    /// <summary>
     /// Returns details of a specific workflow by its ID.
     /// </summary>
     /// <param name="workflowId">The ID of the workflow to retrieve.</param>
