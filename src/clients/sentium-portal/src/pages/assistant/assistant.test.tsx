@@ -61,6 +61,8 @@ beforeEach(() => {
     activeConversationId: null,
     messages: [],
     model: "llama3.2",
+    isStreaming: false,
+    streamingConversationId: null,
   });
   vi.spyOn(useConversationsHook, "default").mockReturnValue(defaultConversationsHook);
   vi.spyOn(useModelsHook, "default").mockReturnValue(defaultModelsHook);

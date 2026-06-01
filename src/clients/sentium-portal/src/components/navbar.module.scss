@@ -112,6 +112,17 @@
     transform var(--transition-base);
 }
 
+.activityDot {
+  margin-left: auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent-glow);
+  flex-shrink: 0;
+  animation: statusPulse 2s ease-in-out infinite;
+}
+
 .navLink:hover {
   color: var(--text-primary);
   background: var(--bg-hover);

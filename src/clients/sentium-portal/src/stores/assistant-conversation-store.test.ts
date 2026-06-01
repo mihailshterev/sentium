@@ -18,6 +18,8 @@ beforeEach(() => {
       activeConversationId: null,
       messages: [],
       model: DEFAULT_ASSISTANT_MODEL,
+      isStreaming: false,
+      streamingConversationId: null,
     });
   });
 });
@@ -144,6 +146,26 @@ describe("updateLastMessage()", () => {
     act(() => result.current.updateLastMessage("nonexistent", " world"));
 
     expect(result.current.messages[0].content).toBe("Hello");
+  });
+});
+
+describe("setEnhancedPrompt()", () => {
+  it("attaches the enhanced prompt to the matching message", () => {
+    const { result } = renderHook(() => useConversationStore());
+    act(() => result.current.appendMessage(makeMessage({ id: "msg-1", role: "assistant" })));
+
+    act(() => result.current.setEnhancedPrompt("msg-1", "A sharper prompt"));
+
+    expect(result.current.messages[0].enhancedPrompt).toBe("A sharper prompt");
+  });
+
+  it("is a no-op when id is not found", () => {
+    const { result } = renderHook(() => useConversationStore());
+    act(() => result.current.appendMessage(makeMessage({ id: "msg-1" })));
+
+    act(() => result.current.setEnhancedPrompt("nope", "x"));
+
+    expect(result.current.messages[0].enhancedPrompt).toBeUndefined();
   });
 });
 

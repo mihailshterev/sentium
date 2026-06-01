@@ -24,6 +24,8 @@ import {
 import styles from "./navbar.module.scss";
 import React from "react";
 import { useAuthStore } from "../stores/auth-store";
+import { useConversationStore } from "../stores/assistant-conversation-store";
+import { useOrchestrationRunStore } from "../stores/orchestration-run-store";
 import { useRole } from "../hooks/useRole";
 import ThemeToggle from "./ui/theme-toggle";
 
@@ -85,6 +87,17 @@ const Navbar = () => {
   const user = useAuthStore((s) => s.user);
   const { isSovereign, highestRole } = useRole();
 
+  const assistantStreaming = useConversationStore((s) => s.isStreaming);
+  const orchestrationRunning = useOrchestrationRunStore((s) => s.isRunning);
+
+  const activeRoutes = new Set<string>();
+  if (assistantStreaming) {
+    activeRoutes.add("/assistant");
+  }
+  if (orchestrationRunning) {
+    activeRoutes.add("/orchestration");
+  }
+
   const getLinkClass = ({ isActive }: { isActive: boolean }) =>
     isActive ? `${styles.navLink} ${styles.active}` : styles.navLink;
 
@@ -143,6 +156,7 @@ const Navbar = () => {
                   <NavLink key={to} to={to} end={end} className={getLinkClass}>
                     <Icon size={15} className={styles.navIcon} />
                     <span>{label}</span>
+                    {activeRoutes.has(to) && <span className={styles.activityDot} title="Active" />}
                   </NavLink>
                 ))}
               </React.Fragment>

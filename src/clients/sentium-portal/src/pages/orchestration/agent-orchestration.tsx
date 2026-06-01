@@ -1,28 +1,27 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
 import { Zap, CheckCircle, Circle, Loader, Terminal, History, Orbit } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import styles from "./agent-orchestration.module.scss";
-import {
-  runWorkflowPipeline,
-  runDynamicWorkflow,
-  fetchWorkflowRuns,
-  fetchWorkspaces,
-} from "../../services/agentRuntime.service";
+import { fetchWorkflowRuns, fetchWorkspaces } from "../../services/agentRuntime.service";
 import useWorkflows from "../../hooks/useWorkflows";
 import { useWorkflowRun } from "../../hooks/useWorkflowRuns";
 import type { Phase, LogEntry } from "../../types/orchestration";
 import type { WorkflowRecord } from "../../types/workflows";
 import type { WorkflowRun } from "../../types/workflows";
-import { BASE_URL } from "../../api/client";
+import { useOrchestrationRunStore } from "../../stores/orchestration-run-store";
 import PageHeader from "../../components/ui/page-header";
 import LogEntryView from "./components/log-entry-view";
 import ExecuteSidebar, { type ExecuteMode } from "./components/execute-sidebar";
 
-const PHASE_STEPS: { key: Phase; label: string; icon: React.ElementType }[] = [
+const ALL_PHASE_STEPS: { key: Phase; label: string; icon: React.ElementType }[] = [
   { key: "PLANNING", label: "Plan", icon: Circle },
   { key: "SQUAD", label: "Execute", icon: Zap },
   { key: "VALIDATING", label: "Validate", icon: CheckCircle },
+];
+
+const PREDEFINED_PHASE_STEPS: { key: Phase; label: string; icon: React.ElementType }[] = [
+  { key: "SQUAD", label: "Execute", icon: Zap },
 ];
 
 const PHASE_ORDER: Phase[] = ["IDLE", "PLANNING", "SQUAD", "VALIDATING", "COMPLETE"];
@@ -50,10 +49,10 @@ const AgentOrchestration = () => {
   const { runId } = useParams<{ runId?: string }>();
   const navigate = useNavigate();
 
+  const { logs, phase, isRunning: storeRunning, startPredefined, startDynamic } = useOrchestrationRunStore();
+
   const [sidebarView, setSidebarView] = useState<"execute" | "history">(runId ? "history" : "execute");
   const [executeMode, setExecuteMode] = useState<ExecuteMode>("predefined");
-  const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [phase, setPhase] = useState<Phase>("IDLE");
   const [selectedWorkflow, setSelectedWorkflow] = useState<WorkflowRecord | null>(null);
   const [scenarioInput, setScenarioInput] = useState("");
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string>("");
@@ -86,105 +85,45 @@ const AgentOrchestration = () => {
       return next;
     });
 
-  const openStream = useCallback(
-    (eventId: string) => {
-      const eventSource = new EventSource(`${BASE_URL}/agent-runtime/orchestration/stream/${eventId}`, {
-        withCredentials: true,
-      });
+  const wasRunning = useRef(false);
+  useEffect(() => {
+    if (wasRunning.current && !storeRunning && phase === "COMPLETE") {
+      void refetchRuns();
+    }
+    wasRunning.current = storeRunning;
+  }, [storeRunning, phase, refetchRuns]);
 
-      eventSource.onmessage = (e) => {
-        if (!e.data || e.data === "null") {
-          return;
-        }
-        try {
-          const data = JSON.parse(e.data) as {
-            Author?: string;
-            author?: string;
-            Text?: string;
-            text?: string;
-            Type?: string;
-            type?: string;
-          };
-          const author = data.Author ?? data.author ?? "Agent";
-          const text = data.Text ?? data.text ?? "";
-          const type = (data.Type ?? data.type ?? "message") as LogEntry["type"];
-
-          if (type === "message") {
-            const a = author.toLowerCase();
-            if (a.includes("planner")) {
-              setPhase("PLANNING");
-            } else if (a.includes("validator")) {
-              setPhase("VALIDATING");
-            } else {
-              setPhase("SQUAD");
-            }
-          }
-
-          if (text) {
-            setLogs((prev) => {
-              const last = prev.length - 1;
-              if (
-                (type === "message" || type === "thought") &&
-                last >= 0 &&
-                prev[last].author === author &&
-                prev[last].type === type
-              ) {
-                const updated = [...prev];
-                updated[last] = { ...prev[last], text: prev[last].text + text };
-                return updated;
-              }
-              return [...prev, { author, text, type }];
-            });
-          }
-        } catch (err) {
-          console.error("Stream error:", err);
-        }
-      };
-
-      eventSource.onerror = () => {
-        eventSource.close();
-        setPhase("COMPLETE");
-        void refetchRuns();
-      };
-    },
-    [refetchRuns],
-  );
-
-  const startLiveRun = useCallback(() => {
-    setLogs([]);
-    setPhase("PLANNING");
+  const leaveReplay = () => {
     setSidebarView("execute");
     if (runId) {
       navigate("/orchestration");
     }
-  }, [runId, navigate]);
+  };
 
-  const runWorkflow = useCallback(async () => {
+  const runWorkflow = async () => {
     if (!selectedWorkflow) {
       return;
     }
     const scenario = scenarioInput.trim() || `Execute workflow: ${selectedWorkflow.name}`;
-    startLiveRun();
-    const { eventId } = await runWorkflowPipeline({
+    leaveReplay();
+    await startPredefined({
       workflowId: selectedWorkflow.id,
       scenario,
       ...(selectedWorkspaceId && { workspaceId: selectedWorkspaceId }),
     });
-    openStream(eventId);
-  }, [selectedWorkflow, scenarioInput, selectedWorkspaceId, openStream, startLiveRun]);
+  };
 
-  const runDynamic = useCallback(async () => {
+  const runDynamic = async () => {
     const scenario = scenarioInput.trim();
     if (!scenario) {
       return;
     }
-    startLiveRun();
-    const { eventId } = await runDynamicWorkflow({
+    leaveReplay();
+    await startDynamic({
       activity: scenario,
       ...(selectedWorkspaceId && { workspaceId: selectedWorkspaceId }),
     });
-    openStream(eventId);
-  }, [scenarioInput, selectedWorkspaceId, openStream, startLiveRun]);
+  };
 
   const loadRun = (run: WorkflowRun) => {
     setExpandedThoughts(new Set());
@@ -203,10 +142,11 @@ const AgentOrchestration = () => {
   };
 
   const viewingRun = !!runId;
-  const isRunning = !viewingRun && phase !== "IDLE" && phase !== "COMPLETE";
+  const isRunning = !viewingRun && storeRunning;
   const displayLogs = viewingRun && selectedRun ? coalesceLog(selectedRun.logs) : logs;
   const displayPhase: Phase = viewingRun ? "COMPLETE" : phase;
   const displayPhaseIndex = PHASE_ORDER.indexOf(displayPhase);
+  const phaseSteps = !viewingRun && executeMode === "predefined" ? PREDEFINED_PHASE_STEPS : ALL_PHASE_STEPS;
 
   const formatRunLabel = (run: WorkflowRun) => {
     const d = new Date(run.startedAt);
@@ -223,7 +163,7 @@ const AgentOrchestration = () => {
         subtitle="Real-time multi-agent pipeline"
         right={
           <div className={styles.phaseBar}>
-            {PHASE_STEPS.map((step, i) => {
+            {phaseSteps.map((step, i) => {
               const stepIndex = PHASE_ORDER.indexOf(step.key);
               const isDone = displayPhaseIndex > stepIndex;
               const isActive = displayPhase === step.key;
@@ -240,7 +180,7 @@ const AgentOrchestration = () => {
                   >
                     {step.label}
                   </span>
-                  {i < PHASE_STEPS.length - 1 && (
+                  {i < phaseSteps.length - 1 && (
                     <div className={`${styles.phaseConnector} ${isDone ? styles.phaseConnectorDone : ""}`} />
                   )}
                 </div>

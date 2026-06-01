@@ -486,6 +486,63 @@
   }
 }
 
+.enhancedBlock {
+  border: 1px solid var(--border-subtle);
+  border-left: 2px solid var(--accent-cyan);
+  border-radius: 6px;
+  overflow: hidden;
+  background: rgba(34, 211, 238, 0.04);
+  margin-bottom: 0.3rem;
+}
+
+.enhancedHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 0.4rem 0.65rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  font-family: "JetBrains Mono", monospace;
+  letter-spacing: 0.04em;
+  text-align: left;
+  transition: color 0.15s;
+
+  &:hover {
+    color: var(--accent-cyan);
+  }
+
+  svg:first-child {
+    color: var(--accent-cyan);
+    flex-shrink: 0;
+  }
+
+  span {
+    flex: 1;
+  }
+}
+
+.enhancedContent {
+  padding: 0.5rem 0.75rem 0.65rem;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: var(--text-dim);
+  border-top: 1px solid var(--border-subtle);
+  max-height: 280px;
+  overflow-y: auto;
+
+  p {
+    margin: 0;
+  }
+
+  p + p {
+    margin-top: 0.5rem;
+  }
+}
+
 .toolCallList {
   display: flex;
   flex-direction: column;

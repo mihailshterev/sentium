@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import AgentOrchestration from "./agent-orchestration";
 import * as useWorkflowsHook from "../../hooks/useWorkflows";
 import * as agentRuntimeService from "../../services/agentRuntime.service";
+import { useOrchestrationRunStore } from "../../stores/orchestration-run-store";
 import type { WorkflowRecord } from "../../types/workflows";
 import type { WorkflowRun } from "../../types/workflows";
 
@@ -81,6 +82,7 @@ const renderOrchestration = (path = "/orchestration") => {
 };
 
 beforeEach(() => {
+  useOrchestrationRunStore.setState({ logs: [], phase: "IDLE", isRunning: false });
   vi.spyOn(useWorkflowsHook, "default").mockReturnValue(defaultWorkflowsHook);
   vi.stubGlobal("EventSource", MockEventSource);
 });
