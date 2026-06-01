@@ -1,22 +1,45 @@
 using Sentium.AgentRuntime.Core.Conversations;
 using Sentium.AgentRuntime.Core.Dtos;
+using Sentium.Infrastructure.Caching;
 
 namespace Sentium.AgentRuntime.Application.Conversations;
 
-public sealed class ConversationService(IConversationRepository repository) : IConversationService
+public sealed class ConversationService(
+    IConversationRepository repository,
+    IScopedCache cache) : IConversationService
 {
-    public Task<IReadOnlyList<ConversationSummary>> GetConversationsAsync(CancellationToken ct = default)
-        => repository.GetConversationsAsync(ct);
+    private const string CacheTag = "conversations";
 
-    public Task<ConversationResponse> GetConversationAsync(Guid conversationId, CancellationToken ct = default)
-        => repository.GetConversationAsync(conversationId, ct);
+    public async Task<IReadOnlyList<ConversationSummary>> GetConversationsAsync(CancellationToken ct = default)
+        => await cache.GetOrCreateAsync(
+            $"{CacheTag}:all",
+            async token => await repository.GetConversationsAsync(token),
+            CacheTag,
+            ct);
 
-    public Task<ConversationSummary> CreateConversationAsync(CreateConversationRequest request, CancellationToken ct = default)
-        => repository.CreateConversationAsync(request, ct);
+    public async Task<ConversationResponse> GetConversationAsync(Guid conversationId, CancellationToken ct = default)
+        => await cache.GetOrCreateAsync(
+            $"{CacheTag}:{conversationId}",
+            async token => await repository.GetConversationAsync(conversationId, token),
+            CacheTag,
+            ct);
 
-    public Task DeleteConversationAsync(Guid conversationId, CancellationToken ct = default)
-        => repository.DeleteConversationAsync(conversationId, ct);
+    public async Task<ConversationSummary> CreateConversationAsync(CreateConversationRequest request, CancellationToken ct = default)
+    {
+        var result = await repository.CreateConversationAsync(request, ct);
+        await cache.InvalidateTagAsync(CacheTag, ct);
+        return result;
+    }
 
-    public Task AddMessageAsync(Guid conversationId, string role, string content, string? enhancedPrompt = null, string? thought = null, IReadOnlyList<string>? toolCalls = null, CancellationToken ct = default)
-        => repository.AddMessageAsync(conversationId, role, content, enhancedPrompt, thought, toolCalls, ct);
+    public async Task DeleteConversationAsync(Guid conversationId, CancellationToken ct = default)
+    {
+        await repository.DeleteConversationAsync(conversationId, ct);
+        await cache.InvalidateTagAsync(CacheTag, ct);
+    }
+
+    public async Task AddMessageAsync(Guid conversationId, string role, string content, string? enhancedPrompt = null, string? thought = null, IReadOnlyList<string>? toolCalls = null, CancellationToken ct = default)
+    {
+        await repository.AddMessageAsync(conversationId, role, content, enhancedPrompt, thought, toolCalls, ct);
+        await cache.RemoveAsync($"{CacheTag}:{conversationId}", ct);
+    }
 }

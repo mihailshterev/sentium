@@ -1,8 +1,9 @@
+using Microsoft.Extensions.Logging;
 using Sentium.AgentRuntime.Core.Entities;
 using Sentium.AgentRuntime.Core.Learnings;
 using Sentium.AgentRuntime.Core.Rag;
 using Sentium.AgentRuntime.Core.Rag.Models;
-using Microsoft.Extensions.Logging;
+using Sentium.Infrastructure.Caching;
 
 namespace Sentium.AgentRuntime.Infrastructure.Learnings;
 
@@ -12,20 +13,30 @@ public sealed class AgentLearningService(
     IVectorRepository vectorRepository,
     IEmbeddingService embeddingService,
     ILearningSanitizationPipeline sanitizationPipeline,
+    IScopedCache cache,
     ILogger<AgentLearningService> logger) : IAgentLearningService
 {
     private const string LearningsCollection = "agent_learnings";
     private const string SourcePrefix = "learning:";
+    private const string CacheTag = "learnings";
     private const float RecallScoreThreshold = 0.35f;
 
-    public Task<IReadOnlyList<AgentLearningResponse>> GetLearningsAsync(
+    public async Task<IReadOnlyList<AgentLearningResponse>> GetLearningsAsync(
         string? agentName = null,
         int count = 50,
         CancellationToken ct = default)
-        => repository.GetAllAsync(agentName, count, ct);
+        => await cache.GetOrCreateAsync(
+            $"{CacheTag}:{agentName ?? "all"}:{count}",
+            async token => await repository.GetAllAsync(agentName, count, token),
+            CacheTag,
+            ct);
 
-    public Task<AgentLearningStats> GetStatsAsync(CancellationToken ct = default)
-        => repository.GetStatsAsync(ct);
+    public async Task<AgentLearningStats> GetStatsAsync(CancellationToken ct = default)
+        => await cache.GetOrCreateAsync(
+            $"{CacheTag}:stats",
+            async token => await repository.GetStatsAsync(token),
+            CacheTag,
+            ct);
 
     public async Task<AgentLearningResponse> CaptureAsync(CaptureAgentLearningRequest request, CancellationToken ct = default)
     {
@@ -68,6 +79,7 @@ public sealed class AgentLearningService(
         };
 
         await repository.AddAsync(entity, ct);
+        await cache.InvalidateTagAsync(CacheTag, ct);
 
         await IngestLearningAsync(entity, ct);
 
@@ -85,8 +97,8 @@ public sealed class AgentLearningService(
         }
 
         await vectorRepository.DeleteBySourceAsync(LearningsCollection, $"{SourcePrefix}{id}", ct);
-
         await repository.RemoveAsync(entity, ct);
+        await cache.InvalidateTagAsync(CacheTag, ct);
     }
 
     public async Task<AgentLearningResponse> UpdateAsync(Guid id, UpdateAgentLearningRequest request, CancellationToken ct = default)
@@ -102,6 +114,7 @@ public sealed class AgentLearningService(
         entity.IsIngested = false;
 
         await repository.SaveAsync(ct);
+        await cache.InvalidateTagAsync(CacheTag, ct);
 
         await IngestLearningAsync(entity, ct);
 

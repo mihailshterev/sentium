@@ -6,6 +6,7 @@ using Microsoft.Extensions.Caching.Hybrid;
 using Scalar.AspNetCore;
 using Sentium.Shared.Constants;
 using Sentium.Infrastructure.Extensions;
+using Sentium.Infrastructure.Caching;
 using Sentium.AgentRuntime.Api.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -38,6 +39,7 @@ builder.Services.AddHybridCache(options =>
         LocalCacheExpiration = TimeSpan.FromMinutes(5)
     };
 });
+builder.Services.AddScoped<IScopedCache, ScopedCache>();
 
 builder.Services.AddProblemDetails();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();

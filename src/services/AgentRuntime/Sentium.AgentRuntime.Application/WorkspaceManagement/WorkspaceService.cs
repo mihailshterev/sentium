@@ -1,6 +1,7 @@
 using Sentium.AgentRuntime.Core.Dtos;
 using Sentium.AgentRuntime.Core.Storage;
 using Sentium.AgentRuntime.Core.Workspaces;
+using Sentium.Infrastructure.Caching;
 using Sentium.Infrastructure.Messaging;
 
 namespace Sentium.AgentRuntime.Application.WorkspaceManagement;
@@ -8,13 +9,24 @@ namespace Sentium.AgentRuntime.Application.WorkspaceManagement;
 public sealed class WorkspaceService(
     IWorkspaceRepository repository,
     ILocalFileService fileService,
-    IEventBus eventBus) : IWorkspaceService
+    IEventBus eventBus,
+    IScopedCache cache) : IWorkspaceService
 {
-    public Task<IReadOnlyList<WorkspaceDto>> GetWorkspacesAsync(CancellationToken ct = default)
-        => repository.GetWorkspacesAsync(ct);
+    private const string CacheTag = "workspaces";
 
-    public Task<WorkspaceDto?> GetWorkspaceAsync(Guid id, CancellationToken ct = default)
-        => repository.GetWorkspaceAsync(id, ct);
+    public async Task<IReadOnlyList<WorkspaceDto>> GetWorkspacesAsync(CancellationToken ct = default)
+        => await cache.GetOrCreateAsync(
+            $"{CacheTag}:all",
+            async token => await repository.GetWorkspacesAsync(token),
+            CacheTag,
+            ct);
+
+    public async Task<WorkspaceDto?> GetWorkspaceAsync(Guid id, CancellationToken ct = default)
+        => await cache.GetOrCreateAsync(
+            $"{CacheTag}:{id}",
+            async token => await repository.GetWorkspaceAsync(id, token),
+            CacheTag,
+            ct);
 
     public async Task<WorkspaceDto?> CreateWorkspaceAsync(CreateWorkspaceRequest request, CancellationToken ct = default)
     {
@@ -25,7 +37,9 @@ public sealed class WorkspaceService(
             return null;
         }
 
-        return await repository.CreateWorkspaceAsync(request, ct);
+        var result = await repository.CreateWorkspaceAsync(request, ct);
+        await cache.InvalidateTagAsync(CacheTag, ct);
+        return result;
     }
 
     public async Task<WorkspaceDto?> UpdateWorkspaceAsync(Guid id, UpdateWorkspaceRequest request, CancellationToken ct = default)
@@ -42,7 +56,9 @@ public sealed class WorkspaceService(
             throw new InvalidOperationException($"A workspace named '{request.Name}' already exists.");
         }
 
-        return await repository.UpdateWorkspaceAsync(id, request, ct);
+        var result = await repository.UpdateWorkspaceAsync(id, request, ct);
+        await cache.InvalidateTagAsync(CacheTag, ct);
+        return result;
     }
 
     public async Task<bool> DeleteWorkspaceAsync(Guid id, CancellationToken ct = default)
@@ -53,6 +69,7 @@ public sealed class WorkspaceService(
         }
 
         await repository.DeleteWorkspaceAsync(id, ct);
+        await cache.InvalidateTagAsync(CacheTag, ct);
         return true;
     }
 
@@ -63,11 +80,19 @@ public sealed class WorkspaceService(
             throw new KeyNotFoundException($"Workspace {workspaceId} not found.");
         }
 
-        return await repository.GetWorkspaceFilesAsync(workspaceId, ct);
+        return await cache.GetOrCreateAsync(
+            $"{CacheTag}:files:{workspaceId}",
+            async token => await repository.GetWorkspaceFilesAsync(workspaceId, token),
+            CacheTag,
+            ct);
     }
 
-    public Task<IReadOnlyList<WorkspaceFileDto>> GetFilesAsync(Guid? workspaceId, CancellationToken ct = default)
-        => repository.GetFilesAsync(workspaceId, ct);
+    public async Task<IReadOnlyList<WorkspaceFileDto>> GetFilesAsync(Guid? workspaceId, CancellationToken ct = default)
+        => await cache.GetOrCreateAsync(
+            $"{CacheTag}:files:{workspaceId?.ToString() ?? "all"}",
+            async token => await repository.GetFilesAsync(workspaceId, token),
+            CacheTag,
+            ct);
 
     public async Task<WorkspaceFileDto?> UploadFileAsync(Stream content, string fileName, Guid? workspaceId, CancellationToken ct = default)
     {
@@ -83,6 +108,7 @@ public sealed class WorkspaceService(
 
         var fileDto = await repository.AddFileRecordAsync(new AddFileRecord(fileName, blobName, extension, content.Length, workspaceId), ct);
 
+        await cache.InvalidateTagAsync(CacheTag, ct);
         await eventBus.PublishAsync(FileEvents.FileIngested, new FileIngestedEvent(fileDto.Id, fileDto.WorkspaceId), ct: ct);
 
         return fileDto;
@@ -98,6 +124,7 @@ public sealed class WorkspaceService(
 
         await fileService.DeleteFileAsync(file.BlobName, ct);
         await repository.DeleteFileRecordAsync(fileId, ct);
+        await cache.InvalidateTagAsync(CacheTag, ct);
         return true;
     }
 }

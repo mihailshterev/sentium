@@ -1,21 +1,36 @@
 using Sentium.AgentRuntime.Core.Entities;
 using Sentium.AgentRuntime.Core.Skills;
+using Sentium.Infrastructure.Caching;
 
 namespace Sentium.AgentRuntime.Infrastructure.Skills;
 
-public sealed class AgentSkillService(IAgentSkillRepository repository) : IAgentSkillService
+public sealed class AgentSkillService(
+    IAgentSkillRepository repository,
+    IScopedCache cache) : IAgentSkillService
 {
-    public async Task<IReadOnlyList<AgentSkillDto>> GetAllAsync(CancellationToken ct = default)
-    {
-        var skills = await repository.GetAllAsync(ct);
-        return skills.Select(ToDto).ToList();
-    }
+    private const string CacheTag = "skills";
+
+    public Task<IReadOnlyList<AgentSkillDto>> GetAllAsync(CancellationToken ct = default)
+        => cache.GetOrCreateAsync(
+            $"{CacheTag}:all",
+            async token =>
+            {
+                var skills = await repository.GetAllAsync(token);
+                return (IReadOnlyList<AgentSkillDto>)skills.Select(ToDto).ToList();
+            },
+            CacheTag,
+            ct).AsTask();
 
     public async Task<AgentSkillDto> GetByIdAsync(Guid id, CancellationToken ct = default)
-    {
-        var skill = await repository.GetByIdAsync(id, ct) ?? throw new KeyNotFoundException($"Skill with ID {id} was not found.");
-        return ToDto(skill);
-    }
+        => await cache.GetOrCreateAsync(
+            $"{CacheTag}:{id}",
+            async token =>
+            {
+                var skill = await repository.GetByIdAsync(id, token) ?? throw new KeyNotFoundException($"Skill with ID {id} was not found.");
+                return ToDto(skill);
+            },
+            CacheTag,
+            ct);
 
     public async Task<AgentSkillDto> CreateAsync(CreateAgentSkillRequest request, CancellationToken ct = default)
     {
@@ -40,6 +55,7 @@ public sealed class AgentSkillService(IAgentSkillRepository repository) : IAgent
         };
 
         await repository.AddAsync(skill, ct);
+        await cache.InvalidateTagAsync(CacheTag, ct);
         return ToDto(skill);
     }
 
@@ -55,10 +71,14 @@ public sealed class AgentSkillService(IAgentSkillRepository repository) : IAgent
         skill.UpdatedAt = DateTimeOffset.UtcNow;
 
         await repository.UpdateAsync(skill, ct);
+        await cache.InvalidateTagAsync(CacheTag, ct);
     }
 
-    public Task DeleteAsync(Guid id, CancellationToken ct = default)
-        => repository.DeleteAsync(id, ct);
+    public async Task DeleteAsync(Guid id, CancellationToken ct = default)
+    {
+        await repository.DeleteAsync(id, ct);
+        await cache.InvalidateTagAsync(CacheTag, ct);
+    }
 
     private static AgentSkillDto ToDto(AgentSkill s) => new(
         s.Id,
