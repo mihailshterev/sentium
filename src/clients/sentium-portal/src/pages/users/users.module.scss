@@ -500,3 +500,45 @@ $shimmer-gradient: linear-gradient(90deg, var(--bg-elevated) 25%, var(--bg-hover
   border-radius: 8px;
   flex-shrink: 0;
 }
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.1rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.pageBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:hover:not(:disabled) {
+    background: var(--bg-hover);
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+  }
+
+  &:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+}
+
+.pageInfo {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  min-width: 3rem;
+  text-align: center;
+}

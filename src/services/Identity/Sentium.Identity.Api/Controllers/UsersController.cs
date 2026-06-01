@@ -1,5 +1,6 @@
 ﻿using System.Security.Claims;
 using Sentium.Identity.Application.Abstractions;
+using Sentium.Identity.Api.Contracts;
 using Sentium.Identity.Api.Contracts.Users;
 using Sentium.Identity.Core.Security;
 using Microsoft.AspNetCore.Authorization;
@@ -11,33 +12,40 @@ namespace Sentium.Identity.Api.Controllers;
 [Route("users")]
 [Authorize]
 public sealed class UsersController(
-    IUserManagementService userManagementService,
+    IUserService userService,
     IUserClaimsService userClaimsService) : ControllerBase
 {
     /// <summary>
-    /// Lists all users registered in the system.
+    /// Lists users registered in the system, with pagination.
     /// </summary>
     /// <remarks>Only accessible by users with the Sovereign role.</remarks>
-    /// <response code="200">Returns the full list of users with their basic profiles and roles.</response>
+    /// <param name="page">1-based page number (default: 1).</param>
+    /// <param name="pageSize">Number of items per page (default: 20, max: 100).</param>
+    /// <response code="200">Returns a paginated list of users with their basic profiles and roles.</response>
     [HttpGet]
     [Authorize(Roles = Roles.Sovereign)]
-    [ProducesResponseType(typeof(IEnumerable<UserResponse>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetAllUsers(CancellationToken ct)
+    [ProducesResponseType(typeof(PagedResponse<UserResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAllUsers(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        CancellationToken ct = default)
     {
-        var users = await userManagementService.GetAllUsersAsync(ct);
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
+
+        var (users, totalCount) = await userService.GetPagedUsersAsync(page, pageSize, ct);
 
         var userIds = users.Select(u => u.Id);
         var claimsMap = await userClaimsService.GetBatchClaimsAsync(userIds, [Scopes.Roles], ct);
 
-        var result = users.Select(u =>
+        var items = users.Select(u =>
         {
-            var roleList = new List<string>();
+            List<string> roleList = [];
             if (claimsMap.TryGetValue(u.Id, out var claims))
             {
-                roleList = claims
+                roleList = [.. claims
                     .Where(c => c.Type == ClaimTypes.Role)
-                    .Select(c => c.Value)
-                    .ToList();
+                    .Select(c => c.Value)];
             }
 
             return new UserResponse(
@@ -46,10 +54,11 @@ public sealed class UsersController(
                 u.FirstName,
                 u.LastName,
                 roleList,
-                u.LockoutEnd > DateTimeOffset.UtcNow);
+                u.IsLockedOut);
         }).ToList();
 
-        return Ok(result);
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+        return Ok(new PagedResponse<UserResponse>(items, totalCount, page, pageSize, totalPages));
     }
 
     /// <summary>
@@ -64,7 +73,7 @@ public sealed class UsersController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetUser(Guid id, CancellationToken ct)
     {
-        var user = await userManagementService.GetUserByIdAsync(id, ct);
+        var user = await userService.GetUserByIdAsync(id, ct);
         if (user is null)
         {
             return NotFound();
@@ -76,7 +85,7 @@ public sealed class UsersController(
             .Select(c => c.Value)
             .ToList();
 
-        return Ok(new UserResponse(user.Id, user.Email!, user.FirstName, user.LastName, roleList, user.LockoutEnd > DateTimeOffset.UtcNow));
+        return Ok(new UserResponse(user.Id, user.Email!, user.FirstName, user.LastName, roleList, user.IsLockedOut));
     }
 
     /// <summary>
@@ -100,7 +109,7 @@ public sealed class UsersController(
             return Unauthorized();
         }
 
-        var (succeeded, errors) = await userManagementService.DeleteUserAsync(requesterId.Value, id, ct);
+        var (succeeded, errors) = await userService.DeleteUserAsync(requesterId.Value, id, ct);
         if (!succeeded)
         {
             return BadRequest(new { Errors = errors });

@@ -48,7 +48,10 @@ public static class ServiceCollectionExtensions
         services.AddQuartz(options =>
         {
             options.UseSimpleTypeLoader();
-            options.UseInMemoryStore(); // TODO: Replace with persistent store for production use
+            options.UseInMemoryStore();
+
+            options.SchedulerId = "AUTO";
+            options.SchedulerName = "Sentium-Identity-Scheduler";
         });
 
         services.AddQuartzHostedService(options => options.WaitForJobsToComplete = true);
@@ -106,7 +109,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IUserClaimsService, UserClaimsService>();
         services.AddScoped<IIdentityService, IdentityService>();
         services.AddScoped<IRoleService, RoleService>();
-        services.AddScoped<IUserManagementService, UserManagementService>();
+        services.AddScoped<IUserService, UserService>();
+
         services.AddHostedService<OpenIddictWorker>();
 
         return services;

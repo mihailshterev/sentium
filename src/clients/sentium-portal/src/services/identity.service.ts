@@ -8,37 +8,56 @@ export interface UserProfile {
   lastName: string | null;
 }
 
-export interface UserListItem {
-  id: string;
-  email: string;
-  firstName: string;
-  lastName: string | null;
-  roles: string[];
+export interface UserListItem extends UserProfile {
+  roles: Role[];
   isLockedOut: boolean;
 }
 
 export interface AssignRolePayload {
   userId: string;
-  roleName: string;
+  roleName: Role;
 }
 
-export const identityService = {
-  getMe: () => client.get<UserProfile>("/identity/account/me"),
+export interface PagedResponse<T> {
+  items: T[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
 
-  updateMe: (data: { firstName: string; lastName?: string | null; email: string }) =>
-    client.put<void>("/identity/account/me", data),
+export function getMe() {
+  return client.get<UserProfile>("/identity/account/me");
+}
 
-  getUsers: () => client.get<UserListItem[]>("/identity/users"),
+export function updateMe(data: { firstName: string; lastName?: string | null; email: string }) {
+  return client.put<void>("/identity/account/me", data);
+}
 
-  getUser: (id: string) => client.get<UserListItem>(`/identity/users/${id}`),
+export function getUsers(page = 1, pageSize = 20) {
+  return client.get<PagedResponse<UserListItem>>(`/identity/users?page=${page}&pageSize=${pageSize}`);
+}
 
-  deleteUser: (id: string) => client.delete<void>(`/identity/users/${id}`),
+export function getUser(id: string) {
+  return client.get<UserListItem>(`/identity/users/${id}`);
+}
 
-  getRoles: () => client.get<{ name: Role; permissions: string[] }[]>("/identity/roles"),
+export function deleteUser(id: string) {
+  return client.delete<void>(`/identity/users/${id}`);
+}
 
-  getUserRoles: (userId: string) => client.get<string[]>(`/identity/roles/user/${userId}`),
+export function getRoles() {
+  return client.get<{ name: Role; permissions: string[] }[]>("/identity/roles");
+}
 
-  assignRole: (payload: AssignRolePayload) => client.post<void>("/identity/roles/assign", payload),
+export function getUserRoles(userId: string) {
+  return client.get<string[]>(`/identity/roles/user/${userId}`);
+}
 
-  removeRole: (payload: AssignRolePayload) => client.post<void>("/identity/roles/remove", payload),
-};
+export function assignRole(payload: AssignRolePayload) {
+  return client.post<void>("/identity/roles/assign", payload);
+}
+
+export function removeRole(payload: AssignRolePayload) {
+  return client.post<void>("/identity/roles/remove", payload);
+}

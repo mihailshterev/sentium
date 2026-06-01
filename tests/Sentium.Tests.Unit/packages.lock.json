@@ -1582,7 +1582,9 @@
         "type": "Project",
         "dependencies": {
           "Aspire.NATS.Net": "[13.2.4, )",
+          "Aspire.StackExchange.Redis.DistributedCaching": "[13.2.4, )",
           "Microsoft.AspNetCore.OpenApi": "[10.0.1, )",
+          "Microsoft.Extensions.Caching.Hybrid": "[10.4.0, )",
           "OpenIddict.AspNetCore": "[7.2.0, )",
           "Scalar.AspNetCore": "[2.14.4, )",
           "Sentium.Identity.Application": "[1.0.0, )",
@@ -1612,6 +1614,7 @@
           "Microsoft.EntityFrameworkCore": "[10.0.5, )",
           "Microsoft.EntityFrameworkCore.Design": "[10.0.5, )",
           "Microsoft.EntityFrameworkCore.SqlServer": "[10.0.5, )",
+          "Microsoft.Extensions.Caching.Hybrid": "[10.4.0, )",
           "OpenIddict.AspNetCore": "[7.2.0, )",
           "OpenIddict.EntityFrameworkCore": "[7.2.0, )",
           "OpenIddict.Quartz": "[7.2.0, )",

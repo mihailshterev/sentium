@@ -30,5 +30,5 @@ public interface IRoleService
     /// <summary>
     /// Retrieves all roles currently assigned to a user.
     /// </summary>
-    Task<IList<string>> GetRolesAsync(Guid userId, CancellationToken ct);
+    ValueTask<IList<string>> GetRolesAsync(Guid userId, CancellationToken ct);
 }

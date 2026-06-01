@@ -1,21 +1,21 @@
-using Sentium.Identity.Core.Entities;
+using Sentium.Identity.Application.Users;
 
 namespace Sentium.Identity.Application.Abstractions;
 
 /// <summary>
 /// Provides administrative and self-service user management operations.
 /// </summary>
-public interface IUserManagementService
+public interface IUserService
 {
     /// <summary>
-    /// Retrieves a complete list of all users in the system.
+    /// Retrieves a paginated list of users in the system.
     /// </summary>
-    Task<IReadOnlyList<ApplicationUser>> GetAllUsersAsync(CancellationToken ct);
+    ValueTask<(IReadOnlyList<UserDto> Users, int TotalCount)> GetPagedUsersAsync(int page, int pageSize, CancellationToken ct);
 
     /// <summary>
     /// Finds a specific user by their unique identifier.
     /// </summary>
-    Task<ApplicationUser?> GetUserByIdAsync(Guid userId, CancellationToken ct);
+    ValueTask<UserDto?> GetUserByIdAsync(Guid userId, CancellationToken ct);
 
     /// <summary>
     /// Updates the core profile information for a user.
