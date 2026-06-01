@@ -51,7 +51,7 @@ const Sentinel = () => {
       <PageHeader
         icon={<BrickWallShield size={18} className={styles.titleIcon} />}
         title="Sentinel"
-        subtitle="Defence-in-Depth Policy Decision Point — real-time security governance"
+        subtitle="Defense-in-Depth Policy Decision Point"
         right={
           <div className={styles.headerActions}>
             {settings?.lockdownMode && (

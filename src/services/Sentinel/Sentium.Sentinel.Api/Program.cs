@@ -1,3 +1,4 @@
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
 using Sentium.Infrastructure.Extensions;
@@ -12,7 +13,12 @@ builder.AddServiceDefaults();
 builder.AddAuthenticationDefaults();
 
 builder.Services.AddOpenApi();
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
+
 
 builder.AddNatsClient(ResourceNames.Nats);
 
