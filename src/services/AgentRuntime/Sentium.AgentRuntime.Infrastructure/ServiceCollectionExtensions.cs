@@ -137,6 +137,7 @@ public static class ServiceCollectionExtensions
         services.AddTransient<IAgentTool, ReadFileTool>();
         services.AddTransient<IAgentTool, StoreMemoryTool>();
         services.AddTransient<IAgentTool, RecallMemoryTool>();
+        services.AddTransient<IAgentTool, RecallLearningsTool>();
         services.AddTransient<IAgentTool, ListWorkspacesTool>();
         services.AddTransient<IAgentTool, ListWorkspaceFilesTool>();
         services.AddTransient<IAgentTool, ReadWorkspaceFileContentTool>();

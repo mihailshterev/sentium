@@ -12,7 +12,7 @@ namespace Sentium.AgentRuntime.Infrastructure.Skills;
 ///
 /// Instantiated per-request so that it always reflects the latest DB state.
 /// </summary>
-public sealed class DynamicSkillsProvider(IAgentSkillRepository skillRepository)
+public sealed class DynamicSkillsProvider(IAgentSkillRepository skillRepository, IBuiltInSkillCatalog builtInCatalog)
 {
     public async Task<AgentSkillsProvider> BuildAsync(CancellationToken ct = default)
     {
@@ -33,5 +33,23 @@ public sealed class DynamicSkillsProvider(IAgentSkillRepository skillRepository)
         }
 
         return builder.Build();
+    }
+
+    public async Task<IReadOnlyList<(string Name, string Description)>> GetCatalogAsync(CancellationToken ct = default)
+    {
+        var entries = new List<(string Name, string Description)>();
+
+        foreach (var info in builtInCatalog.GetAll())
+        {
+            entries.Add((info.Name, info.Description));
+        }
+
+        var dbSkills = await skillRepository.GetAllAsync(ct);
+        foreach (var skill in dbSkills)
+        {
+            entries.Add((skill.Name, skill.Description));
+        }
+
+        return entries;
     }
 }

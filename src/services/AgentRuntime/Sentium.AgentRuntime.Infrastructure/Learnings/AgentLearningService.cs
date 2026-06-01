@@ -10,11 +10,13 @@ public sealed class AgentLearningService(
     IAgentLearningRepository repository,
     IDocumentIngestionService ingestionService,
     IVectorRepository vectorRepository,
+    IEmbeddingService embeddingService,
     ILearningSanitizationPipeline sanitizationPipeline,
     ILogger<AgentLearningService> logger) : IAgentLearningService
 {
     private const string LearningsCollection = "agent_learnings";
     private const string SourcePrefix = "learning:";
+    private const float RecallScoreThreshold = 0.35f;
 
     public Task<IReadOnlyList<AgentLearningResponse>> GetLearningsAsync(
         string? agentName = null,
@@ -106,6 +108,44 @@ public sealed class AgentLearningService(
         return new AgentLearningResponse(
             entity.Id, entity.AgentName, entity.Content, entity.Tags,
             entity.ConversationId, entity.CapturedAt, entity.IsIngested, entity.IsGlobal);
+    }
+
+    public async Task<IReadOnlyList<RecalledLearning>> RecallRelevantAsync(string query, Guid? userId, int limit = 5, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return [];
+        }
+
+        try
+        {
+            var embedding = await embeddingService.GenerateEmbeddingAsync(query, ct);
+
+            var results = await vectorRepository.SearchAsync(
+                LearningsCollection,
+                embedding,
+                topK: Math.Clamp(limit, 1, 20),
+                scoreThreshold: RecallScoreThreshold,
+                scope: new KnowledgeScopeFilter(userId),
+                ct: ct);
+
+            if (results.Count == 0)
+            {
+                return [];
+            }
+
+            return results
+                .Select(r => new RecalledLearning(
+                    r.Chunk.Content,
+                    r.Score,
+                    r.Chunk.Metadata.TryGetValue("agent_name", out var agentName) ? agentName : string.Empty))
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to recall relevant learnings for query");
+            return [];
+        }
     }
 
     private async Task IngestLearningAsync(AgentLearning entity, CancellationToken ct)

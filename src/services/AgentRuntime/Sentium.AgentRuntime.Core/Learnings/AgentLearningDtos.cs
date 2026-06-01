@@ -27,3 +27,8 @@ public sealed record AgentLearningStats(
     int PendingIngestion,
     int GlobalLearnings,
     IReadOnlyDictionary<string, int> LearningsByAgent);
+
+public sealed record RecalledLearning(
+    string Content,
+    float Score,
+    string AgentName);

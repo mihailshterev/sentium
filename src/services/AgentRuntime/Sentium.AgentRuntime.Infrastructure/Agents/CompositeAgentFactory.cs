@@ -1,4 +1,5 @@
 using Sentium.AgentRuntime.Core.Agents;
+using Sentium.AgentRuntime.Core.Learnings;
 using Sentium.AgentRuntime.Core.Registry;
 using Sentium.AgentRuntime.Core.Tools;
 using Sentium.AgentRuntime.Infrastructure.Tools;
@@ -10,6 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using OllamaSharp;
 using System.Collections.Concurrent;
+using System.Text;
 using Sentium.AgentRuntime.Infrastructure.Extensions;
 using Sentium.Shared.Constants;
 
@@ -21,6 +23,7 @@ public sealed class CompositeAgentFactory(
     IAgentToolProvider agentToolProvider,
     IAgentManager agentManager,
     IRegistrySettingsService registrySettingsService,
+    IAgentLearningService learningService,
     IServiceProvider serviceProvider,
     IHttpClientFactory httpClientFactory,
     DynamicSkillsProvider dynamicSkillsProvider,
@@ -73,13 +76,17 @@ public sealed class CompositeAgentFactory(
 
         var harnessedClient = GetHarnessedClient(overrideModel);
 
+        var capabilityBlock = await BuildCapabilityBlockAsync(tools, ct);
+        var baseInstructions = overrideInstructions ?? definition.Instructions;
+        var instructions = string.IsNullOrEmpty(capabilityBlock) ? baseInstructions : $"{baseInstructions}\n\n{capabilityBlock}";
+
         var options = new ChatClientAgentOptions
         {
             Name = definition.Name,
             AIContextProviders = [skillsProvider],
             ChatOptions = new ChatOptions
             {
-                Instructions = overrideInstructions ?? definition.Instructions,
+                Instructions = instructions,
                 Tools = instrumentedTools
             }
         };
@@ -119,7 +126,10 @@ public sealed class CompositeAgentFactory(
                 return;
             }
 
-            var harnessedDefault = new HarnessedChatClient(defaultChatClient, registrySettingsService);
+#pragma warning disable CA2000 // Dispose objects before losing scope
+            var harnessedDefault = new HarnessedChatClient(defaultChatClient, registrySettingsService)
+                .WithLearnings(learningService, pdpContext);
+#pragma warning restore CA2000 // Dispose objects before losing scope
             clientCache.TryAdd(ollamaOptions.DefaultModel, harnessedDefault);
             defaultInitialized = true;
         }
@@ -144,8 +154,57 @@ public sealed class CompositeAgentFactory(
 
             return ollamaClient
                 .AddSentiumPipeline()
-                .AsHarnessed(registrySettingsService);
+                .AsHarnessed(registrySettingsService)
+                .WithLearnings(learningService, pdpContext);
         });
+    }
+
+    /// <summary>
+    /// Builds the per-agent capability catalogue (### AVAILABLE TOOLS / ### AVAILABLE SKILLS) listing the
+    /// exact names of the tools and skills this agent has, so smaller models stop inventing tool calls.
+    /// </summary>
+    private async Task<string> BuildCapabilityBlockAsync(IEnumerable<AITool> tools, CancellationToken ct)
+    {
+        var sb = new StringBuilder();
+
+        var functions = tools.OfType<AIFunction>().ToList();
+        if (functions.Count > 0)
+        {
+            sb.AppendLine("### AVAILABLE TOOLS");
+            foreach (var function in functions)
+            {
+                sb.Append("- ").Append(function.Name).Append(": ").AppendLine(Summarize(function.Description));
+            }
+        }
+
+        var skills = await dynamicSkillsProvider.GetCatalogAsync(ct);
+        if (skills.Count > 0)
+        {
+            if (sb.Length > 0)
+            {
+                sb.AppendLine();
+            }
+
+            sb.AppendLine("### AVAILABLE SKILLS");
+            sb.AppendLine("Unlock with load_skill before use.");
+            foreach (var skill in skills)
+            {
+                sb.Append("- ").Append(skill.Name).Append(": ").AppendLine(Summarize(skill.Description));
+            }
+        }
+
+        return sb.ToString().TrimEnd();
+    }
+
+    private static string Summarize(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return string.Empty;
+        }
+
+        var oneLine = text.ReplaceLineEndings(" ").Trim();
+        return oneLine.Length > 160 ? string.Concat(oneLine.AsSpan(0, 160), "…") : oneLine;
     }
 
     public void Dispose()
