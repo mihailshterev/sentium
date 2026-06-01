@@ -128,6 +128,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAgentRegistry, AgentRegistry>();
         services.AddScoped<IAgentToolProvider, AgentToolProvider>();
         services.AddScoped<IAgentFactory, CompositeAgentFactory>();
+        services.AddScoped<IPromptEnhancementService, PromptEnhancementService>();
         services.AddScoped<IAgentManager, AgentManager>();
         services.AddScoped<IWorkspaceManager, WorkspaceManager>();
 

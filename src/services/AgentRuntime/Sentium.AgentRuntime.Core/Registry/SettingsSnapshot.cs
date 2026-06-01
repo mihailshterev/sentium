@@ -12,10 +12,12 @@ public sealed record SettingsSnapshot(HarnessSettingsSnapshot Harness)
     public static readonly SettingsSnapshot Default = new(
         Harness: new HarnessSettingsSnapshot(
             UserHarnessPrompt: string.Empty,
-            IsBuiltInHarnessEnabled: true)
+            IsBuiltInHarnessEnabled: true,
+            IsPromptEnhancementEnabled: true)
     );
 }
 
 public sealed record HarnessSettingsSnapshot(
     string UserHarnessPrompt,
-    bool IsBuiltInHarnessEnabled);
+    bool IsBuiltInHarnessEnabled,
+    bool IsPromptEnhancementEnabled = true);

@@ -33,6 +33,7 @@ public sealed class ConversationManager(AgentRuntimeDbContext context) : IConver
             conv.CreatedAt,
             conv.Messages.Select(m => new MessageResponse(
                 m.Id, m.Role, m.Content, m.Timestamp,
+                m.EnhancedPrompt,
                 m.Thought,
                 m.ToolCalls != null ? JsonSerializer.Deserialize<List<string>>(m.ToolCalls) : null)).ToList());
     }
@@ -67,7 +68,7 @@ public sealed class ConversationManager(AgentRuntimeDbContext context) : IConver
         }
     }
 
-    public async Task AddMessageAsync(Guid conversationId, string role, string content, string? thought = null, IReadOnlyList<string>? toolCalls = null, CancellationToken ct = default)
+    public async Task AddMessageAsync(Guid conversationId, string role, string content, string? enhancedPrompt = null, string? thought = null, IReadOnlyList<string>? toolCalls = null, CancellationToken ct = default)
     {
         var message = new Message
         {
@@ -75,6 +76,7 @@ public sealed class ConversationManager(AgentRuntimeDbContext context) : IConver
             ConversationId = conversationId,
             Role = role,
             Content = content,
+            EnhancedPrompt = enhancedPrompt,
             Thought = thought,
             ToolCalls = toolCalls != null ? JsonSerializer.Serialize(toolCalls) : null,
             Timestamp = DateTime.UtcNow

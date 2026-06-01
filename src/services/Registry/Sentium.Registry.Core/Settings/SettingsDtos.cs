@@ -7,10 +7,12 @@ public sealed record SettingsDto(
 
 public sealed record HarnessSettingsDto(
     string UserHarnessPrompt,
-    bool IsBuiltInHarnessEnabled);
+    bool IsBuiltInHarnessEnabled,
+    bool IsPromptEnhancementEnabled = true);
 
 public sealed record UpdateSettingsRequest(UpdateHarnessSettingsRequest Harness);
 
 public sealed record UpdateHarnessSettingsRequest(
     string UserHarnessPrompt,
-    bool IsBuiltInHarnessEnabled);
+    bool IsBuiltInHarnessEnabled,
+    bool IsPromptEnhancementEnabled = true);
