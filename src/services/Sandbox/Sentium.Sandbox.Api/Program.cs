@@ -1,6 +1,9 @@
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
+using Sentium.Infrastructure.Diagnostics;
 using Sentium.Infrastructure.Extensions;
+using Sentium.Infrastructure.Validation;
 using Sentium.Sandbox.Application;
 using Sentium.Sandbox.Infrastructure;
 using Sentium.Sandbox.Infrastructure.Data;
@@ -11,8 +14,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 builder.AddAuthenticationDefaults();
 
+builder.Services.AddSentiumProblemDetails();
 builder.Services.AddOpenApi();
-builder.Services.AddControllers();
+builder.Services.AddControllers(options => options.Filters.Add<FluentValidationFilter>());
+builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
 builder.AddNatsClient(ResourceNames.Nats);
 
@@ -22,6 +27,7 @@ builder.Services.AddSandboxApplication(builder.Configuration);
 var app = builder.Build();
 
 app.UseSentiumTracing();
+app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
 {

@@ -1,7 +1,10 @@
 using System.Text.Json.Serialization;
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Scalar.AspNetCore;
+using Sentium.Infrastructure.Diagnostics;
 using Sentium.Infrastructure.Extensions;
+using Sentium.Infrastructure.Validation;
 using Sentium.Sentinel.Application;
 using Sentium.Sentinel.Infrastructure;
 using Sentium.Sentinel.Infrastructure.Data;
@@ -12,13 +15,15 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 builder.AddAuthenticationDefaults();
 
+builder.Services.AddSentiumProblemDetails();
 builder.Services.AddOpenApi();
-builder.Services.AddControllers()
+builder.Services.AddControllers(options => options.Filters.Add<FluentValidationFilter>())
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
 
+builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
 builder.AddNatsClient(ResourceNames.Nats);
 
@@ -29,6 +34,7 @@ builder.Services.AddApplication(builder.Configuration);
 var app = builder.Build();
 
 app.UseSentiumTracing();
+app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
 {

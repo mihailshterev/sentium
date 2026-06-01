@@ -61,7 +61,7 @@ public static class ServiceCollectionExtensions
         services.AddHttpClient<ISentinelGateway, HttpSentinelGateway>(client =>
         {
             client.BaseAddress = new Uri($"https+http://{ServiceNames.Sentinel}");
-        }).AddHttpMessageHandler<InternalApiKeyDelegatingHandler>().AddStandardResilienceHandler();
+        }).AddHttpMessageHandler<InternalApiKeyDelegatingHandler>();
 
         return builder;
     }

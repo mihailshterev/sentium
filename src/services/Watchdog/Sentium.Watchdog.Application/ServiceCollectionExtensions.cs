@@ -36,12 +36,15 @@ public static class ServiceCollectionExtensions
             ServiceNames.AgentRuntime
         })
         {
+#pragma warning disable EXTEXP0001
             services.AddHttpClient(name, client =>
             {
                 client.BaseAddress = new Uri($"https+http://{name}");
                 client.Timeout = TimeSpan.FromSeconds(5);
             }).AddServiceDiscovery()
+            .RemoveAllResilienceHandlers()
             .RemoveAllLoggers();
+#pragma warning restore EXTEXP0001
         }
 
         return services;
