@@ -33,7 +33,7 @@ public sealed class AgentsManagementControllerTests
         var result = await _controller.GetAgents(ct);
 
         // Assert
-        result.Should().BeOfType<OkObjectResult>()
+        result.Result.Should().BeOfType<OkObjectResult>()
             .Which.Value.Should().BeEquivalentTo(agents);
         await _agentService.Received(1).GetAgentsAsync(ct);
     }
@@ -51,7 +51,7 @@ public sealed class AgentsManagementControllerTests
         var result = await _controller.GetAgentById(id, ct);
 
         // Assert
-        result.Should().BeOfType<OkObjectResult>()
+        result.Result.Should().BeOfType<OkObjectResult>()
             .Which.Value.Should().Be(agent);
         await _agentService.Received(1).GetAgentByIdAsync(id, ct);
     }
@@ -69,9 +69,55 @@ public sealed class AgentsManagementControllerTests
         var result = await _controller.CreateAgent(request, ct);
 
         // Assert
-        result.Should().BeOfType<CreatedAtActionResult>()
+        result.Result.Should().BeOfType<CreatedAtActionResult>()
             .Which.Value.Should().Be(created);
         await _agentService.Received(1).CreateAgentAsync(request, ct);
+    }
+
+    [Fact]
+    public async Task GetAgentById_ReturnsNotFound_WhenAgentMissing()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        var id = Guid.NewGuid();
+        _agentService.GetAgentByIdAsync(id, ct).Returns((AgentResponse?)null);
+
+        // Act
+        var result = await _controller.GetAgentById(id, ct);
+
+        // Assert
+        result.Result.Should().BeOfType<NotFoundResult>();
+    }
+
+    [Fact]
+    public async Task UpdateAgent_ReturnsNotFound_WhenAgentMissing()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        var id = Guid.NewGuid();
+        var request = new UpdateAgentRequest(id, "Updated", "New desc");
+        _agentService.UpdateAgentAsync(id, request, ct).Returns(false);
+
+        // Act
+        var result = await _controller.UpdateAgent(id, request, ct);
+
+        // Assert
+        result.Should().BeOfType<NotFoundResult>();
+    }
+
+    [Fact]
+    public async Task DeleteAgent_ReturnsNotFound_WhenAgentMissing()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        var id = Guid.NewGuid();
+        _agentService.DeleteAgentAsync(id, ct).Returns(false);
+
+        // Act
+        var result = await _controller.DeleteAgent(id, ct);
+
+        // Assert
+        result.Should().BeOfType<NotFoundResult>();
     }
 
     [Fact]
@@ -81,7 +127,7 @@ public sealed class AgentsManagementControllerTests
         var ct = TestContext.Current.CancellationToken;
         var id = Guid.NewGuid();
         var request = new UpdateAgentRequest(id, "Updated", "New desc");
-        _agentService.UpdateAgentAsync(id, request, ct).Returns(default(ValueTask));
+        _agentService.UpdateAgentAsync(id, request, ct).Returns(true);
 
         // Act
         var result = await _controller.UpdateAgent(id, request, ct);
@@ -97,7 +143,7 @@ public sealed class AgentsManagementControllerTests
         // Arrange
         var ct = TestContext.Current.CancellationToken;
         var id = Guid.NewGuid();
-        _agentService.DeleteAgentAsync(id, ct).Returns(default(ValueTask));
+        _agentService.DeleteAgentAsync(id, ct).Returns(true);
 
         // Act
         var result = await _controller.DeleteAgent(id, ct);

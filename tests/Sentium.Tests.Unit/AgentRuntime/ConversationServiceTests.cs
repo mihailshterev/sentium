@@ -14,7 +14,7 @@ public sealed class ConversationServiceTests
 
     public ConversationServiceTests()
     {
-        _service = new ConversationService(_repository);
+        _service = new ConversationService(_repository, new PassThroughScopedCache());
     }
 
     [Fact]
@@ -76,7 +76,7 @@ public sealed class ConversationServiceTests
         // Arrange
         var ct = TestContext.Current.CancellationToken;
         var id = Guid.NewGuid();
-        _repository.DeleteConversationAsync(id, ct).Returns(Task.CompletedTask);
+        _repository.DeleteConversationAsync(id, ct).Returns(true);
 
         // Act
         await _service.DeleteConversationAsync(id, ct);

@@ -14,7 +14,7 @@ public sealed class WorkflowServiceTests
 
     public WorkflowServiceTests()
     {
-        _service = new WorkflowService(_repository);
+        _service = new WorkflowService(_repository, new PassThroughScopedCache());
     }
 
     private static WorkflowResponse MakeResponse(Guid? id = null) =>
@@ -62,7 +62,7 @@ public sealed class WorkflowServiceTests
     {
         var id = Guid.NewGuid();
         var request = new UpdateWorkflowRequest("Updated", "new desc", []);
-        _repository.UpdateWorkflowAsync(id, request, Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+        _repository.UpdateWorkflowAsync(id, request, Arg.Any<CancellationToken>()).Returns(true);
 
         await _service.UpdateWorkflowAsync(id, request, TestContext.Current.CancellationToken);
 
@@ -73,7 +73,7 @@ public sealed class WorkflowServiceTests
     public async Task DeleteWorkflowAsync_DelegatesToManager()
     {
         var id = Guid.NewGuid();
-        _repository.DeleteWorkflowAsync(id, Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+        _repository.DeleteWorkflowAsync(id, Arg.Any<CancellationToken>()).Returns(true);
 
         await _service.DeleteWorkflowAsync(id, TestContext.Current.CancellationToken);
 

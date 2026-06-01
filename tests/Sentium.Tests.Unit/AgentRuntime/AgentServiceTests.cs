@@ -3,7 +3,6 @@ using NSubstitute;
 using Sentium.AgentRuntime.Application.Agents;
 using Sentium.AgentRuntime.Core.Agents;
 using Sentium.AgentRuntime.Core.Dtos;
-using Sentium.Infrastructure.Security;
 using Xunit;
 
 namespace Sentium.Tests.Unit.AgentRuntime;
@@ -11,13 +10,11 @@ namespace Sentium.Tests.Unit.AgentRuntime;
 public sealed class AgentServiceTests
 {
     private readonly IAgentRepository _repository = Substitute.For<IAgentRepository>();
-    private readonly ICurrentUser _currentUser = Substitute.For<ICurrentUser>();
     private readonly AgentService _service;
 
     public AgentServiceTests()
     {
-        _currentUser.UserId.Returns(Guid.NewGuid());
-        _service = new AgentService(_repository, new PassThroughHybridCache(), _currentUser);
+        _service = new AgentService(_repository, new PassThroughScopedCache());
     }
 
     private static AgentResponse MakeResponse(Guid? id = null, string name = "TestAgent") =>
@@ -81,7 +78,7 @@ public sealed class AgentServiceTests
         var ct = TestContext.Current.CancellationToken;
         var id = Guid.NewGuid();
         var request = new UpdateAgentRequest(id, "Updated", "New description");
-        _repository.UpdateAgentAsync(id, request, ct).Returns(Task.CompletedTask);
+        _repository.UpdateAgentAsync(id, request, ct).Returns(true);
 
         // Act
         await _service.UpdateAgentAsync(id, request, ct);
@@ -96,7 +93,7 @@ public sealed class AgentServiceTests
         // Arrange
         var ct = TestContext.Current.CancellationToken;
         var id = Guid.NewGuid();
-        _repository.DeleteAgentAsync(id, ct).Returns(Task.CompletedTask);
+        _repository.DeleteAgentAsync(id, ct).Returns(true);
 
         // Act
         await _service.DeleteAgentAsync(id, ct);

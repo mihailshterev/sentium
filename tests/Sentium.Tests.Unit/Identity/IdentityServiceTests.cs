@@ -54,6 +54,8 @@ public sealed class IdentityServiceTests
         var request = new RegisterRequest { Email = "user@test.com", Password = "Test@123" };
         _userManager.CreateAsync(Arg.Any<ApplicationUser>(), Arg.Any<string>())
             .Returns(IdentityResult.Success);
+        _userManager.AddToRoleAsync(Arg.Any<ApplicationUser>(), Arg.Any<string>())
+            .Returns(IdentityResult.Success);
         _signInManager.SignInAsync(Arg.Any<ApplicationUser>(), Arg.Any<bool>())
             .Returns(Task.CompletedTask);
 

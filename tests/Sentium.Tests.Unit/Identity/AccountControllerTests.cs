@@ -14,7 +14,7 @@ namespace Sentium.Tests.Unit.Identity;
 public sealed class AccountControllerTests
 {
     private readonly IIdentityService _identityService = Substitute.For<IIdentityService>();
-    private readonly IUserManagementService _userManagementService = Substitute.For<IUserManagementService>();
+    private readonly IUserService _userManagementService = Substitute.For<IUserService>();
     private readonly AccountController _controller;
 
     public AccountControllerTests()
