@@ -2,10 +2,11 @@ import { useState } from "react";
 import { Bot, Check, Loader, Plus, X } from "lucide-react";
 import styles from "../skills.module.scss";
 import { useSkills } from "../../../hooks/useSkills";
-import type { AgentSkill, UpdateSkillPayload } from "../../../types/skills";
+import type { AgentSkill } from "../../../types/skills";
 import EmptyState from "../../../components/ui/empty-state";
 import SkillCard from "./skill-card";
-import ConfirmDialog from "../../../components/ui/confirm-dialog"; // Added import
+import StatusMessage from "../../../components/ui/status-message";
+import ConfirmDialog from "../../../components/ui/confirm-dialog";
 
 const CustomTab = () => {
   const {
@@ -29,11 +30,13 @@ const CustomTab = () => {
 
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [skillToDelete, setSkillToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const resetForm = () => {
     setForm({ name: "", description: "", instructions: "" });
     setShowForm(false);
     setEditingId(null);
+    setFormError(null);
   };
 
   const handleEdit = (skill: AgentSkill) => {
@@ -46,22 +49,29 @@ const CustomTab = () => {
     if (!form.name.trim() || !form.description.trim() || !form.instructions.trim()) {
       return;
     }
-    if (editingId) {
-      const payload: UpdateSkillPayload = {
-        name: form.name.trim(),
-        description: form.description.trim(),
-        instructions: form.instructions.trim(),
-      };
-      await updateSkill({ id: editingId, payload });
-    } else {
-      await createSkill({
-        name: form.name.trim(),
-        description: form.description.trim(),
-        instructions: form.instructions.trim(),
-        skillType: 0,
-      });
+    setFormError(null);
+    try {
+      if (editingId) {
+        await updateSkill({
+          id: editingId,
+          payload: {
+            name: form.name.trim(),
+            description: form.description.trim(),
+            instructions: form.instructions.trim(),
+          },
+        });
+      } else {
+        await createSkill({
+          name: form.name.trim(),
+          description: form.description.trim(),
+          instructions: form.instructions.trim(),
+          skillType: 0,
+        });
+      }
+      resetForm();
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "Failed to save skill");
     }
-    resetForm();
   };
 
   const handleOpenDeleteConfirm = (skill: AgentSkill) => {
@@ -159,6 +169,7 @@ const CustomTab = () => {
                 {editingId ? "Save" : "Create"}
               </button>
             </div>
+            {formError && <StatusMessage variant="error" message={formError} />}
           </div>
         )}
 
