@@ -25,8 +25,9 @@ public interface IAgentLearningService
 
     /// <summary>
     /// Hard-deletes a learning and removes its vectors from the knowledge base.
+    /// Returns <see langword="false"/> when no learning with the given <paramref name="id"/> exists.
     /// </summary>
-    Task DeleteAsync(Guid id, CancellationToken ct = default);
+    Task<bool> DeleteAsync(Guid id, CancellationToken ct = default);
 
     /// <summary>
     /// Updates the content and tags of an existing learning.

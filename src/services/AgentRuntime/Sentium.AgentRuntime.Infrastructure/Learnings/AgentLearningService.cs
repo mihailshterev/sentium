@@ -88,17 +88,18 @@ public sealed class AgentLearningService(
             entity.ConversationId, entity.CapturedAt, entity.IsIngested, entity.IsGlobal);
     }
 
-    public async Task DeleteAsync(Guid id, CancellationToken ct = default)
+    public async Task<bool> DeleteAsync(Guid id, CancellationToken ct = default)
     {
         var entity = await repository.FindAsync(id, ct);
         if (entity is null)
         {
-            return;
+            return false;
         }
 
         await vectorRepository.DeleteBySourceAsync(LearningsCollection, $"{SourcePrefix}{id}", ct);
         await repository.RemoveAsync(entity, ct);
         await cache.InvalidateTagAsync(CacheTag, ct);
+        return true;
     }
 
     public async Task<AgentLearningResponse?> UpdateAsync(Guid id, UpdateAgentLearningRequest request, CancellationToken ct = default)

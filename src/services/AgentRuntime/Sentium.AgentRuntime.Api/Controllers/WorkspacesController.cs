@@ -193,7 +193,7 @@ public sealed class WorkspacesController(IWorkspaceService workspaceService) : C
 
         if (fileDto is null)
         {
-            return BadRequest(new { error = $"Workspace '{workspaceId}' not found." });
+            return NotFound();
         }
 
         return CreatedAtAction(nameof(GetFiles), new { workspaceId }, fileDto);

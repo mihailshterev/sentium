@@ -81,52 +81,8 @@ public sealed class SandboxController(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> ExecuteAsync([FromBody] SandboxExecutionRequest body, CancellationToken ct)
     {
-        ArgumentNullException.ThrowIfNull(body);
-
-        if (!Enum.TryParse<ExecutionLanguage>(body.Language, ignoreCase: true, out var language))
-        {
-            return BadRequest($"Unknown language '{body.Language}'. Valid values: {string.Join(", ", Enum.GetNames<ExecutionLanguage>())}");
-        }
-
-        if (string.IsNullOrWhiteSpace(body.Code))
-        {
-            return BadRequest("'Code' must not be empty.");
-        }
-
-        if (body.Code.Length > _opts.MaxCodeSizeBytes)
-        {
-            return BadRequest($"Code exceeds the maximum allowed size of {_opts.MaxCodeSizeBytes:N0} bytes.");
-        }
-
-        if (string.IsNullOrWhiteSpace(body.AgentId))
-        {
-            return BadRequest("'AgentId' must not be empty.");
-        }
-
+        var language = Enum.Parse<ExecutionLanguage>(body.Language, ignoreCase: true);
         var fileContext = body.FileContext ?? [];
-
-        if (fileContext.Count > _opts.MaxFileContextEntries)
-        {
-            return BadRequest($"FileContext exceeds the maximum of {_opts.MaxFileContextEntries} entries.");
-        }
-
-        foreach (var file in fileContext)
-        {
-            if (string.IsNullOrWhiteSpace(file.FileName))
-            {
-                return BadRequest("A FileContext entry has an empty FileName.");
-            }
-
-            if (string.IsNullOrWhiteSpace(file.Content))
-            {
-                return BadRequest($"FileContext entry '{file.FileName}' has empty Content.");
-            }
-
-            if (file.Content.Length > _opts.MaxFileContentBytes)
-            {
-                return BadRequest($"FileContext entry '{file.FileName}' exceeds the maximum content size of {_opts.MaxFileContentBytes:N0} bytes.");
-            }
-        }
 
         var correlationId = HttpContext.Request.Headers[CommonHeaderNames.CorrelationId].FirstOrDefault() ?? Guid.NewGuid().ToString();
 

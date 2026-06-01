@@ -86,13 +86,6 @@ public sealed class SemanticMapController(
     [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
     public async Task<ActionResult<KnowledgeMapSearchResponse>> Search([FromBody] KnowledgeMapSearchRequest request, CancellationToken ct)
     {
-        ArgumentNullException.ThrowIfNull(request);
-
-        if (string.IsNullOrWhiteSpace(request.Query))
-        {
-            return BadRequest(new { error = "Query must not be empty." });
-        }
-
         var topK = Math.Clamp(request.TopK, 1, 50);
         var threshold = ragOptions.Value.ScoreThreshold;
 
