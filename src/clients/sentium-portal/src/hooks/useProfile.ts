@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { identityService, type UserProfile } from "../services/identity.service";
+import { useAuthStore } from "../stores/auth-store";
 
 const PROFILE_KEY = ["profile"] as const;
 
@@ -7,6 +8,7 @@ type UpdateProfilePayload = { firstName: string; lastName?: string | null; email
 
 const useProfile = () => {
   const queryClient = useQueryClient();
+  const updateAuthUser = useAuthStore((s) => s.updateUser);
 
   const { data: profile = null, isLoading } = useQuery({
     queryKey: PROFILE_KEY,
@@ -17,6 +19,8 @@ const useProfile = () => {
     mutationFn: (payload: UpdateProfilePayload) => identityService.updateMe(payload),
     onSuccess: (_data, variables) => {
       queryClient.setQueryData<UserProfile>(PROFILE_KEY, (prev) => (prev ? { ...prev, ...variables } : prev));
+      const fullName = [variables.firstName, variables.lastName].filter(Boolean).join(" ");
+      updateAuthUser({ name: fullName, email: variables.email });
     },
   });
 
