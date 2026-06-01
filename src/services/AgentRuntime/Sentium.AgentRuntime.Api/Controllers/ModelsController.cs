@@ -16,7 +16,7 @@ namespace Sentium.AgentRuntime.Api.Controllers;
 [Route("models")]
 public sealed class ModelsController(
     IHttpClientFactory httpClientFactory,
-    IAgentManager agentManager,
+    IAgentRepository agentRepository,
     OllamaOptions ollamaOptions) : ControllerBase
 {
     private Uri OllamaBase => ollamaOptions.BaseUrl;
@@ -146,7 +146,7 @@ public sealed class ModelsController(
             return StatusCode((int)response.StatusCode);
         }
 
-        var resetCount = await agentManager.ResetAgentsModelAsync(name, ollamaOptions.DefaultModel, ct);
+        var resetCount = await agentRepository.ResetAgentsModelAsync(name, ollamaOptions.DefaultModel, ct);
 
         return Ok(new DeleteModelResult(name, ollamaOptions.DefaultModel, resetCount));
     }

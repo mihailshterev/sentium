@@ -23,7 +23,7 @@ namespace Sentium.AgentRuntime.Infrastructure.WorkspaceManagement;
 /// - Efficient bulk operations (e.g., <c>ExecuteDeleteAsync</c>).
 /// </para>
 /// </remarks>
-public sealed class WorkspaceManager(AgentRuntimeDbContext context) : IWorkspaceManager
+public sealed class WorkspaceRepository(AgentRuntimeDbContext context) : IWorkspaceRepository
 {
     /// <inheritdoc/>
     public async Task<IReadOnlyList<WorkspaceDto>> GetWorkspacesAsync(CancellationToken ct = default)

@@ -2,7 +2,7 @@ using Sentium.AgentRuntime.Core.Dtos;
 
 namespace Sentium.AgentRuntime.Core.WorkflowManagement;
 
-public interface IWorkflowManager
+public interface IWorkflowRepository
 {
     Task<IReadOnlyList<WorkflowResponse>> GetWorkflowsAsync(CancellationToken ct = default);
     Task<WorkflowResponse> GetWorkflowAsync(Guid workflowId, CancellationToken ct = default);

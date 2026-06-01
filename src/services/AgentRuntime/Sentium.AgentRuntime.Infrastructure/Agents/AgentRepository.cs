@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Sentium.AgentRuntime.Infrastructure.Agents;
 
-public sealed class AgentManager(AgentRuntimeDbContext context) : IAgentManager
+public sealed class AgentRepository(AgentRuntimeDbContext context) : IAgentRepository
 {
     public async Task<AgentResponse> CreateAgentAsync(CreateAgentRequest request, CancellationToken ct = default)
     {

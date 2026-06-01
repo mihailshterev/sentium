@@ -21,7 +21,7 @@ public sealed class CompositeAgentFactory(
     IChatClient defaultChatClient,
     OllamaOptions ollamaOptions,
     IAgentToolProvider agentToolProvider,
-    IAgentManager agentManager,
+    IAgentRepository agentRepository,
     IRegistrySettingsService registrySettingsService,
     IAgentLearningService learningService,
     IServiceProvider serviceProvider,
@@ -102,7 +102,7 @@ public sealed class CompositeAgentFactory(
             return keyedAgent;
         }
 
-        var dbAgent = await agentManager.GetAgentByNameAsync(agentName, ct);
+        var dbAgent = await agentRepository.GetAgentByNameAsync(agentName, ct);
 
         if (dbAgent is not null)
         {

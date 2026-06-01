@@ -3,20 +3,20 @@ using Sentium.AgentRuntime.Core.WorkflowManagement;
 
 namespace Sentium.AgentRuntime.Application.WorkflowManagement;
 
-public sealed class WorkflowService(IWorkflowManager manager) : IWorkflowService
+public sealed class WorkflowService(IWorkflowRepository repository) : IWorkflowService
 {
     public Task<IReadOnlyList<WorkflowResponse>> GetWorkflowsAsync(CancellationToken ct = default)
-        => manager.GetWorkflowsAsync(ct);
+        => repository.GetWorkflowsAsync(ct);
 
     public Task<WorkflowResponse> GetWorkflowAsync(Guid workflowId, CancellationToken ct = default)
-        => manager.GetWorkflowAsync(workflowId, ct);
+        => repository.GetWorkflowAsync(workflowId, ct);
 
     public Task<WorkflowResponse> CreateWorkflowAsync(CreateWorkflowRequest request, CancellationToken ct = default)
-        => manager.CreateWorkflowAsync(request, ct);
+        => repository.CreateWorkflowAsync(request, ct);
 
     public Task UpdateWorkflowAsync(Guid workflowId, UpdateWorkflowRequest request, CancellationToken ct = default)
-        => manager.UpdateWorkflowAsync(workflowId, request, ct);
+        => repository.UpdateWorkflowAsync(workflowId, request, ct);
 
     public Task DeleteWorkflowAsync(Guid workflowId, CancellationToken ct = default)
-        => manager.DeleteWorkflowAsync(workflowId, ct);
+        => repository.DeleteWorkflowAsync(workflowId, ct);
 }

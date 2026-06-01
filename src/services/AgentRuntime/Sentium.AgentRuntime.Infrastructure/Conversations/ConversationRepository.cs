@@ -7,7 +7,7 @@ using System.Text.Json;
 
 namespace Sentium.AgentRuntime.Infrastructure.Conversations;
 
-public sealed class ConversationManager(AgentRuntimeDbContext context) : IConversationManager
+public sealed class ConversationRepository(AgentRuntimeDbContext context) : IConversationRepository
 {
     public async Task<IReadOnlyList<ConversationSummary>> GetConversationsAsync(CancellationToken ct = default)
     {

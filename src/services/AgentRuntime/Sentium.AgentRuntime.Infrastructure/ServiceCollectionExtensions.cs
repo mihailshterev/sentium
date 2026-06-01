@@ -129,8 +129,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAgentToolProvider, AgentToolProvider>();
         services.AddScoped<IAgentFactory, CompositeAgentFactory>();
         services.AddScoped<IPromptEnhancementService, PromptEnhancementService>();
-        services.AddScoped<IAgentManager, AgentManager>();
-        services.AddScoped<IWorkspaceManager, WorkspaceManager>();
+        services.AddScoped<IAgentRepository, AgentRepository>();
+        services.AddScoped<IWorkspaceRepository, WorkspaceRepository>();
 
         services.AddTransient<IAgentTool, KnowledgeBaseSearchTool>();
         services.AddTransient<IAgentTool, CodeExecutionSandboxTool>();
@@ -145,8 +145,8 @@ public static class ServiceCollectionExtensions
         services.AddTransient<IAgentTool, CaptureAgentLearningTool>();
         services.AddTransient<IAgentTool, ScheduleTaskTool>();
 
-        services.AddScoped<IConversationManager, ConversationManager>();
-        services.AddScoped<IWorkflowManager, WorkflowManager>();
+        services.AddScoped<IConversationRepository, ConversationRepository>();
+        services.AddScoped<IWorkflowRepository, WorkflowRepository>();
         services.AddScoped<IWorkflowRunRepository, WorkflowRunRepository>();
 
         builder.Services.AddQuartz(q =>

@@ -2,7 +2,7 @@ using Sentium.AgentRuntime.Core.Dtos;
 
 namespace Sentium.AgentRuntime.Core.Conversations;
 
-public interface IConversationManager
+public interface IConversationRepository
 {
     Task<IReadOnlyList<ConversationSummary>> GetConversationsAsync(CancellationToken ct = default);
     Task<ConversationResponse> GetConversationAsync(Guid conversationId, CancellationToken ct = default);

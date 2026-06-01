@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Sentium.AgentRuntime.Infrastructure.WorkflowManagement;
 
-public sealed class WorkflowManager(AgentRuntimeDbContext context) : IWorkflowManager
+public sealed class WorkflowRepository(AgentRuntimeDbContext context) : IWorkflowRepository
 {
     public async Task<IReadOnlyList<WorkflowResponse>> GetWorkflowsAsync(CancellationToken ct = default)
     {

@@ -16,7 +16,7 @@ namespace Sentium.AgentRuntime.Core.Workspaces;
 /// - File methods: Tracking and lifecycle management of project files.
 /// </para>
 /// </remarks>
-public interface IWorkspaceManager
+public interface IWorkspaceRepository
 {
     /// <summary>
     /// Retrieves all workspaces from the system.

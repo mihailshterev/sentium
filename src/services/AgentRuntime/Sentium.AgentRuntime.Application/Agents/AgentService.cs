@@ -5,14 +5,14 @@ using Sentium.Infrastructure.Security;
 
 namespace Sentium.AgentRuntime.Application.Agents;
 
-public sealed class AgentService(IAgentManager manager, HybridCache cache, ICurrentUser currentUser) : IAgentService
+public sealed class AgentService(IAgentRepository repository, HybridCache cache, ICurrentUser currentUser) : IAgentService
 {
     private const string CacheTag = "agents";
     private string Scope => currentUser.IsSovereign ? "sovereign" : currentUser.UserId?.ToString() ?? "anon";
 
     public async ValueTask<AgentResponse> CreateAgentAsync(CreateAgentRequest request, CancellationToken ct = default)
     {
-        var response = await manager.CreateAgentAsync(request, ct);
+        var response = await repository.CreateAgentAsync(request, ct);
 
         await cache.RemoveByTagAsync(CacheTag, ct);
 
@@ -25,7 +25,7 @@ public sealed class AgentService(IAgentManager manager, HybridCache cache, ICurr
 
         return await cache.GetOrCreateAsync(
             cacheKey,
-            async token => await manager.GetAgentsAsync(token),
+            async token => await repository.GetAgentsAsync(token),
             tags: [CacheTag],
             cancellationToken: ct
         );
@@ -37,7 +37,7 @@ public sealed class AgentService(IAgentManager manager, HybridCache cache, ICurr
 
         return await cache.GetOrCreateAsync(
             cacheKey,
-            async token => await manager.GetAgentByIdAsync(agentId, token),
+            async token => await repository.GetAgentByIdAsync(agentId, token),
             tags: [CacheTag],
             cancellationToken: ct
         );
@@ -45,13 +45,13 @@ public sealed class AgentService(IAgentManager manager, HybridCache cache, ICurr
 
     public async ValueTask UpdateAgentAsync(Guid agentId, UpdateAgentRequest request, CancellationToken ct = default)
     {
-        await manager.UpdateAgentAsync(agentId, request, ct);
+        await repository.UpdateAgentAsync(agentId, request, ct);
         await cache.RemoveByTagAsync(CacheTag, ct);
     }
 
     public async ValueTask DeleteAgentAsync(Guid agentId, CancellationToken ct = default)
     {
-        await manager.DeleteAgentAsync(agentId, ct);
+        await repository.DeleteAgentAsync(agentId, ct);
         await cache.RemoveByTagAsync(CacheTag, ct);
     }
 }

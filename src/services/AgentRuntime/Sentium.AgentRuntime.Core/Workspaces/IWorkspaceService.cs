@@ -14,7 +14,7 @@ namespace Sentium.AgentRuntime.Core.Workspaces;
 /// - Transactional consistency across workspace and file operations.
 /// </para>
 /// <para>
-/// Unlike <see cref="IWorkspaceManager"/>, this service implements business logic
+/// Unlike <see cref="IWorkspaceRepository"/>, this service implements business logic
 /// such as duplicate name checking and graceful error handling.
 /// </para>
 /// </remarks>

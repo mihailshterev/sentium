@@ -2,7 +2,7 @@ using Sentium.AgentRuntime.Core.Dtos;
 
 namespace Sentium.AgentRuntime.Core.Agents;
 
-public interface IAgentManager
+public interface IAgentRepository
 {
     Task<AgentResponse> CreateAgentAsync(CreateAgentRequest request, CancellationToken ct = default);
     Task<IReadOnlyList<AgentResponse>> GetAgentsAsync(CancellationToken ct = default);
