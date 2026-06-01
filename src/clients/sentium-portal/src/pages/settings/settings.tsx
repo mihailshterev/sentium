@@ -36,6 +36,7 @@ const SettingsPage = () => {
         key={settings.updatedAt}
         initialPrompt={settings.harness.userHarnessPrompt}
         initialBuiltIn={settings.harness.isBuiltInHarnessEnabled}
+        initialPromptEnhancement={settings.harness.isPromptEnhancementEnabled}
         updatedBy={settings.updatedBy ?? null}
         save={save}
         isSaving={isSaving}

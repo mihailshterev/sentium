@@ -1,5 +1,6 @@
+import { useState } from "react";
 import Markdown from "react-markdown";
-import { ChevronDown, Wrench, Check, Copy, BotMessageSquare, Brain } from "lucide-react";
+import { ChevronDown, Wrench, Check, Copy, BotMessageSquare, Brain, Sparkles } from "lucide-react";
 import styles from "../assistant.module.scss";
 import type { ConversationMessage } from "../../../types/assistant";
 
@@ -49,6 +50,8 @@ const MessageBubble = ({
   onCopyMessage,
   onApproval,
 }: MessageBubbleProps) => {
+  const [enhancedOpen, setEnhancedOpen] = useState(false);
+
   const isLastMessage = msg.role === "assistant" && msg.content === "" && isTyping;
 
   const showStatusCycler = isLastMessage && !msg.thought && (!msg.toolCalls || msg.toolCalls.length === 0);
@@ -148,6 +151,24 @@ const MessageBubble = ({
               <Markdown>{msg.content}</Markdown>
             </div>
           )
+        )}
+
+        {msg.enhancedPrompt && msg.role === "user" && (
+          <div className={styles.enhancedBlock}>
+            <button className={styles.enhancedHeader} onClick={() => setEnhancedOpen((v) => !v)}>
+              <Sparkles size={11} />
+              <span>Enhanced prompt</span>
+              <ChevronDown
+                size={11}
+                className={`${styles.thoughtChevron} ${enhancedOpen ? styles.thoughtChevronOpen : ""}`}
+              />
+            </button>
+            {enhancedOpen && (
+              <div className={styles.enhancedContent}>
+                <Markdown>{msg.enhancedPrompt}</Markdown>
+              </div>
+            )}
+          </div>
         )}
 
         {msg.role === "assistant" && !isLastMessage && msg.content && (
