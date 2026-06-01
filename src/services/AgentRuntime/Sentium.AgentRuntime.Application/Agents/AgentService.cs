@@ -9,12 +9,13 @@ public sealed class AgentService(IAgentRepository repository, HybridCache cache,
 {
     private const string CacheTag = "agents";
     private string Scope => currentUser.IsSovereign ? "sovereign" : currentUser.UserId?.ToString() ?? "anon";
+    private string ScopedTag => $"{CacheTag}:{Scope}";
 
     public async ValueTask<AgentResponse> CreateAgentAsync(CreateAgentRequest request, CancellationToken ct = default)
     {
         var response = await repository.CreateAgentAsync(request, ct);
 
-        await cache.RemoveByTagAsync(CacheTag, ct);
+        await cache.RemoveByTagAsync(ScopedTag, ct);
 
         return response;
     }
@@ -26,7 +27,7 @@ public sealed class AgentService(IAgentRepository repository, HybridCache cache,
         return await cache.GetOrCreateAsync(
             cacheKey,
             async token => await repository.GetAgentsAsync(token),
-            tags: [CacheTag],
+            tags: [ScopedTag],
             cancellationToken: ct
         );
     }
@@ -38,7 +39,7 @@ public sealed class AgentService(IAgentRepository repository, HybridCache cache,
         return await cache.GetOrCreateAsync(
             cacheKey,
             async token => await repository.GetAgentByIdAsync(agentId, token),
-            tags: [CacheTag],
+            tags: [ScopedTag],
             cancellationToken: ct
         );
     }
@@ -46,12 +47,12 @@ public sealed class AgentService(IAgentRepository repository, HybridCache cache,
     public async ValueTask UpdateAgentAsync(Guid agentId, UpdateAgentRequest request, CancellationToken ct = default)
     {
         await repository.UpdateAgentAsync(agentId, request, ct);
-        await cache.RemoveByTagAsync(CacheTag, ct);
+        await cache.RemoveByTagAsync(ScopedTag, ct);
     }
 
     public async ValueTask DeleteAgentAsync(Guid agentId, CancellationToken ct = default)
     {
         await repository.DeleteAgentAsync(agentId, ct);
-        await cache.RemoveByTagAsync(CacheTag, ct);
+        await cache.RemoveByTagAsync(ScopedTag, ct);
     }
 }
