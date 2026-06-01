@@ -101,11 +101,15 @@ public sealed class AgentLearningService(
         await cache.InvalidateTagAsync(CacheTag, ct);
     }
 
-    public async Task<AgentLearningResponse> UpdateAsync(Guid id, UpdateAgentLearningRequest request, CancellationToken ct = default)
+    public async Task<AgentLearningResponse?> UpdateAsync(Guid id, UpdateAgentLearningRequest request, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var entity = await repository.FindAsync(id, ct) ?? throw new KeyNotFoundException($"AgentLearning {id} not found.");
+        var entity = await repository.FindAsync(id, ct);
+        if (entity is null)
+        {
+            return null;
+        }
 
         await vectorRepository.DeleteBySourceAsync(LearningsCollection, $"{SourcePrefix}{id}", ct);
 

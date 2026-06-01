@@ -45,6 +45,11 @@ public sealed class DynamicCustomWorkflow(
         }
 
         var workflowDef = await workflowService.GetWorkflowAsync(workflowId, ct);
+        if (workflowDef is null)
+        {
+            return new WorkflowResult { Explanation = $"Workflow '{workflowId}' was not found." };
+        }
+
         var orderedRefs = workflowDef.Agents.OrderBy(a => a.Order).ToList();
 
         if (orderedRefs.Count == 0)
@@ -56,6 +61,11 @@ public sealed class DynamicCustomWorkflow(
         foreach (var agentRef in orderedRefs)
         {
             var agentDetails = await agentRepository.GetAgentByIdAsync(agentRef.AgentId, ct);
+            if (agentDetails is null)
+            {
+                continue;
+            }
+
             var agentModel = !string.IsNullOrWhiteSpace(agentDetails.Model) ? agentDetails.Model : null;
             var agent = await factory.CreateAsync(agentDetails.Name, overrideInstructions: agentDetails.Description, overrideModel: agentModel, actingUserId: trigger.UserId, ct: ct);
             squadAgents.Add(agent);

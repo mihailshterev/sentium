@@ -3,6 +3,7 @@ using Sentium.AgentRuntime.Core.Storage;
 using Sentium.AgentRuntime.Core.Workspaces;
 using Sentium.Infrastructure.Caching;
 using Sentium.Infrastructure.Messaging;
+using Sentium.Shared.Results;
 
 namespace Sentium.AgentRuntime.Application.WorkspaceManagement;
 
@@ -28,37 +29,42 @@ public sealed class WorkspaceService(
             CacheTag,
             ct);
 
-    public async Task<WorkspaceDto?> CreateWorkspaceAsync(CreateWorkspaceRequest request, CancellationToken ct = default)
+    public async Task<Result<WorkspaceDto>> CreateWorkspaceAsync(CreateWorkspaceRequest request, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(request);
 
         if (await repository.NameExistsAsync(request.Name, ct: ct))
         {
-            return null;
+            return Result<WorkspaceDto>.Conflict($"A workspace named '{request.Name}' already exists.");
         }
 
-        var result = await repository.CreateWorkspaceAsync(request, ct);
+        var created = await repository.CreateWorkspaceAsync(request, ct);
         await cache.InvalidateTagAsync(CacheTag, ct);
-        return result;
+        return Result<WorkspaceDto>.Success(created);
     }
 
-    public async Task<WorkspaceDto?> UpdateWorkspaceAsync(Guid id, UpdateWorkspaceRequest request, CancellationToken ct = default)
+    public async Task<Result<WorkspaceDto>> UpdateWorkspaceAsync(Guid id, UpdateWorkspaceRequest request, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(request);
 
         if (!await repository.ExistsAsync(id, ct))
         {
-            return null;
+            return Result<WorkspaceDto>.NotFound();
         }
 
         if (await repository.NameExistsAsync(request.Name, excludeId: id, ct: ct))
         {
-            throw new InvalidOperationException($"A workspace named '{request.Name}' already exists.");
+            return Result<WorkspaceDto>.Conflict($"A workspace named '{request.Name}' already exists.");
         }
 
-        var result = await repository.UpdateWorkspaceAsync(id, request, ct);
+        var updated = await repository.UpdateWorkspaceAsync(id, request, ct);
+        if (updated is null)
+        {
+            return Result<WorkspaceDto>.NotFound();
+        }
+
         await cache.InvalidateTagAsync(CacheTag, ct);
-        return result;
+        return Result<WorkspaceDto>.Success(updated);
     }
 
     public async Task<bool> DeleteWorkspaceAsync(Guid id, CancellationToken ct = default)
@@ -73,11 +79,11 @@ public sealed class WorkspaceService(
         return true;
     }
 
-    public async Task<IReadOnlyList<WorkspaceFileDto>> GetWorkspaceFilesAsync(Guid workspaceId, CancellationToken ct = default)
+    public async Task<IReadOnlyList<WorkspaceFileDto>?> GetWorkspaceFilesAsync(Guid workspaceId, CancellationToken ct = default)
     {
         if (!await repository.ExistsAsync(workspaceId, ct))
         {
-            throw new KeyNotFoundException($"Workspace {workspaceId} not found.");
+            return null;
         }
 
         return await cache.GetOrCreateAsync(

@@ -52,21 +52,16 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton(new OllamaOptions { BaseUrl = ollamaUri, DefaultModel = modelName });
 
-#pragma warning disable EXTEXP0001
         services.AddHttpClient(ResourceNames.Ollama, client =>
         {
             client.BaseAddress = ollamaUri;
             client.Timeout = TimeSpan.FromMinutes(10);
         })
-        .RemoveAllResilienceHandlers()
-        .AddStandardResilienceHandler(options =>
-        {
-            options.TotalRequestTimeout.Timeout = TimeSpan.FromMinutes(10);
-            options.AttemptTimeout.Timeout = TimeSpan.FromMinutes(3);
-            options.Retry.MaxRetryAttempts = 1;
-            options.CircuitBreaker.SamplingDuration = TimeSpan.FromMinutes(11);
-        });
-#pragma warning restore EXTEXP0001
+        .AddLongRunningResilienceHandler(
+            totalTimeout: TimeSpan.FromMinutes(10),
+            attemptTimeout: TimeSpan.FromMinutes(3),
+            retries: 0
+        );
 
         services.AddChatClient(sp =>
         {
@@ -102,7 +97,7 @@ public static class ServiceCollectionExtensions
         {
             client.BaseAddress = new Uri($"https+http://{ServiceNames.Registry}");
             client.Timeout = TimeSpan.FromSeconds(10);
-        }).AddStandardResilienceHandler();
+        });
 
         services.AddScoped<IRegistrySettingsService, RegistrySettingsService>();
         services.AddHostedService<SettingsSyncWorker>();
@@ -180,8 +175,14 @@ public static class ServiceCollectionExtensions
         services.AddHttpClient(ServiceNames.Sandbox, client =>
         {
             client.BaseAddress = new Uri($"https+http://{ServiceNames.Sandbox}");
-            client.Timeout = TimeSpan.FromSeconds(120);
-        }).AddHttpMessageHandler<InternalApiKeyDelegatingHandler>().AddStandardResilienceHandler();
+            client.Timeout = Timeout.InfiniteTimeSpan;
+        })
+        .AddHttpMessageHandler<InternalApiKeyDelegatingHandler>()
+        .AddLongRunningResilienceHandler(
+            totalTimeout: TimeSpan.FromSeconds(130),
+            attemptTimeout: TimeSpan.FromSeconds(120),
+            retries: 0
+        );
 
         services.AddScoped<IPdpContextAccessor, PdpContextAccessor>();
 

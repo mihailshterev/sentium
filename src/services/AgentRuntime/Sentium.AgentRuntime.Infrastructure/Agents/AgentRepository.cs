@@ -26,7 +26,7 @@ public sealed class AgentRepository(AgentRuntimeDbContext context) : IAgentRepos
         context.Agents.Add(agent);
         await context.SaveChangesAsync(ct);
 
-        return await GetAgentByIdAsync(agent.Id, ct);
+        return await GetAgentByIdAsync(agent.Id, ct) ?? throw new InvalidOperationException($"Agent {agent.Id} could not be loaded immediately after creation.");
     }
 
     public async Task<IReadOnlyList<AgentResponse>> GetAgentsAsync(CancellationToken ct = default)
@@ -47,18 +47,16 @@ public sealed class AgentRepository(AgentRuntimeDbContext context) : IAgentRepos
             .FirstOrDefaultAsync(ct);
     }
 
-    public async Task<AgentResponse> GetAgentByIdAsync(Guid agentId, CancellationToken ct = default)
+    public async Task<AgentResponse?> GetAgentByIdAsync(Guid agentId, CancellationToken ct = default)
     {
-        var response = await context.Agents
+        return await context.Agents
             .AsNoTracking()
             .Where(a => a.Id == agentId)
             .Select(AgentProjections.ToResponse())
             .FirstOrDefaultAsync(ct);
-
-        return response ?? throw new KeyNotFoundException($"Agent with ID {agentId} not found.");
     }
 
-    public async Task UpdateAgentAsync(Guid agentId, UpdateAgentRequest request, CancellationToken ct = default)
+    public async Task<bool> UpdateAgentAsync(Guid agentId, UpdateAgentRequest request, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -71,22 +69,16 @@ public sealed class AgentRepository(AgentRuntimeDbContext context) : IAgentRepos
                 .SetProperty(a => a.UpdatedAt, DateTime.UtcNow),
             ct);
 
-        if (affectedRows == 0)
-        {
-            throw new KeyNotFoundException($"Agent with ID {agentId} not found.");
-        }
+        return affectedRows > 0;
     }
 
-    public async Task DeleteAgentAsync(Guid agentId, CancellationToken ct = default)
+    public async Task<bool> DeleteAgentAsync(Guid agentId, CancellationToken ct = default)
     {
         var affectedRows = await context.Agents
             .Where(a => a.Id == agentId)
             .ExecuteDeleteAsync(ct);
 
-        if (affectedRows == 0)
-        {
-            throw new KeyNotFoundException($"Agent with ID {agentId} not found.");
-        }
+        return affectedRows > 0;
     }
 
     public Task<int> ResetAgentsModelAsync(string modelName, string defaultModel, CancellationToken ct = default)

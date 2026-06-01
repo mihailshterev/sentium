@@ -22,22 +22,32 @@ public sealed class AgentService(IAgentRepository repository, IScopedCache cache
             CacheTag,
             ct);
 
-    public async ValueTask<AgentResponse> GetAgentByIdAsync(Guid agentId, CancellationToken ct = default)
+    public async ValueTask<AgentResponse?> GetAgentByIdAsync(Guid agentId, CancellationToken ct = default)
         => await cache.GetOrCreateAsync(
             $"{CacheTag}:{agentId}",
             async token => await repository.GetAgentByIdAsync(agentId, token),
             CacheTag,
             ct);
 
-    public async ValueTask UpdateAgentAsync(Guid agentId, UpdateAgentRequest request, CancellationToken ct = default)
+    public async ValueTask<bool> UpdateAgentAsync(Guid agentId, UpdateAgentRequest request, CancellationToken ct = default)
     {
-        await repository.UpdateAgentAsync(agentId, request, ct);
-        await cache.InvalidateTagAsync(CacheTag, ct);
+        var updated = await repository.UpdateAgentAsync(agentId, request, ct);
+        if (updated)
+        {
+            await cache.InvalidateTagAsync(CacheTag, ct);
+        }
+
+        return updated;
     }
 
-    public async ValueTask DeleteAgentAsync(Guid agentId, CancellationToken ct = default)
+    public async ValueTask<bool> DeleteAgentAsync(Guid agentId, CancellationToken ct = default)
     {
-        await repository.DeleteAgentAsync(agentId, ct);
-        await cache.InvalidateTagAsync(CacheTag, ct);
+        var deleted = await repository.DeleteAgentAsync(agentId, ct);
+        if (deleted)
+        {
+            await cache.InvalidateTagAsync(CacheTag, ct);
+        }
+
+        return deleted;
     }
 }

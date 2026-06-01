@@ -1,3 +1,5 @@
+using Sentium.Shared.Results;
+
 namespace Sentium.AgentRuntime.Core.Skills;
 
 /// <summary>
@@ -11,23 +13,23 @@ public interface IAgentSkillService
     Task<IReadOnlyList<AgentSkillDto>> GetAllAsync(CancellationToken ct = default);
 
     /// <summary>
-    /// Returns the skill with the given <paramref name="id"/>.
+    /// Returns the skill with the given <paramref name="id"/>, or <see langword="null"/> if none exists.
     /// </summary>
-    /// <exception cref="KeyNotFoundException">Thrown when no skill with the given <paramref name="id"/> exists.</exception>
-    Task<AgentSkillDto> GetByIdAsync(Guid id, CancellationToken ct = default);
+    Task<AgentSkillDto?> GetByIdAsync(Guid id, CancellationToken ct = default);
 
     /// <summary>
-    /// Creates and persists a new skill from the supplied <paramref name="request"/>.
+    /// Creates and persists a new skill. Returns a <see cref="ResultStatus.Conflict"/> result when a skill
+    /// with the same name already exists.
     /// </summary>
-    Task<AgentSkillDto> CreateAsync(CreateAgentSkillRequest request, CancellationToken ct = default);
+    Task<Result<AgentSkillDto>> CreateAsync(CreateAgentSkillRequest request, CancellationToken ct = default);
 
     /// <summary>
-    /// Updates the skill identified by <paramref name="id"/> with values from <paramref name="request"/>.
+    /// Updates the skill identified by <paramref name="id"/>. Returns <see langword="false"/> when no such skill exists.
     /// </summary>
-    Task UpdateAsync(Guid id, UpdateAgentSkillRequest request, CancellationToken ct = default);
+    Task<bool> UpdateAsync(Guid id, UpdateAgentSkillRequest request, CancellationToken ct = default);
 
     /// <summary>
-    /// Permanently deletes the skill identified by <paramref name="id"/>.
+    /// Permanently deletes the skill identified by <paramref name="id"/>. Returns <see langword="false"/> when no such skill exists.
     /// </summary>
-    Task DeleteAsync(Guid id, CancellationToken ct = default);
+    Task<bool> DeleteAsync(Guid id, CancellationToken ct = default);
 }

@@ -17,7 +17,7 @@ public sealed class WorkflowService(
             CacheTag,
             ct);
 
-    public async Task<WorkflowResponse> GetWorkflowAsync(Guid workflowId, CancellationToken ct = default)
+    public async Task<WorkflowResponse?> GetWorkflowAsync(Guid workflowId, CancellationToken ct = default)
         => await cache.GetOrCreateAsync(
             $"{CacheTag}:{workflowId}",
             async token => await repository.GetWorkflowAsync(workflowId, token),
@@ -31,15 +31,25 @@ public sealed class WorkflowService(
         return result;
     }
 
-    public async Task UpdateWorkflowAsync(Guid workflowId, UpdateWorkflowRequest request, CancellationToken ct = default)
+    public async Task<bool> UpdateWorkflowAsync(Guid workflowId, UpdateWorkflowRequest request, CancellationToken ct = default)
     {
-        await repository.UpdateWorkflowAsync(workflowId, request, ct);
-        await cache.InvalidateTagAsync(CacheTag, ct);
+        var updated = await repository.UpdateWorkflowAsync(workflowId, request, ct);
+        if (updated)
+        {
+            await cache.InvalidateTagAsync(CacheTag, ct);
+        }
+
+        return updated;
     }
 
-    public async Task DeleteWorkflowAsync(Guid workflowId, CancellationToken ct = default)
+    public async Task<bool> DeleteWorkflowAsync(Guid workflowId, CancellationToken ct = default)
     {
-        await repository.DeleteWorkflowAsync(workflowId, ct);
-        await cache.InvalidateTagAsync(CacheTag, ct);
+        var deleted = await repository.DeleteWorkflowAsync(workflowId, ct);
+        if (deleted)
+        {
+            await cache.InvalidateTagAsync(CacheTag, ct);
+        }
+
+        return deleted;
     }
 }

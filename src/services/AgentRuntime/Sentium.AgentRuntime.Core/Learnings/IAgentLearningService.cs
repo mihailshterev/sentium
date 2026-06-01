@@ -31,8 +31,9 @@ public interface IAgentLearningService
     /// <summary>
     /// Updates the content and tags of an existing learning.
     /// The old vectors are removed and the learning is re-ingested with the new content.
+    /// Returns <see langword="null"/> when no learning with the given <paramref name="id"/> exists.
     /// </summary>
-    Task<AgentLearningResponse> UpdateAsync(Guid id, UpdateAgentLearningRequest request, CancellationToken ct = default);
+    Task<AgentLearningResponse?> UpdateAsync(Guid id, UpdateAgentLearningRequest request, CancellationToken ct = default);
 
     /// <summary>
     /// Semantic-searches the <c>agent_learnings</c> collection for learnings relevant to

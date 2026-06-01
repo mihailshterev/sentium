@@ -34,10 +34,11 @@ public sealed class AgentsManagementController(IAgentService agentService) : Con
     /// <returns>Agent details</returns>
     [HttpGet("{agentId:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async ValueTask<ActionResult<AgentResponse>> GetAgentById(Guid agentId, CancellationToken ct)
     {
         var agent = await agentService.GetAgentByIdAsync(agentId, ct);
-        return Ok(agent);
+        return agent is null ? NotFound() : Ok(agent);
     }
 
     /// <summary>
@@ -63,10 +64,11 @@ public sealed class AgentsManagementController(IAgentService agentService) : Con
     /// <returns>No content</returns>
     [HttpPut("{agentId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async ValueTask<IActionResult> UpdateAgent(Guid agentId, [FromBody] UpdateAgentRequest request, CancellationToken ct)
     {
-        await agentService.UpdateAgentAsync(agentId, request, ct);
-        return NoContent();
+        var updated = await agentService.UpdateAgentAsync(agentId, request, ct);
+        return updated ? NoContent() : NotFound();
     }
 
     /// <summary>
@@ -77,9 +79,10 @@ public sealed class AgentsManagementController(IAgentService agentService) : Con
     /// <returns>No content</returns>
     [HttpDelete("{agentId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async ValueTask<IActionResult> DeleteAgent(Guid agentId, CancellationToken ct)
     {
-        await agentService.DeleteAgentAsync(agentId, ct);
-        return NoContent();
+        var deleted = await agentService.DeleteAgentAsync(agentId, ct);
+        return deleted ? NoContent() : NotFound();
     }
 }

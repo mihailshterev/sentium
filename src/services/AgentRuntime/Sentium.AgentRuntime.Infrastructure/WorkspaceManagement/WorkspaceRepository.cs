@@ -7,25 +7,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Sentium.AgentRuntime.Infrastructure.WorkspaceManagement;
 
-/// <summary>
-/// Implements the workspace and file management data access layer using Entity Framework Core.
-/// </summary>
-/// <remarks>
-/// <para>
-/// This class directly accesses the <see cref="AgentRuntimeDbContext"/> to perform CRUD operations
-/// on <see cref="Workspace"/> and <see cref="ProjectFile"/> entities.
-/// </para>
-/// <para>
-/// Key responsibilities:
-/// - Workspace CRUD and existence checks.
-/// - File metadata tracking and querying.
-/// - Proper use of <c>AsNoTracking()</c> for read-only queries.
-/// - Efficient bulk operations (e.g., <c>ExecuteDeleteAsync</c>).
-/// </para>
-/// </remarks>
 public sealed class WorkspaceRepository(AgentRuntimeDbContext context) : IWorkspaceRepository
 {
-    /// <inheritdoc/>
     public async Task<IReadOnlyList<WorkspaceDto>> GetWorkspacesAsync(CancellationToken ct = default)
     {
         return await context.Workspaces
@@ -41,7 +24,6 @@ public sealed class WorkspaceRepository(AgentRuntimeDbContext context) : IWorksp
             .ToListAsync(ct);
     }
 
-    /// <inheritdoc/>
     public async Task<WorkspaceDto?> GetWorkspaceAsync(Guid id, CancellationToken ct = default)
     {
         return await context.Workspaces
@@ -57,20 +39,17 @@ public sealed class WorkspaceRepository(AgentRuntimeDbContext context) : IWorksp
             .FirstOrDefaultAsync(ct);
     }
 
-    /// <inheritdoc/>
     public Task<bool> NameExistsAsync(string name, Guid? excludeId = null, CancellationToken ct = default)
     {
         return context.Workspaces
             .AnyAsync(w => w.Name == name && (excludeId == null || w.Id != excludeId.Value), ct);
     }
 
-    /// <inheritdoc/>
     public Task<bool> ExistsAsync(Guid id, CancellationToken ct = default)
     {
         return context.Workspaces.AnyAsync(w => w.Id == id, ct);
     }
 
-    /// <inheritdoc/>
     public async Task<WorkspaceDto> CreateWorkspaceAsync(CreateWorkspaceRequest request, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -91,12 +70,15 @@ public sealed class WorkspaceRepository(AgentRuntimeDbContext context) : IWorksp
         return new WorkspaceDto(workspace.Id, workspace.Name, workspace.Description, 0, workspace.CreatedAt, workspace.UpdatedAt);
     }
 
-    /// <inheritdoc/>
-    public async Task<WorkspaceDto> UpdateWorkspaceAsync(Guid id, UpdateWorkspaceRequest request, CancellationToken ct = default)
+    public async Task<WorkspaceDto?> UpdateWorkspaceAsync(Guid id, UpdateWorkspaceRequest request, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var workspace = await context.Workspaces.FindAsync([id], ct) ?? throw new KeyNotFoundException($"Workspace {id} not found.");
+        var workspace = await context.Workspaces.FindAsync([id], ct);
+        if (workspace is null)
+        {
+            return null;
+        }
 
         workspace.Name = request.Name.Trim();
         workspace.Description = request.Description?.Trim();
@@ -108,20 +90,15 @@ public sealed class WorkspaceRepository(AgentRuntimeDbContext context) : IWorksp
         return new WorkspaceDto(workspace.Id, workspace.Name, workspace.Description, fileCount, workspace.CreatedAt, workspace.UpdatedAt);
     }
 
-    /// <inheritdoc/>
-    public async Task DeleteWorkspaceAsync(Guid id, CancellationToken ct = default)
+    public async Task<bool> DeleteWorkspaceAsync(Guid id, CancellationToken ct = default)
     {
         var affectedRows = await context.Workspaces
             .Where(w => w.Id == id)
             .ExecuteDeleteAsync(ct);
 
-        if (affectedRows == 0)
-        {
-            throw new KeyNotFoundException($"Workspace {id} not found.");
-        }
+        return affectedRows > 0;
     }
 
-    /// <inheritdoc/>
     public async Task<IReadOnlyList<WorkspaceFileDto>> GetWorkspaceFilesAsync(Guid workspaceId, CancellationToken ct = default)
     {
         return await context.ProjectFiles
@@ -134,7 +111,6 @@ public sealed class WorkspaceRepository(AgentRuntimeDbContext context) : IWorksp
             .ToListAsync(ct);
     }
 
-    /// <inheritdoc/>
     public async Task<IReadOnlyList<WorkspaceFileDto>> GetFilesAsync(Guid? workspaceId, CancellationToken ct = default)
     {
         var query = context.ProjectFiles.AsNoTracking().AsQueryable();
@@ -152,7 +128,6 @@ public sealed class WorkspaceRepository(AgentRuntimeDbContext context) : IWorksp
             .ToListAsync(ct);
     }
 
-    /// <inheritdoc/>
     public async Task<WorkspaceFileDto> AddFileRecordAsync(AddFileRecord record, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(record);
@@ -177,7 +152,6 @@ public sealed class WorkspaceRepository(AgentRuntimeDbContext context) : IWorksp
             projectFile.WorkspaceId, projectFile.ProcessingStatus.ToString(), projectFile.CreatedAt);
     }
 
-    /// <inheritdoc/>
     public async Task<DeleteFileRecord?> GetFileForDeletionAsync(Guid fileId, CancellationToken ct = default)
     {
         return await context.ProjectFiles
@@ -187,7 +161,6 @@ public sealed class WorkspaceRepository(AgentRuntimeDbContext context) : IWorksp
             .FirstOrDefaultAsync(ct);
     }
 
-    /// <inheritdoc/>
     public async Task DeleteFileRecordAsync(Guid fileId, CancellationToken ct = default)
     {
         await context.ProjectFiles

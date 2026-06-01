@@ -64,17 +64,16 @@ public interface IWorkspaceRepository
     /// <param name="id">The identifier of the workspace to update.</param>
     /// <param name="request">The update request containing new name and optional description.</param>
     /// <param name="ct">A cancellation token.</param>
-    /// <returns>The updated workspace DTO.</returns>
-    /// <exception cref="KeyNotFoundException">Thrown if the workspace is not found.</exception>
-    Task<WorkspaceDto> UpdateWorkspaceAsync(Guid id, UpdateWorkspaceRequest request, CancellationToken ct = default);
+    /// <returns>The updated workspace DTO, or <c>null</c> if the workspace is not found.</returns>
+    Task<WorkspaceDto?> UpdateWorkspaceAsync(Guid id, UpdateWorkspaceRequest request, CancellationToken ct = default);
 
     /// <summary>
     /// Deletes a workspace and its associated files.
     /// </summary>
     /// <param name="id">The identifier of the workspace to delete.</param>
     /// <param name="ct">A cancellation token.</param>
-    /// <exception cref="KeyNotFoundException">Thrown if the workspace is not found.</exception>
-    Task DeleteWorkspaceAsync(Guid id, CancellationToken ct = default);
+    /// <returns><c>true</c> if the workspace was deleted; <c>false</c> if it was not found.</returns>
+    Task<bool> DeleteWorkspaceAsync(Guid id, CancellationToken ct = default);
 
     /// <summary>
     /// Retrieves all files within a specific workspace.

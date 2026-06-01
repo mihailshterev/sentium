@@ -75,11 +75,16 @@ public sealed class OrchestrationController(
     /// <returns>An accepted response indicating the workflow has been triggered.</returns>
     [HttpPost("run-workflow")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<Envelope>> RunWorkflow([FromBody] RunWorkflowRequest request, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(request);
 
         var workflow = await workflowService.GetWorkflowAsync(request.WorkflowId, ct);
+        if (workflow is null)
+        {
+            return NotFound();
+        }
 
         var enhancedScenario = await EnhanceIfEnabledAsync(request.Scenario, ct);
 

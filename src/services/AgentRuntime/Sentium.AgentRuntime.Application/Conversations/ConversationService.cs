@@ -17,7 +17,7 @@ public sealed class ConversationService(
             CacheTag,
             ct);
 
-    public async Task<ConversationResponse> GetConversationAsync(Guid conversationId, CancellationToken ct = default)
+    public async Task<ConversationResponse?> GetConversationAsync(Guid conversationId, CancellationToken ct = default)
         => await cache.GetOrCreateAsync(
             $"{CacheTag}:{conversationId}",
             async token => await repository.GetConversationAsync(conversationId, token),
@@ -31,10 +31,15 @@ public sealed class ConversationService(
         return result;
     }
 
-    public async Task DeleteConversationAsync(Guid conversationId, CancellationToken ct = default)
+    public async Task<bool> DeleteConversationAsync(Guid conversationId, CancellationToken ct = default)
     {
-        await repository.DeleteConversationAsync(conversationId, ct);
-        await cache.InvalidateTagAsync(CacheTag, ct);
+        var deleted = await repository.DeleteConversationAsync(conversationId, ct);
+        if (deleted)
+        {
+            await cache.InvalidateTagAsync(CacheTag, ct);
+        }
+
+        return deleted;
     }
 
     public async Task AddMessageAsync(Guid conversationId, string role, string content, string? enhancedPrompt = null, string? thought = null, IReadOnlyList<string>? toolCalls = null, CancellationToken ct = default)

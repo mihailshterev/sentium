@@ -34,10 +34,11 @@ public sealed class ConversationsController(IConversationService conversationSer
     /// <returns>Details of the conversation.</returns>
     [HttpGet("{conversationId:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ConversationResponse>> GetConversation(Guid conversationId, CancellationToken ct)
     {
         var conversation = await conversationService.GetConversationAsync(conversationId, ct);
-        return Ok(conversation);
+        return conversation is null ? NotFound() : Ok(conversation);
     }
 
     /// <summary>
@@ -62,9 +63,10 @@ public sealed class ConversationsController(IConversationService conversationSer
     /// <returns>No content.</returns>
     [HttpDelete("{conversationId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteConversation(Guid conversationId, CancellationToken ct)
     {
-        await conversationService.DeleteConversationAsync(conversationId, ct);
-        return NoContent();
+        var deleted = await conversationService.DeleteConversationAsync(conversationId, ct);
+        return deleted ? NoContent() : NotFound();
     }
 }

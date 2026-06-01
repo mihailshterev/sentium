@@ -79,6 +79,6 @@ public sealed class AgentLearningsController(IAgentLearningService learningServi
         }
 
         var result = await learningService.UpdateAsync(id, request, ct);
-        return Ok(result);
+        return result is null ? NotFound() : Ok(result);
     }
 }

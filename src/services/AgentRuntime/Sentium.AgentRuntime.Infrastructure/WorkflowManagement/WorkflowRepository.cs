@@ -28,13 +28,17 @@ public sealed class WorkflowRepository(AgentRuntimeDbContext context) : IWorkflo
             .ToListAsync(ct);
     }
 
-    public async Task<WorkflowResponse> GetWorkflowAsync(Guid workflowId, CancellationToken ct = default)
+    public async Task<WorkflowResponse?> GetWorkflowAsync(Guid workflowId, CancellationToken ct = default)
     {
         var workflow = await context.Workflows
             .AsNoTracking()
             .Include(w => w.WorkflowAgents)
-            .FirstOrDefaultAsync(w => w.Id == workflowId, ct)
-            ?? throw new KeyNotFoundException($"Workflow {workflowId} not found.");
+            .FirstOrDefaultAsync(w => w.Id == workflowId, ct);
+
+        if (workflow is null)
+        {
+            return null;
+        }
 
         return new WorkflowResponse(
             workflow.Id,
@@ -81,14 +85,18 @@ public sealed class WorkflowRepository(AgentRuntimeDbContext context) : IWorkflo
                 .ToList());
     }
 
-    public async Task UpdateWorkflowAsync(Guid workflowId, UpdateWorkflowRequest request, CancellationToken ct = default)
+    public async Task<bool> UpdateWorkflowAsync(Guid workflowId, UpdateWorkflowRequest request, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(request);
 
         var workflow = await context.Workflows
             .Include(w => w.WorkflowAgents)
-            .FirstOrDefaultAsync(w => w.Id == workflowId, ct)
-            ?? throw new KeyNotFoundException($"Workflow {workflowId} not found.");
+            .FirstOrDefaultAsync(w => w.Id == workflowId, ct);
+
+        if (workflow is null)
+        {
+            return false;
+        }
 
         workflow.Name = request.Name;
         workflow.Description = request.Description;
@@ -101,17 +109,15 @@ public sealed class WorkflowRepository(AgentRuntimeDbContext context) : IWorkflo
         }
 
         await context.SaveChangesAsync(ct);
+        return true;
     }
 
-    public async Task DeleteWorkflowAsync(Guid workflowId, CancellationToken ct = default)
+    public async Task<bool> DeleteWorkflowAsync(Guid workflowId, CancellationToken ct = default)
     {
         var affected = await context.Workflows
             .Where(w => w.Id == workflowId)
             .ExecuteDeleteAsync(ct);
 
-        if (affected == 0)
-        {
-            throw new KeyNotFoundException($"Workflow {workflowId} not found.");
-        }
+        return affected > 0;
     }
 }

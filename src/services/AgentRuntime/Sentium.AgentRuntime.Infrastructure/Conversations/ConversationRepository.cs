@@ -18,13 +18,17 @@ public sealed class ConversationRepository(AgentRuntimeDbContext context) : ICon
             .ToListAsync(ct);
     }
 
-    public async Task<ConversationResponse> GetConversationAsync(Guid conversationId, CancellationToken ct = default)
+    public async Task<ConversationResponse?> GetConversationAsync(Guid conversationId, CancellationToken ct = default)
     {
         var conv = await context.Conversations
             .AsNoTracking()
             .Include(c => c.Messages.OrderBy(m => m.Timestamp))
-            .FirstOrDefaultAsync(c => c.Id == conversationId, ct)
-            ?? throw new KeyNotFoundException($"Conversation {conversationId} not found.");
+            .FirstOrDefaultAsync(c => c.Id == conversationId, ct);
+
+        if (conv is null)
+        {
+            return null;
+        }
 
         return new ConversationResponse(
             conv.Id,
@@ -56,16 +60,13 @@ public sealed class ConversationRepository(AgentRuntimeDbContext context) : ICon
         return new ConversationSummary(conversation.Id, conversation.Title, conversation.Model, conversation.CreatedAt);
     }
 
-    public async Task DeleteConversationAsync(Guid conversationId, CancellationToken ct = default)
+    public async Task<bool> DeleteConversationAsync(Guid conversationId, CancellationToken ct = default)
     {
         var affected = await context.Conversations
             .Where(c => c.Id == conversationId)
             .ExecuteDeleteAsync(ct);
 
-        if (affected == 0)
-        {
-            throw new KeyNotFoundException($"Conversation {conversationId} not found.");
-        }
+        return affected > 0;
     }
 
     public async Task AddMessageAsync(Guid conversationId, string role, string content, string? enhancedPrompt = null, string? thought = null, IReadOnlyList<string>? toolCalls = null, CancellationToken ct = default)
