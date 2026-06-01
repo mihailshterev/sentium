@@ -27,6 +27,7 @@ import { useAuthStore } from "../stores/auth-store";
 import { useConversationStore } from "../stores/assistant-conversation-store";
 import { useOrchestrationRunStore } from "../stores/orchestration-run-store";
 import { useRole } from "../hooks/useRole";
+import useProfile from "../hooks/useProfile";
 import ThemeToggle from "./ui/theme-toggle";
 
 interface NavLinkItem {
@@ -86,6 +87,7 @@ const Navbar = () => {
   const logout = useAuthStore((s) => s.logout);
   const user = useAuthStore((s) => s.user);
   const { isSovereign, highestRole } = useRole();
+  const { profile } = useProfile();
 
   const assistantStreaming = useConversationStore((s) => s.isStreaming);
   const orchestrationRunning = useOrchestrationRunStore((s) => s.isRunning);
@@ -101,7 +103,11 @@ const Navbar = () => {
   const getLinkClass = ({ isActive }: { isActive: boolean }) =>
     isActive ? `${styles.navLink} ${styles.active}` : styles.navLink;
 
-  const displayName = user?.name && user.name.trim() !== user.email ? user.name : (user?.email ?? "");
+  const displayName = profile
+    ? [profile.firstName, profile.lastName].filter(Boolean).join(" ") || profile.email
+    : user?.name && user.name.trim() !== user.email
+      ? user.name
+      : (user?.email ?? "");
 
   return (
     <nav className={styles.nav}>
