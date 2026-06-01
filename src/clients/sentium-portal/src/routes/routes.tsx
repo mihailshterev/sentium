@@ -19,6 +19,7 @@ import KnowledgeBase from "../pages/knowledge-base/knowledge-base";
 import Skills from "../pages/skills/skills";
 import Sentinel from "../pages/sentinel/sentinel";
 import Sandbox from "../pages/sandbox/sandbox";
+import SandboxRunDetail from "../pages/sandbox/sandbox-run-detail";
 import SemanticMap from "../pages/semantic-map/semantic-map";
 import Scheduler from "../pages/scheduler/scheduler";
 
@@ -52,6 +53,7 @@ export const routes: RouteObject[] = [
       { path: "skills", element: <Skills /> },
       { path: "sentinel", element: <Sentinel /> },
       { path: "sandbox", element: <Sandbox /> },
+      { path: "sandbox/:jobId", element: <SandboxRunDetail /> },
       { path: "system", element: <System /> },
       { path: "settings", element: <SettingsPage /> },
     ],
