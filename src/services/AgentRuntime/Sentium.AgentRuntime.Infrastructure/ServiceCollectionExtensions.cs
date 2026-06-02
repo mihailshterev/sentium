@@ -97,7 +97,7 @@ public static class ServiceCollectionExtensions
         {
             client.BaseAddress = new Uri($"https+http://{ServiceNames.Registry}");
             client.Timeout = TimeSpan.FromSeconds(10);
-        });
+        }).AddHttpMessageHandler<InternalApiKeyDelegatingHandler>();
 
         services.AddScoped<IRegistrySettingsService, RegistrySettingsService>();
         services.AddHostedService<SettingsSyncWorker>();

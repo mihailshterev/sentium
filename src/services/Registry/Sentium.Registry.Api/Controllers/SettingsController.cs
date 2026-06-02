@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Sentium.Infrastructure.Security;
 using Sentium.Registry.Core.Settings;
 
 namespace Sentium.Registry.Api.Controllers;
@@ -22,6 +23,7 @@ public sealed class SettingsController(ISettingsService settingsService) : Contr
     /// <param name="ct">Cancellation token.</param>
     /// <returns>The current settings snapshot.</returns>
     [HttpGet]
+    [AuthorizeUserOrSystem]
     [ProducesResponseType<SettingsDto>(StatusCodes.Status200OK)]
     public async Task<ActionResult<SettingsDto>> GetSettings(CancellationToken ct)
     {
