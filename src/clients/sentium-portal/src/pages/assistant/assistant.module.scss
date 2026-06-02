@@ -182,7 +182,7 @@
     content: "";
     position: absolute;
     inset: 0;
-    background-image: radial-gradient(circle, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+    background-image: radial-gradient(circle, var(--texture-dot) 1px, transparent 1px);
     background-size: 28px 28px;
     pointer-events: none;
     mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, black 20%, transparent 90%);
@@ -276,7 +276,7 @@
 }
 
 .wrapperAi {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.022);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .avatar {
@@ -555,18 +555,19 @@
   align-items: center;
   gap: 6px;
   padding: 0.3rem 0.6rem;
-  background: rgba(251, 191, 36, 0.06);
-  border: 1px solid rgba(251, 191, 36, 0.18);
+  background: var(--accent-amber-subtle);
+  border: 1px solid var(--accent-amber-border);
   border-radius: 5px;
   font-size: 0.7rem;
   font-family: "JetBrains Mono", monospace;
-  color: rgba(251, 191, 36, 0.8);
+  color: var(--accent-amber);
   max-width: fit-content;
 }
 
 .toolCallRow svg {
   flex-shrink: 0;
-  color: rgba(251, 191, 36, 0.6);
+  color: var(--accent-amber);
+  opacity: 0.7;
 }
 
 .approvalBlock {
@@ -610,7 +611,7 @@
   font-size: 0.7rem;
   font-family: "JetBrains Mono", monospace;
   color: var(--text-muted);
-  background: rgba(0, 0, 0, 0.15);
+  background: var(--bg-elevated);
   border: 1px solid var(--border-subtle);
   border-radius: 4px;
   padding: 0.4rem 0.6rem;
