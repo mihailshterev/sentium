@@ -9,6 +9,7 @@ interface AuthState {
   checkAuth: () => Promise<void>;
   login: (returnUrl?: string) => void;
   logout: () => void;
+  updateUser: (patch: Partial<Pick<User, "name" | "email">>) => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -36,6 +37,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   login: (returnUrl) => {
     const target = returnUrl ?? window.location.pathname;
     window.location.href = `${BFF_BASE}/login?returnUrl=${encodeURIComponent(window.location.origin + target)}`;
+  },
+
+  updateUser: (patch) => {
+    set((state) => (state.user ? { user: { ...state.user, ...patch } } : {}));
   },
 
   logout: async () => {

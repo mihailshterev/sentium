@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { MemoryRouter } from "react-router";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
+import { MemoryRouter, Route, Routes } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Workspaces from "./workspaces";
+import WorkspaceDetail from "./workspace-detail";
 import * as agentRuntimeService from "../../services/agentRuntime.service";
 import type { Workspace, WorkspaceFile } from "../../types/workspace";
 
@@ -48,6 +49,22 @@ const renderWorkspaces = () => {
   );
 };
 
+const renderWorkspaceDetail = (workspaceId = "ws-1") => {
+  const qc = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  return render(
+    <QueryClientProvider client={qc}>
+      <MemoryRouter initialEntries={[`/workspaces/${workspaceId}`]}>
+        <Routes>
+          <Route path="/workspaces/:workspaceId" element={<WorkspaceDetail />} />
+          <Route path="/workspaces" element={<Workspaces />} />
+        </Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+};
+
 beforeEach(() => {
   vi.mocked(agentRuntimeService.fetchWorkspaces).mockResolvedValue([mockWorkspace]);
   vi.mocked(agentRuntimeService.fetchWorkspaceFiles).mockResolvedValue([mockFile]);
@@ -69,9 +86,9 @@ describe("Workspaces initial render", () => {
     expect(screen.getByRole("button", { name: /new workspace/i })).toBeInTheDocument();
   });
 
-  it("shows 'Select a workspace' placeholder initially", () => {
+  it("shows workspace grid when workspaces are loaded", async () => {
     renderWorkspaces();
-    expect(screen.getByText(/select a workspace to manage its files/i)).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText("Incident 2026")).toBeInTheDocument());
   });
 });
 
@@ -88,25 +105,19 @@ describe("Workspaces list state", () => {
 });
 
 describe("Workspaces selecting a workspace", () => {
-  it("shows workspace detail when a workspace is clicked", async () => {
-    renderWorkspaces();
-    await waitFor(() => screen.getByText("Incident 2026"));
-    fireEvent.click(screen.getByText("Incident 2026"));
+  it("shows workspace detail when navigating to workspace route", async () => {
+    renderWorkspaceDetail();
     await waitFor(() => expect(screen.getByText(/report\.txt/i)).toBeInTheDocument());
   });
 
   it("shows empty files message when no files in workspace", async () => {
     vi.mocked(agentRuntimeService.fetchWorkspaceFiles).mockResolvedValue([]);
-    renderWorkspaces();
-    await waitFor(() => screen.getByText("Incident 2026"));
-    fireEvent.click(screen.getByText("Incident 2026"));
+    renderWorkspaceDetail();
     await waitFor(() => expect(screen.getByText(/no files yet/i)).toBeInTheDocument());
   });
 
   it("shows file processing status badge", async () => {
-    renderWorkspaces();
-    await waitFor(() => screen.getByText("Incident 2026"));
-    fireEvent.click(screen.getByText("Incident 2026"));
+    renderWorkspaceDetail();
     await waitFor(() => expect(screen.getByText("Completed")).toBeInTheDocument());
   });
 
@@ -114,9 +125,7 @@ describe("Workspaces selecting a workspace", () => {
     vi.mocked(agentRuntimeService.fetchWorkspaceFiles).mockResolvedValue([
       { ...mockFile, processingStatus: "Pending" },
     ]);
-    renderWorkspaces();
-    await waitFor(() => screen.getByText("Incident 2026"));
-    fireEvent.click(screen.getByText("Incident 2026"));
+    renderWorkspaceDetail();
     await waitFor(() => expect(screen.getByText("Pending")).toBeInTheDocument());
   });
 });
@@ -125,7 +134,7 @@ describe("Workspaces create form", () => {
   it("opens create form when New Workspace is clicked", () => {
     renderWorkspaces();
     fireEvent.click(screen.getByRole("button", { name: /new workspace/i }));
-    expect(screen.getByText("New Workspace")).toBeInTheDocument();
+    expect(screen.getAllByText("Create Workspace").length).toBeGreaterThanOrEqual(1);
   });
 
   it("submit button is disabled when name is empty", () => {
@@ -157,10 +166,8 @@ describe("Workspaces create form", () => {
 
 describe("Workspaces file upload", () => {
   it("shows file type error for unsupported file types", async () => {
-    renderWorkspaces();
-    await waitFor(() => screen.getByText("Incident 2026"));
-    fireEvent.click(screen.getByText("Incident 2026"));
-    await waitFor(() => screen.getByText("Drop a file or click to browse"));
+    renderWorkspaceDetail();
+    await waitFor(() => screen.getByText("Upload File"));
 
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     Object.defineProperty(fileInput, "files", {
@@ -172,10 +179,8 @@ describe("Workspaces file upload", () => {
   });
 
   it("shows selected file name when valid file chosen", async () => {
-    renderWorkspaces();
-    await waitFor(() => screen.getByText("Incident 2026"));
-    fireEvent.click(screen.getByText("Incident 2026"));
-    await waitFor(() => screen.getByText("Drop a file or click to browse"));
+    renderWorkspaceDetail();
+    await waitFor(() => screen.getByText("Upload File"));
 
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
     Object.defineProperty(fileInput, "files", {
@@ -189,17 +194,13 @@ describe("Workspaces file upload", () => {
 
 describe("Workspaces formatBytes utility", () => {
   it("shows file size in KB", async () => {
-    renderWorkspaces();
-    await waitFor(() => screen.getByText("Incident 2026"));
-    fireEvent.click(screen.getByText("Incident 2026"));
+    renderWorkspaceDetail();
     await waitFor(() => expect(screen.getByText(/2\.0 KB/)).toBeInTheDocument());
   });
 
   it("shows file size in MB for large files", async () => {
     vi.mocked(agentRuntimeService.fetchWorkspaceFiles).mockResolvedValue([{ ...mockFile, sizeBytes: 5 * 1024 * 1024 }]);
-    renderWorkspaces();
-    await waitFor(() => screen.getByText("Incident 2026"));
-    fireEvent.click(screen.getByText("Incident 2026"));
+    renderWorkspaceDetail();
     await waitFor(() => expect(screen.getByText(/5\.0 MB/)).toBeInTheDocument());
   });
 });
@@ -232,16 +233,9 @@ describe("Workspaces edit workspace", () => {
     vi.mocked(agentRuntimeService.updateWorkspace).mockResolvedValue({ ...mockWorkspace, name: "Updated WS" });
     renderWorkspaces();
     await waitFor(() => screen.getByText("Incident 2026"));
-    fireEvent.click(screen.getByText("Incident 2026"));
-    await waitFor(() => screen.getByText("Upload File"));
     fireEvent.click(screen.getByTitle("Edit workspace"));
-    await waitFor(() => screen.getAllByText("Edit Workspace").length > 0);
     fireEvent.change(screen.getByLabelText(/^name/i), { target: { value: "Updated WS" } });
-    const forms = document.querySelectorAll("form");
-    const editForm = Array.from(forms).find((f) =>
-      f.querySelector('button[type="submit"]')?.textContent?.includes("Edit Workspace"),
-    );
-    if (editForm) fireEvent.submit(editForm);
+    fireEvent.submit(document.querySelector("form")!);
     await waitFor(() => expect(agentRuntimeService.updateWorkspace).toHaveBeenCalled());
   });
 
@@ -259,35 +253,35 @@ describe("Workspaces delete workspace", () => {
     renderWorkspaces();
     await waitFor(() => screen.getByText("Incident 2026"));
     fireEvent.click(screen.getByTitle("Delete workspace"));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: /delete workspace/i }));
     await waitFor(() => expect(agentRuntimeService.deleteWorkspace).toHaveBeenCalledWith("ws-1"));
   });
 
   it("deselects workspace when selected workspace is deleted", async () => {
     renderWorkspaces();
     await waitFor(() => screen.getByText("Incident 2026"));
-    fireEvent.click(screen.getByText("Incident 2026"));
-    await waitFor(() => screen.getByText("Upload File"));
     fireEvent.click(screen.getByTitle("Delete workspace"));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: /delete workspace/i }));
     await waitFor(() => expect(agentRuntimeService.deleteWorkspace).toHaveBeenCalledWith("ws-1"));
   });
 });
 
 describe("Workspaces delete file", () => {
   it("calls deleteWorkspaceFile when delete file button is clicked", async () => {
-    renderWorkspaces();
-    await waitFor(() => screen.getByText("Incident 2026"));
-    fireEvent.click(screen.getByText("Incident 2026"));
-    await waitFor(() => screen.getByTitle("Delete file"));
-    fireEvent.click(screen.getByTitle("Delete file"));
+    renderWorkspaceDetail();
+    await waitFor(() => screen.getByTitle("Remove file"));
+    fireEvent.click(screen.getByTitle("Remove file"));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: /remove file/i }));
     await waitFor(() => expect(agentRuntimeService.deleteWorkspaceFile).toHaveBeenCalledWith("file-1"));
   });
 });
 
 describe("Workspaces upload submit", () => {
   it("calls uploadWorkspaceFile when form submitted with a file", async () => {
-    renderWorkspaces();
-    await waitFor(() => screen.getByText("Incident 2026"));
-    fireEvent.click(screen.getByText("Incident 2026"));
+    renderWorkspaceDetail();
     await waitFor(() => screen.getByText("Drop a file or click to browse"));
 
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
@@ -303,9 +297,7 @@ describe("Workspaces upload submit", () => {
 
   it("shows upload error when upload fails", async () => {
     vi.mocked(agentRuntimeService.uploadWorkspaceFile).mockRejectedValue(new Error("Upload failed"));
-    renderWorkspaces();
-    await waitFor(() => screen.getByText("Incident 2026"));
-    fireEvent.click(screen.getByText("Incident 2026"));
+    renderWorkspaceDetail();
     await waitFor(() => screen.getByText("Drop a file or click to browse"));
 
     const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
@@ -321,18 +313,19 @@ describe("Workspaces upload submit", () => {
 });
 
 describe("Workspaces empty workspace state", () => {
-  it("shows 'No workspaces yet' and Create one button when empty", async () => {
+  it("shows 'No workspaces yet' and New Workspace button when empty", async () => {
     vi.mocked(agentRuntimeService.fetchWorkspaces).mockResolvedValue([]);
     renderWorkspaces();
     await waitFor(() => expect(screen.getByText(/no workspaces yet/i)).toBeInTheDocument());
-    expect(screen.getByRole("button", { name: /create one/i })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /new workspace/i }).length).toBeGreaterThanOrEqual(1);
   });
 
-  it("opens create form via 'Create one' button", async () => {
+  it("opens create form via empty state New Workspace button", async () => {
     vi.mocked(agentRuntimeService.fetchWorkspaces).mockResolvedValue([]);
     renderWorkspaces();
-    await waitFor(() => screen.getByRole("button", { name: /create one/i }));
-    fireEvent.click(screen.getByRole("button", { name: /create one/i }));
+    await waitFor(() => screen.getAllByRole("button", { name: /new workspace/i }));
+    const btns = screen.getAllByRole("button", { name: /new workspace/i });
+    fireEvent.click(btns[btns.length - 1]);
     expect(screen.getAllByText("Create Workspace").length).toBeGreaterThanOrEqual(1);
   });
 });
@@ -342,17 +335,13 @@ describe("Workspaces Processing file status", () => {
     vi.mocked(agentRuntimeService.fetchWorkspaceFiles).mockResolvedValue([
       { ...mockFile, processingStatus: "Processing" },
     ]);
-    renderWorkspaces();
-    await waitFor(() => screen.getByText("Incident 2026"));
-    fireEvent.click(screen.getByText("Incident 2026"));
+    renderWorkspaceDetail();
     await waitFor(() => expect(screen.getByText("Processing")).toBeInTheDocument());
   });
 
   it("shows Failed status badge", async () => {
     vi.mocked(agentRuntimeService.fetchWorkspaceFiles).mockResolvedValue([{ ...mockFile, processingStatus: "Failed" }]);
-    renderWorkspaces();
-    await waitFor(() => screen.getByText("Incident 2026"));
-    fireEvent.click(screen.getByText("Incident 2026"));
+    renderWorkspaceDetail();
     await waitFor(() => expect(screen.getByText("Failed")).toBeInTheDocument());
   });
 });
@@ -360,18 +349,14 @@ describe("Workspaces Processing file status", () => {
 describe("Workspaces small file bytes", () => {
   it("shows file size in bytes for tiny files", async () => {
     vi.mocked(agentRuntimeService.fetchWorkspaceFiles).mockResolvedValue([{ ...mockFile, sizeBytes: 500 }]);
-    renderWorkspaces();
-    await waitFor(() => screen.getByText("Incident 2026"));
-    fireEvent.click(screen.getByText("Incident 2026"));
+    renderWorkspaceDetail();
     await waitFor(() => expect(screen.getByText(/500 B/)).toBeInTheDocument());
   });
 });
 
 describe("Workspaces drag and drop upload", () => {
   it("handles drag over and drag leave on upload area", async () => {
-    renderWorkspaces();
-    await waitFor(() => screen.getByText("Incident 2026"));
-    fireEvent.click(screen.getByText("Incident 2026"));
+    renderWorkspaceDetail();
     await waitFor(() => screen.getByText("Upload File"));
     const uploadArea = document.querySelector("[role='button']") as HTMLElement;
     fireEvent.dragOver(uploadArea);
@@ -380,9 +365,7 @@ describe("Workspaces drag and drop upload", () => {
   });
 
   it("handles drop event with a file", async () => {
-    renderWorkspaces();
-    await waitFor(() => screen.getByText("Incident 2026"));
-    fireEvent.click(screen.getByText("Incident 2026"));
+    renderWorkspaceDetail();
     await waitFor(() => screen.getByText("Upload File"));
     const uploadArea = document.querySelector("[role='button']") as HTMLElement;
     const file = new File(["content"], "test-file.txt", { type: "text/plain" });
@@ -391,9 +374,7 @@ describe("Workspaces drag and drop upload", () => {
   });
 
   it("handles keydown Enter on upload area", async () => {
-    renderWorkspaces();
-    await waitFor(() => screen.getByText("Incident 2026"));
-    fireEvent.click(screen.getByText("Incident 2026"));
+    renderWorkspaceDetail();
     await waitFor(() => screen.getByText("Upload File"));
     const uploadArea = document.querySelector("[role='button']") as HTMLElement;
     fireEvent.keyDown(uploadArea, { key: "Enter" });
@@ -401,9 +382,7 @@ describe("Workspaces drag and drop upload", () => {
   });
 
   it("does nothing on non-Enter keydown on upload area", async () => {
-    renderWorkspaces();
-    await waitFor(() => screen.getByText("Incident 2026"));
-    fireEvent.click(screen.getByText("Incident 2026"));
+    renderWorkspaceDetail();
     await waitFor(() => screen.getByText("Upload File"));
     const uploadArea = document.querySelector("[role='button']") as HTMLElement;
     fireEvent.keyDown(uploadArea, { key: "Space" });

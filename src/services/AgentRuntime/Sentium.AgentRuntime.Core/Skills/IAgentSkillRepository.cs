@@ -34,6 +34,7 @@ public interface IAgentSkillRepository
 
     /// <summary>
     /// Removes the skill with the given <paramref name="id"/> from the store.
+    /// Returns <see langword="false"/> when no matching skill exists.
     /// </summary>
-    Task DeleteAsync(Guid id, CancellationToken ct = default);
+    Task<bool> DeleteAsync(Guid id, CancellationToken ct = default);
 }

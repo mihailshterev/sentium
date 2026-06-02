@@ -10,6 +10,7 @@ const mockSettings: Settings = {
   harness: {
     userHarnessPrompt: "Be concise.",
     isBuiltInHarnessEnabled: true,
+    isPromptEnhancementEnabled: true,
   },
   updatedAt: "2025-01-01T00:00:00Z",
   updatedBy: "alice@example.com",
@@ -92,7 +93,7 @@ describe("Settings loaded state", () => {
 
   it("renders the built-in harness toggle as checked by default", () => {
     renderSettings();
-    const toggle = screen.getByRole("checkbox");
+    const toggle = screen.getAllByRole("checkbox")[0];
     expect((toggle as HTMLInputElement).checked).toBe(true);
   });
 
@@ -111,7 +112,7 @@ describe("Settings editing interactions", () => {
 
   it("enables save button when toggle is changed", () => {
     renderSettings();
-    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getAllByRole("checkbox")[0]);
     expect(screen.getByRole("button", { name: /save changes/i })).not.toBeDisabled();
   });
 
@@ -126,6 +127,7 @@ describe("Settings editing interactions", () => {
         harness: {
           userHarnessPrompt: "Updated prompt.",
           isBuiltInHarnessEnabled: true,
+          isPromptEnhancementEnabled: true,
         },
       }),
     );

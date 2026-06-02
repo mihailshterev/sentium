@@ -1,30 +1,46 @@
 using Sentium.AgentRuntime.Core.Entities;
 using Sentium.AgentRuntime.Core.Skills;
+using Sentium.Infrastructure.Caching;
+using Sentium.Shared.Results;
 
 namespace Sentium.AgentRuntime.Infrastructure.Skills;
 
-public sealed class AgentSkillService(IAgentSkillRepository repository) : IAgentSkillService
+public sealed class AgentSkillService(
+    IAgentSkillRepository repository,
+    IScopedCache cache) : IAgentSkillService
 {
-    public async Task<IReadOnlyList<AgentSkillDto>> GetAllAsync(CancellationToken ct = default)
-    {
-        var skills = await repository.GetAllAsync(ct);
-        return skills.Select(ToDto).ToList();
-    }
+    private const string CacheTag = "skills";
 
-    public async Task<AgentSkillDto> GetByIdAsync(Guid id, CancellationToken ct = default)
-    {
-        var skill = await repository.GetByIdAsync(id, ct) ?? throw new KeyNotFoundException($"Skill with ID {id} was not found.");
-        return ToDto(skill);
-    }
+    public Task<IReadOnlyList<AgentSkillDto>> GetAllAsync(CancellationToken ct = default)
+        => cache.GetOrCreateAsync(
+            $"{CacheTag}:all",
+            async token =>
+            {
+                var skills = await repository.GetAllAsync(token);
+                return (IReadOnlyList<AgentSkillDto>)skills.Select(ToDto).ToList();
+            },
+            CacheTag,
+            ct).AsTask();
 
-    public async Task<AgentSkillDto> CreateAsync(CreateAgentSkillRequest request, CancellationToken ct = default)
+    public async Task<AgentSkillDto?> GetByIdAsync(Guid id, CancellationToken ct = default)
+        => await cache.GetOrCreateAsync(
+            $"{CacheTag}:{id}",
+            async token =>
+            {
+                var skill = await repository.GetByIdAsync(id, token);
+                return skill is null ? null : ToDto(skill);
+            },
+            CacheTag,
+            ct);
+
+    public async Task<Result<AgentSkillDto>> CreateAsync(CreateAgentSkillRequest request, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(request);
 
         var existing = await repository.GetByNameAsync(request.Name, ct);
         if (existing is not null)
         {
-            throw new InvalidOperationException($"A skill named '{request.Name}' already exists.");
+            return Result<AgentSkillDto>.Conflict($"A skill named '{request.Name}' already exists.");
         }
 
         var skill = new AgentSkill
@@ -40,14 +56,19 @@ public sealed class AgentSkillService(IAgentSkillRepository repository) : IAgent
         };
 
         await repository.AddAsync(skill, ct);
-        return ToDto(skill);
+        await cache.InvalidateTagAsync(CacheTag, ct);
+        return Result<AgentSkillDto>.Success(ToDto(skill));
     }
 
-    public async Task UpdateAsync(Guid id, UpdateAgentSkillRequest request, CancellationToken ct = default)
+    public async Task<bool> UpdateAsync(Guid id, UpdateAgentSkillRequest request, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var skill = await repository.GetByIdAsync(id, ct) ?? throw new KeyNotFoundException($"Skill with ID {id} was not found.");
+        var skill = await repository.GetByIdAsync(id, ct);
+        if (skill is null)
+        {
+            return false;
+        }
 
         skill.Name = request.Name;
         skill.Description = request.Description;
@@ -55,10 +76,20 @@ public sealed class AgentSkillService(IAgentSkillRepository repository) : IAgent
         skill.UpdatedAt = DateTimeOffset.UtcNow;
 
         await repository.UpdateAsync(skill, ct);
+        await cache.InvalidateTagAsync(CacheTag, ct);
+        return true;
     }
 
-    public Task DeleteAsync(Guid id, CancellationToken ct = default)
-        => repository.DeleteAsync(id, ct);
+    public async Task<bool> DeleteAsync(Guid id, CancellationToken ct = default)
+    {
+        var deleted = await repository.DeleteAsync(id, ct);
+        if (deleted)
+        {
+            await cache.InvalidateTagAsync(CacheTag, ct);
+        }
+
+        return deleted;
+    }
 
     private static AgentSkillDto ToDto(AgentSkill s) => new(
         s.Id,

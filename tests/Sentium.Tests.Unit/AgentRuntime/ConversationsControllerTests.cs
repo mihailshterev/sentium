@@ -29,7 +29,7 @@ public sealed class ConversationsControllerTests
 
         var result = await _controller.GetConversations(TestContext.Current.CancellationToken);
 
-        result.Should().BeOfType<OkObjectResult>()
+        result.Result.Should().BeOfType<OkObjectResult>()
             .Which.Value.Should().BeEquivalentTo(conversations);
     }
 
@@ -42,7 +42,7 @@ public sealed class ConversationsControllerTests
 
         var result = await _controller.GetConversation(id, TestContext.Current.CancellationToken);
 
-        result.Should().BeOfType<OkObjectResult>()
+        result.Result.Should().BeOfType<OkObjectResult>()
             .Which.Value.Should().Be(expected);
     }
 
@@ -55,7 +55,7 @@ public sealed class ConversationsControllerTests
 
         var result = await _controller.CreateConversation(request, TestContext.Current.CancellationToken);
 
-        result.Should().BeOfType<CreatedAtActionResult>()
+        result.Result.Should().BeOfType<CreatedAtActionResult>()
             .Which.Value.Should().Be(created);
     }
 
@@ -63,7 +63,7 @@ public sealed class ConversationsControllerTests
     public async Task DeleteConversation_ExistingId_ReturnsNoContent()
     {
         var id = Guid.NewGuid();
-        _service.DeleteConversationAsync(id, Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+        _service.DeleteConversationAsync(id, Arg.Any<CancellationToken>()).Returns(true);
 
         var result = await _controller.DeleteConversation(id, TestContext.Current.CancellationToken);
 

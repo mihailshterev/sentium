@@ -15,7 +15,7 @@ namespace Sentium.AgentRuntime.Application.Workflows;
 public sealed class DynamicDiscoveryWorkflow(
     IAgentFactory factory,
     IAgentRegistry registry,
-    IAgentManager agentManager,
+    IAgentRepository agentRepository,
     IEventBus nats) : IAgentWorkflow
 {
     public WorkflowType Type => WorkflowType.Dynamic;
@@ -38,7 +38,7 @@ public sealed class DynamicDiscoveryWorkflow(
         }
         catch { }
 
-        var dbAgents = await agentManager.GetAgentsAsync(ct);
+        var dbAgents = await agentRepository.GetAgentsAsync(ct);
         var dbAgentMap = dbAgents.ToDictionary(a => a.Name, a => a.Description, StringComparer.OrdinalIgnoreCase);
         var dbAgentModelMap = dbAgents.ToDictionary(a => a.Name, a => a.Model, StringComparer.OrdinalIgnoreCase);
 

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { UsersRound, RefreshCw, AlertCircle, UserX } from "lucide-react";
+import { UsersRound, RefreshCw, AlertCircle, UserX, ChevronLeft, ChevronRight } from "lucide-react";
 import styles from "./users.module.scss";
 import { ROLE_HIERARCHY, type Role } from "../../utils/roles";
 import { useRole } from "../../hooks/useRole";
@@ -22,7 +22,20 @@ export default function Users() {
 
   const { isSovereign } = useRole();
   const currentUser = useAuthStore((s) => s.user);
-  const { users, isLoading, isFetching, error, refetch, assignRole, removeRole, deleteUser } = useUsers();
+  const {
+    users,
+    totalCount,
+    totalPages,
+    page,
+    setPage,
+    isLoading,
+    isFetching,
+    error,
+    refetch,
+    assignRole,
+    removeRole,
+    deleteUser,
+  } = useUsers();
 
   const handleAssignRole = async (userId: string, role: Role) => {
     setActionError(null);
@@ -36,7 +49,7 @@ export default function Users() {
     }
   };
 
-  const handleRemoveRole = async (userId: string, role: string) => {
+  const handleRemoveRole = async (userId: string, role: Role) => {
     setActionError(null);
     setPendingUserId(userId);
     try {
@@ -122,9 +135,7 @@ export default function Users() {
               <UsersRound size={13} className={styles.sectionTitleIcon} />
               Registered Users
             </div>
-            <span className={styles.userCount}>
-              {!isFetching && `${users.length} user${users.length !== 1 ? "s" : ""}`}
-            </span>
+            <span className={styles.userCount}>{!isLoading && `${totalCount} user${totalCount !== 1 ? "s" : ""}`}</span>
           </div>
 
           <div className={styles.tableHeader}>
@@ -158,6 +169,28 @@ export default function Users() {
               ))
             )}
           </div>
+
+          {totalPages > 1 && (
+            <div className={styles.pagination}>
+              <button
+                className={styles.pageBtn}
+                onClick={() => setPage((p) => p - 1)}
+                disabled={page <= 1 || isFetching}
+              >
+                <ChevronLeft size={13} />
+              </button>
+              <span className={styles.pageInfo}>
+                {page} / {totalPages}
+              </span>
+              <button
+                className={styles.pageBtn}
+                onClick={() => setPage((p) => p + 1)}
+                disabled={page >= totalPages || isFetching}
+              >
+                <ChevronRight size={13} />
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

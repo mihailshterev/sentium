@@ -25,12 +25,22 @@ public interface IAgentLearningService
 
     /// <summary>
     /// Hard-deletes a learning and removes its vectors from the knowledge base.
+    /// Returns <see langword="false"/> when no learning with the given <paramref name="id"/> exists.
     /// </summary>
-    Task DeleteAsync(Guid id, CancellationToken ct = default);
+    Task<bool> DeleteAsync(Guid id, CancellationToken ct = default);
 
     /// <summary>
     /// Updates the content and tags of an existing learning.
     /// The old vectors are removed and the learning is re-ingested with the new content.
+    /// Returns <see langword="null"/> when no learning with the given <paramref name="id"/> exists.
     /// </summary>
-    Task<AgentLearningResponse> UpdateAsync(Guid id, UpdateAgentLearningRequest request, CancellationToken ct = default);
+    Task<AgentLearningResponse?> UpdateAsync(Guid id, UpdateAgentLearningRequest request, CancellationToken ct = default);
+
+    /// <summary>
+    /// Semantic-searches the <c>agent_learnings</c> collection for learnings relevant to
+    /// <paramref name="query"/>, scoped to shared/global learnings plus the given user's own
+    /// private learnings. Returns an empty list on failure so callers can treat learning recall
+    /// as best-effort (it must never break an agent run).
+    /// </summary>
+    Task<IReadOnlyList<RecalledLearning>> RecallRelevantAsync(string query, Guid? userId, int limit = 5, CancellationToken ct = default);
 }

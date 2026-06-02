@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CheckCircle, Loader, Shield, X, Zap } from "lucide-react";
+import { CheckCircle, Loader, Shield, Sparkles, X, Zap } from "lucide-react";
 import styles from "../settings.module.scss";
 import StatusMessage from "../../../components/ui/status-message";
 import FormField from "../../../components/ui/form-field";
@@ -11,6 +11,7 @@ import type { UpdateSettingsPayload } from "../../../types/agentConfig";
 interface SettingsEditorProps {
   initialPrompt: string;
   initialBuiltIn: boolean;
+  initialPromptEnhancement: boolean;
   updatedBy: string | null;
   save: (payload: UpdateSettingsPayload) => void;
   isSaving: boolean;
@@ -23,6 +24,7 @@ interface SettingsEditorProps {
 const SettingsEditor = ({
   initialPrompt,
   initialBuiltIn,
+  initialPromptEnhancement,
   updatedBy,
   save,
   isSaving,
@@ -39,7 +41,11 @@ const SettingsEditor = ({
     formState: { isDirty },
   } = useForm<SettingsEditorFormData>({
     resolver: zodResolver(settingsEditorSchema),
-    defaultValues: { prompt: initialPrompt, builtInEnabled: initialBuiltIn },
+    defaultValues: {
+      prompt: initialPrompt,
+      builtInEnabled: initialBuiltIn,
+      promptEnhancementEnabled: initialPromptEnhancement,
+    },
   });
 
   // eslint-disable-next-line react-hooks/incompatible-library
@@ -63,6 +69,7 @@ const SettingsEditor = ({
       harness: {
         userHarnessPrompt: data.prompt,
         isBuiltInHarnessEnabled: data.builtInEnabled,
+        isPromptEnhancementEnabled: data.promptEnhancementEnabled,
       },
     });
   };
@@ -101,6 +108,40 @@ const SettingsEditor = ({
             <label className={styles.toggleSwitch}>
               <Controller
                 name="builtInEnabled"
+                control={control}
+                render={({ field }) => (
+                  <input type="checkbox" checked={field.value} onChange={(e) => field.onChange(e.target.checked)} />
+                )}
+              />
+              <span className={styles.slider} />
+            </label>
+          </div>
+        </div>
+
+        <div className={styles.card}>
+          <div className={styles.cardHeader}>
+            <div className={styles.cardHeaderLeft}>
+              <Sparkles size={15} className={styles.cardIconCyan} />
+              <div>
+                <p className={styles.cardTitle}>Prompt Enhancement</p>
+                <p className={styles.cardSubtitle}>
+                  Optimizes each prompt with a pre-pass before execution — sharper results from smaller local models
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.toggleRow}>
+            <div className={styles.toggleInfo}>
+              <span className={styles.toggleLabel}>Enable prompt enhancement</span>
+              <span className={styles.toggleDesc}>
+                Rewrites assistant and workflow prompts for clarity and specificity before the agent runs. The original
+                is preserved and the enhanced version is shown inline.
+              </span>
+            </div>
+            <label className={styles.toggleSwitch}>
+              <Controller
+                name="promptEnhancementEnabled"
                 control={control}
                 render={({ field }) => (
                   <input type="checkbox" checked={field.value} onChange={(e) => field.onChange(e.target.checked)} />

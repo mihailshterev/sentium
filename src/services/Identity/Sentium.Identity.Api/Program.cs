@@ -1,8 +1,14 @@
+using FluentValidation;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Caching.Hybrid;
 using Scalar.AspNetCore;
 using Sentium.Identity.Application;
 using Sentium.Identity.Infrastructure;
+using Sentium.Infrastructure.Diagnostics;
 using Sentium.Infrastructure.Extensions;
+using Sentium.Infrastructure.Validation;
 using Sentium.Shared.Constants;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,11 +16,34 @@ builder.AddServiceDefaults();
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddProblemDetails();
+builder.Services.AddSentiumProblemDetails();
 builder.Services.AddOpenApi();
-builder.Services.AddControllers();
+builder.Services.AddControllers(options => options.Filters.Add<FluentValidationFilter>());
+builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
 builder.AddNatsClient(ResourceNames.Nats);
+builder.AddRedisDistributedCache(ResourceNames.Redis);
+
+builder.Services.AddHybridCache(options =>
+{
+    options.DefaultEntryOptions = new HybridCacheEntryOptions
+    {
+        Expiration = TimeSpan.FromMinutes(15),
+        LocalCacheExpiration = TimeSpan.FromMinutes(3)
+    };
+});
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("auth", policy =>
+    {
+        policy.PermitLimit = 10;
+        policy.Window = TimeSpan.FromMinutes(1);
+        policy.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        policy.QueueLimit = 0;
+    });
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+});
 
 builder.AddSentiumAuditLogging();
 builder.AddInfrastructure();
@@ -53,6 +82,8 @@ if (app.Environment.IsDevelopment())
 
 app.MapDefaultEndpoints();
 
+app.UseRateLimiter();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -61,3 +92,8 @@ app.MapControllers();
 app.MapFallbackToFile("index.html");
 
 app.Run();
+
+namespace Sentium.Identity.Api
+{
+    public partial class Program { }
+}

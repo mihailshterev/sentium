@@ -1,8 +1,9 @@
+using Microsoft.Extensions.Logging;
 using Sentium.AgentRuntime.Core.Entities;
 using Sentium.AgentRuntime.Core.Learnings;
 using Sentium.AgentRuntime.Core.Rag;
 using Sentium.AgentRuntime.Core.Rag.Models;
-using Microsoft.Extensions.Logging;
+using Sentium.Infrastructure.Caching;
 
 namespace Sentium.AgentRuntime.Infrastructure.Learnings;
 
@@ -10,20 +11,32 @@ public sealed class AgentLearningService(
     IAgentLearningRepository repository,
     IDocumentIngestionService ingestionService,
     IVectorRepository vectorRepository,
+    IEmbeddingService embeddingService,
     ILearningSanitizationPipeline sanitizationPipeline,
+    IScopedCache cache,
     ILogger<AgentLearningService> logger) : IAgentLearningService
 {
     private const string LearningsCollection = "agent_learnings";
     private const string SourcePrefix = "learning:";
+    private const string CacheTag = "learnings";
+    private const float RecallScoreThreshold = 0.35f;
 
-    public Task<IReadOnlyList<AgentLearningResponse>> GetLearningsAsync(
+    public async Task<IReadOnlyList<AgentLearningResponse>> GetLearningsAsync(
         string? agentName = null,
         int count = 50,
         CancellationToken ct = default)
-        => repository.GetAllAsync(agentName, count, ct);
+        => await cache.GetOrCreateAsync(
+            $"{CacheTag}:{agentName ?? "all"}:{count}",
+            async token => await repository.GetAllAsync(agentName, count, token),
+            CacheTag,
+            ct);
 
-    public Task<AgentLearningStats> GetStatsAsync(CancellationToken ct = default)
-        => repository.GetStatsAsync(ct);
+    public async Task<AgentLearningStats> GetStatsAsync(CancellationToken ct = default)
+        => await cache.GetOrCreateAsync(
+            $"{CacheTag}:stats",
+            async token => await repository.GetStatsAsync(token),
+            CacheTag,
+            ct);
 
     public async Task<AgentLearningResponse> CaptureAsync(CaptureAgentLearningRequest request, CancellationToken ct = default)
     {
@@ -66,6 +79,7 @@ public sealed class AgentLearningService(
         };
 
         await repository.AddAsync(entity, ct);
+        await cache.InvalidateTagAsync(CacheTag, ct);
 
         await IngestLearningAsync(entity, ct);
 
@@ -74,24 +88,29 @@ public sealed class AgentLearningService(
             entity.ConversationId, entity.CapturedAt, entity.IsIngested, entity.IsGlobal);
     }
 
-    public async Task DeleteAsync(Guid id, CancellationToken ct = default)
+    public async Task<bool> DeleteAsync(Guid id, CancellationToken ct = default)
     {
         var entity = await repository.FindAsync(id, ct);
         if (entity is null)
         {
-            return;
+            return false;
         }
 
         await vectorRepository.DeleteBySourceAsync(LearningsCollection, $"{SourcePrefix}{id}", ct);
-
         await repository.RemoveAsync(entity, ct);
+        await cache.InvalidateTagAsync(CacheTag, ct);
+        return true;
     }
 
-    public async Task<AgentLearningResponse> UpdateAsync(Guid id, UpdateAgentLearningRequest request, CancellationToken ct = default)
+    public async Task<AgentLearningResponse?> UpdateAsync(Guid id, UpdateAgentLearningRequest request, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var entity = await repository.FindAsync(id, ct) ?? throw new KeyNotFoundException($"AgentLearning {id} not found.");
+        var entity = await repository.FindAsync(id, ct);
+        if (entity is null)
+        {
+            return null;
+        }
 
         await vectorRepository.DeleteBySourceAsync(LearningsCollection, $"{SourcePrefix}{id}", ct);
 
@@ -100,12 +119,51 @@ public sealed class AgentLearningService(
         entity.IsIngested = false;
 
         await repository.SaveAsync(ct);
+        await cache.InvalidateTagAsync(CacheTag, ct);
 
         await IngestLearningAsync(entity, ct);
 
         return new AgentLearningResponse(
             entity.Id, entity.AgentName, entity.Content, entity.Tags,
             entity.ConversationId, entity.CapturedAt, entity.IsIngested, entity.IsGlobal);
+    }
+
+    public async Task<IReadOnlyList<RecalledLearning>> RecallRelevantAsync(string query, Guid? userId, int limit = 5, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(query))
+        {
+            return [];
+        }
+
+        try
+        {
+            var embedding = await embeddingService.GenerateEmbeddingAsync(query, ct);
+
+            var results = await vectorRepository.SearchAsync(
+                LearningsCollection,
+                embedding,
+                topK: Math.Clamp(limit, 1, 20),
+                scoreThreshold: RecallScoreThreshold,
+                scope: new KnowledgeScopeFilter(userId),
+                ct: ct);
+
+            if (results.Count == 0)
+            {
+                return [];
+            }
+
+            return results
+                .Select(r => new RecalledLearning(
+                    r.Chunk.Content,
+                    r.Score,
+                    r.Chunk.Metadata.TryGetValue("agent_name", out var agentName) ? agentName : string.Empty))
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to recall relevant learnings for query");
+            return [];
+        }
     }
 
     private async Task IngestLearningAsync(AgentLearning entity, CancellationToken ct)

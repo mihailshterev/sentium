@@ -30,10 +30,9 @@ public sealed class PolicyController(
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> EvaluateAsync([FromBody] PolicyEvaluationRequest body, CancellationToken ct)
     {
-        if (!Enum.TryParse<ResourceType>(body.ResourceType, ignoreCase: true, out var resourceType))
-        {
-            return BadRequest($"Unknown resource type '{body.ResourceType}'. " + $"Valid values: {string.Join(", ", Enum.GetNames<ResourceType>())}");
-        }
+        ArgumentNullException.ThrowIfNull(body, nameof(body));
+
+        var resourceType = Enum.Parse<ResourceType>(body.ResourceType, ignoreCase: true);
 
         var request = new PolicyRequest
         {
@@ -169,11 +168,6 @@ public sealed class PolicyController(
 
         if (body.AutonomyLevel.HasValue)
         {
-            if (body.AutonomyLevel.Value is < 1 or > 10)
-            {
-                return BadRequest("AutonomyLevel must be between 1 and 10.");
-            }
-
             opts.AutonomyLevel = body.AutonomyLevel.Value;
         }
 
@@ -184,21 +178,11 @@ public sealed class PolicyController(
 
         if (body.RateLimitMaxRequests.HasValue)
         {
-            if (body.RateLimitMaxRequests.Value < 1)
-            {
-                return BadRequest("RateLimitMaxRequests must be at least 1.");
-            }
-
             opts.RateLimitMaxRequests = body.RateLimitMaxRequests.Value;
         }
 
         if (body.RateLimitWindowSeconds.HasValue)
         {
-            if (body.RateLimitWindowSeconds.Value < 1)
-            {
-                return BadRequest("RateLimitWindowSeconds must be at least 1.");
-            }
-
             opts.RateLimitWindowSeconds = body.RateLimitWindowSeconds.Value;
         }
 

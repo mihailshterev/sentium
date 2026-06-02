@@ -25,4 +25,10 @@ public sealed class HarnessSettings
     /// Set to false to rely solely on <see cref="UserHarnessPrompt"/>.
     /// </summary>
     public bool IsBuiltInHarnessEnabled { get; set; } = true;
+
+    /// <summary>
+    /// When true (default) the user's prompt is rewritten by a fast pre-execution enhancement pass
+    /// before the agent runs, to improve results from smaller local models.
+    /// </summary>
+    public bool IsPromptEnhancementEnabled { get; set; } = true;
 }

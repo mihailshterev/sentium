@@ -46,13 +46,6 @@ public sealed class SettingsController(ISettingsService settingsService) : Contr
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<SettingsDto>> UpdateSettings([FromBody] UpdateSettingsRequest request, CancellationToken ct)
     {
-        ArgumentNullException.ThrowIfNull(request);
-
-        if (request.Harness.UserHarnessPrompt is { Length: > 16_000 })
-        {
-            return BadRequest(new { error = "Harness.UserHarnessPrompt may not exceed 16 000 characters." });
-        }
-
         var updatedBy = User.Identity?.Name;
         await settingsService.UpdateAsync(request, updatedBy, ct);
 

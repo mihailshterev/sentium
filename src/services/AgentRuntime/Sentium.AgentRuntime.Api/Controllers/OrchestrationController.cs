@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Sentium.AgentRuntime.Core.Agents;
 using Sentium.AgentRuntime.Core.Dtos;
+using Sentium.AgentRuntime.Core.Registry;
 using Sentium.AgentRuntime.Core.WorkflowManagement;
 using Sentium.AgentRuntime.Core.Workflows;
 using Sentium.Infrastructure.Messaging;
@@ -23,6 +24,8 @@ public sealed class OrchestrationController(
     IEventBus eventBus,
     IWorkflowService workflowService,
     ICurrentUser currentUser,
+    IPromptEnhancementService promptEnhancementService,
+    IRegistrySettingsService registrySettingsService,
     ILogger<OrchestrationController> logger) : ControllerBase
 {
     /// <summary>
@@ -41,6 +44,17 @@ public sealed class OrchestrationController(
         var payload = customInput ?? new { activity = "Manual trigger", user = user };
         var payloadNode = JsonNode.Parse(JsonSerializer.Serialize(payload))?.AsObject() ?? new JsonObject();
         payloadNode["userId"] = currentUser.UserId?.ToString();
+
+        var activityNode = payloadNode["activity"];
+        if (activityNode is not null)
+        {
+            var activityText = activityNode.GetValue<string>();
+            if (!string.IsNullOrWhiteSpace(activityText))
+            {
+                payloadNode["activity"] = await EnhanceIfEnabledAsync(activityText, ct);
+            }
+        }
+
         var jsonPayload = payloadNode.ToJsonString();
 
         await eventBus.PublishAsync(WorkflowEvents.Dynamic, jsonPayload, ct: ct);
@@ -61,15 +75,22 @@ public sealed class OrchestrationController(
     /// <returns>An accepted response indicating the workflow has been triggered.</returns>
     [HttpPost("run-workflow")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<Envelope>> RunWorkflow([FromBody] RunWorkflowRequest request, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(request);
 
         var workflow = await workflowService.GetWorkflowAsync(request.WorkflowId, ct);
+        if (workflow is null)
+        {
+            return NotFound();
+        }
+
+        var enhancedScenario = await EnhanceIfEnabledAsync(request.Scenario, ct);
 
         var payload = new
         {
-            activity = request.Scenario,
+            activity = enhancedScenario,
             workflowId = workflow.Id,
             workflowName = workflow.Name,
             agents = workflow.Agents.Select(a => a.AgentId),
@@ -142,6 +163,17 @@ public sealed class OrchestrationController(
             await Response.Body.FlushAsync(ct);
         }
 
+    }
+
+    private async Task<string> EnhanceIfEnabledAsync(string? text, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return text ?? string.Empty;
+        }
+
+        var settings = await registrySettingsService.GetAsync(ct);
+        return settings.Harness.IsPromptEnhancementEnabled ? await promptEnhancementService.EnhanceAsync(text, ct) : text;
     }
 
     public record Envelope(string EventId, string? CorrelationId = null, string Status = "Accepted");

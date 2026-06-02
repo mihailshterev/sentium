@@ -45,13 +45,21 @@ public sealed class AuthController(
             return Redirect($"{loginPath}?returnUrl={Uri.EscapeDataString(authorizeUri)}");
         }
 
+        var sub = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var email = User.FindFirstValue(ClaimTypes.Email);
+
+        if (sub is null || email is null)
+        {
+            return Challenge(IdentityConstants.ApplicationScheme);
+        }
+
         var identity = new ClaimsIdentity(OpenIddictServerAspNetCoreDefaults.AuthenticationScheme);
 
-        var subClaim = new Claim(OpenIddictConstants.Claims.Subject, User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+        var subClaim = new Claim(OpenIddictConstants.Claims.Subject, sub);
         subClaim.SetDestinations(OpenIddictConstants.Destinations.AccessToken, OpenIddictConstants.Destinations.IdentityToken);
         identity.AddClaim(subClaim);
 
-        var emailClaim = new Claim(OpenIddictConstants.Claims.Email, User.FindFirstValue(ClaimTypes.Email)!);
+        var emailClaim = new Claim(OpenIddictConstants.Claims.Email, email);
         emailClaim.SetDestinations(OpenIddictConstants.Destinations.AccessToken);
         identity.AddClaim(emailClaim);
 

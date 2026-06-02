@@ -1,6 +1,7 @@
 using Sentium.AgentRuntime.Core.Agents;
 using Sentium.AgentRuntime.Core.Conversations;
 using Sentium.AgentRuntime.Core.Dtos;
+using Sentium.AgentRuntime.Core.Registry;
 using Sentium.AgentRuntime.Infrastructure.Sentinel;
 using Sentium.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
@@ -26,6 +27,8 @@ public sealed class AssistantController(
     IPendingApprovalStore approvalStore,
     IPdpContextAccessor pdpContext,
     ICurrentUser currentUser,
+    IPromptEnhancementService promptEnhancementService,
+    IRegistrySettingsService registrySettingsService,
     ILogger<AssistantController> logger) : ControllerBase
 {
     private static readonly byte[] DataPrefix = "data: "u8.ToArray();
@@ -59,11 +62,18 @@ public sealed class AssistantController(
             ? hdr.ToString()
             : Guid.NewGuid().ToString();
 
+        var enhancedPrompt = await TryEnhancePromptAsync(lastUserMessage?.Content, ct);
+
         if (requestBody.ConversationId.HasValue && lastUserMessage is not null)
         {
             using var scope = scopeFactory.CreateScope();
             var conversationService = scope.ServiceProvider.GetRequiredService<IConversationService>();
-            await conversationService.AddMessageAsync(requestBody.ConversationId.Value, ChatRole.User.ToString(), lastUserMessage.Content, ct: ct);
+            await conversationService.AddMessageAsync(requestBody.ConversationId.Value, ChatRole.User.ToString(), lastUserMessage.Content, enhancedPrompt: enhancedPrompt, ct: ct);
+        }
+
+        if (enhancedPrompt is not null)
+        {
+            await SendUiUpdate(AgentUpdateTypes.EnhancedPrompt, enhancedPrompt, ct);
         }
 
         var agent = await agentFactory.CreateAsync(AgentRole.GeneralAssistant, overrideModel: requestBody.Model, ct: ct);
@@ -73,6 +83,18 @@ public sealed class AssistantController(
             m.Role.Equals(ChatRole.User.ToString(), StringComparison.OrdinalIgnoreCase) ? ChatRole.User : ChatRole.Assistant,
             m.Content
         )).ToList();
+
+        if (enhancedPrompt is not null)
+        {
+            for (var i = chatMessages.Count - 1; i >= 0; i--)
+            {
+                if (chatMessages[i].Role == ChatRole.User)
+                {
+                    chatMessages[i] = new ChatMessage(ChatRole.User, enhancedPrompt);
+                    break;
+                }
+            }
+        }
 
         await RunStreamingAsync(agent, session, chatMessages, requestBody.ConversationId, requestBody.Model, scopeFactory, ct);
     }
@@ -198,9 +220,9 @@ public sealed class AssistantController(
                     conversationId.Value,
                     ChatRole.Assistant.ToString(),
                     assistantResponse.ToString(),
-                    thoughtBuilder.Length > 0 ? thoughtBuilder.ToString() : null,
-                    toolCallLog.Count > 0 ? toolCallLog : null,
-                    ct
+                    thought: thoughtBuilder.Length > 0 ? thoughtBuilder.ToString() : null,
+                    toolCalls: toolCallLog.Count > 0 ? toolCallLog : null,
+                    ct: ct
                 );
             }
 
@@ -235,6 +257,24 @@ public sealed class AssistantController(
                 logger.LogWarning(writeEx, "Failed to write SSE error response.");
             }
         }
+    }
+
+    private async Task<string?> TryEnhancePromptAsync(string? prompt, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(prompt))
+        {
+            return null;
+        }
+
+        var settings = await registrySettingsService.GetAsync(ct);
+        if (!settings.Harness.IsPromptEnhancementEnabled)
+        {
+            return null;
+        }
+
+        var enhanced = await promptEnhancementService.EnhanceAsync(prompt, ct);
+
+        return !string.IsNullOrWhiteSpace(enhanced) && !string.Equals(enhanced, prompt, StringComparison.Ordinal) ? enhanced : null;
     }
 
     private async Task SendUiUpdate(string type, string content, CancellationToken ct)

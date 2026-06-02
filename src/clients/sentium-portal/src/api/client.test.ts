@@ -210,12 +210,12 @@ describe("client 401 Unauthorized handling", () => {
 describe("client non-401 error handling", () => {
   beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 
-  it("throws error with server message when response has 'message' field", async () => {
+  it("throws error with server message when response has 'detail' field", async () => {
     vi.mocked(fetch).mockResolvedValueOnce({
       ok: false,
       status: 422,
       headers: new Headers({ "Content-Length": "30" }),
-      json: async () => ({ message: "Validation failed" }),
+      json: async () => ({ detail: "Validation failed" }),
     } as unknown as Response);
 
     await expect(client.get("/validate")).rejects.toThrow("Validation failed");

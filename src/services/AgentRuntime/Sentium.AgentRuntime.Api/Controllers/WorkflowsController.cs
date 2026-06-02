@@ -67,7 +67,7 @@ public sealed class WorkflowsController(IWorkflowService workflowService, IWorkf
     public async Task<ActionResult<WorkflowResponse>> GetWorkflow(Guid workflowId, CancellationToken ct)
     {
         var workflow = await workflowService.GetWorkflowAsync(workflowId, ct);
-        return Ok(workflow);
+        return workflow is null ? NotFound() : Ok(workflow);
     }
 
     /// <summary>
@@ -93,10 +93,11 @@ public sealed class WorkflowsController(IWorkflowService workflowService, IWorkf
     /// <returns>No content if the update is successful.</returns>
     [HttpPut("{workflowId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateWorkflow(Guid workflowId, [FromBody] UpdateWorkflowRequest request, CancellationToken ct)
     {
-        await workflowService.UpdateWorkflowAsync(workflowId, request, ct);
-        return NoContent();
+        var updated = await workflowService.UpdateWorkflowAsync(workflowId, request, ct);
+        return updated ? NoContent() : NotFound();
     }
 
     /// <summary>
@@ -107,9 +108,10 @@ public sealed class WorkflowsController(IWorkflowService workflowService, IWorkf
     /// <returns>No content if the deletion is successful.</returns>
     [HttpDelete("{workflowId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteWorkflow(Guid workflowId, CancellationToken ct)
     {
-        await workflowService.DeleteWorkflowAsync(workflowId, ct);
-        return NoContent();
+        var deleted = await workflowService.DeleteWorkflowAsync(workflowId, ct);
+        return deleted ? NoContent() : NotFound();
     }
 }

@@ -1,5 +1,14 @@
 export type SandboxLanguage = "Python" | "Node";
 
+export type SandboxStatusFilter = "Succeeded" | "Failed" | "Denied";
+
+export interface SandboxStats {
+  total: number;
+  succeeded: number;
+  failed: number;
+  denied: number;
+}
+
 export interface ArtifactDto {
   fileName: string;
   mimeType: string;

@@ -3,6 +3,8 @@ using Sentium.AgentRuntime.Core.Workspaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sentium.AgentRuntime.Core.Files;
+using Sentium.Infrastructure.Results;
+using Sentium.Shared.Results;
 
 namespace Sentium.AgentRuntime.Api.Controllers;
 
@@ -68,18 +70,13 @@ public sealed class WorkspacesController(IWorkspaceService workspaceService) : C
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> CreateWorkspace([FromBody] CreateWorkspaceRequest request, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(request.Name))
+        var result = await workspaceService.CreateWorkspaceAsync(request, ct);
+        if (result.Status == ResultStatus.Conflict)
         {
-            return BadRequest(new { error = "Workspace name is required." });
+            return Conflict(new ProblemDetails { Title = "Conflict", Detail = result.Error, Status = StatusCodes.Status409Conflict });
         }
 
-        var workspace = await workspaceService.CreateWorkspaceAsync(request, ct);
-        if (workspace is null)
-        {
-            return Conflict(new { error = $"A workspace named '{request.Name}' already exists." });
-        }
-
-        return CreatedAtAction(nameof(GetWorkspace), new { id = workspace.Id }, workspace);
+        return CreatedAtAction(nameof(GetWorkspace), new { id = result.Value!.Id }, result.Value);
     }
 
     /// <summary>
@@ -101,25 +98,8 @@ public sealed class WorkspacesController(IWorkspaceService workspaceService) : C
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> UpdateWorkspace(Guid id, [FromBody] UpdateWorkspaceRequest request, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(request.Name))
-        {
-            return BadRequest(new { error = "Workspace name is required." });
-        }
-
-        try
-        {
-            var workspace = await workspaceService.UpdateWorkspaceAsync(id, request, ct);
-            if (workspace is null)
-            {
-                return NotFound();
-            }
-
-            return Ok(workspace);
-        }
-        catch (InvalidOperationException ex)
-        {
-            return Conflict(new { error = ex.Message });
-        }
+        var result = await workspaceService.UpdateWorkspaceAsync(id, request, ct);
+        return result.ToActionResult(this);
     }
 
     /// <summary>
@@ -159,15 +139,8 @@ public sealed class WorkspacesController(IWorkspaceService workspaceService) : C
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetWorkspaceFiles(Guid id, CancellationToken ct)
     {
-        try
-        {
-            var files = await workspaceService.GetWorkspaceFilesAsync(id, ct);
-            return Ok(files);
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound();
-        }
+        var files = await workspaceService.GetWorkspaceFilesAsync(id, ct);
+        return files is null ? NotFound() : Ok(files);
     }
 
     /// <summary>
@@ -220,7 +193,7 @@ public sealed class WorkspacesController(IWorkspaceService workspaceService) : C
 
         if (fileDto is null)
         {
-            return BadRequest(new { error = $"Workspace '{workspaceId}' not found." });
+            return NotFound();
         }
 
         return CreatedAtAction(nameof(GetFiles), new { workspaceId }, fileDto);

@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Caching.Hybrid;
 
-namespace Sentium.Tests.Unit.AgentRuntime;
+namespace Sentium.Tests.Unit;
 
 internal sealed class PassThroughHybridCache : HybridCache
 {

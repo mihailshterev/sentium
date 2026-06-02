@@ -26,6 +26,8 @@ const WorkspacesList = () => {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingWorkspace, setEditingWorkspace] = useState<Workspace | null>(null);
   const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [updateError, setUpdateError] = useState<string | null>(null);
 
   return (
     <div className={styles.root}>
@@ -104,7 +106,9 @@ const WorkspacesList = () => {
         <WorkspaceForm
           title="Create Workspace"
           isPending={isCreatingWorkspace}
-          onSubmit={(name, description) =>
+          error={createError}
+          onSubmit={(name, description) => {
+            setCreateError(null);
             createWorkspace(
               { name, description: description || undefined },
               {
@@ -112,10 +116,14 @@ const WorkspacesList = () => {
                   setShowCreateForm(false);
                   navigate(`/workspaces/${created.id}`);
                 },
+                onError: (err) => setCreateError(err instanceof Error ? err.message : "Failed to create workspace"),
               },
-            )
-          }
-          onCancel={() => setShowCreateForm(false)}
+            );
+          }}
+          onCancel={() => {
+            setShowCreateForm(false);
+            setCreateError(null);
+          }}
         />
       )}
 
@@ -124,13 +132,24 @@ const WorkspacesList = () => {
           title="Edit Workspace"
           initial={{ name: editingWorkspace.name, description: editingWorkspace.description ?? "" }}
           isPending={isUpdatingWorkspace}
-          onSubmit={(name, description) =>
+          error={updateError}
+          onSubmit={(name, description) => {
+            setUpdateError(null);
             updateWorkspace(
               { id: editingWorkspace.id, name, description: description || undefined },
-              { onSuccess: () => setEditingWorkspace(null) },
-            )
-          }
-          onCancel={() => setEditingWorkspace(null)}
+              {
+                onSuccess: () => {
+                  setEditingWorkspace(null);
+                  setUpdateError(null);
+                },
+                onError: (err) => setUpdateError(err instanceof Error ? err.message : "Failed to update workspace"),
+              },
+            );
+          }}
+          onCancel={() => {
+            setEditingWorkspace(null);
+            setUpdateError(null);
+          }}
         />
       )}
 
@@ -141,7 +160,14 @@ const WorkspacesList = () => {
         description={`Are you sure you want to delete "${pendingDelete?.name}"? All files will be permanently disassociated.`}
         confirmLabel="Delete workspace"
         onConfirm={() =>
-          pendingDelete && deleteWorkspace(pendingDelete.id, { onSuccess: () => setPendingDelete(null) })
+          pendingDelete &&
+          deleteWorkspace(pendingDelete.id, {
+            onSuccess: () => setPendingDelete(null),
+            onError: (err) => {
+              setPendingDelete(null);
+              alert(err instanceof Error ? err.message : "Failed to delete workspace");
+            },
+          })
         }
         onCancel={() => setPendingDelete(null)}
       />

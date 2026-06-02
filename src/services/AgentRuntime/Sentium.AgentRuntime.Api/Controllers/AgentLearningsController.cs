@@ -51,10 +51,11 @@ public sealed class AgentLearningsController(IAgentLearningService learningServi
     /// <returns>No content if deletion is successful.</returns>
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteLearning(Guid id, CancellationToken ct)
     {
-        await learningService.DeleteAsync(id, ct);
-        return NoContent();
+        var deleted = await learningService.DeleteAsync(id, ct);
+        return deleted ? NoContent() : NotFound();
     }
 
     /// <summary>
@@ -71,14 +72,7 @@ public sealed class AgentLearningsController(IAgentLearningService learningServi
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<AgentLearningResponse>> UpdateLearning(Guid id, [FromBody] UpdateAgentLearningRequest request, CancellationToken ct)
     {
-        ArgumentNullException.ThrowIfNull(request);
-
-        if (string.IsNullOrWhiteSpace(request.Content))
-        {
-            return BadRequest(new { error = "Content is required." });
-        }
-
         var result = await learningService.UpdateAsync(id, request, ct);
-        return Ok(result);
+        return result is null ? NotFound() : Ok(result);
     }
 }

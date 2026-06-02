@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Users from "./users";
@@ -28,6 +28,11 @@ const mockUserNoName: UserListItem = {
 
 const defaultUsersHook = {
   users: [mockUser],
+  totalCount: 1,
+  totalPages: 1,
+  page: 1,
+  pageSize: 20,
+  setPage: vi.fn(),
   isLoading: false,
   isFetching: false,
   error: null,
@@ -168,6 +173,7 @@ describe("Users list state", () => {
     vi.spyOn(useUsersHook, "default").mockReturnValue({
       ...defaultUsersHook,
       users: [mockUser, mockUserNoName],
+      totalCount: 2,
     });
     renderUsers();
     expect(screen.getByText("2 users")).toBeInTheDocument();
@@ -250,54 +256,45 @@ describe("Users sovereign controls", () => {
   });
 
   it("calls deleteUser when delete button is clicked and confirmed", async () => {
-    vi.stubGlobal(
-      "confirm",
-      vi.fn(() => true),
-    );
     const deleteUser = vi.fn().mockResolvedValue(undefined);
     vi.spyOn(useUsersHook, "default").mockReturnValue({ ...defaultUsersHook, deleteUser });
     renderUsers();
     fireEvent.click(screen.getByTitle("Delete user"));
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "Alice Smith" } });
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: /delete user/i }));
     await waitFor(() => expect(deleteUser).toHaveBeenCalledWith("user-1"));
   });
 
   it("does NOT call deleteUser when confirmation is cancelled", async () => {
-    vi.stubGlobal(
-      "confirm",
-      vi.fn(() => false),
-    );
     const deleteUser = vi.fn().mockResolvedValue(undefined);
     vi.spyOn(useUsersHook, "default").mockReturnValue({ ...defaultUsersHook, deleteUser });
     renderUsers();
     fireEvent.click(screen.getByTitle("Delete user"));
+    fireEvent.click(screen.getByRole("button", { name: /cancel/i }));
     expect(deleteUser).not.toHaveBeenCalled();
   });
 
   it("shows actionError when deleteUser throws", async () => {
-    vi.stubGlobal(
-      "confirm",
-      vi.fn(() => true),
-    );
     vi.spyOn(useUsersHook, "default").mockReturnValue({
       ...defaultUsersHook,
       deleteUser: vi.fn().mockRejectedValue(new Error("Cannot delete")),
     });
     renderUsers();
     fireEvent.click(screen.getByTitle("Delete user"));
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "Alice Smith" } });
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: /delete user/i }));
     await waitFor(() => expect(screen.getByText("Cannot delete")).toBeInTheDocument());
   });
 
   it("shows generic error when deleteUser throws a non-Error value", async () => {
-    vi.stubGlobal(
-      "confirm",
-      vi.fn(() => true),
-    );
     vi.spyOn(useUsersHook, "default").mockReturnValue({
       ...defaultUsersHook,
       deleteUser: vi.fn().mockRejectedValue("plain error"),
     });
     renderUsers();
     fireEvent.click(screen.getByTitle("Delete user"));
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "Alice Smith" } });
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: /delete user/i }));
     await waitFor(() => expect(screen.getByText("Failed to delete user.")).toBeInTheDocument());
   });
 

@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Navbar from "./navbar";
 import { useAuthStore } from "../stores/auth-store";
 import { AUTH_STATUS } from "../utils/constants";
@@ -22,15 +23,27 @@ const setUser = (roles: string[], overrides: Partial<{ name: string; email: stri
   });
 };
 
-const renderNav = () =>
-  render(
-    <MemoryRouter>
-      <Navbar />
-    </MemoryRouter>,
+const renderNav = () => {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={qc}>
+      <MemoryRouter>
+        <Navbar />
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
+};
 
 beforeEach(() => {
-  vi.stubGlobal("fetch", vi.fn());
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: new Headers({ "Content-Type": "application/json" }),
+      json: async () => ({ id: "u1", email: "user@example.com", firstName: "Test", lastName: "User" }),
+    }),
+  );
   useAuthStore.setState({ user: null, status: AUTH_STATUS.UNAUTHENTICATED });
 });
 

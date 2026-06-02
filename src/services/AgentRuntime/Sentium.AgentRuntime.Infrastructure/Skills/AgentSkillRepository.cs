@@ -33,15 +33,12 @@ public sealed class AgentSkillRepository(AgentRuntimeDbContext context) : IAgent
         await context.SaveChangesAsync(ct);
     }
 
-    public async Task DeleteAsync(Guid id, CancellationToken ct = default)
+    public async Task<bool> DeleteAsync(Guid id, CancellationToken ct = default)
     {
         var affected = await context.AgentSkills
             .Where(s => s.Id == id)
             .ExecuteDeleteAsync(ct);
 
-        if (affected == 0)
-        {
-            throw new KeyNotFoundException($"Skill with ID {id} was not found.");
-        }
+        return affected > 0;
     }
 }

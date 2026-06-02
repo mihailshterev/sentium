@@ -38,8 +38,15 @@ public sealed class SettingsService(
             await repository.AddAsync(entity, ct);
         }
 
-        entity.Settings.Harness.UserHarnessPrompt = request.Harness.UserHarnessPrompt ?? string.Empty;
-        entity.Settings.Harness.IsBuiltInHarnessEnabled = request.Harness.IsBuiltInHarnessEnabled;
+        entity.Settings = new SettingsContainer
+        {
+            Harness = new HarnessSettings
+            {
+                UserHarnessPrompt = request.Harness.UserHarnessPrompt ?? string.Empty,
+                IsBuiltInHarnessEnabled = request.Harness.IsBuiltInHarnessEnabled,
+                IsPromptEnhancementEnabled = request.Harness.IsPromptEnhancementEnabled,
+            }
+        };
         entity.UpdatedAt = DateTimeOffset.UtcNow;
         entity.UpdatedBy = updatedBy;
 
@@ -67,7 +74,8 @@ public sealed class SettingsService(
     private static SettingsDto MapToDto(SystemSettings entity) => new(
         Harness: new HarnessSettingsDto(
             entity.Settings.Harness.UserHarnessPrompt,
-            entity.Settings.Harness.IsBuiltInHarnessEnabled),
+            entity.Settings.Harness.IsBuiltInHarnessEnabled,
+            entity.Settings.Harness.IsPromptEnhancementEnabled),
         UpdatedAt: entity.UpdatedAt,
         UpdatedBy: entity.UpdatedBy);
 }

@@ -2,17 +2,15 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
+import { assignRole, deleteUser, getUsers, removeRole, type UserListItem } from "../services/identity.service";
 import useUsers from "./useUsers";
-import { identityService } from "../services/identity.service";
-import type { UserListItem } from "../services/identity.service";
+import type { Role } from "../utils/roles";
 
 vi.mock("../services/identity.service", () => ({
-  identityService: {
-    getUsers: vi.fn(),
-    assignRole: vi.fn(),
-    removeRole: vi.fn(),
-    deleteUser: vi.fn(),
-  },
+  getUsers: vi.fn(),
+  assignRole: vi.fn(),
+  removeRole: vi.fn(),
+  deleteUser: vi.fn(),
 }));
 
 const createWrapper = () => {
@@ -42,10 +40,16 @@ const bob: UserListItem = {
 };
 
 beforeEach(() => {
-  vi.mocked(identityService.getUsers).mockResolvedValue([alice, bob]);
-  vi.mocked(identityService.assignRole).mockResolvedValue(undefined);
-  vi.mocked(identityService.removeRole).mockResolvedValue(undefined);
-  vi.mocked(identityService.deleteUser).mockResolvedValue(undefined);
+  vi.mocked(getUsers).mockResolvedValue({
+    items: [alice, bob],
+    totalCount: 2,
+    page: 1,
+    pageSize: 20,
+    totalPages: 1,
+  });
+  vi.mocked(assignRole).mockResolvedValue(undefined);
+  vi.mocked(removeRole).mockResolvedValue(undefined);
+  vi.mocked(deleteUser).mockResolvedValue(undefined);
 });
 
 describe("useUsers fetching", () => {
@@ -62,7 +66,7 @@ describe("useUsers fetching", () => {
   });
 
   it("exposes error when getUsers rejects", async () => {
-    vi.mocked(identityService.getUsers).mockRejectedValueOnce(new Error("Forbidden"));
+    vi.mocked(getUsers).mockRejectedValueOnce(new Error("Forbidden"));
     const { result } = renderHook(() => useUsers(), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.error).not.toBeNull());
     expect(result.current.users).toEqual([]);
@@ -111,9 +115,9 @@ describe("useUsers assignRole()", () => {
     const { result } = renderHook(() => useUsers(), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    const payload = { userId: "u-2", roleName: "Member" };
+    const payload = { userId: "u-2", roleName: "Member" as Role };
     await result.current.assignRole(payload);
-    expect(identityService.assignRole).toHaveBeenCalledWith(payload);
+    expect(assignRole).toHaveBeenCalledWith(payload);
   });
 });
 
@@ -122,9 +126,9 @@ describe("useUsers removeRole()", () => {
     const { result } = renderHook(() => useUsers(), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    const payload = { userId: "u-1", roleName: "Member" };
+    const payload = { userId: "u-1", roleName: "Member" as Role };
     await result.current.removeRole(payload);
-    expect(identityService.removeRole).toHaveBeenCalledWith(payload);
+    expect(removeRole).toHaveBeenCalledWith(payload);
   });
 });
 
@@ -134,6 +138,6 @@ describe("useUsers deleteUser()", () => {
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
     await result.current.deleteUser("u-2");
-    expect(identityService.deleteUser).toHaveBeenCalledWith("u-2");
+    expect(deleteUser).toHaveBeenCalledWith("u-2");
   });
 });

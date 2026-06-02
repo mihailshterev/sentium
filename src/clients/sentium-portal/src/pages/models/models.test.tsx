@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Models from "./models";
@@ -104,23 +104,20 @@ describe("Models success state", () => {
 });
 
 describe("Models delete flow", () => {
-  it("calls deleteModel when delete button is clicked and confirmed", () => {
-    vi.stubGlobal(
-      "confirm",
-      vi.fn(() => true),
-    );
+  it("calls deleteModel when delete button is clicked and confirmed", async () => {
     const deleteModel = vi.fn();
     vi.spyOn(useOllamaModelsHook, "default").mockReturnValue({ ...defaultHook, deleteModel });
     renderModels();
     fireEvent.click(screen.getByTitle("Delete llama3.2"));
-    expect(deleteModel).toHaveBeenCalledWith("llama3.2");
+    const dialog = await screen.findByRole("dialog");
+    const confirmInput = within(dialog).getByRole("textbox");
+    fireEvent.change(confirmInput, { target: { value: "llama3.2" } });
+    const confirmBtn = within(dialog).getByRole("button", { name: /delete model/i });
+    fireEvent.click(confirmBtn);
+    await waitFor(() => expect(deleteModel).toHaveBeenCalledWith("llama3.2"));
   });
 
   it("does NOT call deleteModel when confirmation is cancelled", () => {
-    vi.stubGlobal(
-      "confirm",
-      vi.fn(() => false),
-    );
     const deleteModel = vi.fn();
     vi.spyOn(useOllamaModelsHook, "default").mockReturnValue({ ...defaultHook, deleteModel });
     renderModels();

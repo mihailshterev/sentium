@@ -24,50 +24,108 @@ public sealed class SandboxController(
     private readonly SandboxOptions _opts = options.Value;
 
     /// <summary>
-    /// Returns the most recent sandbox execution records (newest first).
+    /// Returns a page of sandbox execution records (newest first), optionally filtered by outcome,
+    /// language, or a free-text term matched against agent id / job id.
     /// Each record includes the original request context (code, agent ID, prompt) and the full result.
     /// </summary>
+    /// <param name="page">1-based page number (default: 1).</param>
+    /// <param name="pageSize">Number of records per page (default: 20, max: 100).</param>
+    /// <param name="status">Optional outcome filter: Succeeded, Failed, or Denied.</param>
+    /// <param name="language">Optional language filter: Python or Node.</param>
+    /// <param name="search">Optional term matched against agent id or job id.</param>
     [HttpGet("executions")]
-    [ProducesResponseType<IReadOnlyList<SandboxExecutionLogRecord>>(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetExecutions([FromQuery] int count = 100, CancellationToken ct = default)
+    [ProducesResponseType<PagedResponse<SandboxExecutionLogRecord>>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetExecutions(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? status = null,
+        [FromQuery] string? language = null,
+        [FromQuery] string? search = null,
+        CancellationToken ct = default)
     {
-        var entries = await executionLog.GetRecentAsync(Math.Min(count, 500), ct);
+        page = Math.Max(1, page);
+        pageSize = Math.Clamp(pageSize, 1, 100);
 
-        var dtos = entries.Select(e => new SandboxExecutionLogRecord
+        var query = new ExecutionLogQuery
         {
-            JobId = e.JobId,
-            ExecutedAt = e.ExecutedAt,
-            AgentId = e.AgentId,
-            CorrelationId = e.CorrelationId,
-            Language = e.Language.ToString(),
-            Code = e.Code,
-            OriginalUserPrompt = e.OriginalUserPrompt,
-            FileContext = e.FileContext
-                .Select(f => new SandboxFileContextDto { FileName = f.FileName, Content = f.Content })
-                .ToList(),
-            Succeeded = e.Succeeded,
-            ExitCode = e.ExitCode,
-            Output = e.Output,
-            Error = e.Error,
-            TimedOut = e.TimedOut,
-            PolicyDenied = e.PolicyDenied,
-            PolicyDenialReason = e.PolicyDenialReason,
-            SentinelAuditId = e.SentinelAuditId,
-            DurationMs = e.DurationMs,
-            Artifacts = e.Artifacts
-                .Select(a => new ArtifactDto
-                {
-                    FileName = a.FileName,
-                    MimeType = a.MimeType,
-                    BlobUri = a.BlobUri.ToString(),
-                    DownloadPath = new BlobUriBuilder(a.BlobUri).BlobName,
-                    SizeBytes = a.SizeBytes
-                })
-                .ToList()
-        }).ToList();
+            Page = page,
+            PageSize = pageSize,
+            Status = Enum.TryParse<ExecutionStatusFilter>(status, ignoreCase: true, out var s) ? s : null,
+            Language = Enum.TryParse<ExecutionLanguage>(language, ignoreCase: true, out var l) ? l : null,
+            Search = string.IsNullOrWhiteSpace(search) ? null : search
+        };
 
-        return Ok(dtos);
+        var (entries, totalCount) = await executionLog.GetPagedAsync(query, ct);
+
+        var items = entries.Select(ToRecord).ToList();
+        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+        return Ok(new PagedResponse<SandboxExecutionLogRecord>(items, totalCount, page, pageSize, totalPages));
     }
+
+    /// <summary>
+    /// Returns a single sandbox execution record by its job id.
+    /// </summary>
+    /// <response code="200">The execution record.</response>
+    /// <response code="404">If no execution with the given job id exists.</response>
+    [HttpGet("executions/{jobId:guid}")]
+    [ProducesResponseType<SandboxExecutionLogRecord>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetExecution(Guid jobId, CancellationToken ct)
+    {
+        var entry = await executionLog.GetByIdAsync(jobId, ct);
+        return entry is null ? NotFound() : Ok(ToRecord(entry));
+    }
+
+    /// <summary>
+    /// Returns aggregate outcome counts across all recorded executions.
+    /// </summary>
+    [HttpGet("executions/stats")]
+    [ProducesResponseType<SandboxExecutionStatsResponse>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetStats(CancellationToken ct)
+    {
+        var stats = await executionLog.GetStatsAsync(ct);
+        return Ok(new SandboxExecutionStatsResponse
+        {
+            Total = stats.Total,
+            Succeeded = stats.Succeeded,
+            Failed = stats.Failed,
+            Denied = stats.Denied
+        });
+    }
+
+    private static SandboxExecutionLogRecord ToRecord(ExecutionLogEntry e) => new()
+    {
+        JobId = e.JobId,
+        ExecutedAt = e.ExecutedAt,
+        AgentId = e.AgentId,
+        CorrelationId = e.CorrelationId,
+        Language = e.Language.ToString(),
+        Code = e.Code,
+        OriginalUserPrompt = e.OriginalUserPrompt,
+        FileContext = e.FileContext
+            .Select(f => new SandboxFileContextDto { FileName = f.FileName, Content = f.Content })
+            .ToList(),
+        Succeeded = e.Succeeded,
+        ExitCode = e.ExitCode,
+        Output = e.Output,
+        Error = e.Error,
+        TimedOut = e.TimedOut,
+        PolicyDenied = e.PolicyDenied,
+        PolicyDenialReason = e.PolicyDenialReason,
+        SentinelAuditId = e.SentinelAuditId,
+        DurationMs = e.DurationMs,
+        Artifacts = e.Artifacts
+            .Select(a => new ArtifactDto
+            {
+                FileName = a.FileName,
+                MimeType = a.MimeType,
+                BlobUri = a.BlobUri.ToString(),
+                DownloadPath = new BlobUriBuilder(a.BlobUri).BlobName,
+                SizeBytes = a.SizeBytes
+            })
+            .ToList()
+    };
 
     /// <summary>
     /// Submits Python or Node.js code for isolated execution inside a Docker container.
@@ -81,52 +139,8 @@ public sealed class SandboxController(
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> ExecuteAsync([FromBody] SandboxExecutionRequest body, CancellationToken ct)
     {
-        ArgumentNullException.ThrowIfNull(body);
-
-        if (!Enum.TryParse<ExecutionLanguage>(body.Language, ignoreCase: true, out var language))
-        {
-            return BadRequest($"Unknown language '{body.Language}'. Valid values: {string.Join(", ", Enum.GetNames<ExecutionLanguage>())}");
-        }
-
-        if (string.IsNullOrWhiteSpace(body.Code))
-        {
-            return BadRequest("'Code' must not be empty.");
-        }
-
-        if (body.Code.Length > _opts.MaxCodeSizeBytes)
-        {
-            return BadRequest($"Code exceeds the maximum allowed size of {_opts.MaxCodeSizeBytes:N0} bytes.");
-        }
-
-        if (string.IsNullOrWhiteSpace(body.AgentId))
-        {
-            return BadRequest("'AgentId' must not be empty.");
-        }
-
+        var language = Enum.Parse<ExecutionLanguage>(body.Language, ignoreCase: true);
         var fileContext = body.FileContext ?? [];
-
-        if (fileContext.Count > _opts.MaxFileContextEntries)
-        {
-            return BadRequest($"FileContext exceeds the maximum of {_opts.MaxFileContextEntries} entries.");
-        }
-
-        foreach (var file in fileContext)
-        {
-            if (string.IsNullOrWhiteSpace(file.FileName))
-            {
-                return BadRequest("A FileContext entry has an empty FileName.");
-            }
-
-            if (string.IsNullOrWhiteSpace(file.Content))
-            {
-                return BadRequest($"FileContext entry '{file.FileName}' has empty Content.");
-            }
-
-            if (file.Content.Length > _opts.MaxFileContentBytes)
-            {
-                return BadRequest($"FileContext entry '{file.FileName}' exceeds the maximum content size of {_opts.MaxFileContentBytes:N0} bytes.");
-            }
-        }
 
         var correlationId = HttpContext.Request.Headers[CommonHeaderNames.CorrelationId].FirstOrDefault() ?? Guid.NewGuid().ToString();
 

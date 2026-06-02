@@ -1,5 +1,8 @@
+using FluentValidation;
 using Scalar.AspNetCore;
+using Sentium.Infrastructure.Diagnostics;
 using Sentium.Infrastructure.Extensions;
+using Sentium.Infrastructure.Validation;
 using Sentium.Registry.Application;
 using Sentium.Registry.Infrastructure;
 using Sentium.Shared.Constants;
@@ -9,9 +12,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 builder.AddAuthenticationDefaults();
 
-builder.Services.AddProblemDetails();
+builder.Services.AddSentiumProblemDetails();
 builder.Services.AddOpenApi();
-builder.Services.AddControllers();
+builder.Services.AddControllers(options => options.Filters.Add<FluentValidationFilter>());
+builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
 builder.AddNatsClient(ResourceNames.Nats);
 builder.AddRedisDistributedCache(ResourceNames.Redis);
@@ -56,3 +60,8 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+namespace Sentium.Registry.Api
+{
+    public partial class Program { }
+}

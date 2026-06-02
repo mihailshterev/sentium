@@ -55,6 +55,7 @@ var identityApi = builder.AddProject<Projects.Sentium_Identity_Api>(ServiceNames
     .WithReference(identityDb).WaitFor(identityDb)
     .WithReference(nats).WaitFor(nats)
     .WithReference(seq).WaitFor(seq)
+    .WithReference(redis).WaitFor(redis)
     .WithUrlForEndpoint("https", url =>
     {
         url.DisplayText = "Scalar API (Docs)";

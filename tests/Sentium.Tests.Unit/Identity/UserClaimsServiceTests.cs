@@ -1,6 +1,7 @@
 using System.Security.Claims;
 using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Sentium.Identity.Core.Entities;
 using Sentium.Identity.Core.Security;
@@ -19,7 +20,7 @@ public sealed class UserClaimsServiceTests
         var store = Substitute.For<IUserStore<ApplicationUser>>();
         _userManager = Substitute.For<UserManager<ApplicationUser>>(
             store, null, null, null, null, null, null, null, null);
-        _service = new UserClaimsService(_userManager);
+        _service = new UserClaimsService(_userManager, new PassThroughHybridCache(), NullLogger<UserClaimsService>.Instance);
     }
 
     [Fact]

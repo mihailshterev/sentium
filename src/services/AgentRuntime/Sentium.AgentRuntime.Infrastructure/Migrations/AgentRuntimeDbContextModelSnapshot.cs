@@ -201,6 +201,9 @@ namespace Sentium.AgentRuntime.Infrastructure.Migrations
                     b.Property<Guid>("ConversationId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("EnhancedPrompt")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Role")
                         .IsRequired()
                         .HasMaxLength(50)

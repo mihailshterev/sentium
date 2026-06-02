@@ -11,7 +11,7 @@ interface UserRowProps {
   isPending: boolean;
   roleOptions: readonly Role[];
   onAssignRole: (userId: string, role: Role) => void;
-  onRemoveRole: (userId: string, role: string) => void;
+  onRemoveRole: (userId: string, role: Role) => void;
   onDeleteUser: (userId: string) => void;
 }
 

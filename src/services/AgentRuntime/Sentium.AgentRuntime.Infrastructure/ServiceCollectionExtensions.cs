@@ -52,21 +52,16 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton(new OllamaOptions { BaseUrl = ollamaUri, DefaultModel = modelName });
 
-#pragma warning disable EXTEXP0001
         services.AddHttpClient(ResourceNames.Ollama, client =>
         {
             client.BaseAddress = ollamaUri;
             client.Timeout = TimeSpan.FromMinutes(10);
         })
-        .RemoveAllResilienceHandlers()
-        .AddStandardResilienceHandler(options =>
-        {
-            options.TotalRequestTimeout.Timeout = TimeSpan.FromMinutes(10);
-            options.AttemptTimeout.Timeout = TimeSpan.FromMinutes(3);
-            options.Retry.MaxRetryAttempts = 1;
-            options.CircuitBreaker.SamplingDuration = TimeSpan.FromMinutes(11);
-        });
-#pragma warning restore EXTEXP0001
+        .AddLongRunningResilienceHandler(
+            totalTimeout: TimeSpan.FromMinutes(10),
+            attemptTimeout: TimeSpan.FromMinutes(3),
+            retries: 0
+        );
 
         services.AddChatClient(sp =>
         {
@@ -102,7 +97,7 @@ public static class ServiceCollectionExtensions
         {
             client.BaseAddress = new Uri($"https+http://{ServiceNames.Registry}");
             client.Timeout = TimeSpan.FromSeconds(10);
-        }).AddStandardResilienceHandler();
+        });
 
         services.AddScoped<IRegistrySettingsService, RegistrySettingsService>();
         services.AddHostedService<SettingsSyncWorker>();
@@ -128,14 +123,16 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAgentRegistry, AgentRegistry>();
         services.AddScoped<IAgentToolProvider, AgentToolProvider>();
         services.AddScoped<IAgentFactory, CompositeAgentFactory>();
-        services.AddScoped<IAgentManager, AgentManager>();
-        services.AddScoped<IWorkspaceManager, WorkspaceManager>();
+        services.AddScoped<IPromptEnhancementService, PromptEnhancementService>();
+        services.AddScoped<IAgentRepository, AgentRepository>();
+        services.AddScoped<IWorkspaceRepository, WorkspaceRepository>();
 
         services.AddTransient<IAgentTool, KnowledgeBaseSearchTool>();
         services.AddTransient<IAgentTool, CodeExecutionSandboxTool>();
         services.AddTransient<IAgentTool, ReadFileTool>();
         services.AddTransient<IAgentTool, StoreMemoryTool>();
         services.AddTransient<IAgentTool, RecallMemoryTool>();
+        services.AddTransient<IAgentTool, RecallLearningsTool>();
         services.AddTransient<IAgentTool, ListWorkspacesTool>();
         services.AddTransient<IAgentTool, ListWorkspaceFilesTool>();
         services.AddTransient<IAgentTool, ReadWorkspaceFileContentTool>();
@@ -143,8 +140,8 @@ public static class ServiceCollectionExtensions
         services.AddTransient<IAgentTool, CaptureAgentLearningTool>();
         services.AddTransient<IAgentTool, ScheduleTaskTool>();
 
-        services.AddScoped<IConversationManager, ConversationManager>();
-        services.AddScoped<IWorkflowManager, WorkflowManager>();
+        services.AddScoped<IConversationRepository, ConversationRepository>();
+        services.AddScoped<IWorkflowRepository, WorkflowRepository>();
         services.AddScoped<IWorkflowRunRepository, WorkflowRunRepository>();
 
         builder.Services.AddQuartz(q =>
@@ -178,8 +175,14 @@ public static class ServiceCollectionExtensions
         services.AddHttpClient(ServiceNames.Sandbox, client =>
         {
             client.BaseAddress = new Uri($"https+http://{ServiceNames.Sandbox}");
-            client.Timeout = TimeSpan.FromSeconds(120);
-        }).AddHttpMessageHandler<InternalApiKeyDelegatingHandler>().AddStandardResilienceHandler();
+            client.Timeout = Timeout.InfiniteTimeSpan;
+        })
+        .AddHttpMessageHandler<InternalApiKeyDelegatingHandler>()
+        .AddLongRunningResilienceHandler(
+            totalTimeout: TimeSpan.FromSeconds(130),
+            attemptTimeout: TimeSpan.FromSeconds(120),
+            retries: 0
+        );
 
         services.AddScoped<IPdpContextAccessor, PdpContextAccessor>();
 

@@ -213,13 +213,14 @@ describe("KnowledgeBase Agent Learnings tab", () => {
   });
 
   it("renders agent filter dropdown", () => {
-    expect(screen.getByRole("combobox")).toBeInTheDocument();
+    expect(screen.getAllByRole("combobox").length).toBeGreaterThanOrEqual(1);
   });
 
   it("filters learnings when agent filter is changed", () => {
-    const select = screen.getByRole("combobox") as HTMLSelectElement;
-    fireEvent.change(select, { target: { value: "All" } });
-    expect(select).toBeInTheDocument();
+    const selects = screen.getAllByRole("combobox") as HTMLSelectElement[];
+    const agentSelect = selects[0];
+    fireEvent.change(agentSelect, { target: { value: "" } });
+    expect(agentSelect).toBeInTheDocument();
   });
 
   it("shows loading text while learnings load", () => {
@@ -316,6 +317,8 @@ describe("KnowledgeBase Learning card edit", () => {
     renderKb();
     fireEvent.click(screen.getByRole("button", { name: /agent learnings/i }));
     fireEvent.click(screen.getByTitle("Delete learning"));
+    const confirmBtn = await screen.findByRole("button", { name: /delete item/i });
+    fireEvent.click(confirmBtn);
     await waitFor(() => expect(deleteLearning).toHaveBeenCalledWith("learn-1"));
   });
 

@@ -18,6 +18,7 @@ const mockSettings: Settings = {
   harness: {
     userHarnessPrompt: "You are a helpful assistant.",
     isBuiltInHarnessEnabled: true,
+    isPromptEnhancementEnabled: true,
   },
   updatedAt: "2025-01-01T00:00:00Z",
   updatedBy: null,
@@ -91,13 +92,17 @@ describe("useSystemSettings save mutation", () => {
 
     act(() => {
       result.current.save({
-        harness: { userHarnessPrompt: "Updated prompt", isBuiltInHarnessEnabled: true },
+        harness: {
+          userHarnessPrompt: "Updated prompt",
+          isBuiltInHarnessEnabled: true,
+          isPromptEnhancementEnabled: true,
+        },
       });
     });
 
     await waitFor(() => expect(result.current.isSaveSuccess).toBe(true));
     expect(spy).toHaveBeenCalledWith({
-      harness: { userHarnessPrompt: "Updated prompt", isBuiltInHarnessEnabled: true },
+      harness: { userHarnessPrompt: "Updated prompt", isBuiltInHarnessEnabled: true, isPromptEnhancementEnabled: true },
     });
     expect(result.current.settings?.harness.userHarnessPrompt).toBe("Updated prompt");
   });

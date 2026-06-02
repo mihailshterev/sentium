@@ -1,4 +1,5 @@
 using Sentium.AgentRuntime.Core.Dtos;
+using Sentium.Shared.Results;
 
 namespace Sentium.AgentRuntime.Core.Workspaces;
 
@@ -14,7 +15,7 @@ namespace Sentium.AgentRuntime.Core.Workspaces;
 /// - Transactional consistency across workspace and file operations.
 /// </para>
 /// <para>
-/// Unlike <see cref="IWorkspaceManager"/>, this service implements business logic
+/// Unlike <see cref="IWorkspaceRepository"/>, this service implements business logic
 /// such as duplicate name checking and graceful error handling.
 /// </para>
 /// </remarks>
@@ -41,9 +42,9 @@ public interface IWorkspaceService
     /// <param name="request">The creation request containing name and optional description.</param>
     /// <param name="ct">A cancellation token.</param>
     /// <returns>
-    /// The created workspace, or <c>null</c> if a workspace with that name already exists.
+    /// The created workspace, or a <see cref="ResultStatus.Conflict"/> result if a workspace with that name already exists.
     /// </returns>
-    Task<WorkspaceDto?> CreateWorkspaceAsync(CreateWorkspaceRequest request, CancellationToken ct = default);
+    Task<Result<WorkspaceDto>> CreateWorkspaceAsync(CreateWorkspaceRequest request, CancellationToken ct = default);
 
     /// <summary>
     /// Updates an existing workspace with name uniqueness validation (excluding itself).
@@ -52,12 +53,10 @@ public interface IWorkspaceService
     /// <param name="request">The update request with new name and optional description.</param>
     /// <param name="ct">A cancellation token.</param>
     /// <returns>
-    /// The updated workspace, or <c>null</c> if the workspace is not found.
+    /// The updated workspace; a <see cref="ResultStatus.NotFound"/> result if the workspace does not exist;
+    /// or a <see cref="ResultStatus.Conflict"/> result when another workspace holds the same name.
     /// </returns>
-    /// <exception cref="InvalidOperationException">
-    /// Thrown when another workspace holds the same name.
-    /// </exception>
-    Task<WorkspaceDto?> UpdateWorkspaceAsync(Guid id, UpdateWorkspaceRequest request, CancellationToken ct = default);
+    Task<Result<WorkspaceDto>> UpdateWorkspaceAsync(Guid id, UpdateWorkspaceRequest request, CancellationToken ct = default);
 
     /// <summary>
     /// Deletes a workspace and all its associated files.
@@ -72,9 +71,8 @@ public interface IWorkspaceService
     /// </summary>
     /// <param name="workspaceId">The identifier of the workspace.</param>
     /// <param name="ct">A cancellation token.</param>
-    /// <returns>A read-only list of files in the workspace.</returns>
-    /// <exception cref="KeyNotFoundException">Thrown if the workspace is not found.</exception>
-    Task<IReadOnlyList<WorkspaceFileDto>> GetWorkspaceFilesAsync(Guid workspaceId, CancellationToken ct = default);
+    /// <returns>A read-only list of files in the workspace, or <c>null</c> if the workspace is not found.</returns>
+    Task<IReadOnlyList<WorkspaceFileDto>?> GetWorkspaceFilesAsync(Guid workspaceId, CancellationToken ct = default);
 
     /// <summary>
     /// Retrieves files optionally filtered by workspace.
