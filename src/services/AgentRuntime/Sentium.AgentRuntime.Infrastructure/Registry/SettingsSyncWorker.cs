@@ -21,25 +21,40 @@ public sealed class SettingsSyncWorker(
     {
         logger.LogInformation("SettingsSyncWorker started — listening on {Subject}", NatsSubjects.SettingsInvalidated);
 
-        await foreach (var msg in eventBus.SubscribeStreamAsync<SettingsInvalidatedEvent>(NatsSubjects.SettingsInvalidated, ct: stoppingToken))
+        while (!stoppingToken.IsCancellationRequested)
         {
-            if (msg.Data is null)
-            {
-                continue;
-            }
-
             try
             {
-                await hybridCache.RemoveAsync(msg.Data.CacheKey, stoppingToken);
+                await foreach (var msg in eventBus.SubscribeStreamAsync<SettingsInvalidatedEvent>(NatsSubjects.SettingsInvalidated, ct: stoppingToken))
+                {
+                    if (msg.Data is null)
+                    {
+                        continue;
+                    }
 
-                logger.LogInformation(
-                    "L1 cache evicted for key '{Key}' (settings updated at {At})",
-                    msg.Data.CacheKey,
-                    msg.Data.InvalidatedAt);
+                    try
+                    {
+                        await hybridCache.RemoveAsync(msg.Data.CacheKey, stoppingToken);
+
+                        logger.LogInformation(
+                            "L1 cache evicted for key '{Key}' (settings updated at {At})",
+                            msg.Data.CacheKey,
+                            msg.Data.InvalidatedAt);
+                    }
+                    catch (Exception ex) when (ex is not OperationCanceledException)
+                    {
+                        logger.LogError(ex, "Failed to evict cache key '{Key}'", msg.Data.CacheKey);
+                    }
+                }
             }
-            catch (Exception ex) when (ex is not OperationCanceledException)
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
-                logger.LogError(ex, "Failed to evict cache key '{Key}'", msg.Data.CacheKey);
+                break;
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "SettingsSyncWorker subscription failed; restarting in 5 s");
+                await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
             }
         }
     }

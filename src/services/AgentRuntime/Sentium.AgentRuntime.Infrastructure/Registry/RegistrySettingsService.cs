@@ -12,14 +12,28 @@ public sealed class RegistrySettingsService(IRegistryClient registryClient, Hybr
         LocalCacheExpiration = TimeSpan.FromMinutes(5)
     };
 
-    public ValueTask<SettingsSnapshot> GetAsync(CancellationToken ct = default)
-        => cache.GetOrCreateAsync(
-            CacheKeys.Settings,
-            async token =>
-            {
-                var snapshot = await registryClient.GetSettingsAsync(token);
-                return snapshot ?? SettingsSnapshot.Default;
-            },
-            CacheOptions,
-            cancellationToken: ct);
+    public async ValueTask<SettingsSnapshot> GetAsync(CancellationToken ct = default)
+    {
+        try
+        {
+            return await cache.GetOrCreateAsync(
+                CacheKeys.Settings,
+                async token =>
+                {
+                    var snapshot = await registryClient.GetSettingsAsync(token);
+
+                    return snapshot ?? throw new InvalidOperationException("Registry did not return settings");
+                },
+                CacheOptions,
+                cancellationToken: ct);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch
+        {
+            return SettingsSnapshot.Default;
+        }
+    }
 }
