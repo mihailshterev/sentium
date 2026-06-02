@@ -1644,6 +1644,91 @@
           "Serilog.Sinks.Seq": "[9.0.0, )"
         }
       },
+      "sentium.registry.api": {
+        "type": "Project",
+        "dependencies": {
+          "Aspire.NATS.Net": "[13.2.4, )",
+          "Aspire.StackExchange.Redis.DistributedCaching": "[13.2.4, )",
+          "Microsoft.AspNetCore.OpenApi": "[10.0.1, )",
+          "Microsoft.Extensions.Caching.Hybrid": "[10.4.0, )",
+          "Scalar.AspNetCore": "[2.14.4, )",
+          "Sentium.Registry.Application": "[1.0.0, )",
+          "Sentium.Registry.Infrastructure": "[1.0.0, )",
+          "Sentium.ServiceDefaults": "[1.0.0, )",
+          "Sentium.Shared": "[1.0.0, )"
+        }
+      },
+      "sentium.registry.application": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.Caching.Hybrid": "[10.4.0, )",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.6, )",
+          "Sentium.Infrastructure": "[1.0.0, )",
+          "Sentium.Registry.Core": "[1.0.0, )",
+          "Sentium.Shared": "[1.0.0, )"
+        }
+      },
+      "sentium.registry.core": {
+        "type": "Project",
+        "dependencies": {
+          "Sentium.Shared": "[1.0.0, )"
+        }
+      },
+      "sentium.registry.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore": "[10.0.5, )",
+          "Microsoft.EntityFrameworkCore.Design": "[10.0.5, )",
+          "Microsoft.EntityFrameworkCore.SqlServer": "[10.0.5, )",
+          "Microsoft.EntityFrameworkCore.Tools": "[10.0.5, )",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.6, )",
+          "Microsoft.Extensions.Hosting": "[10.0.5, )",
+          "Sentium.Infrastructure": "[1.0.0, )",
+          "Sentium.Registry.Core": "[1.0.0, )",
+          "Sentium.Shared": "[1.0.0, )"
+        }
+      },
+      "sentium.sandbox.api": {
+        "type": "Project",
+        "dependencies": {
+          "Aspire.NATS.Net": "[13.2.4, )",
+          "Microsoft.AspNetCore.OpenApi": "[10.0.1, )",
+          "Microsoft.EntityFrameworkCore.SqlServer": "[10.0.5, )",
+          "Scalar.AspNetCore": "[2.14.4, )",
+          "Sentium.Sandbox.Application": "[1.0.0, )",
+          "Sentium.Sandbox.Infrastructure": "[1.0.0, )",
+          "Sentium.ServiceDefaults": "[1.0.0, )",
+          "Sentium.Shared": "[1.0.0, )"
+        }
+      },
+      "sentium.sandbox.application": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.6, )",
+          "Microsoft.Extensions.Hosting": "[10.0.5, )",
+          "Sentium.Sandbox.Core": "[1.0.0, )"
+        }
+      },
+      "sentium.sandbox.core": {
+        "type": "Project"
+      },
+      "sentium.sandbox.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Aspire.Azure.Storage.Blobs": "[13.2.4, )",
+          "Azure.Storage.Blobs": "[12.27.0, )",
+          "Docker.DotNet": "[3.125.15, )",
+          "Microsoft.EntityFrameworkCore": "[10.0.5, )",
+          "Microsoft.EntityFrameworkCore.SqlServer": "[10.0.5, )",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.6, )",
+          "Microsoft.Extensions.Hosting": "[10.0.5, )",
+          "Microsoft.Extensions.Http.Resilience": "[10.2.0, )",
+          "Sentium.Infrastructure": "[1.0.0, )",
+          "Sentium.Sandbox.Application": "[1.0.0, )",
+          "Sentium.Sandbox.Core": "[1.0.0, )",
+          "Sentium.Shared": "[1.0.0, )"
+        }
+      },
       "sentium.sentinel.api": {
         "type": "Project",
         "dependencies": {

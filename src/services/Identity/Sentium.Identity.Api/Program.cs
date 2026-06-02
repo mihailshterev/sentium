@@ -92,3 +92,8 @@ app.MapControllers();
 app.MapFallbackToFile("index.html");
 
 app.Run();
+
+namespace Sentium.Identity.Api
+{
+    public partial class Program { }
+}

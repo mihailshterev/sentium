@@ -2,28 +2,13 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.Extensions.Logging;
-using NATS.Client.Core;
 using NSubstitute;
 using Sentium.Identity.Core.Entities;
 using Sentium.Identity.Infrastructure.Identity;
-using Sentium.Infrastructure.Messaging;
+using Sentium.Tests.Unit.Common;
 using Xunit;
 
 namespace Sentium.Tests.Unit.Identity;
-
-internal sealed class SpyEventBus : IEventBus
-{
-    public List<string> PublishedSubjects { get; } = [];
-
-    public Task PublishAsync<T>(string subject, T message, INatsSerializer<T>? serializer = null, CancellationToken ct = default)
-    {
-        PublishedSubjects.Add(subject);
-        return Task.CompletedTask;
-    }
-
-    public Task SubscribeAsync<T>(string subject, Func<NatsMsg<T>, Task> handler, CancellationToken ct = default) => Task.CompletedTask;
-    public IAsyncEnumerable<NatsMsg<T>> SubscribeStreamAsync<T>(string subject, INatsSerializer<T>? serializer = null, CancellationToken ct = default) => AsyncEnumerable.Empty<NatsMsg<T>>();
-}
 
 public sealed class IdentityServiceTests
 {
@@ -93,7 +78,7 @@ public sealed class IdentityServiceTests
     public async Task LoginAsync_SuccessfulLogin_ReturnsSucceededSignInResult()
     {
         _signInManager.PasswordSignInAsync("user@test.com", "Test@123", false, true)
-            .Returns(Microsoft.AspNetCore.Identity.SignInResult.Success);
+            .Returns(SignInResult.Success);
 
         var result = await _service.LoginAsync("user@test.com", "Test@123");
 
@@ -104,7 +89,7 @@ public sealed class IdentityServiceTests
     public async Task LoginAsync_FailedLogin_ReturnsFailedSignInResult()
     {
         _signInManager.PasswordSignInAsync(Arg.Any<string>(), Arg.Any<string>(), false, true)
-            .Returns(Microsoft.AspNetCore.Identity.SignInResult.Failed);
+            .Returns(SignInResult.Failed);
 
         var result = await _service.LoginAsync("user@test.com", "wrong");
 
@@ -115,7 +100,7 @@ public sealed class IdentityServiceTests
     public async Task LoginAsync_LockedOut_ReturnsLockedOutResult()
     {
         _signInManager.PasswordSignInAsync(Arg.Any<string>(), Arg.Any<string>(), false, true)
-            .Returns(Microsoft.AspNetCore.Identity.SignInResult.LockedOut);
+            .Returns(SignInResult.LockedOut);
 
         var result = await _service.LoginAsync("user@test.com", "wrong");
 

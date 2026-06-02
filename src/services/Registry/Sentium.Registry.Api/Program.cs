@@ -60,3 +60,8 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+namespace Sentium.Registry.Api
+{
+    public partial class Program { }
+}

@@ -4,9 +4,12 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
+using Sentium.Identity.Api.Contracts.Users;
 using Sentium.Identity.Api.Controllers;
 using Sentium.Identity.Application.Abstractions;
+using Sentium.Identity.Application.Users;
 using Sentium.Identity.Core.Entities;
+using System.Security.Claims;
 using Xunit;
 
 namespace Sentium.Tests.Unit.Identity;
@@ -103,5 +106,126 @@ public sealed class AccountControllerTests
 
         // Assert
         result.Should().BeOfType<UnauthorizedObjectResult>();
+    }
+
+    [Fact]
+    public async Task GetProfile_ReturnsOk_WhenUserFound()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        var userId = Guid.NewGuid();
+        var user = new UserDto(userId, "user@test.com", "Test", "User", null);
+        _userManagementService.GetUserByIdAsync(userId, ct).Returns(user);
+
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(new ClaimsIdentity(
+                    [new Claim(ClaimTypes.NameIdentifier, userId.ToString())], "Test"))
+            }
+        };
+
+        // Act
+        var result = await _controller.GetProfile(ct);
+
+        // Assert
+        result.Should().BeOfType<OkObjectResult>();
+    }
+
+    [Fact]
+    public async Task GetProfile_ReturnsNotFound_WhenUserDeleted()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        var userId = Guid.NewGuid();
+        _userManagementService.GetUserByIdAsync(userId, ct).Returns((UserDto?)null);
+
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(new ClaimsIdentity(
+                    [new Claim(ClaimTypes.NameIdentifier, userId.ToString())], "Test"))
+            }
+        };
+
+        // Act
+        var result = await _controller.GetProfile(ct);
+
+        // Assert
+        result.Should().BeOfType<NotFoundResult>();
+    }
+
+    [Fact]
+    public async Task GetProfile_ReturnsUnauthorized_WhenNoSubClaim()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(new ClaimsIdentity())
+            }
+        };
+
+        // Act
+        var result = await _controller.GetProfile(ct);
+
+        // Assert
+        result.Should().BeOfType<UnauthorizedResult>();
+    }
+
+    [Fact]
+    public async Task UpdateProfile_ReturnsNoContent_WhenSuccessful()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        var userId = Guid.NewGuid();
+        var request = new UpdateProfileRequest("Jane", "Doe", "jane@test.com");
+        _userManagementService.UpdateProfileAsync(userId, request.FirstName, request.LastName, request.Email, ct)
+            .Returns((true, Array.Empty<string>()));
+
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(new ClaimsIdentity(
+                    [new Claim(ClaimTypes.NameIdentifier, userId.ToString())], "Test"))
+            }
+        };
+
+        // Act
+        var result = await _controller.UpdateProfile(request, ct);
+
+        // Assert
+        result.Should().BeOfType<NoContentResult>();
+    }
+
+    [Fact]
+    public async Task UpdateProfile_ReturnsBadRequest_WhenValidationFails()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        var userId = Guid.NewGuid();
+        var request = new UpdateProfileRequest("Jane", "Doe", "taken@test.com");
+        _userManagementService.UpdateProfileAsync(userId, request.FirstName, request.LastName, request.Email, ct)
+            .Returns((false, new[] { "Email is already in use." }));
+
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(new ClaimsIdentity(
+                    [new Claim(ClaimTypes.NameIdentifier, userId.ToString())], "Test"))
+            }
+        };
+
+        // Act
+        var result = await _controller.UpdateProfile(request, ct);
+
+        // Assert
+        result.Should().BeOfType<BadRequestObjectResult>();
     }
 }
