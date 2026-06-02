@@ -297,6 +297,7 @@ const Assistant = () => {
     deleteConversationMutate(conversationToDelete, {
       onSuccess: () => {
         if (activeConversationId === conversationToDelete) {
+          setActiveConversation(null, [], model);
           navigate("/assistant");
         }
         setIsConfirmOpen(false);

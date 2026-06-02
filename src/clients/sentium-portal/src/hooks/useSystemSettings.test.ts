@@ -102,7 +102,7 @@ describe("useSystemSettings save mutation", () => {
 
     await waitFor(() => expect(result.current.isSaveSuccess).toBe(true));
     expect(spy).toHaveBeenCalledWith({
-      harness: { userHarnessPrompt: "Updated prompt", isBuiltInHarnessEnabled: true },
+      harness: { userHarnessPrompt: "Updated prompt", isBuiltInHarnessEnabled: true, isPromptEnhancementEnabled: true },
     });
     expect(result.current.settings?.harness.userHarnessPrompt).toBe("Updated prompt");
   });

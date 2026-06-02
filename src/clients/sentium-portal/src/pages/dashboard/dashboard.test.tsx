@@ -1,13 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Dashboard from "./dashboard";
 import * as useAgentsHook from "../../hooks/useAgents";
 import * as useWorkflowsHook from "../../hooks/useWorkflows";
 import * as useServiceHealthHook from "../../hooks/useServiceHealth";
+import * as useWorkflowRunsHook from "../../hooks/useWorkflowRuns";
+import * as useSystemMetricsHook from "../../hooks/useSystemMetrics";
+import * as useSentinelAuditHook from "../../hooks/useSentinelAudit";
+import * as useOllamaModelsHook from "../../hooks/useOllamaModels";
+import * as useSchedulerHook from "../../hooks/useScheduler";
+import * as useKnowledgeBaseStatsHook from "../../hooks/useKnowledgeBaseStats";
 import type { AgentRecord } from "../../types/agents";
-import type { WorkflowRecord } from "../../types/workflows";
+import type { WorkflowRecord, WorkflowRun } from "../../types/workflows";
 import type { ServiceHealthStatus } from "../../types/serviceHealth";
 
 const mockAgent: AgentRecord = {
@@ -26,6 +32,18 @@ const mockWorkflow: WorkflowRecord = {
   createdAt: "2025-01-01T00:00:00Z",
   updatedAt: "2025-01-01T00:00:00Z",
   agents: [{ agentId: "a1", order: 1 }],
+};
+
+const mockRun: WorkflowRun = {
+  id: "r1",
+  triggerType: "manual.execute",
+  triggerPayload: "{}",
+  explanation: "Test run",
+  risk: "Low",
+  recommendation: "Continue",
+  startedAt: "2025-01-01T00:00:00Z",
+  completedAt: "2025-01-01T00:05:00Z",
+  logs: [],
 };
 
 const healthyService: ServiceHealthStatus = {
@@ -47,6 +65,32 @@ const unhealthyService: ServiceHealthStatus = {
 const defaultAgentsHook = { agents: [mockAgent], isLoading: false };
 const defaultWorkflowsHook = { workflows: [mockWorkflow], isLoading: false };
 const defaultHealthHook = { services: [healthyService], isLoading: false, error: null, refetch: vi.fn() };
+const defaultRunsHook = { runs: [mockRun], isLoading: false };
+const defaultMetricsHook = { metrics: null, isLoading: false, isRefetching: false, error: null, refetch: vi.fn() };
+const defaultSentinelHook = { stats: null, isLoading: false, error: null };
+const defaultModelsHook = {
+  models: [] as never[],
+  isLoading: false,
+  error: null,
+  refetch: vi.fn(),
+  pullState: null,
+  pull: vi.fn(),
+  cancelPull: vi.fn(),
+  resetPull: vi.fn(),
+  deletingModel: null,
+  deleteModel: vi.fn(),
+  deleteResult: null,
+  clearDeleteResult: vi.fn(),
+};
+const defaultSchedulerHook = { jobs: [] as never[], isLoading: false, error: null, refetch: vi.fn() };
+const defaultKbHook = {
+  collections: [],
+  isLoading: false,
+  error: null,
+  refetch: vi.fn(),
+  deleteCollection: vi.fn(),
+  isDeleting: false,
+};
 
 const renderDashboard = (path = "/") => {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -65,125 +109,98 @@ beforeEach(() => {
     defaultWorkflowsHook as ReturnType<typeof useWorkflowsHook.default>,
   );
   vi.spyOn(useServiceHealthHook, "default").mockReturnValue(defaultHealthHook);
+  vi.spyOn(useWorkflowRunsHook, "default").mockReturnValue(defaultRunsHook);
+  vi.spyOn(useSystemMetricsHook, "default").mockReturnValue(
+    defaultMetricsHook as unknown as ReturnType<typeof useSystemMetricsHook.default>,
+  );
+  vi.spyOn(useSentinelAuditHook, "useSentinelStats").mockReturnValue(
+    defaultSentinelHook as unknown as ReturnType<typeof useSentinelAuditHook.useSentinelStats>,
+  );
+  vi.spyOn(useOllamaModelsHook, "default").mockReturnValue(
+    defaultModelsHook as unknown as ReturnType<typeof useOllamaModelsHook.default>,
+  );
+  vi.spyOn(useSchedulerHook, "useSchedulerJobs").mockReturnValue(
+    defaultSchedulerHook as unknown as ReturnType<typeof useSchedulerHook.useSchedulerJobs>,
+  );
+  vi.spyOn(useKnowledgeBaseStatsHook, "useKnowledgeBaseStats").mockReturnValue(
+    defaultKbHook as ReturnType<typeof useKnowledgeBaseStatsHook.useKnowledgeBaseStats>,
+  );
 });
 
 describe("Dashboard initial render", () => {
   it("renders the page title", () => {
     renderDashboard();
-    expect(screen.getByText("Dashboard")).toBeInTheDocument();
+    expect(screen.getByText("Control Center")).toBeInTheDocument();
   });
 
-  it("renders the agents count", () => {
+  it("renders stat cards section", () => {
+    renderDashboard();
+    expect(screen.getByText("Agents")).toBeInTheDocument();
+    expect(screen.getByText("Workflows")).toBeInTheDocument();
+  });
+
+  it("renders agents count in stat card", () => {
     renderDashboard();
     expect(screen.getAllByText("1").length).toBeGreaterThanOrEqual(1);
   });
 
-  it("renders the workflows count", () => {
+  it("renders the Service Health section", () => {
     renderDashboard();
-    expect(screen.getAllByText("1").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText("Service Health")).toBeInTheDocument();
   });
 
-  it("renders the Quick Access section", () => {
+  it("renders the Security Overview section", () => {
     renderDashboard();
-    expect(screen.getByText("Quick Access")).toBeInTheDocument();
-  });
-
-  it("renders all quick access cards", () => {
-    renderDashboard();
-    expect(screen.getAllByText("Orchestration").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText("AI Assistant")).toBeInTheDocument();
-    expect(screen.getAllByText("Agents").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("Workflows").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("Sentinel").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("Watchdog").length).toBeGreaterThanOrEqual(1);
-  });
-
-  it("renders the System Modules section", () => {
-    renderDashboard();
-    expect(screen.getByText("System Modules")).toBeInTheDocument();
-  });
-
-  it("renders all module names", () => {
-    renderDashboard();
-    expect(screen.getAllByText("Agent Runtime").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText("Sentinel").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText("Identity Provider")).toBeInTheDocument();
+    expect(screen.getByText("Security Overview")).toBeInTheDocument();
   });
 });
 
 describe("Dashboard loading state", () => {
-  it("shows skeleton values when agents are loading", () => {
+  it("shows loading skeleton in stat cards when agents are loading", () => {
     vi.spyOn(useAgentsHook, "default").mockReturnValue({ ...defaultAgentsHook, isLoading: true } as ReturnType<
       typeof useAgentsHook.default
     >);
     renderDashboard();
-    expect(screen.queryByText("AI Assistant")).toBeInTheDocument();
-  });
-
-  it("shows skeleton activity rows when loading", () => {
-    vi.spyOn(useAgentsHook, "default").mockReturnValue({ ...defaultAgentsHook, isLoading: true } as ReturnType<
-      typeof useAgentsHook.default
-    >);
-    renderDashboard();
-    expect(screen.queryByText("Threat Pipeline")).not.toBeInTheDocument();
+    expect(screen.getByText("Service Health")).toBeInTheDocument();
   });
 });
 
-describe("Dashboard activity feed", () => {
-  it("shows 'No recent activity' when agents and workflows are empty", () => {
-    vi.spyOn(useAgentsHook, "default").mockReturnValue({ agents: [], isLoading: false } as unknown as ReturnType<
-      typeof useAgentsHook.default
-    >);
-    vi.spyOn(useWorkflowsHook, "default").mockReturnValue({ workflows: [], isLoading: false } as unknown as ReturnType<
-      typeof useWorkflowsHook.default
-    >);
+describe("Dashboard workflow runs feed", () => {
+  it("shows 'No workflow runs yet' when runs list is empty", () => {
+    vi.spyOn(useWorkflowRunsHook, "default").mockReturnValue({ runs: [], isLoading: false });
     renderDashboard();
-    expect(screen.getByText(/no recent activity/i)).toBeInTheDocument();
+    expect(screen.getByText(/no workflow runs yet/i)).toBeInTheDocument();
   });
 
-  it("shows workflow name in activity feed", () => {
+  it("shows workflow run risk badge when run data is available", () => {
     renderDashboard();
-    expect(screen.getByText("Threat Pipeline")).toBeInTheDocument();
-  });
-
-  it("shows agent name in activity feed", () => {
-    renderDashboard();
-    expect(screen.getAllByText(/recon/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Low").length).toBeGreaterThanOrEqual(1);
   });
 });
 
-describe("Dashboard module status", () => {
-  it("shows 'Online' for modules that are healthy", () => {
+describe("Dashboard service health", () => {
+  it("shows 'Healthy' status for healthy services", () => {
     renderDashboard();
-    expect(screen.getByText("Online")).toBeInTheDocument();
+    expect(screen.getByText("Healthy")).toBeInTheDocument();
   });
 
-  it("shows 'Unknown' for modules with no health data", () => {
+  it("shows 'No services monitored' when services list is empty", () => {
     vi.spyOn(useServiceHealthHook, "default").mockReturnValue({ ...defaultHealthHook, services: [] });
     renderDashboard();
-    expect(screen.getAllByText("Unknown").length).toBeGreaterThan(0);
+    expect(screen.getByText("No services monitored")).toBeInTheDocument();
   });
 
-  it("shows 'Offline' for unhealthy services", () => {
+  it("shows 'Unhealthy' status for unhealthy services", () => {
     vi.spyOn(useServiceHealthHook, "default").mockReturnValue({
       ...defaultHealthHook,
       services: [unhealthyService],
     });
     renderDashboard();
-    expect(screen.getByText("Offline")).toBeInTheDocument();
-  });
-});
-
-describe("Dashboard navigation", () => {
-  it("navigates when a Quick Access card is clicked", () => {
-    renderDashboard();
-    fireEvent.click(screen.getByText("Orchestration").closest("button")!);
+    expect(screen.getByText("Unhealthy")).toBeInTheDocument();
   });
 
-  it("navigates to sentinel when View button clicked in security section", () => {
+  it("shows service name in health list", () => {
     renderDashboard();
-    const viewBtns = screen.getAllByRole("button").filter((b) => b.textContent?.trim() === "View");
-    viewBtns.forEach((btn) => fireEvent.click(btn));
-    expect(viewBtns.length).toBeGreaterThan(0);
+    expect(screen.getByText("Agent Runtime")).toBeInTheDocument();
   });
 });

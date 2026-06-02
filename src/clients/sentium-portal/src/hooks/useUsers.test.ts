@@ -7,12 +7,10 @@ import useUsers from "./useUsers";
 import type { Role } from "../utils/roles";
 
 vi.mock("../services/identity.service", () => ({
-  identityService: {
-    getUsers: vi.fn(),
-    assignRole: vi.fn(),
-    removeRole: vi.fn(),
-    deleteUser: vi.fn(),
-  },
+  getUsers: vi.fn(),
+  assignRole: vi.fn(),
+  removeRole: vi.fn(),
+  deleteUser: vi.fn(),
 }));
 
 const createWrapper = () => {
