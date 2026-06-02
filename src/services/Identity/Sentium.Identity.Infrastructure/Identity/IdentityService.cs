@@ -5,6 +5,7 @@ using Sentium.Infrastructure.Messaging;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.Extensions.Logging;
+using Sentium.Identity.Core.Constants;
 
 namespace Sentium.Identity.Infrastructure.Identity;
 
@@ -14,7 +15,6 @@ public sealed class IdentityService(
     IEventBus eventBus,
     ILogger<IdentityService> logger) : IIdentityService
 {
-    /// <inheritdoc />
     public async Task<(IdentityResult Result, ApplicationUser? User)> RegisterUserAsync(RegisterRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -31,12 +31,16 @@ public sealed class IdentityService(
 
         if (result.Succeeded)
         {
-            // temp
-            await userManager.AddToRoleAsync(user, Roles.Sovereign);
+            var roleResult = await userManager.AddToRoleAsync(user, Roles.Member);
+            if (!roleResult.Succeeded)
+            {
+                logger.LogError("Failed to assign role {Role} to user {UserId}", Roles.Member, user.Id);
+                return (roleResult, user);
+            }
 
             await signInManager.SignInAsync(user, isPersistent: false);
 
-            await eventBus.PublishAsync("identity.user.registered", new
+            await eventBus.PublishAsync(IdentityEvents.UserRegistered, new
             {
                 UserId = user.Id,
                 user.Email,
@@ -52,9 +56,19 @@ public sealed class IdentityService(
         return (result, user);
     }
 
-    /// <inheritdoc />
     public async Task<SignInResult> LoginAsync(string email, string password)
     {
-        return await signInManager.PasswordSignInAsync(email, password, false, lockoutOnFailure: true);
+        var result = await signInManager.PasswordSignInAsync(email, password, false, lockoutOnFailure: true);
+
+        if (result.IsLockedOut)
+        {
+            logger.LogWarning("Login attempt for {Email} rejected: account locked.", email);
+        }
+        else if (!result.Succeeded)
+        {
+            logger.LogInformation("Failed login attempt for {Email}.", email);
+        }
+
+        return result;
     }
 }

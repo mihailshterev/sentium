@@ -4,6 +4,7 @@ import styles from "../skills.module.scss";
 import { useSkills } from "../../../hooks/useSkills";
 import type { AgentSkill } from "../../../types/skills";
 import EmptyState from "../../../components/ui/empty-state";
+import StatusMessage from "../../../components/ui/status-message";
 import SkillCard from "./skill-card";
 
 const UploadedTab = () => {
@@ -26,6 +27,7 @@ const UploadedTab = () => {
   const [editForm, setEditForm] = useState({ name: "", description: "", instructions: "" });
   const [expanded, setExpanded] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -43,18 +45,24 @@ const UploadedTab = () => {
   const handleEdit = (skill: AgentSkill) => {
     setEditForm({ name: skill.name, description: skill.description, instructions: skill.instructions });
     setEditingId(skill.id);
+    setSaveError(null);
   };
 
   const handleSave = async (id: string) => {
-    await updateSkill({
-      id,
-      payload: {
-        name: editForm.name.trim(),
-        description: editForm.description.trim(),
-        instructions: editForm.instructions.trim(),
-      },
-    });
-    setEditingId(null);
+    setSaveError(null);
+    try {
+      await updateSkill({
+        id,
+        payload: {
+          name: editForm.name.trim(),
+          description: editForm.description.trim(),
+          instructions: editForm.instructions.trim(),
+        },
+      });
+      setEditingId(null);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : "Failed to save skill");
+    }
   };
 
   return (
@@ -89,7 +97,12 @@ const UploadedTab = () => {
       </div>
 
       <div className={styles.cardBody}>
-        {isLoading && <p className={styles.loadingText}>Loading skills…</p>}
+        {isLoading && (
+          <p className={styles.loadingText}>
+            <Loader size={14} className="animate-spin" />
+            Loading skills…
+          </p>
+        )}
 
         {!isLoading && uploadedSkills.length === 0 && (
           <EmptyState
@@ -129,7 +142,13 @@ const UploadedTab = () => {
                   />
                 </div>
                 <div className={styles.formActions}>
-                  <button className={styles.btnGhost} onClick={() => setEditingId(null)}>
+                  <button
+                    className={styles.btnGhost}
+                    onClick={() => {
+                      setEditingId(null);
+                      setSaveError(null);
+                    }}
+                  >
                     <X size={13} />
                     Cancel
                   </button>
@@ -146,6 +165,7 @@ const UploadedTab = () => {
                     Save
                   </button>
                 </div>
+                {saveError && <StatusMessage variant="error" message={saveError} />}
               </div>
             ) : (
               <SkillCard

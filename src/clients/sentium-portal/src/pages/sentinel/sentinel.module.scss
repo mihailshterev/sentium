@@ -47,7 +47,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--bg-base);
+  background: transparent;
   overflow: hidden;
   position: relative;
 
@@ -85,8 +85,9 @@
   height: 64px;
   padding: 0 1.75rem;
   border-bottom: 1px solid var(--border-subtle);
-  background: rgba(15, 15, 19, 0.85);
-  backdrop-filter: blur(8px);
+  background: var(--glass-bg-strong);
+  backdrop-filter: blur(var(--blur-md)) saturate(140%);
+  -webkit-backdrop-filter: blur(var(--blur-md)) saturate(140%);
   flex-shrink: 0;
   gap: 1rem;
 }
@@ -306,7 +307,8 @@
 
 .auditTableHead {
   display: grid;
-  grid-template-columns: 70px 120px 130px 80px 80px 72px 90px 24px;
+  grid-template-columns: 70px 120px 1fr 70px 90px 72px 90px 24px;
+  column-gap: 0.5rem;
   padding: 0.45rem 1rem;
   border-bottom: 1px solid var(--border-subtle);
   background: var(--bg-elevated);
@@ -328,15 +330,19 @@
 }
 
 .emptyState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   padding: 2rem 1.25rem;
   font-size: 0.78rem;
   color: var(--text-muted);
-  text-align: center;
 }
 
 .auditRow {
   display: grid;
-  grid-template-columns: 70px 120px 130px 80px 80px 72px 90px 24px;
+  grid-template-columns: 70px 120px 1fr 70px 90px 72px 90px 24px;
+  column-gap: 0.5rem;
   align-items: center;
   padding: 0.55rem 1rem;
   border-bottom: 1px solid var(--border-subtle);
@@ -384,6 +390,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  min-width: 0;
 }
 
 .auditAction {

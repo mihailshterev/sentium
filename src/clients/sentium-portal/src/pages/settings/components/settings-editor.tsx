@@ -1,17 +1,19 @@
 import { useEffect, useRef } from "react";
-import { useForm, Controller, useWatch } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CheckCircle, Loader, Shield, X, Zap } from "lucide-react";
+import { CheckCircle, Loader, Shield, Sparkles, X, Zap } from "lucide-react";
 import styles from "../settings.module.scss";
 import StatusMessage from "../../../components/ui/status-message";
 import FormField from "../../../components/ui/form-field";
 import { settingsEditorSchema, type SettingsEditorFormData } from "../../../schemas/settings.editor";
+import type { UpdateSettingsPayload } from "../../../types/agentConfig";
 
 interface SettingsEditorProps {
   initialPrompt: string;
   initialBuiltIn: boolean;
+  initialPromptEnhancement: boolean;
   updatedBy: string | null;
-  save: (payload: { userHarnessPrompt: string; isBuiltInHarnessEnabled: boolean }) => void;
+  save: (payload: UpdateSettingsPayload) => void;
   isSaving: boolean;
   isSaveSuccess: boolean;
   isSaveError: boolean;
@@ -22,6 +24,7 @@ interface SettingsEditorProps {
 const SettingsEditor = ({
   initialPrompt,
   initialBuiltIn,
+  initialPromptEnhancement,
   updatedBy,
   save,
   isSaving,
@@ -34,16 +37,19 @@ const SettingsEditor = ({
     register,
     handleSubmit,
     control,
+    watch,
     formState: { isDirty },
   } = useForm<SettingsEditorFormData>({
     resolver: zodResolver(settingsEditorSchema),
-    defaultValues: { prompt: initialPrompt, builtInEnabled: initialBuiltIn },
+    defaultValues: {
+      prompt: initialPrompt,
+      builtInEnabled: initialBuiltIn,
+      promptEnhancementEnabled: initialPromptEnhancement,
+    },
   });
 
-  const prompt = useWatch({
-    control,
-    name: "prompt",
-  });
+  // eslint-disable-next-line react-hooks/incompatible-library
+  const prompt = watch("prompt") ?? "";
 
   const successTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -59,7 +65,13 @@ const SettingsEditor = ({
   }, [isSaveSuccess, resetSave]);
 
   const onSubmit = (data: SettingsEditorFormData) => {
-    save({ userHarnessPrompt: data.prompt, isBuiltInHarnessEnabled: data.builtInEnabled });
+    save({
+      harness: {
+        userHarnessPrompt: data.prompt,
+        isBuiltInHarnessEnabled: data.builtInEnabled,
+        isPromptEnhancementEnabled: data.promptEnhancementEnabled,
+      },
+    });
   };
 
   const charsRemaining = 16000 - prompt.length;
@@ -109,6 +121,40 @@ const SettingsEditor = ({
         <div className={styles.card}>
           <div className={styles.cardHeader}>
             <div className={styles.cardHeaderLeft}>
+              <Sparkles size={15} className={styles.cardIconCyan} />
+              <div>
+                <p className={styles.cardTitle}>Prompt Enhancement</p>
+                <p className={styles.cardSubtitle}>
+                  Optimizes each prompt with a pre-pass before execution — sharper results from smaller local models
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className={styles.toggleRow}>
+            <div className={styles.toggleInfo}>
+              <span className={styles.toggleLabel}>Enable prompt enhancement</span>
+              <span className={styles.toggleDesc}>
+                Rewrites assistant and workflow prompts for clarity and specificity before the agent runs. The original
+                is preserved and the enhanced version is shown inline.
+              </span>
+            </div>
+            <label className={styles.toggleSwitch}>
+              <Controller
+                name="promptEnhancementEnabled"
+                control={control}
+                render={({ field }) => (
+                  <input type="checkbox" checked={field.value} onChange={(e) => field.onChange(e.target.checked)} />
+                )}
+              />
+              <span className={styles.slider} />
+            </label>
+          </div>
+        </div>
+
+        <div className={styles.card}>
+          <div className={styles.cardHeader}>
+            <div className={styles.cardHeaderLeft}>
               <Zap size={15} className={styles.cardIconAmber} />
               <div>
                 <p className={styles.cardTitle}>User-Defined Global Behavior</p>
@@ -137,7 +183,7 @@ const SettingsEditor = ({
               <StatusMessage
                 variant="success"
                 icon={<CheckCircle size={14} />}
-                message="Settings saved. Changes will take effect within 30 seconds."
+                message="Settings saved. Changes will take effect on the next agent interaction."
               />
             )}
 

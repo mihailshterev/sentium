@@ -1,55 +1,53 @@
-using Microsoft.Extensions.Caching.Hybrid;
 using Sentium.AgentRuntime.Core.Agents;
 using Sentium.AgentRuntime.Core.Dtos;
+using Sentium.Infrastructure.Caching;
 
 namespace Sentium.AgentRuntime.Application.Agents;
 
-public sealed class AgentService(IAgentManager manager, HybridCache cache) : IAgentService
+public sealed class AgentService(IAgentRepository repository, IScopedCache cache) : IAgentService
 {
     private const string CacheTag = "agents";
 
     public async ValueTask<AgentResponse> CreateAgentAsync(CreateAgentRequest request, CancellationToken ct = default)
     {
-        var response = await manager.CreateAgentAsync(request, ct);
-
-        await cache.RemoveByTagAsync(CacheTag, ct);
-
+        var response = await repository.CreateAgentAsync(request, ct);
+        await cache.InvalidateTagAsync(CacheTag, ct);
         return response;
     }
 
     public async ValueTask<IReadOnlyList<AgentResponse>> GetAgentsAsync(CancellationToken ct = default)
-    {
-        var cacheKey = $"{CacheTag}:all";
+        => await cache.GetOrCreateAsync(
+            $"{CacheTag}:all",
+            async token => await repository.GetAgentsAsync(token),
+            CacheTag,
+            ct);
 
-        return await cache.GetOrCreateAsync(
-            cacheKey,
-            async token => await manager.GetAgentsAsync(token),
-            tags: [CacheTag],
-            cancellationToken: ct
-        );
+    public async ValueTask<AgentResponse?> GetAgentByIdAsync(Guid agentId, CancellationToken ct = default)
+        => await cache.GetOrCreateAsync(
+            $"{CacheTag}:{agentId}",
+            async token => await repository.GetAgentByIdAsync(agentId, token),
+            CacheTag,
+            ct);
+
+    public async ValueTask<bool> UpdateAgentAsync(Guid agentId, UpdateAgentRequest request, CancellationToken ct = default)
+    {
+        var updated = await repository.UpdateAgentAsync(agentId, request, ct);
+        if (updated)
+        {
+            await cache.InvalidateTagAsync(CacheTag, ct);
+        }
+
+        return updated;
     }
 
-    public async ValueTask<AgentResponse> GetAgentByIdAsync(Guid agentId, CancellationToken ct = default)
+    public async ValueTask<bool> DeleteAgentAsync(Guid agentId, CancellationToken ct = default)
     {
-        var cacheKey = $"{CacheTag}:{agentId}";
+        var deleted = await repository.DeleteAgentAsync(agentId, ct);
+        if (deleted)
+        {
+            await cache.InvalidateTagAsync(CacheTag, ct);
+        }
 
-        return await cache.GetOrCreateAsync(
-            cacheKey,
-            async token => await manager.GetAgentByIdAsync(agentId, token),
-            tags: [CacheTag],
-            cancellationToken: ct
-        );
-    }
-
-    public async ValueTask UpdateAgentAsync(Guid agentId, UpdateAgentRequest request, CancellationToken ct = default)
-    {
-        await manager.UpdateAgentAsync(agentId, request, ct);
-        await cache.RemoveByTagAsync(CacheTag, ct);
-    }
-
-    public async ValueTask DeleteAgentAsync(Guid agentId, CancellationToken ct = default)
-    {
-        await manager.DeleteAgentAsync(agentId, ct);
-        await cache.RemoveByTagAsync(CacheTag, ct);
+        return deleted;
     }
 }

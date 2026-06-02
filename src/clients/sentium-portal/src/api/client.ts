@@ -3,6 +3,28 @@ import { useAuthStore } from "../stores/auth-store";
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export const BASE_URL = import.meta.env.VITE_API_BASE + "/api";
 
+export class ApiError extends Error {
+  readonly status: number;
+  readonly errors?: Record<string, string[]>;
+
+  constructor(status: number, message: string, errors?: Record<string, string[]>) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+    this.errors = errors;
+  }
+
+  get isNotFound() {
+    return this.status === 404;
+  }
+  get isConflict() {
+    return this.status === 409;
+  }
+  get isValidation() {
+    return this.status === 400;
+  }
+}
+
 export const BFF_BASE = import.meta.env.VITE_API_BASE + "/bff";
 
 interface RequestOptions extends RequestInit {
@@ -37,7 +59,8 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+    const message: string = errorData.detail ?? errorData.title ?? `HTTP error! status: ${response.status}`;
+    throw new ApiError(response.status, message, errorData.errors);
   }
 
   if (response.status === 204 || response.headers.get("Content-Length") === "0") {

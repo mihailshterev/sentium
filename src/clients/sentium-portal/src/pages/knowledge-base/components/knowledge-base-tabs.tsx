@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { Bot, BrainCircuit, Database, FlaskConical, RefreshCw, Trash2, X } from "lucide-react";
+import { Bot, BrainCircuit, Database, FlaskConical, Loader, RefreshCw, Trash2, X } from "lucide-react";
 import styles from "../knowledge-base.module.scss";
 import { useAgentLearnings } from "../../../hooks/useAgentLearnings";
 import { useKnowledgeBaseStats } from "../../../hooks/useKnowledgeBaseStats";
+import ConfirmDialog from "../../../components/ui/confirm-dialog";
 import EmptyState from "../../../components/ui/empty-state";
 import LearningCard from "./learning-card";
 
@@ -18,14 +19,9 @@ const formatDate = (iso: string) => {
 export const GlobalContextTab = () => {
   const { collections, isLoading, error, refetch, deleteCollection, isDeleting } = useKnowledgeBaseStats();
   const { stats, isStatsLoading } = useAgentLearnings();
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
 
   const totalVectors = collections.reduce((sum, c) => sum + c.pointCount, 0);
-
-  const handleDelete = (name: string) => {
-    if (confirm(`Are you sure you want to delete the collection "${name}"? This action cannot be undone.`)) {
-      deleteCollection(name);
-    }
-  };
 
   return (
     <>
@@ -45,7 +41,12 @@ export const GlobalContextTab = () => {
         </div>
 
         <div className={styles.cardBody}>
-          {isLoading && <p className={styles.loadingText}>Querying vector store…</p>}
+          {isLoading && (
+            <p className={styles.loadingText}>
+              <Loader size={14} className="animate-spin" />
+              Querying vector store…
+            </p>
+          )}
 
           {error && (
             <div className={styles.alertError}>
@@ -72,6 +73,10 @@ export const GlobalContextTab = () => {
                       <span className={styles.statLabel}>Agent Learnings</span>
                     </div>
                     <div className={styles.statCard}>
+                      <span className={`${styles.statValue} ${styles.statValueCyan}`}>{stats.globalLearnings}</span>
+                      <span className={styles.statLabel}>Global (Shared)</span>
+                    </div>
+                    <div className={styles.statCard}>
                       <span className={styles.statValue}>{stats.pendingIngestion}</span>
                       <span className={styles.statLabel}>Pending Ingestion</span>
                     </div>
@@ -93,7 +98,7 @@ export const GlobalContextTab = () => {
                         </span>
                         <button
                           className={styles.deleteBtn}
-                          onClick={() => handleDelete(c.collectionName)}
+                          onClick={() => setPendingDelete(c.collectionName)}
                           disabled={isDeleting}
                           title="Delete Collection"
                         >
@@ -114,6 +119,21 @@ export const GlobalContextTab = () => {
           )}
         </div>
       </div>
+
+      {pendingDelete && (
+        <ConfirmDialog
+          open
+          variant="danger"
+          title="Delete collection?"
+          description={`This will permanently delete the collection "${pendingDelete}" and all its vectors. This action cannot be undone.`}
+          confirmLabel="Delete collection"
+          onConfirm={() => {
+            deleteCollection(pendingDelete);
+            setPendingDelete(null);
+          }}
+          onCancel={() => setPendingDelete(null)}
+        />
+      )}
 
       {!isStatsLoading && stats && Object.keys(stats.learningsByAgent).length > 0 && (
         <div className={styles.card}>
@@ -144,10 +164,14 @@ export const GlobalContextTab = () => {
 
 export const AgentLearningsTab = () => {
   const [agentFilter, setAgentFilter] = useState<string>("");
+  const [scopeFilter, setScopeFilter] = useState<"all" | "global" | "private">("all");
   const { learnings, isLoading, stats, updateLearning, isUpdating, updatingId, deleteLearning, isDeleting } =
     useAgentLearnings(agentFilter || undefined, 100);
 
   const agentNames = stats ? Object.keys(stats.learningsByAgent) : [];
+
+  const filteredLearnings =
+    scopeFilter === "all" ? learnings : learnings.filter((l) => (scopeFilter === "global" ? l.isGlobal : !l.isGlobal));
 
   return (
     <div className={styles.card}>
@@ -174,21 +198,41 @@ export const AgentLearningsTab = () => {
               </option>
             ))}
           </select>
+          <select
+            className={styles.filterSelect}
+            value={scopeFilter}
+            onChange={(e) => setScopeFilter(e.target.value as "all" | "global" | "private")}
+          >
+            <option value="all">All scopes</option>
+            <option value="global">Global only</option>
+            <option value="private">Private only</option>
+          </select>
         </div>
 
-        {isLoading && <p className={styles.loadingText}>Loading learnings…</p>}
+        {isLoading && (
+          <p className={styles.loadingText}>
+            <Loader size={14} className="animate-spin" />
+            Loading learnings…
+          </p>
+        )}
 
-        {!isLoading && learnings.length === 0 && (
+        {!isLoading && filteredLearnings.length === 0 && (
           <EmptyState
             icon={<BrainCircuit size={32} />}
-            title="No learnings captured yet"
-            hint="Agents automatically capture learnings during analyses and store them in the vector knowledge base."
+            title={scopeFilter !== "all" ? `No ${scopeFilter} learnings` : "No learnings captured yet"}
+            hint={
+              scopeFilter === "global"
+                ? "Agents promote learnings to global only after validation. Captured patterns will appear here once approved."
+                : scopeFilter === "private"
+                  ? "No private learnings for this filter. Private learnings are scoped to your agents only."
+                  : "Agents automatically capture learnings during analyses and store them in the vector knowledge base."
+            }
           />
         )}
 
-        {!isLoading && learnings.length > 0 && (
+        {!isLoading && filteredLearnings.length > 0 && (
           <div className={styles.learningList}>
-            {learnings.map((l) => (
+            {filteredLearnings.map((l) => (
               <LearningCard
                 key={l.id}
                 learning={l}

@@ -10,7 +10,7 @@ namespace Sentium.AgentRuntime.Application.Orchestration;
 public sealed class WorkflowOrchestrator(
     IAgentFactory factory,
     IAgentRegistry registry,
-    IAgentManager agentManager,
+    IAgentRepository agentRepository,
     IWorkflowService workflowService,
     IEventBus nats) : IOrchestrator
 {
@@ -19,8 +19,8 @@ public sealed class WorkflowOrchestrator(
         ArgumentNullException.ThrowIfNull(trigger);
         IAgentWorkflow workflow = trigger.TriggerType switch
         {
-            WorkflowEvents.CustomWorkflow => new DynamicCustomWorkflow(factory, agentManager, workflowService, nats),
-            _ => new DynamicDiscoveryWorkflow(factory, registry, agentManager, nats)
+            WorkflowEvents.CustomWorkflow => new DynamicCustomWorkflow(factory, agentRepository, workflowService, nats),
+            _ => new DynamicDiscoveryWorkflow(factory, registry, agentRepository, nats)
         };
 
         return await workflow.ExecuteAsync(trigger, ct);

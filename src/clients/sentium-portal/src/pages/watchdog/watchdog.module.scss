@@ -27,9 +27,16 @@ $shimmer-gradient: linear-gradient(90deg, var(--bg-elevated) 25%, var(--bg-hover
 
 .root {
   height: 100%;
+  overflow: hidden;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+}
+
+.content {
+  flex: 1;
   overflow-y: auto;
-  background: var(--bg-base);
-  padding: 1.75rem 2rem 2rem;
+  padding: 1.5rem 1.75rem 2rem;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;

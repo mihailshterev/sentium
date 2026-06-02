@@ -6,6 +6,10 @@ using Microsoft.Extensions.Caching.Hybrid;
 using Scalar.AspNetCore;
 using Sentium.Shared.Constants;
 using Sentium.Infrastructure.Extensions;
+using Sentium.Infrastructure.Caching;
+using Sentium.Infrastructure.Diagnostics;
+using Sentium.Infrastructure.Validation;
+using FluentValidation;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,7 +19,8 @@ builder.AddAuthenticationDefaults();
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
-builder.Services.AddControllers();
+builder.Services.AddControllers(options => options.Filters.Add<FluentValidationFilter>());
+builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
 builder.AddNatsClient(ResourceNames.Nats);
 builder.AddRedisDistributedCache(ResourceNames.Redis);
@@ -37,6 +42,9 @@ builder.Services.AddHybridCache(options =>
         LocalCacheExpiration = TimeSpan.FromMinutes(5)
     };
 });
+builder.Services.AddScoped<IScopedCache, ScopedCache>();
+
+builder.Services.AddSentiumProblemDetails();
 
 var app = builder.Build();
 
@@ -62,6 +70,8 @@ if (app.Environment.IsDevelopment())
                .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
     });
 }
+
+app.UseExceptionHandler();
 
 app.MapDefaultEndpoints();
 

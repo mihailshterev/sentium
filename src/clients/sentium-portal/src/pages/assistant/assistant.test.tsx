@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { MemoryRouter } from "react-router";
+import { MemoryRouter, Route, Routes } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Assistant from "./assistant";
 import * as useConversationsHook from "../../hooks/useConversations";
@@ -43,14 +43,17 @@ const defaultModelsHook = {
   isLoading: false,
 };
 
-const renderAssistant = () => {
+const renderAssistant = (initialPath = "/assistant") => {
   const qc = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter>
-        <Assistant />
+      <MemoryRouter initialEntries={[initialPath]}>
+        <Routes>
+          <Route path="/assistant" element={<Assistant />} />
+          <Route path="/assistant/:conversationId" element={<Assistant />} />
+        </Routes>
       </MemoryRouter>
     </QueryClientProvider>,
   );
@@ -61,6 +64,8 @@ beforeEach(() => {
     activeConversationId: null,
     messages: [],
     model: "llama3.2",
+    isStreaming: false,
+    streamingConversationId: null,
   });
   vi.spyOn(useConversationsHook, "default").mockReturnValue(defaultConversationsHook);
   vi.spyOn(useModelsHook, "default").mockReturnValue(defaultModelsHook);
@@ -378,6 +383,8 @@ describe("Assistant conversation deletion", () => {
     renderAssistant();
     const delBtn = screen.getByTitle("Delete conversation");
     fireEvent.click(delBtn);
+    const confirmBtn = await screen.findByRole("button", { name: /delete chat/i });
+    fireEvent.click(confirmBtn);
     expect(deleteConversation).toHaveBeenCalledWith("conv-1", expect.any(Object));
   });
 
@@ -395,6 +402,8 @@ describe("Assistant conversation deletion", () => {
     renderAssistant();
     const delBtn = screen.getByTitle("Delete conversation");
     fireEvent.click(delBtn);
+    const confirmBtn = await screen.findByRole("button", { name: /delete chat/i });
+    fireEvent.click(confirmBtn);
     await waitFor(() => expect(useConversationStore.getState().activeConversationId).toBeNull());
   });
 });

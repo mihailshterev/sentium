@@ -1,0 +1,57 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: var(--text-2xs);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-full);
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+}
+
+.green {
+  color: var(--accent-green);
+  background: var(--accent-green-subtle);
+  border-color: var(--accent-green-border);
+}
+.blue {
+  color: var(--accent-blue);
+  background: var(--accent-blue-subtle);
+  border-color: var(--accent-blue-border);
+}
+.purple {
+  color: var(--accent-purple);
+  background: var(--accent-purple-subtle);
+  border-color: var(--accent-purple-border);
+}
+.amber {
+  color: var(--accent-amber);
+  background: var(--accent-amber-subtle);
+  border-color: var(--accent-amber-border);
+}
+.red {
+  color: var(--accent-red);
+  background: var(--accent-red-subtle);
+  border-color: var(--accent-red-border);
+}
+.cyan {
+  color: var(--accent-cyan);
+  background: var(--accent-cyan-subtle);
+  border-color: var(--accent-cyan-border);
+}
+.neutral {
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  border-color: var(--border-color);
+}

@@ -20,7 +20,7 @@ public sealed class WorkflowsControllerTests
     }
 
     private static WorkflowResponse MakeResponse(Guid? id = null) =>
-        new(id ?? Guid.NewGuid(), "WF", "desc", DateTime.UtcNow, DateTime.UtcNow, []);
+        new(id ?? Guid.NewGuid(), Guid.NewGuid(), "WF", "desc", DateTime.UtcNow, DateTime.UtcNow, []);
 
     [Fact]
     public async Task GetWorkflows_ReturnsOkWithList()
@@ -30,7 +30,7 @@ public sealed class WorkflowsControllerTests
 
         var result = await _controller.GetWorkflows(TestContext.Current.CancellationToken);
 
-        result.Should().BeOfType<OkObjectResult>()
+        result.Result.Should().BeOfType<OkObjectResult>()
             .Which.Value.Should().BeEquivalentTo(list);
     }
 
@@ -63,7 +63,7 @@ public sealed class WorkflowsControllerTests
 
         var result = await _controller.CreateWorkflow(request, TestContext.Current.CancellationToken);
 
-        result.Should().BeOfType<CreatedAtActionResult>()
+        result.Result.Should().BeOfType<CreatedAtActionResult>()
             .Which.Value.Should().Be(created);
     }
 
@@ -71,7 +71,7 @@ public sealed class WorkflowsControllerTests
     public async Task DeleteWorkflow_ExistingId_ReturnsNoContent()
     {
         var id = Guid.NewGuid();
-        _workflowService.DeleteWorkflowAsync(id, Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+        _workflowService.DeleteWorkflowAsync(id, Arg.Any<CancellationToken>()).Returns(true);
 
         var result = await _controller.DeleteWorkflow(id, TestContext.Current.CancellationToken);
 

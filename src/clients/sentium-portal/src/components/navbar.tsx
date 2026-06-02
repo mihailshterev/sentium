@@ -24,7 +24,11 @@ import {
 import styles from "./navbar.module.scss";
 import React from "react";
 import { useAuthStore } from "../stores/auth-store";
+import { useConversationStore } from "../stores/assistant-conversation-store";
+import { useOrchestrationRunStore } from "../stores/orchestration-run-store";
 import { useRole } from "../hooks/useRole";
+import useProfile from "../hooks/useProfile";
+import ThemeToggle from "./ui/theme-toggle";
 
 interface NavLinkItem {
   to: string;
@@ -83,11 +87,27 @@ const Navbar = () => {
   const logout = useAuthStore((s) => s.logout);
   const user = useAuthStore((s) => s.user);
   const { isSovereign, highestRole } = useRole();
+  const { profile } = useProfile();
+
+  const assistantStreaming = useConversationStore((s) => s.isStreaming);
+  const orchestrationRunning = useOrchestrationRunStore((s) => s.isRunning);
+
+  const activeRoutes = new Set<string>();
+  if (assistantStreaming) {
+    activeRoutes.add("/assistant");
+  }
+  if (orchestrationRunning) {
+    activeRoutes.add("/orchestration");
+  }
 
   const getLinkClass = ({ isActive }: { isActive: boolean }) =>
     isActive ? `${styles.navLink} ${styles.active}` : styles.navLink;
 
-  const displayName = user?.name && user.name.trim() !== user.email ? user.name : (user?.email ?? "");
+  const displayName = profile
+    ? [profile.firstName, profile.lastName].filter(Boolean).join(" ") || profile.email
+    : user?.name && user.name.trim() !== user.email
+      ? user.name
+      : (user?.email ?? "");
 
   return (
     <nav className={styles.nav}>
@@ -142,6 +162,7 @@ const Navbar = () => {
                   <NavLink key={to} to={to} end={end} className={getLinkClass}>
                     <Icon size={15} className={styles.navIcon} />
                     <span>{label}</span>
+                    {activeRoutes.has(to) && <span className={styles.activityDot} title="Active" />}
                   </NavLink>
                 ))}
               </React.Fragment>
@@ -173,6 +194,7 @@ const Navbar = () => {
           <span className={styles.buildDot}></span>
           <span>v0.1.0-alpha</span>
         </div>
+        <ThemeToggle />
       </div>
     </nav>
   );

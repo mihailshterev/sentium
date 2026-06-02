@@ -1,6 +1,8 @@
 using Microsoft.Extensions.AI;
-using Sentium.AgentRuntime.Core.Settings;
+using Sentium.AgentRuntime.Core.Learnings;
+using Sentium.AgentRuntime.Core.Registry;
 using Sentium.AgentRuntime.Infrastructure.Agents;
+using Sentium.AgentRuntime.Infrastructure.Sentinel;
 
 namespace Sentium.AgentRuntime.Infrastructure.Extensions;
 
@@ -18,8 +20,15 @@ public static class ChatClientExtensions
     }
 
     /// <summary>
-    /// Wraps the given chat client in a harness driven by the dynamic <see cref="ISystemSettingsService"/>.
+    /// Wraps the given chat client in a harness driven by the centralised Registry settings.
     /// </summary>
-    public static IChatClient AsHarnessed(this IChatClient client, ISystemSettingsService systemSettingsService)
-        => new HarnessedChatClient(client, systemSettingsService);
+    public static IChatClient AsHarnessed(this IChatClient client, IRegistrySettingsService registrySettingsService)
+        => new HarnessedChatClient(client, registrySettingsService);
+
+    /// <summary>
+    /// Wraps the given chat client so that relevant prior agent learnings are recalled and injected
+    /// into the system prompt on each turn. Apply as the outermost decorator.
+    /// </summary>
+    public static IChatClient WithLearnings(this IChatClient client, IAgentLearningService learningService, IPdpContextAccessor pdpContext)
+        => new LearningAugmentedChatClient(client, learningService, pdpContext);
 }

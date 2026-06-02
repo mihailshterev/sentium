@@ -14,14 +14,7 @@ import type {
   CreateConversationResult,
 } from "../types/assistant";
 import type { Workspace, WorkspaceFile, CreateWorkspacePayload, UpdateWorkspacePayload } from "../types/workspace";
-import type {
-  SystemSettings,
-  UpdateSystemSettingsPayload,
-  AgentLearning,
-  AgentLearningStats,
-  CaptureAgentLearningPayload,
-  KnowledgeBaseCollectionStats,
-} from "../types/agentConfig";
+import type { AgentLearning, AgentLearningStats, KnowledgeBaseCollectionStats } from "../types/agentConfig";
 import type { DeleteModelResult, OllamaModel } from "../types/models";
 import type { AgentSkill, BuiltInSkill, CreateSkillPayload, UpdateSkillPayload } from "../types/skills";
 import { BASE_URL, client } from "../api/client";
@@ -77,14 +70,17 @@ export const createConversation = (payload: CreateConversationPayload) =>
 
 export const deleteConversation = (id: string) => client.delete<void>(`${BASE}/conversations/${id}`);
 
-export const runPipeline = (payload: Record<string, string>) =>
-  client.post<{ eventId: string }>(`${BASE}/agents/test-pipeline`, payload);
+export const runDynamicWorkflow = (payload: Record<string, string>) =>
+  client.post<{ eventId: string }>(`${BASE}/orchestration/run-dynamic-workflow`, payload);
 
 export const runWorkflowPipeline = (payload: RunWorkflowPayload) =>
-  client.post<{ eventId: string }>(`${BASE}/agents/run-workflow`, payload);
+  client.post<{ eventId: string }>(`${BASE}/orchestration/run-workflow`, payload);
 
 export const fetchWorkflowRuns = (count = 15): Promise<WorkflowRun[]> =>
   client.get<WorkflowRun[]>(`${BASE}/workflows/runs?count=${count}`);
+
+export const fetchWorkflowRun = (runId: string): Promise<WorkflowRun> =>
+  client.get<WorkflowRun>(`${BASE}/workflows/runs/${runId}`);
 
 export const sendChatMessage = (payload: ChatPayload, signal?: AbortSignal): Promise<Response> => {
   return fetch(`${BASE_URL}${BASE}/assistant/chat`, {
@@ -108,11 +104,11 @@ export const approveToolCall = (requestId: string, approved: boolean, signal?: A
 
 export const listWorkspaceFiles = (workspaceId?: string): Promise<WorkspaceFile[]> =>
   client.get<WorkspaceFile[]>(
-    `${BASE}/workspace/files${workspaceId ? `?workspaceId=${encodeURIComponent(workspaceId)}` : ""}`,
+    `${BASE}/workspaces/files${workspaceId ? `?workspaceId=${encodeURIComponent(workspaceId)}` : ""}`,
   );
 
 export const deleteWorkspaceFile = (fileId: string): Promise<void> =>
-  client.delete<void>(`${BASE}/workspace/files/${fileId}`);
+  client.delete<void>(`${BASE}/workspaces/files/${fileId}`);
 
 export const fetchWorkspaces = (): Promise<Workspace[]> => client.get<Workspace[]>(`${BASE}/workspaces`);
 
@@ -134,7 +130,7 @@ export const uploadWorkspaceFile = async (file: File, workspaceId?: string): Pro
     formData.append("workspaceId", workspaceId);
   }
 
-  const response = await fetch(`${BASE_URL}${BASE}/workspace/files`, {
+  const response = await fetch(`${BASE_URL}${BASE}/workspaces/files`, {
     method: "POST",
     body: formData,
     credentials: "include",
@@ -153,11 +149,6 @@ export const uploadWorkspaceFile = async (file: File, workspaceId?: string): Pro
   return response.json() as Promise<WorkspaceFile>;
 };
 
-export const fetchSystemSettings = (): Promise<SystemSettings> => client.get<SystemSettings>(`${BASE}/system-settings`);
-
-export const updateSystemSettings = (payload: UpdateSystemSettingsPayload): Promise<SystemSettings> =>
-  client.put<SystemSettings>(`${BASE}/system-settings`, payload);
-
 export const fetchAgentLearnings = (agentName?: string, count = 50): Promise<AgentLearning[]> => {
   const params = new URLSearchParams({ count: String(count) });
   if (agentName) {
@@ -168,9 +159,6 @@ export const fetchAgentLearnings = (agentName?: string, count = 50): Promise<Age
 
 export const fetchAgentLearningStats = (): Promise<AgentLearningStats> =>
   client.get<AgentLearningStats>(`${BASE}/agent-learnings/stats`);
-
-export const captureAgentLearning = (payload: CaptureAgentLearningPayload): Promise<AgentLearning> =>
-  client.post<AgentLearning>(`${BASE}/agent-learnings`, payload);
 
 export const updateAgentLearning = (id: string, payload: { content: string; tags: string }): Promise<AgentLearning> =>
   client.put<AgentLearning>(`${BASE}/agent-learnings/${id}`, payload);

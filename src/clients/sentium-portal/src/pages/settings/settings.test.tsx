@@ -4,11 +4,14 @@ import { MemoryRouter } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import SettingsPage from "./settings";
 import * as useSystemSettingsHook from "../../hooks/useSystemSettings";
-import type { SystemSettings } from "../../types/agentConfig";
+import type { Settings } from "../../types/agentConfig";
 
-const mockSettings: SystemSettings = {
-  userHarnessPrompt: "Be concise.",
-  isBuiltInHarnessEnabled: true,
+const mockSettings: Settings = {
+  harness: {
+    userHarnessPrompt: "Be concise.",
+    isBuiltInHarnessEnabled: true,
+    isPromptEnhancementEnabled: true,
+  },
   updatedAt: "2025-01-01T00:00:00Z",
   updatedBy: "alice@example.com",
 };
@@ -90,7 +93,7 @@ describe("Settings loaded state", () => {
 
   it("renders the built-in harness toggle as checked by default", () => {
     renderSettings();
-    const toggle = screen.getByRole("checkbox");
+    const toggle = screen.getAllByRole("checkbox")[0];
     expect((toggle as HTMLInputElement).checked).toBe(true);
   });
 
@@ -109,7 +112,7 @@ describe("Settings editing interactions", () => {
 
   it("enables save button when toggle is changed", () => {
     renderSettings();
-    fireEvent.click(screen.getByRole("checkbox"));
+    fireEvent.click(screen.getAllByRole("checkbox")[0]);
     expect(screen.getByRole("button", { name: /save changes/i })).not.toBeDisabled();
   });
 
@@ -121,8 +124,11 @@ describe("Settings editing interactions", () => {
     fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
     await waitFor(() =>
       expect(save).toHaveBeenCalledWith({
-        userHarnessPrompt: "Updated prompt.",
-        isBuiltInHarnessEnabled: true,
+        harness: {
+          userHarnessPrompt: "Updated prompt.",
+          isBuiltInHarnessEnabled: true,
+          isPromptEnhancementEnabled: true,
+        },
       }),
     );
   });
@@ -131,7 +137,7 @@ describe("Settings editing interactions", () => {
     vi.spyOn(useSystemSettingsHook, "useSystemSettings").mockReturnValue({
       ...defaultHook,
       isSaving: true,
-      settings: { ...mockSettings, userHarnessPrompt: "Changed" },
+      settings: { ...mockSettings, harness: { ...mockSettings.harness, userHarnessPrompt: "Changed" } },
     });
     renderSettings();
     expect(screen.getByRole("button", { name: /saving/i })).toBeDisabled();
@@ -170,7 +176,7 @@ describe("Settings editing interactions", () => {
     const longPrompt = "x".repeat(16001);
     vi.spyOn(useSystemSettingsHook, "useSystemSettings").mockReturnValue({
       ...defaultHook,
-      settings: { ...mockSettings, userHarnessPrompt: longPrompt },
+      settings: { ...mockSettings, harness: { ...mockSettings.harness, userHarnessPrompt: longPrompt } },
     });
     renderSettings();
     expect(screen.getByText(/characters over limit/i)).toBeInTheDocument();
@@ -179,7 +185,7 @@ describe("Settings editing interactions", () => {
   it("disables save when content is over the character limit", () => {
     vi.spyOn(useSystemSettingsHook, "useSystemSettings").mockReturnValue({
       ...defaultHook,
-      settings: { ...mockSettings, userHarnessPrompt: "x" },
+      settings: { ...mockSettings, harness: { ...mockSettings.harness, userHarnessPrompt: "x" } },
     });
     renderSettings();
     const textarea = screen.getByRole("textbox");
@@ -190,7 +196,7 @@ describe("Settings editing interactions", () => {
   it("shows near-limit warning when close to character limit", () => {
     vi.spyOn(useSystemSettingsHook, "useSystemSettings").mockReturnValue({
       ...defaultHook,
-      settings: { ...mockSettings, userHarnessPrompt: "x".repeat(15600) },
+      settings: { ...mockSettings, harness: { ...mockSettings.harness, userHarnessPrompt: "x".repeat(15600) } },
     });
     renderSettings();
     // Should still show characters remaining in the warn style (near limit)

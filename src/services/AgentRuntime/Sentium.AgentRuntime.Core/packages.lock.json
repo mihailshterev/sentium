@@ -107,6 +107,9 @@
         "resolved": "10.0.6",
         "contentHash": "DOZ8Z8CxHVWU8gSo4ZQ8sCAPIQb+agp56ISuMiu39WWZiV+reZwn9NM1tj4lRDfqLaOAinF6zTi0csmFBQes9Q=="
       },
+      "sentium.shared": {
+        "type": "Project"
+      },
       "Microsoft.Extensions.AI": {
         "type": "CentralTransitive",
         "requested": "[10.5.2, )",

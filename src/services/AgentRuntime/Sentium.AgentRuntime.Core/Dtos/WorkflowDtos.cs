@@ -6,6 +6,7 @@ public sealed record WorkflowAgentRef(
 
 public sealed record WorkflowResponse(
     Guid Id,
+    Guid UserId,
     string Name,
     string Description,
     DateTime CreatedAt,
@@ -31,6 +32,7 @@ public sealed record WorkflowLogEntry(string Author, string Text, string Type);
 
 public sealed record WorkflowRunResponse(
     Guid Id,
+    Guid? WorkflowId,
     string TriggerType,
     string TriggerPayload,
     string Explanation,

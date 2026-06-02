@@ -21,7 +21,7 @@ public sealed class AgentLearningRepository(AgentRuntimeDbContext context) : IAg
             .Take(count)
             .Select(l => new AgentLearningResponse(
                 l.Id, l.AgentName, l.Content, l.Tags,
-                l.ConversationId, l.CapturedAt, l.IsIngested))
+                l.ConversationId, l.CapturedAt, l.IsIngested, l.IsGlobal))
             .ToListAsync(ct);
     }
 
@@ -29,6 +29,7 @@ public sealed class AgentLearningRepository(AgentRuntimeDbContext context) : IAg
     {
         var total = await context.AgentLearnings.CountAsync(ct);
         var pending = await context.AgentLearnings.CountAsync(l => !l.IsIngested, ct);
+        var global = await context.AgentLearnings.CountAsync(l => l.IsGlobal, ct);
 
         var byAgent = await context.AgentLearnings
             .AsNoTracking()
@@ -36,7 +37,7 @@ public sealed class AgentLearningRepository(AgentRuntimeDbContext context) : IAg
             .Select(g => new { AgentName = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.AgentName, x => x.Count, ct);
 
-        return new AgentLearningStats(total, pending, byAgent);
+        return new AgentLearningStats(total, pending, global, byAgent);
     }
 
     public async Task<AgentLearning?> FindAsync(Guid id, CancellationToken ct = default)

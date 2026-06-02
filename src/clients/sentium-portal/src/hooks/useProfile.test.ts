@@ -3,14 +3,12 @@ import { renderHook, act, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import useProfile from "./useProfile";
-import { identityService } from "../services/identity.service";
+import * as identityService from "../services/identity.service";
 import type { UserProfile } from "../services/identity.service";
 
 vi.mock("../services/identity.service", () => ({
-  identityService: {
-    getMe: vi.fn(),
-    updateMe: vi.fn(),
-  },
+  getMe: vi.fn(),
+  updateMe: vi.fn(),
 }));
 
 const createWrapper = () => {
@@ -75,7 +73,7 @@ describe("useProfile save mutation state", () => {
 });
 
 describe("useProfile updateProfile()", () => {
-  it("calls identityService.updateMe with the payload", async () => {
+  it("calls updateMe with the payload", async () => {
     const { result } = renderHook(() => useProfile(), { wrapper: createWrapper() });
     const payload = { firstName: "Bob", lastName: "Jones", email: "bob@example.com" };
     await act(async () => {

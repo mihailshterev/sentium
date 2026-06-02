@@ -12,7 +12,7 @@ public static class FileEvents
     /// The background worker (<see cref="Infrastructure.Storage.FileIngestionWorker"/>) subscribes to this event
     /// and processes files for RAG indexing.
     /// </remarks>
-    public const string FileIngested = "events.file.ingested";
+    public const string FileIngested = "internal.file.ingested";
 }
 
 /// <summary>

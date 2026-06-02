@@ -1,4 +1,6 @@
 using Sentium.AgentRuntime.Core.Rag;
+using Sentium.AgentRuntime.Core.Rag.Models;
+using Sentium.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -16,17 +18,26 @@ namespace Sentium.AgentRuntime.Api.Controllers;
 public sealed class SemanticMapController(
     IVectorRepository vectorRepository,
     IEmbeddingService embeddingService,
-    IOptions<RagOptions> ragOptions) : ControllerBase
+    IOptions<RagOptions> ragOptions,
+    ICurrentUser currentUser) : ControllerBase
 {
     private static readonly string[] TrackedCollections = ["knowledge_base", "agent_learnings", "user_memories"];
+    private static readonly HashSet<string> ScopedCollections = ["knowledge_base", "agent_learnings", "user_memories"];
 
     /// <summary>
     /// Returns a page of nodes from the specified collections for graph rendering.
     /// Each node represents a document chunk with its source metadata.
     /// </summary>
+    /// <param name="limit">The maximum number of nodes to return (default 300, max 500).</param>
+    /// <param name="collection">Optional specific collection to query; if not provided, queries all tracked collections.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>A list of knowledge map nodes with their metadata.</returns>
     [HttpGet("nodes")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetNodes([FromQuery] int limit = 300, [FromQuery] string? collection = null, CancellationToken ct = default)
+    public async Task<ActionResult<KnowledgeMapResponse>> GetNodes(
+        [FromQuery] int limit = 300,
+        [FromQuery] string? collection = null,
+        CancellationToken ct = default)
     {
         var collections = collection is not null ? [collection] : TrackedCollections;
 
@@ -34,9 +45,12 @@ public sealed class SemanticMapController(
 
         var allNodes = new List<KnowledgeMapNode>();
 
+        var userScope = new KnowledgeScopeFilter(currentUser.UserId);
+
         foreach (var col in collections)
         {
-            var chunks = await vectorRepository.GetPageAsync(col, (ulong)safeLimit, ct: ct);
+            var scope = ScopedCollections.Contains(col) ? userScope : null;
+            var chunks = await vectorRepository.GetPageAsync(col, (ulong)safeLimit, scope: scope, ct: ct);
 
             allNodes.AddRange(chunks.Select(chunk => new KnowledgeMapNode
             {
@@ -63,16 +77,15 @@ public sealed class SemanticMapController(
     /// Performs a semantic search across all tracked collections and returns
     /// ranked results for query-traversal visualization.
     /// </summary>
+    /// <param name="request">The search request containing the query and top-K parameter.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>A list of search results with their scores and metadata.</returns>
     [HttpPost("search")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Search([FromBody] KnowledgeMapSearchRequest request, CancellationToken ct)
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+    public async Task<ActionResult<KnowledgeMapSearchResponse>> Search([FromBody] KnowledgeMapSearchRequest request, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(request.Query))
-        {
-            return BadRequest(new { error = "Query must not be empty." });
-        }
-
         var topK = Math.Clamp(request.TopK, 1, 50);
         var threshold = ragOptions.Value.ScoreThreshold;
 
@@ -88,9 +101,12 @@ public sealed class SemanticMapController(
 
         var allResults = new List<KnowledgeMapSearchResult>();
 
+        var userScope = new KnowledgeScopeFilter(currentUser.UserId);
+
         foreach (var col in TrackedCollections)
         {
-            var hits = await vectorRepository.SearchAsync(col, embedding, topK, threshold, ct);
+            var scope = ScopedCollections.Contains(col) ? userScope : null;
+            var hits = await vectorRepository.SearchAsync(col, embedding, topK, threshold, scope: scope, ct: ct);
 
             allResults.AddRange(hits.Select(hit => new KnowledgeMapSearchResult
             {

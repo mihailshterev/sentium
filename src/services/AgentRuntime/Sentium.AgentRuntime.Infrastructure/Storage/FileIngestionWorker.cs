@@ -3,6 +3,7 @@ using Sentium.AgentRuntime.Core.Rag.Models;
 using Sentium.AgentRuntime.Core.Storage;
 using Sentium.AgentRuntime.Infrastructure.Data;
 using Sentium.Infrastructure.Messaging;
+using Sentium.Infrastructure.Security;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -73,6 +74,7 @@ public sealed class FileIngestionWorker(IServiceScopeFactory scopeFactory, IEven
     private async Task ProcessFileAsync(Guid fileId, Guid? workspaceId, CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
+        scope.ServiceProvider.GetRequiredService<SystemScopeContext>().Activate();
         var dbContext = scope.ServiceProvider.GetRequiredService<AgentRuntimeDbContext>();
         var fileService = scope.ServiceProvider.GetRequiredService<ILocalFileService>();
         var ingestionService = scope.ServiceProvider.GetRequiredService<IDocumentIngestionService>();
@@ -103,7 +105,9 @@ public sealed class FileIngestionWorker(IServiceScopeFactory scopeFactory, IEven
                     { "FileId", projectFile.Id.ToString() },
                     { "BlobName", projectFile.BlobName.ToString() },
                     { "Extension", projectFile.Extension }
-                }
+                },
+                Scope = KnowledgeScope.User,
+                UserId = projectFile.UserId
             };
 
             if (workspaceId.HasValue)

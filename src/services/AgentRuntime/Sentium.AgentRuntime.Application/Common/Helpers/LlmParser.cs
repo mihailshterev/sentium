@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using Sentium.AgentRuntime.Core.Agents;
 using Sentium.AgentRuntime.Core.Dtos;
+using Sentium.AgentRuntime.Core.Learnings;
 using Sentium.AgentRuntime.Core.Workflows;
 
 namespace Sentium.AgentRuntime.Application.Common.Helpers;
@@ -24,6 +25,15 @@ public static partial class LlmParser
 
     [GeneratedRegex(@"```(?:json)?\s*([\s\S]*?)\s*```")]
     private static partial Regex CleanJsonRegex();
+
+    [GeneratedRegex(@"VERDICT:\s*(APPROVE|REJECT)", RegexOptions.IgnoreCase)]
+    private static partial Regex VerdictRegex();
+
+    [GeneratedRegex(@"REASON:\s*(.*)", RegexOptions.IgnoreCase)]
+    private static partial Regex ReasonRegex();
+
+    [GeneratedRegex(@"SANITIZED:\s*([\s\S]*)", RegexOptions.IgnoreCase)]
+    private static partial Regex SanitizedRegex();
 
     public static List<string> ParseAgentRoles(string llmOutput, Dictionary<string, string> dbAgentMap, IAgentRegistry registry)
     {
@@ -118,7 +128,7 @@ public static partial class LlmParser
         return ia == a.Length && ib == b.Length;
     }
 
-    public static WorkflowResult ParseWorkflowResult(string validatorOutput, List<string> roles, IReadOnlyList<WorkflowLogEntry>? streamLog = null)
+    public static WorkflowResult ParseWorkflowResult(string validatorOutput, List<string> roles, IReadOnlyList<WorkflowLogEntry>? streamLog = null, Guid? userId = null)
     {
         var riskMatch = RiskRegex().Match(validatorOutput);
         var recMatch = RecommendationRegex().Match(validatorOutput);
@@ -129,7 +139,35 @@ public static partial class LlmParser
             Risk = riskMatch.Groups[1].Value.Trim() is { Length: > 0 } r ? r : "Unknown",
             Recommendation = recMatch.Groups[1].Value.Trim() is { Length: > 0 } rec ? rec : "Review squad logs manually.",
             History = roles.Select(r => ("AgentSelection", r)).ToList(),
-            StreamLog = streamLog ?? []
+            StreamLog = streamLog ?? [],
+            UserId = userId
         };
+    }
+
+    /// <summary>
+    /// Parses the structured verdict emitted by the learning sanitization LLM stage.
+    /// Defaults to a rejection when the output is missing or unparseable (fail-closed), so a malformed
+    /// model response can never accidentally promote a learning to global.
+    /// </summary>
+    /// <param name="originalContent">Fallback content used when the model omits a SANITIZED section.</param>
+    public static LearningPromotionVerdict ParseSanitizationVerdict(string llmOutput, string originalContent)
+    {
+        if (string.IsNullOrWhiteSpace(llmOutput))
+        {
+            return new LearningPromotionVerdict(false, "Validator returned no output.", originalContent);
+        }
+
+        var approved = VerdictRegex().Match(llmOutput) is { Success: true } verdict
+            && verdict.Groups[1].Value.Trim().Equals("APPROVE", StringComparison.OrdinalIgnoreCase);
+
+        var reason = ReasonRegex().Match(llmOutput).Groups[1].Value.Trim() is { Length: > 0 } r
+            ? r
+            : (approved ? "Approved as a generalizable, abstracted pattern." : "Did not meet the abstraction and generalizability criteria.");
+
+        var sanitized = SanitizedRegex().Match(llmOutput).Groups[1].Value.Trim() is { Length: > 0 } s
+            ? s
+            : originalContent;
+
+        return new LearningPromotionVerdict(approved, reason, sanitized);
     }
 }

@@ -9,6 +9,7 @@ import EmptyState from "../../components/ui/empty-state";
 import AgentCard from "./components/agent-card";
 import AgentCreateForm from "./components/agent-create-form";
 import AgentEditModal from "./components/agent-edit-modal";
+import ConfirmDialog from "../../components/ui/confirm-dialog";
 
 const Agents = () => {
   const {
@@ -32,6 +33,7 @@ const Agents = () => {
   const { models } = useModels();
 
   const [editAgent, setEditAgent] = useState<AgentRecord | null>(null);
+  const [confirmState, setConfirmState] = useState<{ agentId: string } | null>(null);
 
   const handleCreateSubmit = (data: { name: string; description: string; model: string }) => {
     createAgent(data, {
@@ -55,14 +57,7 @@ const Agents = () => {
     });
   };
 
-  const handleDelete = (agentId: string) => {
-    if (!confirm("Are you sure you want to delete this agent?")) {
-      return;
-    }
-    deleteAgent(agentId, {
-      onError: (err) => alert(err instanceof Error ? err.message : "Unknown error"),
-    });
-  };
+  const handleDelete = (agentId: string) => setConfirmState({ agentId });
 
   return (
     <div className={styles.agentsContainer}>
@@ -129,6 +124,23 @@ const Agents = () => {
           updateAgentError={updateAgentError}
           onSubmit={handleEditSubmit}
           onClose={closeEdit}
+        />
+      )}
+
+      {confirmState && (
+        <ConfirmDialog
+          open
+          variant="danger"
+          title="Delete agent?"
+          description="This will permanently remove the agent from the registry. This action cannot be undone."
+          confirmLabel="Delete agent"
+          onConfirm={() => {
+            deleteAgent(confirmState.agentId, {
+              onError: (err) => alert(err instanceof Error ? err.message : "Unknown error"),
+            });
+            setConfirmState(null);
+          }}
+          onCancel={() => setConfirmState(null)}
         />
       )}
     </div>

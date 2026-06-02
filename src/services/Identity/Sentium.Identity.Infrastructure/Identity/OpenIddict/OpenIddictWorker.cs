@@ -21,13 +21,16 @@ public sealed class OpenIddictWorker(IServiceProvider serviceProvider, IConfigur
 
         var manager = scope.ServiceProvider.GetRequiredService<IOpenIddictApplicationManager>();
 
-        if (await manager.FindByClientIdAsync("service-worker", cancellationToken) is null)
+        var serviceWorkerSecret = configuration["Identity:ServiceWorkerSecret"] ?? throw new InvalidOperationException("Identity:ServiceWorkerSecret is not configured.");
+
+        const string serviceWorkerClientId = "service-worker";
+
+        if (await manager.FindByClientIdAsync(serviceWorkerClientId, cancellationToken) is null)
         {
             await manager.CreateAsync(new OpenIddictApplicationDescriptor
             {
-                ClientId = "service-worker",
-                // TODO: Replace this
-                ClientSecret = "dev-secret",
+                ClientId = serviceWorkerClientId,
+                ClientSecret = serviceWorkerSecret,
                 Permissions =
                 {
                     OidcConstants.Permissions.Endpoints.Token,

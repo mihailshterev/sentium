@@ -1,4 +1,4 @@
-import { BrickWallShield, RefreshCw, ShieldCheck, Siren, Sliders, Zap } from "lucide-react";
+import { BrickWallShield, Loader, RefreshCw, ShieldCheck, Siren, Sliders, Zap } from "lucide-react";
 import { useState } from "react";
 import { useSentinelAudit, useSentinelStats } from "../../hooks/useSentinelAudit";
 import { useSentinelSettings } from "../../hooks/useSentinelSettings";
@@ -51,7 +51,7 @@ const Sentinel = () => {
       <PageHeader
         icon={<BrickWallShield size={18} className={styles.titleIcon} />}
         title="Sentinel"
-        subtitle="Defence-in-Depth Policy Decision Point — real-time security governance"
+        subtitle="Defense-in-Depth Policy Decision Point"
         right={
           <div className={styles.headerActions}>
             {settings?.lockdownMode && (
@@ -93,7 +93,12 @@ const Sentinel = () => {
             </div>
 
             <div className={styles.auditBody}>
-              {auditLoading && records.length === 0 && <div className={styles.emptyState}>Loading audit records…</div>}
+              {auditLoading && records.length === 0 && (
+                <div className={styles.emptyState}>
+                  <Loader size={15} className={styles.spinning} />
+                  Loading audit records…
+                </div>
+              )}
               {!auditLoading && records.length === 0 && (
                 <div className={styles.emptyState}>No decisions recorded yet. Decisions appear here in real-time.</div>
               )}

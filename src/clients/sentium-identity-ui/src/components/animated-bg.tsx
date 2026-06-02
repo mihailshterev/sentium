@@ -10,7 +10,6 @@ interface Particle {
   pulseSpeed: number;
 }
 
-const ACCENT_RGB = "34, 197, 94";
 const MAX_DIST = 130;
 const PARTICLE_COUNT = 60;
 
@@ -27,6 +26,9 @@ export const AnimatedBg = ({ className }: { className?: string }) => {
     if (!ctx) {
       return;
     }
+
+    const accentRgb =
+      getComputedStyle(document.documentElement).getPropertyValue("--accent-green-rgb").trim() || "34, 197, 94";
 
     const resize = () => {
       canvas.width = canvas.offsetWidth;
@@ -64,7 +66,7 @@ export const AnimatedBg = ({ className }: { className?: string }) => {
         const pulseAlpha = 0.6 + Math.sin(p.pulse) * 0.35;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${ACCENT_RGB}, ${pulseAlpha})`;
+        ctx.fillStyle = `rgba(${accentRgb}, ${pulseAlpha})`;
         ctx.fill();
       }
 
@@ -78,7 +80,7 @@ export const AnimatedBg = ({ className }: { className?: string }) => {
             ctx.beginPath();
             ctx.moveTo(particles[i].x, particles[i].y);
             ctx.lineTo(particles[j].x, particles[j].y);
-            ctx.strokeStyle = `rgba(${ACCENT_RGB}, ${alpha})`;
+            ctx.strokeStyle = `rgba(${accentRgb}, ${alpha})`;
             ctx.lineWidth = 0.9;
             ctx.stroke();
           }

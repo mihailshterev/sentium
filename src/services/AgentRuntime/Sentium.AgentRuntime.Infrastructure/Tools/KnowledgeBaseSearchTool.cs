@@ -1,8 +1,10 @@
 using System.Text;
 using System.Text.Json;
 using Sentium.AgentRuntime.Core.Rag;
+using Sentium.AgentRuntime.Core.Rag.Models;
 using Sentium.AgentRuntime.Core.Tools;
 using Sentium.AgentRuntime.Core.Tools.Attributes;
+using Sentium.AgentRuntime.Infrastructure.Sentinel;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -28,6 +30,7 @@ public sealed class KnowledgeBaseSearchTool(
     IEmbeddingService embeddingService,
     IVectorRepository vectorRepository,
     IOptions<RagOptions> options,
+    IPdpContextAccessor pdpContext,
     ILogger<KnowledgeBaseSearchTool> logger) : IAgentTool
 {
     private readonly RagOptions ragOptions = options.Value;
@@ -62,11 +65,14 @@ public sealed class KnowledgeBaseSearchTool(
 
         var queryEmbedding = await embeddingService.GenerateEmbeddingAsync(query, ct);
 
+        var scope = new KnowledgeScopeFilter(pdpContext.UserId);
+
         var results = await vectorRepository.SearchAsync(
             ragOptions.CollectionName,
             queryEmbedding,
             topK,
             ragOptions.ScoreThreshold,
+            scope,
             ct
         );
 

@@ -35,4 +35,14 @@ public sealed class DocumentChunk
     /// Wall-clock time at which this chunk was ingested.
     /// </summary>
     public DateTimeOffset CreatedAt { get; init; } = DateTimeOffset.UtcNow;
+
+    /// <summary>
+    /// Visibility scope of this chunk (<see cref="KnowledgeScope.Shared"/> or <see cref="KnowledgeScope.User"/>).
+    /// </summary>
+    public string Scope { get; init; } = KnowledgeScope.Shared;
+
+    /// <summary>
+    /// The owning user when <see cref="Scope"/> is <see cref="KnowledgeScope.User"/>; otherwise <c>null</c>.
+    /// </summary>
+    public Guid? UserId { get; init; }
 }

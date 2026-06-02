@@ -1550,7 +1550,8 @@
       "sentium.agentruntime.core": {
         "type": "Project",
         "dependencies": {
-          "Microsoft.Agents.AI": "[1.5.0, )"
+          "Microsoft.Agents.AI": "[1.5.0, )",
+          "Sentium.Shared": "[1.0.0, )"
         }
       },
       "sentium.agentruntime.infrastructure": {
@@ -1582,7 +1583,9 @@
         "type": "Project",
         "dependencies": {
           "Aspire.NATS.Net": "[13.2.4, )",
+          "Aspire.StackExchange.Redis.DistributedCaching": "[13.2.4, )",
           "Microsoft.AspNetCore.OpenApi": "[10.0.1, )",
+          "Microsoft.Extensions.Caching.Hybrid": "[10.4.0, )",
           "OpenIddict.AspNetCore": "[7.2.0, )",
           "Scalar.AspNetCore": "[2.14.4, )",
           "Sentium.Identity.Application": "[1.0.0, )",
@@ -1612,6 +1615,7 @@
           "Microsoft.EntityFrameworkCore": "[10.0.5, )",
           "Microsoft.EntityFrameworkCore.Design": "[10.0.5, )",
           "Microsoft.EntityFrameworkCore.SqlServer": "[10.0.5, )",
+          "Microsoft.Extensions.Caching.Hybrid": "[10.4.0, )",
           "OpenIddict.AspNetCore": "[7.2.0, )",
           "OpenIddict.EntityFrameworkCore": "[7.2.0, )",
           "OpenIddict.Quartz": "[7.2.0, )",
@@ -1627,14 +1631,102 @@
         "dependencies": {
           "Aspire.Microsoft.EntityFrameworkCore.SqlServer": "[13.2.4, )",
           "Aspire.Seq": "[13.2.4, )",
+          "FluentValidation": "[12.1.1, )",
+          "FluentValidation.DependencyInjectionExtensions": "[12.1.1, )",
           "Microsoft.EntityFrameworkCore": "[10.0.5, )",
           "Microsoft.EntityFrameworkCore.SqlServer": "[10.0.5, )",
+          "Microsoft.Extensions.Http.Resilience": "[10.2.0, )",
           "NATS.Net": "[2.7.2, )",
           "Sentium.Shared": "[1.0.0, )",
           "Serilog.AspNetCore": "[10.0.0, )",
           "Serilog.Sinks.Console": "[6.1.1, )",
           "Serilog.Sinks.OpenTelemetry": "[4.2.0, )",
           "Serilog.Sinks.Seq": "[9.0.0, )"
+        }
+      },
+      "sentium.registry.api": {
+        "type": "Project",
+        "dependencies": {
+          "Aspire.NATS.Net": "[13.2.4, )",
+          "Aspire.StackExchange.Redis.DistributedCaching": "[13.2.4, )",
+          "Microsoft.AspNetCore.OpenApi": "[10.0.1, )",
+          "Microsoft.Extensions.Caching.Hybrid": "[10.4.0, )",
+          "Scalar.AspNetCore": "[2.14.4, )",
+          "Sentium.Registry.Application": "[1.0.0, )",
+          "Sentium.Registry.Infrastructure": "[1.0.0, )",
+          "Sentium.ServiceDefaults": "[1.0.0, )",
+          "Sentium.Shared": "[1.0.0, )"
+        }
+      },
+      "sentium.registry.application": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.Caching.Hybrid": "[10.4.0, )",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.6, )",
+          "Sentium.Infrastructure": "[1.0.0, )",
+          "Sentium.Registry.Core": "[1.0.0, )",
+          "Sentium.Shared": "[1.0.0, )"
+        }
+      },
+      "sentium.registry.core": {
+        "type": "Project",
+        "dependencies": {
+          "Sentium.Shared": "[1.0.0, )"
+        }
+      },
+      "sentium.registry.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.EntityFrameworkCore": "[10.0.5, )",
+          "Microsoft.EntityFrameworkCore.Design": "[10.0.5, )",
+          "Microsoft.EntityFrameworkCore.SqlServer": "[10.0.5, )",
+          "Microsoft.EntityFrameworkCore.Tools": "[10.0.5, )",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.6, )",
+          "Microsoft.Extensions.Hosting": "[10.0.5, )",
+          "Sentium.Infrastructure": "[1.0.0, )",
+          "Sentium.Registry.Core": "[1.0.0, )",
+          "Sentium.Shared": "[1.0.0, )"
+        }
+      },
+      "sentium.sandbox.api": {
+        "type": "Project",
+        "dependencies": {
+          "Aspire.NATS.Net": "[13.2.4, )",
+          "Microsoft.AspNetCore.OpenApi": "[10.0.1, )",
+          "Microsoft.EntityFrameworkCore.SqlServer": "[10.0.5, )",
+          "Scalar.AspNetCore": "[2.14.4, )",
+          "Sentium.Sandbox.Application": "[1.0.0, )",
+          "Sentium.Sandbox.Infrastructure": "[1.0.0, )",
+          "Sentium.ServiceDefaults": "[1.0.0, )",
+          "Sentium.Shared": "[1.0.0, )"
+        }
+      },
+      "sentium.sandbox.application": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.6, )",
+          "Microsoft.Extensions.Hosting": "[10.0.5, )",
+          "Sentium.Sandbox.Core": "[1.0.0, )"
+        }
+      },
+      "sentium.sandbox.core": {
+        "type": "Project"
+      },
+      "sentium.sandbox.infrastructure": {
+        "type": "Project",
+        "dependencies": {
+          "Aspire.Azure.Storage.Blobs": "[13.2.4, )",
+          "Azure.Storage.Blobs": "[12.27.0, )",
+          "Docker.DotNet": "[3.125.15, )",
+          "Microsoft.EntityFrameworkCore": "[10.0.5, )",
+          "Microsoft.EntityFrameworkCore.SqlServer": "[10.0.5, )",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.6, )",
+          "Microsoft.Extensions.Hosting": "[10.0.5, )",
+          "Microsoft.Extensions.Http.Resilience": "[10.2.0, )",
+          "Sentium.Infrastructure": "[1.0.0, )",
+          "Sentium.Sandbox.Application": "[1.0.0, )",
+          "Sentium.Sandbox.Core": "[1.0.0, )",
+          "Sentium.Shared": "[1.0.0, )"
         }
       },
       "sentium.sentinel.api": {
@@ -1858,6 +1950,22 @@
         "contentHash": "XN8FKxVv8Mjmwu104/Hl9lM61pLY675s70gzwSj8KR5pwblo8HfWLcCuinh9kYsqujBkMH4HVRCEcRuU6al4BQ==",
         "dependencies": {
           "Newtonsoft.Json": "13.0.1"
+        }
+      },
+      "FluentValidation": {
+        "type": "CentralTransitive",
+        "requested": "[12.1.1, )",
+        "resolved": "12.1.1",
+        "contentHash": "EPpkIe1yh1a0OXyC100oOA8WMbZvqUu5plwhvYcb7oSELfyUZzfxV48BLhvs3kKo4NwG7MGLNgy1RJiYtT8Dpw=="
+      },
+      "FluentValidation.DependencyInjectionExtensions": {
+        "type": "CentralTransitive",
+        "requested": "[12.1.1, )",
+        "resolved": "12.1.1",
+        "contentHash": "D0VXh4dtjjX2aQizuaa0g6R8X3U1JaVqJPfGCvLwZX9t/O2h7tkpbitbadQMfwcgSPdDbI2vDxuwRMv/Uf9dHA==",
+        "dependencies": {
+          "FluentValidation": "12.1.1",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "2.1.0"
         }
       },
       "Microsoft.Agents.AI": {

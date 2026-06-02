@@ -2,9 +2,11 @@ import { useState } from "react";
 import { Bot, Check, Loader, Plus, X } from "lucide-react";
 import styles from "../skills.module.scss";
 import { useSkills } from "../../../hooks/useSkills";
-import type { AgentSkill, UpdateSkillPayload } from "../../../types/skills";
+import type { AgentSkill } from "../../../types/skills";
 import EmptyState from "../../../components/ui/empty-state";
 import SkillCard from "./skill-card";
+import StatusMessage from "../../../components/ui/status-message";
+import ConfirmDialog from "../../../components/ui/confirm-dialog";
 
 const CustomTab = () => {
   const {
@@ -26,10 +28,15 @@ const CustomTab = () => {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [form, setForm] = useState({ name: "", description: "", instructions: "" });
 
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [skillToDelete, setSkillToDelete] = useState<{ id: string; name: string } | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+
   const resetForm = () => {
     setForm({ name: "", description: "", instructions: "" });
     setShowForm(false);
     setEditingId(null);
+    setFormError(null);
   };
 
   const handleEdit = (skill: AgentSkill) => {
@@ -42,22 +49,53 @@ const CustomTab = () => {
     if (!form.name.trim() || !form.description.trim() || !form.instructions.trim()) {
       return;
     }
-    if (editingId) {
-      const payload: UpdateSkillPayload = {
-        name: form.name.trim(),
-        description: form.description.trim(),
-        instructions: form.instructions.trim(),
-      };
-      await updateSkill({ id: editingId, payload });
-    } else {
-      await createSkill({
-        name: form.name.trim(),
-        description: form.description.trim(),
-        instructions: form.instructions.trim(),
-        skillType: 0,
-      });
+    setFormError(null);
+    try {
+      if (editingId) {
+        await updateSkill({
+          id: editingId,
+          payload: {
+            name: form.name.trim(),
+            description: form.description.trim(),
+            instructions: form.instructions.trim(),
+          },
+        });
+      } else {
+        await createSkill({
+          name: form.name.trim(),
+          description: form.description.trim(),
+          instructions: form.instructions.trim(),
+          skillType: 0,
+        });
+      }
+      resetForm();
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "Failed to save skill");
     }
-    resetForm();
+  };
+
+  const handleOpenDeleteConfirm = (skill: AgentSkill) => {
+    setSkillToDelete({ id: skill.id, name: skill.name });
+    setIsConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!skillToDelete) {
+      return;
+    }
+    try {
+      await deleteSkill(skillToDelete.id);
+    } catch (error) {
+      console.error("Failed to delete skill:", error);
+    } finally {
+      setIsConfirmOpen(false);
+      setSkillToDelete(null);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setIsConfirmOpen(false);
+    setSkillToDelete(null);
   };
 
   return (
@@ -79,7 +117,12 @@ const CustomTab = () => {
       </div>
 
       <div className={styles.cardBody}>
-        {isLoading && <p className={styles.loadingText}>Loading skills…</p>}
+        {isLoading && (
+          <p className={styles.loadingText}>
+            <Loader size={14} className="animate-spin" />
+            Loading skills…
+          </p>
+        )}
 
         {showForm && (
           <div className={styles.formCard}>
@@ -126,6 +169,7 @@ const CustomTab = () => {
                 {editingId ? "Save" : "Create"}
               </button>
             </div>
+            {formError && <StatusMessage variant="error" message={formError} />}
           </div>
         )}
 
@@ -145,7 +189,7 @@ const CustomTab = () => {
               expanded={expanded === skill.id}
               onToggle={() => setExpanded(expanded === skill.id ? null : skill.id)}
               onEdit={() => handleEdit(skill)}
-              onDelete={() => void deleteSkill(skill.id)}
+              onDelete={() => handleOpenDeleteConfirm(skill)}
               isDeleting={isDeleting && deletingId === skill.id}
               isUpdating={isUpdating && updatingId === skill.id}
               pill="custom"
@@ -154,6 +198,17 @@ const CustomTab = () => {
           ))}
         </div>
       </div>
+
+      <ConfirmDialog
+        open={isConfirmOpen}
+        variant="danger"
+        title="Delete Custom Skill"
+        description={`Are you sure you want to delete the skill "${skillToDelete?.name || ""}"? Agents will immediately lose access to this configuration.`}
+        confirmLabel="Delete Skill"
+        cancelLabel="Cancel"
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+      />
     </div>
   );
 };

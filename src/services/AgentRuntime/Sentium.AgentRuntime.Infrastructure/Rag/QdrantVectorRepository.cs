@@ -17,6 +17,8 @@ public sealed class QdrantVectorRepository(QdrantClient qdrantClient, ILogger<Qd
     private const string FieldSource = "source";
     private const string FieldSourceType = "source_type";
     private const string FieldCreatedAt = "created_at";
+    private const string FieldScope = "scope";
+    private const string FieldUserId = "user_id";
     private const string MetadataPrefix = "meta_";
 
     public async Task EnsureCollectionExistsAsync(string collectionName, uint vectorSize, CancellationToken ct = default)
@@ -52,6 +54,12 @@ public sealed class QdrantVectorRepository(QdrantClient qdrantClient, ILogger<Qd
         point.Payload[FieldSource] = chunk.Source;
         point.Payload[FieldSourceType] = chunk.SourceType.ToString();
         point.Payload[FieldCreatedAt] = chunk.CreatedAt.ToString("O");
+        point.Payload[FieldScope] = chunk.Scope;
+
+        if (chunk.UserId.HasValue)
+        {
+            point.Payload[FieldUserId] = chunk.UserId.Value.ToString();
+        }
 
         foreach (var (key, value) in chunk.Metadata)
         {
@@ -66,11 +74,12 @@ public sealed class QdrantVectorRepository(QdrantClient qdrantClient, ILogger<Qd
         }
     }
 
-    public async Task<IReadOnlyList<VectorSearchResult>> SearchAsync(string collectionName, float[] queryEmbedding, int topK = 5, float scoreThreshold = 0.0f, CancellationToken ct = default)
+    public async Task<IReadOnlyList<VectorSearchResult>> SearchAsync(string collectionName, float[] queryEmbedding, int topK = 5, float scoreThreshold = 0.0f, KnowledgeScopeFilter? scope = null, CancellationToken ct = default)
     {
         var hits = await qdrantClient.SearchAsync(
             collectionName,
             queryEmbedding,
+            filter: BuildScopeFilter(scope),
             limit: (ulong)topK,
             scoreThreshold: scoreThreshold,
             cancellationToken: ct);
@@ -104,13 +113,30 @@ public sealed class QdrantVectorRepository(QdrantClient qdrantClient, ILogger<Qd
         }
     }
 
-    private static DocumentChunk ReconstructChunk(ScoredPoint hit)
+    private static Filter? BuildScopeFilter(KnowledgeScopeFilter? scope)
     {
-        var payload = hit.Payload;
+        if (scope is null)
+        {
+            return null;
+        }
 
-        var id = hit.Id.HasUuid
-            ? Guid.Parse(hit.Id.Uuid)
-            : Guid.Empty;
+        var filter = new Filter();
+        filter.Should.Add(Conditions.MatchKeyword(FieldScope, KnowledgeScope.Shared));
+        filter.Should.Add(Conditions.IsEmpty(FieldScope));
+
+        if (scope.UserId.HasValue)
+        {
+            filter.Should.Add(Conditions.MatchKeyword(FieldUserId, scope.UserId.Value.ToString()));
+        }
+
+        return filter;
+    }
+
+    private static DocumentChunk ReconstructChunk(ScoredPoint hit) => BuildChunk(hit.Id, hit.Payload);
+
+    private static DocumentChunk BuildChunk(PointId pointId, Google.Protobuf.Collections.MapField<string, Value> payload)
+    {
+        var id = pointId.HasUuid ? Guid.Parse(pointId.Uuid) : Guid.Empty;
 
         var metadata = payload
             .Where(kvp => kvp.Key.StartsWith(MetadataPrefix, StringComparison.Ordinal))
@@ -126,6 +152,14 @@ public sealed class QdrantVectorRepository(QdrantClient qdrantClient, ILogger<Qd
             ? parsedDt
             : DateTimeOffset.UtcNow;
 
+        var scope = payload.TryGetValue(FieldScope, out var scopeVal) && !string.IsNullOrEmpty(scopeVal.StringValue)
+            ? scopeVal.StringValue
+            : KnowledgeScope.Shared;
+
+        Guid? userId = payload.TryGetValue(FieldUserId, out var uidVal) && Guid.TryParse(uidVal.StringValue, out var parsedUid)
+            ? parsedUid
+            : null;
+
         return new DocumentChunk
         {
             Id = id,
@@ -133,7 +167,9 @@ public sealed class QdrantVectorRepository(QdrantClient qdrantClient, ILogger<Qd
             Source = payload.TryGetValue(FieldSource, out var s) ? s.StringValue : string.Empty,
             SourceType = sourceType,
             CreatedAt = createdAt,
-            Metadata = metadata
+            Metadata = metadata,
+            Scope = scope,
+            UserId = userId
         };
     }
 
@@ -173,7 +209,7 @@ public sealed class QdrantVectorRepository(QdrantClient qdrantClient, ILogger<Qd
         }
     }
 
-    public async Task<IReadOnlyList<DocumentChunk>> GetPageAsync(string collectionName, ulong limit = 200, ulong? offset = null, CancellationToken ct = default)
+    public async Task<IReadOnlyList<DocumentChunk>> GetPageAsync(string collectionName, ulong limit = 200, ulong? offset = null, KnowledgeScopeFilter? scope = null, CancellationToken ct = default)
     {
         var exists = await qdrantClient.CollectionExistsAsync(collectionName, ct);
         if (!exists)
@@ -185,7 +221,7 @@ public sealed class QdrantVectorRepository(QdrantClient qdrantClient, ILogger<Qd
 
         var result = await qdrantClient.ScrollAsync(
             collectionName,
-            null,
+            BuildScopeFilter(scope),
             (uint)limit,
             offsetId,
             true,
@@ -193,35 +229,7 @@ public sealed class QdrantVectorRepository(QdrantClient qdrantClient, ILogger<Qd
             cancellationToken: ct);
 
         return result.Result
-            .Select(point =>
-            {
-                var payload = point.Payload;
-                var id = point.Id.HasUuid ? Guid.Parse(point.Id.Uuid) : Guid.Empty;
-
-                var metadata = payload
-                    .Where(kvp => kvp.Key.StartsWith(MetadataPrefix, StringComparison.Ordinal))
-                    .ToDictionary(kvp => kvp.Key[MetadataPrefix.Length..], kvp => kvp.Value.StringValue);
-
-                var sourceType = payload.TryGetValue(FieldSourceType, out var stVal)
-                    && Enum.TryParse<IngestionSourceType>(stVal.StringValue, out var parsed)
-                    ? parsed
-                    : IngestionSourceType.Custom;
-
-                var createdAt = payload.TryGetValue(FieldCreatedAt, out var dtVal)
-                    && DateTimeOffset.TryParse(dtVal.StringValue, out var parsedDt)
-                    ? parsedDt
-                    : DateTimeOffset.UtcNow;
-
-                return new DocumentChunk
-                {
-                    Id = id,
-                    Content = payload.TryGetValue(FieldContent, out var c) ? c.StringValue : string.Empty,
-                    Source = payload.TryGetValue(FieldSource, out var s) ? s.StringValue : string.Empty,
-                    SourceType = sourceType,
-                    CreatedAt = createdAt,
-                    Metadata = metadata
-                };
-            })
+            .Select(point => BuildChunk(point.Id, point.Payload))
             .ToList();
     }
 }

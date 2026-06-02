@@ -22,7 +22,7 @@ public class TestAuthHandler(
             new Claim(ClaimTypes.Name, "TestUser"),
             new Claim(ClaimTypes.NameIdentifier, TestUserId),
             new Claim("sub", TestUserId),
-            new Claim(ClaimTypes.Role, "Admin")
+            new Claim(ClaimTypes.Role, "Sovereign")
         };
 
         var identity = new ClaimsIdentity(claims, AuthenticationScheme);

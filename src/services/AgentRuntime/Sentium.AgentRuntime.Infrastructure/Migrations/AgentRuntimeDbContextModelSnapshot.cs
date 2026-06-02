@@ -51,9 +51,12 @@ namespace Sentium.AgentRuntime.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("Name")
+                    b.HasIndex("UserId", "Name")
                         .IsUnique();
 
                     b.ToTable("Agents");
@@ -80,6 +83,9 @@ namespace Sentium.AgentRuntime.Infrastructure.Migrations
                     b.Property<Guid?>("ConversationId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<bool>("IsGlobal")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("IsIngested")
                         .HasColumnType("bit");
 
@@ -88,13 +94,20 @@ namespace Sentium.AgentRuntime.Infrastructure.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
                     b.HasIndex("AgentName");
 
                     b.HasIndex("CapturedAt");
 
+                    b.HasIndex("IsGlobal");
+
                     b.HasIndex("IsIngested");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("AgentLearnings");
                 });
@@ -132,11 +145,14 @@ namespace Sentium.AgentRuntime.Infrastructure.Migrations
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("datetimeoffset");
 
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedAt");
 
-                    b.HasIndex("Name")
+                    b.HasIndex("UserId", "Name")
                         .IsUnique();
 
                     b.ToTable("AgentSkills");
@@ -161,9 +177,12 @@ namespace Sentium.AgentRuntime.Infrastructure.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("Title")
+                    b.HasIndex("UserId", "Title")
                         .IsUnique();
 
                     b.ToTable("Conversations");
@@ -181,6 +200,9 @@ namespace Sentium.AgentRuntime.Infrastructure.Migrations
 
                     b.Property<Guid>("ConversationId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("EnhancedPrompt")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Role")
                         .IsRequired()
@@ -231,6 +253,9 @@ namespace Sentium.AgentRuntime.Infrastructure.Migrations
                     b.Property<long>("SizeBytes")
                         .HasColumnType("bigint");
 
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid?>("WorkspaceId")
                         .HasColumnType("uniqueidentifier");
 
@@ -238,35 +263,11 @@ namespace Sentium.AgentRuntime.Infrastructure.Migrations
 
                     b.HasIndex("CreatedAt");
 
+                    b.HasIndex("UserId");
+
                     b.HasIndex("WorkspaceId");
 
                     b.ToTable("ProjectFiles");
-                });
-
-            modelBuilder.Entity("Sentium.AgentRuntime.Core.Entities.SystemSettings", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<bool>("IsBuiltInHarnessEnabled")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasMaxLength(512)
-                        .HasColumnType("nvarchar(512)");
-
-                    b.Property<string>("UserHarnessPrompt")
-                        .IsRequired()
-                        .HasMaxLength(16000)
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("SystemSettings");
                 });
 
             modelBuilder.Entity("Sentium.AgentRuntime.Core.Entities.Workflow", b =>
@@ -291,9 +292,12 @@ namespace Sentium.AgentRuntime.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("Name")
+                    b.HasIndex("UserId", "Name")
                         .IsUnique();
 
                     b.ToTable("Workflows");
@@ -330,9 +334,6 @@ namespace Sentium.AgentRuntime.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("LogJson")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Recommendation")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -353,9 +354,19 @@ namespace Sentium.AgentRuntime.Infrastructure.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("WorkflowId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
                     b.HasIndex("StartedAt");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("WorkflowId");
 
                     b.ToTable("WorkflowRuns");
                 });
@@ -381,9 +392,12 @@ namespace Sentium.AgentRuntime.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("Name")
+                    b.HasIndex("UserId", "Name")
                         .IsUnique();
 
                     b.ToTable("Workspaces");
@@ -425,6 +439,46 @@ namespace Sentium.AgentRuntime.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Agent");
+
+                    b.Navigation("Workflow");
+                });
+
+            modelBuilder.Entity("Sentium.AgentRuntime.Core.Entities.WorkflowRun", b =>
+                {
+                    b.HasOne("Sentium.AgentRuntime.Core.Entities.Workflow", "Workflow")
+                        .WithMany()
+                        .HasForeignKey("WorkflowId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.OwnsMany("Sentium.AgentRuntime.Core.Dtos.WorkflowLogEntry", "Logs", b1 =>
+                        {
+                            b1.Property<Guid>("WorkflowRunId");
+
+                            b1.Property<int>("__synthesizedOrdinal")
+                                .ValueGeneratedOnAddOrUpdate();
+
+                            b1.Property<string>("Author")
+                                .IsRequired();
+
+                            b1.Property<string>("Text")
+                                .IsRequired();
+
+                            b1.Property<string>("Type")
+                                .IsRequired();
+
+                            b1.HasKey("WorkflowRunId", "__synthesizedOrdinal");
+
+                            b1.ToTable("WorkflowRuns");
+
+                            b1
+                                .ToJson("LogJson")
+                                .HasColumnType("nvarchar(max)");
+
+                            b1.WithOwner()
+                                .HasForeignKey("WorkflowRunId");
+                        });
+
+                    b.Navigation("Logs");
 
                     b.Navigation("Workflow");
                 });

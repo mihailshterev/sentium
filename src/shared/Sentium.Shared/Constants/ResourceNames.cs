@@ -10,6 +10,7 @@ public static class ResourceNames
     public const string AgentRuntimeDb = "agentruntimedb";
     public const string SandboxDb = "sandboxdb";
     public const string SentinelDb = "sentineldb";
+    public const string RegistryDb = "registrydb";
     public const string Qdrant = "qdrant";
     public const string Storage = "storage";
     public const string WorkspaceBlobs = "workspace-storage";

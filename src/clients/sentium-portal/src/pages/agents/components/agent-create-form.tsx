@@ -1,4 +1,4 @@
-import { useForm, Controller, useWatch } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Loader, Cpu } from "lucide-react";
 import styles from "../agents.module.scss";
@@ -33,6 +33,7 @@ const AgentCreateForm = ({
     reset,
     control,
     setValue,
+    watch,
     formState: { errors },
   } = useForm<AgentCreateFormData>({
     resolver: zodResolver(agentCreateSchema),
@@ -49,15 +50,9 @@ const AgentCreateForm = ({
     }
   }, [models, setValue]);
 
-  const descriptionValue = useWatch({
-    control,
-    name: "description",
-  });
-
-  const nameValue = useWatch({
-    control,
-    name: "name",
-  });
+  // eslint-disable-next-line react-hooks/incompatible-library
+  const nameValue = watch("name") ?? "";
+  const descriptionValue = watch("description") ?? "";
 
   const handleFormSubmit = (data: AgentCreateFormData) => {
     onSubmit({ name: data.name, description: data.description, model: data.model });

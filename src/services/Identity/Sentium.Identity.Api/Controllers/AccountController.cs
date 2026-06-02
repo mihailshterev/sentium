@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using OpenIddict.Server.AspNetCore;
 
 namespace Sentium.Identity.Api.Controllers;
@@ -17,7 +18,7 @@ namespace Sentium.Identity.Api.Controllers;
 [Route("account")]
 public sealed class AccountController(
     IIdentityService identityService,
-    IUserManagementService userManagementService) : ControllerBase
+    IUserService userService) : ControllerBase
 {
     /// <summary>
     /// Registers a new user in the system.
@@ -25,6 +26,7 @@ public sealed class AccountController(
     /// <response code="200">Returns the new user's unique identifier and email.</response>
     /// <response code="400">If the registration data is invalid or the email is already in use.</response>
     [HttpPost("register")]
+    [EnableRateLimiting("auth")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
@@ -51,6 +53,7 @@ public sealed class AccountController(
     /// <response code="401">Invalid credentials provided.</response>
     /// <response code="423">Account is locked due to repeated failed attempts.</response>
     [HttpPost("login")]
+    [EnableRateLimiting("auth")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status423Locked)]
@@ -106,7 +109,7 @@ public sealed class AccountController(
             return Unauthorized();
         }
 
-        var user = await userManagementService.GetUserByIdAsync(userId.Value, ct);
+        var user = await userService.GetUserByIdAsync(userId.Value, ct);
         if (user is null)
         {
             return NotFound();
@@ -132,13 +135,15 @@ public sealed class AccountController(
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request, CancellationToken ct)
     {
+        ArgumentNullException.ThrowIfNull(request);
+
         var userId = GetCurrentUserId();
         if (userId is null)
         {
             return Unauthorized();
         }
 
-        var (succeeded, errors) = await userManagementService.UpdateProfileAsync(userId.Value, request.FirstName, request.LastName, request.Email, ct);
+        var (succeeded, errors) = await userService.UpdateProfileAsync(userId.Value, request.FirstName, request.LastName, request.Email, ct);
 
         if (!succeeded)
         {

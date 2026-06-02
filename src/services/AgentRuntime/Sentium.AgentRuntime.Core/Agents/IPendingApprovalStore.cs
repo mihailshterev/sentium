@@ -11,7 +11,9 @@ public sealed record PendingApproval(
     string Model,
     List<ChatMessage> ChatHistory,
     string OriginalUserPrompt = "",
-    string CorrelationId = "");
+    string CorrelationId = "",
+    Guid? UserId = null,
+    string AgentName = "");
 
 public interface IPendingApprovalStore
 {

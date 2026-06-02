@@ -9,12 +9,12 @@ namespace Sentium.Tests.Unit.AgentRuntime;
 
 public sealed class AgentServiceTests
 {
-    private readonly IAgentManager _manager = Substitute.For<IAgentManager>();
+    private readonly IAgentRepository _repository = Substitute.For<IAgentRepository>();
     private readonly AgentService _service;
 
     public AgentServiceTests()
     {
-        _service = new AgentService(_manager, new PassThroughHybridCache());
+        _service = new AgentService(_repository, new PassThroughScopedCache());
     }
 
     private static AgentResponse MakeResponse(Guid? id = null, string name = "TestAgent") =>
@@ -27,14 +27,14 @@ public sealed class AgentServiceTests
         // Arrange
         var ct = TestContext.Current.CancellationToken;
         var agents = new List<AgentResponse> { MakeResponse() };
-        _manager.GetAgentsAsync(ct).Returns(agents);
+        _repository.GetAgentsAsync(ct).Returns(agents);
 
         // Act
         var result = await _service.GetAgentsAsync(ct);
 
         // Assert
         result.Should().BeEquivalentTo(agents);
-        await _manager.Received(1).GetAgentsAsync(ct);
+        await _repository.Received(1).GetAgentsAsync(ct);
     }
 
     [Fact]
@@ -44,14 +44,14 @@ public sealed class AgentServiceTests
         var ct = TestContext.Current.CancellationToken;
         var id = Guid.NewGuid();
         var expected = MakeResponse(id);
-        _manager.GetAgentByIdAsync(id, ct).Returns(expected);
+        _repository.GetAgentByIdAsync(id, ct).Returns(expected);
 
         // Act
         var result = await _service.GetAgentByIdAsync(id, ct);
 
         // Assert
         result.Should().Be(expected);
-        await _manager.Received(1).GetAgentByIdAsync(id, ct);
+        await _repository.Received(1).GetAgentByIdAsync(id, ct);
     }
 
     [Fact]
@@ -61,14 +61,14 @@ public sealed class AgentServiceTests
         var ct = TestContext.Current.CancellationToken;
         var request = new CreateAgentRequest("NewAgent", "Desc", "gemma3:1b");
         var expected = MakeResponse(name: "NewAgent");
-        _manager.CreateAgentAsync(request, ct).Returns(expected);
+        _repository.CreateAgentAsync(request, ct).Returns(expected);
 
         // Act
         var result = await _service.CreateAgentAsync(request, ct);
 
         // Assert
         result.Should().Be(expected);
-        await _manager.Received(1).CreateAgentAsync(request, ct);
+        await _repository.Received(1).CreateAgentAsync(request, ct);
     }
 
     [Fact]
@@ -78,13 +78,13 @@ public sealed class AgentServiceTests
         var ct = TestContext.Current.CancellationToken;
         var id = Guid.NewGuid();
         var request = new UpdateAgentRequest(id, "Updated", "New description");
-        _manager.UpdateAgentAsync(id, request, ct).Returns(Task.CompletedTask);
+        _repository.UpdateAgentAsync(id, request, ct).Returns(true);
 
         // Act
         await _service.UpdateAgentAsync(id, request, ct);
 
         // Assert
-        await _manager.Received(1).UpdateAgentAsync(id, request, ct);
+        await _repository.Received(1).UpdateAgentAsync(id, request, ct);
     }
 
     [Fact]
@@ -93,12 +93,12 @@ public sealed class AgentServiceTests
         // Arrange
         var ct = TestContext.Current.CancellationToken;
         var id = Guid.NewGuid();
-        _manager.DeleteAgentAsync(id, ct).Returns(Task.CompletedTask);
+        _repository.DeleteAgentAsync(id, ct).Returns(true);
 
         // Act
         await _service.DeleteAgentAsync(id, ct);
 
         // Assert
-        await _manager.Received(1).DeleteAgentAsync(id, ct);
+        await _repository.Received(1).DeleteAgentAsync(id, ct);
     }
 }

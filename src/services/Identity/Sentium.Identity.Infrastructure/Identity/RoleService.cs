@@ -1,17 +1,27 @@
+using System.Data;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Caching.Hybrid;
+using Microsoft.Extensions.Logging;
 using Sentium.Identity.Application.Abstractions;
 using Sentium.Identity.Core.Entities;
 using Sentium.Identity.Core.Security;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Logging;
+using Sentium.Identity.Infrastructure.Data;
+using Sentium.Infrastructure.Extensions;
 
 namespace Sentium.Identity.Infrastructure.Identity;
 
 public sealed class RoleService(
     UserManager<ApplicationUser> userManager,
     RoleManager<ApplicationRole> roleManager,
+    IdentityDbContext dbContext,
+    HybridCache cache,
     ILogger<RoleService> logger) : IRoleService
 {
-    /// <inheritdoc />
+    private static readonly Dictionary<string, int> RoleRanks =
+        Roles.Hierarchy
+            .Select((role, index) => (role, index))
+            .ToDictionary(x => x.role, x => x.index);
+
     public async Task<(bool Succeeded, string? Error)> AssignRoleAsync(Guid requesterId, Guid targetUserId, string roleName, CancellationToken ct)
     {
         if (!Roles.IsValid(roleName))
@@ -28,16 +38,9 @@ public sealed class RoleService(
         var requesterRoles = await userManager.GetRolesAsync(requester);
         var highestRequesterRole = GetHighestRole(requesterRoles);
 
-        // Hierarchy enforcement: only Sovereign may assign Sovereign
-        if (roleName == Roles.Sovereign && highestRequesterRole != Roles.Sovereign)
-        {
-            return (false, "Only a Sovereign may assign the Sovereign role.");
-        }
-
-        // Members cannot assign roles at all — only Sovereigns can manage roles
         if (highestRequesterRole != Roles.Sovereign)
         {
-            return (false, "Insufficient privileges to assign roles.");
+            return (false, roleName == Roles.Sovereign ? "Only a Sovereign may assign the Sovereign role." : "Insufficient privileges to assign roles.");
         }
 
         var target = await userManager.FindByIdAsync(targetUserId.ToString());
@@ -59,6 +62,8 @@ public sealed class RoleService(
             return (false, errors);
         }
 
+        await cache.RemoveByTagAsync(IdentityCacheKeys.UserTag(targetUserId), ct);
+
         if (logger.IsEnabled(LogLevel.Information))
         {
             logger.LogInformation("Requester {RequesterId} assigned role {Role} to user {UserId}.", requesterId, roleName, targetUserId);
@@ -67,7 +72,6 @@ public sealed class RoleService(
         return (true, null);
     }
 
-    /// <inheritdoc />
     public async Task<(bool Succeeded, string? Error)> RemoveRoleAsync(Guid requesterId, Guid targetUserId, string roleName, CancellationToken ct)
     {
         if (!Roles.IsValid(roleName))
@@ -84,20 +88,9 @@ public sealed class RoleService(
         var requesterRoles = await userManager.GetRolesAsync(requester);
         var highestRequesterRole = GetHighestRole(requesterRoles);
 
-        // Only Sovereigns may remove roles
         if (highestRequesterRole != Roles.Sovereign)
         {
             return (false, "Insufficient privileges to remove roles.");
-        }
-
-        // Prevent a Sovereign from removing their own Sovereign role if it would leave no Sovereigns
-        if (requesterId == targetUserId && roleName == Roles.Sovereign)
-        {
-            var sovereigns = await userManager.GetUsersInRoleAsync(Roles.Sovereign);
-            if (sovereigns.Count <= 1)
-            {
-                return (false, "Cannot remove the last Sovereign from the system.");
-            }
         }
 
         var target = await userManager.FindByIdAsync(targetUserId.ToString());
@@ -106,12 +99,34 @@ public sealed class RoleService(
             return (false, "Target user not found.");
         }
 
-        var result = await userManager.RemoveFromRoleAsync(target, roleName);
-        if (!result.Succeeded)
+        var (removeResult, removeError) = await dbContext.Database.ExecuteInTransactionAsync<(bool, string?)>(async () =>
         {
-            var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-            return (false, errors);
+            if (roleName == Roles.Sovereign)
+            {
+                var sovereigns = await userManager.GetUsersInRoleAsync(Roles.Sovereign);
+                if (sovereigns.Count <= 1)
+                {
+                    return (false, "Cannot remove the last Sovereign from the system.");
+                }
+            }
+
+            var result = await userManager.RemoveFromRoleAsync(target, roleName);
+            if (!result.Succeeded)
+            {
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                logger.LogWarning("Failed to remove role {Role} from user {UserId}: {Errors}", roleName, targetUserId, errors);
+                return (false, errors);
+            }
+
+            return (true, null);
+        }, IsolationLevel.Serializable, ct);
+
+        if (!removeResult)
+        {
+            return (removeResult, removeError);
         }
+
+        await cache.RemoveByTagAsync(IdentityCacheKeys.UserTag(targetUserId), ct);
 
         if (logger.IsEnabled(LogLevel.Information))
         {
@@ -121,23 +136,26 @@ public sealed class RoleService(
         return (true, null);
     }
 
-    /// <inheritdoc />
-    public async Task<IList<string>> GetRolesAsync(Guid userId, CancellationToken ct)
-    {
-        var user = await userManager.FindByIdAsync(userId.ToString());
-        if (user is null)
-        {
-            return [];
-        }
-
-        return await userManager.GetRolesAsync(user);
-    }
+    public ValueTask<IList<string>> GetRolesAsync(Guid userId, CancellationToken ct)
+        => cache.GetOrCreateAsync(
+            IdentityCacheKeys.RolesFor(userId),
+            async token =>
+            {
+                var user = await userManager.FindByIdAsync(userId.ToString());
+                if (user is null)
+                {
+                    return [];
+                }
+                return await userManager.GetRolesAsync(user);
+            },
+            tags: [IdentityCacheKeys.UserTag(userId)],
+            cancellationToken: ct);
 
     private static string GetHighestRole(IEnumerable<string> roles)
     {
         return roles
             .Where(Roles.IsValid)
-            .OrderByDescending(r => ((IList<string>)Roles.Hierarchy).IndexOf(r))
+            .OrderByDescending(r => RoleRanks[r])
             .FirstOrDefault() ?? string.Empty;
     }
 }

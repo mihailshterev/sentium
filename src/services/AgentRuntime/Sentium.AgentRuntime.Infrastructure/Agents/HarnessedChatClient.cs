@@ -2,17 +2,17 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using Microsoft.Extensions.AI;
 using Sentium.AgentRuntime.Core.Harness;
-using Sentium.AgentRuntime.Core.Settings;
+using Sentium.AgentRuntime.Core.Registry;
 
 namespace Sentium.AgentRuntime.Infrastructure.Agents;
 
 /// <summary>
 /// Decorates an <see cref="IChatClient"/> by prepending a combined system prompt
 /// (built-in governance policy + user-defined harness) to every request.
-/// Instructions are resolved at call-time from <see cref="ISystemSettingsService"/>
-/// so changes take effect within the cache TTL (~30 s) without a service restart.
+/// Instructions are resolved at call-time from <see cref="IRegistrySettingsService"/>
+/// so admin changes take effect within the L1 cache TTL without a service restart.
 /// </summary>
-public sealed class HarnessedChatClient(IChatClient innerClient, ISystemSettingsService systemSettingsService) : DelegatingChatClient(innerClient)
+public sealed class HarnessedChatClient(IChatClient innerClient, IRegistrySettingsService registrySettingsService) : DelegatingChatClient(innerClient)
 {
     public override async Task<ChatResponse> GetResponseAsync(
         IEnumerable<ChatMessage> messages,
@@ -38,7 +38,7 @@ public sealed class HarnessedChatClient(IChatClient innerClient, ISystemSettings
 
     private async Task<List<ChatMessage>> ApplyHarnessAsync(IEnumerable<ChatMessage> messages, CancellationToken ct)
     {
-        var settings = await systemSettingsService.GetAsync(ct);
+        var settings = await registrySettingsService.GetAsync(ct);
         var harness = BuildHarness(settings);
 
         var messageList = messages.ToList();
@@ -58,16 +58,16 @@ public sealed class HarnessedChatClient(IChatClient innerClient, ISystemSettings
         return messageList;
     }
 
-    private static string BuildHarness(SystemSettingsDto settings)
+    private static string BuildHarness(SettingsSnapshot settings)
     {
         var sb = new StringBuilder();
 
-        if (settings.IsBuiltInHarnessEnabled)
+        if (settings.Harness.IsBuiltInHarnessEnabled)
         {
             sb.Append(UniversalSystemHarness.Policy);
         }
 
-        if (!string.IsNullOrWhiteSpace(settings.UserHarnessPrompt))
+        if (!string.IsNullOrWhiteSpace(settings.Harness.UserHarnessPrompt))
         {
             if (sb.Length > 0)
             {
@@ -75,7 +75,7 @@ public sealed class HarnessedChatClient(IChatClient innerClient, ISystemSettings
             }
 
             sb.AppendLine("### USER-DEFINED GLOBAL BEHAVIOUR");
-            sb.Append(settings.UserHarnessPrompt);
+            sb.Append(settings.Harness.UserHarnessPrompt);
         }
 
         return sb.ToString().TrimEnd();

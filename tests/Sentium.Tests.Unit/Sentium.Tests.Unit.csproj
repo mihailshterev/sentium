@@ -34,7 +34,13 @@
     <ProjectReference Include="..\..\src\services\Identity\Sentium.Identity.Infrastructure\Sentium.Identity.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\services\Identity\Sentium.Identity.Api\Sentium.Identity.Api.csproj" />
     <ProjectReference Include="..\..\src\services\AgentRuntime\Sentium.AgentRuntime.Application\Sentium.AgentRuntime.Application.csproj" />
+    <ProjectReference Include="..\..\src\services\AgentRuntime\Sentium.AgentRuntime.Infrastructure\Sentium.AgentRuntime.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\services\AgentRuntime\Sentium.AgentRuntime.Api\Sentium.AgentRuntime.Api.csproj" />
+    <ProjectReference Include="..\..\src\services\Registry\Sentium.Registry.Application\Sentium.Registry.Application.csproj" />
+    <ProjectReference Include="..\..\src\services\Registry\Sentium.Registry.Infrastructure\Sentium.Registry.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\services\Registry\Sentium.Registry.Api\Sentium.Registry.Api.csproj" />
+    <ProjectReference Include="..\..\src\services\Sandbox\Sentium.Sandbox.Application\Sentium.Sandbox.Application.csproj" />
+    <ProjectReference Include="..\..\src\services\Sandbox\Sentium.Sandbox.Api\Sentium.Sandbox.Api.csproj" />
   </ItemGroup>
 
 </Project>

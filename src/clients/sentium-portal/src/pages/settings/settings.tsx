@@ -1,4 +1,4 @@
-import { Settings } from "lucide-react";
+import { Loader, Settings } from "lucide-react";
 import styles from "./settings.module.scss";
 import { useSystemSettings } from "../../hooks/useSystemSettings";
 import PageHeader from "../../components/ui/page-header";
@@ -16,7 +16,10 @@ const SettingsPage = () => {
           subtitle="System configuration and global agent behavior"
         />
         <div className={styles.body}>
-          <p className={styles.loadingText}>Loading settings…</p>
+          <p className={styles.loadingText}>
+            <Loader size={15} className="animate-spin" />
+            Loading settings…
+          </p>
         </div>
       </div>
     );
@@ -30,9 +33,10 @@ const SettingsPage = () => {
         subtitle="System configuration and global agent behaviour"
       />
       <SettingsEditor
-        key={`${settings.updatedAt}`}
-        initialPrompt={settings.userHarnessPrompt}
-        initialBuiltIn={settings.isBuiltInHarnessEnabled}
+        key={settings.updatedAt}
+        initialPrompt={settings.harness.userHarnessPrompt}
+        initialBuiltIn={settings.harness.isBuiltInHarnessEnabled}
+        initialPromptEnhancement={settings.harness.isPromptEnhancementEnabled}
         updatedBy={settings.updatedBy ?? null}
         save={save}
         isSaving={isSaving}

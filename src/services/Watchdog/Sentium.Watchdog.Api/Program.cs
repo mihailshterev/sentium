@@ -1,6 +1,9 @@
+using FluentValidation;
 using Sentium.Watchdog.Application;
 using Sentium.Shared.Constants;
+using Sentium.Infrastructure.Diagnostics;
 using Sentium.Infrastructure.Extensions;
+using Sentium.Infrastructure.Validation;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -11,11 +14,14 @@ builder.AddAuthenticationDefaults();
 builder.AddNatsClient(ResourceNames.Nats);
 builder.AddRedisDistributedCache(ResourceNames.Redis);
 
+builder.Services.AddSentiumProblemDetails();
 builder.Services.AddOpenApi();
-builder.Services.AddControllers().AddJsonOptions(options =>
+builder.Services.AddControllers(options => options.Filters.Add<FluentValidationFilter>())
+    .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.Converters.Add(new System.Text.Json.Serialization.JsonStringEnumConverter());
     });
+builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
 builder.AddSentiumAuditLogging();
 builder.Services.AddWatchdogApplication();
@@ -23,6 +29,7 @@ builder.Services.AddWatchdogApplication();
 var app = builder.Build();
 
 app.UseSentiumTracing();
+app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
 {

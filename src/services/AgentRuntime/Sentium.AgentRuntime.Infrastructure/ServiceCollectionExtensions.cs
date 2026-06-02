@@ -2,7 +2,7 @@ using Sentium.AgentRuntime.Core.Agents;
 using Sentium.AgentRuntime.Core.Conversations;
 using Sentium.AgentRuntime.Core.Learnings;
 using Sentium.AgentRuntime.Core.Rag;
-using Sentium.AgentRuntime.Core.Settings;
+using Sentium.AgentRuntime.Core.Registry;
 using Sentium.AgentRuntime.Core.Skills;
 using Sentium.AgentRuntime.Core.Tools;
 using Sentium.AgentRuntime.Core.WorkflowManagement;
@@ -12,7 +12,7 @@ using Sentium.AgentRuntime.Infrastructure.Conversations;
 using Sentium.AgentRuntime.Infrastructure.Data;
 using Sentium.AgentRuntime.Infrastructure.Learnings;
 using Sentium.AgentRuntime.Infrastructure.Rag;
-using Sentium.AgentRuntime.Infrastructure.Settings;
+using Sentium.AgentRuntime.Infrastructure.Registry;
 using Sentium.AgentRuntime.Infrastructure.Sentinel;
 using Sentium.AgentRuntime.Infrastructure.Skills;
 using Sentium.AgentRuntime.Infrastructure.Skills.BuiltIn;
@@ -20,6 +20,7 @@ using Sentium.AgentRuntime.Infrastructure.Tools;
 using Sentium.AgentRuntime.Infrastructure.WorkflowManagement;
 using Sentium.AgentRuntime.Infrastructure.WorkspaceManagement;
 using Sentium.Infrastructure.Messaging;
+using Sentium.Infrastructure.Security;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -51,21 +52,16 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton(new OllamaOptions { BaseUrl = ollamaUri, DefaultModel = modelName });
 
-#pragma warning disable EXTEXP0001
         services.AddHttpClient(ResourceNames.Ollama, client =>
         {
             client.BaseAddress = ollamaUri;
             client.Timeout = TimeSpan.FromMinutes(10);
         })
-        .RemoveAllResilienceHandlers()
-        .AddStandardResilienceHandler(options =>
-        {
-            options.TotalRequestTimeout.Timeout = TimeSpan.FromMinutes(10);
-            options.AttemptTimeout.Timeout = TimeSpan.FromMinutes(3);
-            options.Retry.MaxRetryAttempts = 1;
-            options.CircuitBreaker.SamplingDuration = TimeSpan.FromMinutes(11);
-        });
-#pragma warning restore EXTEXP0001
+        .AddLongRunningResilienceHandler(
+            totalTimeout: TimeSpan.FromMinutes(10),
+            attemptTimeout: TimeSpan.FromMinutes(3),
+            retries: 0
+        );
 
         services.AddChatClient(sp =>
         {
@@ -97,6 +93,15 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<IEventBus, NatsEventBus>();
 
+        services.AddHttpClient<IRegistryClient, RegistryClient>(client =>
+        {
+            client.BaseAddress = new Uri($"https+http://{ServiceNames.Registry}");
+            client.Timeout = TimeSpan.FromSeconds(10);
+        });
+
+        services.AddScoped<IRegistrySettingsService, RegistrySettingsService>();
+        services.AddHostedService<SettingsSyncWorker>();
+
         services.AddSingleton<IEmbeddingService, OllamaEmbeddingService>();
         services.AddSingleton<IVectorRepository, QdrantVectorRepository>();
         services.AddScoped<IDocumentIngestionService, DocumentIngestionService>();
@@ -104,9 +109,8 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ILocalFileService, LocalFileService>();
         services.AddHostedService<FileIngestionWorker>();
 
-        services.AddScoped<ISystemSettingsRepository, SystemSettingsRepository>();
-        services.AddScoped<ISystemSettingsService, SystemSettingsService>();
         services.AddScoped<IAgentLearningRepository, AgentLearningRepository>();
+        services.AddScoped<ILearningSanitizationPipeline, LearningSanitizationPipeline>();
         services.AddScoped<IAgentLearningService, AgentLearningService>();
 
         services.AddSingleton<IBuiltInSkillCatalog, BuiltInSkillCatalog>();
@@ -119,14 +123,16 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IAgentRegistry, AgentRegistry>();
         services.AddScoped<IAgentToolProvider, AgentToolProvider>();
         services.AddScoped<IAgentFactory, CompositeAgentFactory>();
-        services.AddScoped<IAgentManager, AgentManager>();
-        services.AddScoped<IWorkspaceManager, WorkspaceManager>();
+        services.AddScoped<IPromptEnhancementService, PromptEnhancementService>();
+        services.AddScoped<IAgentRepository, AgentRepository>();
+        services.AddScoped<IWorkspaceRepository, WorkspaceRepository>();
 
         services.AddTransient<IAgentTool, KnowledgeBaseSearchTool>();
         services.AddTransient<IAgentTool, CodeExecutionSandboxTool>();
         services.AddTransient<IAgentTool, ReadFileTool>();
         services.AddTransient<IAgentTool, StoreMemoryTool>();
         services.AddTransient<IAgentTool, RecallMemoryTool>();
+        services.AddTransient<IAgentTool, RecallLearningsTool>();
         services.AddTransient<IAgentTool, ListWorkspacesTool>();
         services.AddTransient<IAgentTool, ListWorkspaceFilesTool>();
         services.AddTransient<IAgentTool, ReadWorkspaceFileContentTool>();
@@ -134,8 +140,8 @@ public static class ServiceCollectionExtensions
         services.AddTransient<IAgentTool, CaptureAgentLearningTool>();
         services.AddTransient<IAgentTool, ScheduleTaskTool>();
 
-        services.AddScoped<IConversationManager, ConversationManager>();
-        services.AddScoped<IWorkflowManager, WorkflowManager>();
+        services.AddScoped<IConversationRepository, ConversationRepository>();
+        services.AddScoped<IWorkflowRepository, WorkflowRepository>();
         services.AddScoped<IWorkflowRunRepository, WorkflowRunRepository>();
 
         builder.Services.AddQuartz(q =>
@@ -156,19 +162,33 @@ public static class ServiceCollectionExtensions
 
         builder.Services.AddQuartzHostedService(options => options.WaitForJobsToComplete = true);
 
+        services.Configure<InternalApiOptions>(builder.Configuration.GetSection(InternalApiOptions.SectionName));
+
+        services.AddTransient<InternalApiKeyDelegatingHandler>();
+
         services.AddHttpClient<SentinelClient>(client =>
         {
             client.BaseAddress = new Uri($"https+http://{ServiceNames.Sentinel}");
             client.Timeout = TimeSpan.FromSeconds(10);
-        });
+        }).AddHttpMessageHandler<InternalApiKeyDelegatingHandler>();
 
         services.AddHttpClient(ServiceNames.Sandbox, client =>
         {
             client.BaseAddress = new Uri($"https+http://{ServiceNames.Sandbox}");
-            client.Timeout = TimeSpan.FromSeconds(120);
-        }).AddStandardResilienceHandler();
+            client.Timeout = Timeout.InfiniteTimeSpan;
+        })
+        .AddHttpMessageHandler<InternalApiKeyDelegatingHandler>()
+        .AddLongRunningResilienceHandler(
+            totalTimeout: TimeSpan.FromSeconds(130),
+            attemptTimeout: TimeSpan.FromSeconds(120),
+            retries: 0
+        );
 
         services.AddScoped<IPdpContextAccessor, PdpContextAccessor>();
+
+        services.AddHttpContextAccessor();
+        services.AddScoped<SystemScopeContext>();
+        services.AddScoped<ICurrentUser, CurrentUser>();
 
         return builder;
     }

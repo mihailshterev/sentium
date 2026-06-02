@@ -1,8 +1,6 @@
 using Sentium.AgentRuntime.Core.Learnings;
-using Sentium.AgentRuntime.Core.Rag;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 
 namespace Sentium.AgentRuntime.Api.Controllers;
 
@@ -17,9 +15,16 @@ public sealed class AgentLearningsController(IAgentLearningService learningServi
     /// <summary>
     /// Returns captured learnings. Optionally filter by agent name.
     /// </summary>
+    /// <param name="agentName">Optional agent name to filter learnings.</param>
+    /// <param name="count">Number of learnings to return (default 50).</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>A list of captured learnings.</returns>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetLearnings([FromQuery] string? agentName, [FromQuery] int count = 50, CancellationToken ct = default)
+    public async Task<ActionResult<IReadOnlyList<AgentLearningResponse>>> GetLearnings(
+        [FromQuery] string? agentName,
+        [FromQuery] int count = 50,
+        CancellationToken ct = default)
     {
         var results = await learningService.GetLearningsAsync(agentName, count, ct);
         return Ok(results);
@@ -28,69 +33,46 @@ public sealed class AgentLearningsController(IAgentLearningService learningServi
     /// <summary>
     /// Returns aggregate statistics about captured learnings.
     /// </summary>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>Aggregate statistics about captured learnings.</returns>
     [HttpGet("stats")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetStats(CancellationToken ct)
+    public async Task<ActionResult<AgentLearningStats>> GetStats(CancellationToken ct)
     {
         var stats = await learningService.GetStatsAsync(ct);
         return Ok(stats);
     }
 
     /// <summary>
-    /// Manually captures a learning (useful for testing or admin backfills).
-    /// </summary>
-    [HttpPost]
-    [ProducesResponseType(StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> CaptureLearning([FromBody] CaptureAgentLearningRequest request, CancellationToken ct)
-    {
-        ArgumentNullException.ThrowIfNull(request);
-
-        if (string.IsNullOrWhiteSpace(request.Content))
-        {
-            return BadRequest(new { error = "Content is required." });
-        }
-
-        var result = await learningService.CaptureAsync(request, ct);
-        return CreatedAtAction(nameof(GetLearnings), new { }, result);
-    }
-
-    /// <summary>
     /// Deletes a learning and removes its vectors from the knowledge base.
     /// </summary>
+    /// <param name="id">The ID of the learning to delete.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>No content if deletion is successful.</returns>
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteLearning(Guid id, CancellationToken ct)
     {
-        await learningService.DeleteAsync(id, ct);
-        return NoContent();
+        var deleted = await learningService.DeleteAsync(id, ct);
+        return deleted ? NoContent() : NotFound();
     }
 
     /// <summary>
     /// Updates the content and tags of an existing learning.
     /// Old vectors are removed and the learning is re-ingested with the new content.
     /// </summary>
+    /// <param name="id">The ID of the learning to update.</param>
+    /// <param name="request">The update request containing new content and tags.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>The updated learning.</returns>
     [HttpPut("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> UpdateLearning(Guid id, [FromBody] UpdateAgentLearningRequest request, CancellationToken ct)
+    public async Task<ActionResult<AgentLearningResponse>> UpdateLearning(Guid id, [FromBody] UpdateAgentLearningRequest request, CancellationToken ct)
     {
-        ArgumentNullException.ThrowIfNull(request);
-
-        if (string.IsNullOrWhiteSpace(request.Content))
-        {
-            return BadRequest(new { error = "Content is required." });
-        }
-
-        try
-        {
-            var result = await learningService.UpdateAsync(id, request, ct);
-            return Ok(result);
-        }
-        catch (KeyNotFoundException)
-        {
-            return NotFound(new { error = $"Learning {id} not found." });
-        }
+        var result = await learningService.UpdateAsync(id, request, ct);
+        return result is null ? NotFound() : Ok(result);
     }
 }

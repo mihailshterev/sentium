@@ -1,6 +1,7 @@
 using Sentium.AgentRuntime.Core.Skills;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Sentium.Shared.Results;
 
 namespace Sentium.AgentRuntime.Api.Controllers;
 
@@ -57,7 +58,7 @@ public sealed class SkillsController(
     public async ValueTask<IActionResult> GetSkillById(Guid skillId, CancellationToken ct)
     {
         var skill = await skillService.GetByIdAsync(skillId, ct);
-        return Ok(skill);
+        return skill is null ? NotFound() : Ok(skill);
     }
 
     /// <summary>
@@ -67,14 +68,21 @@ public sealed class SkillsController(
     /// <param name="ct">The cancellation token.</param>
     /// <returns>The created skill data.</returns>
     /// <response code="201">Returns the newly created skill.</response>
-    /// <response code="400">If the request is invalid or a skill with the same name exists.</response>
+    /// <response code="400">If the request is invalid.</response>
+    /// <response code="409">If a skill with the same name already exists.</response>
     [HttpPost]
     [ProducesResponseType(typeof(AgentSkillDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async ValueTask<IActionResult> CreateSkill([FromBody] CreateAgentSkillRequest request, CancellationToken ct)
     {
         var result = await skillService.CreateAsync(request, ct);
-        return CreatedAtAction(nameof(GetSkillById), new { skillId = result.Id }, result);
+        if (result.Status == ResultStatus.Conflict)
+        {
+            return Conflict(new ProblemDetails { Title = "Conflict", Detail = result.Error, Status = StatusCodes.Status409Conflict });
+        }
+
+        return CreatedAtAction(nameof(GetSkillById), new { skillId = result.Value!.Id }, result.Value);
     }
 
     /// <summary>
@@ -117,11 +125,16 @@ public sealed class SkillsController(
             Name: skillName,
             Description: $"Uploaded skill from {file.FileName}",
             Instructions: content,
-            SkillType: Core.Entities.AgentSkillType.Uploaded,
+            SkillType: AgentSkillType.Uploaded,
             FileName: file.FileName);
 
         var result = await skillService.CreateAsync(request, ct);
-        return CreatedAtAction(nameof(GetSkillById), new { skillId = result.Id }, result);
+        if (result.Status == ResultStatus.Conflict)
+        {
+            return Conflict(new ProblemDetails { Title = "Conflict", Detail = result.Error, Status = StatusCodes.Status409Conflict });
+        }
+
+        return CreatedAtAction(nameof(GetSkillById), new { skillId = result.Value!.Id }, result.Value);
     }
 
     /// <summary>
@@ -140,8 +153,8 @@ public sealed class SkillsController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async ValueTask<IActionResult> UpdateSkill(Guid skillId, [FromBody] UpdateAgentSkillRequest request, CancellationToken ct)
     {
-        await skillService.UpdateAsync(skillId, request, ct);
-        return NoContent();
+        var updated = await skillService.UpdateAsync(skillId, request, ct);
+        return updated ? NoContent() : NotFound();
     }
 
     /// <summary>
@@ -151,12 +164,14 @@ public sealed class SkillsController(
     /// <param name="ct">The cancellation token.</param>
     /// <returns>No content if the deletion was successful.</returns>
     /// <response code="204">Skill deleted successfully.</response>
+    /// <response code="404">If the skill was not found.</response>
     [HttpDelete("{skillId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async ValueTask<IActionResult> DeleteSkill(Guid skillId, CancellationToken ct)
     {
-        await skillService.DeleteAsync(skillId, ct);
-        return NoContent();
+        var deleted = await skillService.DeleteAsync(skillId, ct);
+        return deleted ? NoContent() : NotFound();
     }
 
     private static string SlugifyName(string name)

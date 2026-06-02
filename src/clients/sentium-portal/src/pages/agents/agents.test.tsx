@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Agents from "./agents";
@@ -207,40 +207,34 @@ describe("Agents create form", () => {
 });
 
 describe("Agents delete", () => {
-  it("calls deleteAgent when confirmed", () => {
-    vi.stubGlobal(
-      "confirm",
-      vi.fn(() => true),
-    );
+  it("calls deleteAgent when confirmed", async () => {
     const deleteAgent = vi.fn();
     vi.spyOn(useAgentsHook, "default").mockReturnValue({ ...defaultAgentsHook, deleteAgent });
     renderAgents();
     fireEvent.click(screen.getByTitle("Delete agent"));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: /delete agent/i }));
     expect(deleteAgent).toHaveBeenCalledWith("agent-1", expect.any(Object));
   });
 
-  it("does not call deleteAgent when confirmation cancelled", () => {
-    vi.stubGlobal(
-      "confirm",
-      vi.fn(() => false),
-    );
+  it("does not call deleteAgent when confirmation cancelled", async () => {
     const deleteAgent = vi.fn();
     vi.spyOn(useAgentsHook, "default").mockReturnValue({ ...defaultAgentsHook, deleteAgent });
     renderAgents();
     fireEvent.click(screen.getByTitle("Delete agent"));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: /cancel/i }));
     expect(deleteAgent).not.toHaveBeenCalled();
   });
 
-  it("calls alert when deleteAgent fails", () => {
-    vi.stubGlobal(
-      "confirm",
-      vi.fn(() => true),
-    );
+  it("calls alert when deleteAgent fails", async () => {
     vi.stubGlobal("alert", vi.fn());
     const deleteAgent = vi.fn().mockImplementation((_id, { onError } = {}) => onError?.(new Error("Delete failed")));
     vi.spyOn(useAgentsHook, "default").mockReturnValue({ ...defaultAgentsHook, deleteAgent });
     renderAgents();
     fireEvent.click(screen.getByTitle("Delete agent"));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: /delete agent/i }));
     expect(vi.mocked(window.alert)).toHaveBeenCalledWith("Delete failed");
   });
 });
@@ -465,27 +459,23 @@ describe("Agents create form", () => {
 });
 
 describe("Agents delete confirmation", () => {
-  it("does not call deleteAgent when confirmation cancelled", () => {
-    vi.stubGlobal(
-      "confirm",
-      vi.fn(() => false),
-    );
+  it("does not call deleteAgent when confirmation cancelled", async () => {
     const deleteAgent = vi.fn();
     vi.spyOn(useAgentsHook, "default").mockReturnValue({ ...defaultAgentsHook, deleteAgent });
     renderAgents();
     fireEvent.click(screen.getByTitle("Delete agent"));
+    const cancelBtn = await screen.findByRole("button", { name: /cancel/i });
+    fireEvent.click(cancelBtn);
     expect(deleteAgent).not.toHaveBeenCalled();
   });
 
   it("calls deleteAgent when confirmation accepted", async () => {
-    vi.stubGlobal(
-      "confirm",
-      vi.fn(() => true),
-    );
     const deleteAgent = vi.fn();
     vi.spyOn(useAgentsHook, "default").mockReturnValue({ ...defaultAgentsHook, deleteAgent });
     renderAgents();
     fireEvent.click(screen.getByTitle("Delete agent"));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: /delete agent/i }));
     await waitFor(() => expect(deleteAgent).toHaveBeenCalledWith("agent-1", expect.any(Object)));
   });
 });

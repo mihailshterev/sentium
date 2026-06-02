@@ -35,6 +35,8 @@
     <ProjectReference Include="..\..\src\services\Watchdog\Sentium.Watchdog.Api\Sentium.Watchdog.Api.csproj" />
     <ProjectReference Include="..\..\src\services\AgentRuntime\Sentium.AgentRuntime.Api\Sentium.AgentRuntime.Api.csproj" />
     <ProjectReference Include="..\..\src\services\AgentRuntime\Sentium.AgentRuntime.Infrastructure\Sentium.AgentRuntime.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\services\Identity\Sentium.Identity.Api\Sentium.Identity.Api.csproj" />
+    <ProjectReference Include="..\..\src\services\Registry\Sentium.Registry.Api\Sentium.Registry.Api.csproj" />
   </ItemGroup>
 
 </Project>

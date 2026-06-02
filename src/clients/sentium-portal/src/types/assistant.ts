@@ -19,6 +19,7 @@ export interface ConversationMessage {
   toolCalls?: string[];
   timestamp: Date;
   pendingApproval?: PendingApproval;
+  enhancedPrompt?: string;
 }
 
 export interface ConversationDetail {

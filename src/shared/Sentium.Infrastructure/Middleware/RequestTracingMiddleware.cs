@@ -10,14 +10,14 @@ public class RequestTracingMiddleware(RequestDelegate next)
     {
         ArgumentNullException.ThrowIfNull(context, nameof(context));
 
-        if (!context.Request.Headers.TryGetValue(HeaderNames.CorrelationId, out var correlationId))
+        if (!context.Request.Headers.TryGetValue(CommonHeaderNames.CorrelationId, out var correlationId))
         {
             correlationId = context.TraceIdentifier;
         }
 
-        context.Response.Headers[HeaderNames.CorrelationId] = correlationId;
+        context.Response.Headers[CommonHeaderNames.CorrelationId] = correlationId;
 
-        using (LogContext.PushProperty(HeaderNames.CorrelationId, correlationId))
+        using (LogContext.PushProperty(CommonHeaderNames.CorrelationId, correlationId))
         {
             await next(context);
         }

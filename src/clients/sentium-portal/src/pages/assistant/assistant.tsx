@@ -1,13 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
+import { useParams, useNavigate } from "react-router";
 import styles from "./assistant.module.scss";
-import { ChevronRight, Brain, ChevronDown } from "lucide-react";
-import {
-  fetchConversation,
-  sendChatMessage,
-  approveToolCall,
-  fetchWorkspaces,
-  fetchWorkspaceFiles,
-} from "../../services/agentRuntime.service";
+import { ChevronRight, ChevronDown, BotMessageSquare, Loader } from "lucide-react";
+import { fetchConversation, fetchWorkspaces, fetchWorkspaceFiles } from "../../services/agentRuntime.service";
 import useConversations from "../../hooks/useConversations";
 import useModels from "../../hooks/useModels";
 import type { ConversationMessage, ConversationSummary } from "../../types/assistant";
@@ -20,6 +15,7 @@ import MessageBubble, { STATUS_MESSAGES } from "./components/message-bubble";
 import WelcomeScreen from "./components/welcome-screen";
 import ChatInputBar from "./components/chat-input-bar";
 import ConversationSidebar from "./components/conversation-sidebar";
+import ConfirmDialog from "../../components/ui/confirm-dialog";
 
 type ContextPill = { type: "workspace" | "file"; id: string; label: string };
 
@@ -58,12 +54,13 @@ const Assistant = () => {
     activeConversationId,
     messages,
     model,
+    isStreaming,
+    streamingConversationId,
     setActiveConversation,
-    appendMessage,
-    updateLastMessage,
-    clearPendingApproval,
     setModel,
-    clearConversation,
+    sendMessage,
+    respondToApproval,
+    stopStreaming,
   } = useConversationStore();
 
   const {
@@ -75,8 +72,10 @@ const Assistant = () => {
 
   const { models } = useModels();
 
+  const { conversationId: routeConversationId } = useParams<{ conversationId?: string }>();
+  const navigate = useNavigate();
+
   const [input, setInput] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [expandedThoughts, setExpandedThoughts] = useState<Set<string>>(new Set());
   const [wsContextOpen, setWsContextOpen] = useState(false);
@@ -86,6 +85,9 @@ const Assistant = () => {
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [statusIndex, setStatusIndex] = useState(0);
   const [statusVisible, setStatusVisible] = useState(true);
+
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [conversationToDelete, setConversationToDelete] = useState<string | null>(null);
 
   const toggleThought = (id: string) =>
     setExpandedThoughts((prev) => {
@@ -100,8 +102,9 @@ const Assistant = () => {
 
   const chatAreaRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const abortControllerRef = useRef<AbortController | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const isTyping = isStreaming && streamingConversationId === activeConversationId;
 
   const scrollToBottom = useCallback(() => {
     if (chatAreaRef.current) {
@@ -137,6 +140,54 @@ const Assistant = () => {
       setModel(models[0]);
     }
   }, [models, model, setModel]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (routeConversationId) {
+      if (routeConversationId === activeConversationId) {
+        return;
+      }
+      if (isStreaming && streamingConversationId === routeConversationId) {
+        return;
+      }
+      fetchConversation(routeConversationId)
+        .then((data) => {
+          if (cancelled) {
+            return;
+          }
+          const loadedMessages: ConversationMessage[] = (data.messages ?? []).map(
+            (m: {
+              id: string;
+              role: "user" | "assistant";
+              content: string;
+              timestamp: string;
+              enhancedPrompt?: string;
+              thought?: string;
+              toolCalls?: string[];
+            }) => ({
+              id: m.id,
+              role: m.role,
+              content: m.content,
+              enhancedPrompt: m.enhancedPrompt,
+              thought: m.thought,
+              toolCalls: m.toolCalls,
+              timestamp: new Date(m.timestamp),
+            }),
+          );
+          setActiveConversation(routeConversationId, loadedMessages, data.model);
+          setModel(data.model);
+        })
+        .catch(() => {
+          if (!cancelled) {
+            navigate("/assistant", { replace: true });
+          }
+        });
+    }
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [routeConversationId]);
 
   useEffect(() => {
     if (!isTyping) {
@@ -208,30 +259,9 @@ const Assistant = () => {
     }
   };
 
-  const loadConversation = async (conv: ConversationSummary) => {
-    try {
-      const data = await fetchConversation(conv.id);
-      const loadedMessages: ConversationMessage[] = (data.messages ?? []).map(
-        (m: {
-          id: string;
-          role: "user" | "assistant";
-          content: string;
-          timestamp: string;
-          thought?: string;
-          toolCalls?: string[];
-        }) => ({
-          id: m.id,
-          role: m.role,
-          content: m.content,
-          thought: m.thought,
-          toolCalls: m.toolCalls,
-          timestamp: new Date(m.timestamp),
-        }),
-      );
-      setActiveConversation(conv.id, loadedMessages, conv.model);
-      setModel(conv.model);
-    } catch {
-      // non-blocking
+  const loadConversation = (conv: ConversationSummary) => {
+    if (conv.id !== activeConversationId) {
+      navigate(`/assistant/${conv.id}`);
     }
   };
 
@@ -248,6 +278,7 @@ const Assistant = () => {
     try {
       const data = await createConversation({ title, model });
       setActiveConversation(data.id, [], model);
+      navigate(`/assistant/${data.id}`);
       return data.id;
     } catch {
       return null;
@@ -256,104 +287,42 @@ const Assistant = () => {
 
   const deleteConversation = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    deleteConversationMutate(id, {
+    setConversationToDelete(id);
+    setIsConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (!conversationToDelete) return;
+
+    deleteConversationMutate(conversationToDelete, {
       onSuccess: () => {
-        if (activeConversationId === id) {
-          clearConversation();
+        if (activeConversationId === conversationToDelete) {
+          setActiveConversation(null, [], model);
+          navigate("/assistant");
         }
+        setIsConfirmOpen(false);
+        setConversationToDelete(null);
+      },
+      onError: () => {
+        setIsConfirmOpen(false);
+        setConversationToDelete(null);
       },
     });
   };
 
-  const handleStop = () => {
-    abortControllerRef.current?.abort();
+  const handleCancelDelete = () => {
+    setIsConfirmOpen(false);
+    setConversationToDelete(null);
   };
 
-  const handleApproval = async (aiMsgId: string, requestId: string, approved: boolean) => {
-    clearPendingApproval(aiMsgId);
-    setIsTyping(true);
+  const handleStop = () => {
+    stopStreaming();
+  };
 
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
-
-    try {
-      const response = await approveToolCall(requestId, approved, controller.signal);
-
-      if (!response.ok) {
-        throw new Error("Approval response failed");
-      }
-
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder("utf-8");
-      if (!reader) {
-        throw new Error("Failed to read stream");
-      }
-
-      let leftover = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) {
-          break;
-        }
-
-        const chunk = leftover + decoder.decode(value, { stream: true });
-        const lines = chunk.split("\n");
-        leftover = lines.pop() || "";
-
-        for (const line of lines) {
-          let trimmed = line.trim();
-          if (!trimmed) {
-            continue;
-          }
-
-          if (trimmed.startsWith("data: ")) {
-            trimmed = trimmed.slice(6).trim();
-          }
-
-          if (!trimmed) {
-            continue;
-          }
-
-          try {
-            const parsed = JSON.parse(trimmed);
-
-            if (parsed.type === "done") {
-              break;
-            }
-
-            if (parsed.type === "error") {
-              throw new Error(parsed.message || "Connection to AI node failed.");
-            }
-
-            const content = parsed.message?.content;
-            if (parsed.type === "approval_request") {
-              updateLastMessage(aiMsgId, content, "approval");
-              setIsTyping(false);
-              return;
-            }
-            if (content) {
-              if (parsed.type === "thought") {
-                updateLastMessage(aiMsgId, content, "thought");
-              } else if (parsed.type === "tool") {
-                updateLastMessage(aiMsgId, content, "tool");
-              } else {
-                updateLastMessage(aiMsgId, content, "content");
-              }
-            }
-          } catch {
-            // ignore parse errors
-          }
-        }
-      }
-    } catch (err) {
-      if (err instanceof Error && err.name !== "AbortError") {
-        updateLastMessage(aiMsgId, "\n\n_Error: Failed to process approval._");
-      }
-    } finally {
-      setIsTyping(false);
-      abortControllerRef.current = null;
-    }
+  const handleApproval = (aiMsgId: string, requestId: string, approved: boolean) => {
+    setStatusIndex(0);
+    setStatusVisible(true);
+    void respondToApproval({ aiMsgId, requestId, approved });
   };
 
   const submitMessage = async () => {
@@ -374,14 +343,6 @@ const Assistant = () => {
       .join(" ");
     const userContent = pillPrefix ? (input.trim() ? `${pillPrefix} ${input.trim()}` : pillPrefix) : input.trim();
 
-    const userMsg: ConversationMessage = {
-      id: Date.now().toString(),
-      role: "user",
-      content: userContent,
-      timestamp: new Date(),
-    };
-
-    appendMessage(userMsg);
     setInput("");
     setContextPills([]);
     if (textareaRef.current) {
@@ -389,115 +350,8 @@ const Assistant = () => {
     }
     setStatusIndex(0);
     setStatusVisible(true);
-    setIsTyping(true);
 
-    const aiMsgId = (Date.now() + 1).toString();
-    appendMessage({
-      id: aiMsgId,
-      role: "assistant",
-      content: "",
-      timestamp: new Date(),
-    });
-
-    const chatHistory = [...messages, userMsg].map((msg: ConversationMessage) => ({
-      role: msg.role,
-      content: msg.content,
-    }));
-
-    const controller = new AbortController();
-    abortControllerRef.current = controller;
-
-    try {
-      const response = await sendChatMessage(
-        {
-          conversationId: conversationId ?? undefined,
-          model,
-          messages: chatHistory,
-          stream: true,
-        },
-        controller.signal,
-      );
-
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
-
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder("utf-8");
-      if (!reader) {
-        throw new Error("Failed to read stream");
-      }
-
-      let leftover = "";
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) {
-          break;
-        }
-
-        const chunk = leftover + decoder.decode(value, { stream: true });
-        const lines = chunk.split("\n");
-
-        leftover = lines.pop() || "";
-
-        for (const line of lines) {
-          let trimmed = line.trim();
-          if (!trimmed) {
-            continue;
-          }
-
-          if (trimmed.startsWith("data: ")) {
-            trimmed = trimmed.slice(6).trim();
-          }
-
-          if (!trimmed) {
-            continue;
-          }
-
-          try {
-            const parsed = JSON.parse(trimmed);
-
-            if (parsed.type === "done") {
-              break;
-            }
-
-            if (parsed.type === "error") {
-              throw new Error(parsed.message || "Execution exception context");
-            }
-
-            const content = parsed.message?.content;
-
-            if (parsed.type === "approval_request") {
-              updateLastMessage(aiMsgId, content, "approval");
-              setIsTyping(false);
-              return;
-            }
-
-            if (content) {
-              if (parsed.type === "thought") {
-                updateLastMessage(aiMsgId, content, "thought");
-              } else if (parsed.type === "tool") {
-                updateLastMessage(aiMsgId, content, "tool");
-              } else {
-                updateLastMessage(aiMsgId, content, "content");
-              }
-            }
-          } catch (err) {
-            console.error("Stream parse error:", err);
-          }
-        }
-      }
-    } catch (err) {
-      if (err instanceof Error && err.name === "AbortError") {
-        // User stopped generation — not an error
-      } else {
-        updateLastMessage(aiMsgId, "\n\n_Error: Connection to AI node failed._");
-      }
-    } finally {
-      setIsTyping(false);
-      abortControllerRef.current = null;
-    }
+    void sendMessage({ conversationId, model, userContent });
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -525,6 +379,7 @@ const Assistant = () => {
   };
 
   const isEmpty = messages.length === 0 && !isTyping;
+  const isLoadingConversation = !!routeConversationId && routeConversationId !== activeConversationId;
   const conversationGroups = groupConversationsByDate(conversations);
 
   const resizeTextareaOnInput = (value: string) => {
@@ -539,7 +394,7 @@ const Assistant = () => {
     <div className={styles.container}>
       <div className={styles.chatWrapper}>
         <PageHeader
-          icon={<Brain size={20} className={styles.headerIcon} />}
+          icon={<BotMessageSquare size={20} className={styles.headerIcon} />}
           title="Assistant"
           subtitle="Chat with the Sentium assistant"
           right={
@@ -566,7 +421,12 @@ const Assistant = () => {
         />
 
         <div className={styles.chatArea} ref={chatAreaRef}>
-          {isEmpty ? (
+          {isLoadingConversation ? (
+            <div className={styles.loadingConversation}>
+              <Loader size={22} className={styles.statusSpinner} />
+              <span>Loading conversation…</span>
+            </div>
+          ) : isEmpty ? (
             <WelcomeScreen suggestions={randomizedSuggestions} onSelectSuggestion={(s) => setInput(s)} />
           ) : (
             <div className={styles.messagesArea}>
@@ -612,7 +472,7 @@ const Assistant = () => {
         isOpen={sidebarOpen}
         conversations={conversations}
         conversationGroups={conversationGroups}
-        activeConversationId={activeConversationId}
+        activeConversationId={routeConversationId ?? activeConversationId}
         model={model}
         models={models}
         isCreating={isCreating}
@@ -628,6 +488,17 @@ const Assistant = () => {
         onToggleExpandWorkspace={(wsId) => setExpandedWorkspace((v) => (v === wsId ? null : wsId))}
         onInjectWorkspaceContext={injectWorkspaceContext}
         onInjectFileContext={injectFileContext}
+      />
+
+      <ConfirmDialog
+        open={isConfirmOpen}
+        variant="danger"
+        title="Delete Conversation"
+        description="Are you sure you want to delete this conversation? This action cannot be undone."
+        confirmLabel="Delete Chat"
+        cancelLabel="Cancel"
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
       />
     </div>
   );

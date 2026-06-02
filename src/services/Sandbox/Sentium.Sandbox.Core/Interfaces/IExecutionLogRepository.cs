@@ -14,7 +14,18 @@ public interface IExecutionLogRepository
     Task AddAsync(ExecutionLogEntry entry, CancellationToken ct = default);
 
     /// <summary>
-    /// Returns the most recent <paramref name="count"/> entries, newest first.
+    /// Returns a page of entries (newest first) matching the supplied filter, along with the
+    /// total number of entries that match (ignoring paging).
     /// </summary>
-    Task<IReadOnlyList<ExecutionLogEntry>> GetRecentAsync(int count = 100, CancellationToken ct = default);
+    Task<(IReadOnlyList<ExecutionLogEntry> Items, int TotalCount)> GetPagedAsync(ExecutionLogQuery query, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns a single entry by its job id, or <c>null</c> if no such entry exists.
+    /// </summary>
+    Task<ExecutionLogEntry?> GetByIdAsync(Guid jobId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns aggregate outcome counts across all recorded executions.
+    /// </summary>
+    Task<ExecutionLogStats> GetStatsAsync(CancellationToken ct = default);
 }

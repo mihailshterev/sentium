@@ -12,20 +12,18 @@ namespace Sentium.Identity.Api.Controllers;
 [Authorize(Roles = Roles.Sovereign)]
 public sealed class RolesController(IRoleService roleService) : ControllerBase
 {
+    private static readonly IReadOnlyList<object> CachedRoles =
+        Roles.Hierarchy
+            .Select(r => (object)new { Name = r, Permissions = Permissions.GetPermissions(r).ToList() })
+            .ToList();
+
     /// <summary>
     /// Returns all defined system roles and their associated permission sets.
     /// </summary>
     /// <response code="200">Returns the full list of roles and permissions.</response>
     [HttpGet]
     [ProducesResponseType(typeof(IEnumerable<object>), StatusCodes.Status200OK)]
-    public IActionResult GetRoles()
-    {
-        var roles = Roles.Hierarchy
-            .Select(r => new { Name = r, Permissions = Permissions.GetPermissions(r).ToList() })
-            .ToList();
-
-        return Ok(roles);
-    }
+    public IActionResult GetRoles() => Ok(CachedRoles);
 
     /// <summary>
     /// Returns the roles currently assigned to a specific user.
@@ -60,6 +58,8 @@ public sealed class RolesController(IRoleService roleService) : ControllerBase
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> AssignRole([FromBody] AssignRoleRequest request, CancellationToken ct)
     {
+        ArgumentNullException.ThrowIfNull(request);
+
         var requesterId = GetCurrentUserId();
         if (requesterId is null)
         {
@@ -89,6 +89,8 @@ public sealed class RolesController(IRoleService roleService) : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> RemoveRole([FromBody] RemoveRoleRequest request, CancellationToken ct)
     {
+        ArgumentNullException.ThrowIfNull(request);
+
         var requesterId = GetCurrentUserId();
         if (requesterId is null)
         {

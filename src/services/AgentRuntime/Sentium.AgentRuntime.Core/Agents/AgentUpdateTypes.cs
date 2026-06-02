@@ -7,4 +7,5 @@ public static class AgentUpdateTypes
     public const string ApprovalRequest = "approval_request";
     public const string Thought = "thought";
     public const string Done = "done";
+    public const string EnhancedPrompt = "enhanced_prompt";
 }

@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Check, Loader, Pencil, Trash2, X } from "lucide-react";
+import { Check, Globe, Loader, Lock, Pencil, Trash2, X } from "lucide-react";
 import styles from "../knowledge-base.module.scss";
+import ConfirmDialog from "../../../components/ui/confirm-dialog";
 
 interface LearningCardProps {
   learning: {
@@ -10,6 +11,7 @@ interface LearningCardProps {
     tags: string;
     capturedAt: string;
     isIngested: boolean;
+    isGlobal: boolean;
   };
   isSaving: boolean;
   isDeleting: boolean;
@@ -22,6 +24,8 @@ const LearningCard = ({ learning: l, isSaving, isDeleting, onSave, onDelete, for
   const [editing, setEditing] = useState(false);
   const [editContent, setEditContent] = useState(l.content);
   const [editTags, setEditTags] = useState(l.tags);
+
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
   const handleEdit = () => {
     setEditContent(l.content);
@@ -39,8 +43,15 @@ const LearningCard = ({ learning: l, isSaving, isDeleting, onSave, onDelete, for
     setEditing(false);
   };
 
+  const handleConfirmDelete = () => {
+    setIsConfirmOpen(false);
+    onDelete();
+  };
+
   return (
-    <div className={`${styles.learningCard} ${editing ? styles.learningCardEditing : ""}`}>
+    <div
+      className={`${styles.learningCard} ${editing ? styles.learningCardEditing : ""} ${l.isGlobal ? styles.learningCardGlobal : ""}`}
+    >
       <div className={styles.learningCardHeader}>
         <div className={styles.learningMeta}>
           <span className={styles.agentBadge}>{l.agentName}</span>
@@ -54,6 +65,13 @@ const LearningCard = ({ learning: l, isSaving, isDeleting, onSave, onDelete, for
                   {tag.trim()}
                 </span>
               ))}
+          <span
+            className={l.isGlobal ? styles.pillCyan : styles.pillMuted}
+            title={l.isGlobal ? "Validated and shared with all users' agents" : "Private to your agents"}
+          >
+            {l.isGlobal ? <Globe size={10} /> : <Lock size={10} />}
+            {l.isGlobal ? "Global" : "Private"}
+          </span>
           <span className={l.isIngested ? styles.pillGreen : styles.pillAmber}>
             {l.isIngested ? "Indexed" : "Pending"}
           </span>
@@ -72,10 +90,10 @@ const LearningCard = ({ learning: l, isSaving, isDeleting, onSave, onDelete, for
           <button
             className={`${styles.btnIcon} ${styles.btnIconDanger}`}
             disabled={isDeleting || isSaving}
-            onClick={onDelete}
+            onClick={() => setIsConfirmOpen(true)}
             title="Delete learning"
           >
-            <Trash2 size={13} />
+            {isDeleting ? <Loader size={13} className={styles.spin} /> : <Trash2 size={13} />}
           </button>
         </div>
       </div>
@@ -110,6 +128,17 @@ const LearningCard = ({ learning: l, isSaving, isDeleting, onSave, onDelete, for
       ) : (
         <div className={styles.learningContent}>{l.content}</div>
       )}
+
+      <ConfirmDialog
+        open={isConfirmOpen}
+        variant="danger"
+        title="Delete Knowledge Record"
+        description="Are you sure you want to delete this captured memory item? This cannot be undone and will remove it from the agent's contextual knowledge base."
+        confirmLabel="Delete Item"
+        cancelLabel="Cancel"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setIsConfirmOpen(false)}
+      />
     </div>
   );
 };

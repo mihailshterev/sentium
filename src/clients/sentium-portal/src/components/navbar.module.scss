@@ -1,14 +1,15 @@
 .nav {
   display: flex;
   flex-direction: column;
-  width: 220px;
+  width: 224px;
   height: 100vh;
   background: var(--glass-bg);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border-right: 1px solid var(--border-subtle);
+  backdrop-filter: blur(var(--blur-md)) saturate(140%);
+  -webkit-backdrop-filter: blur(var(--blur-md)) saturate(140%);
+  border-right: 1px solid var(--glass-border);
   flex-shrink: 0;
-  z-index: 10;
+  position: relative;
+  z-index: var(--z-nav);
 }
 
 .navBrand {
@@ -17,22 +18,22 @@
   gap: 12px;
   height: 64px;
   padding: 0 1.25rem;
-  border-bottom: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--glass-border);
   flex-shrink: 0;
 }
 
 .brandIcon {
   width: 32px;
   height: 32px;
-  border-radius: 8px;
-  background: var(--accent-green-subtle);
-  border: 1px solid rgba(34, 197, 94, 0.2);
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--accent-green-subtle), var(--accent-cyan-subtle));
+  border: 1px solid var(--accent-green-border);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--accent-green);
+  color: var(--accent);
   flex-shrink: 0;
-  box-shadow: 0 0 12px rgba(34, 197, 94, 0.12);
+  box-shadow: 0 0 16px var(--accent-green-subtle);
 }
 
 .brandText {
@@ -42,11 +43,14 @@
 }
 
 .brandName {
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font-mono);
   font-size: 0.8rem;
   font-weight: 700;
   letter-spacing: 3px;
-  color: var(--text-primary);
+  background: linear-gradient(90deg, var(--text-primary), var(--accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .brandStatus {
@@ -56,15 +60,16 @@
   font-size: 0.6rem;
   font-weight: 600;
   letter-spacing: 1.5px;
-  color: var(--accent-green);
-  opacity: 0.8;
+  color: var(--accent);
+  opacity: 0.85;
 }
 
 .navSection {
-  padding: 0rem 0.75rem 0.5rem;
+  padding: 0 0.75rem 0.5rem;
   flex: 1;
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
 }
 
 .navSectionLabel {
@@ -92,7 +97,7 @@
   font-size: 0.82rem;
   font-weight: 500;
   padding: 0.55rem 0.75rem;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   transition: all var(--transition-base);
   text-decoration: none;
   position: relative;
@@ -107,6 +112,17 @@
     transform var(--transition-base);
 }
 
+.activityDot {
+  margin-left: auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent-glow);
+  flex-shrink: 0;
+  animation: statusPulse 2s ease-in-out infinite;
+}
+
 .navLink:hover {
   color: var(--text-primary);
   background: var(--bg-hover);
@@ -119,15 +135,16 @@
 }
 
 .navLink.active {
-  color: var(--accent-green);
+  color: var(--accent);
   background: var(--accent-green-subtle);
   font-weight: 600;
-  border-left-color: var(--accent-green);
+  border-left-color: var(--accent);
+  box-shadow: inset 0 0 18px -8px var(--accent-glow);
 }
 
 .navLink.active .navIcon {
   opacity: 1;
-  color: var(--accent-green);
+  color: var(--accent);
 }
 
 .navSectionBottom {
@@ -139,15 +156,19 @@
 }
 
 .navFooter {
-  padding: 1rem 1.25rem;
-  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.85rem 1.25rem;
+  border-top: 1px solid var(--glass-border);
 }
 
 .buildInfo {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-family: "JetBrains Mono", monospace;
+  font-family: var(--font-mono);
   font-size: 0.62rem;
   color: var(--text-muted);
   letter-spacing: 0.5px;
@@ -157,7 +178,8 @@
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: var(--text-dim);
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent-glow);
   flex-shrink: 0;
 }
 
@@ -167,7 +189,7 @@
   gap: 10px;
   width: 100%;
   padding: 0.55rem 0.75rem;
-  border-radius: 8px;
+  border-radius: var(--radius-sm);
   border: none;
   background: transparent;
   color: var(--text-secondary);
@@ -194,20 +216,7 @@
 .navDivider {
   height: 1px;
   margin: 12px 16px;
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.1) 50%,
-    rgba(255, 255, 255, 0) 100%
-  );
-  &::after {
-    display: none;
-    content: attr(data-label);
-    font-size: 10px;
-    color: #666;
-    text-transform: uppercase;
-    margin-top: 4px;
-  }
+  background: linear-gradient(90deg, transparent 0%, var(--glass-border) 50%, transparent 100%);
 }
 
 .userCard {
@@ -216,11 +225,11 @@
   gap: 0.65rem;
   padding: 0.75rem 1rem;
   margin: 0.5rem 0.75rem 0;
-  border-radius: 9px;
-  border: 1px solid var(--border-subtle);
-  background: rgba(255, 255, 255, 0.02);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--glass-border);
+  background: var(--glass-highlight);
   text-decoration: none;
-  transition: all 0.15s;
+  transition: all var(--transition-base);
 
   &:hover {
     background: var(--bg-hover);
@@ -229,12 +238,12 @@
 }
 
 .userCardActive {
-  border-color: rgba(34, 197, 94, 0.3);
+  border-color: var(--accent-green-border);
   background: var(--accent-green-subtle);
 
   .userAvatar {
-    color: var(--accent-green);
-    border-color: rgba(34, 197, 94, 0.3);
+    color: var(--accent);
+    border-color: var(--accent-green-border);
   }
 }
 
@@ -242,7 +251,7 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--bg-elevated);
   border: 1px solid var(--border-subtle);
   display: flex;
   align-items: center;
@@ -271,29 +280,30 @@
 .userRoleBadge {
   font-size: 0.62rem;
   padding: 0.08rem 0.4rem;
-  border-radius: 3px;
+  border-radius: var(--radius-xs);
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   align-self: flex-start;
+  border: 1px solid transparent;
 }
 
 .roleColor_sovereign {
-  background: rgba(250, 204, 21, 0.12);
-  color: #fbbf24;
-  border: 1px solid rgba(250, 204, 21, 0.25);
+  background: var(--accent-amber-subtle);
+  color: var(--accent-amber);
+  border-color: var(--accent-amber-border);
 }
 
 .roleColor_member {
-  background: rgba(59, 130, 246, 0.12);
-  color: #60a5fa;
-  border: 1px solid rgba(59, 130, 246, 0.25);
+  background: var(--accent-blue-subtle);
+  color: var(--accent-blue);
+  border-color: var(--accent-blue-border);
 }
 
 .roleColor_guest {
-  background: rgba(148, 163, 184, 0.12);
-  color: #94a3b8;
-  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  border-color: var(--border-color);
 }
 
 .groupLabel {

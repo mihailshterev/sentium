@@ -8,4 +8,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Agents.AI" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\shared\Sentium.Shared\Sentium.Shared.csproj" />
+  </ItemGroup>
 </Project>

@@ -5,15 +5,20 @@ namespace Sentium.AgentRuntime.Core.Entities;
 /// </summary>
 /// <remarks>
 /// Workspaces provide a logical grouping mechanism for files that the agent can access and process.
-/// Each workspace can contain multiple files (see <see cref="ProjectFile"/>) and is associated with 
+/// Each workspace can contain multiple files (see <see cref="ProjectFile"/>) and is associated with
 /// file uploads, RAG (Retrieval-Augmented Generation) ingestion, and agent context management.
 /// </remarks>
-public sealed class Workspace
+public sealed class Workspace : IUserOwned
 {
     /// <summary>
     /// Gets or sets the unique identifier for this workspace.
     /// </summary>
     public Guid Id { get; set; }
+
+    /// <summary>
+    /// Gets or sets the id of the user who owns this workspace.
+    /// </summary>
+    public Guid UserId { get; set; }
 
     /// <summary>
     /// Gets or sets the name of the workspace.
