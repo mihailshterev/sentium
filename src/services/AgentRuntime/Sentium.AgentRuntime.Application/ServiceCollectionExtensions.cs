@@ -35,10 +35,7 @@ public static class ServiceCollectionExtensions
     {
         RegisterAgent<GeneralAssistant>(services, AgentRole.GeneralAssistant);
         RegisterAgent<PlannerAgent>(services, AgentRole.Planner);
-        RegisterAgent<SecurityAnalyst>(services, AgentRole.SecurityAnalyst);
         RegisterAgent<SummaryAgent>(services, AgentRole.Summarizer);
-        RegisterAgent<ThreatIntelAgent>(services, AgentRole.ThreatIntel);
-        RegisterAgent<ForensicsAgent>(services, AgentRole.Forensics);
         RegisterAgent<ValidationAgent>(services, AgentRole.Validator);
     }
 
