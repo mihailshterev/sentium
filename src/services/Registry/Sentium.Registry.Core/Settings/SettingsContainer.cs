@@ -27,8 +27,8 @@ public sealed class HarnessSettings
     public bool IsBuiltInHarnessEnabled { get; set; } = true;
 
     /// <summary>
-    /// When true (default) the user's prompt is rewritten by a fast pre-execution enhancement pass
+    /// When true the user's prompt is rewritten by a fast pre-execution enhancement pass
     /// before the agent runs, to improve results from smaller local models.
     /// </summary>
-    public bool IsPromptEnhancementEnabled { get; set; } = true;
+    public bool IsPromptEnhancementEnabled { get; set; } = false;
 }

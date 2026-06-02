@@ -13,7 +13,7 @@ public sealed record SettingsSnapshot(HarnessSettingsSnapshot Harness)
         Harness: new HarnessSettingsSnapshot(
             UserHarnessPrompt: string.Empty,
             IsBuiltInHarnessEnabled: true,
-            IsPromptEnhancementEnabled: true)
+            IsPromptEnhancementEnabled: false)
     );
 }
 
