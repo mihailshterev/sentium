@@ -1,15 +1,12 @@
-using System.Text;
 using System.Text.Json;
 using Sentium.AgentRuntime.Application.Common.Helpers;
 using Sentium.AgentRuntime.Application.Extensions;
 using Sentium.AgentRuntime.Core.Agents;
+using AgentResponse = Sentium.AgentRuntime.Core.Dtos.AgentResponse;
 using Sentium.AgentRuntime.Core.WorkflowManagement;
 using Sentium.AgentRuntime.Core.Workflows;
 using Sentium.Infrastructure.Messaging;
 using Microsoft.Agents.AI;
-using Microsoft.Agents.AI.Workflows;
-using Microsoft.Extensions.AI;
-using ChatMessage = Microsoft.Extensions.AI.ChatMessage;
 
 namespace Sentium.AgentRuntime.Application.Workflows;
 
@@ -37,9 +34,7 @@ public sealed class DynamicCustomWorkflow(
             return new WorkflowResult { Explanation = "Custom workflow trigger is missing a valid workflowId." };
         }
 
-        if (root.TryGetProperty("workspaceId", out var wsProp)
-            && wsProp.ValueKind == JsonValueKind.String
-            && Guid.TryParse(wsProp.GetString(), out _))
+        if (root.TryGetProperty("workspaceId", out var wsProp) && wsProp.ValueKind == JsonValueKind.String && Guid.TryParse(wsProp.GetString(), out _))
         {
             activity = $"{activity}\n\n[Workspace context: ID = {wsProp.GetString()}. Use list_workspaces and list_workspace_files tools to discover and read files in this workspace before answering.]";
         }
@@ -57,79 +52,54 @@ public sealed class DynamicCustomWorkflow(
             return new WorkflowResult { Explanation = $"Workflow '{workflowDef.Name}' has no agents configured." };
         }
 
-        var squadAgents = new List<AIAgent>();
+        var resolved = new List<AgentResponse>();
         foreach (var agentRef in orderedRefs)
         {
             var agentDetails = await agentRepository.GetAgentByIdAsync(agentRef.AgentId, ct);
-            if (agentDetails is null)
+            if (agentDetails is not null)
             {
-                continue;
+                resolved.Add(agentDetails);
             }
-
-            var agentModel = !string.IsNullOrWhiteSpace(agentDetails.Model) ? agentDetails.Model : null;
-            var agent = await factory.CreateAsync(agentDetails.Name, overrideInstructions: agentDetails.Description, overrideModel: agentModel, actingUserId: trigger.UserId, ct: ct);
-            squadAgents.Add(agent);
         }
 
-        var squadWorkflow = AgentWorkflowBuilder.BuildSequential($"custom-{workflowDef.Name}", squadAgents);
-        var messages = new List<ChatMessage> { new(ChatRole.User, activity) };
+        var rosterNames = resolved.Select(a => a.Name).ToList();
 
-        await using var run = await InProcessExecution.RunStreamingAsync(squadWorkflow, messages, cancellationToken: ct);
-        await run.TrySendMessageAsync(new TurnToken(emitEvents: true));
+        var squadAgents = new List<AIAgent>();
+        var roster = new List<SquadMember>();
+
+        for (var i = 0; i < resolved.Count; i++)
+        {
+            var agentDetails = resolved[i];
+            var agentModel = !string.IsNullOrWhiteSpace(agentDetails.Model) ? agentDetails.Model : null;
+
+            var directive = SquadCollaborationPrompt.Build(agentDetails.Name, assignment: null, i + 1, resolved.Count, rosterNames);
+            var instructions = $"{agentDetails.Description}\n\n{directive}";
+
+            var agent = await factory.CreateAsync(agentDetails.Name, overrideInstructions: instructions, overrideModel: agentModel, actingUserId: trigger.UserId, ct: ct);
+            squadAgents.Add(agent);
+
+            roster.Add(new SquadMember(agentDetails.Name, agentDetails.Description));
+        }
 
         var streamLog = new StreamLogAccumulator();
-        List<ChatMessage> finalHistory = [];
 
-        await foreach (var evt in run.WatchStreamAsync(ct).ConfigureAwait(false).WithCancellation(ct))
+        var duplicateNames = roster
+            .GroupBy(r => r.Name, StringComparer.OrdinalIgnoreCase)
+            .Where(g => g.Count() > 1)
+            .Select(g => g.Key)
+            .ToList();
+
+        if (duplicateNames.Count > 0)
         {
-            if (evt is AgentResponseUpdateEvent e)
-            {
-                var author = e.Update.AuthorName ?? workflowDef.Name;
-
-                if (e.Update.Contents.OfType<TextReasoningContent>().FirstOrDefault() is { } reasoning && !string.IsNullOrEmpty(reasoning.Text))
-                {
-                    await nats.StreamAgentUpdateAsync(trigger.TriggerType, author, reasoning.Text, AgentUpdateTypes.Thought, ct);
-                    streamLog.Add(author, reasoning.Text, AgentUpdateTypes.Thought);
-                }
-
-                foreach (var call in e.Update.Contents.OfType<FunctionCallContent>())
-                {
-                    var toolLabel = $"Calling {call.Name}...";
-                    await nats.StreamAgentUpdateAsync(trigger.TriggerType, author, toolLabel, AgentUpdateTypes.Tool, ct);
-                    streamLog.Add(author, toolLabel, AgentUpdateTypes.Tool);
-                }
-
-                if (!string.IsNullOrEmpty(e.Update.Text))
-                {
-                    await nats.StreamAgentUpdateAsync(trigger.TriggerType, author, e.Update.Text, ct);
-                    streamLog.Add(author, e.Update.Text, AgentUpdateTypes.Message);
-                }
-            }
-            else if (evt is WorkflowOutputEvent outputEvt)
-            {
-                finalHistory = outputEvt.As<List<ChatMessage>>()!;
-            }
+            var warning = $"Warning: workflow '{workflowDef.Name}' has duplicate agent names ({string.Join(", ", duplicateNames)}). Targeted re-runs and per-agent attribution may be unreliable - give each agent a unique name.";
+            await nats.StreamAgentUpdateAsync(trigger.TriggerType, "System", warning, AgentUpdateTypes.Status, ct);
+            streamLog.Add("System", warning, AgentUpdateTypes.Status);
         }
 
-        string explanation;
-        if (finalHistory.Count > 0)
-        {
-            var explanationSb = new StringBuilder();
-            foreach (var m in finalHistory)
-            {
-                if (explanationSb.Length > 0)
-                {
-                    explanationSb.Append('\n');
-                }
+        var loop = new AgenticRefinementLoop(factory, nats);
+        var outcome = await loop.RunAsync(trigger, $"custom-{workflowDef.Name}", squadAgents, activity, streamLog, ct, roster);
 
-                explanationSb.Append(m.Role).Append(": ").Append(m.Text);
-            }
-            explanation = explanationSb.ToString();
-        }
-        else
-        {
-            explanation = $"Custom workflow '{workflowDef.Name}' completed with no output.";
-        }
+        var explanation = string.IsNullOrWhiteSpace(outcome.SquadText) ? $"Custom workflow '{workflowDef.Name}' completed with no output." : outcome.SquadText;
 
         return new WorkflowResult
         {

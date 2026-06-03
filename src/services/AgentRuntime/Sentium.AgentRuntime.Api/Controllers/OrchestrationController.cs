@@ -123,10 +123,33 @@ public sealed class OrchestrationController(
         await Response.WriteAsync($"data: {init}\n\n", ct);
         await Response.Body.FlushAsync(ct);
 
+        var enumerator = eventBus
+            .SubscribeStreamAsync($"stream.{eventId}", serializer: NatsJsonSerializer<AgentStreamUpdate>.Default, ct: ct)
+            .GetAsyncEnumerator(ct);
+
         try
         {
-            await foreach (var msg in eventBus.SubscribeStreamAsync($"stream.{eventId}", serializer: NatsJsonSerializer<AgentStreamUpdate>.Default, ct: ct))
+            while (true)
             {
+                var moveNextTask = enumerator.MoveNextAsync().AsTask();
+
+                while (!moveNextTask.IsCompleted)
+                {
+                    await Task.WhenAny(moveNextTask, Task.Delay(TimeSpan.FromSeconds(20), ct));
+                    if (!moveNextTask.IsCompleted && !ct.IsCancellationRequested)
+                    {
+                        await Response.WriteAsync(": heartbeat\n\n", ct);
+                        await Response.Body.FlushAsync(ct);
+                    }
+                }
+
+                if (!await moveNextTask)
+                {
+                    break;
+                }
+
+                var msg = enumerator.Current;
+
                 if (msg.Data is null)
                 {
                     continue;
@@ -134,6 +157,9 @@ public sealed class OrchestrationController(
 
                 if (msg.Data.Type == AgentUpdateTypes.Done)
                 {
+                    var doneJson = JsonSerializer.Serialize(new { type = AgentUpdateTypes.Done });
+                    await Response.WriteAsync($"data: {doneJson}\n\n", ct);
+                    await Response.Body.FlushAsync(ct);
                     break;
                 }
 
@@ -153,16 +179,25 @@ public sealed class OrchestrationController(
             {
                 logger.LogInformation("Client disconnected from stream {EventId}", eventId);
             }
-            return;
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Error while streaming agent execution for event {EventId}: {Message}", eventId, ex.Message);
-            var errorPayload = JsonSerializer.Serialize(new AgentStreamUpdate("System", $"Error: {ex.Message}"));
-            await Response.WriteAsync($"data: {errorPayload}\n\n", ct);
-            await Response.Body.FlushAsync(ct);
+            try
+            {
+                var errorPayload = JsonSerializer.Serialize(new AgentStreamUpdate("System", $"Error: {ex.Message}"));
+                await Response.WriteAsync($"data: {errorPayload}\n\n", ct);
+                await Response.Body.FlushAsync(ct);
+            }
+            catch (Exception writeEx)
+            {
+                logger.LogWarning(writeEx, "Failed to write SSE error response for stream {EventId}.", eventId);
+            }
         }
-
+        finally
+        {
+            await enumerator.DisposeAsync();
+        }
     }
 
     private async Task<string> EnhanceIfEnabledAsync(string? text, CancellationToken ct)
