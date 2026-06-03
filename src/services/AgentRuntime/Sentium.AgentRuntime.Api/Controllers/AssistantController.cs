@@ -33,6 +33,8 @@ public sealed class AssistantController(
 {
     private static readonly byte[] DataPrefix = "data: "u8.ToArray();
     private static readonly byte[] SseDelimiter = "\n\n"u8.ToArray();
+    private static readonly byte[] HeartbeatLine = ": ping\n\n"u8.ToArray();
+    private static readonly byte[] KeepAliveLine = ": keep-alive\n\n"u8.ToArray();
 
     /// <summary>
     /// Handles a chat message to the assistant agent and streams back responses using Server-Sent Events (SSE).
@@ -51,16 +53,18 @@ public sealed class AssistantController(
         ArgumentNullException.ThrowIfNull(requestBody);
         ArgumentNullException.ThrowIfNull(scopeFactory);
 
-        ConfigureSseResponse();
+        using var writeSemaphore = new SemaphoreSlim(1, 1);
+        await StartSseResponseAsync(writeSemaphore, ct);
 
         var lastUserMessage = requestBody.Messages.LastOrDefault(m => m.Role.Equals(ChatRole.User.ToString(), StringComparison.OrdinalIgnoreCase));
 
         pdpContext.OriginalUserPrompt = lastUserMessage?.Content ?? string.Empty;
         pdpContext.UserId = currentUser.UserId;
 
-        pdpContext.CorrelationId = Request.Headers.TryGetValue(CommonHeaderNames.CorrelationId, out var hdr)
-            ? hdr.ToString()
-            : Guid.NewGuid().ToString();
+        pdpContext.CorrelationId = Request.Headers.TryGetValue(CommonHeaderNames.CorrelationId, out var hdr) ? hdr.ToString() : Guid.NewGuid().ToString();
+
+        using var heartbeatCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        var heartbeatTask = RunHeartbeatAsync(writeSemaphore, heartbeatCts.Token);
 
         var enhancedPrompt = await TryEnhancePromptAsync(lastUserMessage?.Content, ct);
 
@@ -73,7 +77,7 @@ public sealed class AssistantController(
 
         if (enhancedPrompt is not null)
         {
-            await SendUiUpdate(AgentUpdateTypes.EnhancedPrompt, enhancedPrompt, ct);
+            await SendUiUpdate(AgentUpdateTypes.EnhancedPrompt, enhancedPrompt, writeSemaphore, ct);
         }
 
         var agent = await agentFactory.CreateAsync(AgentRole.GeneralAssistant, overrideModel: requestBody.Model, ct: ct);
@@ -96,7 +100,10 @@ public sealed class AssistantController(
             }
         }
 
-        await RunStreamingAsync(agent, session, chatMessages, requestBody.ConversationId, requestBody.Model, scopeFactory, ct);
+        await heartbeatCts.CancelAsync();
+        await heartbeatTask;
+
+        await RunStreamingAsync(agent, session, chatMessages, requestBody.ConversationId, requestBody.Model, scopeFactory, writeSemaphore, ct);
     }
 
     /// <summary>
@@ -121,7 +128,8 @@ public sealed class AssistantController(
             return;
         }
 
-        ConfigureSseResponse();
+        using var writeSemaphore = new SemaphoreSlim(1, 1);
+        await StartSseResponseAsync(writeSemaphore, ct);
 
         pdpContext.OriginalUserPrompt = pending.OriginalUserPrompt;
         pdpContext.CorrelationId = pending.CorrelationId;
@@ -135,7 +143,7 @@ public sealed class AssistantController(
             approvalResponseMessage
         };
 
-        await RunStreamingAsync(pending.Agent, pending.Session, restoredHistory, pending.ConversationId, pending.Model, scopeFactory, ct);
+        await RunStreamingAsync(pending.Agent, pending.Session, restoredHistory, pending.ConversationId, pending.Model, scopeFactory, writeSemaphore, ct);
     }
 
     private async Task RunStreamingAsync(
@@ -145,6 +153,7 @@ public sealed class AssistantController(
         Guid? conversationId,
         string model,
         IServiceScopeFactory scopeFactory,
+        SemaphoreSlim writeSemaphore,
         CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(scopeFactory);
@@ -162,7 +171,7 @@ public sealed class AssistantController(
                 if (update.Contents.OfType<TextReasoningContent>().FirstOrDefault() is { } reasoning)
                 {
                     thoughtBuilder.Append(reasoning.Text);
-                    await SendUiUpdate(AgentUpdateTypes.Thought, reasoning.Text, ct);
+                    await SendUiUpdate(AgentUpdateTypes.Thought, reasoning.Text, writeSemaphore, ct);
                 }
 
                 if (update.Contents.OfType<ToolApprovalRequestContent>().FirstOrDefault() is { } approvalRequest)
@@ -193,7 +202,7 @@ public sealed class AssistantController(
                         arguments = toolCall?.Arguments,
                     };
 
-                    await SendUiUpdate(AgentUpdateTypes.ApprovalRequest, JsonSerializer.Serialize(approvalData), ct);
+                    await SendUiUpdate(AgentUpdateTypes.ApprovalRequest, JsonSerializer.Serialize(approvalData), writeSemaphore, ct);
                     return;
                 }
 
@@ -201,13 +210,13 @@ public sealed class AssistantController(
                 {
                     var toolLabel = $"Calling {call.Name}...";
                     toolCallLog.Add(toolLabel);
-                    await SendUiUpdate(AgentUpdateTypes.Tool, toolLabel, ct);
+                    await SendUiUpdate(AgentUpdateTypes.Tool, toolLabel, writeSemaphore, ct);
                 }
 
                 if (!string.IsNullOrEmpty(update.Text))
                 {
                     assistantResponse.Append(update.Text);
-                    await SendUiUpdate(AgentUpdateTypes.Message, update.Text, ct);
+                    await SendUiUpdate(AgentUpdateTypes.Message, update.Text, writeSemaphore, ct);
                 }
             }
 
@@ -226,9 +235,17 @@ public sealed class AssistantController(
                 );
             }
 
-            var completeJson = JsonSerializer.Serialize(new { type = "done", done = true });
-            await Response.WriteAsync($"data: {completeJson}\n\n", ct);
-            await Response.Body.FlushAsync(ct);
+            await writeSemaphore.WaitAsync(ct);
+            try
+            {
+                var completeJson = JsonSerializer.Serialize(new { type = "done", done = true });
+                await Response.WriteAsync($"data: {completeJson}\n\n", ct);
+                await Response.Body.FlushAsync(ct);
+            }
+            finally
+            {
+                writeSemaphore.Release();
+            }
         }
         catch (OperationCanceledException)
         {
@@ -249,8 +266,16 @@ public sealed class AssistantController(
             try
             {
                 var errorJson = JsonSerializer.Serialize(new { type = "error", message = ex.Message, done = true });
-                await Response.WriteAsync($"data: {errorJson}\n\n", ct);
-                await Response.Body.FlushAsync(ct);
+                await writeSemaphore.WaitAsync(CancellationToken.None);
+                try
+                {
+                    await Response.WriteAsync($"data: {errorJson}\n\n", CancellationToken.None);
+                    await Response.Body.FlushAsync(CancellationToken.None);
+                }
+                finally
+                {
+                    writeSemaphore.Release();
+                }
             }
             catch (Exception writeEx)
             {
@@ -277,37 +302,85 @@ public sealed class AssistantController(
         return !string.IsNullOrWhiteSpace(enhanced) && !string.Equals(enhanced, prompt, StringComparison.Ordinal) ? enhanced : null;
     }
 
-    private async Task SendUiUpdate(string type, string content, CancellationToken ct)
+    private async Task SendUiUpdate(string type, string content, SemaphoreSlim writeSemaphore, CancellationToken ct)
     {
-        var pipeWriter = Response.BodyWriter;
+        await writeSemaphore.WaitAsync(ct);
+        try
+        {
+            var pipeWriter = Response.BodyWriter;
 
-        pipeWriter.Write(DataPrefix);
+            pipeWriter.Write(DataPrefix);
 
-        await using var jsonWriter = new Utf8JsonWriter(pipeWriter);
+            await using var jsonWriter = new Utf8JsonWriter(pipeWriter);
 
-        jsonWriter.WriteStartObject();
-        jsonWriter.WriteString("type", type);
+            jsonWriter.WriteStartObject();
+            jsonWriter.WriteString("type", type);
 
-        jsonWriter.WriteStartObject("message");
-        jsonWriter.WriteString("content", content);
-        jsonWriter.WriteEndObject();
+            jsonWriter.WriteStartObject("message");
+            jsonWriter.WriteString("content", content);
+            jsonWriter.WriteEndObject();
 
-        jsonWriter.WriteBoolean("done", false);
+            jsonWriter.WriteBoolean("done", false);
 
-        jsonWriter.WriteEndObject();
+            jsonWriter.WriteEndObject();
 
-        await jsonWriter.FlushAsync(ct);
+            await jsonWriter.FlushAsync(ct);
 
-        pipeWriter.Write(SseDelimiter);
+            pipeWriter.Write(SseDelimiter);
 
-        await pipeWriter.FlushAsync(ct);
+            await pipeWriter.FlushAsync(ct);
+        }
+        finally
+        {
+            writeSemaphore.Release();
+        }
     }
 
-    private void ConfigureSseResponse()
+    private async Task StartSseResponseAsync(SemaphoreSlim writeSemaphore, CancellationToken ct)
     {
         Response.ContentType = "text/event-stream";
         Response.Headers.CacheControl = "no-cache";
         Response.Headers.Connection = "keep-alive";
         Response.Headers.Append(CommonHeaderNames.AccelBuffering, "no");
+
+        await Response.StartAsync(ct);
+
+        await writeSemaphore.WaitAsync(ct);
+        try
+        {
+            var pipeWriter = Response.BodyWriter;
+            pipeWriter.Write(KeepAliveLine);
+            await pipeWriter.FlushAsync(ct);
+        }
+        finally
+        {
+            writeSemaphore.Release();
+        }
+    }
+
+    private async Task RunHeartbeatAsync(SemaphoreSlim writeSemaphore, CancellationToken ct)
+    {
+        try
+        {
+            while (!ct.IsCancellationRequested)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(15), ct);
+
+                await writeSemaphore.WaitAsync(ct);
+                try
+                {
+                    var pipeWriter = Response.BodyWriter;
+                    pipeWriter.Write(HeartbeatLine);
+                    await pipeWriter.FlushAsync(ct);
+                }
+                finally
+                {
+                    writeSemaphore.Release();
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
     }
 }

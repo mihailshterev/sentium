@@ -37,6 +37,7 @@ interface MessageBubbleProps {
   onToggleThought: (id: string) => void;
   onCopyMessage: (content: string, id: string) => void;
   onApproval: (aiMsgId: string, requestId: string, approved: boolean) => void;
+  onRetry?: () => void;
 }
 
 const MessageBubble = ({
@@ -49,10 +50,11 @@ const MessageBubble = ({
   onToggleThought,
   onCopyMessage,
   onApproval,
+  onRetry,
 }: MessageBubbleProps) => {
   const [enhancedOpen, setEnhancedOpen] = useState(false);
 
-  const isLastMessage = msg.role === "assistant" && msg.content === "" && isTyping;
+  const isLastMessage = msg.role === "assistant" && msg.content === "" && isTyping && !msg.error;
 
   const showStatusCycler = isLastMessage && !msg.thought && (!msg.toolCalls || msg.toolCalls.length === 0);
 
@@ -70,30 +72,55 @@ const MessageBubble = ({
           </div>
         )}
 
-        {msg.thought !== undefined && msg.role === "assistant" && (
-          <div className={styles.thoughtBlock}>
-            <button className={styles.thoughtHeader} onClick={() => onToggleThought(msg.id)}>
-              <Brain size={11} />
-              <span>Thinking</span>
-              <ChevronDown
-                size={11}
-                className={`${styles.thoughtChevron} ${expandedThoughts.has(msg.id) ? styles.thoughtChevronOpen : ""}`}
-              />
-            </button>
-            {expandedThoughts.has(msg.id) && (
-              <div className={styles.thoughtContent}>
-                <Markdown>{msg.thought}</Markdown>
+        {msg.role === "assistant" && (msg.thought !== undefined || (msg.toolCalls && msg.toolCalls.length > 0)) && (
+          <div className={styles.activityTimeline}>
+            {msg.thought !== undefined && (
+              <div className={styles.timelineRow}>
+                <span className={`${styles.timelineDot} ${styles.timelineDotThought}`} />
+                <div className={styles.timelineRowBody}>
+                  <div className={styles.thoughtBlock}>
+                    {(() => {
+                      const isActiveThought = isTyping && msg.content === "";
+                      return (
+                        <button
+                          className={`${styles.thoughtHeader} ${isActiveThought ? styles.thoughtHeaderActive : ""}`}
+                          onClick={() => onToggleThought(msg.id)}
+                        >
+                          <Brain size={11} className={isActiveThought ? styles.brainPulse : undefined} />
+                          <span>Thinking</span>
+                          {isActiveThought && (
+                            <span className={styles.thinkingDots}>
+                              <span className={styles.thinkingDot} />
+                              <span className={styles.thinkingDot} />
+                              <span className={styles.thinkingDot} />
+                            </span>
+                          )}
+                          <ChevronDown
+                            size={11}
+                            className={`${styles.thoughtChevron} ${expandedThoughts.has(msg.id) ? styles.thoughtChevronOpen : ""}`}
+                          />
+                        </button>
+                      );
+                    })()}
+                    {expandedThoughts.has(msg.id) && (
+                      <div className={styles.thoughtContent}>
+                        <Markdown>{msg.thought}</Markdown>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
-          </div>
-        )}
 
-        {msg.toolCalls && msg.toolCalls.length > 0 && msg.role === "assistant" && (
-          <div className={styles.toolCallList}>
-            {msg.toolCalls.map((call, i) => (
-              <div key={i} className={styles.toolCallRow}>
-                <Wrench size={10} />
-                <span>{call}</span>
+            {msg.toolCalls?.map((call, i) => (
+              <div key={`tool-${i}`} className={styles.timelineRow}>
+                <span className={`${styles.timelineDot} ${styles.timelineDotTool}`} />
+                <div className={styles.timelineRowBody}>
+                  <div className={styles.toolCallRow}>
+                    <Wrench size={10} />
+                    <span>{call}</span>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -167,6 +194,17 @@ const MessageBubble = ({
               <div className={styles.enhancedContent}>
                 <Markdown>{msg.enhancedPrompt}</Markdown>
               </div>
+            )}
+          </div>
+        )}
+
+        {msg.error && msg.role === "assistant" && (
+          <div className={styles.errorBanner}>
+            <span className={styles.errorBannerText}>{msg.error}</span>
+            {onRetry && (
+              <button className={styles.retryBtn} onClick={onRetry} disabled={isTyping}>
+                Retry
+              </button>
             )}
           </div>
         )}

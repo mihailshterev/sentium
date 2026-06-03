@@ -61,6 +61,7 @@ const Assistant = () => {
     sendMessage,
     respondToApproval,
     stopStreaming,
+    retryLastMessage,
   } = useConversationStore();
 
   const {
@@ -438,6 +439,7 @@ const Assistant = () => {
                   onToggleThought={toggleThought}
                   onCopyMessage={copyMessage}
                   onApproval={handleApproval}
+                  onRetry={msg.error ? retryLastMessage : undefined}
                 />
               ))}
               <div ref={messagesEndRef} />

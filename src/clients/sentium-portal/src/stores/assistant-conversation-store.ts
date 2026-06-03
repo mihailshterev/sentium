@@ -26,10 +26,12 @@ interface ConversationState {
   appendMessage: (message: ConversationMessage) => void;
   updateLastMessage: (id: string, appendContent: string, type?: "content" | "thought" | "tool" | "approval") => void;
   setEnhancedPrompt: (id: string, prompt: string) => void;
+  setMessageError: (id: string, error: string) => void;
   clearPendingApproval: (id: string) => void;
   setModel: (model: string) => void;
   clearConversation: () => void;
   sendMessage: (args: SendMessageArgs) => Promise<void>;
+  retryLastMessage: () => void;
   respondToApproval: (args: RespondToApprovalArgs) => Promise<void>;
   stopStreaming: () => void;
 }
@@ -39,7 +41,14 @@ const controllers = new Map<string, AbortController>();
 const STREAM_KEY = "active";
 
 export const useConversationStore = create<ConversationState>((set, get) => {
-  const consumeStream = async (response: Response, aiMsgId: string, userMsgId?: string): Promise<boolean> => {
+  const STALL_TIMEOUT_MS = 120_000;
+
+  const consumeStream = async (
+    response: Response,
+    aiMsgId: string,
+    controller: AbortController,
+    userMsgId?: string,
+  ): Promise<boolean> => {
     if (!response.ok) {
       throw new Error("Network response was not ok");
     }
@@ -53,65 +62,77 @@ export const useConversationStore = create<ConversationState>((set, get) => {
     const { updateLastMessage, setEnhancedPrompt } = get();
     let leftover = "";
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) {
-        break;
-      }
+    let stallTimer = setTimeout(() => controller.abort(), STALL_TIMEOUT_MS);
+    const resetStallTimer = () => {
+      clearTimeout(stallTimer);
+      stallTimer = setTimeout(() => controller.abort(), STALL_TIMEOUT_MS);
+    };
 
-      const chunk = leftover + decoder.decode(value, { stream: true });
-      const lines = chunk.split("\n");
-      leftover = lines.pop() || "";
-
-      for (const line of lines) {
-        let trimmed = line.trim();
-        if (!trimmed) {
-          continue;
-        }
-        if (trimmed.startsWith("data: ")) {
-          trimmed = trimmed.slice(6).trim();
-        }
-        if (!trimmed) {
-          continue;
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          break;
         }
 
-        let parsed: { type?: string; message?: string | { content?: string } };
-        try {
-          parsed = JSON.parse(trimmed);
-        } catch {
-          continue;
-        }
+        resetStallTimer();
 
-        if (parsed.type === "done") {
-          return false;
-        }
-        if (parsed.type === "error") {
-          const errorText = typeof parsed.message === "string" ? parsed.message : parsed.message?.content;
-          throw new Error(errorText || "Connection to AI node failed.");
-        }
+        const chunk = leftover + decoder.decode(value, { stream: true });
+        const lines = chunk.split("\n");
+        leftover = lines.pop() || "";
 
-        const content = typeof parsed.message === "string" ? undefined : parsed.message?.content;
-
-        if (parsed.type === "enhanced_prompt") {
-          if (content && userMsgId) {
-            setEnhancedPrompt(userMsgId, content);
+        for (const line of lines) {
+          let trimmed = line.trim();
+          if (!trimmed || trimmed.startsWith(":")) {
+            continue;
           }
-          continue;
-        }
-        if (parsed.type === "approval_request") {
-          updateLastMessage(aiMsgId, content ?? "", "approval");
-          return true;
-        }
-        if (content) {
-          if (parsed.type === "thought") {
-            updateLastMessage(aiMsgId, content, "thought");
-          } else if (parsed.type === "tool") {
-            updateLastMessage(aiMsgId, content, "tool");
-          } else {
-            updateLastMessage(aiMsgId, content, "content");
+          if (trimmed.startsWith("data: ")) {
+            trimmed = trimmed.slice(6).trim();
+          }
+          if (!trimmed) {
+            continue;
+          }
+
+          let parsed: { type?: string; message?: string | { content?: string } };
+          try {
+            parsed = JSON.parse(trimmed);
+          } catch {
+            continue;
+          }
+
+          if (parsed.type === "done") {
+            return false;
+          }
+          if (parsed.type === "error") {
+            const errorText = typeof parsed.message === "string" ? parsed.message : parsed.message?.content;
+            throw new Error(errorText || "Connection to AI node failed.");
+          }
+
+          const content = typeof parsed.message === "string" ? undefined : parsed.message?.content;
+
+          if (parsed.type === "enhanced_prompt") {
+            if (content && userMsgId) {
+              setEnhancedPrompt(userMsgId, content);
+            }
+            continue;
+          }
+          if (parsed.type === "approval_request") {
+            updateLastMessage(aiMsgId, content ?? "", "approval");
+            return true;
+          }
+          if (content) {
+            if (parsed.type === "thought") {
+              updateLastMessage(aiMsgId, content, "thought");
+            } else if (parsed.type === "tool") {
+              updateLastMessage(aiMsgId, content, "tool");
+            } else {
+              updateLastMessage(aiMsgId, content, "content");
+            }
           }
         }
       }
+    } finally {
+      clearTimeout(stallTimer);
     }
 
     return false;
@@ -172,6 +193,11 @@ export const useConversationStore = create<ConversationState>((set, get) => {
         messages: state.messages.map((msg) => (msg.id === id ? { ...msg, enhancedPrompt: prompt } : msg)),
       })),
 
+    setMessageError: (id, error) =>
+      set((state) => ({
+        messages: state.messages.map((msg) => (msg.id === id ? { ...msg, error } : msg)),
+      })),
+
     clearPendingApproval: (id) =>
       set((state) => ({
         messages: state.messages.map((msg) => (msg.id === id ? { ...msg, pendingApproval: undefined } : msg)),
@@ -226,15 +252,27 @@ export const useConversationStore = create<ConversationState>((set, get) => {
           controller.signal,
         );
 
-        await consumeStream(response, aiMsgId, userMsg.id);
+        await consumeStream(response, aiMsgId, controller, userMsg.id);
       } catch (err) {
         if (!(err instanceof Error && err.name === "AbortError")) {
-          get().updateLastMessage(aiMsgId, "\n\n_Error: Connection to AI node failed._");
+          get().setMessageError(aiMsgId, "Connection to AI node failed.");
         }
       } finally {
         controllers.delete(STREAM_KEY);
         set({ isStreaming: false, streamingConversationId: null });
       }
+    },
+
+    retryLastMessage: () => {
+      const { messages, activeConversationId, model } = get();
+      const lastUserIdx = [...messages]
+        .map((m, i) => ({ m, i }))
+        .reverse()
+        .find(({ m }) => m.role === "user")?.i;
+      if (lastUserIdx === undefined) return;
+      const lastUser = messages[lastUserIdx];
+      set({ messages: messages.slice(0, lastUserIdx) });
+      void get().sendMessage({ conversationId: activeConversationId, model, userContent: lastUser.content });
     },
 
     respondToApproval: async ({ aiMsgId, requestId, approved }) => {
@@ -247,10 +285,10 @@ export const useConversationStore = create<ConversationState>((set, get) => {
 
       try {
         const response = await approveToolCall(requestId, approved, controller.signal);
-        await consumeStream(response, aiMsgId);
+        await consumeStream(response, aiMsgId, controller);
       } catch (err) {
         if (!(err instanceof Error && err.name === "AbortError")) {
-          get().updateLastMessage(aiMsgId, "\n\n_Error: Failed to process approval._");
+          get().setMessageError(aiMsgId, "Failed to process approval. Please try again.");
         }
       } finally {
         controllers.delete(STREAM_KEY);
