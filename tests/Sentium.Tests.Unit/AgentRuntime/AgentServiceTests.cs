@@ -16,7 +16,7 @@ public sealed class AgentServiceTests
 
     public AgentServiceTests()
     {
-        _registry.GetRegisteredNames().Returns(new[] { "Validator", "Planner Agent", "Summary Agent", "GeneralAssistant" });
+        _registry.GetRegisteredNames().Returns(new[] { "Validator", "Orchestrator", "Summarizer", "GeneralAssistant" });
         _service = new AgentService(_repository, new PassThroughScopedCache(), _registry);
     }
 
@@ -96,7 +96,7 @@ public sealed class AgentServiceTests
     [Theory]
     [InlineData("Validator")]
     [InlineData("validator")] // case-insensitive: native agents take precedence in the factory regardless of casing
-    [InlineData("Planner Agent")]
+    [InlineData("Summarizer")]
     public async Task CreateAgentAsync_ReturnsConflict_WhenNameIsReservedBuiltIn(string reserved)
     {
         // Arrange
