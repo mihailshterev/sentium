@@ -44,6 +44,7 @@ var ollama = builder.AddOllama(ResourceNames.Ollama)
     // .WithEnvironment(OllamaConfig.ContextSizeKey, OllamaConfig.DefaultContextSize)
     .WithEnvironment(OllamaConfig.FlashAttentionKey, "1")
     .WithEnvironment(OllamaConfig.ParallelRequestsKey, "2")
+    .WithEnvironment(OllamaConfig.KeepAliveKey, "-1")
     // .WithEnvironment(OllamaConfig.CacheTypeKey, "q4_0")
     .WithEnvironment(OllamaConfig.DebugKey, "1")
     .WithEndpoint("http", e => e.Port = 11434);
@@ -75,7 +76,7 @@ var sentinelApi = builder.AddProject<Projects.Sentium_Sentinel_Api>(ServiceNames
     .WithReference(seq).WaitFor(seq)
     .WithReference(sentinelDb).WaitFor(sentinelDb)
     .WithReference(identityApi).WaitFor(identityApi)
-    .WithReference(ollama).WaitFor(ollama)
+    .WithReference(ollamaModel).WaitFor(ollamaModel)
     .WithEnvironment(EnvConfig.Keys.IdentityAuthority, identityApi.GetEndpoint("http"))
     .WithEnvironment(EnvConfig.Keys.InternalApiKey, internalApiKey)
     .WithUrlForEndpoint("https", url =>
