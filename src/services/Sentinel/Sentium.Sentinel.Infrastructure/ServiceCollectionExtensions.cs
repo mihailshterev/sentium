@@ -1,5 +1,4 @@
 using Microsoft.Extensions.AI;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
@@ -56,6 +55,8 @@ public static class ServiceCollectionExtensions
                 SelectedModel = pdpOpts.IntentCheckModel
             };
         });
+
+        services.AddSingleton<IPdpPolicy, SemanticIntentPolicy>();
 
         return builder;
     }

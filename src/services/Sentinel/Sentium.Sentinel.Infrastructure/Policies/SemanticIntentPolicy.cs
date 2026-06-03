@@ -7,16 +7,10 @@ using Sentium.Sentinel.Core.Policies;
 namespace Sentium.Sentinel.Infrastructure.Policies;
 
 /// <summary>
-/// Semantic Intent Check — uses a local LLM (via Ollama) to compare the agent's
-/// declared skill action against the original user prompt.
-///
-/// Purpose: Detect prompt injection and intent mismatch where a compromised or
-/// hallucinating agent attempts to execute capabilities unrelated to what the
-/// human user actually requested.
-///
-/// This policy is intentionally positioned AFTER the InvariantGuard and
-/// RateLimiting layers so that hard failures are caught cheaply before the
-/// (more expensive) LLM call.
+/// Validates the agent's declared action against the original user prompt using a local LLM.
+/// <para/>
+/// This policy detects prompt injections and semantic intent mismatches, preventing
+/// a compromised or hallucinating agent from executing actions unrelated to the user's request.
 /// </summary>
 public sealed class SemanticIntentPolicy(
     IChatClient chatClient,
@@ -95,19 +89,16 @@ public sealed class SemanticIntentPolicy(
     {
         var prompt = BuildClassificationPrompt(request);
 
-        using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(_options.IntentCheckTimeoutSeconds));
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        linkedCts.CancelAfter(TimeSpan.FromSeconds(_options.IntentCheckTimeoutSeconds));
 
         try
         {
-            var chatOptions = new ChatOptions
-            {
-                Temperature = 0f,
-                MaxOutputTokens = 32
-            };
+            var chatOptions = new ChatOptions { Temperature = 0f };
 
             var message = new ChatMessage(ChatRole.User, prompt);
 
-            var response = await chatClient.GetResponseAsync([message], chatOptions, timeoutCts.Token);
+            var response = await chatClient.GetResponseAsync([message], chatOptions, linkedCts.Token);
 
             var span = (response.Text ?? string.Empty).AsSpan().Trim();
 
@@ -125,7 +116,7 @@ public sealed class SemanticIntentPolicy(
 
             return IntentVerdict.Inconclusive;
         }
-        catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested)
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
             logger.LogWarning("Semantic intent check timed out after {TimeoutSeconds}s. Treating as inconclusive.", _options.IntentCheckTimeoutSeconds);
 
