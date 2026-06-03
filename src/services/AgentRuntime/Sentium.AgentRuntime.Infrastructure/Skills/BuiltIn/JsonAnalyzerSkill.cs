@@ -43,7 +43,7 @@ internal sealed class JsonAnalyzerSkill : AgentClassSkill<JsonAnalyzerSkill>
         # JSON Best Practices
 
         ## Structure
-        - Use camelCase for property names (JavaScript convention) or snake_case (Python/API convention) — be consistent.
+        - Use camelCase for property names (JavaScript convention) or snake_case (Python/API convention) - be consistent.
         - Prefer flat structures; deeply nested JSON is hard to maintain.
         - Use arrays for homogeneous collections.
 
@@ -59,7 +59,7 @@ internal sealed class JsonAnalyzerSkill : AgentClassSkill<JsonAnalyzerSkill>
         ## Common Pitfalls
         - Trailing commas are NOT allowed in standard JSON.
         - Comments are NOT allowed in standard JSON (use JSONC or JSON5 for dev configs).
-        - Duplicate keys have undefined behaviour — avoid them.
+        - Duplicate keys have undefined behaviour - avoid them.
         """;
 
     [AgentSkillScript("validate")]

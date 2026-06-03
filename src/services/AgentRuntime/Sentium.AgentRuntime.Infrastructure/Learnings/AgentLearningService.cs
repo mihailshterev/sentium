@@ -16,7 +16,7 @@ public sealed class AgentLearningService(
     IScopedCache cache,
     ILogger<AgentLearningService> logger) : IAgentLearningService
 {
-    private const string LearningsCollection = "agent_learnings";
+    private const string LearningsCollection = KnowledgeCollections.AgentLearnings;
     private const string SourcePrefix = "learning:";
     private const string CacheTag = "learnings";
     private const float RecallScoreThreshold = 0.35f;
@@ -170,7 +170,7 @@ public sealed class AgentLearningService(
     {
         if (!entity.IsGlobal && entity.UserId is null)
         {
-            logger.LogInformation("Skipping vector ingestion for ownerless, non-global learning {LearningId} — no retrieval scope.", entity.Id);
+            logger.LogInformation("Skipping vector ingestion for ownerless, non-global learning {LearningId} - no retrieval scope.", entity.Id);
             return;
         }
 
@@ -213,7 +213,7 @@ public sealed class AgentLearningService(
             : $"\n**Tags:** {entity.Tags}";
 
         return $"""
-            # Agent Learning — {entity.AgentName}
+            # Agent Learning - {entity.AgentName}
 
             **Captured:** {entity.CapturedAt:yyyy-MM-dd HH:mm UTC}{tagsSection}
 
