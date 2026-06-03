@@ -18,11 +18,13 @@ const ModelSelector = ({ id, className, models, value, onChange, placeholder, di
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}
       >
-        {models.map((m) => (
-          <option key={m} value={m}>
-            {m}
-          </option>
-        ))}
+        {[...models]
+          .sort((a, b) => a.localeCompare(b))
+          .map((m) => (
+            <option key={m} value={m}>
+              {m}
+            </option>
+          ))}
       </select>
     );
   }
