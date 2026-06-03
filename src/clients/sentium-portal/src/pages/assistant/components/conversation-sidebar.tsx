@@ -1,18 +1,7 @@
-import {
-  Plus,
-  MessageSquare,
-  Trash2,
-  FolderOpen,
-  FileText,
-  ChevronDown,
-  ChevronRight,
-  Cpu,
-  Loader2,
-} from "lucide-react";
+import { Plus, MessageSquare, Trash2, FolderOpen, FileText, ChevronDown, ChevronRight, Loader2 } from "lucide-react";
 import styles from "../assistant.module.scss";
 import type { ConversationSummary } from "../../../types/assistant";
 import type { Workspace, WorkspaceFile } from "../../../types/workspace";
-import ModelSelector from "../../../components/ui/model-selector";
 
 interface ConversationGroup {
   label: string;
@@ -24,8 +13,6 @@ interface ConversationSidebarProps {
   conversations: ConversationSummary[];
   conversationGroups: ConversationGroup[];
   activeConversationId: string | null;
-  model: string;
-  models: string[];
   isCreating: boolean;
   wsContextOpen: boolean;
   workspaces: Workspace[];
@@ -34,7 +21,6 @@ interface ConversationSidebarProps {
   onNewConversation: () => void;
   onLoadConversation: (conv: ConversationSummary) => void;
   onDeleteConversation: (id: string, e: React.MouseEvent) => void;
-  onSetModel: (model: string) => void;
   onToggleWsContext: () => void;
   onToggleExpandWorkspace: (wsId: string) => void;
   onInjectWorkspaceContext: (ws: Workspace) => void;
@@ -46,8 +32,6 @@ const ConversationSidebar = ({
   conversations,
   conversationGroups,
   activeConversationId,
-  model,
-  models,
   isCreating,
   wsContextOpen,
   workspaces,
@@ -56,7 +40,6 @@ const ConversationSidebar = ({
   onNewConversation,
   onLoadConversation,
   onDeleteConversation,
-  onSetModel,
   onToggleWsContext,
   onToggleExpandWorkspace,
   onInjectWorkspaceContext,
@@ -74,17 +57,6 @@ const ConversationSidebar = ({
         >
           {isCreating ? <Loader2 size={13} /> : <Plus size={13} />}
         </button>
-      </div>
-
-      <div className={styles.modelSelector}>
-        <Cpu size={12} />
-        <ModelSelector
-          className={models.length > 0 ? styles.modelSelect : styles.modelInput}
-          models={models}
-          value={model}
-          onChange={onSetModel}
-          placeholder="model name..."
-        />
       </div>
 
       <div className={styles.convList}>
