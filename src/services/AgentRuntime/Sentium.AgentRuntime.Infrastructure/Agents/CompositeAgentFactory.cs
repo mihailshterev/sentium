@@ -22,6 +22,7 @@ public sealed class CompositeAgentFactory(
     OllamaOptions ollamaOptions,
     IAgentToolProvider agentToolProvider,
     IAgentRepository agentRepository,
+    IAgentRegistry agentRegistry,
     IRegistrySettingsService registrySettingsService,
     IAgentLearningService learningService,
     IServiceProvider serviceProvider,
@@ -77,7 +78,22 @@ public sealed class CompositeAgentFactory(
         var harnessedClient = GetHarnessedClient(overrideModel);
 
         var capabilityBlock = await BuildCapabilityBlockAsync(tools, ct);
-        var baseInstructions = overrideInstructions ?? definition.Instructions;
+
+        string baseInstructions;
+        if (overrideInstructions is not null)
+        {
+            baseInstructions = overrideInstructions;
+        }
+        else if (string.Equals(definition.Name, AgentRole.Planner, StringComparison.OrdinalIgnoreCase))
+        {
+            var dbAgents = await agentRepository.GetAgentsAsync(ct);
+            baseInstructions = PlannerTemplate.Build(agentRegistry, dbAgents);
+        }
+        else
+        {
+            baseInstructions = definition.Instructions;
+        }
+
         var instructions = string.IsNullOrEmpty(capabilityBlock) ? baseInstructions : $"{baseInstructions}\n\n{capabilityBlock}";
 
         var options = new ChatClientAgentOptions

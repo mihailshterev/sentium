@@ -42,8 +42,7 @@ public sealed class DynamicDiscoveryWorkflow(
         var dbAgentMap = dbAgents.ToDictionary(a => a.Name, a => a.Description, StringComparer.OrdinalIgnoreCase);
         var dbAgentModelMap = dbAgents.ToDictionary(a => a.Name, a => a.Model, StringComparer.OrdinalIgnoreCase);
 
-        var plannerInstructions = BuildPlannerInstructions(dbAgents);
-        var planner = await factory.CreateAsync(AgentRole.Planner, overrideInstructions: plannerInstructions, actingUserId: trigger.UserId, ct: ct);
+        var planner = await factory.CreateAsync(AgentRole.Planner, actingUserId: trigger.UserId, ct: ct);
         var plannerSession = await planner.CreateSessionAsync(ct);
 
         var streamLog = new StreamLogAccumulator();

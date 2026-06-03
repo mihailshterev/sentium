@@ -1,3 +1,4 @@
+using Sentium.AgentRuntime.Application.Common.Helpers;
 using Sentium.AgentRuntime.Core.Agents;
 
 namespace Sentium.AgentRuntime.Application.Agents.Native;
@@ -15,17 +16,9 @@ public sealed class PlannerAgent : IAgent
 
     /// <inheritdoc />
     /// <remarks>
-    /// This agent is strictly constrained to output valid JSON arrays. It serves as the
-    /// "brain" or router of the system, determining the workflow based on the capabilities
-    /// of the available Native agent roles.
+    /// The available-agents section is injected at runtime by <see cref="CompositeAgentFactory"/>
+    /// using <see cref="PlannerTemplate.Build(IAgentRegistry, System.Collections.Generic.IReadOnlyList{Sentium.AgentRuntime.Core.Dtos.AgentResponse})"/>,
+    /// so these instructions never go stale regardless of which agents are registered.
     /// </remarks>
-    public string Instructions => @"You are an orchestration agent. Analyze the input and determine which specialized agents are required to resolve the issue.
-
-    Available Agents:
-    - Forensics: Analyzes technical artifacts, Base64 strings, and binary obfuscation.
-    - SecurityAnalyst: Analyzes network traffic and connection anomalies.
-    - ThreatIntel: Evaluates Source IPs and matches behaviors against known APT groups.
-
-    You MUST output strictly a JSON array of strings representing the required agent roles. Do not include markdown, explanations, or any other text.
-    Example output: [""Forensics"", ""ThreatIntel""]";
+    public string Instructions => PlannerTemplate.SystemRole;
 }
