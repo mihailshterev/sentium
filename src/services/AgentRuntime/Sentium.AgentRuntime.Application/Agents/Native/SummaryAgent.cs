@@ -10,8 +10,10 @@ namespace Sentium.AgentRuntime.Application.Agents.Native;
 public sealed class SummaryAgent : IAgent
 {
     /// <inheritdoc />
-    /// <value>"Summary Agent"</value>
-    public string Name => "Summary Agent";
+    /// <value><see cref="AgentRole.Summarizer"/> ("Summarizer")</value>
+    /// <remarks>Must equal the key this agent is registered under (<see cref="AgentRole.Summarizer"/>) so the planner
+    /// can name it and the factory can resolve it back to this native agent.</remarks>
+    public string Name => AgentRole.Summarizer;
 
     /// <inheritdoc />
     /// <remarks>

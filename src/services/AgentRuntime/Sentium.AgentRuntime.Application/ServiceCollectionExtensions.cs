@@ -34,7 +34,7 @@ public static class ServiceCollectionExtensions
     private static void RegisterNativeAgents(this IServiceCollection services)
     {
         RegisterAgent<GeneralAssistant>(services, AgentRole.GeneralAssistant);
-        RegisterAgent<PlannerAgent>(services, AgentRole.Planner);
+        RegisterAgent<OrchestratorAgent>(services, AgentRole.Orchestrator);
         RegisterAgent<SummaryAgent>(services, AgentRole.Summarizer);
         RegisterAgent<ValidationAgent>(services, AgentRole.Validator);
     }
