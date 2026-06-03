@@ -8,8 +8,10 @@ using Sentium.Infrastructure.Extensions;
 using Sentium.Infrastructure.Messaging;
 using Sentium.Sentinel.Application.Options;
 using Sentium.Sentinel.Core.Audit;
+using Sentium.Sentinel.Core.Policies;
 using Sentium.Sentinel.Infrastructure.Audit;
 using Sentium.Sentinel.Infrastructure.Data;
+using Sentium.Sentinel.Infrastructure.Policies;
 using Sentium.Shared.Constants;
 
 namespace Sentium.Sentinel.Infrastructure;
@@ -31,14 +33,25 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton<IEventBus, NatsEventBus>();
 
+        var ollamaUri = new Uri(builder.Configuration["AI:OllamaBaseUrl"] ?? "http://localhost:11434");
+
+        services.AddHttpClient(ResourceNames.Ollama, client =>
+        {
+            client.BaseAddress = ollamaUri;
+            client.Timeout = Timeout.InfiniteTimeSpan;
+        })
+        .AddLongRunningResilienceHandler(
+            totalTimeout: TimeSpan.FromMinutes(5),
+            attemptTimeout: TimeSpan.FromMinutes(2),
+            retries: 0
+        );
+
         services.AddChatClient(sp =>
         {
-            var configuration = sp.GetRequiredService<IConfiguration>();
             var pdpOpts = sp.GetRequiredService<IOptions<PdpOptions>>().Value;
+            var httpClient = sp.GetRequiredService<IHttpClientFactory>().CreateClient(ResourceNames.Ollama);
 
-            var ollamaUri = new Uri(configuration["AI:OllamaBaseUrl"] ?? "http://localhost:11434");
-
-            return new OllamaApiClient(ollamaUri)
+            return new OllamaApiClient(httpClient)
             {
                 SelectedModel = pdpOpts.IntentCheckModel
             };

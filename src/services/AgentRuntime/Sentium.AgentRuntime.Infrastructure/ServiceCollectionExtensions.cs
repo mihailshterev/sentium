@@ -169,8 +169,14 @@ public static class ServiceCollectionExtensions
         services.AddHttpClient<SentinelClient>(client =>
         {
             client.BaseAddress = new Uri($"https+http://{ServiceNames.Sentinel}");
-            client.Timeout = TimeSpan.FromSeconds(10);
-        }).AddHttpMessageHandler<InternalApiKeyDelegatingHandler>();
+            client.Timeout = Timeout.InfiniteTimeSpan;
+        })
+        .AddHttpMessageHandler<InternalApiKeyDelegatingHandler>()
+        .AddLongRunningResilienceHandler(
+            totalTimeout: TimeSpan.FromMinutes(5),
+            attemptTimeout: TimeSpan.FromMinutes(2),
+            retries: 0
+        );
 
         services.AddHttpClient(ServiceNames.Sandbox, client =>
         {
