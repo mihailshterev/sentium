@@ -4,22 +4,23 @@ using NSubstitute;
 using Sentium.AgentRuntime.Api.Controllers;
 using Sentium.AgentRuntime.Core.Agents;
 using Sentium.AgentRuntime.Core.Dtos;
+using Sentium.Shared.Results;
 using Xunit;
 
 namespace Sentium.Tests.Unit.AgentRuntime;
 
-public sealed class AgentsManagementControllerTests
+public sealed class AgentsControllerTests
 {
     private readonly IAgentService _agentService = Substitute.For<IAgentService>();
-    private readonly AgentsManagementController _controller;
+    private readonly AgentsController _controller;
 
-    public AgentsManagementControllerTests()
+    public AgentsControllerTests()
     {
-        _controller = new AgentsManagementController(_agentService);
+        _controller = new AgentsController(_agentService);
     }
 
-    private static AgentResponse MakeResponse(Guid? id = null) =>
-        new(id ?? Guid.NewGuid(), "Agent", "Desc", "gemma3:1b", DateTime.UtcNow, DateTime.UtcNow);
+    private static AgentResponse MakeResponse(Guid? id = null, string name = "Agent") =>
+        new(id ?? Guid.NewGuid(), name, "Desc", "gemma3:1b", DateTime.UtcNow, DateTime.UtcNow);
 
     [Fact]
     public async Task GetAgents_ReturnsOkWithList_WhenCalled()
@@ -62,8 +63,8 @@ public sealed class AgentsManagementControllerTests
         // Arrange
         var ct = TestContext.Current.CancellationToken;
         var request = new CreateAgentRequest("MyAgent", "Desc", "gemma3:1b");
-        var created = new AgentResponse(Guid.NewGuid(), "MyAgent", "Desc", "gemma3:1b", DateTime.UtcNow, DateTime.UtcNow);
-        _agentService.CreateAgentAsync(request, ct).Returns(created);
+        var created = MakeResponse(name: "MyAgent");
+        _agentService.CreateAgentAsync(request, ct).Returns(Result<AgentResponse>.Success(created));
 
         // Act
         var result = await _controller.CreateAgent(request, ct);
@@ -72,6 +73,24 @@ public sealed class AgentsManagementControllerTests
         result.Result.Should().BeOfType<CreatedAtActionResult>()
             .Which.Value.Should().Be(created);
         await _agentService.Received(1).CreateAgentAsync(request, ct);
+    }
+
+    [Fact]
+    public async Task CreateAgent_ReturnsConflict_WhenNameExists()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        var request = new CreateAgentRequest("Dupe", "Desc", "gemma3:1b");
+        _agentService.CreateAgentAsync(request, ct)
+            .Returns(Result<AgentResponse>.Conflict("An agent named 'Dupe' already exists."));
+
+        // Act
+        var result = await _controller.CreateAgent(request, ct);
+
+        // Assert
+        result.Result.Should().BeOfType<ConflictObjectResult>()
+            .Which.Value.Should().BeOfType<ProblemDetails>()
+            .Which.Detail.Should().Contain("Dupe");
     }
 
     [Fact]
@@ -96,13 +115,49 @@ public sealed class AgentsManagementControllerTests
         var ct = TestContext.Current.CancellationToken;
         var id = Guid.NewGuid();
         var request = new UpdateAgentRequest(id, "Updated", "New desc");
-        _agentService.UpdateAgentAsync(id, request, ct).Returns(false);
+        _agentService.UpdateAgentAsync(id, request, ct).Returns(Result<AgentResponse>.NotFound());
 
         // Act
         var result = await _controller.UpdateAgent(id, request, ct);
 
         // Assert
         result.Should().BeOfType<NotFoundResult>();
+    }
+
+    [Fact]
+    public async Task UpdateAgent_ReturnsConflict_WhenNameTaken()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        var id = Guid.NewGuid();
+        var request = new UpdateAgentRequest(id, "Taken", "New desc");
+        _agentService.UpdateAgentAsync(id, request, ct)
+            .Returns(Result<AgentResponse>.Conflict("An agent named 'Taken' already exists."));
+
+        // Act
+        var result = await _controller.UpdateAgent(id, request, ct);
+
+        // Assert
+        result.Should().BeOfType<ConflictObjectResult>()
+            .Which.Value.Should().BeOfType<ProblemDetails>()
+            .Which.Detail.Should().Contain("Taken");
+    }
+
+    [Fact]
+    public async Task UpdateAgent_ReturnsNoContent_WhenSuccessful()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        var id = Guid.NewGuid();
+        var request = new UpdateAgentRequest(id, "Updated", "New desc");
+        _agentService.UpdateAgentAsync(id, request, ct).Returns(Result<AgentResponse>.Success(MakeResponse(id)));
+
+        // Act
+        var result = await _controller.UpdateAgent(id, request, ct);
+
+        // Assert
+        result.Should().BeOfType<NoContentResult>();
+        await _agentService.Received(1).UpdateAgentAsync(id, request, ct);
     }
 
     [Fact]
@@ -118,23 +173,6 @@ public sealed class AgentsManagementControllerTests
 
         // Assert
         result.Should().BeOfType<NotFoundResult>();
-    }
-
-    [Fact]
-    public async Task UpdateAgent_ReturnsNoContent_WhenSuccessful()
-    {
-        // Arrange
-        var ct = TestContext.Current.CancellationToken;
-        var id = Guid.NewGuid();
-        var request = new UpdateAgentRequest(id, "Updated", "New desc");
-        _agentService.UpdateAgentAsync(id, request, ct).Returns(true);
-
-        // Act
-        var result = await _controller.UpdateAgent(id, request, ct);
-
-        // Assert
-        result.Should().BeOfType<NoContentResult>();
-        await _agentService.Received(1).UpdateAgentAsync(id, request, ct);
     }
 
     [Fact]

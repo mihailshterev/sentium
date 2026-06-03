@@ -2,6 +2,7 @@ using Sentium.AgentRuntime.Core.Agents;
 using Sentium.AgentRuntime.Core.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Sentium.Shared.Results;
 
 namespace Sentium.AgentRuntime.Api.Controllers;
 
@@ -11,7 +12,7 @@ namespace Sentium.AgentRuntime.Api.Controllers;
 [ApiController]
 [Authorize]
 [Route("agents")]
-public sealed class AgentsManagementController(IAgentService agentService) : ControllerBase
+public sealed class AgentsController(IAgentService agentService) : ControllerBase
 {
     /// <summary>
     /// Returns a list of all agents
@@ -46,13 +47,19 @@ public sealed class AgentsManagementController(IAgentService agentService) : Con
     /// </summary>
     /// <param name="request">Agent creation request</param>
     /// <param name="ct">Cancellation token</param>
-    /// <returns>Created agent details</returns>
+    /// <returns>Created agent details, or HTTP 409 Conflict if an agent with the same name already exists.</returns>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async ValueTask<ActionResult<AgentResponse>> CreateAgent([FromBody] CreateAgentRequest request, CancellationToken ct)
     {
         var result = await agentService.CreateAgentAsync(request, ct);
-        return CreatedAtAction(nameof(GetAgentById), new { agentId = result.Id }, result);
+        if (result.Status == ResultStatus.Conflict)
+        {
+            return Conflict(new ProblemDetails { Title = "Conflict", Detail = result.Error, Status = StatusCodes.Status409Conflict });
+        }
+
+        return CreatedAtAction(nameof(GetAgentById), new { agentId = result.Value!.Id }, result.Value);
     }
 
     /// <summary>
@@ -61,14 +68,20 @@ public sealed class AgentsManagementController(IAgentService agentService) : Con
     /// <param name="agentId">Agent ID</param>
     /// <param name="request">Agent update request</param>
     /// <param name="ct">Cancellation token</param>
-    /// <returns>No content</returns>
+    /// <returns>No content, HTTP 404 if the agent does not exist, or HTTP 409 Conflict if the new name is taken by another agent.</returns>
     [HttpPut("{agentId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async ValueTask<IActionResult> UpdateAgent(Guid agentId, [FromBody] UpdateAgentRequest request, CancellationToken ct)
     {
-        var updated = await agentService.UpdateAgentAsync(agentId, request, ct);
-        return updated ? NoContent() : NotFound();
+        var result = await agentService.UpdateAgentAsync(agentId, request, ct);
+        return result.Status switch
+        {
+            ResultStatus.Conflict => Conflict(new ProblemDetails { Title = "Conflict", Detail = result.Error, Status = StatusCodes.Status409Conflict }),
+            ResultStatus.NotFound => NotFound(),
+            _ => NoContent()
+        };
     }
 
     /// <summary>
