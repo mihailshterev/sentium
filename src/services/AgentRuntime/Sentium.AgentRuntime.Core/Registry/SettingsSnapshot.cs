@@ -20,4 +20,4 @@ public sealed record SettingsSnapshot(HarnessSettingsSnapshot Harness)
 public sealed record HarnessSettingsSnapshot(
     string UserHarnessPrompt,
     bool IsBuiltInHarnessEnabled,
-    bool IsPromptEnhancementEnabled = true);
+    bool IsPromptEnhancementEnabled = false);
