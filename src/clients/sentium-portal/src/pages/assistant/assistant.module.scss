@@ -449,17 +449,69 @@
   color: rgba(167, 139, 250, 0.9);
 }
 
+.thoughtHeaderActive {
+  color: rgba(167, 139, 250, 0.95);
+}
+
+@keyframes brainPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.brainPulse {
+  color: rgba(139, 92, 246, 0.9) !important;
+  animation: brainPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes thinkingBounce {
+  0%,
+  80%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.35;
+  }
+  40% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
+}
+
+.thinkingDots {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+}
+
+.thinkingDot {
+  display: inline-block;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--accent-purple);
+  animation: thinkingBounce 1.2s ease-in-out infinite;
+
+  &:nth-child(2) {
+    animation-delay: 0.16s;
+  }
+  &:nth-child(3) {
+    animation-delay: 0.32s;
+  }
+}
+
 .thoughtHeader svg:first-child {
   color: rgba(139, 92, 246, 0.7);
   flex-shrink: 0;
 }
 
-.thoughtHeader span {
-  flex: 1;
-}
-
 .thoughtChevron {
   flex-shrink: 0;
+  margin-left: auto;
   transition: transform 0.2s ease;
 }
 
@@ -568,6 +620,62 @@
   flex-shrink: 0;
   color: var(--accent-amber);
   opacity: 0.7;
+}
+
+.activityTimeline {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0.4rem;
+}
+
+.timelineRow {
+  display: flex;
+  gap: 10px;
+  position: relative;
+  padding-bottom: 0.5rem;
+}
+
+.timelineRow::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 14px;
+  bottom: 0;
+  width: 2px;
+  background: var(--border-subtle);
+}
+
+.timelineRow:last-child::before {
+  display: none;
+}
+
+.timelineDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 3px;
+  background: var(--border-strong);
+  border: 2px solid var(--bg-surface);
+  box-shadow: 0 0 0 1px var(--border-color);
+  z-index: 1;
+}
+
+.timelineRowBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.timelineDotThought {
+  background: var(--accent-purple);
+  box-shadow:
+    0 0 0 1px var(--accent-purple-border),
+    0 0 7px rgba(139, 92, 246, 0.45);
+}
+
+.timelineDotTool {
+  background: var(--accent-amber);
+  box-shadow: 0 0 0 1px var(--accent-amber-border);
 }
 
 .approvalBlock {
@@ -804,12 +912,13 @@
 
 .inputForm {
   display: flex;
-  align-items: flex-end;
+  flex-direction: row;
+  align-items: center;
   gap: 0.5rem;
   background-color: var(--bg-elevated);
   border: 1px solid var(--border-color);
   border-radius: 18px;
-  padding: 0.6rem 0.6rem 0.6rem 1.1rem;
+  padding: 0.55rem 0.55rem 0.55rem 1.1rem;
   width: 100%;
   max-width: 820px;
   transition:
@@ -823,7 +932,56 @@
   flex-direction: column;
   gap: 4px;
   min-width: 0;
-  padding: 4px 0;
+}
+
+.inputModelChip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: 20px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    color 0.15s;
+  user-select: none;
+
+  &:hover {
+    border-color: rgba(34, 197, 94, 0.35);
+    background: rgba(34, 197, 94, 0.05);
+  }
+}
+
+.inputModelChipIcon {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.inputModelChevron {
+  flex-shrink: 0;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.inputModelInput {
+  background: transparent;
+  border: none;
+  color: inherit;
+  font-size: 0.7rem;
+  font-family: "JetBrains Mono", monospace;
+  outline: none;
+  padding: 0;
+  width: 140px;
+  cursor: text;
+
+  &::placeholder {
+    color: var(--text-dim);
+  }
 }
 
 .contextPillsRow {
@@ -1077,7 +1235,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.85rem 1rem;
+  height: 64px;
+  padding: 0 1rem;
   border-bottom: 1px solid var(--border-subtle);
   flex-shrink: 0;
 }
@@ -1108,32 +1267,6 @@
   background: var(--accent-green-subtle);
   color: var(--accent-green);
   border-color: rgba(34, 197, 94, 0.25);
-}
-
-.modelSelector {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0.55rem 1rem;
-  border-bottom: 1px solid var(--border-subtle);
-  color: var(--text-dim);
-  flex-shrink: 0;
-}
-
-.modelSelect,
-.modelInput {
-  flex: 1;
-  background: transparent;
-  border: none;
-  color: var(--text-secondary);
-  font-size: 0.72rem;
-  font-family: "JetBrains Mono", monospace;
-  outline: none;
-  cursor: pointer;
-}
-
-.modelSelect option {
-  background: var(--bg-surface);
 }
 
 .convList {
@@ -1440,4 +1573,102 @@
   font-size: 0.6rem;
   color: var(--accent-amber, #f59e0b);
   font-family: "JetBrains Mono", monospace;
+}
+
+.inputModelLabel {
+  font-size: 0.78rem;
+  font-family: "JetBrains Mono", monospace;
+  color: inherit;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+  line-height: 1;
+}
+
+.inputModelChipOpen {
+  border-color: rgba(34, 197, 94, 0.4) !important;
+  background: rgba(34, 197, 94, 0.06) !important;
+  color: var(--text-secondary) !important;
+}
+
+.inputModelChevronOpen {
+  transform: rotate(180deg);
+}
+
+@keyframes modelDropdownIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modelDropdown {
+  position: absolute;
+  left: 0;
+  z-index: 60;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 4px;
+  min-width: 240px;
+  max-height: 220px;
+  overflow-y: auto;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    0 2px 8px rgba(0, 0, 0, 0.25);
+  animation: modelDropdownIn 0.15s ease both;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+}
+
+.modelDropdownUp {
+  bottom: calc(100% + 8px);
+}
+
+.modelOption {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  width: 100%;
+  padding: 7px 10px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-family: "JetBrains Mono", monospace;
+  cursor: pointer;
+  text-align: left;
+  transition:
+    background 0.1s,
+    color 0.1s;
+
+  &:hover {
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+  }
+}
+
+.modelOptionActive {
+  color: var(--accent-green);
+  background: rgba(34, 197, 94, 0.07);
+
+  &:hover {
+    background: rgba(34, 197, 94, 0.12);
+    color: var(--accent-green);
+  }
+}
+
+.modelOptionCheck {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  flex-shrink: 0;
+  color: var(--accent-green);
 }

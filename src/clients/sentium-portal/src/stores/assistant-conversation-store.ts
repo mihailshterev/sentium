@@ -75,7 +75,7 @@ export const useConversationStore = create<ConversationState>((set, get) => {
           continue;
         }
 
-        let parsed: { type?: string; message?: { content?: string } };
+        let parsed: { type?: string; message?: string | { content?: string } };
         try {
           parsed = JSON.parse(trimmed);
         } catch {
@@ -86,10 +86,11 @@ export const useConversationStore = create<ConversationState>((set, get) => {
           return false;
         }
         if (parsed.type === "error") {
-          throw new Error(parsed.message?.content || "Connection to AI node failed.");
+          const errorText = typeof parsed.message === "string" ? parsed.message : parsed.message?.content;
+          throw new Error(errorText || "Connection to AI node failed.");
         }
 
-        const content = parsed.message?.content;
+        const content = typeof parsed.message === "string" ? undefined : parsed.message?.content;
 
         if (parsed.type === "enhanced_prompt") {
           if (content && userMsgId) {
@@ -101,7 +102,6 @@ export const useConversationStore = create<ConversationState>((set, get) => {
           updateLastMessage(aiMsgId, content ?? "", "approval");
           return true;
         }
-
         if (content) {
           if (parsed.type === "thought") {
             updateLastMessage(aiMsgId, content, "thought");
@@ -195,6 +195,12 @@ export const useConversationStore = create<ConversationState>((set, get) => {
         content: userContent,
         timestamp: new Date(),
       };
+
+      const chatHistory = [
+        ...get().messages.map((msg) => ({ role: msg.role, content: msg.content })),
+        { role: userMsg.role, content: userMsg.content },
+      ];
+
       appendMessage(userMsg);
 
       const aiMsgId = (Date.now() + 1).toString();
@@ -204,8 +210,6 @@ export const useConversationStore = create<ConversationState>((set, get) => {
         content: "",
         timestamp: new Date(),
       });
-
-      const chatHistory = get().messages.map((msg) => ({ role: msg.role, content: msg.content }));
 
       const controller = new AbortController();
       controllers.set(STREAM_KEY, controller);

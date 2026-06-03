@@ -20,6 +20,7 @@ export interface ConversationMessage {
   timestamp: Date;
   pendingApproval?: PendingApproval;
   enhancedPrompt?: string;
+  error?: string;
 }
 
 export interface ConversationDetail {
