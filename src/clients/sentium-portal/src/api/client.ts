@@ -1,6 +1,5 @@
 import { useAuthStore } from "../stores/auth-store";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 export const BASE_URL = import.meta.env.VITE_API_BASE + "/api";
 
 export class ApiError extends Error {
@@ -27,13 +26,15 @@ export class ApiError extends Error {
 
 export const BFF_BASE = import.meta.env.VITE_API_BASE + "/bff";
 
-interface RequestOptions extends RequestInit {
-  body?: any;
+interface RequestOptions extends Omit<RequestInit, "body"> {
+  body?: unknown;
 }
 
 async function request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
+  const { body, ...restOptions } = options;
+
   const config: RequestInit = {
-    ...options,
+    ...restOptions,
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
@@ -41,8 +42,8 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
     },
   };
 
-  if (options.body) {
-    config.body = JSON.stringify(options.body);
+  if (body) {
+    config.body = JSON.stringify(body);
   }
 
   const response = await fetch(`${BASE_URL}${endpoint}`, config);
@@ -73,9 +74,11 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
 export const client = {
   get: <T>(url: string, options?: RequestOptions) => request<T>(url, { ...options, method: "GET" }),
 
-  post: <T>(url: string, body: any, options?: RequestOptions) => request<T>(url, { ...options, method: "POST", body }),
+  post: <T>(url: string, body: unknown, options?: RequestOptions) =>
+    request<T>(url, { ...options, method: "POST", body }),
 
-  put: <T>(url: string, body: any, options?: RequestOptions) => request<T>(url, { ...options, method: "PUT", body }),
+  put: <T>(url: string, body: unknown, options?: RequestOptions) =>
+    request<T>(url, { ...options, method: "PUT", body }),
 
   delete: <T>(url: string, options?: RequestOptions) => request<T>(url, { ...options, method: "DELETE" }),
 };
