@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Http;
+using Sentium.Shared.Constants;
 
 namespace Sentium.Infrastructure.Security;
 
@@ -15,8 +16,6 @@ namespace Sentium.Infrastructure.Security;
 /// </summary>
 public sealed class CurrentUser(IHttpContextAccessor httpContextAccessor, SystemScopeContext systemScopeContext) : ICurrentUser
 {
-    private const string SovereignRole = "Sovereign";
-
     private ClaimsPrincipal? Principal => httpContextAccessor.HttpContext?.User;
 
     public bool IsAuthenticated => Principal?.Identity?.IsAuthenticated ?? false;
@@ -41,17 +40,5 @@ public sealed class CurrentUser(IHttpContextAccessor httpContextAccessor, System
         }
     }
 
-    public bool IsSovereign
-    {
-        get
-        {
-            var principal = Principal;
-            if (principal is null)
-            {
-                return false;
-            }
-
-            return principal.IsInRole(SovereignRole) || principal.FindAll("role").Any(c => c.Value == SovereignRole);
-        }
-    }
+    public bool IsSovereign => RoleClaims.IsInRole(Principal, SecurityRoles.Sovereign);
 }

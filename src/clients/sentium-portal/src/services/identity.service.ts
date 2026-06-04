@@ -47,7 +47,7 @@ export function deleteUser(id: string) {
 }
 
 export function getRoles() {
-  return client.get<{ name: Role; permissions: string[] }[]>("/identity/roles");
+  return client.get<{ name: Role }[]>("/identity/roles");
 }
 
 export function getUserRoles(userId: string) {

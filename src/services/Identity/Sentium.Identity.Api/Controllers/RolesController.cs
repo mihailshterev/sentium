@@ -14,13 +14,13 @@ public sealed class RolesController(IRoleService roleService) : ControllerBase
 {
     private static readonly IReadOnlyList<object> CachedRoles =
         Roles.Hierarchy
-            .Select(r => (object)new { Name = r, Permissions = Permissions.GetPermissions(r).ToList() })
+            .Select(r => (object)new { Name = r })
             .ToList();
 
     /// <summary>
-    /// Returns all defined system roles and their associated permission sets.
+    /// Returns all defined system roles.
     /// </summary>
-    /// <response code="200">Returns the full list of roles and permissions.</response>
+    /// <response code="200">Returns the full list of roles.</response>
     [HttpGet]
     [ProducesResponseType(typeof(IEnumerable<object>), StatusCodes.Status200OK)]
     public IActionResult GetRoles() => Ok(CachedRoles);

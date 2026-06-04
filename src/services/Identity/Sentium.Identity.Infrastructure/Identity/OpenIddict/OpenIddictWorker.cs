@@ -101,7 +101,6 @@ public sealed class OpenIddictWorker(IServiceProvider serviceProvider, IConfigur
         {
             Roles.Sovereign,
             Roles.Member,
-            Roles.Guest,
         };
 
         foreach (var name in roleDefs)
