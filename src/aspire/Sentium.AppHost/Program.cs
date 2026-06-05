@@ -40,7 +40,7 @@ var seq = builder.AddSeq(ResourceNames.Seq)
     .WithEnvironment(EnvConfig.Keys.AcceptEula, EnvConfig.Values.Yes);
 
 var ollama = builder.AddOllama(ResourceNames.Ollama)
-    .WithImage("ollama/ollama", "0.20.2")
+    .WithImage("ollama/ollama", "0.30.5")
     .WithDataVolume()
     .WithGPUSupport(OllamaGpuVendor.Nvidia)
     // .WithEnvironment(OllamaConfig.ContextSizeKey, OllamaConfig.DefaultContextSize)
