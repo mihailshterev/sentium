@@ -3,22 +3,23 @@ using Sentium.Registry.Core.Entities;
 namespace Sentium.Registry.Core.Settings;
 
 /// <summary>
-/// Persistence contract for the singleton <see cref="SystemSettings"/> row.
+/// Persistence contract for <see cref="SystemSettings"/> rows.
 /// </summary>
 public interface ISettingsRepository
 {
     /// <summary>
-    /// Returns the singleton settings row, or <c>null</c> if it has not been seeded yet.
+    /// Returns the settings row for <paramref name="userId"/> (or the global row when
+    /// <paramref name="userId"/> is <c>null</c>), or <c>null</c> if it has not been seeded yet.
     /// </summary>
-    Task<SystemSettings?> FindAsync(CancellationToken ct = default);
+    Task<SystemSettings?> FindAsync(Guid? userId, CancellationToken ct = default);
 
     /// <summary>
-    /// Inserts a new settings row and immediately persists it.
+    /// Inserts a new settings row.
     /// </summary>
     Task AddAsync(SystemSettings entity, CancellationToken ct = default);
 
     /// <summary>
-    /// Flushes pending change-tracker mutations to the database.
+    /// Updates the settings.
     /// </summary>
-    Task SaveAsync(CancellationToken ct = default);
+    Task UpdateAsync(SystemSettings entity, CancellationToken ct = default);
 }

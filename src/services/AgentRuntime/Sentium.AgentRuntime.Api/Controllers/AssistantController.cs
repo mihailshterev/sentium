@@ -291,7 +291,7 @@ public sealed class AssistantController(
             return null;
         }
 
-        var settings = await registrySettingsService.GetAsync(ct);
+        var settings = await registrySettingsService.GetAsync(currentUser.UserId, ct);
         if (!settings.Harness.IsPromptEnhancementEnabled)
         {
             return null;

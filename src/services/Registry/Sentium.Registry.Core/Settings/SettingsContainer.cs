@@ -2,11 +2,23 @@ namespace Sentium.Registry.Core.Settings;
 
 /// <summary>
 /// Root JSON payload stored in the SystemSettings.Settings column.
-/// Add new top-level sections (Monitoring, Security, etc.) here without any DB migration.
 /// </summary>
 public sealed class SettingsContainer
 {
+    /// <summary>
+    /// Per-user agent harness settings.
+    /// </summary>
     public HarnessSettings Harness { get; set; } = new();
+
+    /// <summary>
+    /// Global Policy Decision Point settings.
+    /// </summary>
+    public PdpSettings Pdp { get; set; } = new();
+
+    /// <summary>
+    /// Global Ollama inference settings.
+    /// </summary>
+    public OllamaSettings Ollama { get; set; } = new();
 }
 
 /// <summary>
@@ -31,4 +43,19 @@ public sealed class HarnessSettings
     /// before the agent runs, to improve results from smaller local models.
     /// </summary>
     public bool IsPromptEnhancementEnabled { get; set; } = false;
+}
+
+/// <summary>
+/// Runtime-configurable Policy Decision Point settings, managed by Sovereign users and consumed
+/// by the Sentinel service. Static policy lists (forbidden actions, protected prefixes) remain in
+/// Sentinel's appsettings.
+/// </summary>
+public sealed class PdpSettings
+{
+    public bool LockdownMode { get; set; } = false;
+    public int AutonomyLevel { get; set; } = 5;
+    public bool SemanticIntentCheckEnabled { get; set; } = true;
+    public string IntentCheckModel { get; set; } = string.Empty;
+    public int RateLimitMaxRequests { get; set; } = 120;
+    public int RateLimitWindowSeconds { get; set; } = 60;
 }

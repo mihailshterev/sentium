@@ -1,16 +1,17 @@
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Options;
 using OllamaSharp;
 using Sentium.Infrastructure.Extensions;
 using Sentium.Infrastructure.Messaging;
-using Sentium.Sentinel.Application.Options;
+using Sentium.Infrastructure.Security;
 using Sentium.Sentinel.Core.Audit;
 using Sentium.Sentinel.Core.Policies;
+using Sentium.Sentinel.Core.Settings;
 using Sentium.Sentinel.Infrastructure.Audit;
 using Sentium.Sentinel.Infrastructure.Data;
 using Sentium.Sentinel.Infrastructure.Policies;
+using Sentium.Sentinel.Infrastructure.Registry;
 using Sentium.Shared.Constants;
 
 namespace Sentium.Sentinel.Infrastructure;
@@ -45,18 +46,25 @@ public static class ServiceCollectionExtensions
             retries: 0
         );
 
+        var intentCheckModel = builder.Configuration["AI:ModelName"] ?? string.Empty;
+
         services.AddChatClient(sp =>
         {
-            var pdpOpts = sp.GetRequiredService<IOptions<PdpOptions>>().Value;
             var httpClient = sp.GetRequiredService<IHttpClientFactory>().CreateClient(ResourceNames.Ollama);
-
-            return new OllamaApiClient(httpClient)
-            {
-                SelectedModel = pdpOpts.IntentCheckModel
-            };
+            return new OllamaApiClient(httpClient) { SelectedModel = intentCheckModel };
         });
 
         services.AddSingleton<IPdpPolicy, SemanticIntentPolicy>();
+
+        services.AddTransient<InternalApiKeyDelegatingHandler>();
+
+        services.AddHttpClient(ServiceNames.Registry, client =>
+        {
+            client.BaseAddress = new Uri($"https+http://{ServiceNames.Registry}");
+        }).AddHttpMessageHandler<InternalApiKeyDelegatingHandler>();
+
+        services.AddSingleton<IPdpRuntimeSettingsProvider, RegistryPdpSettingsProvider>();
+        services.AddHostedService<SettingsSyncWorker>();
 
         return builder;
     }

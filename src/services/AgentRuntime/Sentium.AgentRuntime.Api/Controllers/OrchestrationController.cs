@@ -207,7 +207,7 @@ public sealed class OrchestrationController(
             return text ?? string.Empty;
         }
 
-        var settings = await registrySettingsService.GetAsync(ct);
+        var settings = await registrySettingsService.GetAsync(currentUser.UserId, ct);
         return settings.Harness.IsPromptEnhancementEnabled ? await promptEnhancementService.EnhanceAsync(text, ct) : text;
     }
 

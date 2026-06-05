@@ -57,6 +57,9 @@ public sealed class CompositeAgentFactory(
 
         var isOrchestrator = string.Equals(definition.Name, AgentRole.Orchestrator, StringComparison.OrdinalIgnoreCase);
 
+        var settings = await registrySettingsService.GetAsync(actingUserId, ct);
+        var ollamaSettings = settings.Ollama;
+
         var tools = isOrchestrator ? [] : agentToolProvider.GetToolsForAgent(definition.Name, ct);
 
         var instrumentedTools = tools
@@ -83,7 +86,9 @@ public sealed class CompositeAgentFactory(
             contextProviders.Add(await dynamicSkillsProvider.BuildAsync(ct));
         }
 
-        var harnessedClient = GetHarnessedClient(overrideModel);
+        var effectiveModel = !string.IsNullOrWhiteSpace(overrideModel) ? overrideModel : ollamaSettings?.DefaultModel ?? ollamaOptions.DefaultModel;
+
+        var harnessedClient = GetHarnessedClient(effectiveModel);
 
         var capabilityBlock = isOrchestrator ? string.Empty : await BuildCapabilityBlockAsync(tools, ct);
 
@@ -108,10 +113,10 @@ public sealed class CompositeAgentFactory(
         {
             Instructions = instructions,
             Tools = instrumentedTools,
-            Temperature = ollamaOptions.AgentTemperature
+            Temperature = ollamaSettings?.AgentTemperature ?? ollamaOptions.AgentTemperature
         };
 
-        chatOptions.AddOllamaOption(OllamaOption.NumCtx, ollamaOptions.AgentContextWindow);
+        chatOptions.AddOllamaOption(OllamaOption.NumCtx, ollamaSettings?.AgentContextWindow ?? ollamaOptions.AgentContextWindow);
 
         var options = new ChatClientAgentOptions
         {
@@ -156,7 +161,7 @@ public sealed class CompositeAgentFactory(
             }
 
 #pragma warning disable CA2000 // Dispose objects before losing scope
-            var harnessedDefault = new HarnessedChatClient(defaultChatClient, registrySettingsService)
+            var harnessedDefault = new HarnessedChatClient(defaultChatClient, registrySettingsService, pdpContext)
                 .WithLearnings(learningService, pdpContext);
 #pragma warning restore CA2000 // Dispose objects before losing scope
             clientCache.TryAdd(ollamaOptions.DefaultModel, harnessedDefault);
@@ -183,7 +188,7 @@ public sealed class CompositeAgentFactory(
 
             return ollamaClient
                 .AddSentiumPipeline()
-                .AsHarnessed(registrySettingsService)
+                .AsHarnessed(registrySettingsService, pdpContext)
                 .WithLearnings(learningService, pdpContext);
         });
     }

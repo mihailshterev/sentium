@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Sentium.Sentinel.Application.Options;
 using Sentium.Sentinel.Core.Policies;
+using Sentium.Sentinel.Core.Settings;
 
 namespace Sentium.Sentinel.Infrastructure.Policies;
 
@@ -14,6 +15,7 @@ namespace Sentium.Sentinel.Infrastructure.Policies;
 /// </summary>
 public sealed class SemanticIntentPolicy(
     IChatClient chatClient,
+    IPdpRuntimeSettingsProvider settings,
     IOptions<PdpOptions> opts,
     ILogger<SemanticIntentPolicy> logger) : IPdpPolicy
 {
@@ -25,12 +27,14 @@ public sealed class SemanticIntentPolicy(
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        if (!_options.SemanticIntentCheckEnabled)
+        var runtime = await settings.GetAsync(ct);
+
+        if (!runtime.SemanticIntentCheckEnabled)
         {
             return null;
         }
 
-        if (_options.AutonomyLevel >= 9)
+        if (runtime.AutonomyLevel >= 9)
         {
             return null;
         }
@@ -40,7 +44,7 @@ public sealed class SemanticIntentPolicy(
             return null;
         }
 
-        var verdict = await ClassifyIntentAsync(request, ct);
+        var verdict = await ClassifyIntentAsync(request, runtime, ct);
         var verdictLabel = verdict switch
         {
             IntentVerdict.Aligned => "Aligned",
@@ -49,7 +53,7 @@ public sealed class SemanticIntentPolicy(
         };
 
         var effectiveVerdict = verdict;
-        if (verdict == IntentVerdict.Inconclusive && _options.AutonomyLevel <= 2)
+        if (verdict == IntentVerdict.Inconclusive && runtime.AutonomyLevel <= 2)
         {
             effectiveVerdict = IntentVerdict.Misaligned;
         }
@@ -85,7 +89,7 @@ public sealed class SemanticIntentPolicy(
         };
     }
 
-    private async Task<IntentVerdict> ClassifyIntentAsync(PolicyRequest request, CancellationToken ct)
+    private async Task<IntentVerdict> ClassifyIntentAsync(PolicyRequest request, PdpRuntimeSettings runtime, CancellationToken ct)
     {
         var prompt = BuildClassificationPrompt(request);
 
@@ -94,7 +98,11 @@ public sealed class SemanticIntentPolicy(
 
         try
         {
-            var chatOptions = new ChatOptions { Temperature = 0f };
+            var chatOptions = new ChatOptions
+            {
+                Temperature = 0f,
+                ModelId = string.IsNullOrWhiteSpace(runtime.IntentCheckModel) ? null : runtime.IntentCheckModel
+            };
 
             var message = new ChatMessage(ChatRole.User, prompt);
 

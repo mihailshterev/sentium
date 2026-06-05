@@ -2171,7 +2171,9 @@
         "type": "Project",
         "dependencies": {
           "Aspire.NATS.Net": "[13.2.4, )",
+          "Aspire.StackExchange.Redis.DistributedCaching": "[13.2.4, )",
           "Microsoft.AspNetCore.OpenApi": "[10.0.1, )",
+          "Microsoft.Extensions.Caching.Hybrid": "[10.4.0, )",
           "Scalar.AspNetCore": "[2.14.4, )",
           "Sentium.Sentinel.Application": "[1.0.0, )",
           "Sentium.Sentinel.Infrastructure": "[1.0.0, )",

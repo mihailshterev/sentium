@@ -96,6 +96,7 @@ var sentinelApi = builder.AddProject<Projects.Sentium_Sentinel_Api>(ServiceNames
     .WithReference(identityApi).WaitFor(identityApi)
     .WithReference(registryApi).WaitFor(registryApi)
     .WithReference(ollamaModel).WaitFor(ollamaModel)
+    .WithReference(redis).WaitFor(redis)
     .WithEnvironment(EnvConfig.Keys.IdentityAuthority, identityApi.GetEndpoint("http"))
     .WithEnvironment(EnvConfig.Keys.InternalApiKey, internalApiKey)
     .WithUrlForEndpoint("https", url =>

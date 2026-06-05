@@ -27,6 +27,9 @@ builder.Services.AddControllers(options => options.Filters.Add<FluentValidationF
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
 builder.AddNatsClient(ResourceNames.Nats);
+builder.AddRedisDistributedCache(ResourceNames.Redis);
+
+builder.Services.AddHybridCache();
 
 builder.AddSentiumAuditLogging();
 builder.AddInfrastructure();

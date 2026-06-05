@@ -3,16 +3,21 @@ using System.Text;
 using Microsoft.Extensions.AI;
 using Sentium.AgentRuntime.Core.Harness;
 using Sentium.AgentRuntime.Core.Registry;
+using Sentium.AgentRuntime.Infrastructure.Sentinel;
 
 namespace Sentium.AgentRuntime.Infrastructure.Agents;
 
 /// <summary>
 /// Decorates an <see cref="IChatClient"/> by prepending a combined system prompt
-/// (built-in governance policy + user-defined harness) to every request.
-/// Instructions are resolved at call-time from <see cref="IRegistrySettingsService"/>
-/// so admin changes take effect within the L1 cache TTL without a service restart.
+/// (built-in governance policy + the user's own harness) to every request.
+/// Instructions are resolved at call-time from <see cref="IRegistrySettingsService"/> scoped to the
+/// acting user (<see cref="IPdpContextAccessor.UserId"/>) so changes take effect within the L1 cache
+/// TTL without a service restart.
 /// </summary>
-public sealed class HarnessedChatClient(IChatClient innerClient, IRegistrySettingsService registrySettingsService) : DelegatingChatClient(innerClient)
+public sealed class HarnessedChatClient(
+    IChatClient innerClient,
+    IRegistrySettingsService registrySettingsService,
+    IPdpContextAccessor pdpContext) : DelegatingChatClient(innerClient)
 {
     public override async Task<ChatResponse> GetResponseAsync(
         IEnumerable<ChatMessage> messages,
@@ -38,7 +43,7 @@ public sealed class HarnessedChatClient(IChatClient innerClient, IRegistrySettin
 
     private async Task<List<ChatMessage>> ApplyHarnessAsync(IEnumerable<ChatMessage> messages, CancellationToken ct)
     {
-        var settings = await registrySettingsService.GetAsync(ct);
+        var settings = await registrySettingsService.GetAsync(pdpContext.UserId, ct);
         var harness = BuildHarness(settings);
 
         var messageList = messages.ToList();
@@ -74,7 +79,7 @@ public sealed class HarnessedChatClient(IChatClient innerClient, IRegistrySettin
                 sb.AppendLine().AppendLine();
             }
 
-            sb.AppendLine("### USER-DEFINED GLOBAL BEHAVIOUR");
+            sb.AppendLine("### USER-DEFINED BEHAVIOUR");
             sb.Append(settings.Harness.UserHarnessPrompt);
         }
 

@@ -6,7 +6,7 @@ namespace Sentium.AgentRuntime.Core.Registry;
 public interface IRegistryClient
 {
     /// <summary>
-    /// Fetches the current global settings from Registry. Returns null on failure.
+    /// Fetches the settings from Registry
     /// </summary>
-    Task<SettingsSnapshot?> GetSettingsAsync(CancellationToken ct = default);
+    Task<SettingsSnapshot?> GetSettingsAsync(Guid? userId, CancellationToken ct = default);
 }

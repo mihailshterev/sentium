@@ -7,9 +7,10 @@ namespace Sentium.AgentRuntime.Core.Registry;
 public interface IRegistrySettingsService
 {
     /// <summary>
-    /// Returns the current settings, reading from the local in-memory cache or falling back to Registry HTTP.
+    /// Returns the settings
     /// </summary>
+    /// <param name="userId">The user whose settings to resolve, or null for global defaults.</param>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>The current settings snapshot.</returns>
-    ValueTask<SettingsSnapshot> GetAsync(CancellationToken ct = default);
+    ValueTask<SettingsSnapshot> GetAsync(Guid? userId, CancellationToken ct = default);
 }

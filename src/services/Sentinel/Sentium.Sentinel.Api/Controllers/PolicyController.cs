@@ -1,12 +1,10 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 using Sentium.Infrastructure.Security;
 using Sentium.Sentinel.Application.Engine;
-using Sentium.Sentinel.Application.Options;
 using Sentium.Sentinel.Core.Audit;
 using Sentium.Sentinel.Core.Dtos;
 using Sentium.Sentinel.Core.Policies;
+using Sentium.Sentinel.Core.Settings;
 
 namespace Sentium.Sentinel.Api.Controllers;
 
@@ -18,7 +16,7 @@ namespace Sentium.Sentinel.Api.Controllers;
 public sealed class PolicyController(
     SentinelPolicyEngine engine,
     IAuditLog auditLog,
-    IOptionsMonitor<PdpOptions> optionsMonitor) : ControllerBase
+    IPdpRuntimeSettingsProvider pdpSettings) : ControllerBase
 {
     /// <summary>
     /// Evaluates a policy request and returns an authorization decision.
@@ -66,7 +64,7 @@ public sealed class PolicyController(
     /// Returns recent forensic audit records, newest first. Requires authentication.
     /// </summary>
     [HttpGet("audit")]
-    [Authorize]
+    [AuthorizeSovereign]
     [ProducesResponseType<IReadOnlyList<AuditRecord>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAudit([FromQuery] int count = 100, CancellationToken ct = default)
     {
@@ -78,7 +76,7 @@ public sealed class PolicyController(
     /// Returns audit records for a specific agent. Requires authentication.
     /// </summary>
     [HttpGet("audit/agent/{agentId}")]
-    [Authorize]
+    [AuthorizeSovereign]
     [ProducesResponseType<IReadOnlyList<AuditRecord>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAuditByAgent(string agentId, [FromQuery] int count = 50, CancellationToken ct = default)
     {
@@ -90,7 +88,7 @@ public sealed class PolicyController(
     /// Returns aggregate statistics for the current audit window. Requires authentication.
     /// </summary>
     [HttpGet("audit/stats")]
-    [Authorize]
+    [AuthorizeSovereign]
     [ProducesResponseType<AuditStatsDto>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAuditStats(CancellationToken ct = default)
     {
@@ -129,70 +127,49 @@ public sealed class PolicyController(
     }
 
     /// <summary>
-    /// Returns the current runtime-configurable PDP settings. Requires authentication.
+    /// Returns the current runtime-configurable PDP settings.
     /// </summary>
     [HttpGet("settings")]
-    [Authorize]
+    [AuthorizeSovereign]
     [ProducesResponseType<PdpSettingsDto>(StatusCodes.Status200OK)]
-    public IActionResult GetSettings()
+    public async Task<IActionResult> GetSettings(CancellationToken ct)
     {
-        var opts = optionsMonitor.CurrentValue;
-        return Ok(new PdpSettingsDto
-        {
-            LockdownMode = opts.LockdownMode,
-            AutonomyLevel = opts.AutonomyLevel,
-            SemanticIntentCheckEnabled = opts.SemanticIntentCheckEnabled,
-            RateLimitMaxRequests = opts.RateLimitMaxRequests,
-            RateLimitWindowSeconds = opts.RateLimitWindowSeconds
-        });
+        var runtime = await pdpSettings.GetAsync(ct);
+        return Ok(ToDto(runtime));
     }
 
     /// <summary>
-    /// Updates runtime-configurable PDP settings. Requires authentication.
-    /// Changes take effect immediately without restarting the service.
+    /// Updates runtime-configurable PDP settings.
     /// </summary>
     [HttpPut("settings")]
-    [Authorize]
+    [AuthorizeSovereign]
     [ProducesResponseType<PdpSettingsDto>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public IActionResult UpdateSettings([FromBody] UpdatePdpSettingsRequest body)
+    public async Task<IActionResult> UpdateSettings([FromBody] UpdatePdpSettingsRequest body, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(body);
 
-        var opts = optionsMonitor.CurrentValue;
-
-        if (body.LockdownMode.HasValue)
+        var current = await pdpSettings.GetAsync(ct);
+        var merged = current with
         {
-            opts.LockdownMode = body.LockdownMode.Value;
-        }
+            LockdownMode = body.LockdownMode ?? current.LockdownMode,
+            AutonomyLevel = body.AutonomyLevel ?? current.AutonomyLevel,
+            SemanticIntentCheckEnabled = body.SemanticIntentCheckEnabled ?? current.SemanticIntentCheckEnabled,
+            RateLimitMaxRequests = body.RateLimitMaxRequests ?? current.RateLimitMaxRequests,
+            RateLimitWindowSeconds = body.RateLimitWindowSeconds ?? current.RateLimitWindowSeconds,
+        };
 
-        if (body.AutonomyLevel.HasValue)
-        {
-            opts.AutonomyLevel = body.AutonomyLevel.Value;
-        }
+        await pdpSettings.UpdateAsync(merged, ct);
 
-        if (body.SemanticIntentCheckEnabled.HasValue)
-        {
-            opts.SemanticIntentCheckEnabled = body.SemanticIntentCheckEnabled.Value;
-        }
-
-        if (body.RateLimitMaxRequests.HasValue)
-        {
-            opts.RateLimitMaxRequests = body.RateLimitMaxRequests.Value;
-        }
-
-        if (body.RateLimitWindowSeconds.HasValue)
-        {
-            opts.RateLimitWindowSeconds = body.RateLimitWindowSeconds.Value;
-        }
-
-        return Ok(new PdpSettingsDto
-        {
-            LockdownMode = opts.LockdownMode,
-            AutonomyLevel = opts.AutonomyLevel,
-            SemanticIntentCheckEnabled = opts.SemanticIntentCheckEnabled,
-            RateLimitMaxRequests = opts.RateLimitMaxRequests,
-            RateLimitWindowSeconds = opts.RateLimitWindowSeconds
-        });
+        return Ok(ToDto(merged));
     }
+
+    private static PdpSettingsDto ToDto(PdpRuntimeSettings runtime) => new()
+    {
+        LockdownMode = runtime.LockdownMode,
+        AutonomyLevel = runtime.AutonomyLevel,
+        SemanticIntentCheckEnabled = runtime.SemanticIntentCheckEnabled,
+        RateLimitMaxRequests = runtime.RateLimitMaxRequests,
+        RateLimitWindowSeconds = runtime.RateLimitWindowSeconds
+    };
 }
