@@ -1,3 +1,4 @@
+using System.Text.Json;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
@@ -12,115 +13,110 @@ namespace Sentium.Tests.Unit.Registry;
 
 public sealed class SettingsServiceTests
 {
+    private static readonly Guid UserId = Guid.NewGuid();
+
     private readonly ISettingsRepository _repository = Substitute.For<ISettingsRepository>();
     private readonly SpyEventBus _eventBus = new();
     private readonly SettingsService _sut;
 
     public SettingsServiceTests()
     {
+        var catalog = new SettingsCatalog(new ISettingsDescriptor[]
+        {
+            new SettingsDescriptor<HarnessSettings>(SettingsKeys.Harness, SettingsScope.PerUser, c => c.Harness, (c, v) => c.Harness = v),
+            new SettingsDescriptor<PdpSettings>(SettingsKeys.Pdp, SettingsScope.Global, c => c.Pdp, (c, v) => c.Pdp = v),
+        });
+
         _sut = new SettingsService(
             _repository,
+            catalog,
             new PassThroughHybridCache(),
             _eventBus,
+            Substitute.For<IServiceProvider>(),
             NullLogger<SettingsService>.Instance);
     }
 
-    private static UpdateSettingsRequest MakeUpdateRequest(bool promptEnhancement = true) =>
-        new(new UpdateHarnessSettingsRequest("custom prompt", true, promptEnhancement));
+    private static JsonElement Payload(object value) => JsonSerializer.SerializeToElement(value);
 
     [Fact]
-    public async Task GetAsync_ReturnsExistingSettings_WhenRowExists()
+    public async Task GetAsync_ReturnsNull_ForUnknownKey()
     {
-        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        var result = await _sut.GetAsync("nope", UserId, ct);
+        result.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task GetAsync_Harness_ReturnsUserValue_WhenRowExists()
+    {
         var ct = TestContext.Current.CancellationToken;
         var entity = new SystemSettings
         {
-            Settings = new SettingsContainer
-            {
-                Harness = new HarnessSettings { UserHarnessPrompt = "existing", IsBuiltInHarnessEnabled = true }
-            }
+            UserId = UserId,
+            Settings = new SettingsContainer { Harness = new HarnessSettings { UserHarnessPrompt = "existing" } }
         };
-        _repository.FindAsync(ct).Returns(entity);
+        _repository.FindAsync(UserId, ct).Returns(entity);
 
-        // Act
-        var result = await _sut.GetAsync(ct);
+        var result = await _sut.GetAsync(SettingsKeys.Harness, UserId, ct);
 
-        // Assert
-        result.Harness.UserHarnessPrompt.Should().Be("existing");
-    }
-
-    [Fact]
-    public async Task GetAsync_SeedsDefaults_WhenNoRowExists()
-    {
-        // Arrange
-        var ct = TestContext.Current.CancellationToken;
-        _repository.FindAsync(ct).Returns((SystemSettings?)null);
-
-        // Act
-        var result = await _sut.GetAsync(ct);
-
-        // Assert
         result.Should().NotBeNull();
-        await _repository.Received(1).AddAsync(Arg.Any<SystemSettings>(), ct);
+        result!.Key.Should().Be(SettingsKeys.Harness);
+        result.Value.Should().BeOfType<HarnessSettings>().Which.UserHarnessPrompt.Should().Be("existing");
     }
 
     [Fact]
-    public async Task UpdateAsync_PersistsNewValues_WhenRowExists()
+    public async Task GetAsync_Harness_ReturnsDefaults_WithoutSeeding_WhenNoRow()
     {
-        // Arrange
         var ct = TestContext.Current.CancellationToken;
-        var entity = new SystemSettings();
-        _repository.FindAsync(ct).Returns(entity);
-        var request = MakeUpdateRequest();
+        _repository.FindAsync(UserId, ct).Returns((SystemSettings?)null);
 
-        // Act
-        await _sut.UpdateAsync(request, "admin", ct);
+        var result = await _sut.GetAsync(SettingsKeys.Harness, UserId, ct);
 
-        // Assert
-        await _repository.Received(1).SaveAsync(ct);
-        entity.Settings.Harness.UserHarnessPrompt.Should().Be("custom prompt");
+        result!.Value.Should().BeOfType<HarnessSettings>().Which.UserHarnessPrompt.Should().BeEmpty();
+        await _repository.DidNotReceive().AddAsync(Arg.Any<SystemSettings>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task UpdateAsync_Harness_PersistsAndPublishes()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var entity = new SystemSettings { UserId = UserId };
+        _repository.FindAsync(UserId, ct).Returns(entity);
+
+        var result = await _sut.UpdateAsync(
+            SettingsKeys.Harness, UserId,
+            Payload(new { userHarnessPrompt = "custom", isBuiltInHarnessEnabled = true, isPromptEnhancementEnabled = true }),
+            "admin", ct);
+
+        await _repository.Received(1).UpdateAsync(Arg.Any<SystemSettings>(), ct);
+        entity.Settings.Harness.UserHarnessPrompt.Should().Be("custom");
         entity.UpdatedBy.Should().Be("admin");
-    }
-
-    [Fact]
-    public async Task UpdateAsync_SeedsRow_ThenPersists_WhenNoRowExists()
-    {
-        // Arrange
-        var ct = TestContext.Current.CancellationToken;
-        _repository.FindAsync(ct).Returns((SystemSettings?)null);
-
-        // Act
-        await _sut.UpdateAsync(MakeUpdateRequest(), null, ct);
-
-        // Assert
-        await _repository.Received(1).AddAsync(Arg.Any<SystemSettings>(), ct);
-        await _repository.Received(1).SaveAsync(ct);
-    }
-
-    [Fact]
-    public async Task UpdateAsync_PublishesNatsEvent_OnSuccess()
-    {
-        // Arrange
-        var ct = TestContext.Current.CancellationToken;
-        _repository.FindAsync(ct).Returns(new SystemSettings());
-
-        // Act
-        await _sut.UpdateAsync(MakeUpdateRequest(), null, ct);
-
-        // Assert
+        result.Value.Should().BeOfType<HarnessSettings>().Which.UserHarnessPrompt.Should().Be("custom");
         _eventBus.PublishedSubjects.Should().ContainSingle(s => s == NatsSubjects.SettingsInvalidated);
     }
 
     [Fact]
-    public async Task UpdateAsync_ThrowsArgumentNull_WhenRequestNull()
+    public async Task UpdateAsync_Pdp_ForcesGlobalRow_EvenWithUserId()
     {
-        // Arrange
         var ct = TestContext.Current.CancellationToken;
+        var globalRow = new SystemSettings { UserId = null };
+        _repository.FindAsync(null, ct).Returns(globalRow);
 
-        // Act
-        var act = async () => await _sut.UpdateAsync(null!, null, ct);
+        await _sut.UpdateAsync(
+            SettingsKeys.Pdp, UserId,
+            Payload(new { lockdownMode = true, autonomyLevel = 3, semanticIntentCheckEnabled = false, intentCheckModel = "m", rateLimitMaxRequests = 50, rateLimitWindowSeconds = 30 }),
+            "admin", ct);
 
-        // Assert
-        await act.Should().ThrowAsync<ArgumentNullException>();
+        globalRow.Settings.Pdp.LockdownMode.Should().BeTrue();
+        globalRow.Settings.Pdp.AutonomyLevel.Should().Be(3);
+        await _repository.Received(1).FindAsync(null, ct);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ThrowsKeyNotFound_ForUnknownKey()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var act = async () => await _sut.UpdateAsync("nope", UserId, Payload(new { }), null, ct);
+        await act.Should().ThrowAsync<KeyNotFoundException>();
     }
 }

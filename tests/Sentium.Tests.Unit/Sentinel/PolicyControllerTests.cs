@@ -1,15 +1,13 @@
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
-using NSubstitute;
 using Sentium.Sentinel.Application.Audit;
 using Sentium.Sentinel.Application.Engine;
-using Sentium.Sentinel.Application.Options;
 using Sentium.Sentinel.Api.Controllers;
 using Sentium.Sentinel.Core.Audit;
 using Sentium.Sentinel.Core.Dtos;
 using Sentium.Sentinel.Core.Policies;
+using Sentium.Sentinel.Core.Settings;
 using Xunit;
 
 namespace Sentium.Tests.Unit.Sentinel;
@@ -17,16 +15,13 @@ namespace Sentium.Tests.Unit.Sentinel;
 public sealed class PolicyControllerTests
 {
     private readonly InMemoryAuditLog _auditLog = new();
-    private readonly PdpOptions _options = new();
+    private readonly FakePdpRuntimeSettingsProvider _pdpSettings = new();
     private readonly PolicyController _controller;
 
     public PolicyControllerTests()
     {
-        var optionsMonitor = Substitute.For<IOptionsMonitor<PdpOptions>>();
-        optionsMonitor.CurrentValue.Returns(_options);
-
         var engine = new SentinelPolicyEngine([], _auditLog, NullLogger<SentinelPolicyEngine>.Instance);
-        _controller = new PolicyController(engine, _auditLog, optionsMonitor);
+        _controller = new PolicyController(engine, _auditLog, _pdpSettings);
     }
 
     private static AuditRecord MakeAuditRecord(bool allowed = true) =>
@@ -70,10 +65,10 @@ public sealed class PolicyControllerTests
         // Arrange
         var ct = TestContext.Current.CancellationToken;
 
-        // Act — request 999 but the controller clamps to 500
+        // Act - request 999 but the controller clamps to 500
         var result = await _controller.GetAudit(999, ct);
 
-        // Assert — just verify it returns OK without error
+        // Assert - just verify it returns OK without error
         result.Should().BeOfType<OkObjectResult>();
     }
 
@@ -128,10 +123,10 @@ public sealed class PolicyControllerTests
     }
 
     [Fact]
-    public void GetSettings_ReturnsOk_WithCurrentOptions()
+    public async Task GetSettings_ReturnsOk_WithCurrentSettings()
     {
         // Act
-        var result = _controller.GetSettings();
+        var result = await _controller.GetSettings(TestContext.Current.CancellationToken);
 
         // Assert
         result.Should().BeOfType<OkObjectResult>()
@@ -139,19 +134,22 @@ public sealed class PolicyControllerTests
     }
 
     [Fact]
-    public void UpdateSettings_ReturnsOk_WithUpdatedValues()
+    public async Task UpdateSettings_ReturnsOk_WithUpdatedValues_AndPersists()
     {
         // Arrange
+        var ct = TestContext.Current.CancellationToken;
         var request = new UpdatePdpSettingsRequest { LockdownMode = true, RateLimitMaxRequests = 50 };
 
         // Act
-        var result = _controller.UpdateSettings(request);
+        var result = await _controller.UpdateSettings(request, ct);
 
         // Assert
         var dto = result.Should().BeOfType<OkObjectResult>()
             .Which.Value.As<PdpSettingsDto>();
         dto.LockdownMode.Should().BeTrue();
         dto.RateLimitMaxRequests.Should().Be(50);
+        _pdpSettings.LastUpdated.Should().NotBeNull();
+        _pdpSettings.LastUpdated!.LockdownMode.Should().BeTrue();
     }
 
     [Fact]
