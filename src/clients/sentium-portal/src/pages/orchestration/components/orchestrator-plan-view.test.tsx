@@ -1,8 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import OrchestratorPlanView, { parseAssignments } from "./orchestrator-plan-view";
+import OrchestratorPlanView from "./orchestrator-plan-view";
 import LogEntryView from "./log-entry-view";
 import type { LogEntry } from "../../../types/orchestration";
+import { parseAssignments } from "../../../utils/agent-helpers";
 
 const PLAN_JSON =
   '[{"agent":"DotNet Architect","task":"Design the C# Clean Architecture layers."},' +

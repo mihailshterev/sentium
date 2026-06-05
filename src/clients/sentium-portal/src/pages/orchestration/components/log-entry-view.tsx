@@ -3,7 +3,8 @@ import { Brain, ChevronDown, Wrench, CheckCircle2, XCircle, RefreshCw, AlertTria
 import type { ElementType } from "react";
 import styles from "../agent-orchestration.module.scss";
 import type { LogEntry } from "../../../types/orchestration";
-import OrchestratorPlanView, { parseAssignments } from "./orchestrator-plan-view";
+import OrchestratorPlanView from "./orchestrator-plan-view";
+import { parseAssignments } from "../../../utils/agent-helpers";
 
 interface LogEntryViewProps {
   log: LogEntry;
