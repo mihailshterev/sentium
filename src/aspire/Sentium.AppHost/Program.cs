@@ -51,7 +51,7 @@ var ollama = builder.AddOllama(ResourceNames.Ollama)
     .WithEnvironment(OllamaConfig.DebugKey, "1")
     .WithEndpoint("http", e => e.Port = 11434);
 
-var ollamaModel = ollama.AddModel(AIModels.Gemma4);
+var ollamaModel = ollama.AddModel(AIModels.Gemma4_E4B);
 var ollamaEmbeddingModel = ollama.AddModel(AIModels.NomicEmbedText);
 
 var identityApi = builder.AddProject<Projects.Sentium_Identity_Api>(ServiceNames.Identity)

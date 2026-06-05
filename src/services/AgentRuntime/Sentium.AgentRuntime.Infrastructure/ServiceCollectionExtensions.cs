@@ -48,7 +48,7 @@ public static class ServiceCollectionExtensions
         var configuration = builder.Configuration;
 
         var ollamaUri = new Uri(configuration["AI:OllamaBaseUrl"] ?? "http://localhost:11434");
-        var modelName = configuration["AI:ModelName"] ?? AIModels.Gemma4;
+        var modelName = configuration["AI:ModelName"] ?? AIModels.Gemma4_E4B;
 
         services.AddSingleton(new OllamaOptions { BaseUrl = ollamaUri, DefaultModel = modelName });
 
