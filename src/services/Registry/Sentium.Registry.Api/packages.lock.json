@@ -694,6 +694,7 @@
       "sentium.registry.application": {
         "type": "Project",
         "dependencies": {
+          "FluentValidation": "[12.1.1, )",
           "Microsoft.Extensions.Caching.Hybrid": "[10.4.0, )",
           "Sentium.Infrastructure": "[1.0.0, )",
           "Sentium.Registry.Core": "[1.0.0, )",

@@ -665,6 +665,7 @@
           "Microsoft.EntityFrameworkCore": "[10.0.5, )",
           "Microsoft.EntityFrameworkCore.SqlServer": "[10.0.5, )",
           "Microsoft.Extensions.AI": "[10.5.2, )",
+          "Microsoft.Extensions.Caching.Hybrid": "[10.4.0, )",
           "NATS.Net": "[2.7.2, )",
           "OllamaSharp": "[5.4.25, )",
           "Sentium.Infrastructure": "[1.0.0, )",
@@ -766,6 +767,12 @@
           "Microsoft.Extensions.AI.Abstractions": "10.5.2",
           "System.Numerics.Tensors": "10.0.6"
         }
+      },
+      "Microsoft.Extensions.Caching.Hybrid": {
+        "type": "CentralTransitive",
+        "requested": "[10.4.0, )",
+        "resolved": "10.4.0",
+        "contentHash": "4V+aMLQeU/p4VcIWIcvGro0L6HynmL2TrelL04Ce1iotP6T5+kjxuZQvl6P1ObSXIRPCbVXtQSt1NxK0fRIuag=="
       },
       "Microsoft.Extensions.Http.Resilience": {
         "type": "CentralTransitive",
