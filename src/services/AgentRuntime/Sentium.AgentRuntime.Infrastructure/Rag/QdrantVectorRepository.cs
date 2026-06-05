@@ -13,6 +13,8 @@ namespace Sentium.AgentRuntime.Infrastructure.Rag;
 /// </summary>
 public sealed class QdrantVectorRepository(QdrantClient qdrantClient, ILogger<QdrantVectorRepository> logger) : IVectorRepository
 {
+    private const uint MaxPageLimit = 1000;
+
     private const string FieldContent = "content";
     private const string FieldSource = "source";
     private const string FieldSourceType = "source_type";
@@ -217,12 +219,16 @@ public sealed class QdrantVectorRepository(QdrantClient qdrantClient, ILogger<Qd
             return [];
         }
 
+        var requestedLimit = limit == 0 ? 1 : limit;
+
+        var safeLimit = (uint)Math.Min(requestedLimit, MaxPageLimit);
+
         var offsetId = offset.HasValue ? new PointId { Num = offset.Value } : null;
 
         var result = await qdrantClient.ScrollAsync(
             collectionName,
             BuildScopeFilter(scope),
-            (uint)limit,
+            safeLimit,
             offsetId,
             true,
             false,
