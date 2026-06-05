@@ -158,35 +158,33 @@ export const useConversationStore = create<ConversationState>((set, get) => {
       })),
 
     updateLastMessage: (id, appendContent, type = "content") =>
-      set((state) => ({
-        messages: state.messages.map((msg) => {
-          if (msg.id !== id) {
-            return msg;
-          }
+      set((state) => {
+        const idx = state.messages.findLastIndex((m) => m.id === id);
+        if (idx === -1) {
+          return state;
+        }
 
-          if (type === "thought") {
-            return { ...msg, thought: (msg.thought || "") + appendContent };
-          }
+        const msg = state.messages[idx];
+        let updated: ConversationMessage;
 
-          if (type === "tool") {
-            return {
-              ...msg,
-              toolCalls: [...(msg.toolCalls || []), appendContent],
-            };
+        if (type === "thought") {
+          updated = { ...msg, thought: (msg.thought || "") + appendContent };
+        } else if (type === "tool") {
+          updated = { ...msg, toolCalls: [...(msg.toolCalls || []), appendContent] };
+        } else if (type === "approval") {
+          try {
+            updated = { ...msg, pendingApproval: JSON.parse(appendContent) };
+          } catch {
+            return state;
           }
+        } else {
+          updated = { ...msg, content: msg.content + appendContent };
+        }
 
-          if (type === "approval") {
-            try {
-              const pendingApproval = JSON.parse(appendContent);
-              return { ...msg, pendingApproval };
-            } catch {
-              return msg;
-            }
-          }
-
-          return { ...msg, content: msg.content + appendContent };
-        }),
-      })),
+        const next = state.messages.slice();
+        next[idx] = updated;
+        return { messages: next };
+      }),
 
     setEnhancedPrompt: (id, prompt) =>
       set((state) => ({
