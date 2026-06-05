@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using Sentium.AgentRuntime.Core.Agents;
 using Sentium.AgentRuntime.Core.Rag;
 using Sentium.AgentRuntime.Infrastructure;
+using Sentium.Infrastructure.Security;
 using Sentium.Shared.Constants;
 using System.Text;
 using System.Text.Json;
@@ -25,6 +26,7 @@ public sealed class ModelsController(
 {
     private Uri OllamaBase => ollamaOptions.BaseUrl;
     private string EmbeddingModel => ragOptions.Value.EmbeddingModelName;
+    private bool IsSovereign => RoleClaims.IsInRole(User, SecurityRoles.Sovereign);
 
     /// <summary>
     /// Retrieves a list of all models currently installed on the local Ollama instance.
@@ -73,9 +75,16 @@ public sealed class ModelsController(
     [HttpPost("pull")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task PullModel([FromBody] PullModelRequest request, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(request);
+
+        if (!IsSovereign)
+        {
+            Response.StatusCode = StatusCodes.Status403Forbidden;
+            return;
+        }
 
         var ollamaClient = httpClientFactory.CreateClient(ResourceNames.Ollama);
 
@@ -131,8 +140,14 @@ public sealed class ModelsController(
     [HttpDelete]
     [ProducesResponseType(typeof(DeleteModelResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> DeleteModel([FromQuery] string name, CancellationToken ct)
     {
+        if (!IsSovereign)
+        {
+            return Forbid();
+        }
+
         if (string.IsNullOrWhiteSpace(name))
         {
             return BadRequest("Model name is required.");

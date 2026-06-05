@@ -584,3 +584,12 @@
     opacity: 1;
   }
 }
+
+.sovereignNote {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1.25rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}

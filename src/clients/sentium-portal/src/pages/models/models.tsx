@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { BrainCircuit, RefreshCw, HardDrive, Info, X, Loader } from "lucide-react";
+import { BrainCircuit, RefreshCw, HardDrive, Info, Lock, X, Loader } from "lucide-react";
 import styles from "./models.module.scss";
 import useOllamaModels from "../../hooks/useOllamaModels";
+import { useRole } from "../../hooks/useRole";
 import PageHeader from "../../components/ui/page-header";
 import EmptyState from "../../components/ui/empty-state";
 import ModelCard from "./components/model-card";
@@ -22,6 +23,7 @@ const Models = () => {
     deleteResult,
     clearDeleteResult,
   } = useOllamaModels();
+  const { isSovereign } = useRole();
 
   const [pendingDeleteName, setPendingDeleteName] = useState<string | null>(null);
 
@@ -103,7 +105,13 @@ const Models = () => {
               />
             ) : (
               models.map((model) => (
-                <ModelCard key={model.name} model={model} deletingModel={deletingModel} onDelete={handleDelete} />
+                <ModelCard
+                  key={model.name}
+                  model={model}
+                  deletingModel={deletingModel}
+                  onDelete={handleDelete}
+                  canDelete={isSovereign}
+                />
               ))
             )}
           </div>
@@ -114,14 +122,21 @@ const Models = () => {
             <span className={styles.panelDot} />
             Download Model
           </div>
-          <PullModelForm
-            pullState={pullState}
-            isPulling={isPulling}
-            onSubmit={handlePull}
-            onCancelPull={cancelPull}
-            onResetPull={resetPull}
-            getPullPercent={getPullPercent}
-          />
+          {isSovereign ? (
+            <PullModelForm
+              pullState={pullState}
+              isPulling={isPulling}
+              onSubmit={handlePull}
+              onCancelPull={cancelPull}
+              onResetPull={resetPull}
+              getPullPercent={getPullPercent}
+            />
+          ) : (
+            <div className={styles.sovereignNote}>
+              <Lock size={14} />
+              Model installation and deletion requires Sovereign access.
+            </div>
+          )}
         </div>
       </div>
 
