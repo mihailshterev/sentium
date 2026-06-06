@@ -155,6 +155,7 @@ public sealed class PolicyController(
             LockdownMode = body.LockdownMode ?? current.LockdownMode,
             AutonomyLevel = body.AutonomyLevel ?? current.AutonomyLevel,
             SemanticIntentCheckEnabled = body.SemanticIntentCheckEnabled ?? current.SemanticIntentCheckEnabled,
+            IntentCheckModel = body.IntentCheckModel ?? current.IntentCheckModel,
             RateLimitMaxRequests = body.RateLimitMaxRequests ?? current.RateLimitMaxRequests,
             RateLimitWindowSeconds = body.RateLimitWindowSeconds ?? current.RateLimitWindowSeconds,
         };
@@ -169,6 +170,7 @@ public sealed class PolicyController(
         LockdownMode = runtime.LockdownMode,
         AutonomyLevel = runtime.AutonomyLevel,
         SemanticIntentCheckEnabled = runtime.SemanticIntentCheckEnabled,
+        IntentCheckModel = runtime.IntentCheckModel,
         RateLimitMaxRequests = runtime.RateLimitMaxRequests,
         RateLimitWindowSeconds = runtime.RateLimitWindowSeconds
     };
