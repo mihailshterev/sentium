@@ -38,16 +38,16 @@ public sealed class DynamicDiscoveryWorkflow(
         var dbAgentMap = dbAgents.ToDictionary(a => a.Name, a => a.Description, StringComparer.OrdinalIgnoreCase);
         var dbAgentModelMap = dbAgents.ToDictionary(a => a.Name, a => a.Model, StringComparer.OrdinalIgnoreCase);
 
-        var planner = await factory.CreateAsync(AgentRole.Orchestrator, actingUserId: trigger.UserId, ct: ct);
-        var plannerSession = await planner.CreateSessionAsync(ct);
+        var orchestrator = await factory.CreateAsync(AgentRole.Orchestrator, actingUserId: trigger.UserId, ct: ct);
+        var orchestratorSession = await orchestrator.CreateSessionAsync(ct);
 
         var streamLog = new StreamLogAccumulator();
         var rawPlanBuilder = new StringBuilder();
-        var plannerInput = workspaceContext is not null
+        var orchestratorInput = workspaceContext is not null
             ? $"{trigger.Payload}\n\n[Workspace context: ID = {workspaceContext}. Use list_workspaces and list_workspace_files tools to explore available files.]"
             : trigger.Payload;
 
-        await foreach (var update in planner.RunStreamingAsync(plannerInput, plannerSession, cancellationToken: ct))
+        await foreach (var update in orchestrator.RunStreamingAsync(orchestratorInput, orchestratorSession, cancellationToken: ct))
         {
             if (update.Contents.OfType<TextReasoningContent>().FirstOrDefault() is { } reasoning && !string.IsNullOrEmpty(reasoning.Text))
             {
