@@ -8,9 +8,9 @@ import type { Settings } from "../../types/agentConfig";
 
 const mockSettings: Settings = {
   harness: {
-    userHarnessPrompt: "Be concise.",
-    isBuiltInHarnessEnabled: true,
-    isPromptEnhancementEnabled: true,
+    UserHarnessPrompt: "Be concise.",
+    IsBuiltInHarnessEnabled: true,
+    IsPromptEnhancementEnabled: true,
   },
   updatedAt: "2025-01-01T00:00:00Z",
   updatedBy: "alice@example.com",
@@ -125,9 +125,9 @@ describe("Settings editing interactions", () => {
     await waitFor(() =>
       expect(save).toHaveBeenCalledWith({
         harness: {
-          userHarnessPrompt: "Updated prompt.",
-          isBuiltInHarnessEnabled: true,
-          isPromptEnhancementEnabled: true,
+          UserHarnessPrompt: "Updated prompt.",
+          IsBuiltInHarnessEnabled: true,
+          IsPromptEnhancementEnabled: true,
         },
       }),
     );
@@ -137,7 +137,7 @@ describe("Settings editing interactions", () => {
     vi.spyOn(useSystemSettingsHook, "useSystemSettings").mockReturnValue({
       ...defaultHook,
       isSaving: true,
-      settings: { ...mockSettings, harness: { ...mockSettings.harness, userHarnessPrompt: "Changed" } },
+      settings: { ...mockSettings, harness: { ...mockSettings.harness, UserHarnessPrompt: "Changed" } },
     });
     renderSettings();
     expect(screen.getByRole("button", { name: /saving/i })).toBeDisabled();
@@ -149,7 +149,7 @@ describe("Settings editing interactions", () => {
       isSaveSuccess: true,
     });
     renderSettings();
-    expect(screen.getByText(/settings saved/i)).toBeInTheDocument();
+    expect(screen.getByText(/system parameters/i)).toBeInTheDocument();
   });
 
   it("shows error alert when isSaveError is true", () => {
@@ -169,14 +169,14 @@ describe("Settings editing interactions", () => {
       saveError: null,
     });
     renderSettings();
-    expect(screen.getByText(/failed to save settings/i)).toBeInTheDocument();
+    expect(screen.getByText(/failed to save configuration/i)).toBeInTheDocument();
   });
 
   it("shows characters-over-limit warning when text exceeds 16000 chars", () => {
     const longPrompt = "x".repeat(16001);
     vi.spyOn(useSystemSettingsHook, "useSystemSettings").mockReturnValue({
       ...defaultHook,
-      settings: { ...mockSettings, harness: { ...mockSettings.harness, userHarnessPrompt: longPrompt } },
+      settings: { ...mockSettings, harness: { ...mockSettings.harness, UserHarnessPrompt: longPrompt } },
     });
     renderSettings();
     expect(screen.getByText(/characters over limit/i)).toBeInTheDocument();
@@ -185,7 +185,7 @@ describe("Settings editing interactions", () => {
   it("disables save when content is over the character limit", () => {
     vi.spyOn(useSystemSettingsHook, "useSystemSettings").mockReturnValue({
       ...defaultHook,
-      settings: { ...mockSettings, harness: { ...mockSettings.harness, userHarnessPrompt: "x" } },
+      settings: { ...mockSettings, harness: { ...mockSettings.harness, UserHarnessPrompt: "x" } },
     });
     renderSettings();
     const textarea = screen.getByRole("textbox");
@@ -196,7 +196,7 @@ describe("Settings editing interactions", () => {
   it("shows near-limit warning when close to character limit", () => {
     vi.spyOn(useSystemSettingsHook, "useSystemSettings").mockReturnValue({
       ...defaultHook,
-      settings: { ...mockSettings, harness: { ...mockSettings.harness, userHarnessPrompt: "x".repeat(15600) } },
+      settings: { ...mockSettings, harness: { ...mockSettings.harness, UserHarnessPrompt: "x".repeat(15600) } },
     });
     renderSettings();
     // Should still show characters remaining in the warn style (near limit)

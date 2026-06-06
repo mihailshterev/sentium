@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using NSubstitute;
 using Sentium.Infrastructure.Messaging;
+using Sentium.Infrastructure.Security;
 using Sentium.Shared.Constants;
 using Testcontainers.MsSql;
 using Testcontainers.Redis;
@@ -65,6 +66,12 @@ public class ServiceWebApplicationFactory<TProgram>(
                 options.DefaultChallengeScheme = TestAuthHandler.AuthenticationScheme;
             })
             .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>(TestAuthHandler.AuthenticationScheme, _ => { });
+
+            services.AddAuthorizationBuilder()
+                .AddPolicy(Policies.Sovereign, policy =>
+                    policy.AddAuthenticationSchemes(TestAuthHandler.AuthenticationScheme)
+                          .RequireAuthenticatedUser()
+                          .RequireAssertion(ctx => RoleClaims.IsInRole(ctx.User, SecurityRoles.Sovereign)));
         });
     }
 
