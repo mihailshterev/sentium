@@ -1,5 +1,7 @@
 using System.Net.Http.Json;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Sentium.Sandbox.Application.Options;
 using Sentium.Sandbox.Application.Sentinel;
 using Sentium.Sandbox.Core.Models;
 
@@ -9,15 +11,20 @@ namespace Sentium.Sandbox.Infrastructure.Sentinel;
 /// Typed HTTP client that submits authorization requests to the Sentinel PDP.
 /// Fail-closed: any communication failure results in a denial.
 /// </summary>
-internal sealed class HttpSentinelGateway(HttpClient httpClient, ILogger<HttpSentinelGateway> logger) : ISentinelGateway
+internal sealed class HttpSentinelGateway(
+    HttpClient httpClient,
+    IOptions<SandboxOptions> options,
+    ILogger<HttpSentinelGateway> logger) : ISentinelGateway
 {
+    private readonly SandboxOptions _options = options.Value;
+
     /// <inheritdoc />
     public async Task<SentinelAuthorizationResult> AuthorizeExecutionAsync(ExecutionRequest request, CancellationToken ct)
     {
         var body = new SentinelEvaluationRequest
         {
             AgentId = request.AgentId,
-            SkillName = "sandbox.execute",
+            SkillName = _options.SentinelSkillName,
             ResourceType = "Code",
             ResourceId = request.Language.ToString(),
             Action = "execute",

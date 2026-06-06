@@ -16,6 +16,13 @@ public sealed class ExecuteJob(IHttpClientFactory httpClientFactory, ILogger<Exe
         List<object>? FileContext = null
     );
 
+    private sealed record SandboxExecutionResponse(
+        bool Succeeded,
+        long ExitCode,
+        bool TimedOut,
+        bool PolicyDenied
+    );
+
     public async Task Execute(IJobExecutionContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -54,9 +61,19 @@ public sealed class ExecuteJob(IHttpClientFactory httpClientFactory, ILogger<Exe
 
             if (response.IsSuccessStatusCode)
             {
-                if (logger.IsEnabled(LogLevel.Information))
+                var result = await response.Content.ReadFromJsonAsync<SandboxExecutionResponse>(context.CancellationToken);
+                if (result is { Succeeded: true })
                 {
-                    logger.LogInformation("[Quartz Success] Sandbox execution completed successfully for job '{JobName}'", jobName);
+                    if (logger.IsEnabled(LogLevel.Information))
+                    {
+                        logger.LogInformation("[Quartz Success] Sandbox execution completed for job '{JobName}'", jobName);
+                    }
+                }
+                else
+                {
+                    logger.LogWarning(
+                        "[Quartz Warning] Sandbox execution finished but did not succeed for job '{JobName}'. ExitCode={ExitCode} TimedOut={TimedOut} PolicyDenied={PolicyDenied}",
+                        jobName, result?.ExitCode, result?.TimedOut, result?.PolicyDenied);
                 }
             }
             else
