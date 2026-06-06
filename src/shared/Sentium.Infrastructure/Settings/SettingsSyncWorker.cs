@@ -5,8 +5,13 @@ using Sentium.Infrastructure.Messaging;
 using Sentium.Shared.Constants;
 using Sentium.Shared.Events;
 
-namespace Sentium.Sentinel.Infrastructure.Registry;
+namespace Sentium.Infrastructure.Settings;
 
+/// <summary>
+/// Subscribes to the Registry's cache-invalidation event and evicts the local L1 entry
+/// so this service instance always sees fresh settings on the next read.
+/// L2 (Redis) is already evicted by Registry itself; this worker only clears L1.
+/// </summary>
 public sealed class SettingsSyncWorker(
     IEventBus eventBus,
     HybridCache hybridCache,
@@ -14,7 +19,7 @@ public sealed class SettingsSyncWorker(
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        logger.LogInformation("Sentinel SettingsSyncWorker started - listening on {Subject}", NatsSubjects.SettingsInvalidated);
+        logger.LogInformation("SettingsSyncWorker started - listening on {Subject}", NatsSubjects.SettingsInvalidated);
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -48,7 +53,7 @@ public sealed class SettingsSyncWorker(
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Sentinel SettingsSyncWorker subscription failed; restarting in 5 s");
+                logger.LogError(ex, "SettingsSyncWorker subscription failed; restarting in 5 s");
                 await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
             }
         }

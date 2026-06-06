@@ -31,6 +31,7 @@ using Sentium.AgentRuntime.Core.Storage;
 using Sentium.AgentRuntime.Infrastructure.Storage;
 using Microsoft.Extensions.Hosting;
 using Sentium.Infrastructure.Extensions;
+using Sentium.Infrastructure.Settings;
 using Sentium.AgentRuntime.Infrastructure.Extensions;
 using Quartz;
 
@@ -100,7 +101,7 @@ public static class ServiceCollectionExtensions
         }).AddHttpMessageHandler<InternalApiKeyDelegatingHandler>();
 
         services.AddScoped<IRegistrySettingsService, RegistrySettingsService>();
-        services.AddHostedService<SettingsSyncWorker>();
+        builder.AddSettingsSyncWorker();
 
         services.AddSingleton<IEmbeddingService, OllamaEmbeddingService>();
         services.AddSingleton<IVectorRepository, QdrantVectorRepository>();

@@ -4,6 +4,7 @@ using Microsoft.Extensions.Hosting;
 using OllamaSharp;
 using Sentium.Infrastructure.Extensions;
 using Sentium.Infrastructure.Messaging;
+using Sentium.Infrastructure.Settings;
 using Sentium.Infrastructure.Security;
 using Sentium.Sentinel.Core.Audit;
 using Sentium.Sentinel.Core.Policies;
@@ -64,7 +65,7 @@ public static class ServiceCollectionExtensions
         }).AddHttpMessageHandler<InternalApiKeyDelegatingHandler>();
 
         services.AddSingleton<IPdpRuntimeSettingsProvider, RegistryPdpSettingsProvider>();
-        services.AddHostedService<SettingsSyncWorker>();
+        builder.AddSettingsSyncWorker();
 
         return builder;
     }
