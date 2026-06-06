@@ -3,7 +3,7 @@ import { fetchServiceHealth } from "../services/watchdog.service";
 import type { ServiceHealthStatus } from "../types/serviceHealth";
 
 const POLL_INTERVAL = 15_000;
-const SERVICE_HEALTH_KEY = ["service-health"] as const;
+export const SERVICE_HEALTH_KEY = ["service-health"] as const;
 
 const useServiceHealth = () => {
   const {

@@ -2,6 +2,18 @@
   "version": 2,
   "dependencies": {
     "net10.0": {
+      "Microsoft.Extensions.Caching.Hybrid": {
+        "type": "Direct",
+        "requested": "[10.4.0, )",
+        "resolved": "10.4.0",
+        "contentHash": "4V+aMLQeU/p4VcIWIcvGro0L6HynmL2TrelL04Ce1iotP6T5+kjxuZQvl6P1ObSXIRPCbVXtQSt1NxK0fRIuag==",
+        "dependencies": {
+          "Microsoft.Extensions.Caching.Abstractions": "10.0.4",
+          "Microsoft.Extensions.Caching.Memory": "10.0.4",
+          "Microsoft.Extensions.Logging.Abstractions": "10.0.4",
+          "Microsoft.Extensions.Options": "10.0.4"
+        }
+      },
       "Microsoft.Extensions.DependencyInjection.Abstractions": {
         "type": "Direct",
         "requested": "[10.0.6, )",
@@ -57,6 +69,22 @@
         "dependencies": {
           "Microsoft.Extensions.Http": "10.0.2",
           "Microsoft.Extensions.ServiceDiscovery.Abstractions": "10.2.0"
+        }
+      },
+      "NATS.Net": {
+        "type": "Direct",
+        "requested": "[2.7.2, )",
+        "resolved": "2.7.2",
+        "contentHash": "6B8RlcstYwgoKm9IXcZEDADpH93Hn6+LcvR8hvmFa8jzwshNlIArv8tL5jelJD+fQmnlymKoQYcZ5cL7J1bITw==",
+        "dependencies": {
+          "NATS.Client.Core": "2.7.2",
+          "NATS.Client.Hosting": "2.7.2",
+          "NATS.Client.JetStream": "2.7.2",
+          "NATS.Client.KeyValueStore": "2.7.2",
+          "NATS.Client.ObjectStore": "2.7.2",
+          "NATS.Client.Serializers.Json": "2.7.2",
+          "NATS.Client.Services": "2.7.2",
+          "NATS.Client.Simplified": "2.7.2"
         }
       },
       "Azure.Core": {
@@ -983,22 +1011,6 @@
           "Microsoft.Extensions.Logging.Abstractions": "10.0.2",
           "Microsoft.Extensions.Options": "10.0.2",
           "Microsoft.Extensions.Primitives": "10.0.2"
-        }
-      },
-      "NATS.Net": {
-        "type": "CentralTransitive",
-        "requested": "[2.7.2, )",
-        "resolved": "2.7.2",
-        "contentHash": "6B8RlcstYwgoKm9IXcZEDADpH93Hn6+LcvR8hvmFa8jzwshNlIArv8tL5jelJD+fQmnlymKoQYcZ5cL7J1bITw==",
-        "dependencies": {
-          "NATS.Client.Core": "2.7.2",
-          "NATS.Client.Hosting": "2.7.2",
-          "NATS.Client.JetStream": "2.7.2",
-          "NATS.Client.KeyValueStore": "2.7.2",
-          "NATS.Client.ObjectStore": "2.7.2",
-          "NATS.Client.Serializers.Json": "2.7.2",
-          "NATS.Client.Services": "2.7.2",
-          "NATS.Client.Simplified": "2.7.2"
         }
       },
       "OpenTelemetry.Api": {

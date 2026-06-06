@@ -563,8 +563,10 @@
       "sentium.watchdog.application": {
         "type": "Project",
         "dependencies": {
+          "Microsoft.Extensions.Caching.Hybrid": "[10.4.0, )",
           "Microsoft.Extensions.Http.Resilience": "[10.2.0, )",
           "Microsoft.Extensions.ServiceDiscovery": "[10.2.0, )",
+          "NATS.Net": "[2.7.2, )",
           "Sentium.Infrastructure": "[1.0.0, )",
           "Sentium.Shared": "[1.0.0, )",
           "Sentium.Watchdog.Core": "[1.0.0, )"
@@ -640,6 +642,12 @@
           "Microsoft.Data.SqlClient": "6.1.1",
           "Microsoft.EntityFrameworkCore.Relational": "10.0.5"
         }
+      },
+      "Microsoft.Extensions.Caching.Hybrid": {
+        "type": "CentralTransitive",
+        "requested": "[10.4.0, )",
+        "resolved": "10.4.0",
+        "contentHash": "4V+aMLQeU/p4VcIWIcvGro0L6HynmL2TrelL04Ce1iotP6T5+kjxuZQvl6P1ObSXIRPCbVXtQSt1NxK0fRIuag=="
       },
       "Microsoft.Extensions.Http.Resilience": {
         "type": "CentralTransitive",

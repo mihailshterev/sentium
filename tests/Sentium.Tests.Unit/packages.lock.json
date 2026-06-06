@@ -1804,10 +1804,12 @@
       "sentium.watchdog.application": {
         "type": "Project",
         "dependencies": {
+          "Microsoft.Extensions.Caching.Hybrid": "[10.4.0, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.6, )",
           "Microsoft.Extensions.Hosting": "[10.0.5, )",
           "Microsoft.Extensions.Http.Resilience": "[10.2.0, )",
           "Microsoft.Extensions.ServiceDiscovery": "[10.2.0, )",
+          "NATS.Net": "[2.7.2, )",
           "Sentium.Infrastructure": "[1.0.0, )",
           "Sentium.Shared": "[1.0.0, )",
           "Sentium.Watchdog.Core": "[1.0.0, )"

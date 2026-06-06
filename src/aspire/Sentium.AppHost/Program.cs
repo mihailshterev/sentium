@@ -154,10 +154,15 @@ var watchdogApi = builder.AddProject<Projects.Sentium_Watchdog_Api>(ServiceNames
     .WithReference(seq).WaitFor(seq)
     .WithReference(sql).WaitFor(sql)
     .WithReference(redis).WaitFor(redis)
+    .WithReference(qdrant)
+    .WithReference(ollama)
     .WithReference(identityApi).WaitFor(identityApi)
     .WithReference(sentinelApi).WaitFor(sentinelApi)
     .WithReference(agentRuntimeApi).WaitFor(agentRuntimeApi)
+    .WithReference(registryApi).WaitFor(registryApi)
+    .WithReference(sandboxApi).WaitFor(sandboxApi)
     .WithEnvironment(EnvConfig.Keys.IdentityAuthority, identityApi.GetEndpoint("http"))
+    .WithEnvironment(EnvConfig.Keys.InternalApiKey, internalApiKey)
     .WithUrlForEndpoint("https", url =>
     {
         url.DisplayText = "Scalar API (Docs)";

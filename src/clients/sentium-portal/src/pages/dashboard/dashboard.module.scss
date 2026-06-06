@@ -434,6 +434,11 @@ $shimmer-gradient: linear-gradient(90deg, var(--bg-elevated) 25%, var(--bg-hover
   box-shadow: 0 0 5px var(--accent-red-glow);
 }
 
+.healthDotDegraded {
+  background: var(--accent-amber);
+  box-shadow: 0 0 5px rgba(245, 158, 11, 0.4);
+}
+
 .healthDotUnknown {
   background: var(--text-dim);
 }
@@ -468,6 +473,9 @@ $shimmer-gradient: linear-gradient(90deg, var(--bg-elevated) 25%, var(--bg-hover
 
 .healthStatusHealthy {
   color: var(--accent-green);
+}
+.healthStatusDegraded {
+  color: var(--accent-amber);
 }
 .healthStatusUnhealthy {
   color: var(--accent-red);
