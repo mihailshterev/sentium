@@ -16,9 +16,9 @@ const createWrapper = () => {
 
 const mockSettings: Settings = {
   harness: {
-    userHarnessPrompt: "You are a helpful assistant.",
-    isBuiltInHarnessEnabled: true,
-    isPromptEnhancementEnabled: true,
+    UserHarnessPrompt: "You are a helpful assistant.",
+    IsBuiltInHarnessEnabled: true,
+    IsPromptEnhancementEnabled: true,
   },
   updatedAt: "2025-01-01T00:00:00Z",
   updatedBy: null,
@@ -28,7 +28,7 @@ beforeEach(() => {
   vi.spyOn(registryService, "fetchSettings").mockResolvedValue(mockSettings);
   vi.spyOn(registryService, "updateSettings").mockResolvedValue({
     ...mockSettings,
-    harness: { ...mockSettings.harness, userHarnessPrompt: "Updated prompt" },
+    harness: { ...mockSettings.harness, UserHarnessPrompt: "Updated prompt" },
   });
 });
 
@@ -93,9 +93,9 @@ describe("useSystemSettings save mutation", () => {
     act(() => {
       result.current.save({
         harness: {
-          userHarnessPrompt: "Updated prompt",
-          isBuiltInHarnessEnabled: true,
-          isPromptEnhancementEnabled: true,
+          UserHarnessPrompt: "Updated prompt",
+          IsBuiltInHarnessEnabled: true,
+          IsPromptEnhancementEnabled: true,
         },
       });
     });
@@ -104,6 +104,6 @@ describe("useSystemSettings save mutation", () => {
     expect(spy).toHaveBeenCalledWith({
       harness: { userHarnessPrompt: "Updated prompt", isBuiltInHarnessEnabled: true, isPromptEnhancementEnabled: true },
     });
-    expect(result.current.settings?.harness.userHarnessPrompt).toBe("Updated prompt");
+    expect(result.current.settings?.harness.UserHarnessPrompt).toBe("Updated prompt");
   });
 });
