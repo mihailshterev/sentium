@@ -21,6 +21,10 @@ public static class ServiceCollectionExtensions
             SettingsKeys.Ollama, SettingsScope.Global, c => c.Ollama, (c, v) => c.Ollama = v)
         );
 
+        services.AddSingleton<ISettingsDescriptor>(new SettingsDescriptor<WatchdogSettings>(
+            SettingsKeys.Watchdog, SettingsScope.Global, c => c.Watchdog, (c, v) => c.Watchdog = v)
+        );
+
         services.AddSingleton<ISettingsCatalog, SettingsCatalog>();
         services.AddScoped<ISettingsService, SettingsService>();
         return services;

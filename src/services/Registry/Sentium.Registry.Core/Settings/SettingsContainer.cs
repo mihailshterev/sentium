@@ -19,6 +19,11 @@ public sealed class SettingsContainer
     /// Global Ollama inference settings.
     /// </summary>
     public OllamaSettings Ollama { get; set; } = new();
+
+    /// <summary>
+    /// Global Watchdog monitoring settings.
+    /// </summary>
+    public WatchdogSettings Watchdog { get; set; } = new();
 }
 
 /// <summary>
@@ -58,4 +63,38 @@ public sealed class PdpSettings
     public string IntentCheckModel { get; set; } = string.Empty;
     public int RateLimitMaxRequests { get; set; } = 120;
     public int RateLimitWindowSeconds { get; set; } = 60;
+}
+
+/// <summary>
+/// Runtime-configurable Watchdog monitoring settings, managed by Sovereign users and consumed by
+/// the Watchdog service. Controls poll cadence, probe timeouts, the degraded-latency threshold, and
+/// when a sustained degradation escalates into an incident.
+/// </summary>
+public sealed class WatchdogSettings
+{
+    /// <summary>
+    /// How often every target is probed, in seconds.
+    /// </summary>
+    public int PollIntervalSeconds { get; set; } = 15;
+
+    /// <summary>
+    /// Per-probe timeout, in seconds.
+    /// </summary>
+    public int ProbeTimeoutSeconds { get; set; } = 5;
+
+    /// <summary>
+    /// A reachable target whose latency exceeds this is reported as Degraded.
+    /// </summary>
+    public int DegradedLatencyMs { get; set; } = 1_000;
+
+    /// <summary>
+    /// Number of consecutive non-healthy cycles a Degraded (but reachable) target must sustain
+    /// before an incident is opened. Unhealthy targets always open an incident immediately.
+    /// </summary>
+    public int ConsecutiveFailuresToOpenIncident { get; set; } = 3;
+
+    /// <summary>
+    /// Maximum number of recent samples returned per target for sparklines.
+    /// </summary>
+    public int SampleHistorySize { get; set; } = 60;
 }
