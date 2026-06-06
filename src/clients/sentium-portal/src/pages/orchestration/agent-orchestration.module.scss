@@ -382,7 +382,7 @@
 
 .logWindow {
   flex: 1;
-  padding: 1.5rem;
+  padding: 1.5rem max(1.5rem, calc((100% - 820px) / 2));
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -427,6 +427,107 @@
 
 .logEntry:last-of-type {
   border-bottom: none;
+}
+
+.timelineItem {
+  display: flex;
+  gap: 12px;
+  animation: slideUp 0.25s ease-out;
+}
+
+.timelineRail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  width: 12px;
+  padding-top: 4px;
+}
+
+.timelineDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--border-strong);
+  border: 2px solid var(--bg-surface);
+  box-shadow: 0 0 0 1px var(--border-color);
+  z-index: 1;
+}
+
+.timelineConnector {
+  flex: 1;
+  width: 2px;
+  min-height: 8px;
+  margin-top: 3px;
+  background: var(--border-subtle);
+}
+
+.timelineItem:last-child .timelineConnector {
+  display: none;
+}
+
+.timelineContent {
+  flex: 1;
+  min-width: 0;
+  padding-bottom: 1.1rem;
+}
+
+.timelineItemStatus .timelineContent {
+  padding-bottom: 0.6rem;
+}
+
+.timelineDotThought {
+  background: var(--accent-purple);
+  box-shadow:
+    0 0 0 1px var(--accent-purple-border),
+    0 0 7px rgba(139, 92, 246, 0.45);
+}
+
+.timelineDotTool {
+  background: var(--accent-amber);
+  box-shadow: 0 0 0 1px var(--accent-amber-border);
+}
+
+.timelineDotMessage {
+  background: var(--accent-green);
+  box-shadow: 0 0 0 1px var(--accent-green-border);
+}
+
+.timelineDotPass {
+  background: var(--accent-green);
+  box-shadow: 0 0 8px var(--accent-green-glow);
+}
+
+.timelineDotFail {
+  background: var(--accent-red);
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.55);
+}
+
+.timelineDotLoop {
+  background: var(--accent-amber);
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.45);
+}
+
+.timelineDotStuck {
+  background: var(--accent-red);
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.55);
+}
+
+.statusRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-family: "Inter", system-ui, sans-serif;
+  color: var(--text-secondary);
+  padding: 1px 0;
+}
+
+.statusRow svg {
+  flex-shrink: 0;
+  color: inherit;
 }
 
 @keyframes slideUp {
@@ -916,17 +1017,69 @@
   color: rgba(167, 139, 250, 0.9);
 }
 
+.thoughtHeaderActive {
+  color: rgba(167, 139, 250, 0.95);
+}
+
+@keyframes brainPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.brainPulse {
+  color: rgba(139, 92, 246, 0.9) !important;
+  animation: brainPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes thinkingBounce {
+  0%,
+  80%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.35;
+  }
+  40% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
+}
+
+.thinkingDots {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+}
+
+.thinkingDot {
+  display: inline-block;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--accent-purple);
+  animation: thinkingBounce 1.2s ease-in-out infinite;
+
+  &:nth-child(2) {
+    animation-delay: 0.16s;
+  }
+  &:nth-child(3) {
+    animation-delay: 0.32s;
+  }
+}
+
 .thoughtHeader svg:first-child {
   color: rgba(139, 92, 246, 0.7);
   flex-shrink: 0;
 }
 
-.thoughtHeader span {
-  flex: 1;
-}
-
 .thoughtChevron {
   flex-shrink: 0;
+  margin-left: auto;
   transition: transform 0.2s ease;
 }
 
@@ -1013,6 +1166,93 @@
   color: var(--text-secondary);
   border-color: var(--border-color);
   background: var(--bg-elevated);
+}
+
+.planFlow {
+  display: flex;
+  flex-direction: column;
+  padding-left: 4px;
+}
+
+.planStep {
+  display: flex;
+  flex-direction: column;
+}
+
+.planCard {
+  position: relative;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 0.65rem 0.8rem;
+  border-style: solid;
+  border-width: 1px;
+  border-left-width: 3px;
+  border-radius: var(--radius-md, 10px);
+}
+
+.planStepNum {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 2px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--text-dim);
+  background: var(--bg-base);
+  border: 1px solid var(--border-subtle);
+  border-radius: 50%;
+}
+
+.planCardMain {
+  flex: 1;
+  min-width: 0;
+}
+
+.planCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 0.4rem;
+}
+
+.planCardIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-style: solid;
+  border-width: 1px;
+  border-radius: 7px;
+}
+
+.planAgentName {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.planCardTask {
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: var(--text-secondary);
+}
+
+.planConnector {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 20px;
+  margin-left: 8px;
+  color: var(--text-dim);
 }
 
 .modeToggle {

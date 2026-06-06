@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Sentium.Sandbox.Application.Options;
@@ -69,7 +70,9 @@ internal sealed class JobDirectoryService(IOptions<SandboxOptions> options, ILog
 
         var prefix = normalizedBase.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + Path.DirectorySeparatorChar;
 
-        if (!fullPath.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+        var comparison = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+
+        if (!fullPath.StartsWith(prefix, comparison))
         {
             throw new ArgumentException($"Security violation: '{relativeFileName}' resolves outside the job directory.");
         }

@@ -87,6 +87,7 @@ export class UniverseRenderer {
   private particleSprites: Sprite[] = [];
   private particlePool: Sprite[] = [];
   private starSprites: Sprite[] = [];
+  private _isLight = false;
   private _nodes: GraphNode[] = [];
   private _links: GraphLink[] = [];
   private _particles: Particle[] = [];
@@ -118,16 +119,17 @@ export class UniverseRenderer {
     this.nebulaLayer = new Container();
   }
 
-  async init(canvas: HTMLCanvasElement, width: number, height: number) {
+  async init(canvas: HTMLCanvasElement, width: number, height: number, isLight = false) {
     this._width = width;
     this._height = height;
+    this._isLight = isLight;
 
     await this.app.init({
       canvas,
       width,
       height,
       antialias: true,
-      backgroundColor: 0x03050f,
+      backgroundColor: isLight ? 0xf4f5fa : 0x03050f,
       resolution: Math.min(window.devicePixelRatio, 2),
       autoDensity: true,
       powerPreference: "high-performance",
@@ -145,9 +147,9 @@ export class UniverseRenderer {
     this.world.addChild(this.labelLayer);
     this.app.stage.addChild(this.world);
 
-    this.glowLayer.blendMode = "add";
-    this.glowLayer.filters = [new BlurFilter({ strength: 4, quality: 2 })];
-    this.glowLayer.alpha = 0.55;
+    this.glowLayer.blendMode = isLight ? "normal" : "add";
+    this.glowLayer.filters = [new BlurFilter({ strength: isLight ? 3 : 4, quality: 2 })];
+    this.glowLayer.alpha = isLight ? 0.32 : 0.55;
 
     this.nebulaLayer.filters = [new BlurFilter({ strength: 20, quality: 3 })];
     this.nebulaLayer.alpha = 1;
@@ -192,6 +194,7 @@ export class UniverseRenderer {
         star.alpha = layer.alpha + Math.random() * 0.15;
         star.scale.set(layer.scale + Math.random() * 0.3);
         star.tint = Math.random() > 0.7 ? 0x88ccff : 0xffffff;
+        star.visible = !this._isLight;
         this.bgLayer.addChild(star);
         this.starSprites.push(star);
       }
@@ -213,6 +216,7 @@ export class UniverseRenderer {
       sprite.scale.set(b.scale);
       this.nebulaLayer.addChild(sprite);
     }
+    this.nebulaLayer.visible = !this._isLight;
   }
 
   private initGrid(width: number, height: number) {
@@ -221,23 +225,26 @@ export class UniverseRenderer {
     const minorSize = 100;
     const majorSize = 500;
 
+    const lineColor = this._isLight ? 0xc8ccd8 : 0x0d1f3c;
+    const dotColor = this._isLight ? 0xa8aec0 : 0x1a3a6c;
+
     for (let x = -extent; x <= extent; x += minorSize) {
       const isMajor = x % majorSize === 0;
       g.moveTo(x, -extent);
       g.lineTo(x, extent);
-      g.stroke({ color: 0x0d1f3c, alpha: isMajor ? 0.5 : 0.18, width: isMajor ? 0.8 : 0.35 });
+      g.stroke({ color: lineColor, alpha: isMajor ? 0.5 : 0.18, width: isMajor ? 0.8 : 0.35 });
     }
     for (let y = -extent; y <= extent; y += minorSize) {
       const isMajor = y % majorSize === 0;
       g.moveTo(-extent, y);
       g.lineTo(extent, y);
-      g.stroke({ color: 0x0d1f3c, alpha: isMajor ? 0.5 : 0.18, width: isMajor ? 0.8 : 0.35 });
+      g.stroke({ color: lineColor, alpha: isMajor ? 0.5 : 0.18, width: isMajor ? 0.8 : 0.35 });
     }
 
     for (let x = -extent; x <= extent; x += majorSize) {
       for (let y = -extent; y <= extent; y += majorSize) {
         g.circle(x, y, 1.5);
-        g.fill({ color: 0x1a3a6c, alpha: 0.7 });
+        g.fill({ color: dotColor, alpha: 0.7 });
       }
     }
 
@@ -247,21 +254,48 @@ export class UniverseRenderer {
       { x: width * 0.5, y: height * 0.7, r: 160, color: 0xf59e0b },
     ];
     for (const z of zones) {
+      const zoneAlpha = this._isLight ? 0.15 : 0.09;
+      const crossAlpha = this._isLight ? 0.4 : 0.22;
+      const centerAlpha = this._isLight ? 0.5 : 0.35;
       g.circle(z.x, z.y, z.r);
-      g.stroke({ color: z.color, alpha: 0.09, width: 1 });
+      g.stroke({ color: z.color, alpha: zoneAlpha, width: 1 });
       g.circle(z.x, z.y, z.r * 0.55);
-      g.stroke({ color: z.color, alpha: 0.05, width: 0.5 });
+      g.stroke({ color: z.color, alpha: zoneAlpha * 0.55, width: 0.5 });
       const ch = 10;
       g.moveTo(z.x - ch, z.y);
       g.lineTo(z.x + ch, z.y);
       g.moveTo(z.x, z.y - ch);
       g.lineTo(z.x, z.y + ch);
-      g.stroke({ color: z.color, alpha: 0.22, width: 0.7 });
+      g.stroke({ color: z.color, alpha: crossAlpha, width: 0.7 });
       g.circle(z.x, z.y, 2);
-      g.fill({ color: z.color, alpha: 0.35 });
+      g.fill({ color: z.color, alpha: centerAlpha });
     }
 
     this.gridLayer.addChild(g);
+  }
+
+  setTheme(isLight: boolean) {
+    this._isLight = isLight;
+    if (!this._initialized) {
+      return;
+    }
+
+    this.app.renderer.background.color = isLight ? 0xf4f5fa : 0x03050f;
+
+    for (const star of this.starSprites) {
+      star.visible = !isLight;
+    }
+
+    this.nebulaLayer.visible = !isLight;
+
+    for (const child of this.gridLayer.removeChildren()) {
+      child.destroy();
+    }
+    this.initGrid(this._width, this._height);
+
+    this.glowLayer.blendMode = isLight ? "normal" : "add";
+    this.glowLayer.alpha = isLight ? 0.32 : 0.55;
+    this.glowLayer.filters = [new BlurFilter({ strength: isLight ? 3 : 4, quality: 2 })];
   }
 
   setGraph(nodes: GraphNode[], links: GraphLink[]) {
@@ -438,14 +472,16 @@ export class UniverseRenderer {
       const cpy = my + perpY;
 
       const alpha = highlighted ? 0.65 : 0.2 + pulse * 0.08;
-      const color = highlighted ? s.color : 0x4a5568;
+      const edgeGlowBase = this._isLight ? 0xb8c0cc : 0x334155;
+      const edgeLineBase = this._isLight ? 0x9aa4b8 : 0x4a5568;
+      const color = highlighted ? s.color : edgeLineBase;
       const width = highlighted ? 1.5 : 0.7;
 
       const glowAlpha = highlighted ? 0.2 : 0.07 + pulse * 0.03;
       const glowWidth = highlighted ? 5 : 2.5;
       this.edgeGraphics.moveTo(sx, sy);
       this.edgeGraphics.quadraticCurveTo(cpx, cpy, tx, ty);
-      this.edgeGraphics.stroke({ color: highlighted ? s.color : 0x334155, alpha: glowAlpha, width: glowWidth });
+      this.edgeGraphics.stroke({ color: highlighted ? s.color : edgeGlowBase, alpha: glowAlpha, width: glowWidth });
 
       this.edgeGraphics.moveTo(sx, sy);
       this.edgeGraphics.quadraticCurveTo(cpx, cpy, tx, ty);

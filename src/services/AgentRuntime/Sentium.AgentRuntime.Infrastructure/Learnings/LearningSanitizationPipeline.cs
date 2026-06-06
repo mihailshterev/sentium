@@ -11,9 +11,9 @@ namespace Sentium.AgentRuntime.Infrastructure.Learnings;
 /// <summary>
 /// Three-stage, fail-closed gate that decides whether a captured learning may be shared globally:
 /// <list type="number">
-/// <item>Deterministic identifier guard — regex rejection of user-specific identifiers.</item>
-/// <item>LLM generalizability judge — confirms the content is an abstracted, reusable pattern.</item>
-/// <item>Semantic dedup — skips promotion when an equivalent global learning already exists.</item>
+/// <item>Deterministic identifier guard - regex rejection of user-specific identifiers.</item>
+/// <item>LLM generalizability judge - confirms the content is an abstracted, reusable pattern.</item>
+/// <item>Semantic dedup - skips promotion when an equivalent global learning already exists.</item>
 /// </list>
 /// Any unexpected failure results in <c>Approved = false</c> so a learning is never wrongly globalized.
 /// </summary>
@@ -23,7 +23,7 @@ public sealed partial class LearningSanitizationPipeline(
     IVectorRepository vectorRepository,
     ILogger<LearningSanitizationPipeline> logger) : ILearningSanitizationPipeline
 {
-    private const string LearningsCollection = "agent_learnings";
+    private const string LearningsCollection = KnowledgeCollections.AgentLearnings;
 
     /// <summary>
     /// Cosine similarity at or above which a candidate is treated as a duplicate of existing global knowledge.
@@ -37,7 +37,7 @@ public sealed partial class LearningSanitizationPipeline(
             return new LearningPromotionVerdict(false, "Empty content cannot be shared globally.", content ?? string.Empty);
         }
 
-        // Stage 1 — deterministic identifier guard (hard reject, independent of the LLM).
+        // Stage 1 - deterministic identifier guard (hard reject, independent of the LLM).
         if (DetectIdentifier(content) is { } category)
         {
             return new LearningPromotionVerdict(false, $"Contains a user-specific identifier ({category}); kept private.", content);
@@ -45,7 +45,7 @@ public sealed partial class LearningSanitizationPipeline(
 
         try
         {
-            // Stage 2 — LLM generalizability judge (un-harnessed client: no agent tools/governance).
+            // Stage 2 - LLM generalizability judge (un-harnessed client: no agent tools/governance).
             var messages = new List<ChatMessage>
             {
                 new(ChatRole.System, LearningSanitizationPrompt.SystemRole),
@@ -65,7 +65,7 @@ public sealed partial class LearningSanitizationPipeline(
                 return new LearningPromotionVerdict(false, $"Sanitized text still contains a user-specific identifier ({leaked}); kept private.", content);
             }
 
-            // Stage 3 — semantic dedup against existing GLOBAL learnings only.
+            // Stage 3 - semantic dedup against existing GLOBAL learnings only.
             if (await FindGlobalDuplicateAsync(verdict.SanitizedContent, ct) is { } duplicateId)
             {
                 return verdict with

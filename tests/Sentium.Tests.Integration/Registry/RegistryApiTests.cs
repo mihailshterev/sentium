@@ -12,59 +12,55 @@ public sealed class RegistryApiTests(RegistryTestFactory factory) : IClassFixtur
     private readonly HttpClient _client = factory.CreateClient();
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
+    private sealed record Envelope(string Key, HarnessSettings Value, DateTimeOffset UpdatedAt, string? UpdatedBy);
+
     [Fact]
-    public async Task GetSettings_ReturnsOk_OnFirstCall()
+    public async Task GetHarness_ReturnsOk_OnFirstCall()
     {
-        var response = await _client.GetAsync("/settings", Ct);
+        var response = await _client.GetAsync("/settings/harness", Ct);
         response.StatusCode.Should().Be(HttpStatusCode.OK);
     }
 
     [Fact]
-    public async Task GetSettings_SeedsDefaults_WhenNoRowExists()
+    public async Task GetHarness_ReturnsDefaults_WhenNoRowExists()
     {
-        var response = await _client.GetAsync("/settings", Ct);
+        var response = await _client.GetAsync("/settings/harness", Ct);
 
-        var dto = await response.Content.ReadFromJsonAsync<SettingsDto>(Ct);
-        dto.Should().NotBeNull();
-        dto!.Harness.Should().NotBeNull();
+        var env = await response.Content.ReadFromJsonAsync<Envelope>(Ct);
+        env.Should().NotBeNull();
+        env!.Key.Should().Be("harness");
+        env.Value.Should().NotBeNull();
     }
 
     [Fact]
-    public async Task UpdateSettings_ReturnsOk_WithAppliedChanges()
+    public async Task UpdateHarness_ReturnsOk_WithAppliedChanges()
     {
-        var request = new UpdateSettingsRequest(new UpdateHarnessSettingsRequest("my custom prompt", true, false));
+        var payload = new HarnessSettings { UserHarnessPrompt = "my custom prompt", IsBuiltInHarnessEnabled = true, IsPromptEnhancementEnabled = false };
 
-        var response = await _client.PutAsJsonAsync("/settings", request, Ct);
+        var response = await _client.PutAsJsonAsync("/settings/harness", payload, Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var dto = await response.Content.ReadFromJsonAsync<SettingsDto>(Ct);
-        dto!.Harness.UserHarnessPrompt.Should().Be("my custom prompt");
+        var env = await response.Content.ReadFromJsonAsync<Envelope>(Ct);
+        env!.Value.UserHarnessPrompt.Should().Be("my custom prompt");
     }
 
     [Fact]
-    public async Task UpdateSettings_ThenGet_ReturnsPersisted()
+    public async Task UpdateHarness_ThenGet_ReturnsPersisted()
     {
         var uniquePrompt = $"prompt-{Guid.NewGuid()}";
-        var updateRequest = new UpdateSettingsRequest(new UpdateHarnessSettingsRequest(uniquePrompt, true, true));
-        await _client.PutAsJsonAsync("/settings", updateRequest, Ct);
+        var payload = new HarnessSettings { UserHarnessPrompt = uniquePrompt, IsBuiltInHarnessEnabled = true, IsPromptEnhancementEnabled = true };
+        await _client.PutAsJsonAsync("/settings/harness", payload, Ct);
 
-        var getResponse = await _client.GetAsync("/settings", Ct);
-        var dto = await getResponse.Content.ReadFromJsonAsync<SettingsDto>(Ct);
+        var getResponse = await _client.GetAsync("/settings/harness", Ct);
+        var env = await getResponse.Content.ReadFromJsonAsync<Envelope>(Ct);
 
-        dto!.Harness.UserHarnessPrompt.Should().Be(uniquePrompt);
+        env!.Value.UserHarnessPrompt.Should().Be(uniquePrompt);
     }
 
     [Fact]
-    public async Task GetSettings_Returns401_WhenUnauthenticated()
+    public async Task UnknownKey_Returns404()
     {
-        var unauthClient = factory.CreateClient(new Microsoft.AspNetCore.Mvc.Testing.WebApplicationFactoryClientOptions
-        {
-            HandleCookies = false
-        });
-        unauthClient.DefaultRequestHeaders.Clear();
-
-        var response = await unauthClient.GetAsync("/settings", Ct);
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        var response = await _client.GetAsync("/settings/does-not-exist", Ct);
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 }

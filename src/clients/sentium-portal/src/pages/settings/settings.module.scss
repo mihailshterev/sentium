@@ -100,6 +100,17 @@
   max-width: 860px;
   width: 100%;
   margin: 0 auto;
+
+  & > * {
+    flex-shrink: 0;
+  }
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
 }
 
 .card {
@@ -273,11 +284,17 @@
   color: var(--accent-amber);
 }
 
+.formFooter {
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
 .actionRow {
   display: flex;
   align-items: center;
   justify-content: flex-end;
   gap: 8px;
+  margin-top: 1rem;
 }
 
 .btnPrimary {
@@ -370,4 +387,83 @@
   font-size: 0.78rem;
   color: var(--text-muted);
   padding: 2rem;
+}
+
+.fieldRow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.fieldLabel {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.fieldValue {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--accent-cyan);
+  font-family: "JetBrains Mono", monospace;
+}
+
+.selectField {
+  font-size: 0.8rem;
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border: 1px solid var(--glass-border);
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+  cursor: pointer;
+  width: 100%;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.modelSelectorField {
+  width: 100%;
+
+  > button:first-child {
+    width: 100%;
+  }
+}
+
+.rangeField {
+  width: 100%;
+  accent-color: var(--accent-purple);
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.rangeLabels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.numberField {
+  font-size: 0.8rem;
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border: 1px solid var(--glass-border);
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+  width: 100%;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 }

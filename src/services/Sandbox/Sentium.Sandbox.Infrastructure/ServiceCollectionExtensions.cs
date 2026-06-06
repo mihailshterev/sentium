@@ -63,6 +63,8 @@ public static class ServiceCollectionExtensions
             client.BaseAddress = new Uri($"https+http://{ServiceNames.Sentinel}");
         }).AddHttpMessageHandler<InternalApiKeyDelegatingHandler>();
 
+        services.AddHealthChecks().AddCheck<DockerHealthCheck>("docker");
+
         return builder;
     }
 }

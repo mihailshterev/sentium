@@ -589,8 +589,12 @@
       "sentium.identity.core": {
         "type": "Project",
         "dependencies": {
-          "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "[10.0.5, )"
+          "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "[10.0.5, )",
+          "Sentium.Shared": "[1.0.0, )"
         }
+      },
+      "sentium.shared": {
+        "type": "Project"
       },
       "Microsoft.AspNetCore.Identity.EntityFrameworkCore": {
         "type": "CentralTransitive",

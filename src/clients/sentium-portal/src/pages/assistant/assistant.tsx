@@ -61,6 +61,7 @@ const Assistant = () => {
     sendMessage,
     respondToApproval,
     stopStreaming,
+    retryLastMessage,
   } = useConversationStore();
 
   const {
@@ -399,10 +400,6 @@ const Assistant = () => {
           subtitle="Chat with the Sentium assistant"
           right={
             <div className={styles.headerRight}>
-              <div className={styles.statusBadge}>
-                <span className={styles.statusDot} />
-                <span className={styles.statusText}>{model || "No model selected"}</span>
-              </div>
               <button
                 className={styles.sidebarToggle}
                 onClick={() => setSidebarOpen((v) => !v)}
@@ -442,6 +439,7 @@ const Assistant = () => {
                   onToggleThought={toggleThought}
                   onCopyMessage={copyMessage}
                   onApproval={handleApproval}
+                  onRetry={msg.error ? retryLastMessage : undefined}
                 />
               ))}
               <div ref={messagesEndRef} />
@@ -459,11 +457,14 @@ const Assistant = () => {
           input={input}
           isTyping={isTyping}
           contextPills={contextPills}
+          model={model}
+          models={models}
           onInputChange={resizeTextareaOnInput}
           onKeyDown={handleKeyDown}
           onSubmit={handleSubmit}
           onStop={handleStop}
           onRemoveContextPill={removeContextPill}
+          onSetModel={setModel}
           textareaRef={textareaRef}
         />
       </div>
@@ -473,8 +474,6 @@ const Assistant = () => {
         conversations={conversations}
         conversationGroups={conversationGroups}
         activeConversationId={routeConversationId ?? activeConversationId}
-        model={model}
-        models={models}
         isCreating={isCreating}
         wsContextOpen={wsContextOpen}
         workspaces={workspaces}
@@ -483,7 +482,6 @@ const Assistant = () => {
         onNewConversation={createNewConversation}
         onLoadConversation={loadConversation}
         onDeleteConversation={deleteConversation}
-        onSetModel={setModel}
         onToggleWsContext={() => setWsContextOpen((v) => !v)}
         onToggleExpandWorkspace={(wsId) => setExpandedWorkspace((v) => (v === wsId ? null : wsId))}
         onInjectWorkspaceContext={injectWorkspaceContext}

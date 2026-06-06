@@ -26,6 +26,7 @@ export interface PdpSettings {
   lockdownMode: boolean;
   autonomyLevel: number;
   semanticIntentCheckEnabled: boolean;
+  intentCheckModel: string;
   rateLimitMaxRequests: number;
   rateLimitWindowSeconds: number;
 }
@@ -34,6 +35,7 @@ export interface UpdatePdpSettingsPayload {
   lockdownMode?: boolean;
   autonomyLevel?: number;
   semanticIntentCheckEnabled?: boolean;
+  intentCheckModel?: string;
   rateLimitMaxRequests?: number;
   rateLimitWindowSeconds?: number;
 }

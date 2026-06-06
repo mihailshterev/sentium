@@ -14,6 +14,8 @@ var redis = builder.AddRedis(ResourceNames.Redis);
 
 var sqlPassword = builder.AddParameter("sql-password", secret: true);
 var internalApiKey = builder.AddParameter("internal-api-key", secret: true);
+var gatewayBffSecret = builder.AddParameter("gateway-bff-secret", secret: true);
+var serviceWorkerSecret = builder.AddParameter("service-worker-secret", secret: true);
 
 var sql = builder.AddSqlServer(ResourceNames.Sql, password: sqlPassword)
     .WithDataVolume();
@@ -38,17 +40,18 @@ var seq = builder.AddSeq(ResourceNames.Seq)
     .WithEnvironment(EnvConfig.Keys.AcceptEula, EnvConfig.Values.Yes);
 
 var ollama = builder.AddOllama(ResourceNames.Ollama)
-    .WithImage("ollama/ollama", "0.20.2")
+    .WithImage("ollama/ollama", "0.30.5")
     .WithDataVolume()
     .WithGPUSupport(OllamaGpuVendor.Nvidia)
     // .WithEnvironment(OllamaConfig.ContextSizeKey, OllamaConfig.DefaultContextSize)
     .WithEnvironment(OllamaConfig.FlashAttentionKey, "1")
     .WithEnvironment(OllamaConfig.ParallelRequestsKey, "2")
+    .WithEnvironment(OllamaConfig.KeepAliveKey, "-1")
     // .WithEnvironment(OllamaConfig.CacheTypeKey, "q4_0")
     .WithEnvironment(OllamaConfig.DebugKey, "1")
     .WithEndpoint("http", e => e.Port = 11434);
 
-var ollamaModel = ollama.AddModel(AIModels.Gemma4);
+var ollamaModel = ollama.AddModel(AIModels.Gemma4_E4B);
 var ollamaEmbeddingModel = ollama.AddModel(AIModels.NomicEmbedText);
 
 var identityApi = builder.AddProject<Projects.Sentium_Identity_Api>(ServiceNames.Identity)
@@ -56,6 +59,8 @@ var identityApi = builder.AddProject<Projects.Sentium_Identity_Api>(ServiceNames
     .WithReference(nats).WaitFor(nats)
     .WithReference(seq).WaitFor(seq)
     .WithReference(redis).WaitFor(redis)
+    .WithEnvironment("Identity__GatewayBffSecret", gatewayBffSecret)
+    .WithEnvironment("Identity__ServiceWorkerSecret", serviceWorkerSecret)
     .WithUrlForEndpoint("https", url =>
     {
         url.DisplayText = "Scalar API (Docs)";
@@ -70,12 +75,28 @@ var identityUi = builder.AddViteApp(ServiceNames.IdentityUi, "../../clients/sent
 
 identityUi.WithParentRelationship(identityApi);
 
+var registryApi = builder.AddProject<Projects.Sentium_Registry_Api>(ServiceNames.Registry)
+    .WithReference(registryDb).WaitFor(registryDb)
+    .WithReference(nats).WaitFor(nats)
+    .WithReference(redis).WaitFor(redis)
+    .WithReference(seq).WaitFor(seq)
+    .WithReference(identityApi).WaitFor(identityApi)
+    .WithEnvironment(EnvConfig.Keys.IdentityAuthority, identityApi.GetEndpoint("http"))
+    .WithEnvironment(EnvConfig.Keys.InternalApiKey, internalApiKey)
+    .WithUrlForEndpoint("https", url =>
+    {
+        url.DisplayText = "Scalar API (Docs)";
+        url.Url = "/scalar/v1";
+    });
+
 var sentinelApi = builder.AddProject<Projects.Sentium_Sentinel_Api>(ServiceNames.Sentinel)
     .WithReference(nats).WaitFor(nats)
     .WithReference(seq).WaitFor(seq)
     .WithReference(sentinelDb).WaitFor(sentinelDb)
     .WithReference(identityApi).WaitFor(identityApi)
-    .WithReference(ollama).WaitFor(ollama)
+    .WithReference(registryApi).WaitFor(registryApi)
+    .WithReference(ollamaModel).WaitFor(ollamaModel)
+    .WithReference(redis).WaitFor(redis)
     .WithEnvironment(EnvConfig.Keys.IdentityAuthority, identityApi.GetEndpoint("http"))
     .WithEnvironment(EnvConfig.Keys.InternalApiKey, internalApiKey)
     .WithUrlForEndpoint("https", url =>
@@ -98,19 +119,6 @@ var sandboxApi = builder.AddProject<Projects.Sentium_Sandbox_Api>(ServiceNames.S
     .WithEnvironment(EnvConfig.Keys.IdentityAuthority, identityApi.GetEndpoint("http"))
     .WithEnvironment(EnvConfig.Keys.DockerHost, dockerHost)
     .WithEnvironment(EnvConfig.Keys.InternalApiKey, internalApiKey)
-    .WithUrlForEndpoint("https", url =>
-    {
-        url.DisplayText = "Scalar API (Docs)";
-        url.Url = "/scalar/v1";
-    });
-
-var registryApi = builder.AddProject<Projects.Sentium_Registry_Api>(ServiceNames.Registry)
-    .WithReference(registryDb).WaitFor(registryDb)
-    .WithReference(nats).WaitFor(nats)
-    .WithReference(redis).WaitFor(redis)
-    .WithReference(seq).WaitFor(seq)
-    .WithReference(identityApi).WaitFor(identityApi)
-    .WithEnvironment(EnvConfig.Keys.IdentityAuthority, identityApi.GetEndpoint("http"))
     .WithUrlForEndpoint("https", url =>
     {
         url.DisplayText = "Scalar API (Docs)";
@@ -146,10 +154,15 @@ var watchdogApi = builder.AddProject<Projects.Sentium_Watchdog_Api>(ServiceNames
     .WithReference(seq).WaitFor(seq)
     .WithReference(sql).WaitFor(sql)
     .WithReference(redis).WaitFor(redis)
+    .WithReference(qdrant)
+    .WithReference(ollama)
     .WithReference(identityApi).WaitFor(identityApi)
     .WithReference(sentinelApi).WaitFor(sentinelApi)
     .WithReference(agentRuntimeApi).WaitFor(agentRuntimeApi)
+    .WithReference(registryApi).WaitFor(registryApi)
+    .WithReference(sandboxApi).WaitFor(sandboxApi)
     .WithEnvironment(EnvConfig.Keys.IdentityAuthority, identityApi.GetEndpoint("http"))
+    .WithEnvironment(EnvConfig.Keys.InternalApiKey, internalApiKey)
     .WithUrlForEndpoint("https", url =>
     {
         url.DisplayText = "Scalar API (Docs)";
@@ -163,7 +176,8 @@ var apiGateway = builder.AddProject<Projects.Sentium_ApiGateway>(ServiceNames.Ga
     .WithReference(agentRuntimeApi).WaitFor(agentRuntimeApi)
     .WithReference(sandboxApi).WaitFor(sandboxApi)
     .WithReference(registryApi).WaitFor(registryApi)
-    .WithEnvironment(EnvConfig.Keys.IdentityAuthority, identityApi.GetEndpoint("http"));
+    .WithEnvironment(EnvConfig.Keys.IdentityAuthority, identityApi.GetEndpoint("http"))
+    .WithEnvironment("Identity__GatewayBffSecret", gatewayBffSecret);
 
 var frontend = builder.AddViteApp(ServiceNames.Frontend, "../../clients/sentium-portal")
     .WithPnpm()

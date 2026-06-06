@@ -1,96 +1,128 @@
+using System.Security.Claims;
+using System.Text.Json;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
 using Sentium.Registry.Api.Controllers;
+using Sentium.Registry.Application.Settings;
 using Sentium.Registry.Core.Settings;
-using System.Security.Claims;
+using Sentium.Shared.Constants;
 using Xunit;
 
 namespace Sentium.Tests.Unit.Registry;
 
 public sealed class SettingsControllerTests
 {
-    private readonly ISettingsService _settingsService = Substitute.For<ISettingsService>();
-    private readonly SettingsController _controller;
+    private readonly ISettingsService _service = Substitute.For<ISettingsService>();
 
-    public SettingsControllerTests()
+    private readonly ISettingsCatalog _catalog = new SettingsCatalog(new ISettingsDescriptor[]
     {
-        _controller = new SettingsController(_settingsService)
+        new SettingsDescriptor<HarnessSettings>(SettingsKeys.Harness, SettingsScope.PerUser, c => c.Harness, (c, v) => c.Harness = v),
+        new SettingsDescriptor<PdpSettings>(SettingsKeys.Pdp, SettingsScope.Global, c => c.Pdp, (c, v) => c.Pdp = v),
+    });
+
+    private SettingsController NewController(params Claim[] claims) =>
+        new(_service, _catalog)
         {
             ControllerContext = new ControllerContext
             {
-                HttpContext = new DefaultHttpContext
-                {
-                    User = new ClaimsPrincipal(new ClaimsIdentity(
-                        [new Claim(ClaimTypes.Name, "admin-user")], "Test"))
-                }
+                HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test")) }
             }
         };
-    }
 
-    private static SettingsDto MakeDto() =>
-        new(new HarnessSettingsDto("", true, true), DateTimeOffset.UtcNow, null);
+    private static readonly JsonSerializerOptions WebOptions = new(JsonSerializerDefaults.Web);
+
+    private static SettingsEnvelope Env(string key, object value) =>
+        new(key, JsonSerializer.SerializeToElement(value, value.GetType(), WebOptions), DateTimeOffset.UtcNow, null);
+    private static JsonElement Payload(object value) => JsonSerializer.SerializeToElement(value);
 
     [Fact]
-    public async Task GetSettings_ReturnsOk_WithSettingsDto()
+    public async Task Get_UnknownKey_ReturnsNotFound()
     {
-        // Arrange
-        var ct = TestContext.Current.CancellationToken;
-        _settingsService.GetAsync(ct).Returns(MakeDto());
-
-        // Act
-        var result = await _controller.GetSettings(ct);
-
-        // Assert — controller returns ActionResult<SettingsDto>; unwrap .Result
-        result.Result.Should().BeOfType<OkObjectResult>()
-            .Which.Value.Should().NotBeNull();
+        var controller = NewController(new Claim(ClaimTypes.Name, "member"));
+        var result = await controller.Get("nope", null, TestContext.Current.CancellationToken);
+        result.Result.Should().BeOfType<NotFoundResult>();
     }
 
     [Fact]
-    public async Task UpdateSettings_ReturnsOk_WithUpdatedDto()
+    public async Task Get_Harness_ReturnsOk_ForUser()
     {
-        // Arrange
         var ct = TestContext.Current.CancellationToken;
-        var updated = new SettingsDto(new HarnessSettingsDto("new prompt", true, false), DateTimeOffset.UtcNow, "admin-user");
-        _settingsService.GetAsync(ct).Returns(updated);
-        var request = new UpdateSettingsRequest(new UpdateHarnessSettingsRequest("new prompt", true, false));
+        _service.GetAsync(SettingsKeys.Harness, Arg.Any<Guid?>(), ct).Returns(Env(SettingsKeys.Harness, new HarnessSettings()));
+        var controller = NewController(new Claim(ClaimTypes.NameIdentifier, Guid.NewGuid().ToString()));
 
-        // Act
-        var result = await _controller.UpdateSettings(request, ct);
+        var result = await controller.Get(SettingsKeys.Harness, null, ct);
 
-        // Assert — controller returns ActionResult<SettingsDto>; unwrap .Result
-        result.Result.Should().BeOfType<OkObjectResult>()
-            .Which.Value.Should().NotBeNull();
+        result.Result.Should().BeOfType<OkObjectResult>();
     }
 
     [Fact]
-    public async Task UpdateSettings_PassesCallerIdentity_ToService()
+    public async Task Get_Harness_SystemCaller_HonorsUserIdQuery()
     {
-        // Arrange
         var ct = TestContext.Current.CancellationToken;
-        _settingsService.GetAsync(ct).Returns(MakeDto());
-        var request = new UpdateSettingsRequest(new UpdateHarnessSettingsRequest("", true, true));
+        var target = Guid.NewGuid();
+        _service.GetAsync(SettingsKeys.Harness, Arg.Any<Guid?>(), ct).Returns(Env(SettingsKeys.Harness, new HarnessSettings()));
+        var controller = NewController(new Claim("caller-type", "internal-system"));
 
-        // Act
-        await _controller.UpdateSettings(request, ct);
+        await controller.Get(SettingsKeys.Harness, target, ct);
 
-        // Assert
-        await _settingsService.Received(1).UpdateAsync(request, "admin-user", ct);
+        await _service.Received(1).GetAsync(SettingsKeys.Harness, target, ct);
     }
 
     [Fact]
-    public async Task UpdateSettings_CallsGetAsync_AfterUpdate()
+    public async Task Get_Pdp_Forbids_NonSovereign()
     {
-        // Arrange
+        var controller = NewController(new Claim(ClaimTypes.Name, "member"));
+        var result = await controller.Get(SettingsKeys.Pdp, null, TestContext.Current.CancellationToken);
+        result.Result.Should().BeOfType<ForbidResult>();
+    }
+
+    [Fact]
+    public async Task Get_Pdp_ReturnsOk_ForSovereign()
+    {
         var ct = TestContext.Current.CancellationToken;
-        _settingsService.GetAsync(ct).Returns(MakeDto());
-        var request = new UpdateSettingsRequest(new UpdateHarnessSettingsRequest("", true, true));
+        _service.GetAsync(SettingsKeys.Pdp, null, ct).Returns(Env(SettingsKeys.Pdp, new PdpSettings()));
+        var controller = NewController(new Claim(ClaimTypes.Role, "Sovereign"));
 
-        // Act
-        await _controller.UpdateSettings(request, ct);
+        var result = await controller.Get(SettingsKeys.Pdp, null, ct);
 
-        // Assert
-        await _settingsService.Received(1).GetAsync(ct);
+        result.Result.Should().BeOfType<OkObjectResult>();
+    }
+
+    [Fact]
+    public async Task Update_Pdp_Forbids_NonSovereign()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var controller = NewController(new Claim(ClaimTypes.Name, "member"));
+        var result = await controller.Update(SettingsKeys.Pdp, Payload(new { lockdownMode = true }), ct);
+        result.Result.Should().BeOfType<ForbidResult>();
+    }
+
+    [Fact]
+    public async Task Update_Pdp_ReturnsOk_ForSovereign()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        _service.UpdateAsync(SettingsKeys.Pdp, null, Arg.Any<JsonElement>(), Arg.Any<string?>(), ct)
+            .Returns(Env(SettingsKeys.Pdp, new PdpSettings()));
+        var controller = NewController(new Claim(ClaimTypes.Role, "Sovereign"), new Claim(ClaimTypes.Name, "admin"));
+
+        var result = await controller.Update(SettingsKeys.Pdp, Payload(new { lockdownMode = true }), ct);
+
+        result.Result.Should().BeOfType<OkObjectResult>();
+    }
+
+    [Fact]
+    public async Task Update_Harness_PassesCallerUserId_ToService()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var userId = Guid.NewGuid();
+        _service.UpdateAsync(SettingsKeys.Harness, userId, Arg.Any<JsonElement>(), Arg.Any<string?>(), ct)
+            .Returns(Env(SettingsKeys.Harness, new HarnessSettings()));
+        var controller = NewController(new Claim(ClaimTypes.NameIdentifier, userId.ToString()), new Claim(ClaimTypes.Name, "member"));
+
+        await controller.Update(SettingsKeys.Harness, Payload(new { userHarnessPrompt = "x" }), ct);
+
+        await _service.Received(1).UpdateAsync(SettingsKeys.Harness, userId, Arg.Any<JsonElement>(), "member", ct);
     }
 }

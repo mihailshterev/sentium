@@ -51,40 +51,6 @@ describe("useRole no user", () => {
   });
 });
 
-describe("useRole Guest", () => {
-  beforeEach(() => setUser(["Guest"]));
-
-  it("highestRole is 'Guest'", () => {
-    const { result } = renderHook(() => useRole());
-    expect(result.current.highestRole).toBe("Guest");
-  });
-
-  it("isSovereign is false", () => {
-    const { result } = renderHook(() => useRole());
-    expect(result.current.isSovereign).toBe(false);
-  });
-
-  it("isMemberOrAbove is false", () => {
-    const { result } = renderHook(() => useRole());
-    expect(result.current.isMemberOrAbove).toBe(false);
-  });
-
-  it("isAuthenticated is true", () => {
-    const { result } = renderHook(() => useRole());
-    expect(result.current.isAuthenticated).toBe(true);
-  });
-
-  it("hasRole('Guest') is true", () => {
-    const { result } = renderHook(() => useRole());
-    expect(result.current.hasRole("Guest")).toBe(true);
-  });
-
-  it("hasRole('Member') is false", () => {
-    const { result } = renderHook(() => useRole());
-    expect(result.current.hasRole("Member")).toBe(false);
-  });
-});
-
 describe("useRole Member", () => {
   beforeEach(() => setUser(["Member"]));
 
@@ -123,17 +89,17 @@ describe("useRole Sovereign", () => {
   });
 });
 
-describe("useRole multiple roles (Member + Guest)", () => {
-  beforeEach(() => setUser(["Member", "Guest"]));
+describe("useRole multiple roles (Member + unlisted)", () => {
+  beforeEach(() => setUser(["Member", "UnknownRole"]));
 
-  it("highestRole picks Member over Guest", () => {
+  it("highestRole picks Member and ignores the unlisted role", () => {
     const { result } = renderHook(() => useRole());
     expect(result.current.highestRole).toBe("Member");
   });
 });
 
-describe("useRole multiple roles (Sovereign + Member + Guest)", () => {
-  beforeEach(() => setUser(["Sovereign", "Member", "Guest"]));
+describe("useRole multiple roles (Sovereign + Member)", () => {
+  beforeEach(() => setUser(["Sovereign", "Member"]));
 
   it("highestRole picks Sovereign", () => {
     const { result } = renderHook(() => useRole());

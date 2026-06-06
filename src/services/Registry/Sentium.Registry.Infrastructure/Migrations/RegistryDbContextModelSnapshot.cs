@@ -28,6 +28,10 @@ namespace Sentium.Registry.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("Settings")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("datetimeoffset");
 
@@ -35,51 +39,15 @@ namespace Sentium.Registry.Infrastructure.Migrations
                         .HasMaxLength(512)
                         .HasColumnType("nvarchar(512)");
 
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
                     b.ToTable("SystemSettings");
-                });
-
-            modelBuilder.Entity("Sentium.Registry.Core.Entities.SystemSettings", b =>
-                {
-                    b.OwnsOne("Sentium.Registry.Core.Settings.SettingsContainer", "Settings", b1 =>
-                        {
-                            b1.Property<Guid>("SystemSettingsId");
-
-                            b1.HasKey("SystemSettingsId");
-
-                            b1.ToTable("SystemSettings");
-
-                            b1
-                                .ToJson("Settings")
-                                .HasColumnType("nvarchar(max)");
-
-                            b1.WithOwner()
-                                .HasForeignKey("SystemSettingsId");
-
-                            b1.OwnsOne("Sentium.Registry.Core.Settings.HarnessSettings", "Harness", b2 =>
-                                {
-                                    b2.Property<Guid>("SettingsContainerSystemSettingsId");
-
-                                    b2.Property<bool>("IsBuiltInHarnessEnabled");
-
-                                    b2.Property<string>("UserHarnessPrompt")
-                                        .IsRequired();
-
-                                    b2.HasKey("SettingsContainerSystemSettingsId");
-
-                                    b2.ToTable("SystemSettings");
-
-                                    b2.WithOwner()
-                                        .HasForeignKey("SettingsContainerSystemSettingsId");
-                                });
-
-                            b1.Navigation("Harness")
-                                .IsRequired();
-                        });
-
-                    b.Navigation("Settings")
-                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

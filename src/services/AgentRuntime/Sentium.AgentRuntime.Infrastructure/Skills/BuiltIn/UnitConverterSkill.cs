@@ -69,7 +69,7 @@ internal sealed class UnitConverterSkill : AgentClassSkill<UnitConverterSkill>
         | fluid oz    | ml       | 29.5735  |
         | ml          | fluid oz | 0.033814 |
 
-        ## Temperature — use the convert-temperature script (not this table).
+        ## Temperature - use the convert-temperature script (not this table).
         """;
 
     [AgentSkillScript("convert")]

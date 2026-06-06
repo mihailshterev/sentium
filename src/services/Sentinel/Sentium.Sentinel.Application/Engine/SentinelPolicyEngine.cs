@@ -87,7 +87,7 @@ public sealed class SentinelPolicyEngine(
         finally
         {
             sw.Stop();
-            await WriteAuditAsync(request, decision!, auditId, sw.ElapsedMilliseconds, ct);
+            await WriteAuditAsync(request, decision!, auditId, sw.ElapsedMilliseconds, CancellationToken.None);
         }
 
         if (logger.IsEnabled(LogLevel.Information))

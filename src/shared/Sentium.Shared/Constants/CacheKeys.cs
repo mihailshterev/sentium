@@ -7,6 +7,10 @@ namespace Sentium.Shared.Constants;
 /// </summary>
 public static class CacheKeys
 {
-    /// <summary>Global settings managed by the Registry service.</summary>
-    public const string Settings = "global:app-settings";
+    /// <summary>
+    /// Per-key, per-scope Registry settings cache key. Used identically by the Registry (publish +
+    /// evict) and consumers (cache + NATS eviction). <paramref name="userId"/> is null for
+    /// global-scoped settings.
+    /// </summary>
+    public static string SettingsFor(string key, Guid? userId) => $"settings:{key}:{userId?.ToString() ?? "global"}";
 }

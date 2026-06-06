@@ -3,23 +3,19 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Sentium.Sentinel.Application.Options;
 using Sentium.Sentinel.Core.Policies;
+using Sentium.Sentinel.Core.Settings;
 
 namespace Sentium.Sentinel.Infrastructure.Policies;
 
 /// <summary>
-/// Semantic Intent Check — uses a local LLM (via Ollama) to compare the agent's
-/// declared skill action against the original user prompt.
-///
-/// Purpose: Detect prompt injection and intent mismatch where a compromised or
-/// hallucinating agent attempts to execute capabilities unrelated to what the
-/// human user actually requested.
-///
-/// This policy is intentionally positioned AFTER the InvariantGuard and
-/// RateLimiting layers so that hard failures are caught cheaply before the
-/// (more expensive) LLM call.
+/// Validates the agent's declared action against the original user prompt using a local LLM.
+/// <para/>
+/// This policy detects prompt injections and semantic intent mismatches, preventing
+/// a compromised or hallucinating agent from executing actions unrelated to the user's request.
 /// </summary>
 public sealed class SemanticIntentPolicy(
     IChatClient chatClient,
+    IPdpRuntimeSettingsProvider settings,
     IOptions<PdpOptions> opts,
     ILogger<SemanticIntentPolicy> logger) : IPdpPolicy
 {
@@ -31,12 +27,14 @@ public sealed class SemanticIntentPolicy(
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        if (!_options.SemanticIntentCheckEnabled)
+        var runtime = await settings.GetAsync(ct);
+
+        if (!runtime.SemanticIntentCheckEnabled)
         {
             return null;
         }
 
-        if (_options.AutonomyLevel >= 9)
+        if (runtime.AutonomyLevel >= 9)
         {
             return null;
         }
@@ -46,7 +44,7 @@ public sealed class SemanticIntentPolicy(
             return null;
         }
 
-        var verdict = await ClassifyIntentAsync(request, ct);
+        var verdict = await ClassifyIntentAsync(request, runtime, ct);
         var verdictLabel = verdict switch
         {
             IntentVerdict.Aligned => "Aligned",
@@ -55,7 +53,7 @@ public sealed class SemanticIntentPolicy(
         };
 
         var effectiveVerdict = verdict;
-        if (verdict == IntentVerdict.Inconclusive && _options.AutonomyLevel <= 2)
+        if (verdict == IntentVerdict.Inconclusive && runtime.AutonomyLevel <= 2)
         {
             effectiveVerdict = IntentVerdict.Misaligned;
         }
@@ -91,23 +89,24 @@ public sealed class SemanticIntentPolicy(
         };
     }
 
-    private async Task<IntentVerdict> ClassifyIntentAsync(PolicyRequest request, CancellationToken ct)
+    private async Task<IntentVerdict> ClassifyIntentAsync(PolicyRequest request, PdpRuntimeSettings runtime, CancellationToken ct)
     {
         var prompt = BuildClassificationPrompt(request);
 
-        using var timeoutCts = new CancellationTokenSource(TimeSpan.FromSeconds(_options.IntentCheckTimeoutSeconds));
+        using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        linkedCts.CancelAfter(TimeSpan.FromSeconds(_options.IntentCheckTimeoutSeconds));
 
         try
         {
             var chatOptions = new ChatOptions
             {
                 Temperature = 0f,
-                MaxOutputTokens = 32
+                ModelId = string.IsNullOrWhiteSpace(runtime.IntentCheckModel) ? null : runtime.IntentCheckModel
             };
 
             var message = new ChatMessage(ChatRole.User, prompt);
 
-            var response = await chatClient.GetResponseAsync([message], chatOptions, timeoutCts.Token);
+            var response = await chatClient.GetResponseAsync([message], chatOptions, linkedCts.Token);
 
             var span = (response.Text ?? string.Empty).AsSpan().Trim();
 
@@ -125,7 +124,7 @@ public sealed class SemanticIntentPolicy(
 
             return IntentVerdict.Inconclusive;
         }
-        catch (OperationCanceledException) when (timeoutCts.IsCancellationRequested)
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
         {
             logger.LogWarning("Semantic intent check timed out after {TimeoutSeconds}s. Treating as inconclusive.", _options.IntentCheckTimeoutSeconds);
 

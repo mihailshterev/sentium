@@ -11,6 +11,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 builder.AddAuthenticationDefaults();
+builder.AddInternalApiSecurity();
+builder.AddRoleAuthorization();
 
 builder.Services.AddSentiumProblemDetails();
 builder.Services.AddOpenApi();

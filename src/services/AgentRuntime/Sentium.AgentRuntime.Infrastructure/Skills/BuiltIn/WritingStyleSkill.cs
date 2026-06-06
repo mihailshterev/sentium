@@ -42,11 +42,11 @@ internal sealed class WritingStyleSkill : AgentClassSkill<WritingStyleSkill>
         # Writing Style Guide
 
         ## Golden Rules
-        1. **Clarity over cleverness** — If a reader needs to re-read a sentence, rewrite it.
-        2. **Active voice** — "The system processes the request" not "The request is processed by the system."
-        3. **Short sentences** — Aim for ≤ 20 words per sentence. Split complex ideas.
-        4. **One idea per paragraph** — State it, support it, conclude it.
-        5. **Reader-first** — Answer "what does the reader need?" before you write.
+        1. **Clarity over cleverness** - If a reader needs to re-read a sentence, rewrite it.
+        2. **Active voice** - "The system processes the request" not "The request is processed by the system."
+        3. **Short sentences** - Aim for ≤ 20 words per sentence. Split complex ideas.
+        4. **One idea per paragraph** - State it, support it, conclude it.
+        5. **Reader-first** - Answer "what does the reader need?" before you write.
 
         ## Document Structure
         - Lead with the most important information (inverted pyramid).
@@ -87,7 +87,7 @@ internal sealed class WritingStyleSkill : AgentClassSkill<WritingStyleSkill>
         Quick update on [project]:
         - Completed: [item]
         - In progress: [item] (ETA: [date])
-        - Blocker: [item] — need [action]
+        - Blocker: [item] - need [action]
         Next check-in: [date].
         [Name]
 
@@ -103,7 +103,7 @@ internal sealed class WritingStyleSkill : AgentClassSkill<WritingStyleSkill>
         [Name]
 
         ## Incident Notification
-        Subject: [SEV-X] [Service] Issue – [Start Time]
+        Subject: [SEV-X] [Service] Issue - [Start Time]
         Body:
         **Status**: Investigating / Mitigated / Resolved
         **Impact**: [what is affected and how many users]

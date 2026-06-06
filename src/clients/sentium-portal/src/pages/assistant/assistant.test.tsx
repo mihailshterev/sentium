@@ -74,7 +74,7 @@ beforeEach(() => {
 describe("Assistant – initial render", () => {
   it("renders the model selector", () => {
     renderAssistant();
-    expect(screen.getByRole("combobox")).toBeInTheDocument();
+    expect(screen.getByText("llama3.2")).toBeInTheDocument();
   });
 
   it("renders suggestion chips when no conversation", () => {
@@ -108,30 +108,30 @@ describe("Assistant sidebar toggle", () => {
 describe("Assistant model selection", () => {
   it("renders all available models in the selector", () => {
     renderAssistant();
-    const select = screen.getByRole("combobox");
-    const options = Array.from((select as HTMLSelectElement).options).map((o) => o.text);
-    expect(options).toContain("llama3.2");
-    expect(options).toContain("gemma3:1b");
+    const chip = screen.getByText("llama3.2").closest("[class*='inputModelChip']") as HTMLElement;
+    fireEvent.click(chip!);
+    expect(screen.getAllByText("llama3.2").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText("gemma3:1b")).toBeInTheDocument();
   });
 
   it("sets model from available models on initial render", () => {
     renderAssistant();
-    const select = screen.getByRole("combobox") as HTMLSelectElement;
-    expect(select.value).toBe("llama3.2");
+    expect(screen.getByText("llama3.2")).toBeInTheDocument();
   });
 
   it("shows 'No model selected' status when no models are available", () => {
     vi.spyOn(useModelsHook, "default").mockReturnValue({ ...defaultModelsHook, models: [] });
     useConversationStore.setState((s) => ({ ...s, model: "" }));
     renderAssistant();
-    expect(screen.getByText(/no model selected/i)).toBeInTheDocument();
+    expect(screen.getByPlaceholderText(/model name/i)).toBeInTheDocument();
   });
 
   it("updates model when model selector is changed", () => {
     renderAssistant();
-    const select = screen.getByRole("combobox") as HTMLSelectElement;
-    fireEvent.change(select, { target: { value: "gemma3:1b" } });
-    expect(select.value).toBe("gemma3:1b");
+    const chip = screen.getByText("llama3.2").closest("[class*='inputModelChip']") as HTMLElement;
+    fireEvent.click(chip!);
+    fireEvent.click(screen.getByText("gemma3:1b"));
+    expect(screen.getByText("gemma3:1b")).toBeInTheDocument();
   });
 
   it("updates model in text input when no models and user types", () => {

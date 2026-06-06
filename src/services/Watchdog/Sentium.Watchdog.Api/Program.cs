@@ -10,6 +10,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 builder.AddAuthenticationDefaults();
+builder.AddRoleAuthorization();
 
 builder.AddNatsClient(ResourceNames.Nats);
 builder.AddRedisDistributedCache(ResourceNames.Redis);
@@ -24,7 +25,7 @@ builder.Services.AddControllers(options => options.Filters.Add<FluentValidationF
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
 builder.AddSentiumAuditLogging();
-builder.Services.AddWatchdogApplication();
+builder.AddWatchdogApplication();
 
 var app = builder.Build();
 

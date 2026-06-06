@@ -1,9 +1,6 @@
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 using Sentium.Infrastructure.Security;
 using Sentium.Sentinel.Application.Engine;
-using Sentium.Sentinel.Application.Options;
 using Sentium.Sentinel.Core.Audit;
 using Sentium.Sentinel.Core.Dtos;
 using Sentium.Sentinel.Core.Policies;
@@ -17,8 +14,7 @@ namespace Sentium.Sentinel.Api.Controllers;
 [Route("policy")]
 public sealed class PolicyController(
     SentinelPolicyEngine engine,
-    IAuditLog auditLog,
-    IOptionsMonitor<PdpOptions> optionsMonitor) : ControllerBase
+    IAuditLog auditLog) : ControllerBase
 {
     /// <summary>
     /// Evaluates a policy request and returns an authorization decision.
@@ -66,7 +62,7 @@ public sealed class PolicyController(
     /// Returns recent forensic audit records, newest first. Requires authentication.
     /// </summary>
     [HttpGet("audit")]
-    [Authorize]
+    [AuthorizeSovereign]
     [ProducesResponseType<IReadOnlyList<AuditRecord>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAudit([FromQuery] int count = 100, CancellationToken ct = default)
     {
@@ -78,7 +74,7 @@ public sealed class PolicyController(
     /// Returns audit records for a specific agent. Requires authentication.
     /// </summary>
     [HttpGet("audit/agent/{agentId}")]
-    [Authorize]
+    [AuthorizeSovereign]
     [ProducesResponseType<IReadOnlyList<AuditRecord>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAuditByAgent(string agentId, [FromQuery] int count = 50, CancellationToken ct = default)
     {
@@ -90,7 +86,7 @@ public sealed class PolicyController(
     /// Returns aggregate statistics for the current audit window. Requires authentication.
     /// </summary>
     [HttpGet("audit/stats")]
-    [Authorize]
+    [AuthorizeSovereign]
     [ProducesResponseType<AuditStatsDto>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAuditStats(CancellationToken ct = default)
     {
@@ -128,71 +124,4 @@ public sealed class PolicyController(
         return Ok(stats);
     }
 
-    /// <summary>
-    /// Returns the current runtime-configurable PDP settings. Requires authentication.
-    /// </summary>
-    [HttpGet("settings")]
-    [Authorize]
-    [ProducesResponseType<PdpSettingsDto>(StatusCodes.Status200OK)]
-    public IActionResult GetSettings()
-    {
-        var opts = optionsMonitor.CurrentValue;
-        return Ok(new PdpSettingsDto
-        {
-            LockdownMode = opts.LockdownMode,
-            AutonomyLevel = opts.AutonomyLevel,
-            SemanticIntentCheckEnabled = opts.SemanticIntentCheckEnabled,
-            RateLimitMaxRequests = opts.RateLimitMaxRequests,
-            RateLimitWindowSeconds = opts.RateLimitWindowSeconds
-        });
-    }
-
-    /// <summary>
-    /// Updates runtime-configurable PDP settings. Requires authentication.
-    /// Changes take effect immediately without restarting the service.
-    /// </summary>
-    [HttpPut("settings")]
-    [Authorize]
-    [ProducesResponseType<PdpSettingsDto>(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public IActionResult UpdateSettings([FromBody] UpdatePdpSettingsRequest body)
-    {
-        ArgumentNullException.ThrowIfNull(body);
-
-        var opts = optionsMonitor.CurrentValue;
-
-        if (body.LockdownMode.HasValue)
-        {
-            opts.LockdownMode = body.LockdownMode.Value;
-        }
-
-        if (body.AutonomyLevel.HasValue)
-        {
-            opts.AutonomyLevel = body.AutonomyLevel.Value;
-        }
-
-        if (body.SemanticIntentCheckEnabled.HasValue)
-        {
-            opts.SemanticIntentCheckEnabled = body.SemanticIntentCheckEnabled.Value;
-        }
-
-        if (body.RateLimitMaxRequests.HasValue)
-        {
-            opts.RateLimitMaxRequests = body.RateLimitMaxRequests.Value;
-        }
-
-        if (body.RateLimitWindowSeconds.HasValue)
-        {
-            opts.RateLimitWindowSeconds = body.RateLimitWindowSeconds.Value;
-        }
-
-        return Ok(new PdpSettingsDto
-        {
-            LockdownMode = opts.LockdownMode,
-            AutonomyLevel = opts.AutonomyLevel,
-            SemanticIntentCheckEnabled = opts.SemanticIntentCheckEnabled,
-            RateLimitMaxRequests = opts.RateLimitMaxRequests,
-            RateLimitWindowSeconds = opts.RateLimitWindowSeconds
-        });
-    }
 }

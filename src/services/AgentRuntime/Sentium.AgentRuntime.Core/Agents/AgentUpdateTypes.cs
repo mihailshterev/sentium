@@ -8,4 +8,5 @@ public static class AgentUpdateTypes
     public const string Thought = "thought";
     public const string Done = "done";
     public const string EnhancedPrompt = "enhanced_prompt";
+    public const string Status = "status";
 }

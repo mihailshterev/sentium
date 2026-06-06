@@ -31,7 +31,9 @@ public sealed class SandboxOrchestrator(
 
         if (!authorization.IsAllowed)
         {
-            logger.LogWarning("Sentinel PDP denied sandbox execution. AgentId={AgentId} Language={Language} AuditId={AuditId} Reason={Reason}", request.AgentId, request.Language, authorization.AuditId, authorization.Reason);
+            var auditId = authorization.AuditId == Guid.Empty ? Guid.NewGuid() : authorization.AuditId;
+
+            logger.LogWarning("Sentinel PDP denied sandbox execution. AgentId={AgentId} Language={Language} AuditId={AuditId} Reason={Reason}", request.AgentId, request.Language, auditId, authorization.Reason);
 
             var deniedResult = new ExecutionResult
             {
@@ -42,7 +44,7 @@ public sealed class SandboxOrchestrator(
                 TimedOut = false,
                 PolicyDenied = true,
                 PolicyDenialReason = authorization.Reason,
-                SentinelAuditId = authorization.AuditId,
+                SentinelAuditId = auditId,
                 JobId = Guid.NewGuid(),
                 DurationMs = 0
             };

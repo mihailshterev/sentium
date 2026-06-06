@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Logging;
 using Sentium.Infrastructure.Messaging;
@@ -10,72 +11,85 @@ namespace Sentium.Registry.Application.Settings;
 
 public sealed class SettingsService(
     ISettingsRepository repository,
+    ISettingsCatalog catalog,
     HybridCache cache,
     IEventBus eventBus,
+    IServiceProvider serviceProvider,
     ILogger<SettingsService> logger) : ISettingsService
 {
+    private static readonly JsonSerializerOptions WebOptions = new(JsonSerializerDefaults.Web);
+
     private static readonly HybridCacheEntryOptions CacheOptions = new()
     {
         Expiration = TimeSpan.FromHours(1),
         LocalCacheExpiration = TimeSpan.FromMinutes(5)
     };
 
-    public ValueTask<SettingsDto> GetAsync(CancellationToken ct = default)
-        => cache.GetOrCreateAsync(
-            CacheKeys.Settings,
-            Factory,
-            CacheOptions,
-            cancellationToken: ct);
-
-    public async Task UpdateAsync(UpdateSettingsRequest request, string? updatedBy = null, CancellationToken ct = default)
+    public async Task<SettingsEnvelope?> GetAsync(string key, Guid? userId, CancellationToken ct = default)
     {
-        ArgumentNullException.ThrowIfNull(request);
-
-        var entity = await repository.FindAsync(ct);
-        if (entity is null)
+        if (!catalog.TryGet(key, out var descriptor))
         {
-            entity = new SystemSettings();
-            await repository.AddAsync(entity, ct);
+            return null;
         }
 
-        entity.Settings = new SettingsContainer
+        var scopeUserId = ScopeUserId(descriptor, userId);
+
+        return await cache.GetOrCreateAsync(
+            CacheKeys.SettingsFor(descriptor.Key, scopeUserId),
+            async token => await LoadAsync(descriptor, scopeUserId, token),
+            CacheOptions,
+            cancellationToken: ct
+        );
+    }
+
+    public async Task<SettingsEnvelope> UpdateAsync(string key, Guid? userId, JsonElement payload, string? updatedBy = null, CancellationToken ct = default)
+    {
+        if (!catalog.TryGet(key, out var descriptor))
         {
-            Harness = new HarnessSettings
-            {
-                UserHarnessPrompt = request.Harness.UserHarnessPrompt ?? string.Empty,
-                IsBuiltInHarnessEnabled = request.Harness.IsBuiltInHarnessEnabled,
-                IsPromptEnhancementEnabled = request.Harness.IsPromptEnhancementEnabled,
-            }
-        };
+            throw new KeyNotFoundException($"Unknown settings key '{key}'.");
+        }
+
+        var scopeUserId = ScopeUserId(descriptor, userId);
+        var value = descriptor.Deserialize(payload);
+        await descriptor.ValidateAsync(value, serviceProvider, ct);
+
+        var isNew = false;
+        var entity = await repository.FindAsync(scopeUserId, ct);
+        if (entity is null)
+        {
+            entity = new SystemSettings { UserId = scopeUserId };
+            isNew = true;
+        }
+
+        descriptor.Write(entity.Settings, value);
         entity.UpdatedAt = DateTimeOffset.UtcNow;
         entity.UpdatedBy = updatedBy;
 
-        await repository.SaveAsync(ct);
-        await cache.RemoveAsync(CacheKeys.Settings, ct);
-        await eventBus.PublishAsync(
-            NatsSubjects.SettingsInvalidated,
-            new SettingsInvalidatedEvent(CacheKeys.Settings, DateTimeOffset.UtcNow),
-            ct: ct);
-
-        logger.LogInformation("Settings updated by {User}; cache invalidated", updatedBy ?? "system");
-    }
-
-    private async ValueTask<SettingsDto> Factory(CancellationToken ct)
-    {
-        var entity = await repository.FindAsync(ct);
-        if (entity is null)
+        if (isNew)
         {
-            entity = new SystemSettings();
             await repository.AddAsync(entity, ct);
         }
-        return MapToDto(entity);
+        else
+        {
+            await repository.UpdateAsync(entity, ct);
+        }
+
+        var cacheKey = CacheKeys.SettingsFor(descriptor.Key, scopeUserId);
+        await cache.RemoveAsync(cacheKey, ct);
+        await eventBus.PublishAsync(NatsSubjects.SettingsInvalidated, new SettingsInvalidatedEvent(cacheKey, DateTimeOffset.UtcNow), ct: ct);
+
+        logger.LogInformation("Settings '{Key}' updated for {Scope} by {By}; cache invalidated", descriptor.Key, scopeUserId?.ToString() ?? "global", updatedBy ?? "system");
+
+        return new SettingsEnvelope(descriptor.Key, JsonSerializer.SerializeToElement(value, value.GetType(), WebOptions), entity.UpdatedAt, entity.UpdatedBy);
     }
 
-    private static SettingsDto MapToDto(SystemSettings entity) => new(
-        Harness: new HarnessSettingsDto(
-            entity.Settings.Harness.UserHarnessPrompt,
-            entity.Settings.Harness.IsBuiltInHarnessEnabled,
-            entity.Settings.Harness.IsPromptEnhancementEnabled),
-        UpdatedAt: entity.UpdatedAt,
-        UpdatedBy: entity.UpdatedBy);
+    private async Task<SettingsEnvelope> LoadAsync(ISettingsDescriptor descriptor, Guid? scopeUserId, CancellationToken ct)
+    {
+        var entity = await repository.FindAsync(scopeUserId, ct);
+        var container = entity?.Settings ?? new SettingsContainer();
+        var value = descriptor.Read(container);
+        return new SettingsEnvelope(descriptor.Key, JsonSerializer.SerializeToElement(value, value.GetType(), WebOptions), entity?.UpdatedAt ?? DateTimeOffset.UtcNow, entity?.UpdatedBy);
+    }
+
+    private static Guid? ScopeUserId(ISettingsDescriptor descriptor, Guid? userId) => descriptor.Scope == SettingsScope.Global ? null : userId;
 }

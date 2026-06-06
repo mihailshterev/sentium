@@ -48,18 +48,28 @@ const mockRun: WorkflowRun = {
 
 const healthyService: ServiceHealthStatus = {
   serviceName: "Agent Runtime",
+  kind: "Service",
   status: "Healthy",
   latencyMs: 20,
   checkedAt: "2025-01-01T00:00:00Z",
   details: null,
+  checks: [],
+  uptimePercent: 100,
+  lastStateChange: "2025-01-01T00:00:00Z",
+  consecutiveFailures: 0,
 };
 
 const unhealthyService: ServiceHealthStatus = {
   serviceName: "Sentinel",
+  kind: "Service",
   status: "Unhealthy",
   latencyMs: 999,
   checkedAt: "2025-01-01T00:00:00Z",
   details: null,
+  checks: [],
+  uptimePercent: 50,
+  lastStateChange: "2025-01-01T00:00:00Z",
+  consecutiveFailures: 2,
 };
 
 const defaultAgentsHook = { agents: [mockAgent], isLoading: false };

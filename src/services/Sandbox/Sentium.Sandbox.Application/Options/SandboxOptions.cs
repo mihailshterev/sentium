@@ -23,4 +23,6 @@ public sealed class SandboxOptions
     public bool HarvestArtifacts { get; set; } = true;
     public string ArtifactContainerName { get; set; } = "sandbox-artifacts";
     public long MaxArtifactSizeBytes { get; set; } = 50 * 1024 * 1024;
+    public int MaxOutputBytes { get; set; } = 256 * 1024;
+    public string SentinelSkillName { get; set; } = "sandbox.execute";
 }

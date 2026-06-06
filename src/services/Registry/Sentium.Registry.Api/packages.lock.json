@@ -679,6 +679,7 @@
           "Aspire.Seq": "[13.2.4, )",
           "FluentValidation": "[12.1.1, )",
           "FluentValidation.DependencyInjectionExtensions": "[12.1.1, )",
+          "Microsoft.AspNetCore.Authentication.JwtBearer": "[10.0.1, )",
           "Microsoft.EntityFrameworkCore": "[10.0.5, )",
           "Microsoft.EntityFrameworkCore.SqlServer": "[10.0.5, )",
           "Microsoft.Extensions.Http.Resilience": "[10.2.0, )",
@@ -693,6 +694,7 @@
       "sentium.registry.application": {
         "type": "Project",
         "dependencies": {
+          "FluentValidation": "[12.1.1, )",
           "Microsoft.Extensions.Caching.Hybrid": "[10.4.0, )",
           "Sentium.Infrastructure": "[1.0.0, )",
           "Sentium.Registry.Core": "[1.0.0, )",

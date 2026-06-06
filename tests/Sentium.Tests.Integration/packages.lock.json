@@ -2080,7 +2080,8 @@
       "sentium.identity.core": {
         "type": "Project",
         "dependencies": {
-          "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "[10.0.5, )"
+          "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "[10.0.5, )",
+          "Sentium.Shared": "[1.0.0, )"
         }
       },
       "sentium.identity.infrastructure": {
@@ -2109,6 +2110,7 @@
           "Aspire.Seq": "[13.2.4, )",
           "FluentValidation": "[12.1.1, )",
           "FluentValidation.DependencyInjectionExtensions": "[12.1.1, )",
+          "Microsoft.AspNetCore.Authentication.JwtBearer": "[10.0.1, )",
           "Microsoft.EntityFrameworkCore": "[10.0.5, )",
           "Microsoft.EntityFrameworkCore.SqlServer": "[10.0.5, )",
           "Microsoft.Extensions.Http.Resilience": "[10.2.0, )",
@@ -2137,6 +2139,7 @@
       "sentium.registry.application": {
         "type": "Project",
         "dependencies": {
+          "FluentValidation": "[12.1.1, )",
           "Microsoft.Extensions.Caching.Hybrid": "[10.4.0, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.6, )",
           "Sentium.Infrastructure": "[1.0.0, )",
@@ -2168,7 +2171,9 @@
         "type": "Project",
         "dependencies": {
           "Aspire.NATS.Net": "[13.2.4, )",
+          "Aspire.StackExchange.Redis.DistributedCaching": "[13.2.4, )",
           "Microsoft.AspNetCore.OpenApi": "[10.0.1, )",
+          "Microsoft.Extensions.Caching.Hybrid": "[10.4.0, )",
           "Scalar.AspNetCore": "[2.14.4, )",
           "Sentium.Sentinel.Application": "[1.0.0, )",
           "Sentium.Sentinel.Infrastructure": "[1.0.0, )",
@@ -2193,6 +2198,7 @@
           "Microsoft.EntityFrameworkCore": "[10.0.5, )",
           "Microsoft.EntityFrameworkCore.SqlServer": "[10.0.5, )",
           "Microsoft.Extensions.AI": "[10.5.2, )",
+          "Microsoft.Extensions.Caching.Hybrid": "[10.4.0, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.6, )",
           "Microsoft.Extensions.Hosting": "[10.0.5, )",
           "NATS.Net": "[2.7.2, )",
@@ -2233,10 +2239,12 @@
       "sentium.watchdog.application": {
         "type": "Project",
         "dependencies": {
+          "Microsoft.Extensions.Caching.Hybrid": "[10.4.0, )",
           "Microsoft.Extensions.DependencyInjection.Abstractions": "[10.0.6, )",
           "Microsoft.Extensions.Hosting": "[10.0.5, )",
           "Microsoft.Extensions.Http.Resilience": "[10.2.0, )",
           "Microsoft.Extensions.ServiceDiscovery": "[10.2.0, )",
+          "NATS.Net": "[2.7.2, )",
           "Sentium.Infrastructure": "[1.0.0, )",
           "Sentium.Shared": "[1.0.0, )",
           "Sentium.Watchdog.Core": "[1.0.0, )"

@@ -1,14 +1,15 @@
 namespace Sentium.Sentinel.Application.Options;
 
 /// <summary>
-/// Configuration for the Policy Decision Point engine.
-/// Bind from <c>appsettings.json</c> under the key <c>"Pdp"</c>.
+/// Static Policy Decision Point configuration bound from appsettings.
+/// Runtime-tunables (lockdown, autonomy, rate limits, intent model) live in the Registry
+/// and are managed via Sovereign controls. Only static policy lists and infrastructure
+/// timeouts belong here.
 /// </summary>
 public sealed class PdpOptions
 {
     public const string SectionName = "Pdp";
-    public int RateLimitMaxRequests { get; set; } = 120;
-    public int RateLimitWindowSeconds { get; set; } = 60;
+
     public IReadOnlyList<string> ForbiddenActions { get; set; } =
     [
         "delete",
@@ -32,9 +33,5 @@ public sealed class PdpOptions
         "private_key"
     ];
 
-    public bool LockdownMode { get; set; } = false;
-    public int AutonomyLevel { get; set; } = 5;
-    public bool SemanticIntentCheckEnabled { get; set; } = true;
-    public string IntentCheckModel { get; set; } = "llama3.2:1b";
     public int IntentCheckTimeoutSeconds { get; set; } = 120;
 }

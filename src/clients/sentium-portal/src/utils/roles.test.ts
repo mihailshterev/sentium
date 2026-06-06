@@ -6,20 +6,12 @@ describe("outranks", () => {
     expect(outranks("Sovereign", "Member")).toBe(true);
   });
 
-  it("Sovereign outranks Guest", () => {
-    expect(outranks("Sovereign", "Guest")).toBe(true);
-  });
-
-  it("Member outranks Guest", () => {
-    expect(outranks("Member", "Guest")).toBe(true);
-  });
-
   it("Member does not outrank Sovereign", () => {
     expect(outranks("Member", "Sovereign")).toBe(false);
   });
 
-  it("Guest does not outrank Member", () => {
-    expect(outranks("Guest", "Member")).toBe(false);
+  it("an unlisted role does not outrank Member", () => {
+    expect(outranks("UnknownRole", "Member")).toBe(false);
   });
 
   it("same role does not outrank itself", () => {

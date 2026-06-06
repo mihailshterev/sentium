@@ -20,10 +20,10 @@ public static class ChatClientExtensions
     }
 
     /// <summary>
-    /// Wraps the given chat client in a harness driven by the centralised Registry settings.
+    /// Wraps the given chat client in a harness driven by the acting user's Registry settings.
     /// </summary>
-    public static IChatClient AsHarnessed(this IChatClient client, IRegistrySettingsService registrySettingsService)
-        => new HarnessedChatClient(client, registrySettingsService);
+    public static IChatClient AsHarnessed(this IChatClient client, IRegistrySettingsService registrySettingsService, IPdpContextAccessor pdpContext)
+        => new HarnessedChatClient(client, registrySettingsService, pdpContext);
 
     /// <summary>
     /// Wraps the given chat client so that relevant prior agent learnings are recalled and injected

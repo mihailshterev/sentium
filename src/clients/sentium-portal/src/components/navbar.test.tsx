@@ -104,13 +104,13 @@ describe("Navbar role badge", () => {
   it("renders no role badge when user has no recognised roles", () => {
     setUser([]);
     renderNav();
-    expect(screen.queryByText(/^(Sovereign|Member|Guest)$/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^(Sovereign|Member)$/)).not.toBeInTheDocument();
   });
 });
 
 describe("Navbar navigation links", () => {
   it("shows Dashboard link for all users", () => {
-    setUser(["Guest"]);
+    setUser(["Member"]);
     renderNav();
     expect(screen.getByRole("link", { name: /dashboard/i })).toBeInTheDocument();
   });
@@ -181,8 +181,8 @@ describe("Navbar sovereign-only links", () => {
     expect(usersLink).toBeUndefined();
   });
 
-  it("hides Users link for Guest users", () => {
-    setUser(["Guest"]);
+  it("hides Users link for users without the Sovereign role", () => {
+    setUser([]);
     renderNav();
     const links = screen.getAllByRole("link");
     const usersLink = links.find((l) => l.getAttribute("href") === "/users");

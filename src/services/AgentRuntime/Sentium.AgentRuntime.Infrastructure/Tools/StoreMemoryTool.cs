@@ -23,9 +23,9 @@ public sealed class StoreMemoryTool(
     public string Name => "store_memory";
 
     public string Description =>
-        "Saves important information, user preferences, or project facts to your long-term memory. " +
-        "Input should be a descriptive string of the fact to remember in the following format {\"input\": \"Your fact here\"}. " +
-        "Use this when the user tells you something they want you to remember for future sessions.";
+        "Saves a PERSONAL fact or preference the USER explicitly asked you to remember (their name, a setting, a standing instruction) to long-term memory. " +
+        "Input format: {\"input\": \"Your fact here\"}. " +
+        "Do NOT use this for things YOU figured out - patterns, conclusions, designs, fixes, or reusable approaches belong in capture_agent_learning instead.";
 
     public async Task<string> ExecuteAsync(string input, CancellationToken ct)
     {
@@ -53,7 +53,7 @@ public sealed class StoreMemoryTool(
                 }
             };
 
-            await ingestionService.IngestAsync(request, "user_memories", ct);
+            await ingestionService.IngestAsync(request, KnowledgeCollections.UserMemories, ct);
 
             logger.LogInformation("Agent successfully stored a new semantic memory.");
 
