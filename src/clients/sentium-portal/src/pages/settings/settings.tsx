@@ -37,9 +37,9 @@ const SettingsPage = () => {
 
   const initialUnifiedValues: SettingsEditorFormData = useMemo(
     () => ({
-      UserHarnessPrompt: harnessSettings?.harness.UserHarnessPrompt ?? "",
-      IsBuiltInHarnessEnabled: harnessSettings?.harness.IsBuiltInHarnessEnabled ?? true,
-      IsPromptEnhancementEnabled: harnessSettings?.harness.IsPromptEnhancementEnabled ?? false,
+      userHarnessPrompt: harnessSettings?.harness.userHarnessPrompt ?? "",
+      isBuiltInHarnessEnabled: harnessSettings?.harness.isBuiltInHarnessEnabled ?? true,
+      isPromptEnhancementEnabled: harnessSettings?.harness.isPromptEnhancementEnabled ?? false,
       defaultModel: ollamaEnvelope?.value?.defaultModel ?? "",
       agentTemperature: ollamaEnvelope?.value?.agentTemperature ?? 0.3,
       agentContextWindow: ollamaEnvelope?.value?.agentContextWindow ?? 16384,
@@ -68,9 +68,9 @@ const SettingsPage = () => {
   const handleGlobalSubmit = (data: SettingsEditorFormData) => {
     saveHarness({
       harness: {
-        UserHarnessPrompt: data.UserHarnessPrompt,
-        IsBuiltInHarnessEnabled: data.IsBuiltInHarnessEnabled,
-        IsPromptEnhancementEnabled: data.IsPromptEnhancementEnabled,
+        userHarnessPrompt: data.userHarnessPrompt,
+        isBuiltInHarnessEnabled: data.isBuiltInHarnessEnabled,
+        isPromptEnhancementEnabled: data.isPromptEnhancementEnabled,
       },
     });
 

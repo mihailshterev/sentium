@@ -4,7 +4,6 @@ using Sentium.Sentinel.Application.Engine;
 using Sentium.Sentinel.Core.Audit;
 using Sentium.Sentinel.Core.Dtos;
 using Sentium.Sentinel.Core.Policies;
-using Sentium.Sentinel.Core.Settings;
 
 namespace Sentium.Sentinel.Api.Controllers;
 
@@ -15,8 +14,7 @@ namespace Sentium.Sentinel.Api.Controllers;
 [Route("policy")]
 public sealed class PolicyController(
     SentinelPolicyEngine engine,
-    IAuditLog auditLog,
-    IPdpRuntimeSettingsProvider pdpSettings) : ControllerBase
+    IAuditLog auditLog) : ControllerBase
 {
     /// <summary>
     /// Evaluates a policy request and returns an authorization decision.
@@ -126,52 +124,4 @@ public sealed class PolicyController(
         return Ok(stats);
     }
 
-    /// <summary>
-    /// Returns the current runtime-configurable PDP settings.
-    /// </summary>
-    [HttpGet("settings")]
-    [AuthorizeSovereign]
-    [ProducesResponseType<PdpSettingsDto>(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetSettings(CancellationToken ct)
-    {
-        var runtime = await pdpSettings.GetAsync(ct);
-        return Ok(ToDto(runtime));
-    }
-
-    /// <summary>
-    /// Updates runtime-configurable PDP settings.
-    /// </summary>
-    [HttpPut("settings")]
-    [AuthorizeSovereign]
-    [ProducesResponseType<PdpSettingsDto>(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> UpdateSettings([FromBody] UpdatePdpSettingsRequest body, CancellationToken ct)
-    {
-        ArgumentNullException.ThrowIfNull(body);
-
-        var current = await pdpSettings.GetAsync(ct);
-        var merged = current with
-        {
-            LockdownMode = body.LockdownMode ?? current.LockdownMode,
-            AutonomyLevel = body.AutonomyLevel ?? current.AutonomyLevel,
-            SemanticIntentCheckEnabled = body.SemanticIntentCheckEnabled ?? current.SemanticIntentCheckEnabled,
-            IntentCheckModel = body.IntentCheckModel ?? current.IntentCheckModel,
-            RateLimitMaxRequests = body.RateLimitMaxRequests ?? current.RateLimitMaxRequests,
-            RateLimitWindowSeconds = body.RateLimitWindowSeconds ?? current.RateLimitWindowSeconds,
-        };
-
-        await pdpSettings.UpdateAsync(merged, ct);
-
-        return Ok(ToDto(merged));
-    }
-
-    private static PdpSettingsDto ToDto(PdpRuntimeSettings runtime) => new()
-    {
-        LockdownMode = runtime.LockdownMode,
-        AutonomyLevel = runtime.AutonomyLevel,
-        SemanticIntentCheckEnabled = runtime.SemanticIntentCheckEnabled,
-        IntentCheckModel = runtime.IntentCheckModel,
-        RateLimitMaxRequests = runtime.RateLimitMaxRequests,
-        RateLimitWindowSeconds = runtime.RateLimitWindowSeconds
-    };
 }

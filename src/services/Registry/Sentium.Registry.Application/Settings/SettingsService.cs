@@ -17,6 +17,8 @@ public sealed class SettingsService(
     IServiceProvider serviceProvider,
     ILogger<SettingsService> logger) : ISettingsService
 {
+    private static readonly JsonSerializerOptions WebOptions = new(JsonSerializerDefaults.Web);
+
     private static readonly HybridCacheEntryOptions CacheOptions = new()
     {
         Expiration = TimeSpan.FromHours(1),
@@ -78,7 +80,7 @@ public sealed class SettingsService(
 
         logger.LogInformation("Settings '{Key}' updated for {Scope} by {By}; cache invalidated", descriptor.Key, scopeUserId?.ToString() ?? "global", updatedBy ?? "system");
 
-        return new SettingsEnvelope(descriptor.Key, value, entity.UpdatedAt, entity.UpdatedBy);
+        return new SettingsEnvelope(descriptor.Key, JsonSerializer.SerializeToElement(value, value.GetType(), WebOptions), entity.UpdatedAt, entity.UpdatedBy);
     }
 
     private async Task<SettingsEnvelope> LoadAsync(ISettingsDescriptor descriptor, Guid? scopeUserId, CancellationToken ct)
@@ -86,7 +88,7 @@ public sealed class SettingsService(
         var entity = await repository.FindAsync(scopeUserId, ct);
         var container = entity?.Settings ?? new SettingsContainer();
         var value = descriptor.Read(container);
-        return new SettingsEnvelope(descriptor.Key, value, entity?.UpdatedAt ?? DateTimeOffset.UtcNow, entity?.UpdatedBy);
+        return new SettingsEnvelope(descriptor.Key, JsonSerializer.SerializeToElement(value, value.GetType(), WebOptions), entity?.UpdatedAt ?? DateTimeOffset.UtcNow, entity?.UpdatedBy);
     }
 
     private static Guid? ScopeUserId(ISettingsDescriptor descriptor, Guid? userId) => descriptor.Scope == SettingsScope.Global ? null : userId;

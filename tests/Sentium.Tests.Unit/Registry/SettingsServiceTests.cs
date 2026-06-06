@@ -36,6 +36,8 @@ public sealed class SettingsServiceTests
             NullLogger<SettingsService>.Instance);
     }
 
+    private static readonly JsonSerializerOptions WebOptions = new(JsonSerializerDefaults.Web);
+
     private static JsonElement Payload(object value) => JsonSerializer.SerializeToElement(value);
 
     [Fact]
@@ -61,7 +63,7 @@ public sealed class SettingsServiceTests
 
         result.Should().NotBeNull();
         result!.Key.Should().Be(SettingsKeys.Harness);
-        result.Value.Should().BeOfType<HarnessSettings>().Which.UserHarnessPrompt.Should().Be("existing");
+        result.Value.Deserialize<HarnessSettings>(WebOptions)!.UserHarnessPrompt.Should().Be("existing");
     }
 
     [Fact]
@@ -72,7 +74,7 @@ public sealed class SettingsServiceTests
 
         var result = await _sut.GetAsync(SettingsKeys.Harness, UserId, ct);
 
-        result!.Value.Should().BeOfType<HarnessSettings>().Which.UserHarnessPrompt.Should().BeEmpty();
+        result!.Value.Deserialize<HarnessSettings>(WebOptions)!.UserHarnessPrompt.Should().BeEmpty();
         await _repository.DidNotReceive().AddAsync(Arg.Any<SystemSettings>(), Arg.Any<CancellationToken>());
     }
 
@@ -91,7 +93,7 @@ public sealed class SettingsServiceTests
         await _repository.Received(1).UpdateAsync(Arg.Any<SystemSettings>(), ct);
         entity.Settings.Harness.UserHarnessPrompt.Should().Be("custom");
         entity.UpdatedBy.Should().Be("admin");
-        result.Value.Should().BeOfType<HarnessSettings>().Which.UserHarnessPrompt.Should().Be("custom");
+        result.Value.Deserialize<HarnessSettings>(WebOptions)!.UserHarnessPrompt.Should().Be("custom");
         _eventBus.PublishedSubjects.Should().ContainSingle(s => s == NatsSubjects.SettingsInvalidated);
     }
 

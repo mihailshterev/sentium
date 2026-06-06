@@ -8,9 +8,9 @@ import type { Settings } from "../../types/agentConfig";
 
 const mockSettings: Settings = {
   harness: {
-    UserHarnessPrompt: "Be concise.",
-    IsBuiltInHarnessEnabled: true,
-    IsPromptEnhancementEnabled: true,
+    userHarnessPrompt: "Be concise.",
+    isBuiltInHarnessEnabled: true,
+    isPromptEnhancementEnabled: true,
   },
   updatedAt: "2025-01-01T00:00:00Z",
   updatedBy: "alice@example.com",
@@ -125,9 +125,9 @@ describe("Settings editing interactions", () => {
     await waitFor(() =>
       expect(save).toHaveBeenCalledWith({
         harness: {
-          UserHarnessPrompt: "Updated prompt.",
-          IsBuiltInHarnessEnabled: true,
-          IsPromptEnhancementEnabled: true,
+          userHarnessPrompt: "Updated prompt.",
+          isBuiltInHarnessEnabled: true,
+          isPromptEnhancementEnabled: true,
         },
       }),
     );
@@ -137,7 +137,7 @@ describe("Settings editing interactions", () => {
     vi.spyOn(useSystemSettingsHook, "useSystemSettings").mockReturnValue({
       ...defaultHook,
       isSaving: true,
-      settings: { ...mockSettings, harness: { ...mockSettings.harness, UserHarnessPrompt: "Changed" } },
+      settings: { ...mockSettings, harness: { ...mockSettings.harness, userHarnessPrompt: "Changed" } },
     });
     renderSettings();
     expect(screen.getByRole("button", { name: /saving/i })).toBeDisabled();
@@ -176,7 +176,7 @@ describe("Settings editing interactions", () => {
     const longPrompt = "x".repeat(16001);
     vi.spyOn(useSystemSettingsHook, "useSystemSettings").mockReturnValue({
       ...defaultHook,
-      settings: { ...mockSettings, harness: { ...mockSettings.harness, UserHarnessPrompt: longPrompt } },
+      settings: { ...mockSettings, harness: { ...mockSettings.harness, userHarnessPrompt: longPrompt } },
     });
     renderSettings();
     expect(screen.getByText(/characters over limit/i)).toBeInTheDocument();
@@ -185,7 +185,7 @@ describe("Settings editing interactions", () => {
   it("disables save when content is over the character limit", () => {
     vi.spyOn(useSystemSettingsHook, "useSystemSettings").mockReturnValue({
       ...defaultHook,
-      settings: { ...mockSettings, harness: { ...mockSettings.harness, UserHarnessPrompt: "x" } },
+      settings: { ...mockSettings, harness: { ...mockSettings.harness, userHarnessPrompt: "x" } },
     });
     renderSettings();
     const textarea = screen.getByRole("textbox");
@@ -196,7 +196,7 @@ describe("Settings editing interactions", () => {
   it("shows near-limit warning when close to character limit", () => {
     vi.spyOn(useSystemSettingsHook, "useSystemSettings").mockReturnValue({
       ...defaultHook,
-      settings: { ...mockSettings, harness: { ...mockSettings.harness, UserHarnessPrompt: "x".repeat(15600) } },
+      settings: { ...mockSettings, harness: { ...mockSettings.harness, userHarnessPrompt: "x".repeat(15600) } },
     });
     renderSettings();
     // Should still show characters remaining in the warn style (near limit)

@@ -31,7 +31,10 @@ public sealed class SettingsControllerTests
             }
         };
 
-    private static SettingsEnvelope Env(string key, object value) => new(key, value, DateTimeOffset.UtcNow, null);
+    private static readonly JsonSerializerOptions WebOptions = new(JsonSerializerDefaults.Web);
+
+    private static SettingsEnvelope Env(string key, object value) =>
+        new(key, JsonSerializer.SerializeToElement(value, value.GetType(), WebOptions), DateTimeOffset.UtcNow, null);
     private static JsonElement Payload(object value) => JsonSerializer.SerializeToElement(value);
 
     [Fact]

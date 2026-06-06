@@ -1,9 +1,9 @@
 import { z } from "zod";
 
 export const settingsEditorSchema = z.object({
-  UserHarnessPrompt: z.string().max(16000),
-  IsBuiltInHarnessEnabled: z.boolean(),
-  IsPromptEnhancementEnabled: z.boolean(),
+  userHarnessPrompt: z.string().max(16000),
+  isBuiltInHarnessEnabled: z.boolean(),
+  isPromptEnhancementEnabled: z.boolean(),
 
   defaultModel: z.string(),
   agentTemperature: z.number().min(0).max(1),

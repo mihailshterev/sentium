@@ -31,28 +31,6 @@ public sealed class SentinelApiTests(SentinelTestFactory factory) : IClassFixtur
     }
 
     [Fact]
-    public async Task GetSettings_ReturnsOk_WithDefaultSettings()
-    {
-        var response = await _client.GetAsync("/policy/settings", Ct);
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var settings = await response.Content.ReadFromJsonAsync<PdpSettingsDto>(Ct);
-        settings.Should().NotBeNull();
-    }
-
-    [Fact]
-    public async Task UpdateSettings_ReturnsOk_WithUpdatedValues()
-    {
-        var body = new UpdatePdpSettingsRequest { LockdownMode = true };
-
-        var response = await _client.PutAsJsonAsync("/policy/settings", body, Ct);
-
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var settings = await response.Content.ReadFromJsonAsync<PdpSettingsDto>(Ct);
-        settings!.LockdownMode.Should().BeTrue();
-    }
-
-    [Fact]
     public async Task GetAuditByAgent_ReturnsOk_WithEmptyList()
     {
         var response = await _client.GetAsync("/policy/audit/agent/test-agent-integration", Ct);

@@ -14,7 +14,7 @@ public sealed record PdpRuntimeSettings
 }
 
 /// <summary>
-/// Provides cached, Registry-backed access to the runtime PDP settings, and persists updates.
+/// Provides cached, Registry-backed access to the runtime PDP settings.
 /// </summary>
 public interface IPdpRuntimeSettingsProvider
 {
@@ -22,9 +22,4 @@ public interface IPdpRuntimeSettingsProvider
     /// Returns the current runtime PDP settings.
     /// </summary>
     ValueTask<PdpRuntimeSettings> GetAsync(CancellationToken ct = default);
-
-    /// <summary>
-    /// Persists updated runtime PDP settings to the Registry and evicts the local cache.
-    /// </summary>
-    Task UpdateAsync(PdpRuntimeSettings settings, CancellationToken ct = default);
 }

@@ -7,7 +7,6 @@ using Sentium.Sentinel.Api.Controllers;
 using Sentium.Sentinel.Core.Audit;
 using Sentium.Sentinel.Core.Dtos;
 using Sentium.Sentinel.Core.Policies;
-using Sentium.Sentinel.Core.Settings;
 using Xunit;
 
 namespace Sentium.Tests.Unit.Sentinel;
@@ -15,13 +14,12 @@ namespace Sentium.Tests.Unit.Sentinel;
 public sealed class PolicyControllerTests
 {
     private readonly InMemoryAuditLog _auditLog = new();
-    private readonly FakePdpRuntimeSettingsProvider _pdpSettings = new();
     private readonly PolicyController _controller;
 
     public PolicyControllerTests()
     {
         var engine = new SentinelPolicyEngine([], _auditLog, NullLogger<SentinelPolicyEngine>.Instance);
-        _controller = new PolicyController(engine, _auditLog, _pdpSettings);
+        _controller = new PolicyController(engine, _auditLog);
     }
 
     private static AuditRecord MakeAuditRecord(bool allowed = true) =>
@@ -120,36 +118,6 @@ public sealed class PolicyControllerTests
         stats.Total.Should().Be(2);
         stats.Allowed.Should().Be(1);
         stats.Denied.Should().Be(1);
-    }
-
-    [Fact]
-    public async Task GetSettings_ReturnsOk_WithCurrentSettings()
-    {
-        // Act
-        var result = await _controller.GetSettings(TestContext.Current.CancellationToken);
-
-        // Assert
-        result.Should().BeOfType<OkObjectResult>()
-            .Which.Value.As<PdpSettingsDto>().Should().NotBeNull();
-    }
-
-    [Fact]
-    public async Task UpdateSettings_ReturnsOk_WithUpdatedValues_AndPersists()
-    {
-        // Arrange
-        var ct = TestContext.Current.CancellationToken;
-        var request = new UpdatePdpSettingsRequest { LockdownMode = true, RateLimitMaxRequests = 50 };
-
-        // Act
-        var result = await _controller.UpdateSettings(request, ct);
-
-        // Assert
-        var dto = result.Should().BeOfType<OkObjectResult>()
-            .Which.Value.As<PdpSettingsDto>();
-        dto.LockdownMode.Should().BeTrue();
-        dto.RateLimitMaxRequests.Should().Be(50);
-        _pdpSettings.LastUpdated.Should().NotBeNull();
-        _pdpSettings.LastUpdated!.LockdownMode.Should().BeTrue();
     }
 
     [Fact]

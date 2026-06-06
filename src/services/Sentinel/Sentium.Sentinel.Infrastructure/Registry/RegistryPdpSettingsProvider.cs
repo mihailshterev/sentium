@@ -44,27 +44,6 @@ public sealed class RegistryPdpSettingsProvider(
         }
     }
 
-    public async Task UpdateAsync(PdpRuntimeSettings settings, CancellationToken ct = default)
-    {
-        ArgumentNullException.ThrowIfNull(settings);
-
-        var client = httpClientFactory.CreateClient(ServiceNames.Registry);
-        var body = new
-        {
-            settings.LockdownMode,
-            settings.AutonomyLevel,
-            settings.SemanticIntentCheckEnabled,
-            settings.IntentCheckModel,
-            settings.RateLimitMaxRequests,
-            settings.RateLimitWindowSeconds
-        };
-
-        using var response = await client.PutAsJsonAsync($"settings/{SettingsKeys.Pdp}", body, ct);
-        response.EnsureSuccessStatusCode();
-
-        await cache.RemoveAsync(CacheKeys.SettingsFor(SettingsKeys.Pdp, null), ct);
-    }
-
     private static PdpRuntimeSettings Fallback() => new()
     {
         LockdownMode = false,

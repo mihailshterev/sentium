@@ -53,7 +53,7 @@ const SettingsEditor = ({
   }, [initialValues, reset]);
 
   // eslint-disable-next-line react-hooks/incompatible-library
-  const prompt = watch("UserHarnessPrompt") ?? "";
+  const prompt = watch("userHarnessPrompt") ?? "";
   const currentTemperature = watch("agentTemperature") ?? 0.3;
 
   const successTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -98,7 +98,7 @@ const SettingsEditor = ({
           </div>
           <label className={styles.toggleSwitch}>
             <Controller
-              name="IsBuiltInHarnessEnabled"
+              name="isBuiltInHarnessEnabled"
               control={control}
               render={({ field }) => (
                 <input type="checkbox" checked={field.value} onChange={(e) => field.onChange(e.target.checked)} />
@@ -132,7 +132,7 @@ const SettingsEditor = ({
           </div>
           <label className={styles.toggleSwitch}>
             <Controller
-              name="IsPromptEnhancementEnabled"
+              name="isPromptEnhancementEnabled"
               control={control}
               render={({ field }) => (
                 <input type="checkbox" checked={field.value} onChange={(e) => field.onChange(e.target.checked)} />
@@ -166,7 +166,7 @@ const SettingsEditor = ({
               className={`${styles.promptTextarea} ${isOverLimit || isNearLimit ? styles.promptTextareaWarn : ""}`}
               placeholder={`Define global agent behavior in plain text or markdown.\n\nExamples:\n- "Always respond in a professional, concise tone."\n- "You are a local AI orchestrator. Prioritize efficient workflow execution."`}
               spellCheck={false}
-              {...register("UserHarnessPrompt")}
+              {...register("userHarnessPrompt")}
             />
           </FormField>
         </div>
