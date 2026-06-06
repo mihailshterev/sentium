@@ -1,7 +1,7 @@
 export interface HarnessSettings {
-  userHarnessPrompt: string;
-  isBuiltInHarnessEnabled: boolean;
-  isPromptEnhancementEnabled: boolean;
+  UserHarnessPrompt: string;
+  IsBuiltInHarnessEnabled: boolean;
+  IsPromptEnhancementEnabled: boolean;
 }
 
 export interface Settings {

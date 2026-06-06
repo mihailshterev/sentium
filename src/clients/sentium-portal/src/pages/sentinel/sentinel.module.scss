@@ -691,6 +691,35 @@
   }
 }
 
+.modelSelectRow {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.modelSelect {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border: 1px solid var(--glass-border);
+  border-radius: 6px;
+  padding: 0.3rem 0.5rem;
+  cursor: pointer;
+  max-width: 160px;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.modelSelectorField {
+  flex-shrink: 0;
+  max-width: 160px;
+}
+
 .rateLimitRow {
   display: flex;
   align-items: center;
