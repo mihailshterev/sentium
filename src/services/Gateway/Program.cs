@@ -77,7 +77,7 @@ builder.Services.AddAuthentication(options =>
     options.TokenValidationParameters.NameClaimType = ClaimTypes.Name;
     options.TokenValidationParameters.RoleClaimType = ClaimTypes.Role;
 
-    options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+    options.RequireHttpsMetadata = !builder.Environment.IsDevelopment() && !builder.Environment.IsEnvironment("Testing");
 
     options.Events = new OpenIdConnectEvents
     {
@@ -95,7 +95,7 @@ builder.Services.AddAuthentication(options =>
 .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
 {
     options.Authority = identityAuthority;
-    options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+    options.RequireHttpsMetadata = !builder.Environment.IsDevelopment() && !builder.Environment.IsEnvironment("Testing");
     options.TokenValidationParameters.ValidateAudience = false;
 });
 

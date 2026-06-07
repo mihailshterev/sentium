@@ -10,8 +10,12 @@ test.describe.serial("Agent Registry", () => {
     await agentsPage.expectLoaded();
   });
 
-  test("renders the Agent Registry heading", async ({ page }) => {
+  test("renders the Agent Registry heading", { tag: "@smoke" }, async ({ page }) => {
     await expect(page.getByRole("heading", { name: "Agent Registry" })).toBeVisible();
+  });
+
+  test("shows the seeded baseline agent", { tag: "@smoke" }, async ({ page }) => {
+    await expect(page.getByText("e2e-baseline-agent")).toBeVisible();
   });
 
   test("shows the register agent form", async ({ page }) => {
@@ -19,20 +23,21 @@ test.describe.serial("Agent Registry", () => {
     await expect(page.getByLabel("Description")).toBeVisible();
   });
 
-  test("creates a new agent", async ({ agentsPage }) => {
+  test("creates a new agent", { tag: "@regression" }, async ({ agentsPage }) => {
     await agentsPage.fillAgentName(AGENT_NAME);
     await agentsPage.fillAgentDescription(AGENT_DESC);
+    await agentsPage.fillModel("gemma3:1b");
     await agentsPage.submitCreate();
 
     await agentsPage.expectAgentVisible(AGENT_NAME);
   });
 
-  test("shows validation error when name is empty", async ({ page }) => {
+  test("shows validation error when name is empty", { tag: "@regression" }, async ({ page }) => {
     await page.locator("form").evaluate((form: HTMLFormElement) => form.requestSubmit());
     await expect(page.getByText(/name is required/i)).toBeVisible();
   });
 
-  test("edits an existing agent's description", async ({ agentsPage }) => {
+  test("edits an existing agent's description", { tag: "@regression" }, async ({ agentsPage }) => {
     await agentsPage.clickEditOnAgent(AGENT_NAME);
     await agentsPage.clearAndFillDescriptionInEdit(UPDATED_DESC);
     await agentsPage.submitEdit();
@@ -40,9 +45,9 @@ test.describe.serial("Agent Registry", () => {
     await agentsPage.expectAgentVisible(AGENT_NAME);
   });
 
-  test("deletes an agent", async ({ agentsPage, page }) => {
-    page.on("dialog", (dialog) => dialog.accept());
+  test("deletes an agent", { tag: "@regression" }, async ({ agentsPage }) => {
     await agentsPage.clickDeleteOnAgent(AGENT_NAME);
+    await agentsPage.confirmDelete();
     await agentsPage.expectAgentNotVisible(AGENT_NAME);
   });
 });

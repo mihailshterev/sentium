@@ -4,6 +4,13 @@ using Sentium.Shared.Constants;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
+if (args.Contains("--TestRun=true"))
+{
+    TestRunConfiguration.Configure(builder);
+    builder.Build().Run();
+    return;
+}
+
 builder.AddDockerComposeEnvironment("env");
 
 var nats = builder.AddNats(ResourceNames.Nats)

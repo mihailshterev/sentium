@@ -10,9 +10,11 @@ using OidcConstants = OpenIddict.Abstractions.OpenIddictConstants;
 
 namespace Sentium.Identity.Infrastructure.Identity.OpenIddict;
 
-public sealed class OpenIddictWorker(IServiceProvider serviceProvider, IConfiguration configuration) : IHostedService
+public sealed class OpenIddictWorker(
+    IServiceProvider serviceProvider,
+    IConfiguration configuration) : IHostedLifecycleService
 {
-    public async Task StartAsync(CancellationToken cancellationToken)
+    public async Task StartingAsync(CancellationToken cancellationToken)
     {
         await using var scope = serviceProvider.CreateAsyncScope();
 
@@ -42,7 +44,7 @@ public sealed class OpenIddictWorker(IServiceProvider serviceProvider, IConfigur
 
         await SeedGatewayBffClientAsync(manager, cancellationToken);
         await SeedRolesAsync(scope.ServiceProvider, cancellationToken);
-        await SeedTestUserAsync(scope.ServiceProvider, cancellationToken);
+        await SeedTestUserAsync(scope.ServiceProvider);
     }
 
     private async Task SeedGatewayBffClientAsync(IOpenIddictApplicationManager manager, CancellationToken ct)
@@ -91,7 +93,11 @@ public sealed class OpenIddictWorker(IServiceProvider serviceProvider, IConfigur
         }
     }
 
+    public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+    public Task StartedAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+    public Task StoppingAsync(CancellationToken cancellationToken) => Task.CompletedTask;
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+    public Task StoppedAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
     private static async Task SeedRolesAsync(IServiceProvider services, CancellationToken ct)
     {
@@ -112,7 +118,7 @@ public sealed class OpenIddictWorker(IServiceProvider serviceProvider, IConfigur
         }
     }
 
-    private async Task SeedTestUserAsync(IServiceProvider services, CancellationToken ct)
+    private async Task SeedTestUserAsync(IServiceProvider services)
     {
         var shouldSeed = configuration.GetValue<bool>("E2E:SeedTestUser");
         if (!shouldSeed)
@@ -133,11 +139,16 @@ public sealed class OpenIddictWorker(IServiceProvider serviceProvider, IConfigur
         var existing = await userManager.FindByEmailAsync(testEmail);
         if (existing is not null)
         {
+            var resetToken = await userManager.GeneratePasswordResetTokenAsync(existing);
+            await userManager.ResetPasswordAsync(existing, resetToken, testPassword);
+            await EnsureRolesAsync(userManager, existing);
             return;
         }
 
+        var fixedId = configuration["E2E:UserId"];
         var user = new ApplicationUser
         {
+            Id = fixedId is not null ? Guid.Parse(fixedId) : Guid.CreateVersion7(),
             UserName = testEmail,
             Email = testEmail,
             EmailConfirmed = true,
@@ -151,6 +162,17 @@ public sealed class OpenIddictWorker(IServiceProvider serviceProvider, IConfigur
             throw new InvalidOperationException($"Failed to seed E2E test user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
         }
 
-        await userManager.AddToRoleAsync(user, Roles.Member);
+        await EnsureRolesAsync(userManager, user);
+    }
+
+    private static async Task EnsureRolesAsync(UserManager<ApplicationUser> userManager, ApplicationUser user)
+    {
+        foreach (var role in new[] { Roles.Member, Roles.Sovereign })
+        {
+            if (!await userManager.IsInRoleAsync(user, role))
+            {
+                await userManager.AddToRoleAsync(user, role);
+            }
+        }
     }
 }

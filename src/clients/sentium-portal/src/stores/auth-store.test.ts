@@ -57,8 +57,8 @@ describe("checkAuth()", () => {
     expect(result.current.user).toBeNull();
   });
 
-  it("sets status to UNAUTHENTICATED when fetch throws", async () => {
-    vi.mocked(fetch).mockRejectedValueOnce(new Error("Network error"));
+  it("sets status to UNAUTHENTICATED when fetch keeps throwing", async () => {
+    vi.mocked(fetch).mockRejectedValue(new Error("Network error"));
 
     const { result } = renderHook(() => useAuthStore());
     await act(async () => {
@@ -67,6 +67,41 @@ describe("checkAuth()", () => {
 
     expect(result.current.status).toBe(AUTH_STATUS.UNAUTHENTICATED);
     expect(result.current.user).toBeNull();
+  });
+
+  it("recovers to AUTHENTICATED when a transient network error is followed by success", async () => {
+    const mockUser = { sub: "u1", email: "alice@example.com", name: "Alice", roles: ["Member"] };
+
+    vi.mocked(fetch)
+      .mockRejectedValueOnce(new Error("Network error"))
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockUser,
+      } as unknown as Response);
+
+    const { result } = renderHook(() => useAuthStore());
+    await act(async () => {
+      await result.current.checkAuth();
+    });
+
+    expect(result.current.status).toBe(AUTH_STATUS.AUTHENTICATED);
+    expect(result.current.user).toEqual(mockUser);
+  });
+
+  it("does not retry on an explicit 401 (logged out)", async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: false,
+      status: 401,
+      json: async () => ({}),
+    } as unknown as Response);
+
+    const { result } = renderHook(() => useAuthStore());
+    await act(async () => {
+      await result.current.checkAuth();
+    });
+
+    expect(result.current.status).toBe(AUTH_STATUS.UNAUTHENTICATED);
+    expect(fetch).toHaveBeenCalledTimes(1);
   });
 
   it("transitions through CHECKING state before resolving", async () => {

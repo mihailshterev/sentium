@@ -154,6 +154,7 @@ public sealed class AuthController(
             case ClaimTypes.Email:
             case ClaimTypes.Name:
             case ClaimTypes.Role:
+            case OpenIddictConstants.Claims.Role:
                 yield return OpenIddictConstants.Destinations.AccessToken;
                 yield return OpenIddictConstants.Destinations.IdentityToken;
                 break;

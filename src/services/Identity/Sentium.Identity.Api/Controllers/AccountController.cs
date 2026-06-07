@@ -7,7 +7,9 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
+using OpenIddict.Validation.AspNetCore;
 
 namespace Sentium.Identity.Api.Controllers;
 
@@ -98,7 +100,7 @@ public sealed class AccountController(
     /// <response code="200">Returns the profile data.</response>
     /// <response code="401">If the user is not authenticated.</response>
     [HttpGet("me")]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetProfile(CancellationToken ct)
@@ -130,7 +132,7 @@ public sealed class AccountController(
     /// <response code="204">Profile updated successfully.</response>
     /// <response code="400">If the update data is invalid (e.g., email conflict).</response>
     [HttpPut("me")]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request, CancellationToken ct)
@@ -155,7 +157,7 @@ public sealed class AccountController(
 
     private Guid? GetCurrentUserId()
     {
-        var sub = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var sub = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue(OpenIddictConstants.Claims.Subject);
         return Guid.TryParse(sub, out var id) ? id : null;
     }
 }

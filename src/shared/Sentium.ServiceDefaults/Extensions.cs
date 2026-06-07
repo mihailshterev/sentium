@@ -167,7 +167,7 @@ public static class Extensions
             .AddJwtBearer(options =>
             {
                 options.Authority = identityAuthority;
-                options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+                options.RequireHttpsMetadata = !builder.Environment.IsDevelopment() && !builder.Environment.IsEnvironment("Testing");
                 options.TokenValidationParameters.ValidateAudience = false;
             });
 

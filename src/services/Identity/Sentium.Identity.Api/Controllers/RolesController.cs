@@ -4,12 +4,13 @@ using Sentium.Identity.Api.Contracts.Roles;
 using Sentium.Identity.Core.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using OpenIddict.Validation.AspNetCore;
 
 namespace Sentium.Identity.Api.Controllers;
 
 [ApiController]
 [Route("roles")]
-[Authorize(Roles = Roles.Sovereign)]
+[Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Roles = Roles.Sovereign)]
 public sealed class RolesController(IRoleService roleService) : ControllerBase
 {
     private static readonly IReadOnlyList<object> CachedRoles =

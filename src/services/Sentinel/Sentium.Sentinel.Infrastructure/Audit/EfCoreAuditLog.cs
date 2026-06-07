@@ -74,7 +74,7 @@ public sealed class EfCoreAuditLog(SentinelDbContext dbContext) : IAuditLog
         Timestamp = e.Timestamp,
         AgentId = e.AgentId,
         SkillName = e.SkillName,
-        ResourceType = Enum.Parse<ResourceType>(e.ResourceType),
+        ResourceType = Enum.TryParse<ResourceType>(e.ResourceType, out var rt) ? rt : ResourceType.File,
         ResourceId = e.ResourceId,
         Action = e.Action,
         UserPromptHash = e.UserPromptHash,
