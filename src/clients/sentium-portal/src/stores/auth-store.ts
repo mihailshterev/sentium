@@ -18,20 +18,34 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   checkAuth: async () => {
     set({ status: AUTH_STATUS.CHECKING });
-    try {
-      const res = await fetch(`${BFF_BASE}/user`, {
-        credentials: "include",
-      });
 
-      if (res.ok) {
-        const data = await res.json();
-        set({ user: data, status: AUTH_STATUS.AUTHENTICATED });
-      } else {
-        set({ user: null, status: AUTH_STATUS.UNAUTHENTICATED });
+    const maxAttempts = 3;
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        const res = await fetch(`${BFF_BASE}/user`, {
+          credentials: "include",
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          set({ user: data, status: AUTH_STATUS.AUTHENTICATED });
+          return;
+        }
+
+        if (res.status === 401 || res.status === 403) {
+          set({ user: null, status: AUTH_STATUS.UNAUTHENTICATED });
+          return;
+        }
+      } catch {
+        //
       }
-    } catch {
-      set({ user: null, status: AUTH_STATUS.UNAUTHENTICATED });
+
+      if (attempt < maxAttempts) {
+        await new Promise((resolve) => setTimeout(resolve, 300 * attempt));
+      }
     }
+
+    set({ user: null, status: AUTH_STATUS.UNAUTHENTICATED });
   },
 
   login: (returnUrl) => {

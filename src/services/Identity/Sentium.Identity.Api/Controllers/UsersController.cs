@@ -5,12 +5,14 @@ using Sentium.Identity.Api.Contracts.Users;
 using Sentium.Identity.Core.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using OpenIddict.Abstractions;
+using OpenIddict.Validation.AspNetCore;
 
 namespace Sentium.Identity.Api.Controllers;
 
 [ApiController]
 [Route("users")]
-[Authorize]
+[Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
 public sealed class UsersController(
     IUserService userService,
     IUserClaimsService userClaimsService) : ControllerBase
@@ -120,7 +122,7 @@ public sealed class UsersController(
 
     private Guid? GetCurrentUserId()
     {
-        var sub = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var sub = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue(OpenIddictConstants.Claims.Subject);
         return Guid.TryParse(sub, out var id) ? id : null;
     }
 }
