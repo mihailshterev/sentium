@@ -13,6 +13,7 @@ env:
 
 jobs:
   dotnet-build-test:
+    name: .NET Build & Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
@@ -21,9 +22,6 @@ jobs:
         uses: actions/setup-dotnet@v5
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-
-      - name: Install Aspire Workload
-        run: dotnet workload install aspire
 
       - name: Restore dependencies
         run: dotnet restore
@@ -35,6 +33,7 @@ jobs:
         run: dotnet test --no-build --configuration ${{ env.BUILD_CONFIGURATION }} --verbosity normal
 
   react-build-test:
+    name: React Build & Test
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -92,9 +91,6 @@ jobs:
         uses: actions/setup-dotnet@v5
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
-
-      - name: Install Aspire Workload
-        run: dotnet workload install aspire
 
       - name: Restore .NET dependencies
         run: dotnet restore
