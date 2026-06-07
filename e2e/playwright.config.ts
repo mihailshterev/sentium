@@ -8,7 +8,7 @@ export default defineConfig({
   testDir: "./tests",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 2,
+  retries: 2,
   workers: process.env.CI ? 1 : 3,
   reporter: process.env.CI ? [["html", { open: "never" }], ["github"]] : [["html", { open: "on-failure" }]],
   timeout: 60 * 1000,

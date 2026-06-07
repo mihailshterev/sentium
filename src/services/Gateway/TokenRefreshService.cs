@@ -8,10 +8,15 @@ using System.Text.Json;
 
 namespace Sentium.ApiGateway;
 
-public sealed class TokenRefreshService(IHttpClientFactory httpClientFactory, IOptionsMonitor<OpenIdConnectOptions> oidcOptions)
+public sealed class TokenRefreshService(
+    IHttpClientFactory httpClientFactory,
+    IOptionsMonitor<OpenIdConnectOptions> oidcOptions,
+    ILogger<TokenRefreshService> logger)
 {
     public async Task<bool> TryRefreshAsync(HttpContext context)
     {
+        ArgumentNullException.ThrowIfNull(context);
+
         var refreshToken = await context.GetTokenAsync("refresh_token");
         if (string.IsNullOrEmpty(refreshToken))
         {
@@ -28,15 +33,17 @@ public sealed class TokenRefreshService(IHttpClientFactory httpClientFactory, IO
         OpenIdConnectConfiguration oidcConfig;
         try
         {
-            oidcConfig = await configManager.GetConfigurationAsync(CancellationToken.None);
+            oidcConfig = await configManager.GetConfigurationAsync(context.RequestAborted);
         }
-        catch
+        catch (Exception ex)
         {
+            logger.LogWarning(ex, "Token refresh failed: could not retrieve OpenID Connect configuration.");
             return false;
         }
 
         if (string.IsNullOrEmpty(oidcConfig.TokenEndpoint))
         {
+            logger.LogWarning("Token refresh failed: OpenID Connect configuration has no token endpoint.");
             return false;
         }
 
@@ -52,35 +59,40 @@ public sealed class TokenRefreshService(IHttpClientFactory httpClientFactory, IO
         HttpResponseMessage response;
         try
         {
-            response = await client.PostAsync(oidcConfig.TokenEndpoint, content);
+            response = await client.PostAsync(oidcConfig.TokenEndpoint, content, context.RequestAborted);
         }
-        catch
+        catch (Exception ex)
         {
+            logger.LogWarning(ex, "Token refresh failed: request to the token endpoint threw.");
             return false;
         }
 
         if (!response.IsSuccessStatusCode)
         {
+            logger.LogWarning("Token refresh failed: token endpoint returned {StatusCode}.", response.StatusCode);
             return false;
         }
 
         JsonElement tokenData;
         try
         {
-            tokenData = await response.Content.ReadFromJsonAsync<JsonElement>();
+            tokenData = await response.Content.ReadFromJsonAsync<JsonElement>(context.RequestAborted);
         }
-        catch
+        catch (Exception ex)
         {
+            logger.LogWarning(ex, "Token refresh failed: could not parse the token endpoint response.");
             return false;
         }
 
         if (!tokenData.TryGetProperty("access_token", out var accessTokenProp))
         {
+            logger.LogWarning("Token refresh failed: token endpoint response contained no access_token.");
             return false;
         }
         var newAccessToken = accessTokenProp.GetString();
         if (string.IsNullOrEmpty(newAccessToken))
         {
+            logger.LogWarning("Token refresh failed: token endpoint returned an empty access_token.");
             return false;
         }
 
@@ -94,6 +106,7 @@ public sealed class TokenRefreshService(IHttpClientFactory httpClientFactory, IO
         var authResult = await context.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         if (authResult.Principal is null)
         {
+            logger.LogWarning("Token refresh failed: could not re-authenticate the current principal to persist new tokens.");
             return false;
         }
 

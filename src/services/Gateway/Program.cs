@@ -57,7 +57,13 @@ builder.Services.AddAuthentication(options =>
 {
     options.Authority = identityAuthority;
     options.ClientId = "gateway-bff";
-    options.ClientSecret = builder.Configuration["Identity:GatewayBffSecret"] ?? throw new InvalidOperationException("Gateway BFF secret is not configured.");
+
+    var gatewayBffSecret = builder.Configuration["Identity:GatewayBffSecret"];
+
+    options.ClientSecret = string.IsNullOrWhiteSpace(gatewayBffSecret)
+        ? throw new InvalidOperationException("Gateway BFF secret is not configured.")
+        : gatewayBffSecret;
+
     options.ResponseType = OpenIdConnectResponseType.Code;
     options.UsePkce = true;
     options.SaveTokens = true;
