@@ -29,7 +29,18 @@ var app = builder.Build();
 app.UseSentiumTracing();
 app.UseExceptionHandler();
 
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsEnvironment("Testing"))
+{
+    using var scope = app.Services.CreateScope();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    var db = scope.ServiceProvider.GetRequiredService<SandboxDbContext>();
+
+    logger.LogInformation("Dropping and recreating sandboxdb_e2e database...");
+    await db.Database.EnsureDeletedAsync();
+    await db.Database.MigrateAsync();
+    logger.LogInformation("Sandbox database ready");
+}
+else if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
@@ -38,7 +49,10 @@ if (app.Environment.IsDevelopment())
     var db = scope.ServiceProvider.GetRequiredService<SandboxDbContext>();
     await db.Database.MigrateAsync();
     logger.LogInformation("Sandbox database migrations applied");
+}
 
+if (app.Environment.IsDevelopment())
+{
     app.MapOpenApi();
 
     app.MapScalarApiReference(options =>

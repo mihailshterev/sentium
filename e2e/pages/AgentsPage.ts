@@ -24,6 +24,10 @@ export class AgentsPage {
     await this.page.getByLabel("Model").selectOption(modelName);
   }
 
+  async fillModel(modelName: string): Promise<void> {
+    await this.page.getByLabel("Model", { exact: true }).fill(modelName);
+  }
+
   async submitCreate(): Promise<void> {
     await this.page.getByRole("button", { name: /register agent/i }).click();
   }
@@ -36,11 +40,7 @@ export class AgentsPage {
   }
 
   async clickEditOnAgent(agentName: string): Promise<void> {
-    await this.page
-      .getByText(agentName, { exact: true })
-      .locator("xpath=ancestor::div[.//button[@title='Edit agent']][1]")
-      .getByTitle("Edit agent")
-      .click();
+    await this.page.getByTestId(`agent-edit-${agentName}`).click();
   }
 
   async clearAndFillDescriptionInEdit(description: string): Promise<void> {
@@ -54,11 +54,11 @@ export class AgentsPage {
   }
 
   async clickDeleteOnAgent(agentName: string): Promise<void> {
-    await this.page
-      .getByText(agentName, { exact: true })
-      .locator("xpath=ancestor::div[.//button[@title='Delete agent']][1]")
-      .getByTitle("Delete agent")
-      .click();
+    await this.page.getByTestId(`agent-delete-${agentName}`).click();
+  }
+
+  async confirmDelete(): Promise<void> {
+    await this.page.getByTestId("confirm-dialog-confirm").click();
   }
 
   async expectAgentVisible(name: string): Promise<void> {

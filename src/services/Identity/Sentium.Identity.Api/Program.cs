@@ -4,6 +4,7 @@ using Microsoft.Extensions.Caching.Hybrid;
 using Scalar.AspNetCore;
 using Sentium.Identity.Application;
 using Sentium.Identity.Infrastructure;
+using Sentium.Identity.Infrastructure.Data;
 using Sentium.Infrastructure.Diagnostics;
 using Sentium.Infrastructure.Extensions;
 using Sentium.Infrastructure.Validation;
@@ -61,15 +62,24 @@ app.UseSentiumTracing();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsEnvironment("Testing"))
+{
+    using var dropScope = app.Services.CreateScope();
+    var db = dropScope.ServiceProvider.GetRequiredService<IdentityDbContext>();
+    await db.Database.EnsureDeletedAsync();
+}
+
+if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
 {
     using var scope = app.Services.CreateScope();
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-
     logger.LogInformation("Applying database migrations...");
     await app.ApplyMigrations();
     logger.LogInformation("Database migrations applied");
+}
 
+if (app.Environment.IsDevelopment())
+{
     app.MapOpenApi();
 
     app.MapScalarApiReference(options =>

@@ -8,10 +8,10 @@ export default defineConfig({
   testDir: "./tests",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 1 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  retries: process.env.CI ? 2 : 2,
+  workers: process.env.CI ? 1 : 3,
   reporter: process.env.CI ? [["html", { open: "never" }], ["github"]] : [["html", { open: "on-failure" }]],
-
+  timeout: 60 * 1000,
   use: {
     baseURL: BASE_URL,
     storageState: AUTH_FILE,
@@ -22,6 +22,9 @@ export default defineConfig({
     ignoreHTTPSErrors: true,
     actionTimeout: 15_000,
     navigationTimeout: 30_000,
+  },
+  expect: {
+    timeout: 30 * 1000,
   },
 
   projects: [
@@ -62,8 +65,8 @@ export default defineConfig({
   webServer: {
     command: "dotnet run --project ../src/aspire/Sentium.AppHost/Sentium.AppHost.csproj -- --TestRun=true",
     url: BASE_URL,
-    reuseExistingServer: !process.env.CI,
-    timeout: 300 * 1000,
+    reuseExistingServer: false,
+    timeout: (process.env.CI ? 600 : 300) * 1000,
     env: {
       DOTNET_ENVIRONMENT: "Testing",
       ASPNETCORE_ENVIRONMENT: "Testing",

@@ -7,6 +7,19 @@ import {
   WorkflowsPage,
   AssistantPage,
   WorkspacesPage,
+  SettingsPage,
+  ProfilePage,
+  OrchestrationPage,
+  KnowledgeBasePage,
+  SkillsPage,
+  ModelsPage,
+  SandboxPage,
+  SchedulerPage,
+  SentinelPage,
+  WatchdogPage,
+  SystemPage,
+  UsersPage,
+  SemanticMapPage,
 } from "../pages/index";
 
 export type AppFixtures = {
@@ -17,6 +30,19 @@ export type AppFixtures = {
   workflowsPage: WorkflowsPage;
   assistantPage: AssistantPage;
   workspacesPage: WorkspacesPage;
+  settingsPage: SettingsPage;
+  profilePage: ProfilePage;
+  orchestrationPage: OrchestrationPage;
+  knowledgeBasePage: KnowledgeBasePage;
+  skillsPage: SkillsPage;
+  modelsPage: ModelsPage;
+  sandboxPage: SandboxPage;
+  schedulerPage: SchedulerPage;
+  sentinelPage: SentinelPage;
+  watchdogPage: WatchdogPage;
+  systemPage: SystemPage;
+  usersPage: UsersPage;
+  semanticMapPage: SemanticMapPage;
 };
 
 export const test = base.extend<AppFixtures>({
@@ -46,6 +72,58 @@ export const test = base.extend<AppFixtures>({
 
   workspacesPage: async ({ page }, use) => {
     await use(new WorkspacesPage(page));
+  },
+
+  settingsPage: async ({ page }, use) => {
+    await use(new SettingsPage(page));
+  },
+
+  profilePage: async ({ page }, use) => {
+    await use(new ProfilePage(page));
+  },
+
+  orchestrationPage: async ({ page }, use) => {
+    await use(new OrchestrationPage(page));
+  },
+
+  knowledgeBasePage: async ({ page }, use) => {
+    await use(new KnowledgeBasePage(page));
+  },
+
+  skillsPage: async ({ page }, use) => {
+    await use(new SkillsPage(page));
+  },
+
+  modelsPage: async ({ page }, use) => {
+    await use(new ModelsPage(page));
+  },
+
+  sandboxPage: async ({ page }, use) => {
+    await use(new SandboxPage(page));
+  },
+
+  schedulerPage: async ({ page }, use) => {
+    await use(new SchedulerPage(page));
+  },
+
+  sentinelPage: async ({ page }, use) => {
+    await use(new SentinelPage(page));
+  },
+
+  watchdogPage: async ({ page }, use) => {
+    await use(new WatchdogPage(page));
+  },
+
+  systemPage: async ({ page }, use) => {
+    await use(new SystemPage(page));
+  },
+
+  usersPage: async ({ page }, use) => {
+    await use(new UsersPage(page));
+  },
+
+  semanticMapPage: async ({ page }, use) => {
+    await use(new SemanticMapPage(page));
   },
 });
 

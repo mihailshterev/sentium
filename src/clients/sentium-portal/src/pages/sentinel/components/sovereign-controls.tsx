@@ -41,6 +41,7 @@ const SovereignControls = ({
         onClick={onLockdown}
         disabled={isUpdating || !settings}
         aria-pressed={settings?.lockdownMode}
+        data-testid="lockdown-toggle"
       >
         <span className={styles.toggleThumb} />
       </button>
@@ -59,6 +60,7 @@ const SovereignControls = ({
         onClick={onSemanticToggle}
         disabled={isUpdating || !settings}
         aria-pressed={settings?.semanticIntentCheckEnabled}
+        data-testid="semantic-intent-toggle"
       >
         <span className={styles.toggleThumb} />
       </button>
@@ -107,6 +109,7 @@ const SovereignControls = ({
         onKeyUp={commitAutonomy}
         disabled={isUpdating || !settings}
         className={styles.slider}
+        data-testid="autonomy-slider"
       />
       <p className={styles.toggleDesc}>
         {displayAutonomy <= 2

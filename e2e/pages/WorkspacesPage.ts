@@ -9,7 +9,7 @@ export class WorkspacesPage {
   }
 
   async expectLoaded(): Promise<void> {
-    await expect(this.page.getByRole("heading", { name: /workspace/i })).toBeVisible();
+    await expect(this.page.getByRole("heading", { name: "Workspaces", exact: true })).toBeVisible();
   }
 
   async openCreateForm(): Promise<void> {
@@ -44,11 +44,8 @@ export class WorkspacesPage {
   }
 
   async deleteWorkspace(name: string): Promise<void> {
-    await this.page
-      .getByText(name, { exact: true })
-      .locator("xpath=ancestor::div[.//button[@title='Delete workspace']][1]")
-      .getByTitle("Delete workspace")
-      .click();
+    await this.page.getByTestId(`workspace-delete-${name}`).click();
+    await this.page.getByTestId("confirm-dialog-confirm").click();
   }
 
   async expectWorkspaceVisible(name: string): Promise<void> {

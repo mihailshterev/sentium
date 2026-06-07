@@ -1,6 +1,8 @@
 using Sentium.AgentRuntime.Application;
 using Sentium.AgentRuntime.Infrastructure;
 using Sentium.AgentRuntime.Infrastructure.Data;
+using Sentium.AgentRuntime.Infrastructure.Testing;
+using Sentium.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Hybrid;
 using Scalar.AspNetCore;
@@ -51,7 +53,24 @@ var app = builder.Build();
 app.UseSentiumTracing();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+if (app.Environment.IsEnvironment("Testing"))
+{
+    using var scope = app.Services.CreateScope();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+
+    scope.ServiceProvider.GetRequiredService<SystemScopeContext>().Activate();
+    var db = scope.ServiceProvider.GetRequiredService<AgentRuntimeDbContext>();
+
+    logger.LogInformation("Dropping and recreating agentRuntime_e2e database...");
+    await db.Database.EnsureDeletedAsync();
+    await db.Database.MigrateAsync();
+    logger.LogInformation("Database ready. Seeding E2E baseline data...");
+
+    var testUserId = Guid.Parse(app.Configuration["E2E:UserId"] ?? "e2e00000-0000-0000-0000-000000000001");
+    await E2EDataSeeder.SeedAsync(db, testUserId);
+    logger.LogInformation("E2E seeding complete");
+}
+else if (app.Environment.IsDevelopment())
 {
     using var scope = app.Services.CreateScope();
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
@@ -60,7 +79,10 @@ if (app.Environment.IsDevelopment())
     var db = scope.ServiceProvider.GetRequiredService<AgentRuntimeDbContext>();
     await db.Database.MigrateAsync();
     logger.LogInformation("Database migrations applied");
+}
 
+if (app.Environment.IsDevelopment())
+{
     app.MapOpenApi();
 
     app.MapScalarApiReference(options =>

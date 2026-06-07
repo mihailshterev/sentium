@@ -23,6 +23,7 @@ const Skills = () => {
         <button
           className={`${styles.tab} ${activeTab === "built-in" ? styles.activeTab : ""}`}
           onClick={() => setActiveTab("built-in")}
+          data-testid="tab-builtin"
         >
           <Cpu size={14} />
           Built-in
@@ -30,6 +31,7 @@ const Skills = () => {
         <button
           className={`${styles.tab} ${activeTab === "custom" ? styles.activeTab : ""}`}
           onClick={() => setActiveTab("custom")}
+          data-testid="tab-custom"
         >
           <Bot size={14} />
           Custom
@@ -37,6 +39,7 @@ const Skills = () => {
         <button
           className={`${styles.tab} ${activeTab === "uploaded" ? styles.activeTab : ""}`}
           onClick={() => setActiveTab("uploaded")}
+          data-testid="tab-uploaded"
         >
           <Upload size={14} />
           Uploaded

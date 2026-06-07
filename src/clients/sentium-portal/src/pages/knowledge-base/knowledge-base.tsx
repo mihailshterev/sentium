@@ -21,6 +21,7 @@ const KnowledgeBase = () => {
         <button
           className={`${styles.tab} ${activeTab === "context" ? styles.activeTab : ""}`}
           onClick={() => setActiveTab("context")}
+          data-testid="tab-global-context"
         >
           <FlaskConical size={14} />
           Global Context
@@ -28,6 +29,7 @@ const KnowledgeBase = () => {
         <button
           className={`${styles.tab} ${activeTab === "learnings" ? styles.activeTab : ""}`}
           onClick={() => setActiveTab("learnings")}
+          data-testid="tab-agent-learnings"
         >
           <BrainCircuit size={14} />
           Agent Learnings

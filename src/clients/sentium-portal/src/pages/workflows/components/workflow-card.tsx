@@ -34,6 +34,7 @@ const WorkflowCard = ({ workflow, isActive, onSelect, onEdit, onDelete }: Workfl
               onEdit(workflow);
             }}
             title="Edit"
+            data-testid={`workflow-edit-${workflow.name}`}
           >
             <Pencil size={11} />
           </button>
@@ -44,6 +45,7 @@ const WorkflowCard = ({ workflow, isActive, onSelect, onEdit, onDelete }: Workfl
               onDelete(workflow.id);
             }}
             title="Delete"
+            data-testid={`workflow-delete-${workflow.name}`}
           >
             <Trash2 size={11} />
           </button>

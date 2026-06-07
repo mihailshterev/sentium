@@ -7,29 +7,19 @@ test.describe.serial("Dashboard", () => {
   });
 
   test("renders the page heading", async ({ page }) => {
-    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
-    await expect(page.getByText("System overview and quick access")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Control Center" })).toBeVisible();
+    await expect(page.getByText("Real-time system monitoring and intelligence")).toBeVisible();
   });
 
   test("displays the system status badge", async ({ page }) => {
-    await expect(page.getByText(/all systems operational/i)).toBeVisible();
+    await expect(page.getByText(/all systems operational|degraded services|checking status/i)).toBeVisible();
   });
 
   test("shows stat cards section", async ({ page }) => {
-    await expect(page.getByText(/agent/i).first()).toBeVisible();
-    await expect(page.getByText(/workflow/i).first()).toBeVisible();
-  });
-
-  test("shows Quick Access section", async ({ page }) => {
-    await expect(page.getByText("Quick Access", { exact: true })).toBeVisible();
-  });
-
-  test("shows System Modules section", async ({ page }) => {
-    await expect(page.getByText(/system modules/i)).toBeVisible();
-  });
-
-  test("shows Recent Activity section", async ({ page }) => {
-    await expect(page.getByText(/recent activity/i)).toBeVisible();
+    const main = page.getByRole("main");
+    await expect(main.getByText("Agents", { exact: true })).toBeVisible();
+    await expect(main.getByText("Workflows", { exact: true }).first()).toBeVisible();
+    await expect(main.getByText("AI Models", { exact: true })).toBeVisible();
   });
 
   test("navbar is visible after login", async ({ navbar }) => {

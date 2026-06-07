@@ -1,4 +1,5 @@
 import { test, expect } from "../fixtures/auth.fixture";
+import { mockSseRoute, sseMessage, sseDone } from "../helpers/mock-sse";
 
 test.describe.serial("Assistant", () => {
   test.beforeEach(async ({ assistantPage }) => {
@@ -6,7 +7,7 @@ test.describe.serial("Assistant", () => {
     await assistantPage.expectLoaded();
   });
 
-  test("renders the assistant heading", async ({ page }) => {
+  test("renders the assistant heading", { tag: "@smoke" }, async ({ page }) => {
     await expect(page.getByRole("heading", { name: /assistant/i })).toBeVisible();
   });
 
@@ -38,6 +39,18 @@ test.describe.serial("Assistant", () => {
   });
 
   test("model selector is visible", async ({ page }) => {
-    await expect(page.getByRole("combobox").first()).toBeVisible();
+    await expect(page.getByPlaceholder(/model name/i)).toBeVisible();
+  });
+
+  test("sends a message and shows mocked SSE response", { tag: "@regression" }, async ({ assistantPage, page }) => {
+    await mockSseRoute(page, /\/assistant\/chat/, [
+      sseMessage({ type: "content", message: { content: "Hello from mock" } }),
+      sseDone(),
+    ]);
+
+    await assistantPage.startNewConversation();
+    await assistantPage.typeMessage("hello world");
+    await assistantPage.sendMessage();
+    await assistantPage.expectMessageVisible("Hello from mock");
   });
 });

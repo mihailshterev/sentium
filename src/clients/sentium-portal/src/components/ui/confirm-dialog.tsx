@@ -118,7 +118,7 @@ const ConfirmDialog = ({
         </div>
 
         <div className={styles.footer}>
-          <button className={styles.btnCancel} onClick={handleCancel}>
+          <button className={styles.btnCancel} onClick={handleCancel} data-testid="confirm-dialog-cancel">
             <X size={14} />
             {cancelLabel}
           </button>
@@ -126,6 +126,7 @@ const ConfirmDialog = ({
             className={`${styles.btnConfirm} ${isSafe ? styles.btnConfirmSafe : styles.btnConfirmDanger}`}
             disabled={!isConfirmEnabled}
             onClick={handleConfirm}
+            data-testid="confirm-dialog-confirm"
           >
             {isSafe ? <Check size={14} /> : <Trash2 size={14} />}
             {confirmLabel ?? defaultConfirmLabel}

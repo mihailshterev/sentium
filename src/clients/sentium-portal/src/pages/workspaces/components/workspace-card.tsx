@@ -17,13 +17,19 @@ const WorkspaceCard = ({ workspace: ws, onOpen, onEdit, onDelete }: WorkspaceCar
         <FolderOpen size={22} />
       </div>
       <div className={styles.wsCardActions}>
-        <button className={styles.wsCardActionBtn} title="Edit workspace" onClick={onEdit}>
+        <button
+          className={styles.wsCardActionBtn}
+          title="Edit workspace"
+          onClick={onEdit}
+          data-testid={`workspace-edit-${ws.name}`}
+        >
           <Pencil size={12} />
         </button>
         <button
           className={`${styles.wsCardActionBtn} ${styles.wsCardActionBtnDanger}`}
           title="Delete workspace"
           onClick={onDelete}
+          data-testid={`workspace-delete-${ws.name}`}
         >
           <Trash2 size={12} />
         </button>
