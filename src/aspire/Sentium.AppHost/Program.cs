@@ -41,10 +41,14 @@ var storage = builder.AddAzureStorage(ResourceNames.Storage)
 
 var blobs = storage.AddBlobs(ResourceNames.WorkspaceBlobs);
 
-var seq = builder.AddSeq(ResourceNames.Seq)
-    .ExcludeFromManifest()
-    .WithDataVolume()
-    .WithEnvironment(EnvConfig.Keys.AcceptEula, EnvConfig.Values.Yes);
+IResourceBuilder<SeqResource>? seq = null;
+if (!isTestRun)
+{
+    seq = builder.AddSeq(ResourceNames.Seq)
+        .ExcludeFromManifest()
+        .WithDataVolume()
+        .WithEnvironment(EnvConfig.Keys.AcceptEula, EnvConfig.Values.Yes);
+}
 
 var ollama = builder.AddOllama(ResourceNames.Ollama)
     .WithImage("ollama/ollama", "0.30.5")
@@ -72,7 +76,6 @@ if (!isTestRun)
 var identityApi = builder.AddProject<Projects.Sentium_Identity_Api>(ServiceNames.Identity)
     .WithReference(identityDb).WaitFor(identityDb)
     .WithReference(nats).WaitFor(nats)
-    .WithReference(seq).WaitFor(seq)
     .WithReference(redis).WaitFor(redis)
     .WithEnvironment("ASPNETCORE_ENVIRONMENT", aspNetCoreEnvironment)
     .WithEnvironment("Identity__GatewayBffSecret", gatewayBffSecret)
@@ -82,6 +85,7 @@ var identityApi = builder.AddProject<Projects.Sentium_Identity_Api>(ServiceNames
         url.DisplayText = "Scalar API (Docs)";
         url.Url = "/scalar/v1";
     });
+if (seq != null) identityApi.WithReference(seq).WaitFor(seq);
 
 var identityUi = builder.AddViteApp(ServiceNames.IdentityUi, "../../clients/sentium-identity-ui")
     .WithPnpm()
@@ -95,7 +99,6 @@ var registryApi = builder.AddProject<Projects.Sentium_Registry_Api>(ServiceNames
     .WithReference(registryDb).WaitFor(registryDb)
     .WithReference(nats).WaitFor(nats)
     .WithReference(redis).WaitFor(redis)
-    .WithReference(seq).WaitFor(seq)
     .WithReference(identityApi).WaitFor(identityApi)
     .WithEnvironment("ASPNETCORE_ENVIRONMENT", aspNetCoreEnvironment)
     .WithEnvironment(EnvConfig.Keys.IdentityAuthority, identityApi.GetEndpoint("http"))
@@ -105,10 +108,10 @@ var registryApi = builder.AddProject<Projects.Sentium_Registry_Api>(ServiceNames
         url.DisplayText = "Scalar API (Docs)";
         url.Url = "/scalar/v1";
     });
+if (seq != null) registryApi.WithReference(seq).WaitFor(seq);
 
 var sentinelApi = builder.AddProject<Projects.Sentium_Sentinel_Api>(ServiceNames.Sentinel)
     .WithReference(nats).WaitFor(nats)
-    .WithReference(seq).WaitFor(seq)
     .WithReference(sentinelDb).WaitFor(sentinelDb)
     .WithReference(identityApi).WaitFor(identityApi)
     .WithReference(registryApi).WaitFor(registryApi)
@@ -121,6 +124,7 @@ var sentinelApi = builder.AddProject<Projects.Sentium_Sentinel_Api>(ServiceNames
         url.DisplayText = "Scalar API (Docs)";
         url.Url = "/scalar/v1";
     });
+if (seq != null) sentinelApi.WithReference(seq).WaitFor(seq);
 
 if (!isTestRun)
 {
@@ -133,7 +137,6 @@ var dockerHost = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
 
 var sandboxApi = builder.AddProject<Projects.Sentium_Sandbox_Api>(ServiceNames.Sandbox)
     .WithReference(nats).WaitFor(nats)
-    .WithReference(seq).WaitFor(seq)
     .WithReference(blobs).WaitFor(blobs)
     .WithReference(sandboxDb).WaitFor(sandboxDb)
     .WithReference(sentinelApi).WaitFor(sentinelApi)
@@ -147,10 +150,10 @@ var sandboxApi = builder.AddProject<Projects.Sentium_Sandbox_Api>(ServiceNames.S
         url.DisplayText = "Scalar API (Docs)";
         url.Url = "/scalar/v1";
     });
+if (seq != null) sandboxApi.WithReference(seq).WaitFor(seq);
 
 var agentRuntimeApi = builder.AddProject<Projects.Sentium_AgentRuntime_Api>(ServiceNames.AgentRuntime)
     .WithReference(nats).WaitFor(nats)
-    .WithReference(seq).WaitFor(seq)
     .WithReference(agentRuntimeDb).WaitFor(agentRuntimeDb)
     .WithReference(redis).WaitFor(redis)
     .WithReference(qdrant).WaitFor(qdrant)
@@ -169,6 +172,7 @@ var agentRuntimeApi = builder.AddProject<Projects.Sentium_AgentRuntime_Api>(Serv
         url.Url = "/scalar/v1";
     });
 
+if (seq != null) agentRuntimeApi.WithReference(seq).WaitFor(seq);
 if (!isTestRun)
 {
     agentRuntimeApi
@@ -187,7 +191,6 @@ else
 
 var watchdogApi = builder.AddProject<Projects.Sentium_Watchdog_Api>(ServiceNames.Watchdog)
     .WithReference(nats).WaitFor(nats)
-    .WithReference(seq).WaitFor(seq)
     .WithReference(sql).WaitFor(sql)
     .WithReference(redis).WaitFor(redis)
     .WithReference(qdrant)
@@ -205,6 +208,7 @@ var watchdogApi = builder.AddProject<Projects.Sentium_Watchdog_Api>(ServiceNames
         url.DisplayText = "Scalar API (Docs)";
         url.Url = "/scalar/v1";
     });
+if (seq != null) watchdogApi.WithReference(seq).WaitFor(seq);
 
 var apiGateway = builder.AddProject<Projects.Sentium_ApiGateway>(ServiceNames.Gateway)
     .WithReference(identityApi).WaitFor(identityApi)
