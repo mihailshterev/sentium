@@ -1,5 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { fetchSystemMetrics, fetchServiceHealth } from "./watchdog.service";
+import {
+  fetchSystemMetrics,
+  fetchServiceHealth,
+  fetchServiceHealthDetail,
+  fetchSystemOverview,
+  fetchIncidents,
+  fetchWatchdogConfig,
+  updateWatchdogConfig,
+} from "./watchdog.service";
 import { client } from "../api/client";
 
 vi.mock("../api/client", () => ({
@@ -93,5 +101,52 @@ describe("watchdog.service fetchServiceHealth()", () => {
   it("propagates errors thrown by client.get", async () => {
     vi.mocked(client.get).mockRejectedValueOnce(new Error("Not reachable"));
     await expect(fetchServiceHealth()).rejects.toThrow("Not reachable");
+  });
+});
+
+describe("watchdog.service remaining reads", () => {
+  it("fetchServiceHealthDetail encodes the service name", async () => {
+    vi.mocked(client.get).mockResolvedValueOnce({});
+    await fetchServiceHealthDetail("agent runtime");
+    expect(client.get).toHaveBeenCalledWith("/watchdog/status/agent%20runtime");
+  });
+
+  it("fetchSystemOverview calls the overview endpoint", async () => {
+    vi.mocked(client.get).mockResolvedValueOnce({});
+    await fetchSystemOverview();
+    expect(client.get).toHaveBeenCalledWith("/watchdog/status/overview");
+  });
+
+  it("fetchIncidents calls the incidents endpoint", async () => {
+    vi.mocked(client.get).mockResolvedValueOnce([]);
+    await fetchIncidents();
+    expect(client.get).toHaveBeenCalledWith("/watchdog/incidents");
+  });
+});
+
+describe("watchdog.service config", () => {
+  it("fetchWatchdogConfig unwraps the settings envelope", async () => {
+    vi.mocked(client.get).mockResolvedValueOnce({
+      key: "watchdog",
+      value: { pollIntervalSeconds: 30 },
+      updatedAt: "x",
+      updatedBy: null,
+    });
+    const result = await fetchWatchdogConfig();
+    expect(client.get).toHaveBeenCalledWith("/registry/settings/watchdog");
+    expect(result).toEqual({ pollIntervalSeconds: 30 });
+  });
+
+  it("updateWatchdogConfig writes to the registry and unwraps the value", async () => {
+    const payload = { pollIntervalSeconds: 60 } as never;
+    vi.mocked(client.put).mockResolvedValueOnce({
+      key: "watchdog",
+      value: { pollIntervalSeconds: 60 },
+      updatedAt: "x",
+      updatedBy: null,
+    });
+    const result = await updateWatchdogConfig(payload);
+    expect(client.put).toHaveBeenCalledWith("/registry/settings/watchdog", payload);
+    expect(result).toEqual({ pollIntervalSeconds: 60 });
   });
 });
