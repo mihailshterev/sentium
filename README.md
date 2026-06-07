@@ -17,7 +17,6 @@ What sets Sentium apart is that every agent action is **mediated by a security c
 - [Running the tests](#running-the-tests)
 - [Security model](#security-model)
 - [Repository layout](#repository-layout)
-- [Documentation](#documentation)
 
 ---
 
