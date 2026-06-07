@@ -214,7 +214,7 @@ export const useConversationStore = create<ConversationState>((set, get) => {
       const { appendMessage } = get();
 
       const userMsg: ConversationMessage = {
-        id: Date.now().toString(),
+        id: crypto.randomUUID(),
         role: "user",
         content: userContent,
         timestamp: new Date(),
@@ -227,7 +227,7 @@ export const useConversationStore = create<ConversationState>((set, get) => {
 
       appendMessage(userMsg);
 
-      const aiMsgId = (Date.now() + 1).toString();
+      const aiMsgId = crypto.randomUUID();
       appendMessage({
         id: aiMsgId,
         role: "assistant",

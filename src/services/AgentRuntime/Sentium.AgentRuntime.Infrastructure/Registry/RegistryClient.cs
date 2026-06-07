@@ -18,13 +18,13 @@ public sealed class RegistryClient(HttpClient httpClient, ILogger<RegistryClient
 
             await Task.WhenAll(harnessTask, ollamaTask);
 
-            var harness = harnessTask.Result?.Value;
+            var harness = (await harnessTask)?.Value;
             if (harness is null)
             {
                 return null;
             }
 
-            return new SettingsSnapshot(harness, ollamaTask.Result);
+            return new SettingsSnapshot(harness, await ollamaTask);
         }
         catch (Exception ex)
         {
