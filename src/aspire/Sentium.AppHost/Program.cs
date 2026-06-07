@@ -102,8 +102,8 @@ var sentinelApi = builder.AddProject<Projects.Sentium_Sentinel_Api>(ServiceNames
     .WithReference(sentinelDb).WaitFor(sentinelDb)
     .WithReference(identityApi).WaitFor(identityApi)
     .WithReference(registryApi).WaitFor(registryApi)
-    .WithReference(redis).WaitFor(redis)
     .WithReference(ollamaModel).WaitFor(ollamaModel)
+    .WithReference(redis).WaitFor(redis)
     .WithEnvironment(EnvConfig.Keys.IdentityAuthority, identityApi.GetEndpoint("http"))
     .WithEnvironment(EnvConfig.Keys.InternalApiKey, internalApiKey)
     .WithUrlForEndpoint("https", url =>
@@ -133,6 +133,8 @@ var sandboxApi = builder.AddProject<Projects.Sentium_Sandbox_Api>(ServiceNames.S
     });
 
 var agentRuntimeApi = builder.AddProject<Projects.Sentium_AgentRuntime_Api>(ServiceNames.AgentRuntime)
+    .WithReference(ollamaModel).WaitFor(ollamaModel)
+    .WithReference(ollamaEmbeddingModel).WaitFor(ollamaEmbeddingModel)
     .WithReference(nats).WaitFor(nats)
     .WithReference(seq).WaitFor(seq)
     .WithReference(agentRuntimeDb).WaitFor(agentRuntimeDb)
@@ -143,8 +145,6 @@ var agentRuntimeApi = builder.AddProject<Projects.Sentium_AgentRuntime_Api>(Serv
     .WithReference(sentinelApi).WaitFor(sentinelApi)
     .WithReference(sandboxApi).WaitFor(sandboxApi)
     .WithReference(registryApi).WaitFor(registryApi)
-    .WithReference(ollamaModel).WaitFor(ollamaModel)
-    .WithReference(ollamaEmbeddingModel).WaitFor(ollamaEmbeddingModel)
     .WithEnvironment(EnvConfig.Keys.AI.ModelName, ollamaModel.Resource.ModelName)
     .WithEnvironment(EnvConfig.Keys.AI.EmbeddingModelName, ollamaEmbeddingModel.Resource.ModelName)
     .WithEnvironment(EnvConfig.Keys.IdentityAuthority, identityApi.GetEndpoint("http"))
