@@ -4,8 +4,12 @@ using Sentium.Shared.Constants;
 
 var builder = DistributedApplication.CreateBuilder(args);
 
-var isTestRun = args.Contains("--TestRun=true");
-var aspNetCoreEnvironment = isTestRun ? "Testing" : "Development";
+if (args.Contains("--TestRun=true"))
+{
+    TestRunConfiguration.Configure(builder);
+    builder.Build().Run();
+    return;
+}
 
 builder.AddDockerComposeEnvironment("env");
 
@@ -23,61 +27,45 @@ var serviceWorkerSecret = builder.AddParameter("service-worker-secret", secret: 
 var sql = builder.AddSqlServer(ResourceNames.Sql, password: sqlPassword)
     .WithDataVolume();
 
-var identityDb = sql.AddDatabase(ResourceNames.IdentityDb, isTestRun ? "identitydb_e2e" : null);
-var agentRuntimeDb = sql.AddDatabase(ResourceNames.AgentRuntimeDb, isTestRun ? "agentruntimedb_e2e" : null);
-var sandboxDb = sql.AddDatabase(ResourceNames.SandboxDb, isTestRun ? "sandboxdb_e2e" : null);
-var sentinelDb = sql.AddDatabase(ResourceNames.SentinelDb, isTestRun ? "sentineldb_e2e" : null);
-var registryDb = sql.AddDatabase(ResourceNames.RegistryDb, isTestRun ? "registrydb_e2e" : null);
+var identityDb = sql.AddDatabase(ResourceNames.IdentityDb);
+var agentRuntimeDb = sql.AddDatabase(ResourceNames.AgentRuntimeDb);
+var sandboxDb = sql.AddDatabase(ResourceNames.SandboxDb);
+var sentinelDb = sql.AddDatabase(ResourceNames.SentinelDb);
+var registryDb = sql.AddDatabase(ResourceNames.RegistryDb);
 
-var qdrant = builder.AddQdrant(ResourceNames.Qdrant);
-
-if (!isTestRun)
-{
-    qdrant.WithDataVolume();
-}
+var qdrant = builder.AddQdrant(ResourceNames.Qdrant)
+    .WithDataVolume();
 
 var storage = builder.AddAzureStorage(ResourceNames.Storage)
     .RunAsEmulator(azurite => azurite.WithDataVolume());
 
 var blobs = storage.AddBlobs(ResourceNames.WorkspaceBlobs);
 
-IResourceBuilder<SeqResource>? seq = null;
-if (!isTestRun)
-{
-    seq = builder.AddSeq(ResourceNames.Seq)
-        .ExcludeFromManifest()
-        .WithDataVolume()
-        .WithEnvironment(EnvConfig.Keys.AcceptEula, EnvConfig.Values.Yes);
-}
+var seq = builder.AddSeq(ResourceNames.Seq)
+    .ExcludeFromManifest()
+    .WithDataVolume()
+    .WithEnvironment(EnvConfig.Keys.AcceptEula, EnvConfig.Values.Yes);
 
 var ollama = builder.AddOllama(ResourceNames.Ollama)
     .WithImage("ollama/ollama", "0.30.5")
+    .WithDataVolume()
+    .WithGPUSupport(OllamaGpuVendor.Nvidia)
+    // .WithEnvironment(OllamaConfig.ContextSizeKey, OllamaConfig.DefaultContextSize)
+    .WithEnvironment(OllamaConfig.FlashAttentionKey, "1")
+    .WithEnvironment(OllamaConfig.ParallelRequestsKey, "2")
+    .WithEnvironment(OllamaConfig.KeepAliveKey, "-1")
+    // .WithEnvironment(OllamaConfig.CacheTypeKey, "q4_0")
+    .WithEnvironment(OllamaConfig.DebugKey, "1")
     .WithEndpoint("http", e => e.Port = 11434);
 
-IResourceBuilder<OllamaModelResource>? ollamaModel = null;
-IResourceBuilder<OllamaModelResource>? ollamaEmbeddingModel = null;
-
-if (!isTestRun)
-{
-    ollama
-        .WithDataVolume()
-        .WithGPUSupport(OllamaGpuVendor.Nvidia)
-        // .WithEnvironment(OllamaConfig.ContextSizeKey, OllamaConfig.DefaultContextSize)
-        .WithEnvironment(OllamaConfig.FlashAttentionKey, "1")
-        .WithEnvironment(OllamaConfig.ParallelRequestsKey, "2")
-        .WithEnvironment(OllamaConfig.KeepAliveKey, "-1")
-        // .WithEnvironment(OllamaConfig.CacheTypeKey, "q4_0")
-        .WithEnvironment(OllamaConfig.DebugKey, "1");
-
-    ollamaModel = ollama.AddModel(AIModels.Gemma4_E4B);
-    ollamaEmbeddingModel = ollama.AddModel(AIModels.NomicEmbedText);
-}
+var ollamaModel = ollama.AddModel(AIModels.Gemma4_E4B);
+var ollamaEmbeddingModel = ollama.AddModel(AIModels.NomicEmbedText);
 
 var identityApi = builder.AddProject<Projects.Sentium_Identity_Api>(ServiceNames.Identity)
     .WithReference(identityDb).WaitFor(identityDb)
     .WithReference(nats).WaitFor(nats)
+    .WithReference(seq).WaitFor(seq)
     .WithReference(redis).WaitFor(redis)
-    .WithEnvironment("ASPNETCORE_ENVIRONMENT", aspNetCoreEnvironment)
     .WithEnvironment("Identity__GatewayBffSecret", gatewayBffSecret)
     .WithEnvironment("Identity__ServiceWorkerSecret", serviceWorkerSecret)
     .WithUrlForEndpoint("https", url =>
@@ -85,7 +73,6 @@ var identityApi = builder.AddProject<Projects.Sentium_Identity_Api>(ServiceNames
         url.DisplayText = "Scalar API (Docs)";
         url.Url = "/scalar/v1";
     });
-if (seq != null) identityApi.WithReference(seq).WaitFor(seq);
 
 var identityUi = builder.AddViteApp(ServiceNames.IdentityUi, "../../clients/sentium-identity-ui")
     .WithPnpm()
@@ -99,8 +86,8 @@ var registryApi = builder.AddProject<Projects.Sentium_Registry_Api>(ServiceNames
     .WithReference(registryDb).WaitFor(registryDb)
     .WithReference(nats).WaitFor(nats)
     .WithReference(redis).WaitFor(redis)
+    .WithReference(seq).WaitFor(seq)
     .WithReference(identityApi).WaitFor(identityApi)
-    .WithEnvironment("ASPNETCORE_ENVIRONMENT", aspNetCoreEnvironment)
     .WithEnvironment(EnvConfig.Keys.IdentityAuthority, identityApi.GetEndpoint("http"))
     .WithEnvironment(EnvConfig.Keys.InternalApiKey, internalApiKey)
     .WithUrlForEndpoint("https", url =>
@@ -108,15 +95,15 @@ var registryApi = builder.AddProject<Projects.Sentium_Registry_Api>(ServiceNames
         url.DisplayText = "Scalar API (Docs)";
         url.Url = "/scalar/v1";
     });
-if (seq != null) registryApi.WithReference(seq).WaitFor(seq);
 
 var sentinelApi = builder.AddProject<Projects.Sentium_Sentinel_Api>(ServiceNames.Sentinel)
     .WithReference(nats).WaitFor(nats)
+    .WithReference(seq).WaitFor(seq)
     .WithReference(sentinelDb).WaitFor(sentinelDb)
     .WithReference(identityApi).WaitFor(identityApi)
     .WithReference(registryApi).WaitFor(registryApi)
     .WithReference(redis).WaitFor(redis)
-    .WithEnvironment("ASPNETCORE_ENVIRONMENT", aspNetCoreEnvironment)
+    .WithReference(ollamaModel).WaitFor(ollamaModel)
     .WithEnvironment(EnvConfig.Keys.IdentityAuthority, identityApi.GetEndpoint("http"))
     .WithEnvironment(EnvConfig.Keys.InternalApiKey, internalApiKey)
     .WithUrlForEndpoint("https", url =>
@@ -124,12 +111,6 @@ var sentinelApi = builder.AddProject<Projects.Sentium_Sentinel_Api>(ServiceNames
         url.DisplayText = "Scalar API (Docs)";
         url.Url = "/scalar/v1";
     });
-if (seq != null) sentinelApi.WithReference(seq).WaitFor(seq);
-
-if (!isTestRun)
-{
-    sentinelApi.WithReference(ollamaModel!).WaitFor(ollamaModel!);
-}
 
 var dockerHost = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
     ? EnvConfig.Values.DockerSockets.Windows
@@ -137,11 +118,11 @@ var dockerHost = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
 
 var sandboxApi = builder.AddProject<Projects.Sentium_Sandbox_Api>(ServiceNames.Sandbox)
     .WithReference(nats).WaitFor(nats)
+    .WithReference(seq).WaitFor(seq)
     .WithReference(blobs).WaitFor(blobs)
     .WithReference(sandboxDb).WaitFor(sandboxDb)
     .WithReference(sentinelApi).WaitFor(sentinelApi)
     .WithReference(identityApi).WaitFor(identityApi)
-    .WithEnvironment("ASPNETCORE_ENVIRONMENT", aspNetCoreEnvironment)
     .WithEnvironment(EnvConfig.Keys.IdentityAuthority, identityApi.GetEndpoint("http"))
     .WithEnvironment(EnvConfig.Keys.DockerHost, dockerHost)
     .WithEnvironment(EnvConfig.Keys.InternalApiKey, internalApiKey)
@@ -150,10 +131,10 @@ var sandboxApi = builder.AddProject<Projects.Sentium_Sandbox_Api>(ServiceNames.S
         url.DisplayText = "Scalar API (Docs)";
         url.Url = "/scalar/v1";
     });
-if (seq != null) sandboxApi.WithReference(seq).WaitFor(seq);
 
 var agentRuntimeApi = builder.AddProject<Projects.Sentium_AgentRuntime_Api>(ServiceNames.AgentRuntime)
     .WithReference(nats).WaitFor(nats)
+    .WithReference(seq).WaitFor(seq)
     .WithReference(agentRuntimeDb).WaitFor(agentRuntimeDb)
     .WithReference(redis).WaitFor(redis)
     .WithReference(qdrant).WaitFor(qdrant)
@@ -162,7 +143,10 @@ var agentRuntimeApi = builder.AddProject<Projects.Sentium_AgentRuntime_Api>(Serv
     .WithReference(sentinelApi).WaitFor(sentinelApi)
     .WithReference(sandboxApi).WaitFor(sandboxApi)
     .WithReference(registryApi).WaitFor(registryApi)
-    .WithEnvironment("ASPNETCORE_ENVIRONMENT", aspNetCoreEnvironment)
+    .WithReference(ollamaModel).WaitFor(ollamaModel)
+    .WithReference(ollamaEmbeddingModel).WaitFor(ollamaEmbeddingModel)
+    .WithEnvironment(EnvConfig.Keys.AI.ModelName, ollamaModel.Resource.ModelName)
+    .WithEnvironment(EnvConfig.Keys.AI.EmbeddingModelName, ollamaEmbeddingModel.Resource.ModelName)
     .WithEnvironment(EnvConfig.Keys.IdentityAuthority, identityApi.GetEndpoint("http"))
     .WithEnvironment(EnvConfig.Keys.InternalApiKey, internalApiKey)
     .WithExternalHttpEndpoints()
@@ -172,25 +156,9 @@ var agentRuntimeApi = builder.AddProject<Projects.Sentium_AgentRuntime_Api>(Serv
         url.Url = "/scalar/v1";
     });
 
-if (seq != null) agentRuntimeApi.WithReference(seq).WaitFor(seq);
-if (!isTestRun)
-{
-    agentRuntimeApi
-        .WithReference(ollamaModel!).WaitFor(ollamaModel!)
-        .WithReference(ollamaEmbeddingModel!).WaitFor(ollamaEmbeddingModel!)
-        .WithEnvironment(EnvConfig.Keys.AI.ModelName, ollamaModel!.Resource.ModelName)
-        .WithEnvironment(EnvConfig.Keys.AI.EmbeddingModelName, ollamaEmbeddingModel!.Resource.ModelName);
-}
-else
-{
-    agentRuntimeApi
-        .WithReference(ollama).WaitFor(ollama)
-        .WithEnvironment(EnvConfig.Keys.AI.ModelName, AIModels.Gemma4_E4B)
-        .WithEnvironment(EnvConfig.Keys.AI.EmbeddingModelName, AIModels.NomicEmbedText);
-}
-
 var watchdogApi = builder.AddProject<Projects.Sentium_Watchdog_Api>(ServiceNames.Watchdog)
     .WithReference(nats).WaitFor(nats)
+    .WithReference(seq).WaitFor(seq)
     .WithReference(sql).WaitFor(sql)
     .WithReference(redis).WaitFor(redis)
     .WithReference(qdrant)
@@ -200,7 +168,6 @@ var watchdogApi = builder.AddProject<Projects.Sentium_Watchdog_Api>(ServiceNames
     .WithReference(agentRuntimeApi).WaitFor(agentRuntimeApi)
     .WithReference(registryApi).WaitFor(registryApi)
     .WithReference(sandboxApi).WaitFor(sandboxApi)
-    .WithEnvironment("ASPNETCORE_ENVIRONMENT", aspNetCoreEnvironment)
     .WithEnvironment(EnvConfig.Keys.IdentityAuthority, identityApi.GetEndpoint("http"))
     .WithEnvironment(EnvConfig.Keys.InternalApiKey, internalApiKey)
     .WithUrlForEndpoint("https", url =>
@@ -208,7 +175,6 @@ var watchdogApi = builder.AddProject<Projects.Sentium_Watchdog_Api>(ServiceNames
         url.DisplayText = "Scalar API (Docs)";
         url.Url = "/scalar/v1";
     });
-if (seq != null) watchdogApi.WithReference(seq).WaitFor(seq);
 
 var apiGateway = builder.AddProject<Projects.Sentium_ApiGateway>(ServiceNames.Gateway)
     .WithReference(identityApi).WaitFor(identityApi)

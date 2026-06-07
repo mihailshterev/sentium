@@ -76,7 +76,7 @@ jobs:
           key: docker-${{ runner.os }}-${{ hashFiles('src/aspire/**/*.csproj') }}
 
       - name: Start Aspire stack
-        run: dotnet run --project src/aspire/Sentium.AppHost/Sentium.AppHost.csproj --configuration ${{ env.BUILD_CONFIGURATION }} -- --TestRun=true &
+        run: dotnet run --project src/aspire/Sentium.AppHost/Sentium.AppHost.csproj --configuration ${{ env.BUILD_CONFIGURATION }} -- --TestRun=true
         env:
           DOTNET_ENVIRONMENT: Testing
           ASPNETCORE_ENVIRONMENT: Testing
