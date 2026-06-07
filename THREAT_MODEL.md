@@ -5,7 +5,7 @@
 > boundaries. This document records the threats considered, the mitigations actually built into
 > the system, and the residual risks accepted under the project's deployment model.
 >
-> Companion documents: [docs/final-state-overview.md](docs/final-state-overview.md) (architecture
+> Companion document: [docs/final-state-overview.md](docs/final-state-overview.md) (architecture
 > as built).
 
 ---
