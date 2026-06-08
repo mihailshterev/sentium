@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sentium.Infrastructure.Security;
 using Microsoft.Extensions.Options;
-using Sentium.Sandbox.Api.Dtos;
+using Sentium.Sandbox.Core.Dtos;
 using Sentium.Sandbox.Application;
 using Sentium.Sandbox.Application.Options;
 using Sentium.Sandbox.Core.Interfaces;

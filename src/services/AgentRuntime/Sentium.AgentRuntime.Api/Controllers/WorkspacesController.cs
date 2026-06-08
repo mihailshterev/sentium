@@ -174,18 +174,18 @@ public sealed class WorkspacesController(IWorkspaceService workspaceService) : C
     {
         if (file is null || file.Length == 0)
         {
-            return BadRequest(new { error = "A non-empty file is required." });
+            return Problem(detail: "A non-empty file is required.", statusCode: StatusCodes.Status400BadRequest);
         }
 
         if (file.Length > MaxFileSizeBytes)
         {
-            return BadRequest(new { error = "File exceeds the 100 MB size limit." });
+            return Problem(detail: "File exceeds the 100 MB size limit.", statusCode: StatusCodes.Status400BadRequest);
         }
 
         var extension = Path.GetExtension(file.FileName);
         if (!AllowedFileTypes.IsAllowed(extension))
         {
-            return BadRequest(new { error = $"File type '{extension}' is not supported. Allowed types: {AllowedFileTypes.AllowedList}." });
+            return Problem(detail: $"File type '{extension}' is not supported. Allowed types: {AllowedFileTypes.AllowedList}.", statusCode: StatusCodes.Status400BadRequest);
         }
 
         using var stream = file.OpenReadStream();

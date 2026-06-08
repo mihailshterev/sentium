@@ -1,6 +1,6 @@
 using System.Security.Claims;
 using Sentium.Identity.Application.Abstractions;
-using Sentium.Identity.Api.Contracts.Roles;
+using Sentium.Identity.Core.Dtos;
 using Sentium.Identity.Core.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,9 +13,9 @@ namespace Sentium.Identity.Api.Controllers;
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme, Roles = Roles.Sovereign)]
 public sealed class RolesController(IRoleService roleService) : ControllerBase
 {
-    private static readonly IReadOnlyList<object> CachedRoles =
+    private static readonly IReadOnlyList<RoleResponse> CachedRoles =
         Roles.Hierarchy
-            .Select(r => (object)new { Name = r })
+            .Select(r => new RoleResponse(r))
             .ToList();
 
     /// <summary>
@@ -23,7 +23,7 @@ public sealed class RolesController(IRoleService roleService) : ControllerBase
     /// </summary>
     /// <response code="200">Returns the full list of roles.</response>
     [HttpGet]
-    [ProducesResponseType(typeof(IEnumerable<object>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(IEnumerable<RoleResponse>), StatusCodes.Status200OK)]
     public IActionResult GetRoles() => Ok(CachedRoles);
 
     /// <summary>
@@ -70,7 +70,7 @@ public sealed class RolesController(IRoleService roleService) : ControllerBase
         var (succeeded, error) = await roleService.AssignRoleAsync(requesterId.Value, request.UserId, request.RoleName, ct);
         if (!succeeded)
         {
-            return BadRequest(new { Error = error });
+            return Problem(detail: error, statusCode: StatusCodes.Status400BadRequest);
         }
 
         return NoContent();
@@ -101,7 +101,7 @@ public sealed class RolesController(IRoleService roleService) : ControllerBase
         var (succeeded, error) = await roleService.RemoveRoleAsync(requesterId.Value, request.UserId, request.RoleName, ct);
         if (!succeeded)
         {
-            return BadRequest(new { Error = error });
+            return Problem(detail: error, statusCode: StatusCodes.Status400BadRequest);
         }
 
         return NoContent();

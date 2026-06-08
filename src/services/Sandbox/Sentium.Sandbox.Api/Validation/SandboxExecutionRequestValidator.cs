@@ -1,6 +1,6 @@
 using FluentValidation;
 using Microsoft.Extensions.Options;
-using Sentium.Sandbox.Api.Dtos;
+using Sentium.Sandbox.Core.Dtos;
 using Sentium.Sandbox.Application.Options;
 using Sentium.Sandbox.Core.Models;
 

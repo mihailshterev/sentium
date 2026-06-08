@@ -1,4 +1,4 @@
-namespace Sentium.Identity.Api.Contracts;
+namespace Sentium.Identity.Core.Dtos;
 
 public sealed record PagedResponse<T>(
     IReadOnlyList<T> Items,

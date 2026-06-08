@@ -1,3 +1,4 @@
+using Sentium.AgentRuntime.Core.Dtos;
 using Sentium.AgentRuntime.Core.Rag;
 using Sentium.AgentRuntime.Core.Rag.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -8,7 +9,6 @@ namespace Sentium.AgentRuntime.Api.Controllers;
 /// <summary>
 /// REST surface for pushing content into the RAG knowledge base.
 /// Downstream services call these endpoints to contribute their data without requiring direct access to the vector store.
-/// These endpoints are internal-only — external access is gated by the API gateway.
 /// </summary>
 [ApiController]
 [Route("ingestion")]
@@ -64,7 +64,7 @@ public sealed class IngestionController(
 
         if (source is null)
         {
-            return NotFound(new { error = $"No registered ingestion source named '{sourceName}'." });
+            return Problem(detail: $"No registered ingestion source named '{sourceName}'.", statusCode: StatusCodes.Status404NotFound);
         }
 
         await ingestionService.IngestFromSourceAsync(source, ct: ct);
@@ -80,11 +80,7 @@ public sealed class IngestionController(
     [ProducesResponseType(StatusCodes.Status200OK)]
     public IActionResult GetSources()
     {
-        var result = sources.Select(s => new
-        {
-            name = s.SourceName,
-            type = s.SourceType.ToString()
-        });
+        var result = sources.Select(s => new IngestionSourceResponse(s.SourceName, s.SourceType.ToString()));
 
         return Ok(result);
     }
@@ -103,7 +99,7 @@ public sealed class IngestionController(
     {
         if (string.IsNullOrWhiteSpace(source))
         {
-            return BadRequest(new { error = "A non-empty 'source' query parameter is required." });
+            return Problem(detail: "A non-empty 'source' query parameter is required.", statusCode: StatusCodes.Status400BadRequest);
         }
 
         await ingestionService.RemoveBySourceAsync(source, ct: ct);

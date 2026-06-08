@@ -10,6 +10,8 @@ namespace Sentium.AgentRuntime.Infrastructure.Skills.BuiltIn;
 /// </summary>
 internal sealed class JsonAnalyzerSkill : AgentClassSkill<JsonAnalyzerSkill>
 {
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
     internal static BuiltInSkillInfo Descriptor { get; } = new(
         "json-analyzer",
         "Analyse, validate, pretty-print, and summarise JSON structures. Use when the user provides JSON data or asks about JSON schemas, validation, or transformation.",
@@ -69,11 +71,11 @@ internal sealed class JsonAnalyzerSkill : AgentClassSkill<JsonAnalyzerSkill>
         try
         {
             using var doc = JsonDocument.Parse(json);
-            return JsonSerializer.Serialize(new { valid = true, error = (string?)null });
+            return JsonSerializer.Serialize(new JsonValidationResult(true, null), JsonOptions);
         }
         catch (JsonException ex)
         {
-            return JsonSerializer.Serialize(new { valid = false, error = ex.Message });
+            return JsonSerializer.Serialize(new JsonValidationResult(false, ex.Message), JsonOptions);
         }
     }
 
@@ -88,22 +90,22 @@ internal sealed class JsonAnalyzerSkill : AgentClassSkill<JsonAnalyzerSkill>
 
             if (root.ValueKind == JsonValueKind.Object)
             {
-                var keys = root.EnumerateObject().Select(p => new { key = p.Name, type = p.Value.ValueKind.ToString() }).ToArray();
-                return JsonSerializer.Serialize(new { rootType = "object", keyCount = keys.Length, keys });
+                var keys = root.EnumerateObject().Select(p => new JsonKeyInfo(p.Name, p.Value.ValueKind.ToString())).ToArray();
+                return JsonSerializer.Serialize(new JsonObjectSummary("object", keys.Length, keys), JsonOptions);
             }
 
             if (root.ValueKind == JsonValueKind.Array)
             {
                 var count = root.GetArrayLength();
                 var itemType = count > 0 ? root[0].ValueKind.ToString() : "unknown";
-                return JsonSerializer.Serialize(new { rootType = "array", count, itemType });
+                return JsonSerializer.Serialize(new JsonArraySummary("array", count, itemType), JsonOptions);
             }
 
-            return JsonSerializer.Serialize(new { rootType = root.ValueKind.ToString() });
+            return JsonSerializer.Serialize(new JsonScalarSummary(root.ValueKind.ToString()), JsonOptions);
         }
         catch (JsonException ex)
         {
-            return JsonSerializer.Serialize(new { error = ex.Message });
+            return JsonSerializer.Serialize(new SkillError(ex.Message), JsonOptions);
         }
     }
 
@@ -121,4 +123,14 @@ internal sealed class JsonAnalyzerSkill : AgentClassSkill<JsonAnalyzerSkill>
             return $"Invalid JSON: {ex.Message}";
         }
     }
+
+    private sealed record JsonValidationResult(bool Valid, string? Error);
+
+    private sealed record JsonKeyInfo(string Key, string Type);
+
+    private sealed record JsonObjectSummary(string RootType, int KeyCount, IReadOnlyList<JsonKeyInfo> Keys);
+
+    private sealed record JsonArraySummary(string RootType, int Count, string ItemType);
+
+    private sealed record JsonScalarSummary(string RootType);
 }

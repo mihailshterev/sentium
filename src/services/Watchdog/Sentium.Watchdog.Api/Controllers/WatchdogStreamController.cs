@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using NATS.Client.Serializers.Json;
 using Sentium.Infrastructure.Messaging;
 using Sentium.Shared.Constants;
+using Sentium.Watchdog.Core.Dtos;
 using Sentium.Watchdog.Core.Monitoring;
 
 namespace Sentium.Watchdog.Api.Controllers;
@@ -32,7 +33,7 @@ public sealed class WatchdogStreamController(IEventBus eventBus, ILogger<Watchdo
         Response.Headers.Append(CommonHeaderNames.Connection, "keep-alive");
         Response.Headers.Append(CommonHeaderNames.AccelBuffering, "no");
 
-        await WriteFrameAsync(new { type = "connected" }, ct);
+        await WriteFrameAsync(new WatchdogConnectedFrame(), ct);
 
         var channel = Channel.CreateUnbounded<string>(new UnboundedChannelOptions { SingleReader = true });
 
@@ -84,7 +85,7 @@ public sealed class WatchdogStreamController(IEventBus eventBus, ILogger<Watchdo
                     continue;
                 }
 
-                var frame = $"data: {JsonSerializer.Serialize(new Envelope<T>(type, msg.Data), JsonOptions)}\n\n";
+                var frame = $"data: {JsonSerializer.Serialize(new WatchdogStreamFrame<T>(type, msg.Data), JsonOptions)}\n\n";
                 await writer.WriteAsync(frame, ct);
             }
         }
@@ -102,6 +103,4 @@ public sealed class WatchdogStreamController(IEventBus eventBus, ILogger<Watchdo
         await Response.WriteAsync($"data: {JsonSerializer.Serialize(payload, JsonOptions)}\n\n", ct);
         await Response.Body.FlushAsync(ct);
     }
-
-    private sealed record Envelope<T>(string Type, T Data);
 }

@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NSubstitute;
 using Sentium.Sandbox.Api.Controllers;
-using Sentium.Sandbox.Api.Dtos;
+using Sentium.Sandbox.Core.Dtos;
 using Sentium.Sandbox.Application;
 using Sentium.Sandbox.Application.Options;
 using Sentium.Sandbox.Application.Sentinel;

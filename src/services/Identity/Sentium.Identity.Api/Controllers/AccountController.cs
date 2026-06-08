@@ -1,6 +1,6 @@
 using System.Security.Claims;
 using Sentium.Identity.Application.Abstractions;
-using Sentium.Identity.Api.Contracts.Users;
+using Sentium.Identity.Core.Dtos;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
@@ -39,11 +39,7 @@ public sealed class AccountController(
             return BadRequest(result.Errors);
         }
 
-        return Ok(new
-        {
-            user!.Id,
-            user.Email
-        });
+        return Ok(new RegisterResponse(user!.Id, user.Email));
     }
 
     /// <summary>
@@ -72,7 +68,7 @@ public sealed class AccountController(
 
         if (result.RequiresTwoFactor)
         {
-            return Ok(new { RequiresTwoFactor = true });
+            return Ok(new LoginResponse(RequiresTwoFactor: true));
         }
 
         if (!result.Succeeded)
@@ -81,7 +77,7 @@ public sealed class AccountController(
         }
 
         var redirectTo = (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl)) ? returnUrl : "/";
-        return Ok(new { RedirectUrl = redirectTo });
+        return Ok(new LoginResponse(RedirectUrl: redirectTo));
     }
 
     /// <summary>
@@ -117,13 +113,7 @@ public sealed class AccountController(
             return NotFound();
         }
 
-        return Ok(new
-        {
-            user.Id,
-            user.Email,
-            user.FirstName,
-            user.LastName,
-        });
+        return Ok(new ProfileResponse(user.Id, user.Email, user.FirstName, user.LastName));
     }
 
     /// <summary>
@@ -149,7 +139,10 @@ public sealed class AccountController(
 
         if (!succeeded)
         {
-            return BadRequest(new { Errors = errors });
+            return ValidationProblem(new ValidationProblemDetails(new Dictionary<string, string[]>
+            {
+                ["profile"] = errors
+            }));
         }
 
         return NoContent();

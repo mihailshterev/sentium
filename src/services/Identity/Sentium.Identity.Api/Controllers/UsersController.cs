@@ -1,7 +1,6 @@
 ﻿using System.Security.Claims;
 using Sentium.Identity.Application.Abstractions;
-using Sentium.Identity.Api.Contracts;
-using Sentium.Identity.Api.Contracts.Users;
+using Sentium.Identity.Core.Dtos;
 using Sentium.Identity.Core.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -13,9 +12,7 @@ namespace Sentium.Identity.Api.Controllers;
 [ApiController]
 [Route("users")]
 [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
-public sealed class UsersController(
-    IUserService userService,
-    IUserClaimsService userClaimsService) : ControllerBase
+public sealed class UsersController(IUserService userService, IUserClaimsService userClaimsService) : ControllerBase
 {
     /// <summary>
     /// Lists users registered in the system, with pagination.
@@ -27,10 +24,7 @@ public sealed class UsersController(
     [HttpGet]
     [Authorize(Roles = Roles.Sovereign)]
     [ProducesResponseType(typeof(PagedResponse<UserResponse>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetAllUsers(
-        [FromQuery] int page = 1,
-        [FromQuery] int pageSize = 20,
-        CancellationToken ct = default)
+    public async Task<IActionResult> GetAllUsers([FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken ct = default)
     {
         page = Math.Max(1, page);
         pageSize = Math.Clamp(pageSize, 1, 100);
@@ -114,7 +108,10 @@ public sealed class UsersController(
         var (succeeded, errors) = await userService.DeleteUserAsync(requesterId.Value, id, ct);
         if (!succeeded)
         {
-            return BadRequest(new { Errors = errors });
+            return ValidationProblem(new ValidationProblemDetails(new Dictionary<string, string[]>
+            {
+                ["user"] = errors
+            }));
         }
 
         return NoContent();

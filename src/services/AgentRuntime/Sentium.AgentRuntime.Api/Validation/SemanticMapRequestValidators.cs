@@ -1,5 +1,5 @@
 using FluentValidation;
-using Sentium.AgentRuntime.Api.Controllers;
+using Sentium.AgentRuntime.Core.Dtos;
 
 namespace Sentium.AgentRuntime.Api.Validation;
 

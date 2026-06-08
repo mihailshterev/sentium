@@ -195,12 +195,11 @@ public sealed class AssistantController(
 
                     var toolCall = approvalRequest.ToolCall as FunctionCallContent;
 
-                    var approvalData = new
-                    {
-                        requestId = approvalRequest.RequestId,
-                        toolName = toolCall?.Name ?? "unknown",
-                        arguments = toolCall?.Arguments,
-                    };
+                    var approvalData = new ToolApprovalData(
+                        approvalRequest.RequestId,
+                        toolCall?.Name ?? "unknown",
+                        toolCall?.Arguments
+                    );
 
                     await SendUiUpdate(AgentUpdateTypes.ApprovalRequest, JsonSerializer.Serialize(approvalData), writeSemaphore, ct);
                     return;
@@ -238,7 +237,7 @@ public sealed class AssistantController(
             await writeSemaphore.WaitAsync(ct);
             try
             {
-                var completeJson = JsonSerializer.Serialize(new { type = "done", done = true });
+                var completeJson = JsonSerializer.Serialize(new StreamDoneFrame(AgentUpdateTypes.Done));
                 await Response.WriteAsync($"data: {completeJson}\n\n", ct);
                 await Response.Body.FlushAsync(ct);
             }
@@ -265,7 +264,7 @@ public sealed class AssistantController(
 
             try
             {
-                var errorJson = JsonSerializer.Serialize(new { type = "error", message = ex.Message, done = true });
+                var errorJson = JsonSerializer.Serialize(new StreamErrorFrame(ex.Message));
                 await writeSemaphore.WaitAsync(CancellationToken.None);
                 try
                 {

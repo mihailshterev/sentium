@@ -10,6 +10,8 @@ namespace Sentium.AgentRuntime.Infrastructure.Skills.BuiltIn;
 /// </summary>
 internal sealed class DateTimeSkill : AgentClassSkill<DateTimeSkill>
 {
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
     internal static BuiltInSkillInfo Descriptor { get; } = new(
         "datetime-utils",
         "Date and time utilities: current date/time in any timezone, date arithmetic, duration formatting, and ISO 8601 parsing. Use for questions involving dates, times, countdowns, or scheduling.",
@@ -63,14 +65,12 @@ internal sealed class DateTimeSkill : AgentClassSkill<DateTimeSkill>
     private static string CurrentDateTime(double utcOffsetHours = 0)
     {
         var now = DateTimeOffset.UtcNow.ToOffset(TimeSpan.FromHours(utcOffsetHours));
-        return JsonSerializer.Serialize(new
-        {
-            iso = now.ToString("O"),
-            readable = now.ToString("dddd, dd MMMM yyyy HH:mm:ss zzz"),
-            date = now.ToString("yyyy-MM-dd"),
-            time = now.ToString("HH:mm:ss"),
-            utcOffset = utcOffsetHours
-        });
+        return JsonSerializer.Serialize(new CurrentDateTimeResult(
+            Iso: now.ToString("O"),
+            Readable: now.ToString("dddd, dd MMMM yyyy HH:mm:ss zzz"),
+            Date: now.ToString("yyyy-MM-dd"),
+            Time: now.ToString("HH:mm:ss"),
+            UtcOffset: utcOffsetHours), JsonOptions);
     }
 
     [AgentSkillScript("date-add")]
@@ -79,7 +79,7 @@ internal sealed class DateTimeSkill : AgentClassSkill<DateTimeSkill>
     {
         if (!DateTimeOffset.TryParse(baseDate, out var date))
         {
-            return JsonSerializer.Serialize(new { error = "Invalid date format. Use ISO 8601 (e.g. 2026-05-09)." });
+            return JsonSerializer.Serialize(new SkillError("Invalid date format. Use ISO 8601 (e.g. 2026-05-09)."), JsonOptions);
         }
 
         var result = date
@@ -87,13 +87,11 @@ internal sealed class DateTimeSkill : AgentClassSkill<DateTimeSkill>
             .AddDays(weeks * 7)
             .AddMonths(months);
 
-        return JsonSerializer.Serialize(new
-        {
-            input = baseDate,
-            added = new { days, weeks, months },
-            result = result.ToString("yyyy-MM-dd"),
-            readable = result.ToString("dddd, dd MMMM yyyy")
-        });
+        return JsonSerializer.Serialize(new DateAddResult(
+            Input: baseDate,
+            Added: new DateComponents(days, weeks, months),
+            Result: result.ToString("yyyy-MM-dd"),
+            Readable: result.ToString("dddd, dd MMMM yyyy")), JsonOptions);
     }
 
     [AgentSkillScript("date-diff")]
@@ -102,21 +100,27 @@ internal sealed class DateTimeSkill : AgentClassSkill<DateTimeSkill>
     {
         if (!DateTimeOffset.TryParse(fromDate, out var from) || !DateTimeOffset.TryParse(toDate, out var to))
         {
-            return JsonSerializer.Serialize(new { error = "Invalid date format. Use ISO 8601." });
+            return JsonSerializer.Serialize(new SkillError("Invalid date format. Use ISO 8601."), JsonOptions);
         }
 
         var span = to - from;
         var totalDays = (int)Math.Abs(span.TotalDays);
         var direction = span.TotalDays >= 0 ? "future" : "past";
 
-        return JsonSerializer.Serialize(new
-        {
-            from = fromDate,
-            to = toDate,
-            direction,
-            totalDays,
-            weeks = totalDays / 7,
-            remainingDays = totalDays % 7
-        });
+        return JsonSerializer.Serialize(new DateDiffResult(
+            From: fromDate,
+            To: toDate,
+            Direction: direction,
+            TotalDays: totalDays,
+            Weeks: totalDays / 7,
+            RemainingDays: totalDays % 7), JsonOptions);
     }
+
+    private sealed record CurrentDateTimeResult(string Iso, string Readable, string Date, string Time, double UtcOffset);
+
+    private sealed record DateAddResult(string Input, DateComponents Added, string Result, string Readable);
+
+    private sealed record DateComponents(int Days, int Weeks, int Months);
+
+    private sealed record DateDiffResult(string From, string To, string Direction, int TotalDays, int Weeks, int RemainingDays);
 }

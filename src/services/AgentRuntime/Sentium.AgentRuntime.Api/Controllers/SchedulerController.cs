@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Quartz;
 using Quartz.Impl.Matchers;
+using Sentium.AgentRuntime.Core.Dtos;
 
 namespace Sentium.AgentRuntime.Api.Controllers;
 
@@ -22,7 +23,7 @@ public sealed class SchedulerController(ISchedulerFactory schedulerFactory) : Co
     public async Task<IActionResult> GetAllActiveJobsAsync(CancellationToken ct)
     {
         var scheduler = await schedulerFactory.GetScheduler(ct);
-        var activeJobsList = new List<object>();
+        var activeJobsList = new List<ScheduledJobResponse>();
 
         var jobGroups = await scheduler.GetJobGroupNames(ct);
 
@@ -46,17 +47,16 @@ public sealed class SchedulerController(ISchedulerFactory schedulerFactory) : Co
                 var nextFireTime = trigger?.GetNextFireTimeUtc();
                 var previousFireTime = trigger?.GetPreviousFireTimeUtc();
 
-                activeJobsList.Add(new
-                {
-                    JobId = jobKey.Name,
-                    AgentId = jobKey.Group,
-                    JobName = detail.JobDataMap.GetString("JobName") ?? "UnnamedTask",
-                    Language = detail.JobDataMap.GetString("Language") ?? "Python",
-                    CronExpression = cronTrigger?.CronExpressionString ?? "Unknown",
-                    PreviousRun = previousFireTime?.ToString("yyyy-MM-dd HH:mm:ss UTC"),
-                    NextRun = nextFireTime?.ToString("yyyy-MM-dd HH:mm:ss UTC"),
-                    Status = trigger is null ? "Orphaned" : (await scheduler.GetTriggerState(trigger.Key, ct)).ToString()
-                });
+                activeJobsList.Add(new ScheduledJobResponse(
+                    JobId: jobKey.Name,
+                    AgentId: jobKey.Group,
+                    JobName: detail.JobDataMap.GetString("JobName") ?? "UnnamedTask",
+                    Language: detail.JobDataMap.GetString("Language") ?? "Python",
+                    CronExpression: cronTrigger?.CronExpressionString ?? "Unknown",
+                    PreviousRun: previousFireTime?.ToString("yyyy-MM-dd HH:mm:ss UTC"),
+                    NextRun: nextFireTime?.ToString("yyyy-MM-dd HH:mm:ss UTC"),
+                    Status: trigger is null ? "Orphaned" : (await scheduler.GetTriggerState(trigger.Key, ct)).ToString()
+                ));
             }
         }
 
@@ -76,7 +76,7 @@ public sealed class SchedulerController(ISchedulerFactory schedulerFactory) : Co
     {
         if (string.IsNullOrWhiteSpace(agentId) || string.IsNullOrWhiteSpace(jobId))
         {
-            return BadRequest(new { Message = "Identifiers cannot be blank tokens." });
+            return Problem(detail: "Identifiers cannot be blank tokens.", statusCode: StatusCodes.Status400BadRequest);
         }
 
         var scheduler = await schedulerFactory.GetScheduler(ct);
@@ -85,7 +85,7 @@ public sealed class SchedulerController(ISchedulerFactory schedulerFactory) : Co
 
         if (!await scheduler.CheckExists(targetJobKey, ct))
         {
-            return NotFound(new { Message = $"No scheduled task found matching Key: {jobId} under Agent Partition: {agentId}" });
+            return Problem(detail: $"No scheduled task found matching Key: {jobId} under Agent Partition: {agentId}", statusCode: StatusCodes.Status404NotFound);
         }
 
         await scheduler.DeleteJob(targetJobKey, ct);

@@ -4,7 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
-using Sentium.Identity.Api.Contracts.Users;
+using Sentium.Identity.Core.Dtos;
 using Sentium.Identity.Api.Controllers;
 using Sentium.Identity.Application.Abstractions;
 using Sentium.Identity.Application.Users;
@@ -226,6 +226,7 @@ public sealed class AccountControllerTests
         var result = await _controller.UpdateProfile(request, ct);
 
         // Assert
-        result.Should().BeOfType<BadRequestObjectResult>();
+        result.Should().BeAssignableTo<ObjectResult>()
+            .Which.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
     }
 }

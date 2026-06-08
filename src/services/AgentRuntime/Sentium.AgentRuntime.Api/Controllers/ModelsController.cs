@@ -2,13 +2,13 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Sentium.AgentRuntime.Core.Agents;
+using Sentium.AgentRuntime.Core.Dtos;
 using Sentium.AgentRuntime.Core.Rag;
 using Sentium.AgentRuntime.Infrastructure;
 using Sentium.Infrastructure.Security;
 using Sentium.Shared.Constants;
 using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace Sentium.AgentRuntime.Api.Controllers;
 
@@ -91,7 +91,7 @@ public sealed class ModelsController(
         Response.ContentType = "application/x-ndjson";
         Response.Headers.CacheControl = "no-cache";
 
-        var payload = JsonSerializer.Serialize(new { name = request.Name, stream = true });
+        var payload = JsonSerializer.Serialize(new OllamaPullRequest(request.Name, Stream: true));
 
         using var pullContent = new StringContent(payload, Encoding.UTF8, "application/json");
 
@@ -155,7 +155,7 @@ public sealed class ModelsController(
 
         var ollamaClient = httpClientFactory.CreateClient(ResourceNames.Ollama);
 
-        var payload = JsonSerializer.Serialize(new { name });
+        var payload = JsonSerializer.Serialize(new OllamaDeleteRequest(name));
         using var request = new HttpRequestMessage(HttpMethod.Delete, new Uri(OllamaBase, "/api/delete"))
         {
             Content = new StringContent(payload, Encoding.UTF8, "application/json")
@@ -173,24 +173,3 @@ public sealed class ModelsController(
         return Ok(new DeleteModelResult(name, ollamaOptions.DefaultModel, resetCount));
     }
 }
-
-public sealed record PullModelRequest(string Name);
-
-public sealed record DeleteModelResult(string DeletedModel, string DefaultModel, int AgentsReset);
-
-public sealed record OllamaTagsResponse(
-    [property: JsonPropertyName("models")] List<OllamaModelInfo> Models);
-
-public sealed record OllamaModelInfo(
-    [property: JsonPropertyName("name")] string Name,
-    [property: JsonPropertyName("model")] string Model,
-    [property: JsonPropertyName("size")] long Size,
-    [property: JsonPropertyName("digest")] string Digest,
-    [property: JsonPropertyName("modified_at")] string ModifiedAt,
-    [property: JsonPropertyName("details")] OllamaModelDetails? Details);
-
-public sealed record OllamaModelDetails(
-    [property: JsonPropertyName("format")] string Format,
-    [property: JsonPropertyName("family")] string Family,
-    [property: JsonPropertyName("parameter_size")] string ParameterSize,
-    [property: JsonPropertyName("quantization_level")] string QuantizationLevel);
