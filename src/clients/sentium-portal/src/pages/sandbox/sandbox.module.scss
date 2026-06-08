@@ -266,7 +266,18 @@
   background: var(--bg-surface);
   border: 1px solid var(--border-subtle);
   border-radius: 14px;
-  overflow: hidden;
+  overflow: auto;
+}
+
+.runsTable::-webkit-scrollbar {
+  height: 5px;
+}
+.runsTable::-webkit-scrollbar-track {
+  background: transparent;
+}
+.runsTable::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 4px;
 }
 
 .runsTableHead,
@@ -276,6 +287,7 @@
   align-items: center;
   gap: 10px;
   padding: 0.65rem 1.1rem;
+  min-width: 820px;
 }
 
 .runsTableHead {
