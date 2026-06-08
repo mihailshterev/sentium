@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { BrainCircuit, Shield, ShieldAlert, Zap } from "lucide-react";
 import styles from "../sentinel.module.scss";
 import ModelSelector from "../../../components/ui/model-selector";
@@ -80,6 +81,7 @@ const SovereignControls = ({
         onChange={onIntentModelChange}
         disabled={isUpdating || !settings}
         className={styles.modelSelectorField}
+        variant="chip"
       />
     </div>
 
@@ -109,6 +111,7 @@ const SovereignControls = ({
         onKeyUp={commitAutonomy}
         disabled={isUpdating || !settings}
         className={styles.slider}
+        style={{ "--slider-fill": `${((displayAutonomy - 1) / 9) * 100}%` } as CSSProperties}
         data-testid="autonomy-slider"
       />
       <p className={styles.toggleDesc}>

@@ -1,3 +1,4 @@
+using Sentium.AgentRuntime.Core.Dtos;
 using Sentium.AgentRuntime.Core.Rag;
 using Sentium.AgentRuntime.Core.Rag.Models;
 using Sentium.Infrastructure.Security;
@@ -21,7 +22,6 @@ public sealed class SemanticMapController(
     IOptions<RagOptions> ragOptions,
     ICurrentUser currentUser) : ControllerBase
 {
-    private static readonly string[] TrackedCollections = ["knowledge_base", "agent_learnings", "user_memories"];
     private static readonly HashSet<string> ScopedCollections = ["knowledge_base", "agent_learnings", "user_memories"];
 
     /// <summary>
@@ -39,7 +39,7 @@ public sealed class SemanticMapController(
         [FromQuery] string? collection = null,
         CancellationToken ct = default)
     {
-        var collections = collection is not null ? [collection] : TrackedCollections;
+        var collections = collection is not null ? [collection] : KnowledgeCollections.All;
 
         var safeLimit = Math.Clamp(limit, 1, 500);
 
@@ -96,14 +96,14 @@ public sealed class SemanticMapController(
         }
         catch
         {
-            return StatusCode(503, new { error = "Embedding service is unavailable." });
+            return Problem(detail: "Embedding service is unavailable.", statusCode: StatusCodes.Status503ServiceUnavailable);
         }
 
         var allResults = new List<KnowledgeMapSearchResult>();
 
         var userScope = new KnowledgeScopeFilter(currentUser.UserId);
 
-        foreach (var col in TrackedCollections)
+        foreach (var col in KnowledgeCollections.All)
         {
             var scope = ScopedCollections.Contains(col) ? userScope : null;
             var hits = await vectorRepository.SearchAsync(col, embedding, topK, threshold, scope: scope, ct: ct);
@@ -133,48 +133,4 @@ public sealed class SemanticMapController(
             TotalMatches = ranked.Count
         });
     }
-}
-
-public sealed class KnowledgeMapNode
-{
-    public required string Id { get; init; }
-    public required string Content { get; init; }
-    public required string FullContent { get; init; }
-    public required string Source { get; init; }
-    public required string SourceType { get; init; }
-    public required string Collection { get; init; }
-    public DateTimeOffset CreatedAt { get; init; }
-    public IReadOnlyDictionary<string, string> Metadata { get; init; } = new Dictionary<string, string>();
-}
-
-public sealed class KnowledgeMapResponse
-{
-    public required IReadOnlyList<KnowledgeMapNode> Nodes { get; init; }
-    public int TotalNodes { get; init; }
-    public required IReadOnlyList<string> Collections { get; init; }
-}
-
-public sealed class KnowledgeMapSearchRequest
-{
-    public required string Query { get; init; }
-    public int TopK { get; init; } = 20;
-}
-
-public sealed class KnowledgeMapSearchResult
-{
-    public required string Id { get; init; }
-    public float Score { get; init; }
-    public required string Content { get; init; }
-    public required string FullContent { get; init; }
-    public required string Source { get; init; }
-    public required string SourceType { get; init; }
-    public required string Collection { get; init; }
-    public DateTimeOffset CreatedAt { get; init; }
-}
-
-public sealed class KnowledgeMapSearchResponse
-{
-    public required string Query { get; init; }
-    public required IReadOnlyList<KnowledgeMapSearchResult> Results { get; init; }
-    public int TotalMatches { get; init; }
 }

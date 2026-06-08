@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type CSSProperties } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CheckCircle, Cpu, Loader, Shield, Sparkles, X, Zap } from "lucide-react";
@@ -205,6 +205,7 @@ const SettingsEditor = ({
                       value={field.value}
                       onChange={field.onChange}
                       className={styles.modelSelectorField}
+                      variant="chip"
                     />
                   )}
                 />
@@ -221,6 +222,7 @@ const SettingsEditor = ({
                   max={1}
                   step={0.05}
                   className={styles.rangeField}
+                  style={{ "--slider-fill": `${currentTemperature * 100}%` } as CSSProperties}
                   {...register("agentTemperature", { valueAsNumber: true })}
                 />
                 <div className={styles.rangeLabels}>

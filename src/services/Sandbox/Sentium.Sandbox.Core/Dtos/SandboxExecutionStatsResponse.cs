@@ -1,4 +1,4 @@
-namespace Sentium.Sandbox.Api.Dtos;
+namespace Sentium.Sandbox.Core.Dtos;
 
 public sealed record SandboxExecutionStatsResponse
 {

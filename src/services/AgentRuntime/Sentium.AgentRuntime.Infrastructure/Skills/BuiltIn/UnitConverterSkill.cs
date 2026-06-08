@@ -10,6 +10,8 @@ namespace Sentium.AgentRuntime.Infrastructure.Skills.BuiltIn;
 /// </summary>
 internal sealed class UnitConverterSkill : AgentClassSkill<UnitConverterSkill>
 {
+    private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
+
     internal static BuiltInSkillInfo Descriptor { get; } = new(
         "unit-converter",
         "Convert between common measurement units (distance, weight, temperature, volume). Use when the user asks to convert miles, kilometers, pounds, kilograms, Celsius, Fahrenheit, liters, or gallons.",
@@ -77,7 +79,7 @@ internal sealed class UnitConverterSkill : AgentClassSkill<UnitConverterSkill>
     private static string ConvertUnits(double value, double factor)
     {
         var result = Math.Round(value * factor, 4);
-        return JsonSerializer.Serialize(new { value, factor, result });
+        return JsonSerializer.Serialize(new UnitConversionResult(value, factor, result), JsonOptions);
     }
 
     [AgentSkillScript("convert-temperature")]
@@ -89,6 +91,10 @@ internal sealed class UnitConverterSkill : AgentClassSkill<UnitConverterSkill>
             : Math.Round((value - 32) * 5.0 / 9.0, 2);
 
         var toUnit = fromUnit.Equals("C", StringComparison.OrdinalIgnoreCase) ? "F" : "C";
-        return JsonSerializer.Serialize(new { value, fromUnit, result, toUnit });
+        return JsonSerializer.Serialize(new TemperatureConversionResult(value, fromUnit, result, toUnit), JsonOptions);
     }
+
+    private sealed record UnitConversionResult(double Value, double Factor, double Result);
+
+    private sealed record TemperatureConversionResult(double Value, string FromUnit, double Result, string ToUnit);
 }

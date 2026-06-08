@@ -2,7 +2,7 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
-using Sentium.Identity.Api.Contracts.Roles;
+using Sentium.Identity.Core.Dtos;
 using Sentium.Identity.Api.Controllers;
 using Sentium.Identity.Application.Abstractions;
 using System.Security.Claims;
@@ -102,7 +102,8 @@ public sealed class RolesControllerTests
         var result = await _controller.AssignRole(request, ct);
 
         // Assert
-        result.Should().BeOfType<BadRequestObjectResult>();
+        result.Should().BeAssignableTo<ObjectResult>()
+            .Which.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
     }
 
     [Fact]
@@ -138,6 +139,7 @@ public sealed class RolesControllerTests
         var result = await _controller.RemoveRole(request, ct);
 
         // Assert
-        result.Should().BeOfType<BadRequestObjectResult>();
+        result.Should().BeAssignableTo<ObjectResult>()
+            .Which.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
     }
 }
