@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Logging;
 using Sentium.Infrastructure.Messaging;
@@ -50,8 +51,6 @@ public sealed class SettingsService(
         }
 
         var scopeUserId = ScopeUserId(descriptor, userId);
-        var value = descriptor.Deserialize(payload);
-        await descriptor.ValidateAsync(value, serviceProvider, ct);
 
         var isNew = false;
         var entity = await repository.FindAsync(scopeUserId, ct);
@@ -60,6 +59,10 @@ public sealed class SettingsService(
             entity = new SystemSettings { UserId = scopeUserId };
             isNew = true;
         }
+
+        var merged = MergePayload(descriptor.Read(entity.Settings), payload);
+        var value = descriptor.Deserialize(merged);
+        await descriptor.ValidateAsync(value, serviceProvider, ct);
 
         descriptor.Write(entity.Settings, value);
         entity.UpdatedAt = DateTimeOffset.UtcNow;
@@ -81,6 +84,21 @@ public sealed class SettingsService(
         logger.LogInformation("Settings '{Key}' updated for {Scope} by {By}; cache invalidated", descriptor.Key, scopeUserId?.ToString() ?? "global", updatedBy ?? "system");
 
         return new SettingsEnvelope(descriptor.Key, JsonSerializer.SerializeToElement(value, value.GetType(), WebOptions), entity.UpdatedAt, entity.UpdatedBy);
+    }
+
+    private static JsonElement MergePayload(object current, JsonElement patch)
+    {
+        if (JsonSerializer.SerializeToNode(current, current.GetType(), WebOptions) is not JsonObject node)
+        {
+            return patch;
+        }
+
+        foreach (var prop in patch.EnumerateObject())
+        {
+            node[prop.Name] = prop.Value.Deserialize<JsonNode>(WebOptions);
+        }
+
+        return node.Deserialize<JsonElement>(WebOptions);
     }
 
     private async Task<SettingsEnvelope> LoadAsync(ISettingsDescriptor descriptor, Guid? scopeUserId, CancellationToken ct)
