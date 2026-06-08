@@ -205,6 +205,7 @@ const SettingsEditor = ({
                       value={field.value}
                       onChange={field.onChange}
                       className={styles.modelSelectorField}
+                      variant="chip"
                     />
                   )}
                 />

@@ -80,6 +80,7 @@ const SovereignControls = ({
         onChange={onIntentModelChange}
         disabled={isUpdating || !settings}
         className={styles.modelSelectorField}
+        variant="chip"
       />
     </div>
 
