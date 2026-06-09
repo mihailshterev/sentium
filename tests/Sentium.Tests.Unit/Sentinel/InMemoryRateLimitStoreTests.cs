@@ -34,7 +34,7 @@ public sealed class InMemoryRateLimitStoreTests
             _sut.TryConsume("agent-X", window, max);
         }
 
-        // Act — one more exceeds the limit
+        // Act - one more exceeds the limit
         var result = _sut.TryConsume("agent-X", window, max);
 
         // Assert
@@ -51,7 +51,7 @@ public sealed class InMemoryRateLimitStoreTests
         _sut.TryConsume("agent-A", window, 1);
         _sut.TryConsume("agent-A", window, 1); // over limit
 
-        // Act — agent-B should still be allowed
+        // Act - agent-B should still be allowed
         var result = _sut.TryConsume("agent-B", window, 1);
 
         // Assert

@@ -56,7 +56,7 @@ public sealed class InMemoryAuditLogTests
         var ct = TestContext.Current.CancellationToken;
         await _sut.RecordAsync(MakeRecord(), ct);
 
-        // Act — request more than what exists
+        // Act - request more than what exists
         var result = await _sut.GetRecentAsync(999, ct);
 
         // Assert
