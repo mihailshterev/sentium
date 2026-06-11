@@ -7,7 +7,7 @@ namespace Sentium.Sentinel.Core.Audit;
 public interface IAuditLog
 {
     /// <summary>
-    /// Records a decision asynchronously. Never throws — failures are silently swallowed to avoid disrupting the caller.
+    /// Records a decision asynchronously.
     /// </summary>
     ValueTask RecordAsync(AuditRecord record, CancellationToken ct = default);
 

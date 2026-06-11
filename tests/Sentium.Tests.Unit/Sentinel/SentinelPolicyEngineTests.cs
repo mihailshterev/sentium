@@ -4,8 +4,10 @@ using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using Sentium.Sentinel.Application.Engine;
+using Sentium.Sentinel.Application.Engine.Policies;
 using Sentium.Sentinel.Core.Audit;
 using Sentium.Sentinel.Core.Policies;
+using Sentium.Sentinel.Core.Settings;
 using Xunit;
 
 namespace Sentium.Tests.Unit.Sentinel;
@@ -125,6 +127,30 @@ public sealed class SentinelPolicyEngineTests
 
         // Assert
         result.AlignmentVerdict.Should().Be("Aligned");
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_LockdownShortCircuits_BeforeLaterPolicies()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+
+        var lockdown = new LockdownPolicy(
+            new FakePdpRuntimeSettingsProvider(new PdpRuntimeSettings { LockdownMode = true }));
+
+        var laterPolicy = Substitute.For<IPdpPolicy>();
+        laterPolicy.Name.Returns("Later");
+
+        // Lockdown registered first, mirroring production registration order.
+        var engine = MakeEngine(lockdown, laterPolicy);
+
+        // Act
+        var result = await engine.EvaluateAsync(MakeRequest(), ct);
+
+        // Assert
+        result.Allowed.Should().BeFalse();
+        result.Risk.Should().Be(PolicyRiskLevel.Critical);
+        await laterPolicy.DidNotReceive().EvaluateAsync(Arg.Any<PolicyRequest>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]

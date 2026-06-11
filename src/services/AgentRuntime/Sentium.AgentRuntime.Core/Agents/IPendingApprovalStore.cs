@@ -13,7 +13,10 @@ public sealed record PendingApproval(
     string OriginalUserPrompt = "",
     string CorrelationId = "",
     Guid? UserId = null,
-    string AgentName = "");
+    string AgentName = "",
+    string? PartialResponse = null,
+    string? PartialThought = null,
+    IReadOnlyList<string>? PartialToolCalls = null);
 
 public interface IPendingApprovalStore
 {

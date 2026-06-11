@@ -37,6 +37,8 @@ public static class ServiceCollectionExtensions
         RegisterAgent<OrchestratorAgent>(services, AgentRole.Orchestrator);
         RegisterAgent<SummaryAgent>(services, AgentRole.Summarizer);
         RegisterAgent<ValidationAgent>(services, AgentRole.Validator);
+        RegisterAgent<ResearchAnalyst>(services, AgentRole.ResearchAnalyst);
+        RegisterAgent<SoftwareEngineer>(services, AgentRole.SoftwareEngineer);
     }
 
     private static void RegisterAgent<T>(IServiceCollection services, string name) where T : class, IAgent

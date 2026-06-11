@@ -32,8 +32,9 @@ builder.AddRedisDistributedCache(ResourceNames.Redis);
 builder.Services.AddHybridCache();
 
 builder.AddSentiumAuditLogging();
-builder.AddInfrastructure();
+
 builder.Services.AddApplication(builder.Configuration);
+builder.AddInfrastructure();
 
 var app = builder.Build();
 

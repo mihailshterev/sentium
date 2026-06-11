@@ -18,6 +18,14 @@ internal sealed class HttpSentinelGateway(
 {
     private readonly SandboxOptions _options = options.Value;
 
+    /// <summary>
+    /// Upper bound on the code forwarded to the PDP for content inspection. Mirrors the
+    /// AgentRuntime tool-payload window so the sensitive-data egress scan can inspect what is
+    /// actually being executed without shipping arbitrarily large source (which would also risk
+    /// tripping the scan's regex timeout).
+    /// </summary>
+    private const int MaxScanChars = 8 * 1024;
+
     /// <inheritdoc />
     public async Task<SentinelAuthorizationResult> AuthorizeExecutionAsync(ExecutionRequest request, CancellationToken ct)
     {
@@ -34,7 +42,10 @@ internal sealed class HttpSentinelGateway(
             {
                 ["language"] = request.Language.ToString(),
                 ["codeLength"] = request.Code.Length.ToString(),
-                ["fileContextCount"] = request.FileContext.Count.ToString()
+                ["fileContextCount"] = request.FileContext.Count.ToString(),
+                // Forward the (capped) source so content-inspection layers (sensitive-data egress)
+                // can scan what is being executed, not just its shape.
+                ["payload"] = request.Code.Length > MaxScanChars ? request.Code[..MaxScanChars] : request.Code
             }
         };
 

@@ -17,6 +17,14 @@ vi.mock("../../stores/assistant-conversation-store", () => ({
   useConversationStore: () => storeState,
 }));
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const fetchConversation = vi.fn((_id: string) => new Promise(() => {}));
+vi.mock("../../services/agentRuntime.service", () => ({
+  fetchConversation: (id: string) => fetchConversation(id),
+  fetchWorkspaces: vi.fn().mockResolvedValue([]),
+  fetchWorkspaceFiles: vi.fn().mockResolvedValue([]),
+}));
+
 const createConversation = vi.fn().mockResolvedValue({ id: "new-c" });
 const deleteConversationMutate = vi.fn();
 vi.mock("../../hooks/useConversations", () => ({
@@ -67,6 +75,8 @@ beforeEach(() => {
   respondToApproval.mockReset();
   retryLastMessage.mockReset();
   createConversation.mockClear();
+  fetchConversation.mockClear();
+  fetchConversation.mockImplementation(() => new Promise(() => {}));
   routeParams = {};
   for (const k of Object.keys(storeState)) delete storeState[k];
   setStore();
@@ -149,7 +159,63 @@ describe("Assistant page", () => {
     });
     renderPage();
     fireEvent.click(screen.getByText("Approve"));
-    expect(respondToApproval).toHaveBeenCalledWith({ aiMsgId: "a1", requestId: "req-1", approved: true });
+    expect(respondToApproval).toHaveBeenCalledWith({
+      aiMsgId: "a1",
+      requestId: "req-1",
+      approved: true,
+      conversationId: "c1",
+    });
+  });
+
+  it("routes a tool approval to the conversation it belongs to", () => {
+    setStore({
+      activeConversationId: "c-other",
+      messages: [
+        {
+          id: "a1",
+          role: "assistant",
+          content: "",
+          timestamp: new Date(),
+          pendingApproval: { toolName: "delete", requestId: "req-1", arguments: {}, conversationId: "c-origin" },
+        },
+      ],
+    });
+    renderPage();
+    fireEvent.click(screen.getByText("Approve"));
+    expect(respondToApproval).toHaveBeenCalledWith({
+      aiMsgId: "a1",
+      requestId: "req-1",
+      approved: true,
+      conversationId: "c-origin",
+    });
+  });
+
+  it("waits while the routed conversation is streaming, then refetches it when the stream ends", () => {
+    routeParams = { conversationId: "c2" };
+    setStore({ activeConversationId: "c1", isStreaming: true, streamingConversationId: "c2" });
+    const { rerender } = renderPage();
+    expect(fetchConversation).not.toHaveBeenCalled();
+    expect(screen.getByText(/loading conversation/i)).toBeInTheDocument();
+
+    setStore({ activeConversationId: "c1", isStreaming: false, streamingConversationId: null });
+    rerender(
+      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
+        <Assistant />
+      </QueryClientProvider>,
+    );
+    expect(fetchConversation).toHaveBeenCalledWith("c2");
+  });
+
+  it("keeps the input and shows an error when conversation creation fails", async () => {
+    createConversation.mockRejectedValueOnce(new Error("boom"));
+    setStore({ activeConversationId: null });
+    renderPage();
+    const textarea = screen.getByPlaceholderText("Ask Sentium Assistant...");
+    fireEvent.change(textarea, { target: { value: "hello" } });
+    fireEvent.submit(textarea.closest("form")!);
+    await waitFor(() => expect(screen.getByText(/failed to create a conversation/i)).toBeInTheDocument());
+    expect(sendMessage).not.toHaveBeenCalled();
+    expect((textarea as HTMLTextAreaElement).value).toBe("hello");
   });
 
   it("retries the last message from an error banner", () => {
