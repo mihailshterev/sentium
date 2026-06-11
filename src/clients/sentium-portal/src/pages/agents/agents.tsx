@@ -64,7 +64,7 @@ const Agents = () => {
       <PageHeader
         icon={<Bot size={20} className={styles.headerIcon} />}
         title="Agent Registry"
-        subtitle="Register and manage autonomous agents in the pipeline"
+        subtitle="Register and manage autonomous agents"
         right={
           <div className={styles.headerBadge}>
             <Bot size={14} />
