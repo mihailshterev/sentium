@@ -66,15 +66,20 @@ describe("MessageBubble", () => {
     renderBubble(
       base({
         content: "",
-        pendingApproval: { toolName: "delete_file", requestId: "req-1", arguments: { path: "/x" } },
+        pendingApproval: {
+          toolName: "delete_file",
+          requestId: "req-1",
+          arguments: { path: "/x" },
+          conversationId: "c1",
+        },
       }),
       { onApproval },
     );
     expect(screen.getByText("delete_file")).toBeInTheDocument();
     fireEvent.click(screen.getByText("Approve"));
-    expect(onApproval).toHaveBeenCalledWith("m1", "req-1", true);
+    expect(onApproval).toHaveBeenCalledWith("m1", "req-1", true, "c1");
     fireEvent.click(screen.getByText("Deny"));
-    expect(onApproval).toHaveBeenCalledWith("m1", "req-1", false);
+    expect(onApproval).toHaveBeenCalledWith("m1", "req-1", false, "c1");
   });
 
   it("shows the status cycler while typing an empty assistant message", () => {

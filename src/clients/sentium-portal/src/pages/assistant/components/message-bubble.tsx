@@ -36,7 +36,7 @@ interface MessageBubbleProps {
   copiedMessageId: string | null;
   onToggleThought: (id: string) => void;
   onCopyMessage: (content: string, id: string) => void;
-  onApproval: (aiMsgId: string, requestId: string, approved: boolean) => void;
+  onApproval: (aiMsgId: string, requestId: string, approved: boolean, conversationId?: string) => void;
   onRetry?: () => void;
 }
 
@@ -141,14 +141,18 @@ const MessageBubble = ({
             <div className={styles.approvalActions}>
               <button
                 className={styles.approvalDeny}
-                onClick={() => onApproval(msg.id, msg.pendingApproval!.requestId, false)}
+                onClick={() =>
+                  onApproval(msg.id, msg.pendingApproval!.requestId, false, msg.pendingApproval!.conversationId)
+                }
                 disabled={isTyping}
               >
                 Deny
               </button>
               <button
                 className={styles.approvalApprove}
-                onClick={() => onApproval(msg.id, msg.pendingApproval!.requestId, true)}
+                onClick={() =>
+                  onApproval(msg.id, msg.pendingApproval!.requestId, true, msg.pendingApproval!.conversationId)
+                }
                 disabled={isTyping}
               >
                 Approve

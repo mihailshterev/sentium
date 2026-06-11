@@ -2,6 +2,7 @@ import { create } from "zustand";
 import type { ConversationMessage } from "../types/assistant";
 import { DEFAULT_ASSISTANT_MODEL } from "../utils/constants";
 import { sendChatMessage, approveToolCall } from "../services/agentRuntime.service";
+import { handleUnauthorized } from "../api/client";
 
 interface SendMessageArgs {
   conversationId: string | null;
@@ -13,7 +14,28 @@ interface RespondToApprovalArgs {
   aiMsgId: string;
   requestId: string;
   approved: boolean;
+  conversationId: string | null;
 }
+
+class StreamStallError extends Error {
+  constructor() {
+    super("Response timed out.");
+    this.name = "StreamStallError";
+  }
+}
+
+const isAbortError = (err: unknown): boolean =>
+  typeof err === "object" && err !== null && (err as { name?: string }).name === "AbortError";
+
+const streamErrorMessage = (err: unknown, fallback: string): string => {
+  if (err instanceof StreamStallError) {
+    return "Response timed out. Please try again.";
+  }
+  if (err instanceof Error && err.message.startsWith("Session expired")) {
+    return err.message;
+  }
+  return fallback;
+};
 
 interface ConversationState {
   activeConversationId: string | null;
@@ -49,8 +71,11 @@ export const useConversationStore = create<ConversationState>((set, get) => {
     controller: AbortController,
     userMsgId?: string,
   ): Promise<boolean> => {
+    if (response.status === 401) {
+      handleUnauthorized();
+    }
     if (!response.ok) {
-      throw new Error("Network response was not ok");
+      throw new Error(`Assistant request failed (${response.status})`);
     }
 
     const reader = response.body?.getReader();
@@ -62,10 +87,15 @@ export const useConversationStore = create<ConversationState>((set, get) => {
     const { updateLastMessage, setEnhancedPrompt } = get();
     let leftover = "";
 
-    let stallTimer = setTimeout(() => controller.abort(), STALL_TIMEOUT_MS);
+    let stalled = false;
+    const abortOnStall = () => {
+      stalled = true;
+      controller.abort();
+    };
+    let stallTimer = setTimeout(abortOnStall, STALL_TIMEOUT_MS);
     const resetStallTimer = () => {
       clearTimeout(stallTimer);
-      stallTimer = setTimeout(() => controller.abort(), STALL_TIMEOUT_MS);
+      stallTimer = setTimeout(abortOnStall, STALL_TIMEOUT_MS);
     };
 
     try {
@@ -131,6 +161,11 @@ export const useConversationStore = create<ConversationState>((set, get) => {
           }
         }
       }
+    } catch (err) {
+      if (stalled) {
+        throw new StreamStallError();
+      }
+      throw err;
     } finally {
       clearTimeout(stallTimer);
     }
@@ -173,7 +208,13 @@ export const useConversationStore = create<ConversationState>((set, get) => {
           updated = { ...msg, toolCalls: [...(msg.toolCalls || []), appendContent] };
         } else if (type === "approval") {
           try {
-            updated = { ...msg, pendingApproval: JSON.parse(appendContent) };
+            updated = {
+              ...msg,
+              pendingApproval: {
+                ...JSON.parse(appendContent),
+                conversationId: state.streamingConversationId ?? undefined,
+              },
+            };
           } catch {
             return state;
           }
@@ -235,6 +276,7 @@ export const useConversationStore = create<ConversationState>((set, get) => {
         timestamp: new Date(),
       });
 
+      controllers.get(STREAM_KEY)?.abort();
       const controller = new AbortController();
       controllers.set(STREAM_KEY, controller);
       set({ isStreaming: true, streamingConversationId: conversationId });
@@ -252,12 +294,14 @@ export const useConversationStore = create<ConversationState>((set, get) => {
 
         await consumeStream(response, aiMsgId, controller, userMsg.id);
       } catch (err) {
-        if (!(err instanceof Error && err.name === "AbortError")) {
-          get().setMessageError(aiMsgId, "Connection to AI node failed.");
+        if (!isAbortError(err)) {
+          get().setMessageError(aiMsgId, streamErrorMessage(err, "Connection to AI node failed."));
         }
       } finally {
-        controllers.delete(STREAM_KEY);
-        set({ isStreaming: false, streamingConversationId: null });
+        if (controllers.get(STREAM_KEY) === controller) {
+          controllers.delete(STREAM_KEY);
+          set({ isStreaming: false, streamingConversationId: null });
+        }
       }
     },
 
@@ -273,24 +317,27 @@ export const useConversationStore = create<ConversationState>((set, get) => {
       void get().sendMessage({ conversationId: activeConversationId, model, userContent: lastUser.content });
     },
 
-    respondToApproval: async ({ aiMsgId, requestId, approved }) => {
+    respondToApproval: async ({ aiMsgId, requestId, approved, conversationId }) => {
       const { clearPendingApproval } = get();
       clearPendingApproval(aiMsgId);
 
+      controllers.get(STREAM_KEY)?.abort();
       const controller = new AbortController();
       controllers.set(STREAM_KEY, controller);
-      set({ isStreaming: true, streamingConversationId: get().activeConversationId });
+      set({ isStreaming: true, streamingConversationId: conversationId });
 
       try {
         const response = await approveToolCall(requestId, approved, controller.signal);
         await consumeStream(response, aiMsgId, controller);
       } catch (err) {
-        if (!(err instanceof Error && err.name === "AbortError")) {
-          get().setMessageError(aiMsgId, "Failed to process approval. Please try again.");
+        if (!isAbortError(err)) {
+          get().setMessageError(aiMsgId, streamErrorMessage(err, "Failed to process approval. Please try again."));
         }
       } finally {
-        controllers.delete(STREAM_KEY);
-        set({ isStreaming: false, streamingConversationId: null });
+        if (controllers.get(STREAM_KEY) === controller) {
+          controllers.delete(STREAM_KEY);
+          set({ isStreaming: false, streamingConversationId: null });
+        }
       }
     },
 

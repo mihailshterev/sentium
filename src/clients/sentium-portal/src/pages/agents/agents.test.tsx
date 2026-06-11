@@ -227,15 +227,14 @@ describe("Agents delete", () => {
     expect(deleteAgent).not.toHaveBeenCalled();
   });
 
-  it("calls alert when deleteAgent fails", async () => {
-    vi.stubGlobal("alert", vi.fn());
+  it("shows an error message when deleteAgent fails", async () => {
     const deleteAgent = vi.fn().mockImplementation((_id, { onError } = {}) => onError?.(new Error("Delete failed")));
     vi.spyOn(useAgentsHook, "default").mockReturnValue({ ...defaultAgentsHook, deleteAgent });
     renderAgents();
     fireEvent.click(screen.getByTitle("Delete agent"));
     const dialog = await screen.findByRole("dialog");
     fireEvent.click(within(dialog).getByRole("button", { name: /delete agent/i }));
-    expect(vi.mocked(window.alert)).toHaveBeenCalledWith("Delete failed");
+    expect(screen.getByText("Delete failed")).toBeInTheDocument();
   });
 });
 

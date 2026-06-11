@@ -3,6 +3,17 @@ import { act } from "@testing-library/react";
 import { useConversationStore } from "./assistant-conversation-store";
 import { DEFAULT_ASSISTANT_MODEL } from "../utils/constants";
 import * as agentRuntimeService from "../services/agentRuntime.service";
+import { handleUnauthorized } from "../api/client";
+
+vi.mock("../api/client", async (orig) => {
+  const mod = await orig<typeof import("../api/client")>();
+  return {
+    ...mod,
+    handleUnauthorized: vi.fn(() => {
+      throw new Error("Session expired. Please log in again.");
+    }),
+  };
+});
 
 const sseResponse = (lines: string[]): Response => {
   const encoder = new TextEncoder();
@@ -12,6 +23,15 @@ const sseResponse = (lines: string[]): Response => {
         controller.enqueue(encoder.encode(`data: ${line}\n`));
       }
       controller.close();
+    },
+  });
+  return { ok: true, body: stream } as unknown as Response;
+};
+
+const hangingResponse = (signal?: AbortSignal | null): Response => {
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      signal?.addEventListener("abort", () => controller.error(new DOMException("Aborted", "AbortError")));
     },
   });
   return { ok: true, body: stream } as unknown as Response;
@@ -105,6 +125,111 @@ describe("sendMessage streaming", () => {
     const ai = useConversationStore.getState().messages[1];
     expect(ai.pendingApproval).toEqual({ toolName: "delete", requestId: "req-1", arguments: {} });
   });
+
+  it("stamps the streaming conversation onto a pending approval", async () => {
+    const approval = JSON.stringify({ toolName: "delete", requestId: "req-1", arguments: {} });
+    vi.spyOn(agentRuntimeService, "sendChatMessage").mockResolvedValue(
+      sseResponse([JSON.stringify({ type: "approval_request", message: { content: approval } })]),
+    );
+
+    await act(async () => {
+      await useConversationStore.getState().sendMessage({ conversationId: "c-9", model: "g", userContent: "Hi" });
+    });
+
+    const ai = useConversationStore.getState().messages[1];
+    expect(ai.pendingApproval?.conversationId).toBe("c-9");
+  });
+
+  it("reports a timeout error when the stream stalls", async () => {
+    vi.useFakeTimers();
+    try {
+      vi.spyOn(agentRuntimeService, "sendChatMessage").mockImplementation(async (_payload, signal) =>
+        hangingResponse(signal),
+      );
+
+      const pending = useConversationStore.getState().sendMessage({
+        conversationId: "c1",
+        model: "g",
+        userContent: "Hi",
+      });
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(120_000);
+        await pending;
+      });
+
+      const ai = useConversationStore.getState().messages[1];
+      expect(ai.error).toBe("Response timed out. Please try again.");
+      expect(useConversationStore.getState().isStreaming).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("stays silent when the user stops the stream", async () => {
+    vi.spyOn(agentRuntimeService, "sendChatMessage").mockImplementation(async (_payload, signal) =>
+      hangingResponse(signal),
+    );
+
+    const pending = useConversationStore.getState().sendMessage({
+      conversationId: "c1",
+      model: "g",
+      userContent: "Hi",
+    });
+
+    await act(async () => {
+      await Promise.resolve();
+      useConversationStore.getState().stopStreaming();
+      await pending;
+    });
+
+    const ai = useConversationStore.getState().messages[1];
+    expect(ai.error).toBeUndefined();
+    expect(useConversationStore.getState().isStreaming).toBe(false);
+  });
+
+  it("redirects via handleUnauthorized when the stream responds 401", async () => {
+    vi.spyOn(agentRuntimeService, "sendChatMessage").mockResolvedValue({
+      ok: false,
+      status: 401,
+    } as unknown as Response);
+
+    await act(async () => {
+      await useConversationStore.getState().sendMessage({ conversationId: "c1", model: "g", userContent: "Hi" });
+    });
+
+    expect(handleUnauthorized).toHaveBeenCalled();
+    const ai = useConversationStore.getState().messages[1];
+    expect(ai.error).toBe("Session expired. Please log in again.");
+    expect(useConversationStore.getState().isStreaming).toBe(false);
+  });
+
+  it("aborts the previous stream when a new message is sent", async () => {
+    const spy = vi
+      .spyOn(agentRuntimeService, "sendChatMessage")
+      .mockImplementationOnce(async (_payload, signal) => hangingResponse(signal))
+      .mockImplementationOnce(async () =>
+        sseResponse([
+          JSON.stringify({ type: "content", message: { content: "second" } }),
+          JSON.stringify({ type: "done" }),
+        ]),
+      );
+
+    const first = useConversationStore.getState().sendMessage({ conversationId: "a", model: "g", userContent: "1" });
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      await useConversationStore.getState().sendMessage({ conversationId: "b", model: "g", userContent: "2" });
+      await first;
+    });
+
+    const firstSignal = spy.mock.calls[0][1];
+    expect(firstSignal?.aborted).toBe(true);
+    expect(useConversationStore.getState().isStreaming).toBe(false);
+    expect(useConversationStore.getState().streamingConversationId).toBeNull();
+  });
 });
 
 describe("respondToApproval", () => {
@@ -123,11 +248,42 @@ describe("respondToApproval", () => {
     );
 
     await act(async () => {
-      await useConversationStore.getState().respondToApproval({ aiMsgId: "ai-1", requestId: "req-1", approved: true });
+      await useConversationStore.getState().respondToApproval({
+        aiMsgId: "ai-1",
+        requestId: "req-1",
+        approved: true,
+        conversationId: "c1",
+      });
     });
 
     expect(agentRuntimeService.approveToolCall).toHaveBeenCalledWith("req-1", true, expect.anything());
     expect(useConversationStore.getState().messages[0].content).toBe("done it");
+  });
+
+  it("binds the resumed stream to the approval's conversation, not the active one", async () => {
+    act(() =>
+      useConversationStore.setState({
+        activeConversationId: "c-viewing",
+        messages: [{ id: "ai-1", role: "assistant", content: "", timestamp: new Date() }],
+      }),
+    );
+
+    let observedStreamingId: string | null = null;
+    vi.spyOn(agentRuntimeService, "approveToolCall").mockImplementation(async () => {
+      observedStreamingId = useConversationStore.getState().streamingConversationId;
+      return sseResponse([JSON.stringify({ type: "done" })]);
+    });
+
+    await act(async () => {
+      await useConversationStore.getState().respondToApproval({
+        aiMsgId: "ai-1",
+        requestId: "req-1",
+        approved: true,
+        conversationId: "c-origin",
+      });
+    });
+
+    expect(observedStreamingId).toBe("c-origin");
   });
 });
 

@@ -63,7 +63,7 @@ describe("Navbar brand", () => {
   it("renders the version footer", () => {
     setUser([]);
     renderNav();
-    expect(screen.getByText(/v0\.1\.0/)).toBeInTheDocument();
+    expect(screen.getByText(/v1\.0\.0/)).toBeInTheDocument();
   });
 });
 

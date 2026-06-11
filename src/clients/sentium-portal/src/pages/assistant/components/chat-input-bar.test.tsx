@@ -69,6 +69,13 @@ describe("ChatInputBar", () => {
     expect(onSetModel).toHaveBeenCalledWith("qwen");
   });
 
+  it("exposes an accessible name and keyboard hints", () => {
+    renderBar();
+    expect(screen.getByRole("textbox", { name: "Chat message" })).toBeInTheDocument();
+    expect(screen.getByText(/Enter: Send/)).toBeInTheDocument();
+    expect(screen.getByText(/Shift\+Enter: New line/)).toBeInTheDocument();
+  });
+
   it("falls back to a free-text model input when there are no models", () => {
     const onSetModel = vi.fn();
     renderBar({ models: [], model: "", onSetModel });

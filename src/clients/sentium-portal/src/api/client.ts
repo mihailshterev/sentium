@@ -31,6 +31,16 @@ interface RequestOptions extends Omit<RequestInit, "body"> {
   body?: unknown;
 }
 
+export const handleUnauthorized = (): never => {
+  useAuthStore.setState({ user: null, status: AUTH_STATUS.UNAUTHENTICATED });
+
+  if (!window.location.pathname.includes("/login")) {
+    window.location.href = `${BFF_BASE}/login?returnUrl=${encodeURIComponent(window.location.pathname)}`;
+  }
+
+  throw new Error("Session expired. Please log in again.");
+};
+
 async function request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
   const { body, ...restOptions } = options;
 
@@ -50,13 +60,7 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
   const response = await fetch(`${BASE_URL}${endpoint}`, config);
 
   if (response.status === 401) {
-    useAuthStore.setState({ user: null, status: AUTH_STATUS.UNAUTHENTICATED });
-
-    if (!window.location.pathname.includes("/login")) {
-      window.location.href = `${BFF_BASE}/login?returnUrl=${encodeURIComponent(window.location.pathname)}`;
-    }
-
-    throw new Error("Session expired. Please log in again.");
+    handleUnauthorized();
   }
 
   if (!response.ok) {

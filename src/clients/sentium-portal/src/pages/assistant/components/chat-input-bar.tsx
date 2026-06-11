@@ -73,6 +73,7 @@ const ChatInputBar = ({
             onKeyDown={onKeyDown}
             placeholder={isTyping ? "Generating..." : "Ask Sentium Assistant..."}
             className={styles.textarea}
+            aria-label="Chat message"
             autoComplete="off"
             disabled={isTyping}
             rows={1}
@@ -142,7 +143,10 @@ const ChatInputBar = ({
         )}
       </form>
 
-      <div className={styles.inputFooter}>Protected by Sentium Security Protocols &nbsp;·&nbsp; Ctrl+K: New chat</div>
+      <div className={styles.inputFooter}>
+        Protected by Sentium Security Protocols &nbsp;·&nbsp; Ctrl+K: New chat &nbsp;·&nbsp; Enter: Send &nbsp;·&nbsp;
+        Shift+Enter: New line
+      </div>
     </div>
   );
 };
