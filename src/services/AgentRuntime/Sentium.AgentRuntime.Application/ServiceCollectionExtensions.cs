@@ -34,12 +34,11 @@ public static class ServiceCollectionExtensions
     private static void RegisterNativeAgents(this IServiceCollection services)
     {
         RegisterAgent<GeneralAssistant>(services, AgentRole.GeneralAssistant);
-        RegisterAgent<PlannerAgent>(services, AgentRole.Planner);
-        RegisterAgent<SecurityAnalyst>(services, AgentRole.SecurityAnalyst);
+        RegisterAgent<OrchestratorAgent>(services, AgentRole.Orchestrator);
         RegisterAgent<SummaryAgent>(services, AgentRole.Summarizer);
-        RegisterAgent<ThreatIntelAgent>(services, AgentRole.ThreatIntel);
-        RegisterAgent<ForensicsAgent>(services, AgentRole.Forensics);
         RegisterAgent<ValidationAgent>(services, AgentRole.Validator);
+        RegisterAgent<ResearchAnalyst>(services, AgentRole.ResearchAnalyst);
+        RegisterAgent<SoftwareEngineer>(services, AgentRole.SoftwareEngineer);
     }
 
     private static void RegisterAgent<T>(IServiceCollection services, string name) where T : class, IAgent

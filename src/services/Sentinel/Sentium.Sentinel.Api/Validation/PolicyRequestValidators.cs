@@ -13,24 +13,3 @@ public sealed class PolicyEvaluationRequestValidator : AbstractValidator<PolicyE
             .WithMessage(x => $"Unknown resource type '{x.ResourceType}'. Valid values: {string.Join(", ", Enum.GetNames<ResourceType>())}");
     }
 }
-
-public sealed class UpdatePdpSettingsRequestValidator : AbstractValidator<UpdatePdpSettingsRequest>
-{
-    public UpdatePdpSettingsRequestValidator()
-    {
-        RuleFor(x => x.AutonomyLevel)
-            .InclusiveBetween(1, 10)
-            .When(x => x.AutonomyLevel.HasValue)
-            .WithMessage("AutonomyLevel must be between 1 and 10.");
-
-        RuleFor(x => x.RateLimitMaxRequests)
-            .GreaterThanOrEqualTo(1)
-            .When(x => x.RateLimitMaxRequests.HasValue)
-            .WithMessage("RateLimitMaxRequests must be at least 1.");
-
-        RuleFor(x => x.RateLimitWindowSeconds)
-            .GreaterThanOrEqualTo(1)
-            .When(x => x.RateLimitWindowSeconds.HasValue)
-            .WithMessage("RateLimitWindowSeconds must be at least 1.");
-    }
-}

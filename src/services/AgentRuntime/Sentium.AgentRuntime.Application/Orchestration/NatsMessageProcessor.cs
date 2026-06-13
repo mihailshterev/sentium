@@ -104,7 +104,7 @@ public sealed class NatsMessageProcessor(
         }
     }
 
-    private static Guid? TryParseUserId(string payload)
+    private Guid? TryParseUserId(string payload)
     {
         try
         {
@@ -114,7 +114,10 @@ public sealed class NatsMessageProcessor(
                 return id;
             }
         }
-        catch { }
+        catch (JsonException ex)
+        {
+            logger.LogDebug(ex, "Could not parse userId from workflow trigger payload; treating as system-scoped.");
+        }
 
         return null;
     }

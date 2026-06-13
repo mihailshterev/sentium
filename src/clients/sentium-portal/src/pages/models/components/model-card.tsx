@@ -21,9 +21,10 @@ interface ModelCardProps {
   model: OllamaModel;
   deletingModel: string | null;
   onDelete: (name: string) => void;
+  canDelete: boolean;
 }
 
-const ModelCard = ({ model, deletingModel, onDelete }: ModelCardProps) => (
+const ModelCard = ({ model, deletingModel, onDelete, canDelete }: ModelCardProps) => (
   <div className={styles.modelCard}>
     <div className={styles.modelIconWrap}>
       <Cpu size={16} />
@@ -50,14 +51,16 @@ const ModelCard = ({ model, deletingModel, onDelete }: ModelCardProps) => (
       <p className={styles.modelDate}>Modified {formatDate(model.modified_at)}</p>
     </div>
 
-    <button
-      className={styles.deleteBtn}
-      onClick={() => onDelete(model.name)}
-      disabled={deletingModel === model.name}
-      title={`Delete ${model.name}`}
-    >
-      {deletingModel === model.name ? <Loader size={14} className={styles.spinIcon} /> : <Trash2 size={14} />}
-    </button>
+    {canDelete && (
+      <button
+        className={styles.deleteBtn}
+        onClick={() => onDelete(model.name)}
+        disabled={deletingModel === model.name}
+        title={`Delete ${model.name}`}
+      >
+        {deletingModel === model.name ? <Loader size={14} className={styles.spinIcon} /> : <Trash2 size={14} />}
+      </button>
+    )}
   </div>
 );
 

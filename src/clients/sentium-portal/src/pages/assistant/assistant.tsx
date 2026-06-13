@@ -5,7 +5,7 @@ import { ChevronRight, ChevronDown, BotMessageSquare, Loader } from "lucide-reac
 import { fetchConversation, fetchWorkspaces, fetchWorkspaceFiles } from "../../services/agentRuntime.service";
 import useConversations from "../../hooks/useConversations";
 import useModels from "../../hooks/useModels";
-import type { ConversationMessage, ConversationSummary } from "../../types/assistant";
+import type { ConversationMessage, ConversationMessageDto, ConversationSummary } from "../../types/assistant";
 import type { Workspace } from "../../types/workspace";
 import { useConversationStore } from "../../stores/assistant-conversation-store";
 import { SUGGESTIONS_POOL } from "../../utils/constants";
@@ -16,6 +16,7 @@ import WelcomeScreen from "./components/welcome-screen";
 import ChatInputBar from "./components/chat-input-bar";
 import ConversationSidebar from "./components/conversation-sidebar";
 import ConfirmDialog from "../../components/ui/confirm-dialog";
+import StatusMessage from "../../components/ui/status-message";
 
 type ContextPill = { type: "workspace" | "file"; id: string; label: string };
 
@@ -61,6 +62,7 @@ const Assistant = () => {
     sendMessage,
     respondToApproval,
     stopStreaming,
+    retryLastMessage,
   } = useConversationStore();
 
   const {
@@ -88,6 +90,7 @@ const Assistant = () => {
 
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [conversationToDelete, setConversationToDelete] = useState<string | null>(null);
+  const [sendError, setSendError] = useState<string | null>(null);
 
   const toggleThought = (id: string) =>
     setExpandedThoughts((prev) => {
@@ -155,25 +158,15 @@ const Assistant = () => {
           if (cancelled) {
             return;
           }
-          const loadedMessages: ConversationMessage[] = (data.messages ?? []).map(
-            (m: {
-              id: string;
-              role: "user" | "assistant";
-              content: string;
-              timestamp: string;
-              enhancedPrompt?: string;
-              thought?: string;
-              toolCalls?: string[];
-            }) => ({
-              id: m.id,
-              role: m.role,
-              content: m.content,
-              enhancedPrompt: m.enhancedPrompt,
-              thought: m.thought,
-              toolCalls: m.toolCalls,
-              timestamp: new Date(m.timestamp),
-            }),
-          );
+          const loadedMessages: ConversationMessage[] = (data.messages ?? []).map((m: ConversationMessageDto) => ({
+            id: m.id,
+            role: m.role,
+            content: m.content,
+            enhancedPrompt: m.enhancedPrompt,
+            thought: m.thought,
+            toolCalls: m.toolCalls,
+            timestamp: new Date(m.timestamp),
+          }));
           setActiveConversation(routeConversationId, loadedMessages, data.model);
           setModel(data.model);
         })
@@ -187,7 +180,7 @@ const Assistant = () => {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [routeConversationId]);
+  }, [routeConversationId, isStreaming, streamingConversationId, activeConversationId]);
 
   useEffect(() => {
     if (!isTyping) {
@@ -281,6 +274,7 @@ const Assistant = () => {
       navigate(`/assistant/${data.id}`);
       return data.id;
     } catch {
+      setSendError("Failed to create a conversation. Please try again.");
       return null;
     }
   };
@@ -319,10 +313,10 @@ const Assistant = () => {
     stopStreaming();
   };
 
-  const handleApproval = (aiMsgId: string, requestId: string, approved: boolean) => {
+  const handleApproval = (aiMsgId: string, requestId: string, approved: boolean, conversationId?: string) => {
     setStatusIndex(0);
     setStatusVisible(true);
-    void respondToApproval({ aiMsgId, requestId, approved });
+    void respondToApproval({ aiMsgId, requestId, approved, conversationId: conversationId ?? activeConversationId });
   };
 
   const submitMessage = async () => {
@@ -331,9 +325,14 @@ const Assistant = () => {
       return;
     }
 
+    setSendError(null);
+
     let conversationId = activeConversationId;
     if (!conversationId) {
       conversationId = await createNewConversation();
+      if (!conversationId) {
+        return;
+      }
     }
 
     const pillPrefix = contextPills
@@ -399,10 +398,6 @@ const Assistant = () => {
           subtitle="Chat with the Sentium assistant"
           right={
             <div className={styles.headerRight}>
-              <div className={styles.statusBadge}>
-                <span className={styles.statusDot} />
-                <span className={styles.statusText}>{model || "No model selected"}</span>
-              </div>
               <button
                 className={styles.sidebarToggle}
                 onClick={() => setSidebarOpen((v) => !v)}
@@ -442,6 +437,7 @@ const Assistant = () => {
                   onToggleThought={toggleThought}
                   onCopyMessage={copyMessage}
                   onApproval={handleApproval}
+                  onRetry={msg.error ? retryLastMessage : undefined}
                 />
               ))}
               <div ref={messagesEndRef} />
@@ -455,15 +451,20 @@ const Assistant = () => {
           </button>
         )}
 
+        {sendError && <StatusMessage variant="error" message={sendError} />}
+
         <ChatInputBar
           input={input}
           isTyping={isTyping}
           contextPills={contextPills}
+          model={model}
+          models={models}
           onInputChange={resizeTextareaOnInput}
           onKeyDown={handleKeyDown}
           onSubmit={handleSubmit}
           onStop={handleStop}
           onRemoveContextPill={removeContextPill}
+          onSetModel={setModel}
           textareaRef={textareaRef}
         />
       </div>
@@ -473,8 +474,6 @@ const Assistant = () => {
         conversations={conversations}
         conversationGroups={conversationGroups}
         activeConversationId={routeConversationId ?? activeConversationId}
-        model={model}
-        models={models}
         isCreating={isCreating}
         wsContextOpen={wsContextOpen}
         workspaces={workspaces}
@@ -483,7 +482,6 @@ const Assistant = () => {
         onNewConversation={createNewConversation}
         onLoadConversation={loadConversation}
         onDeleteConversation={deleteConversation}
-        onSetModel={setModel}
         onToggleWsContext={() => setWsContextOpen((v) => !v)}
         onToggleExpandWorkspace={(wsId) => setExpandedWorkspace((v) => (v === wsId ? null : wsId))}
         onInjectWorkspaceContext={injectWorkspaceContext}

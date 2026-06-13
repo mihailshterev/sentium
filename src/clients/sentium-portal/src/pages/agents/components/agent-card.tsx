@@ -43,13 +43,19 @@ const AgentCard = ({ agent, index, onEdit, onDelete }: AgentCardProps) => {
         </div>
       </div>
       <div className={styles.agentCardActions}>
-        <button className={styles.iconBtn} onClick={() => onEdit(agent)} title="Edit agent">
+        <button
+          className={styles.iconBtn}
+          onClick={() => onEdit(agent)}
+          title="Edit agent"
+          data-testid={`agent-edit-${agent.name}`}
+        >
           <Pencil size={13} />
         </button>
         <button
           className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
           onClick={() => onDelete(agent.id)}
           title="Delete agent"
+          data-testid={`agent-delete-${agent.name}`}
         >
           <X size={13} />
         </button>

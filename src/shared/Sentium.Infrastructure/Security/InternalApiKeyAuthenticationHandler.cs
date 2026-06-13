@@ -27,6 +27,7 @@ public sealed class InternalApiKeyAuthenticationHandler(
         {
             if (environment.IsDevelopment())
             {
+                Logger.LogWarning("InternalApi:ApiKey is not configured.");
                 return Task.FromResult(AuthenticateResult.Success(CreateTicket()));
             }
 

@@ -8,20 +8,49 @@ import * as useSystemMetricsHook from "../../hooks/useSystemMetrics";
 import type { ServiceHealthStatus } from "../../types/serviceHealth";
 import type { SystemMetrics } from "../../types/system";
 
+vi.mock("../../hooks/useSystemOverview", () => ({
+  default: () => ({ overview: undefined, isLoading: false, error: null, refetch: vi.fn() }),
+}));
+vi.mock("../../hooks/useIncidents", () => ({
+  default: () => ({ incidents: [], isLoading: false, error: null, refetch: vi.fn() }),
+}));
+vi.mock("../../hooks/useWatchdogStream", () => ({
+  default: () => ({ isLive: true }),
+}));
+vi.mock("../../hooks/useRole", () => ({
+  useRole: () => ({
+    isSovereign: false,
+    roles: [],
+    isAuthenticated: true,
+    isMemberOrAbove: false,
+    hasRole: () => false,
+  }),
+}));
+
 const mockHealthy: ServiceHealthStatus = {
   serviceName: "Agent Runtime",
+  kind: "Service",
   status: "Healthy",
   latencyMs: 45,
   checkedAt: "2025-01-01T12:00:00Z",
   details: null,
+  checks: [],
+  uptimePercent: 99.9,
+  lastStateChange: "2025-01-01T12:00:00Z",
+  consecutiveFailures: 0,
 };
 
 const mockUnhealthy: ServiceHealthStatus = {
   serviceName: "Sentinel",
+  kind: "Service",
   status: "Unhealthy",
   latencyMs: 800,
   checkedAt: "2025-01-01T12:00:00Z",
   details: "Connection timeout",
+  checks: [],
+  uptimePercent: 40,
+  lastStateChange: "2025-01-01T12:00:00Z",
+  consecutiveFailures: 5,
 };
 
 const mockMetrics: SystemMetrics = {
@@ -94,24 +123,19 @@ describe("Watchdog initial render", () => {
     expect(screen.getByText("Watchdog")).toBeInTheDocument();
   });
 
-  it("renders service health section", () => {
+  it("renders the Services and Infrastructure sections", () => {
     renderWatchdog();
-    expect(screen.getByText("Service Health")).toBeInTheDocument();
+    expect(screen.getByText("Services")).toBeInTheDocument();
+    expect(screen.getByText("Infrastructure")).toBeInTheDocument();
   });
 
-  it("shows all-healthy badge when all services are healthy", () => {
+  it("shows all-operational badge when all targets are healthy", () => {
     renderWatchdog();
     expect(screen.getByText("All Systems Operational")).toBeInTheDocument();
   });
 });
 
 describe("Watchdog loading state", () => {
-  it("renders skeleton rows when health is loading", () => {
-    vi.spyOn(useServiceHealthHook, "default").mockReturnValue({ ...defaultHealthHook, isLoading: true, services: [] });
-    renderWatchdog();
-    expect(screen.queryByText("api-gateway")).not.toBeInTheDocument();
-  });
-
   it("renders skeleton metric rows when metrics are loading", () => {
     vi.spyOn(useSystemMetricsHook, "default").mockReturnValue({
       ...defaultMetricsHook,
@@ -119,7 +143,7 @@ describe("Watchdog loading state", () => {
       metrics: undefined,
     });
     renderWatchdog();
-    expect(screen.queryByText(/cpu/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/cpu usage/i)).not.toBeInTheDocument();
   });
 });
 
@@ -127,7 +151,7 @@ describe("Watchdog empty state", () => {
   it("shows no-data message when services array is empty", () => {
     vi.spyOn(useServiceHealthHook, "default").mockReturnValue({ ...defaultHealthHook, services: [] });
     renderWatchdog();
-    expect(screen.getByText(/no health data yet/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/no data yet/i).length).toBeGreaterThanOrEqual(1);
   });
 });
 
@@ -146,13 +170,13 @@ describe("Watchdog service health statuses", () => {
     expect(screen.getAllByText("Unhealthy").length).toBeGreaterThanOrEqual(1);
   });
 
-  it("shows 'Degraded Services Detected' when any service is unhealthy", () => {
+  it("shows 'Outage Detected' when any service is unhealthy", () => {
     vi.spyOn(useServiceHealthHook, "default").mockReturnValue({
       ...defaultHealthHook,
       services: [mockHealthy, mockUnhealthy],
     });
     renderWatchdog();
-    expect(screen.getByText("Degraded Services Detected")).toBeInTheDocument();
+    expect(screen.getByText("Outage Detected")).toBeInTheDocument();
   });
 
   it("renders correct monitored count", () => {
@@ -174,6 +198,11 @@ describe("Watchdog service health statuses", () => {
     expect(screen.getByText("45ms")).toBeInTheDocument();
   });
 
+  it("renders uptime percentage", () => {
+    renderWatchdog();
+    expect(screen.getByText("99.9% uptime")).toBeInTheDocument();
+  });
+
   it("renders details when available", () => {
     vi.spyOn(useServiceHealthHook, "default").mockReturnValue({
       ...defaultHealthHook,
@@ -181,24 +210,6 @@ describe("Watchdog service health statuses", () => {
     });
     renderWatchdog();
     expect(screen.getByText("Connection timeout")).toBeInTheDocument();
-  });
-
-  it("high latency (> 400ms) renders red latency bar", () => {
-    vi.spyOn(useServiceHealthHook, "default").mockReturnValue({
-      ...defaultHealthHook,
-      services: [{ ...mockHealthy, latencyMs: 500 }],
-    });
-    renderWatchdog();
-    expect(screen.getByText("500ms")).toBeInTheDocument();
-  });
-
-  it("medium latency (100-400ms) renders amber latency bar", () => {
-    vi.spyOn(useServiceHealthHook, "default").mockReturnValue({
-      ...defaultHealthHook,
-      services: [{ ...mockHealthy, latencyMs: 250 }],
-    });
-    renderWatchdog();
-    expect(screen.getByText("250ms")).toBeInTheDocument();
   });
 });
 
@@ -211,11 +222,6 @@ describe("Watchdog metrics display", () => {
   it("renders CPU usage", () => {
     renderWatchdog();
     expect(screen.getByText("22.5%")).toBeInTheDocument();
-  });
-
-  it("renders total memory", () => {
-    renderWatchdog();
-    expect(screen.getByText("8192 MB")).toBeInTheDocument();
   });
 });
 

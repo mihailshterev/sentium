@@ -10,7 +10,7 @@ namespace Sentium.AgentRuntime.Infrastructure.Tools;
 /// <summary>
 /// Allows agents to persist a discrete insight or conclusion to the long-term
 /// knowledge base so that future agent interactions can build upon it.
-/// The learning is stored in SQL and immediately embedded into the vector store.
+/// The learning is stored in the database and immediately embedded into the vector store.
 /// </summary>
 [AgentToolPolicy(
     AllowedAgents = [],
@@ -25,6 +25,7 @@ public sealed class CaptureAgentLearningTool(
 
     public string Description =>
         "Captures and stores a discrete learning or insight from this interaction for long-term self-improvement. " +
+        "This is the right place for anything YOU figured out - an architecture blueprint, a debugging fix, a design pattern, or a comparison/conclusion you produced. " +
         "Use this tool at the end of significant analyses to record conclusions, patterns, or lessons. " +
         "Input must be a JSON string: {\"content\": \"The learning text\", \"tags\": \"optional,comma,tags\", \"scope\": \"user\"}. " +
         "Set \"scope\": \"global\" ONLY for an abstracted, reusable architectural pattern or execution optimization that any user's agents could benefit from, with NO user-specific details (no names, emails, file paths, hostnames, or personal facts). " +
@@ -71,7 +72,7 @@ public sealed class CaptureAgentLearningTool(
 
             if (requestGlobal && !result.IsGlobal)
             {
-                return $"Learning saved privately (ID: {result.Id}). It did not qualify for global sharing — global learnings must be abstracted, reusable patterns with no user-specific details.";
+                return $"Learning saved privately (ID: {result.Id}). It did not qualify for global sharing - global learnings must be abstracted, reusable patterns with no user-specific details.";
             }
 
             return $"Learning captured and stored (ID: {result.Id}). It will be available for future agent recall.";

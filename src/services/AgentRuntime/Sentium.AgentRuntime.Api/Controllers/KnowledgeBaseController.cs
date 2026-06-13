@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 using Sentium.AgentRuntime.Core.Rag;
 using Sentium.AgentRuntime.Core.Rag.Models;
 
@@ -12,39 +11,23 @@ namespace Sentium.AgentRuntime.Api.Controllers;
 [ApiController]
 [Authorize]
 [Route("knowledge-base")]
-public sealed class KnowledgeBaseController(IVectorRepository vectorRepository, IOptions<RagOptions> ragOptions) : ControllerBase
+public sealed class KnowledgeBaseController(IVectorRepository vectorRepository) : ControllerBase
 {
-    private static readonly string[] TrackedCollections = ["knowledge_base", "agent_learnings", "user_memories"];
-
     /// <summary>
     /// Returns knowledge-base collection statistics from the vector store.
-    /// Returns an array — one entry per tracked collection.
     /// </summary>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>Knowledge-base collection statistics.</returns>
     [HttpGet("stats")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<CollectionStats>> GetKnowledgeBaseStats(CancellationToken ct)
+    [ProducesResponseType(typeof(IReadOnlyList<CollectionStats>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<CollectionStats>>> GetKnowledgeBaseStats(CancellationToken ct)
     {
-        var collections = new[]
-        {
-            ragOptions.Value.CollectionName,
-            "agent_learnings",
-            "user_memories"
-        };
-
-        var tasks = collections.Select(c => vectorRepository.GetCollectionStatsAsync(c, ct));
+        var tasks = KnowledgeCollections.All.Select(c => vectorRepository.GetCollectionStatsAsync(c, ct));
         var results = await Task.WhenAll(tasks);
 
         var stats = results
             .Where(r => r is not null)
-            .Select(r => new
-            {
-                collectionName = r!.CollectionName,
-                pointCount = r.PointCount,
-                vectorSize = r.VectorSize,
-                distanceMetric = r.DistanceMetric
-            })
+            .Select(r => r!)
             .ToList();
 
         return Ok(stats);
@@ -61,9 +44,9 @@ public sealed class KnowledgeBaseController(IVectorRepository vectorRepository, 
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> DeleteCollection(string collection, CancellationToken ct)
     {
-        if (TrackedCollections.Contains(collection))
+        if (KnowledgeCollections.All.Contains(collection))
         {
-            return BadRequest(new { error = $"Collection {collection} is protected." });
+            return Problem(detail: $"Collection {collection} is protected.", statusCode: StatusCodes.Status400BadRequest);
         }
 
         await vectorRepository.DeleteCollectionAsync(collection, ct);

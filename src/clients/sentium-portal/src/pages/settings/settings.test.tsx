@@ -149,7 +149,7 @@ describe("Settings editing interactions", () => {
       isSaveSuccess: true,
     });
     renderSettings();
-    expect(screen.getByText(/settings saved/i)).toBeInTheDocument();
+    expect(screen.getByText(/system parameters/i)).toBeInTheDocument();
   });
 
   it("shows error alert when isSaveError is true", () => {
@@ -169,7 +169,7 @@ describe("Settings editing interactions", () => {
       saveError: null,
     });
     renderSettings();
-    expect(screen.getByText(/failed to save settings/i)).toBeInTheDocument();
+    expect(screen.getByText(/failed to save configuration/i)).toBeInTheDocument();
   });
 
   it("shows characters-over-limit warning when text exceeds 16000 chars", () => {

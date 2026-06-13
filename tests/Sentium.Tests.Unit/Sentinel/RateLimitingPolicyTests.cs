@@ -1,9 +1,8 @@
 using FluentAssertions;
-using Microsoft.Extensions.Options;
 using Sentium.Sentinel.Application.Engine.Policies;
-using Sentium.Sentinel.Application.Options;
 using Sentium.Sentinel.Application.RateLimiting;
 using Sentium.Sentinel.Core.Policies;
+using Sentium.Sentinel.Core.Settings;
 using Xunit;
 
 namespace Sentium.Tests.Unit.Sentinel;
@@ -12,8 +11,9 @@ public sealed class RateLimitingPolicyTests
 {
     private static RateLimitingPolicy MakePolicy(int max = 10, int windowSeconds = 60)
     {
-        var opts = new PdpOptions { RateLimitMaxRequests = max, RateLimitWindowSeconds = windowSeconds };
-        return new RateLimitingPolicy(new InMemoryRateLimitStore(), Options.Create(opts));
+        var provider = new FakePdpRuntimeSettingsProvider(
+            new PdpRuntimeSettings { RateLimitMaxRequests = max, RateLimitWindowSeconds = windowSeconds });
+        return new RateLimitingPolicy(new InMemoryRateLimitStore(), provider);
     }
 
     private static PolicyRequest MakeRequest(string agentId = "agent-1") =>
@@ -55,7 +55,7 @@ public sealed class RateLimitingPolicyTests
             await sut.EvaluateAsync(MakeRequest("burst-agent"), ct);
         }
 
-        // Act — fourth request exceeds limit
+        // Act - fourth request exceeds limit
         var result = await sut.EvaluateAsync(MakeRequest("burst-agent"), ct);
 
         // Assert

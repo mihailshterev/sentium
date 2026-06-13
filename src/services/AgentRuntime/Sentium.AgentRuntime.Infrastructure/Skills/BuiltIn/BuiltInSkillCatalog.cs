@@ -17,6 +17,8 @@ public sealed class BuiltInSkillCatalog : IBuiltInSkillCatalog
         SecurityBestPracticesSkill.Descriptor,
         JsonAnalyzerSkill.Descriptor,
         WritingStyleSkill.Descriptor,
+        RegexToolkitSkill.Descriptor,
+        CsvAnalyzerSkill.Descriptor,
     ];
 
     public IReadOnlyList<BuiltInSkillInfo> GetAll() => Descriptors;
@@ -32,6 +34,8 @@ public sealed class BuiltInSkillCatalog : IBuiltInSkillCatalog
             .UseSkill(new DateTimeSkill())
             .UseSkill(new SecurityBestPracticesSkill())
             .UseSkill(new JsonAnalyzerSkill())
-            .UseSkill(new WritingStyleSkill());
+            .UseSkill(new WritingStyleSkill())
+            .UseSkill(new RegexToolkitSkill())
+            .UseSkill(new CsvAnalyzerSkill());
     }
 }

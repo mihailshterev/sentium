@@ -1,6 +1,8 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
@@ -109,21 +111,50 @@ public static class Extensions
 
     public static WebApplication MapDefaultEndpoints(this WebApplication app)
     {
-        // Adding health checks endpoints to applications in non-development environments has security implications.
-        // See https://aka.ms/dotnet/aspire/healthchecks for details before enabling these endpoints in non-development environments.
-        if (app.Environment.IsDevelopment())
-        {
-            // All health checks must pass for app to be considered ready to accept traffic after starting
-            app.MapHealthChecks(HealthEndpointPath);
+        // The health endpoints are exposed in all environments because the Watchdog service probes
+        // them to aggregate platform-wide health. They are only reachable on the internal service
+        // network (Aspire / reverse proxy) and are not published through the public Gateway.
+        // See https://aka.ms/dotnet/aspire/healthchecks for the security considerations.
 
-            // Only health checks tagged with the "live" tag must pass for app to be considered alive
-            app.MapHealthChecks(AlivenessEndpointPath, new HealthCheckOptions
-            {
-                Predicate = r => r.Tags.Contains("live")
-            });
-        }
+        // All health checks must pass for the app to be considered ready to accept traffic.
+        // A JSON response writer surfaces per-dependency detail so Watchdog can derive Degraded
+        // states and report individual checks, instead of only the overall pass/fail.
+        app.MapHealthChecks(HealthEndpointPath, new HealthCheckOptions
+        {
+            ResponseWriter = WriteHealthReportAsJsonAsync
+        });
+
+        // Only health checks tagged with the "live" tag must pass for the app to be considered alive
+        app.MapHealthChecks(AlivenessEndpointPath, new HealthCheckOptions
+        {
+            Predicate = r => r.Tags.Contains("live")
+        });
 
         return app;
+    }
+
+    private static readonly JsonSerializerOptions HealthJsonOptions = new(JsonSerializerDefaults.Web);
+
+    private static Task WriteHealthReportAsJsonAsync(HttpContext context, HealthReport report)
+    {
+        context.Response.ContentType = "application/json; charset=utf-8";
+
+        var payload = new
+        {
+            status = report.Status.ToString(),
+            totalDurationMs = report.TotalDuration.TotalMilliseconds,
+            entries = report.Entries.Select(e => new
+            {
+                name = e.Key,
+                status = e.Value.Status.ToString(),
+                description = e.Value.Description,
+                durationMs = e.Value.Duration.TotalMilliseconds,
+                tags = e.Value.Tags,
+                exception = e.Value.Exception?.Message
+            })
+        };
+
+        return context.Response.WriteAsync(JsonSerializer.Serialize(payload, HealthJsonOptions));
     }
 
     public static IHostApplicationBuilder AddAuthenticationDefaults(this IHostApplicationBuilder builder)
@@ -136,7 +167,7 @@ public static class Extensions
             .AddJwtBearer(options =>
             {
                 options.Authority = identityAuthority;
-                options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+                options.RequireHttpsMetadata = !builder.Environment.IsDevelopment() && !builder.Environment.IsEnvironment("Testing");
                 options.TokenValidationParameters.ValidateAudience = false;
             });
 

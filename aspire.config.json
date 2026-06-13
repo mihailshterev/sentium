@@ -1,0 +1,5 @@
+{
+  "appHost": {
+    "path": "src/aspire/Sentium.AppHost/Sentium.AppHost.csproj"
+  }
+}

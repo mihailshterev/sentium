@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import gsap from "gsap";
 import styles from "./semantic-map.module.scss";
+import { useThemeStore, resolveTheme } from "../../stores/theme-store";
 import { fetchKnowledgeMapNodes, searchKnowledgeMap } from "../../services/agentRuntime.service";
 import {
   UniverseRenderer,
@@ -36,6 +37,9 @@ const SemanticMap = () => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { width, height } = useResizeObserver(containerRef);
+
+  const preference = useThemeStore((s) => s.preference);
+  const isLight = resolveTheme(preference) === "light";
 
   const [rawNodes, setRawNodes] = useState<KnowledgeMapNode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -127,7 +131,7 @@ const SemanticMap = () => {
       }
     };
 
-    renderer.init(canvasRef.current, width, height).then(() => {
+    renderer.init(canvasRef.current, width, height, isLight).then(() => {
       if (graphNodesRef.current.length > 0) {
         renderer.setGraph(graphNodesRef.current, graphLinksRef.current);
         renderer.setCamera(cameraRef.current);
@@ -144,6 +148,10 @@ const SemanticMap = () => {
   useEffect(() => {
     rendererRef.current?.resize(width, height);
   }, [width, height]);
+
+  useEffect(() => {
+    rendererRef.current?.setTheme(isLight);
+  }, [isLight]);
 
   useEffect(() => {
     if (!width || !height || rawNodes.length === 0) {

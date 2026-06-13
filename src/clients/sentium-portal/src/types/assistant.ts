@@ -9,6 +9,7 @@ export interface PendingApproval {
   requestId: string;
   toolName: string;
   arguments: Record<string, unknown>;
+  conversationId?: string;
 }
 
 export interface ConversationMessage {
@@ -20,13 +21,24 @@ export interface ConversationMessage {
   timestamp: Date;
   pendingApproval?: PendingApproval;
   enhancedPrompt?: string;
+  error?: string;
+}
+
+export interface ConversationMessageDto {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  timestamp: string;
+  enhancedPrompt?: string;
+  thought?: string;
+  toolCalls?: string[];
 }
 
 export interface ConversationDetail {
   id: string;
   title: string;
   model: string;
-  messages: { id: string; role: "user" | "assistant"; content: string; timestamp: string }[];
+  messages: ConversationMessageDto[];
 }
 
 export interface CreateConversationPayload {

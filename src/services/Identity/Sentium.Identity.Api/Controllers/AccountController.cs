@@ -1,13 +1,15 @@
 using System.Security.Claims;
 using Sentium.Identity.Application.Abstractions;
-using Sentium.Identity.Api.Contracts.Users;
+using Sentium.Identity.Core.Dtos;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using OpenIddict.Abstractions;
 using OpenIddict.Server.AspNetCore;
+using OpenIddict.Validation.AspNetCore;
 
 namespace Sentium.Identity.Api.Controllers;
 
@@ -37,11 +39,7 @@ public sealed class AccountController(
             return BadRequest(result.Errors);
         }
 
-        return Ok(new
-        {
-            user!.Id,
-            user.Email
-        });
+        return Ok(new RegisterResponse(user!.Id, user.Email));
     }
 
     /// <summary>
@@ -70,7 +68,7 @@ public sealed class AccountController(
 
         if (result.RequiresTwoFactor)
         {
-            return Ok(new { RequiresTwoFactor = true });
+            return Ok(new LoginResponse(RequiresTwoFactor: true));
         }
 
         if (!result.Succeeded)
@@ -79,7 +77,7 @@ public sealed class AccountController(
         }
 
         var redirectTo = (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl)) ? returnUrl : "/";
-        return Ok(new { RedirectUrl = redirectTo });
+        return Ok(new LoginResponse(RedirectUrl: redirectTo));
     }
 
     /// <summary>
@@ -98,7 +96,7 @@ public sealed class AccountController(
     /// <response code="200">Returns the profile data.</response>
     /// <response code="401">If the user is not authenticated.</response>
     [HttpGet("me")]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetProfile(CancellationToken ct)
@@ -115,13 +113,7 @@ public sealed class AccountController(
             return NotFound();
         }
 
-        return Ok(new
-        {
-            user.Id,
-            user.Email,
-            user.FirstName,
-            user.LastName,
-        });
+        return Ok(new ProfileResponse(user.Id, user.Email, user.FirstName, user.LastName));
     }
 
     /// <summary>
@@ -130,7 +122,7 @@ public sealed class AccountController(
     /// <response code="204">Profile updated successfully.</response>
     /// <response code="400">If the update data is invalid (e.g., email conflict).</response>
     [HttpPut("me")]
-    [Authorize]
+    [Authorize(AuthenticationSchemes = OpenIddictValidationAspNetCoreDefaults.AuthenticationScheme)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request, CancellationToken ct)
@@ -147,7 +139,10 @@ public sealed class AccountController(
 
         if (!succeeded)
         {
-            return BadRequest(new { Errors = errors });
+            return ValidationProblem(new ValidationProblemDetails(new Dictionary<string, string[]>
+            {
+                ["profile"] = errors
+            }));
         }
 
         return NoContent();
@@ -155,7 +150,7 @@ public sealed class AccountController(
 
     private Guid? GetCurrentUserId()
     {
-        var sub = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var sub = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue(OpenIddictConstants.Claims.Subject);
         return Guid.TryParse(sub, out var id) ? id : null;
     }
 }

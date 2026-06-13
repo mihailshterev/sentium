@@ -41,44 +41,44 @@ internal sealed class SecurityBestPracticesSkill : AgentClassSkill<SecurityBestP
     public string OwaspTop10 => """
         # OWASP Top 10 (2021)
 
-        ## A01 – Broken Access Control (Critical)
+        ## A01 - Broken Access Control (Critical)
         Restrict access to resources based on user roles. Apply least-privilege. Deny by default.
         Validate ownership before serving data. Implement CORS properly.
 
-        ## A02 – Cryptographic Failures (Critical)
+        ## A02 - Cryptographic Failures (Critical)
         Use TLS 1.2+ everywhere. Encrypt sensitive data at rest (AES-256).
-        Never store passwords in plain text — use bcrypt/Argon2/PBKDF2.
+        Never store passwords in plain text - use bcrypt/Argon2/PBKDF2.
         Rotate secrets regularly. Avoid weak algorithms (MD5, SHA-1, DES).
 
-        ## A03 – Injection (Critical)
+        ## A03 - Injection (Critical)
         Parameterize all SQL queries. Use ORMs with query builders.
         Validate and sanitize all inputs. Apply allowlists, not denylists.
 
-        ## A04 – Insecure Design (High)
+        ## A04 - Insecure Design (High)
         Threat-model before building. Apply defense-in-depth.
         Separate concerns and limit blast radius.
 
-        ## A05 – Security Misconfiguration (High)
+        ## A05 - Security Misconfiguration (High)
         Harden defaults. Remove unused features. Apply security headers.
         Keep dependencies patched. Use structured logging without sensitive data.
 
-        ## A06 – Vulnerable and Outdated Components (High)
+        ## A06 - Vulnerable and Outdated Components (High)
         Audit dependencies regularly. Subscribe to CVE feeds.
         Use SCA tools (Dependabot, Snyk). Pin versions and review changelogs.
 
-        ## A07 – Identification and Authentication Failures (High)
+        ## A07 - Identification and Authentication Failures (High)
         Enforce MFA. Use short-lived tokens (JWT exp).
         Implement brute-force protection. Secure session management.
 
-        ## A08 – Software and Data Integrity Failures (High)
+        ## A08 - Software and Data Integrity Failures (High)
         Verify software supply chain (SBOM). Sign releases.
         Use integrity checks on CI/CD pipelines.
 
-        ## A09 – Security Logging and Monitoring Failures (Medium)
+        ## A09 - Security Logging and Monitoring Failures (Medium)
         Log authentication events, access failures, and anomalies.
         Centralise logs. Set up alerting. Retain logs per compliance policy.
 
-        ## A10 – Server-Side Request Forgery (Medium)
+        ## A10 - Server-Side Request Forgery (Medium)
         Validate and allowlist outbound URLs. Block internal IP ranges.
         Sanitize user-supplied URLs before making server-side requests.
         """;

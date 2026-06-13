@@ -31,7 +31,7 @@ public sealed class RecallMemoryTool(
         var queryEmbedding = await embeddingService.GenerateEmbeddingAsync(input, ct);
 
         var results = await vectorRepository.SearchAsync(
-            "user_memories",
+            KnowledgeCollections.UserMemories,
             queryEmbedding,
             topK: 3,
             scoreThreshold: 0.7f,

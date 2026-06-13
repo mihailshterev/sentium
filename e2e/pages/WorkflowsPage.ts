@@ -43,11 +43,7 @@ export class WorkflowsPage {
   }
 
   async clickEditOnWorkflow(workflowName: string): Promise<void> {
-    await this.page
-      .getByText(workflowName, { exact: true })
-      .locator("xpath=ancestor::div[.//button[@title='Edit']][1]")
-      .getByTitle("Edit")
-      .click();
+    await this.page.getByTestId(`workflow-edit-${workflowName}`).click();
   }
 
   async clearAndFillWorkflowName(name: string): Promise<void> {
@@ -57,11 +53,11 @@ export class WorkflowsPage {
   }
 
   async clickDeleteOnWorkflow(workflowName: string): Promise<void> {
-    await this.page
-      .getByText(workflowName, { exact: true })
-      .locator("xpath=ancestor::div[.//button[@title='Delete']][1]")
-      .getByTitle("Delete")
-      .click();
+    await this.page.getByTestId(`workflow-delete-${workflowName}`).click();
+  }
+
+  async confirmDelete(): Promise<void> {
+    await this.page.getByTestId("confirm-dialog-confirm").click();
   }
 
   async expectWorkflowVisible(name: string): Promise<void> {

@@ -35,7 +35,7 @@ const bob: UserListItem = {
   email: "bob@example.com",
   firstName: "Bob",
   lastName: null,
-  roles: ["Guest"],
+  roles: ["Member"],
   isLockedOut: true,
 };
 

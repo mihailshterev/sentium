@@ -2,6 +2,7 @@ import { BrickWallShield, Loader, RefreshCw, ShieldCheck, Siren, Sliders, Zap } 
 import { useState } from "react";
 import { useSentinelAudit, useSentinelStats } from "../../hooks/useSentinelAudit";
 import { useSentinelSettings } from "../../hooks/useSentinelSettings";
+import useOllamaModels from "../../hooks/useOllamaModels";
 import styles from "./sentinel.module.scss";
 import PageHeader from "../../components/ui/page-header";
 import AuditRow from "./components/audit-row";
@@ -13,6 +14,7 @@ const Sentinel = () => {
   const { records, isLoading: auditLoading, refetch } = useSentinelAudit(100);
   const { stats } = useSentinelStats();
   const { settings, isUpdating, updateSettings } = useSentinelSettings();
+  const { models } = useOllamaModels();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [autonomyDraft, setAutonomyDraft] = useState<number | null>(null);
   const displayAutonomy = autonomyDraft ?? settings?.autonomyLevel ?? 5;
@@ -42,6 +44,10 @@ const Sentinel = () => {
       return;
     }
     updateSettings({ semanticIntentCheckEnabled: !settings.semanticIntentCheckEnabled });
+  };
+
+  const handleIntentModelChange = (model: string) => {
+    updateSettings({ intentCheckModel: model });
   };
 
   const denialRate = stats && stats.total > 0 ? Math.round((stats.denied / stats.total) * 100) : 0;
@@ -120,10 +126,12 @@ const Sentinel = () => {
                 settings={settings}
                 isUpdating={isUpdating}
                 displayAutonomy={displayAutonomy}
+                models={models}
                 onLockdown={handleLockdown}
                 onSemanticToggle={handleSemanticToggle}
                 onAutonomyChange={handleAutonomyChange}
                 commitAutonomy={commitAutonomy}
+                onIntentModelChange={handleIntentModelChange}
               />
             </div>
 

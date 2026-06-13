@@ -13,7 +13,7 @@ public static class LearningSanitizationPrompt
         Your job is to protect that shared space. Reject anything that does not clearly belong there.
 
         ### Approve ONLY if BOTH criteria hold
-        1. ABSTRACTED: It contains no user-specific identifiers — no personal names, emails, IP
+        1. ABSTRACTED: It contains no user-specific identifiers - no personal names, emails, IP
            addresses, file-system paths, home directories, machine/host names, secrets, project names,
            or any detail unique to one user or environment.
         2. GENERALIZABLE: It is a reusable architectural pattern or execution optimization (a "how to"

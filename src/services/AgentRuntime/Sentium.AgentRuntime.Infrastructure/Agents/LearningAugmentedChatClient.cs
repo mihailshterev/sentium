@@ -12,7 +12,7 @@ namespace Sentium.AgentRuntime.Infrastructure.Agents;
 /// insights captured via <c>capture_agent_learning</c> are automatically fed back into every agent run.
 /// <para>
 /// Applied as the outermost decorator (above <see cref="HarnessedChatClient"/>) so it runs once per agent
-/// turn rather than per tool round. Recall is best-effort — failures leave the messages untouched.
+/// turn rather than per tool round. Recall is best-effort - failures leave the messages untouched.
 /// </para>
 /// </summary>
 public sealed class LearningAugmentedChatClient(

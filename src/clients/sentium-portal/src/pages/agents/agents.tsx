@@ -10,6 +10,7 @@ import AgentCard from "./components/agent-card";
 import AgentCreateForm from "./components/agent-create-form";
 import AgentEditModal from "./components/agent-edit-modal";
 import ConfirmDialog from "../../components/ui/confirm-dialog";
+import StatusMessage from "../../components/ui/status-message";
 
 const Agents = () => {
   const {
@@ -34,6 +35,7 @@ const Agents = () => {
 
   const [editAgent, setEditAgent] = useState<AgentRecord | null>(null);
   const [confirmState, setConfirmState] = useState<{ agentId: string } | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const handleCreateSubmit = (data: { name: string; description: string; model: string }) => {
     createAgent(data, {
@@ -64,7 +66,7 @@ const Agents = () => {
       <PageHeader
         icon={<Bot size={20} className={styles.headerIcon} />}
         title="Agent Registry"
-        subtitle="Register and manage autonomous agents in the pipeline"
+        subtitle="Register and manage autonomous agents"
         right={
           <div className={styles.headerBadge}>
             <Bot size={14} />
@@ -80,6 +82,8 @@ const Agents = () => {
             <span>Registered Agents</span>
             <span className={styles.agentCountBadge}>{agents.length}</span>
           </div>
+
+          {deleteError && <StatusMessage variant="error" message={deleteError} />}
 
           <div className={styles.agentList}>
             {isLoading && (
@@ -135,8 +139,9 @@ const Agents = () => {
           description="This will permanently remove the agent from the registry. This action cannot be undone."
           confirmLabel="Delete agent"
           onConfirm={() => {
+            setDeleteError(null);
             deleteAgent(confirmState.agentId, {
-              onError: (err) => alert(err instanceof Error ? err.message : "Unknown error"),
+              onError: (err) => setDeleteError(err instanceof Error ? err.message : "Failed to delete agent."),
             });
             setConfirmState(null);
           }}

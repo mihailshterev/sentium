@@ -31,8 +31,12 @@ public sealed class AssistantController(
     IRegistrySettingsService registrySettingsService,
     ILogger<AssistantController> logger) : ControllerBase
 {
+    private const string GenericStreamErrorMessage = "An unexpected error occurred while generating the response.";
+
     private static readonly byte[] DataPrefix = "data: "u8.ToArray();
     private static readonly byte[] SseDelimiter = "\n\n"u8.ToArray();
+    private static readonly byte[] HeartbeatLine = ": ping\n\n"u8.ToArray();
+    private static readonly byte[] KeepAliveLine = ": keep-alive\n\n"u8.ToArray();
 
     /// <summary>
     /// Handles a chat message to the assistant agent and streams back responses using Server-Sent Events (SSE).
@@ -51,52 +55,62 @@ public sealed class AssistantController(
         ArgumentNullException.ThrowIfNull(requestBody);
         ArgumentNullException.ThrowIfNull(scopeFactory);
 
-        ConfigureSseResponse();
+        using var writeSemaphore = new SemaphoreSlim(1, 1);
+        await StartSseResponseAsync(writeSemaphore, ct);
 
         var lastUserMessage = requestBody.Messages.LastOrDefault(m => m.Role.Equals(ChatRole.User.ToString(), StringComparison.OrdinalIgnoreCase));
 
         pdpContext.OriginalUserPrompt = lastUserMessage?.Content ?? string.Empty;
         pdpContext.UserId = currentUser.UserId;
 
-        pdpContext.CorrelationId = Request.Headers.TryGetValue(CommonHeaderNames.CorrelationId, out var hdr)
-            ? hdr.ToString()
-            : Guid.NewGuid().ToString();
+        pdpContext.CorrelationId = Request.Headers.TryGetValue(CommonHeaderNames.CorrelationId, out var hdr) ? hdr.ToString() : Guid.NewGuid().ToString();
 
-        var enhancedPrompt = await TryEnhancePromptAsync(lastUserMessage?.Content, ct);
+        using var heartbeatCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        var heartbeatTask = RunHeartbeatAsync(writeSemaphore, heartbeatCts.Token);
 
-        if (requestBody.ConversationId.HasValue && lastUserMessage is not null)
+        try
         {
-            using var scope = scopeFactory.CreateScope();
-            var conversationService = scope.ServiceProvider.GetRequiredService<IConversationService>();
-            await conversationService.AddMessageAsync(requestBody.ConversationId.Value, ChatRole.User.ToString(), lastUserMessage.Content, enhancedPrompt: enhancedPrompt, ct: ct);
-        }
+            var enhancedPrompt = await TryEnhancePromptAsync(lastUserMessage?.Content, ct);
 
-        if (enhancedPrompt is not null)
-        {
-            await SendUiUpdate(AgentUpdateTypes.EnhancedPrompt, enhancedPrompt, ct);
-        }
-
-        var agent = await agentFactory.CreateAsync(AgentRole.GeneralAssistant, overrideModel: requestBody.Model, ct: ct);
-        var session = await agent.CreateSessionAsync(ct);
-
-        var chatMessages = requestBody.Messages.Select(m => new ChatMessage(
-            m.Role.Equals(ChatRole.User.ToString(), StringComparison.OrdinalIgnoreCase) ? ChatRole.User : ChatRole.Assistant,
-            m.Content
-        )).ToList();
-
-        if (enhancedPrompt is not null)
-        {
-            for (var i = chatMessages.Count - 1; i >= 0; i--)
+            if (requestBody.ConversationId.HasValue && lastUserMessage is not null)
             {
-                if (chatMessages[i].Role == ChatRole.User)
+                using var scope = scopeFactory.CreateScope();
+                var conversationService = scope.ServiceProvider.GetRequiredService<IConversationService>();
+                await conversationService.AddMessageAsync(requestBody.ConversationId.Value, ChatRole.User.ToString(), lastUserMessage.Content, enhancedPrompt: enhancedPrompt, ct: ct);
+            }
+
+            if (enhancedPrompt is not null)
+            {
+                await SendUiUpdate(AgentUpdateTypes.EnhancedPrompt, enhancedPrompt, writeSemaphore, ct);
+            }
+
+            var agent = await agentFactory.CreateAsync(AgentRole.GeneralAssistant, overrideModel: requestBody.Model, ct: ct);
+            var session = await agent.CreateSessionAsync(ct);
+
+            var chatMessages = requestBody.Messages.Select(m => new ChatMessage(
+                m.Role.Equals(ChatRole.User.ToString(), StringComparison.OrdinalIgnoreCase) ? ChatRole.User : ChatRole.Assistant,
+                m.Content
+            )).ToList();
+
+            if (enhancedPrompt is not null)
+            {
+                for (var i = chatMessages.Count - 1; i >= 0; i--)
                 {
-                    chatMessages[i] = new ChatMessage(ChatRole.User, enhancedPrompt);
-                    break;
+                    if (chatMessages[i].Role == ChatRole.User)
+                    {
+                        chatMessages[i] = new ChatMessage(ChatRole.User, enhancedPrompt);
+                        break;
+                    }
                 }
             }
-        }
 
-        await RunStreamingAsync(agent, session, chatMessages, requestBody.ConversationId, requestBody.Model, scopeFactory, ct);
+            await RunStreamingAsync(agent, session, chatMessages, requestBody.ConversationId, requestBody.Model, scopeFactory, writeSemaphore, ct);
+        }
+        finally
+        {
+            await heartbeatCts.CancelAsync();
+            await heartbeatTask;
+        }
     }
 
     /// <summary>
@@ -121,21 +135,33 @@ public sealed class AssistantController(
             return;
         }
 
-        ConfigureSseResponse();
+        using var writeSemaphore = new SemaphoreSlim(1, 1);
+        await StartSseResponseAsync(writeSemaphore, ct);
 
-        pdpContext.OriginalUserPrompt = pending.OriginalUserPrompt;
-        pdpContext.CorrelationId = pending.CorrelationId;
-        pdpContext.UserId = pending.UserId;
-        pdpContext.AgentName = pending.AgentName;
+        using var heartbeatCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        var heartbeatTask = RunHeartbeatAsync(writeSemaphore, heartbeatCts.Token);
 
-        var approvalResponseMessage = new ChatMessage(ChatRole.User, [pending.ApprovalRequest.CreateResponse(requestBody.Approved)]);
-
-        var restoredHistory = new List<ChatMessage>(pending.ChatHistory)
+        try
         {
-            approvalResponseMessage
-        };
+            pdpContext.OriginalUserPrompt = pending.OriginalUserPrompt;
+            pdpContext.CorrelationId = pending.CorrelationId;
+            pdpContext.UserId = pending.UserId;
+            pdpContext.AgentName = pending.AgentName;
 
-        await RunStreamingAsync(pending.Agent, pending.Session, restoredHistory, pending.ConversationId, pending.Model, scopeFactory, ct);
+            var approvalResponseMessage = new ChatMessage(ChatRole.User, [pending.ApprovalRequest.CreateResponse(requestBody.Approved)]);
+
+            var restoredHistory = new List<ChatMessage>(pending.ChatHistory)
+            {
+                approvalResponseMessage
+            };
+
+            await RunStreamingAsync(pending.Agent, pending.Session, restoredHistory, pending.ConversationId, pending.Model, scopeFactory, writeSemaphore, ct, resumeState: pending);
+        }
+        finally
+        {
+            await heartbeatCts.CancelAsync();
+            await heartbeatTask;
+        }
     }
 
     private async Task RunStreamingAsync(
@@ -145,13 +171,15 @@ public sealed class AssistantController(
         Guid? conversationId,
         string model,
         IServiceScopeFactory scopeFactory,
-        CancellationToken ct)
+        SemaphoreSlim writeSemaphore,
+        CancellationToken ct,
+        PendingApproval? resumeState = null)
     {
         ArgumentNullException.ThrowIfNull(scopeFactory);
 
-        var assistantResponse = new StringBuilder();
-        var thoughtBuilder = new StringBuilder();
-        var toolCallLog = new List<string>();
+        var assistantResponse = new StringBuilder(resumeState?.PartialResponse ?? string.Empty);
+        var thoughtBuilder = new StringBuilder(resumeState?.PartialThought ?? string.Empty);
+        var toolCallLog = resumeState?.PartialToolCalls?.ToList() ?? [];
 
         try
         {
@@ -162,7 +190,7 @@ public sealed class AssistantController(
                 if (update.Contents.OfType<TextReasoningContent>().FirstOrDefault() is { } reasoning)
                 {
                     thoughtBuilder.Append(reasoning.Text);
-                    await SendUiUpdate(AgentUpdateTypes.Thought, reasoning.Text, ct);
+                    await SendUiUpdate(AgentUpdateTypes.Thought, reasoning.Text, writeSemaphore, ct);
                 }
 
                 if (update.Contents.OfType<ToolApprovalRequestContent>().FirstOrDefault() is { } approvalRequest)
@@ -179,21 +207,23 @@ public sealed class AssistantController(
                         OriginalUserPrompt: pdpContext.OriginalUserPrompt,
                         CorrelationId: pdpContext.CorrelationId,
                         UserId: pdpContext.UserId,
-                        AgentName: pdpContext.AgentName
+                        AgentName: pdpContext.AgentName,
+                        PartialResponse: assistantResponse.Length > 0 ? assistantResponse.ToString() : null,
+                        PartialThought: thoughtBuilder.Length > 0 ? thoughtBuilder.ToString() : null,
+                        PartialToolCalls: toolCallLog.Count > 0 ? [.. toolCallLog] : null
                     );
 
                     approvalStore.Add(approvalRequest.RequestId, approval);
 
                     var toolCall = approvalRequest.ToolCall as FunctionCallContent;
 
-                    var approvalData = new
-                    {
-                        requestId = approvalRequest.RequestId,
-                        toolName = toolCall?.Name ?? "unknown",
-                        arguments = toolCall?.Arguments,
-                    };
+                    var approvalData = new ToolApprovalData(
+                        approvalRequest.RequestId,
+                        toolCall?.Name ?? "unknown",
+                        toolCall?.Arguments
+                    );
 
-                    await SendUiUpdate(AgentUpdateTypes.ApprovalRequest, JsonSerializer.Serialize(approvalData), ct);
+                    await SendUiUpdate(AgentUpdateTypes.ApprovalRequest, JsonSerializer.Serialize(approvalData), writeSemaphore, ct);
                     return;
                 }
 
@@ -201,40 +231,44 @@ public sealed class AssistantController(
                 {
                     var toolLabel = $"Calling {call.Name}...";
                     toolCallLog.Add(toolLabel);
-                    await SendUiUpdate(AgentUpdateTypes.Tool, toolLabel, ct);
+                    await SendUiUpdate(AgentUpdateTypes.Tool, toolLabel, writeSemaphore, ct);
                 }
 
                 if (!string.IsNullOrEmpty(update.Text))
                 {
                     assistantResponse.Append(update.Text);
-                    await SendUiUpdate(AgentUpdateTypes.Message, update.Text, ct);
+                    await SendUiUpdate(AgentUpdateTypes.Message, update.Text, writeSemaphore, ct);
                 }
             }
 
-            if (conversationId.HasValue && assistantResponse.Length > 0)
+            await PersistAssistantMessageAsync(scopeFactory, conversationId, assistantResponse, thoughtBuilder, toolCallLog, ct);
+
+            await writeSemaphore.WaitAsync(ct);
+            try
             {
-                using var scope = scopeFactory.CreateScope();
-                var conversationService = scope.ServiceProvider.GetRequiredService<IConversationService>();
-
-                await conversationService.AddMessageAsync(
-                    conversationId.Value,
-                    ChatRole.Assistant.ToString(),
-                    assistantResponse.ToString(),
-                    thought: thoughtBuilder.Length > 0 ? thoughtBuilder.ToString() : null,
-                    toolCalls: toolCallLog.Count > 0 ? toolCallLog : null,
-                    ct: ct
-                );
+                var completeJson = JsonSerializer.Serialize(new StreamDoneFrame(AgentUpdateTypes.Done));
+                await Response.WriteAsync($"data: {completeJson}\n\n", ct);
+                await Response.Body.FlushAsync(ct);
             }
-
-            var completeJson = JsonSerializer.Serialize(new { type = "done", done = true });
-            await Response.WriteAsync($"data: {completeJson}\n\n", ct);
-            await Response.Body.FlushAsync(ct);
+            finally
+            {
+                writeSemaphore.Release();
+            }
         }
         catch (OperationCanceledException)
         {
             if (logger.IsEnabled(LogLevel.Information))
             {
                 logger.LogInformation("Streaming request cancelled. CorrelationId: {CorrelationId}", pdpContext.CorrelationId);
+            }
+
+            try
+            {
+                await PersistAssistantMessageAsync(scopeFactory, conversationId, assistantResponse, thoughtBuilder, toolCallLog, CancellationToken.None);
+            }
+            catch (Exception persistEx)
+            {
+                logger.LogWarning(persistEx, "Failed to persist partial assistant response after cancellation. CorrelationId: {CorrelationId}", pdpContext.CorrelationId);
             }
         }
         catch (Exception ex)
@@ -248,9 +282,17 @@ public sealed class AssistantController(
 
             try
             {
-                var errorJson = JsonSerializer.Serialize(new { type = "error", message = ex.Message, done = true });
-                await Response.WriteAsync($"data: {errorJson}\n\n", ct);
-                await Response.Body.FlushAsync(ct);
+                var errorJson = JsonSerializer.Serialize(new StreamErrorFrame(GenericStreamErrorMessage));
+                await writeSemaphore.WaitAsync(CancellationToken.None);
+                try
+                {
+                    await Response.WriteAsync($"data: {errorJson}\n\n", CancellationToken.None);
+                    await Response.Body.FlushAsync(CancellationToken.None);
+                }
+                finally
+                {
+                    writeSemaphore.Release();
+                }
             }
             catch (Exception writeEx)
             {
@@ -266,7 +308,7 @@ public sealed class AssistantController(
             return null;
         }
 
-        var settings = await registrySettingsService.GetAsync(ct);
+        var settings = await registrySettingsService.GetAsync(currentUser.UserId, ct);
         if (!settings.Harness.IsPromptEnhancementEnabled)
         {
             return null;
@@ -277,37 +319,115 @@ public sealed class AssistantController(
         return !string.IsNullOrWhiteSpace(enhanced) && !string.Equals(enhanced, prompt, StringComparison.Ordinal) ? enhanced : null;
     }
 
-    private async Task SendUiUpdate(string type, string content, CancellationToken ct)
+    private async Task SendUiUpdate(string type, string content, SemaphoreSlim writeSemaphore, CancellationToken ct)
     {
-        var pipeWriter = Response.BodyWriter;
+        await writeSemaphore.WaitAsync(ct);
+        try
+        {
+            var pipeWriter = Response.BodyWriter;
 
-        pipeWriter.Write(DataPrefix);
+            pipeWriter.Write(DataPrefix);
 
-        await using var jsonWriter = new Utf8JsonWriter(pipeWriter);
+            await using var jsonWriter = new Utf8JsonWriter(pipeWriter);
 
-        jsonWriter.WriteStartObject();
-        jsonWriter.WriteString("type", type);
+            jsonWriter.WriteStartObject();
+            jsonWriter.WriteString("type", type);
 
-        jsonWriter.WriteStartObject("message");
-        jsonWriter.WriteString("content", content);
-        jsonWriter.WriteEndObject();
+            jsonWriter.WriteStartObject("message");
+            jsonWriter.WriteString("content", content);
+            jsonWriter.WriteEndObject();
 
-        jsonWriter.WriteBoolean("done", false);
+            jsonWriter.WriteBoolean("done", false);
 
-        jsonWriter.WriteEndObject();
+            jsonWriter.WriteEndObject();
 
-        await jsonWriter.FlushAsync(ct);
+            await jsonWriter.FlushAsync(ct);
 
-        pipeWriter.Write(SseDelimiter);
+            pipeWriter.Write(SseDelimiter);
 
-        await pipeWriter.FlushAsync(ct);
+            await pipeWriter.FlushAsync(ct);
+        }
+        finally
+        {
+            writeSemaphore.Release();
+        }
     }
 
-    private void ConfigureSseResponse()
+    private async Task StartSseResponseAsync(SemaphoreSlim writeSemaphore, CancellationToken ct)
     {
         Response.ContentType = "text/event-stream";
         Response.Headers.CacheControl = "no-cache";
         Response.Headers.Connection = "keep-alive";
         Response.Headers.Append(CommonHeaderNames.AccelBuffering, "no");
+
+        await Response.StartAsync(ct);
+
+        await writeSemaphore.WaitAsync(ct);
+        try
+        {
+            var pipeWriter = Response.BodyWriter;
+            pipeWriter.Write(KeepAliveLine);
+            await pipeWriter.FlushAsync(ct);
+        }
+        finally
+        {
+            writeSemaphore.Release();
+        }
+    }
+
+    private async Task RunHeartbeatAsync(SemaphoreSlim writeSemaphore, CancellationToken ct)
+    {
+        try
+        {
+            while (!ct.IsCancellationRequested)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(15), ct);
+
+                await writeSemaphore.WaitAsync(ct);
+                try
+                {
+                    var pipeWriter = Response.BodyWriter;
+                    pipeWriter.Write(HeartbeatLine);
+                    await pipeWriter.FlushAsync(ct);
+                }
+                finally
+                {
+                    writeSemaphore.Release();
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch (Exception ex)
+        {
+            logger.LogDebug(ex, "SSE heartbeat stopped due to write failure.");
+        }
+    }
+
+    private static async Task PersistAssistantMessageAsync(
+        IServiceScopeFactory scopeFactory,
+        Guid? conversationId,
+        StringBuilder assistantResponse,
+        StringBuilder thoughtBuilder,
+        List<string> toolCallLog,
+        CancellationToken ct)
+    {
+        if (!conversationId.HasValue || assistantResponse.Length == 0)
+        {
+            return;
+        }
+
+        using var scope = scopeFactory.CreateScope();
+        var conversationService = scope.ServiceProvider.GetRequiredService<IConversationService>();
+
+        await conversationService.AddMessageAsync(
+            conversationId.Value,
+            ChatRole.Assistant.ToString(),
+            assistantResponse.ToString(),
+            thought: thoughtBuilder.Length > 0 ? thoughtBuilder.ToString() : null,
+            toolCalls: toolCallLog.Count > 0 ? toolCallLog : null,
+            ct: ct
+        );
     }
 }

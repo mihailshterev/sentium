@@ -22,6 +22,7 @@ const ALL_PHASE_STEPS: { key: Phase; label: string; icon: React.ElementType }[] 
 
 const PREDEFINED_PHASE_STEPS: { key: Phase; label: string; icon: React.ElementType }[] = [
   { key: "SQUAD", label: "Execute", icon: Zap },
+  { key: "VALIDATING", label: "Validate", icon: CheckCircle },
 ];
 
 const PHASE_ORDER: Phase[] = ["IDLE", "PLANNING", "SQUAD", "VALIDATING", "COMPLETE"];
@@ -49,10 +50,17 @@ const AgentOrchestration = () => {
   const { runId } = useParams<{ runId?: string }>();
   const navigate = useNavigate();
 
-  const { logs, phase, isRunning: storeRunning, startPredefined, startDynamic } = useOrchestrationRunStore();
+  const {
+    logs,
+    phase,
+    isRunning: storeRunning,
+    isDynamicRun,
+    startPredefined,
+    startDynamic,
+  } = useOrchestrationRunStore();
 
   const [sidebarView, setSidebarView] = useState<"execute" | "history">(runId ? "history" : "execute");
-  const [executeMode, setExecuteMode] = useState<ExecuteMode>("predefined");
+  const [executeMode, setExecuteMode] = useState<ExecuteMode>(() => (isDynamicRun ? "dynamic" : "predefined"));
   const [selectedWorkflow, setSelectedWorkflow] = useState<WorkflowRecord | null>(null);
   const [scenarioInput, setScenarioInput] = useState("");
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string>("");
@@ -136,7 +144,7 @@ const AgentOrchestration = () => {
     if (a.includes("summarizer")) return "roleSummarizer";
     if (a.includes("forensics")) return "roleForensics";
     if (a.includes("intel")) return "roleIntel";
-    if (a.includes("planner")) return "rolePlanner";
+    if (a.includes("orchestrator") || a.includes("planner")) return "rolePlanner";
     if (a.includes("validator")) return "roleValidator";
     return "roleSquad";
   };
@@ -146,7 +154,8 @@ const AgentOrchestration = () => {
   const displayLogs = viewingRun && selectedRun ? coalesceLog(selectedRun.logs) : logs;
   const displayPhase: Phase = viewingRun ? "COMPLETE" : phase;
   const displayPhaseIndex = PHASE_ORDER.indexOf(displayPhase);
-  const phaseSteps = !viewingRun && executeMode === "predefined" ? PREDEFINED_PHASE_STEPS : ALL_PHASE_STEPS;
+  const isDynamicPhase = storeRunning ? isDynamicRun : executeMode === "dynamic";
+  const phaseSteps = !viewingRun && !isDynamicPhase ? PREDEFINED_PHASE_STEPS : ALL_PHASE_STEPS;
 
   const formatRunLabel = (run: WorkflowRun) => {
     const d = new Date(run.startedAt);
@@ -238,6 +247,7 @@ const AgentOrchestration = () => {
             )}
             {displayLogs.map((log, i) => {
               const entryId = `${runId ?? "live"}-${i}`;
+              const isActiveThought = isRunning && log.type === "thought" && i === displayLogs.length - 1;
               return (
                 <LogEntryView
                   key={entryId}
@@ -246,6 +256,7 @@ const AgentOrchestration = () => {
                   expanded={expandedThoughts.has(entryId)}
                   onToggle={toggleThought}
                   getRoleClass={getRoleClass}
+                  isActiveThought={isActiveThought}
                 />
               );
             })}

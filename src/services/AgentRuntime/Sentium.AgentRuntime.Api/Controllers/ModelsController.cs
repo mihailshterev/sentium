@@ -1,7 +1,11 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Sentium.AgentRuntime.Core.Agents;
+using Sentium.AgentRuntime.Core.Dtos;
+using Sentium.AgentRuntime.Core.Rag;
 using Sentium.AgentRuntime.Infrastructure;
+using Sentium.Infrastructure.Security;
 using Sentium.Shared.Constants;
 using System.Text;
 using System.Text.Json;
@@ -17,9 +21,12 @@ namespace Sentium.AgentRuntime.Api.Controllers;
 public sealed class ModelsController(
     IHttpClientFactory httpClientFactory,
     IAgentRepository agentRepository,
-    OllamaOptions ollamaOptions) : ControllerBase
+    OllamaOptions ollamaOptions,
+    IOptions<RagOptions> ragOptions) : ControllerBase
 {
     private Uri OllamaBase => ollamaOptions.BaseUrl;
+    private string EmbeddingModel => ragOptions.Value.EmbeddingModelName;
+    private bool IsSovereign => RoleClaims.IsInRole(User, SecurityRoles.Sovereign);
 
     /// <summary>
     /// Retrieves a list of all models currently installed on the local Ollama instance.
@@ -41,15 +48,17 @@ public sealed class ModelsController(
             return StatusCode((int)response.StatusCode);
         }
 
-        var body = await response.Content.ReadAsStringAsync(ct);
-        using var doc = JsonDocument.Parse(body);
-
-        if (!doc.RootElement.TryGetProperty("models", out var modelsElement))
+        var tagsResponse = await response.Content.ReadFromJsonAsync<OllamaTagsResponse>(ct);
+        if (tagsResponse is null)
         {
-            return Ok(Array.Empty<object>());
+            return Ok(Array.Empty<OllamaModelInfo>());
         }
 
-        return Content(modelsElement.GetRawText(), "application/json");
+        var filtered = tagsResponse.Models
+            .Where(m => !m.Name.StartsWith(EmbeddingModel, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        return Ok(filtered);
     }
 
     /// <summary>
@@ -66,16 +75,23 @@ public sealed class ModelsController(
     [HttpPost("pull")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task PullModel([FromBody] PullModelRequest request, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(request);
+
+        if (!IsSovereign)
+        {
+            Response.StatusCode = StatusCodes.Status403Forbidden;
+            return;
+        }
 
         var ollamaClient = httpClientFactory.CreateClient(ResourceNames.Ollama);
 
         Response.ContentType = "application/x-ndjson";
         Response.Headers.CacheControl = "no-cache";
 
-        var payload = JsonSerializer.Serialize(new { name = request.Name, stream = true });
+        var payload = JsonSerializer.Serialize(new OllamaPullRequest(request.Name, Stream: true));
 
         using var pullContent = new StringContent(payload, Encoding.UTF8, "application/json");
 
@@ -124,8 +140,14 @@ public sealed class ModelsController(
     [HttpDelete]
     [ProducesResponseType(typeof(DeleteModelResult), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> DeleteModel([FromQuery] string name, CancellationToken ct)
     {
+        if (!IsSovereign)
+        {
+            return Forbid();
+        }
+
         if (string.IsNullOrWhiteSpace(name))
         {
             return BadRequest("Model name is required.");
@@ -133,7 +155,7 @@ public sealed class ModelsController(
 
         var ollamaClient = httpClientFactory.CreateClient(ResourceNames.Ollama);
 
-        var payload = JsonSerializer.Serialize(new { name });
+        var payload = JsonSerializer.Serialize(new OllamaDeleteRequest(name));
         using var request = new HttpRequestMessage(HttpMethod.Delete, new Uri(OllamaBase, "/api/delete"))
         {
             Content = new StringContent(payload, Encoding.UTF8, "application/json")
@@ -151,7 +173,3 @@ public sealed class ModelsController(
         return Ok(new DeleteModelResult(name, ollamaOptions.DefaultModel, resetCount));
     }
 }
-
-public sealed record PullModelRequest(string Name);
-
-public sealed record DeleteModelResult(string DeletedModel, string DefaultModel, int AgentsReset);

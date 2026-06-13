@@ -1,3 +1,4 @@
+using Sentium.AgentRuntime.Application.Common.Helpers;
 using Sentium.AgentRuntime.Core.Agents;
 using Sentium.AgentRuntime.Core.Learnings;
 using Sentium.AgentRuntime.Core.Registry;
@@ -10,6 +11,7 @@ using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using OllamaSharp;
+using OllamaSharp.Models;
 using System.Collections.Concurrent;
 using System.Text;
 using Sentium.AgentRuntime.Infrastructure.Extensions;
@@ -22,6 +24,7 @@ public sealed class CompositeAgentFactory(
     OllamaOptions ollamaOptions,
     IAgentToolProvider agentToolProvider,
     IAgentRepository agentRepository,
+    IAgentRegistry agentRegistry,
     IRegistrySettingsService registrySettingsService,
     IAgentLearningService learningService,
     IServiceProvider serviceProvider,
@@ -52,7 +55,12 @@ public sealed class CompositeAgentFactory(
             pdpContext.UserId = uid;
         }
 
-        var tools = agentToolProvider.GetToolsForAgent(definition.Name, ct);
+        var isOrchestrator = string.Equals(definition.Name, AgentRole.Orchestrator, StringComparison.OrdinalIgnoreCase);
+
+        var settings = await registrySettingsService.GetAsync(actingUserId, ct);
+        var ollamaSettings = settings.Ollama;
+
+        var tools = isOrchestrator ? [] : agentToolProvider.GetToolsForAgent(definition.Name, ct);
 
         var instrumentedTools = tools
             .OfType<AIFunction>()
@@ -72,23 +80,49 @@ public sealed class CompositeAgentFactory(
             .Cast<AITool>()
             .ToList();
 
-        var skillsProvider = await dynamicSkillsProvider.BuildAsync(ct);
+        var contextProviders = new List<AIContextProvider>();
+        if (!isOrchestrator)
+        {
+            contextProviders.Add(await dynamicSkillsProvider.BuildAsync(ct));
+        }
 
-        var harnessedClient = GetHarnessedClient(overrideModel);
+        var effectiveModel = !string.IsNullOrWhiteSpace(overrideModel) ? overrideModel : ollamaSettings?.DefaultModel ?? ollamaOptions.DefaultModel;
 
-        var capabilityBlock = await BuildCapabilityBlockAsync(tools, ct);
-        var baseInstructions = overrideInstructions ?? definition.Instructions;
+        var harnessedClient = GetHarnessedClient(effectiveModel);
+
+        var capabilityBlock = isOrchestrator ? string.Empty : await BuildCapabilityBlockAsync(tools, ct);
+
+        string baseInstructions;
+        if (overrideInstructions is not null)
+        {
+            baseInstructions = overrideInstructions;
+        }
+        else if (isOrchestrator)
+        {
+            var dbAgents = await agentRepository.GetAgentsAsync(ct);
+            baseInstructions = OrchestratorTemplate.Build(agentRegistry, dbAgents);
+        }
+        else
+        {
+            baseInstructions = definition.Instructions;
+        }
+
         var instructions = string.IsNullOrEmpty(capabilityBlock) ? baseInstructions : $"{baseInstructions}\n\n{capabilityBlock}";
+
+        var chatOptions = new ChatOptions
+        {
+            Instructions = instructions,
+            Tools = instrumentedTools,
+            Temperature = ollamaSettings?.AgentTemperature ?? ollamaOptions.AgentTemperature
+        };
+
+        chatOptions.AddOllamaOption(OllamaOption.NumCtx, ollamaSettings?.AgentContextWindow ?? ollamaOptions.AgentContextWindow);
 
         var options = new ChatClientAgentOptions
         {
             Name = definition.Name,
-            AIContextProviders = [skillsProvider],
-            ChatOptions = new ChatOptions
-            {
-                Instructions = instructions,
-                Tools = instrumentedTools
-            }
+            AIContextProviders = contextProviders,
+            ChatOptions = chatOptions
         };
 
         return new ChatClientAgent(harnessedClient, options);
@@ -127,7 +161,7 @@ public sealed class CompositeAgentFactory(
             }
 
 #pragma warning disable CA2000 // Dispose objects before losing scope
-            var harnessedDefault = new HarnessedChatClient(defaultChatClient, registrySettingsService)
+            var harnessedDefault = new HarnessedChatClient(defaultChatClient, registrySettingsService, pdpContext)
                 .WithLearnings(learningService, pdpContext);
 #pragma warning restore CA2000 // Dispose objects before losing scope
             clientCache.TryAdd(ollamaOptions.DefaultModel, harnessedDefault);
@@ -154,7 +188,7 @@ public sealed class CompositeAgentFactory(
 
             return ollamaClient
                 .AddSentiumPipeline()
-                .AsHarnessed(registrySettingsService)
+                .AsHarnessed(registrySettingsService, pdpContext)
                 .WithLearnings(learningService, pdpContext);
         });
     }

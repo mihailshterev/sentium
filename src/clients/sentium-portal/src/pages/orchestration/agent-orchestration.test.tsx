@@ -412,7 +412,9 @@ describe("AgentOrchestration SSE stream", () => {
     await waitFor(() => expect(lastEventSourceInstance).not.toBeNull());
     const esi1 = lastEventSourceInstance as unknown as MockEventSource;
     if (esi1?.onerror) {
-      esi1.onerror();
+      for (let i = 0; i < 5; i++) {
+        esi1.onerror();
+      }
     }
     await waitFor(() => expect(screen.getByText("Complete")).toBeInTheDocument());
   });

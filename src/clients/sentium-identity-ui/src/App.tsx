@@ -1,5 +1,5 @@
-import Login from "./pages/login/login";
+import Landing from "./pages/landing/landing";
 
-const App = () => <Login />;
+const App = () => <Landing />;
 
 export default App;

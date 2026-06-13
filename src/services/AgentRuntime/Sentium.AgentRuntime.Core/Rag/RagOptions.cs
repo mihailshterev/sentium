@@ -1,3 +1,5 @@
+using Sentium.AgentRuntime.Core.Rag.Models;
+
 namespace Sentium.AgentRuntime.Core.Rag;
 
 /// <summary>
@@ -9,9 +11,15 @@ public sealed class RagOptions
     public const string SectionName = "Rag";
 
     /// <summary>
-    /// Qdrant collection that holds all embedded chunks.
+    /// Qdrant collection that holds ingested knowledge-base documents (the default ingestion/search target).
     /// </summary>
-    public string CollectionName { get; set; } = "knowledge_base";
+    public string CollectionName { get; set; } = KnowledgeCollections.KnowledgeBase;
+
+    /// <summary>
+    /// Collections a unified <c>knowledge_base_search</c> spans, so retrieval is not coupled to which store a
+    /// fact was written to. Defaults to the knowledge base, captured learnings, and saved memories.
+    /// </summary>
+    public string[] SearchCollections { get; set; } = KnowledgeCollections.All;
 
     /// <summary>
     /// Ollama model used for embedding generation.

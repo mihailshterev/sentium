@@ -18,6 +18,7 @@ interface OrchestrationRunState {
   logs: LogEntry[];
   phase: Phase;
   isRunning: boolean;
+  isDynamicRun: boolean;
 
   startPredefined: (args: StartPredefinedArgs) => Promise<void>;
   startDynamic: (args: StartDynamicArgs) => Promise<void>;
@@ -36,23 +37,28 @@ export const useOrchestrationRunStore = create<OrchestrationRunState>((set, get)
   const openStream = (eventId: string) => {
     closeStream();
 
+    let reconnectCount = 0;
+    const MAX_RECONNECTS = 4;
+
     const source = new EventSource(`${BASE_URL}/agent-runtime/orchestration/stream/${eventId}`, {
       withCredentials: true,
     });
     eventSource = source;
 
     source.onmessage = (e) => {
+      reconnectCount = 0;
+
       if (!e.data || e.data === "null") {
         return;
       }
 
       let data: {
+        type?: string;
         Author?: string;
         author?: string;
         Text?: string;
         text?: string;
         Type?: string;
-        type?: string;
       };
       try {
         data = JSON.parse(e.data);
@@ -60,17 +66,32 @@ export const useOrchestrationRunStore = create<OrchestrationRunState>((set, get)
         return;
       }
 
+      const type = data.Type ?? data.type ?? "message";
+
+      if (type === "done") {
+        closeStream();
+        set({ phase: "COMPLETE", isRunning: false });
+        return;
+      }
+
       const author = data.Author ?? data.author ?? "Agent";
       const text = data.Text ?? data.text ?? "";
-      const type = (data.Type ?? data.type ?? "message") as LogEntry["type"];
+      const entryType = type as LogEntry["type"];
 
-      if (type === "message") {
+      if (entryType === "message") {
         const a = author.toLowerCase();
-        if (a.includes("planner")) {
+        if (a.includes("orchestrator") || a.includes("planner")) {
           set({ phase: "PLANNING" });
         } else if (a.includes("validator")) {
           set({ phase: "VALIDATING" });
         } else {
+          set({ phase: "SQUAD" });
+        }
+      } else if (entryType === "status") {
+        const t = text.toLowerCase();
+        if (t.includes("validat") || t.includes("review")) {
+          set({ phase: "VALIDATING" });
+        } else if (t.includes("squad") || t.includes("rewriting")) {
           set({ phase: "SQUAD" });
         }
       }
@@ -82,22 +103,25 @@ export const useOrchestrationRunStore = create<OrchestrationRunState>((set, get)
       set((state) => {
         const last = state.logs.length - 1;
         if (
-          (type === "message" || type === "thought") &&
+          (entryType === "message" || entryType === "thought") &&
           last >= 0 &&
           state.logs[last].author === author &&
-          state.logs[last].type === type
+          state.logs[last].type === entryType
         ) {
           const updated = [...state.logs];
           updated[last] = { ...updated[last], text: updated[last].text + text };
           return { logs: updated };
         }
-        return { logs: [...state.logs, { author, text, type }] };
+        return { logs: [...state.logs, { author, text, type: entryType }] };
       });
     };
 
     source.onerror = () => {
-      closeStream();
-      set({ phase: "COMPLETE", isRunning: false });
+      reconnectCount++;
+      if (reconnectCount > MAX_RECONNECTS) {
+        closeStream();
+        set({ phase: "COMPLETE", isRunning: false });
+      }
     };
   };
 
@@ -110,9 +134,11 @@ export const useOrchestrationRunStore = create<OrchestrationRunState>((set, get)
     logs: [],
     phase: "IDLE",
     isRunning: false,
+    isDynamicRun: false,
 
     startPredefined: async ({ workflowId, scenario, workspaceId }) => {
       beginRun();
+      set({ isDynamicRun: false });
       try {
         const { eventId } = await runWorkflowPipeline({
           workflowId,
@@ -127,6 +153,7 @@ export const useOrchestrationRunStore = create<OrchestrationRunState>((set, get)
 
     startDynamic: async ({ activity, workspaceId }) => {
       beginRun();
+      set({ isDynamicRun: true });
       try {
         const { eventId } = await runDynamicWorkflow({
           activity,
@@ -147,7 +174,7 @@ export const useOrchestrationRunStore = create<OrchestrationRunState>((set, get)
       if (get().isRunning) {
         return;
       }
-      set({ logs: [], phase: "IDLE" });
+      set({ logs: [], phase: "IDLE", isDynamicRun: false });
     },
   };
 });

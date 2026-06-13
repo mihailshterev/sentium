@@ -14,7 +14,6 @@ public interface IJobDirectoryService
 
     /// <summary>
     /// Removes the job directory and all its contents after execution completes.
-    /// Implementations must be resilient — failure to clean up must be logged but must not throw.
     /// </summary>
     Task CleanupJobAsync(JobContext context);
 }

@@ -12,6 +12,9 @@ function dotClass(status: string): string {
   if (status === "Healthy") {
     return styles.healthDotHealthy;
   }
+  if (status === "Degraded") {
+    return styles.healthDotDegraded;
+  }
   if (status === "Unhealthy") {
     return styles.healthDotUnhealthy;
   }
@@ -21,6 +24,9 @@ function dotClass(status: string): string {
 function statusClass(status: string): string {
   if (status === "Healthy") {
     return styles.healthStatusHealthy;
+  }
+  if (status === "Degraded") {
+    return styles.healthStatusDegraded;
   }
   if (status === "Unhealthy") {
     return styles.healthStatusUnhealthy;

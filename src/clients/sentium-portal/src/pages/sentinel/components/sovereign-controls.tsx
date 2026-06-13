@@ -1,25 +1,32 @@
-import { Shield, ShieldAlert, Zap } from "lucide-react";
+import type { CSSProperties } from "react";
+import { BrainCircuit, Shield, ShieldAlert, Zap } from "lucide-react";
 import styles from "../sentinel.module.scss";
+import ModelSelector from "../../../components/ui/model-selector";
 import type { PdpSettings } from "../../../types/sentinel";
+import type { OllamaModel } from "../../../types/models";
 
 interface SovereignControlsProps {
   settings: PdpSettings | undefined;
   isUpdating: boolean;
   displayAutonomy: number;
+  models: OllamaModel[];
   onLockdown: () => void;
   onSemanticToggle: () => void;
   onAutonomyChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   commitAutonomy: () => void;
+  onIntentModelChange: (model: string) => void;
 }
 
 const SovereignControls = ({
   settings,
   isUpdating,
   displayAutonomy,
+  models,
   onLockdown,
   onSemanticToggle,
   onAutonomyChange,
   commitAutonomy,
+  onIntentModelChange,
 }: SovereignControlsProps) => (
   <div className={styles.cardBody}>
     <div className={styles.toggleRow}>
@@ -35,6 +42,7 @@ const SovereignControls = ({
         onClick={onLockdown}
         disabled={isUpdating || !settings}
         aria-pressed={settings?.lockdownMode}
+        data-testid="lockdown-toggle"
       >
         <span className={styles.toggleThumb} />
       </button>
@@ -53,9 +61,28 @@ const SovereignControls = ({
         onClick={onSemanticToggle}
         disabled={isUpdating || !settings}
         aria-pressed={settings?.semanticIntentCheckEnabled}
+        data-testid="semantic-intent-toggle"
       >
         <span className={styles.toggleThumb} />
       </button>
+    </div>
+
+    <div className={styles.modelSelectRow}>
+      <div className={styles.toggleInfo}>
+        <span className={styles.toggleLabel}>
+          <BrainCircuit size={13} />
+          Intent Check Model
+        </span>
+        <p className={styles.toggleDesc}>Model used for semantic intent verification.</p>
+      </div>
+      <ModelSelector
+        models={models.map((m) => m.name)}
+        value={settings?.intentCheckModel ?? ""}
+        onChange={onIntentModelChange}
+        disabled={isUpdating || !settings}
+        className={styles.modelSelectorField}
+        variant="chip"
+      />
     </div>
 
     <div className={styles.sliderSection}>
@@ -84,6 +111,8 @@ const SovereignControls = ({
         onKeyUp={commitAutonomy}
         disabled={isUpdating || !settings}
         className={styles.slider}
+        style={{ "--slider-fill": `${((displayAutonomy - 1) / 9) * 100}%` } as CSSProperties}
+        data-testid="autonomy-slider"
       />
       <p className={styles.toggleDesc}>
         {displayAutonomy <= 2

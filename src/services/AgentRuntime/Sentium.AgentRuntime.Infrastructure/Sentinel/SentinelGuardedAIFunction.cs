@@ -27,15 +27,18 @@ public sealed class SentinelGuardedAIFunction(
 
         pdpContext.AgentName = agentName;
 
+        var action = ResolveAction(inner.Name);
+
         var request = new PdpRequest
         {
             AgentId = agentName,
             SkillName = inner.Name,
             ResourceType = ResolveResourceType(inner.Name),
             ResourceId = ExtractResourceId(arguments),
-            Action = ResolveAction(inner.Name),
+            Action = action,
             OriginalUserPrompt = pdpContext.OriginalUserPrompt,
-            CorrelationId = pdpContext.CorrelationId.Length > 0 ? pdpContext.CorrelationId : Guid.NewGuid().ToString()
+            CorrelationId = pdpContext.CorrelationId.Length > 0 ? pdpContext.CorrelationId : Guid.NewGuid().ToString(),
+            Metadata = BuildMetadata(action, arguments)
         };
 
         var decision = await sentinel.EvaluateAsync(request, cancellationToken);
@@ -83,6 +86,40 @@ public sealed class SentinelGuardedAIFunction(
     private static string ResolveResourceType(string toolName) => ResourceTypeMap.TryGetValue(toolName, out var t) ? t : "Any";
 
     private static string ResolveAction(string toolName) => ActionMap.TryGetValue(toolName, out var a) ? a : "Execute";
+
+    private const int MaxPayloadChars = 8 * 1024;
+
+    /// <summary>
+    /// For write/execute actions, forwards the full (capped) argument payload to the PDP so the
+    /// content-inspection layers (sensitive-data egress, semantic intent) can scan what is actually
+    /// being written or executed - <see cref="ExtractResourceId"/> alone truncates to 200 chars.
+    /// Reads and searches carry no payload to keep evaluation cheap and avoid leaking query text.
+    /// </summary>
+    private static IReadOnlyDictionary<string, string> BuildMetadata(string action, AIFunctionArguments arguments)
+    {
+        var isEgress = action.Equals("Write", StringComparison.OrdinalIgnoreCase) || action.Equals("Execute", StringComparison.OrdinalIgnoreCase);
+
+        if (!isEgress || arguments.Count == 0)
+        {
+            return EmptyMetadata;
+        }
+
+        var payload = string.Join(" ", arguments.Values.Select(v => v?.ToString()).Where(s => !string.IsNullOrEmpty(s)));
+
+        if (string.IsNullOrEmpty(payload))
+        {
+            return EmptyMetadata;
+        }
+
+        if (payload.Length > MaxPayloadChars)
+        {
+            payload = payload[..MaxPayloadChars];
+        }
+
+        return new Dictionary<string, string> { ["payload"] = payload };
+    }
+
+    private static readonly IReadOnlyDictionary<string, string> EmptyMetadata = new Dictionary<string, string>();
 
     private static readonly string[] ResourceIdKeys = ["input", "path", "query", "workspaceId", "fileName"];
 

@@ -192,7 +192,7 @@ const Navbar = () => {
       <div className={styles.navFooter}>
         <div className={styles.buildInfo}>
           <span className={styles.buildDot}></span>
-          <span>v0.1.0-alpha</span>
+          <span>v1.0.0</span>
         </div>
         <ThemeToggle />
       </div>

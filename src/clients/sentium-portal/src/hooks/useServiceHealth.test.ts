@@ -20,18 +20,28 @@ const createWrapper = () => {
 
 const healthy: ServiceHealthStatus = {
   serviceName: "identity",
+  kind: "Service",
   status: "Healthy",
   latencyMs: 4,
   checkedAt: "2025-01-01T00:00:00Z",
   details: null,
+  checks: [],
+  uptimePercent: 100,
+  lastStateChange: "2025-01-01T00:00:00Z",
+  consecutiveFailures: 0,
 };
 
 const unhealthy: ServiceHealthStatus = {
   serviceName: "agentruntime",
+  kind: "Service",
   status: "Unhealthy",
   latencyMs: 9999,
   checkedAt: "2025-01-01T00:00:00Z",
   details: "Connection refused",
+  checks: [],
+  uptimePercent: 12.5,
+  lastStateChange: "2025-01-01T00:00:00Z",
+  consecutiveFailures: 4,
 };
 
 beforeEach(() => {

@@ -17,10 +17,6 @@ namespace Sentium.AgentRuntime.Infrastructure.Tools;
 /// Registered globally (no <c>AllowedAgents</c> restriction) so every agent can autonomously
 /// call this tool when it needs factual context.
 /// </para>
-/// <para>
-/// The LLM may pass either a plain-text query string, or a JSON object with optional <c>topK</c>:
-/// <code>{"query": "suspicious outbound traffic", "topK": 3}</code>
-/// </para>
 /// </summary>
 [AgentToolPolicy(
     AllowedAgents = [],
@@ -40,7 +36,7 @@ public sealed class KnowledgeBaseSearchTool(
 
     /// <inheritdoc />
     public string Description =>
-        "Search the local knowledge base for relevant context. " +
+        "Search ALL of your knowledge - the shared knowledge base, your captured learnings, and your saved memories - for relevant context. " +
         "Input should be a JSON object with 'query' (the search string) and optional 'topK' (number of results). " +
         "Example: { \"query\": \"resource lock conflicts\", \"topK\": 5 }";
 
@@ -60,28 +56,42 @@ public sealed class KnowledgeBaseSearchTool(
 
         if (logger.IsEnabled(LogLevel.Information))
         {
-            logger.LogInformation("Knowledge base search — query: '{Query}', topK: {TopK}", query, topK);
+            logger.LogInformation("Knowledge search - query: '{Query}', topK: {TopK}", query, topK);
         }
 
         var queryEmbedding = await embeddingService.GenerateEmbeddingAsync(query, ct);
-
         var scope = new KnowledgeScopeFilter(pdpContext.UserId);
 
-        var results = await vectorRepository.SearchAsync(
-            ragOptions.CollectionName,
-            queryEmbedding,
-            topK,
-            ragOptions.ScoreThreshold,
-            scope,
-            ct
-        );
+        var collections = ragOptions.SearchCollections is { Length: > 0 } ? ragOptions.SearchCollections : [ragOptions.CollectionName];
 
-        if (results.Count == 0)
+        var merged = new List<(string Collection, VectorSearchResult Result)>();
+        foreach (var collection in collections)
         {
-            return "No relevant information found in the knowledge base for this query.";
+            try
+            {
+                var hits = await vectorRepository.SearchAsync(collection, queryEmbedding, topK, ragOptions.ScoreThreshold, scope, ct);
+                foreach (var hit in hits)
+                {
+                    merged.Add((collection, hit));
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Knowledge search skipped collection '{Collection}'.", collection);
+            }
         }
 
-        return FormatResults(results);
+        if (merged.Count == 0)
+        {
+            return "No relevant information found in your knowledge for this query.";
+        }
+
+        var ranked = merged
+            .OrderByDescending(m => m.Result.Score)
+            .Take(topK)
+            .ToList();
+
+        return FormatResults(ranked);
     }
 
     private (string query, int topK) ParseInput(string input)
@@ -112,16 +122,16 @@ public sealed class KnowledgeBaseSearchTool(
         }
     }
 
-    private static string FormatResults(IReadOnlyList<Core.Rag.Models.VectorSearchResult> results)
+    private static string FormatResults(IReadOnlyList<(string Collection, VectorSearchResult Result)> results)
     {
         var sb = new StringBuilder();
-        sb.AppendLine($"[Knowledge Base — {results.Count} relevant snippet(s)]");
+        sb.AppendLine($"[Knowledge - {results.Count} relevant snippet(s) across your knowledge base, learnings, and memories]");
         sb.AppendLine();
 
         for (var i = 0; i < results.Count; i++)
         {
-            var r = results[i];
-            sb.AppendLine($"--- Snippet {i + 1} ---");
+            var (collection, r) = results[i];
+            sb.AppendLine($"--- Snippet {i + 1} ({StoreLabel(collection)}) ---");
             sb.AppendLine($"Source : {r.Chunk.Source} ({r.Chunk.SourceType})");
             sb.AppendLine($"Score  : {r.Score:P0}");
             sb.AppendLine($"Date   : {r.Chunk.CreatedAt:u}");
@@ -137,8 +147,16 @@ public sealed class KnowledgeBaseSearchTool(
             sb.AppendLine();
         }
 
-        sb.AppendLine("[End of knowledge-base results. Cite sources when using the above content in your answer.]");
+        sb.AppendLine("[End of results. Cite sources when using the above content in your answer.]");
 
         return sb.ToString();
     }
+
+    private static string StoreLabel(string collection) => collection switch
+    {
+        KnowledgeCollections.KnowledgeBase => "Knowledge Base",
+        KnowledgeCollections.AgentLearnings => "Captured Learning",
+        KnowledgeCollections.UserMemories => "Saved Memory",
+        _ => collection
+    };
 }

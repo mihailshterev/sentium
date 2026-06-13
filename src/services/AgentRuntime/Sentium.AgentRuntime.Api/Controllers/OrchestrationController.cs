@@ -37,11 +37,11 @@ public sealed class OrchestrationController(
     /// <returns>An accepted response indicating the workflow has been triggered.</returns>
     [HttpPost("run-dynamic-workflow")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
-    public async Task<ActionResult<Envelope>> RunDynamicWorkflow([FromBody] dynamic customInput, CancellationToken ct)
+    public async Task<ActionResult<WorkflowAcceptedResponse>> RunDynamicWorkflow([FromBody] dynamic customInput, CancellationToken ct)
     {
         var user = User.Identity?.Name ?? "Unknown";
 
-        var payload = customInput ?? new { activity = "Manual trigger", user = user };
+        var payload = customInput ?? new DynamicWorkflowActivity("Manual trigger", user);
         var payloadNode = JsonNode.Parse(JsonSerializer.Serialize(payload))?.AsObject() ?? new JsonObject();
         payloadNode["userId"] = currentUser.UserId?.ToString();
 
@@ -64,7 +64,7 @@ public sealed class OrchestrationController(
             logger.LogInformation("Dynamic workflow triggered by {User}", user);
         }
 
-        return Accepted(new Envelope(WorkflowEvents.Dynamic));
+        return Accepted(new WorkflowAcceptedResponse(WorkflowEvents.Dynamic));
     }
 
     /// <summary>
@@ -76,7 +76,7 @@ public sealed class OrchestrationController(
     [HttpPost("run-workflow")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<ActionResult<Envelope>> RunWorkflow([FromBody] RunWorkflowRequest request, CancellationToken ct)
+    public async Task<ActionResult<WorkflowAcceptedResponse>> RunWorkflow([FromBody] RunWorkflowRequest request, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -88,20 +88,18 @@ public sealed class OrchestrationController(
 
         var enhancedScenario = await EnhanceIfEnabledAsync(request.Scenario, ct);
 
-        var payload = new
-        {
-            activity = enhancedScenario,
-            workflowId = workflow.Id,
-            workflowName = workflow.Name,
-            agents = workflow.Agents.Select(a => a.AgentId),
-            workspaceId = request.WorkspaceId,
-            userId = currentUser.UserId
-        };
+        var payload = new WorkflowTriggerPayload(
+            Activity: enhancedScenario,
+            WorkflowId: workflow.Id,
+            WorkflowName: workflow.Name,
+            Agents: workflow.Agents.Select(a => a.AgentId).ToList(),
+            WorkspaceId: request.WorkspaceId,
+            UserId: currentUser.UserId);
 
         var jsonPayload = JsonSerializer.Serialize(payload);
         await eventBus.PublishAsync(WorkflowEvents.CustomWorkflow, jsonPayload, ct: ct);
 
-        return Accepted(new Envelope(WorkflowEvents.CustomWorkflow));
+        return Accepted(new WorkflowAcceptedResponse(WorkflowEvents.CustomWorkflow));
     }
 
     /// <summary>
@@ -123,10 +121,33 @@ public sealed class OrchestrationController(
         await Response.WriteAsync($"data: {init}\n\n", ct);
         await Response.Body.FlushAsync(ct);
 
+        var enumerator = eventBus
+            .SubscribeStreamAsync($"stream.{eventId}", serializer: NatsJsonSerializer<AgentStreamUpdate>.Default, ct: ct)
+            .GetAsyncEnumerator(ct);
+
         try
         {
-            await foreach (var msg in eventBus.SubscribeStreamAsync($"stream.{eventId}", serializer: NatsJsonSerializer<AgentStreamUpdate>.Default, ct: ct))
+            while (true)
             {
+                var moveNextTask = enumerator.MoveNextAsync().AsTask();
+
+                while (!moveNextTask.IsCompleted)
+                {
+                    await Task.WhenAny(moveNextTask, Task.Delay(TimeSpan.FromSeconds(20), ct));
+                    if (!moveNextTask.IsCompleted && !ct.IsCancellationRequested)
+                    {
+                        await Response.WriteAsync(": heartbeat\n\n", ct);
+                        await Response.Body.FlushAsync(ct);
+                    }
+                }
+
+                if (!await moveNextTask)
+                {
+                    break;
+                }
+
+                var msg = enumerator.Current;
+
                 if (msg.Data is null)
                 {
                     continue;
@@ -134,6 +155,9 @@ public sealed class OrchestrationController(
 
                 if (msg.Data.Type == AgentUpdateTypes.Done)
                 {
+                    var doneJson = JsonSerializer.Serialize(new StreamDoneFrame(AgentUpdateTypes.Done));
+                    await Response.WriteAsync($"data: {doneJson}\n\n", ct);
+                    await Response.Body.FlushAsync(ct);
                     break;
                 }
 
@@ -153,16 +177,25 @@ public sealed class OrchestrationController(
             {
                 logger.LogInformation("Client disconnected from stream {EventId}", eventId);
             }
-            return;
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Error while streaming agent execution for event {EventId}: {Message}", eventId, ex.Message);
-            var errorPayload = JsonSerializer.Serialize(new AgentStreamUpdate("System", $"Error: {ex.Message}"));
-            await Response.WriteAsync($"data: {errorPayload}\n\n", ct);
-            await Response.Body.FlushAsync(ct);
+            try
+            {
+                var errorPayload = JsonSerializer.Serialize(new AgentStreamUpdate("System", $"Error: {ex.Message}"));
+                await Response.WriteAsync($"data: {errorPayload}\n\n", ct);
+                await Response.Body.FlushAsync(ct);
+            }
+            catch (Exception writeEx)
+            {
+                logger.LogWarning(writeEx, "Failed to write SSE error response for stream {EventId}.", eventId);
+            }
         }
-
+        finally
+        {
+            await enumerator.DisposeAsync();
+        }
     }
 
     private async Task<string> EnhanceIfEnabledAsync(string? text, CancellationToken ct)
@@ -172,9 +205,7 @@ public sealed class OrchestrationController(
             return text ?? string.Empty;
         }
 
-        var settings = await registrySettingsService.GetAsync(ct);
+        var settings = await registrySettingsService.GetAsync(currentUser.UserId, ct);
         return settings.Harness.IsPromptEnhancementEnabled ? await promptEnhancementService.EnhanceAsync(text, ct) : text;
     }
-
-    public record Envelope(string EventId, string? CorrelationId = null, string Status = "Accepted");
 }

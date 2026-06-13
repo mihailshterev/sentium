@@ -57,7 +57,13 @@ builder.Services.AddAuthentication(options =>
 {
     options.Authority = identityAuthority;
     options.ClientId = "gateway-bff";
-    options.ClientSecret = builder.Configuration["Identity:GatewayBffSecret"] ?? throw new InvalidOperationException("Gateway BFF secret is not configured.");
+
+    var gatewayBffSecret = builder.Configuration["Identity:GatewayBffSecret"];
+
+    options.ClientSecret = string.IsNullOrWhiteSpace(gatewayBffSecret)
+        ? throw new InvalidOperationException("Gateway BFF secret is not configured.")
+        : gatewayBffSecret;
+
     options.ResponseType = OpenIdConnectResponseType.Code;
     options.UsePkce = true;
     options.SaveTokens = true;
@@ -77,7 +83,7 @@ builder.Services.AddAuthentication(options =>
     options.TokenValidationParameters.NameClaimType = ClaimTypes.Name;
     options.TokenValidationParameters.RoleClaimType = ClaimTypes.Role;
 
-    options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+    options.RequireHttpsMetadata = !builder.Environment.IsDevelopment() && !builder.Environment.IsEnvironment("Testing");
 
     options.Events = new OpenIdConnectEvents
     {
@@ -95,7 +101,7 @@ builder.Services.AddAuthentication(options =>
 .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
 {
     options.Authority = identityAuthority;
-    options.RequireHttpsMetadata = !builder.Environment.IsDevelopment();
+    options.RequireHttpsMetadata = !builder.Environment.IsDevelopment() && !builder.Environment.IsEnvironment("Testing");
     options.TokenValidationParameters.ValidateAudience = false;
 });
 

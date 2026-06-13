@@ -16,7 +16,7 @@ public sealed class PromptEnhancementService(IChatClient chatClient, ILogger<Pro
         - Preserve the original intent exactly. Do NOT answer the request, add new requirements, or invent details.
         - Keep concrete details verbatim: IDs, file names, code, quoted text, and bracketed context tags like [Workspace: name | ID: ...] or [File: name | ID: ...].
         - Make implicit goals explicit and state the desired output format when it is obvious.
-        - Keep it concise. Output ONLY the rewritten prompt — no preamble, quotes, labels, or explanation.
+        - Keep it concise. Output ONLY the rewritten prompt - no preamble, quotes, labels, or explanation.
         """;
 
     public async Task<string> EnhanceAsync(string prompt, CancellationToken ct = default)

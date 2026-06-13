@@ -127,6 +127,7 @@
   --aurora-4: rgba(6, 182, 212, 0.06);
 
   --role-width: 160px;
+  --texture-dot: rgba(255, 255, 255, 0.045);
 }
 
 // LIGHT
@@ -142,8 +143,11 @@
   --accent-blue-subtle: rgba(59, 130, 246, 0.12);
   --accent-purple-subtle: rgba(168, 85, 247, 0.12);
   --accent-amber-subtle: rgba(146, 64, 14, 0.1);
+  --accent-amber-border: rgba(146, 64, 14, 0.3);
   --accent-red-subtle: rgba(239, 68, 68, 0.12);
   --accent-cyan-subtle: rgba(6, 182, 212, 0.12);
+
+  --texture-dot: rgba(0, 0, 0, 0.065);
 
   --bg-base: #eef0f6;
   --bg-surface: #ffffff;

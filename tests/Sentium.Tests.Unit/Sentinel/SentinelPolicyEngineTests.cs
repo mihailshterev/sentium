@@ -4,8 +4,10 @@ using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
 using Sentium.Sentinel.Application.Engine;
+using Sentium.Sentinel.Application.Engine.Policies;
 using Sentium.Sentinel.Core.Audit;
 using Sentium.Sentinel.Core.Policies;
+using Sentium.Sentinel.Core.Settings;
 using Xunit;
 
 namespace Sentium.Tests.Unit.Sentinel;
@@ -78,8 +80,9 @@ public sealed class SentinelPolicyEngineTests
         // Act
         await engine.EvaluateAsync(MakeRequest(), ct);
 
-        // Assert
-        await _auditLog.Received(1).RecordAsync(Arg.Any<AuditRecord>(), ct);
+        // Assert - the engine writes the audit with a non-cancellable token (CancellationToken.None)
+        // so forensic records survive request cancellation; match on any token.
+        await _auditLog.Received(1).RecordAsync(Arg.Any<AuditRecord>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -127,6 +130,30 @@ public sealed class SentinelPolicyEngineTests
     }
 
     [Fact]
+    public async Task EvaluateAsync_LockdownShortCircuits_BeforeLaterPolicies()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+
+        var lockdown = new LockdownPolicy(
+            new FakePdpRuntimeSettingsProvider(new PdpRuntimeSettings { LockdownMode = true }));
+
+        var laterPolicy = Substitute.For<IPdpPolicy>();
+        laterPolicy.Name.Returns("Later");
+
+        // Lockdown registered first, mirroring production registration order.
+        var engine = MakeEngine(lockdown, laterPolicy);
+
+        // Act
+        var result = await engine.EvaluateAsync(MakeRequest(), ct);
+
+        // Assert
+        result.Allowed.Should().BeFalse();
+        result.Risk.Should().Be(PolicyRiskLevel.Critical);
+        await laterPolicy.DidNotReceive().EvaluateAsync(Arg.Any<PolicyRequest>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task EvaluateAsync_ThrowsArgumentNull_WhenRequestNull()
     {
         // Arrange
@@ -146,7 +173,7 @@ public sealed class SentinelPolicyEngineTests
         // Arrange
         var ct = TestContext.Current.CancellationToken;
         AuditRecord? captured = null;
-        _auditLog.RecordAsync(Arg.Do<AuditRecord>(r => captured = r), ct).Returns(ValueTask.CompletedTask);
+        _auditLog.RecordAsync(Arg.Do<AuditRecord>(r => captured = r), Arg.Any<CancellationToken>()).Returns(ValueTask.CompletedTask);
 
         var engine = MakeEngine();
         var request = MakeRequest();
@@ -157,21 +184,5 @@ public sealed class SentinelPolicyEngineTests
         // Assert
         captured.Should().NotBeNull();
         captured!.AgentId.Should().Be(request.AgentId);
-    }
-
-    [Fact]
-    public async Task EvaluateAsync_InvariantGuardDenies_WhenForbiddenAction()
-    {
-        // Arrange
-        var ct = TestContext.Current.CancellationToken;
-        var realGuard = new Microsoft.Extensions.Options.OptionsWrapper<Sentium.Sentinel.Application.Options.PdpOptions>(new());
-        var invariantPolicy = new Sentium.Sentinel.Application.Engine.Policies.InvariantGuardPolicy(realGuard);
-        var engine = MakeEngine(invariantPolicy);
-
-        // Act
-        var result = await engine.EvaluateAsync(MakeRequest("drop", "table-1"), ct);
-
-        // Assert
-        result.Allowed.Should().BeFalse();
     }
 }

@@ -17,7 +17,7 @@ import type { Workspace, WorkspaceFile, CreateWorkspacePayload, UpdateWorkspaceP
 import type { AgentLearning, AgentLearningStats, KnowledgeBaseCollectionStats } from "../types/agentConfig";
 import type { DeleteModelResult, OllamaModel } from "../types/models";
 import type { AgentSkill, BuiltInSkill, CreateSkillPayload, UpdateSkillPayload } from "../types/skills";
-import { BASE_URL, client } from "../api/client";
+import { BASE_URL, client, handleUnauthorized } from "../api/client";
 import type { KnowledgeMapResponse, KnowledgeMapSearchResponse } from "../types/knowledge-map";
 
 const BASE = "/agent-runtime";
@@ -137,8 +137,7 @@ export const uploadWorkspaceFile = async (file: File, workspaceId?: string): Pro
   });
 
   if (response.status === 401) {
-    window.location.href = `${BASE_URL.replace("/api", "")}/bff/login?returnUrl=${encodeURIComponent(window.location.pathname)}`;
-    throw new Error("Session expired.");
+    handleUnauthorized();
   }
 
   if (!response.ok) {
@@ -194,8 +193,7 @@ export const uploadSkillFile = async (file: File): Promise<AgentSkill> => {
   });
 
   if (response.status === 401) {
-    window.location.href = `${BASE_URL.replace("/api", "")}/bff/login?returnUrl=${encodeURIComponent(window.location.pathname)}`;
-    throw new Error("Session expired.");
+    handleUnauthorized();
   }
 
   if (!response.ok) {

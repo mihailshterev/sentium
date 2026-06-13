@@ -4,6 +4,7 @@ import { MemoryRouter } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Models from "./models";
 import * as useOllamaModelsHook from "../../hooks/useOllamaModels";
+import * as useRoleHook from "../../hooks/useRole";
 import type { PullState } from "../../hooks/useOllamaModels";
 import type { OllamaModel, DeleteModelResult } from "../../types/models";
 
@@ -48,6 +49,14 @@ const renderModels = () => {
 
 beforeEach(() => {
   vi.spyOn(useOllamaModelsHook, "default").mockReturnValue(defaultHook);
+  vi.spyOn(useRoleHook, "useRole").mockReturnValue({
+    isSovereign: true,
+    isMemberOrAbove: true,
+    isAuthenticated: true,
+    roles: ["Sovereign"],
+    highestRole: "Sovereign" as const,
+    hasRole: () => true,
+  });
 });
 
 describe("Models loading state", () => {

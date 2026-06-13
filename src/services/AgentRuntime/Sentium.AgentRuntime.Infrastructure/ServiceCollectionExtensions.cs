@@ -31,6 +31,7 @@ using Sentium.AgentRuntime.Core.Storage;
 using Sentium.AgentRuntime.Infrastructure.Storage;
 using Microsoft.Extensions.Hosting;
 using Sentium.Infrastructure.Extensions;
+using Sentium.Infrastructure.Settings;
 using Sentium.AgentRuntime.Infrastructure.Extensions;
 using Quartz;
 
@@ -48,7 +49,7 @@ public static class ServiceCollectionExtensions
         var configuration = builder.Configuration;
 
         var ollamaUri = new Uri(configuration["AI:OllamaBaseUrl"] ?? "http://localhost:11434");
-        var modelName = configuration["AI:ModelName"] ?? AIModels.Gemma4;
+        var modelName = configuration["AI:ModelName"] ?? AIModels.Gemma4_E4B;
 
         services.AddSingleton(new OllamaOptions { BaseUrl = ollamaUri, DefaultModel = modelName });
 
@@ -97,10 +98,10 @@ public static class ServiceCollectionExtensions
         {
             client.BaseAddress = new Uri($"https+http://{ServiceNames.Registry}");
             client.Timeout = TimeSpan.FromSeconds(10);
-        });
+        }).AddHttpMessageHandler<InternalApiKeyDelegatingHandler>();
 
         services.AddScoped<IRegistrySettingsService, RegistrySettingsService>();
-        services.AddHostedService<SettingsSyncWorker>();
+        builder.AddSettingsSyncWorker();
 
         services.AddSingleton<IEmbeddingService, OllamaEmbeddingService>();
         services.AddSingleton<IVectorRepository, QdrantVectorRepository>();
@@ -169,8 +170,14 @@ public static class ServiceCollectionExtensions
         services.AddHttpClient<SentinelClient>(client =>
         {
             client.BaseAddress = new Uri($"https+http://{ServiceNames.Sentinel}");
-            client.Timeout = TimeSpan.FromSeconds(10);
-        }).AddHttpMessageHandler<InternalApiKeyDelegatingHandler>();
+            client.Timeout = Timeout.InfiniteTimeSpan;
+        })
+        .AddHttpMessageHandler<InternalApiKeyDelegatingHandler>()
+        .AddLongRunningResilienceHandler(
+            totalTimeout: TimeSpan.FromMinutes(5),
+            attemptTimeout: TimeSpan.FromMinutes(2),
+            retries: 0
+        );
 
         services.AddHttpClient(ServiceNames.Sandbox, client =>
         {

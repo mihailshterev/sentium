@@ -64,7 +64,7 @@ public sealed class CodeExecutionSandboxTool(
                 language,
                 code,
                 correlationId = _pdpContext.CorrelationId,
-                agentId = "gemma-4-agent-runtime",
+                agentId = _pdpContext.AgentName,
                 originalUserPrompt = _pdpContext.OriginalUserPrompt
             };
 
@@ -134,7 +134,7 @@ public sealed class CodeExecutionSandboxTool(
     private static string FormatOutputForAgent(SandboxExecutionResultDto result)
     {
         var sb = new StringBuilder();
-        sb.AppendLine($"[Sandbox Containment Finished — Exit Code: {result.ExitCode}]");
+        sb.AppendLine($"[Sandbox Containment Finished - Exit Code: {result.ExitCode}]");
         sb.AppendLine($"Succeeded : {result.Succeeded}");
         sb.AppendLine($"Duration  : {result.DurationMs}ms");
 

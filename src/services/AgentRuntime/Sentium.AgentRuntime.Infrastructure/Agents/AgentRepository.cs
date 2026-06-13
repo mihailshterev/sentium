@@ -47,6 +47,12 @@ public sealed class AgentRepository(AgentRuntimeDbContext context) : IAgentRepos
             .FirstOrDefaultAsync(ct);
     }
 
+    public Task<bool> NameExistsAsync(string name, Guid? excludeId = null, CancellationToken ct = default)
+    {
+        var normalized = name?.ToLower();
+        return context.Agents.AnyAsync(a => a.Name.ToLower() == normalized && (excludeId == null || a.Id != excludeId.Value), ct);
+    }
+
     public async Task<AgentResponse?> GetAgentByIdAsync(Guid agentId, CancellationToken ct = default)
     {
         return await context.Agents

@@ -1,55 +1,99 @@
-using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
+using System.Text.Json;
+using FluentValidation;
 using Microsoft.AspNetCore.Mvc;
+using Sentium.Infrastructure.Security;
 using Sentium.Registry.Core.Settings;
+using Sentium.Shared.Constants;
 
 namespace Sentium.Registry.Api.Controllers;
 
 /// <summary>
-/// Manages the global application settings.
+/// Centralized key-based settings API.
 /// </summary>
 [ApiController]
-[Authorize]
 [Route("settings")]
-public sealed class SettingsController(ISettingsService settingsService) : ControllerBase
+public sealed class SettingsController(ISettingsService settingsService, ISettingsCatalog catalog) : ControllerBase
 {
-    /// <summary>
-    /// Returns the current global settings.
-    /// </summary>
-    /// <remarks>
-    /// The response is served from the HybridCache L1 on the hot path.
-    /// The first call after a cold start or cache eviction fetches from the database and seeds defaults if no row exists.
-    /// </remarks>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>The current settings snapshot.</returns>
-    [HttpGet]
-    [ProducesResponseType<SettingsDto>(StatusCodes.Status200OK)]
-    public async Task<ActionResult<SettingsDto>> GetSettings(CancellationToken ct)
+    private const string InternalCallerClaimType = "caller-type";
+    private const string InternalCallerClaimValue = "internal-system";
+
+    private bool IsSystemCaller => User.HasClaim(InternalCallerClaimType, InternalCallerClaimValue);
+
+    private bool IsSovereign => RoleClaims.IsInRole(User, SecurityRoles.Sovereign);
+
+    private Guid? CallerUserId
     {
-        var settings = await settingsService.GetAsync(ct);
-        return Ok(settings);
+        get
+        {
+            var value = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub") ?? User.FindFirstValue("nameid");
+            return Guid.TryParse(value, out var id) ? id : null;
+        }
     }
 
     /// <summary>
-    /// Persists updated global settings and triggers cache invalidation across all services.
+    /// Returns the settings for <paramref name="key"/>. Per-user keys resolve to the caller's own
+    /// settings (the internal system caller may pass <paramref name="userId"/> to read another
+    /// user's); global keys require the system caller or a Sovereign.
     /// </summary>
-    /// <remarks>
-    /// On success the service evicts the shared Redis L2 cache and publishes a NATS
-    /// <c>registry.settings.invalidated</c> event. Consuming services (e.g. AgentRuntime) receive
-    /// the event and evict their local L1 caches so the new values take effect on the next
-    /// agent interaction without a service restart.
-    /// </remarks>
-    /// <param name="request">The field values to apply.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>The settings snapshot reflecting the applied changes.</returns>
-    [HttpPut]
-    [ProducesResponseType<SettingsDto>(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<SettingsDto>> UpdateSettings([FromBody] UpdateSettingsRequest request, CancellationToken ct)
+    [HttpGet("{key}")]
+    [AuthorizeUserOrSystem]
+    [ProducesResponseType<SettingsEnvelope>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<SettingsEnvelope>> Get(string key, [FromQuery] Guid? userId, CancellationToken ct)
     {
-        var updatedBy = User.Identity?.Name;
-        await settingsService.UpdateAsync(request, updatedBy, ct);
+        if (!catalog.TryGet(key, out var descriptor))
+        {
+            return NotFound();
+        }
 
-        var updated = await settingsService.GetAsync(ct);
-        return Ok(updated);
+        if (descriptor.Scope == SettingsScope.Global && !IsSystemCaller && !IsSovereign)
+        {
+            return Forbid();
+        }
+
+        var effectiveUserId = descriptor.Scope == SettingsScope.Global ? null : IsSystemCaller ? userId : CallerUserId;
+
+        var envelope = await settingsService.GetAsync(key, effectiveUserId, ct);
+        return envelope is null ? NotFound() : Ok(envelope);
+    }
+
+    /// <summary>
+    /// Persists the settings for <paramref name="key"/>. Per-user keys are self-scoped; global keys
+    /// require a Sovereign.
+    /// </summary>
+    [HttpPut("{key}")]
+    [AuthorizeUserOrSystem]
+    [ProducesResponseType<SettingsEnvelope>(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<SettingsEnvelope>> Update(string key, [FromBody] JsonElement payload, CancellationToken ct)
+    {
+        if (!catalog.TryGet(key, out var descriptor))
+        {
+            return NotFound();
+        }
+
+        if (descriptor.Scope == SettingsScope.Global && !IsSystemCaller && !IsSovereign)
+        {
+            return Forbid();
+        }
+
+        var effectiveUserId = descriptor.Scope == SettingsScope.Global ? null : CallerUserId;
+
+        try
+        {
+            var envelope = await settingsService.UpdateAsync(key, effectiveUserId, payload, User.Identity?.Name, ct);
+            return Ok(envelope);
+        }
+        catch (ValidationException ex)
+        {
+            foreach (var failure in ex.Errors)
+            {
+                ModelState.AddModelError(failure.PropertyName, failure.ErrorMessage);
+            }
+
+            return ValidationProblem(ModelState);
+        }
     }
 }

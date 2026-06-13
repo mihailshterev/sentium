@@ -1,11 +1,8 @@
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
-using NSubstitute;
 using Sentium.Sentinel.Application.Audit;
 using Sentium.Sentinel.Application.Engine;
-using Sentium.Sentinel.Application.Options;
 using Sentium.Sentinel.Api.Controllers;
 using Sentium.Sentinel.Core.Audit;
 using Sentium.Sentinel.Core.Dtos;
@@ -17,16 +14,12 @@ namespace Sentium.Tests.Unit.Sentinel;
 public sealed class PolicyControllerTests
 {
     private readonly InMemoryAuditLog _auditLog = new();
-    private readonly PdpOptions _options = new();
     private readonly PolicyController _controller;
 
     public PolicyControllerTests()
     {
-        var optionsMonitor = Substitute.For<IOptionsMonitor<PdpOptions>>();
-        optionsMonitor.CurrentValue.Returns(_options);
-
         var engine = new SentinelPolicyEngine([], _auditLog, NullLogger<SentinelPolicyEngine>.Instance);
-        _controller = new PolicyController(engine, _auditLog, optionsMonitor);
+        _controller = new PolicyController(engine, _auditLog);
     }
 
     private static AuditRecord MakeAuditRecord(bool allowed = true) =>
@@ -70,10 +63,10 @@ public sealed class PolicyControllerTests
         // Arrange
         var ct = TestContext.Current.CancellationToken;
 
-        // Act — request 999 but the controller clamps to 500
+        // Act - request 999 but the controller clamps to 500
         var result = await _controller.GetAudit(999, ct);
 
-        // Assert — just verify it returns OK without error
+        // Assert - just verify it returns OK without error
         result.Should().BeOfType<OkObjectResult>();
     }
 
@@ -125,33 +118,6 @@ public sealed class PolicyControllerTests
         stats.Total.Should().Be(2);
         stats.Allowed.Should().Be(1);
         stats.Denied.Should().Be(1);
-    }
-
-    [Fact]
-    public void GetSettings_ReturnsOk_WithCurrentOptions()
-    {
-        // Act
-        var result = _controller.GetSettings();
-
-        // Assert
-        result.Should().BeOfType<OkObjectResult>()
-            .Which.Value.As<PdpSettingsDto>().Should().NotBeNull();
-    }
-
-    [Fact]
-    public void UpdateSettings_ReturnsOk_WithUpdatedValues()
-    {
-        // Arrange
-        var request = new UpdatePdpSettingsRequest { LockdownMode = true, RateLimitMaxRequests = 50 };
-
-        // Act
-        var result = _controller.UpdateSettings(request);
-
-        // Assert
-        var dto = result.Should().BeOfType<OkObjectResult>()
-            .Which.Value.As<PdpSettingsDto>();
-        dto.LockdownMode.Should().BeTrue();
-        dto.RateLimitMaxRequests.Should().Be(50);
     }
 
     [Fact]

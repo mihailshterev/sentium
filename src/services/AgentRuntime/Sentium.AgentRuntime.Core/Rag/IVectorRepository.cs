@@ -29,7 +29,7 @@ public interface IVectorRepository
     /// Optional per-user visibility filter. When non-null, results are restricted to shared entries
     /// plus the given user's own entries; a filter with a <c>null</c> <see cref="KnowledgeScopeFilter.UserId"/>
     /// narrows this to shared/global entries only. When <c>null</c> (default), no scope filtering is
-    /// applied — but all current collections (knowledge_base, agent_learnings, user_memories) pass a
+    /// applied - but all current collections (knowledge_base, agent_learnings, user_memories) pass a
     /// non-null filter, so the unfiltered branch is effectively unused.
     /// </param>
     Task<IReadOnlyList<VectorSearchResult>> SearchAsync(string collectionName, float[] queryEmbedding, int topK = 5, float scoreThreshold = 0.0f, KnowledgeScopeFilter? scope = null, CancellationToken ct = default);
