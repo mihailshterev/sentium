@@ -11,6 +11,10 @@
 *.sln.docstates
 *.env
 
+# Docker Compose local artifacts
+/certs
+/.sandbox-jobs
+
 /src/aspire/Sentium.AppHost/data
 /src/services/Identity/Sentium.Identity.Api/wwwroot
 
