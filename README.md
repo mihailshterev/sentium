@@ -98,6 +98,8 @@ flowchart TB
     Identity --> SQL
 ```
 
+> **Detailed diagrams.** This is the high-level view. Per-feature sequence diagrams (authentication, agents, workflows, RAG, scheduling, Sentinel, Sandbox, Registry, Watchdog) plus component and domain class diagrams live in [docs/diagrams/](docs/diagrams/).
+
 ### Services
 
 | Service          | Responsibility                                                                                                                                                                                                           |
