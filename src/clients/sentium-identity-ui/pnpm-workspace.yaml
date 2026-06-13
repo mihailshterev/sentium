@@ -6,3 +6,6 @@ trustPolicyIgnoreAfter: 129600
 
 overrides:
   vite-plugin-sass-dts>vite: "$vite"
+
+allowBuilds:
+  "@parcel/watcher": false

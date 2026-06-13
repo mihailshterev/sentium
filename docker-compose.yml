@@ -1,13 +1,347 @@
-version: "3.8"
+name: sentium
+
+x-extra-hosts: &extra-hosts
+  - "host.docker.internal:host-gateway"
+
+x-service-env: &service-env
+  ASPNETCORE_ENVIRONMENT: Development
+  Identity__Authority: http://host.docker.internal:${IDENTITY_HTTP_PORT:-8081}
+  InternalApi__ApiKey: ${INTERNAL_API_KEY}
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://seq:80/ingest/otlp
+  OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+  services__identity__http__0: http://identity:8080
+  services__registry__http__0: http://registry:8080
+  services__sentinel__http__0: http://sentinel:8080
+  services__sandbox__http__0: http://sandbox:8080
+  services__agent-runtime__http__0: http://agent-runtime:8080
+  services__watchdog__http__0: http://watchdog:8080
+  services__gateway__http__0: http://gateway:8080
 
 services:
-  sentium-identity:
-    container_name: sentium-identity
+  sql:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: ${SQL_PASSWORD}
+    ports:
+      - "1433:1433"
+    volumes:
+      - sql-data:/var/opt/mssql
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          '/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -C -Q ''SELECT 1'' || exit 1',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 30s
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+
+  nats:
+    image: nats:2-alpine
+    command: ["-js", "-m", "8222"]
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+    volumes:
+      - nats-data:/data
+    restart: unless-stopped
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    environment:
+      QDRANT__SERVICE__API_KEY: ${QDRANT_API_KEY}
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant-data:/qdrant/storage
+    restart: unless-stopped
+
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite:latest
+    command: ["azurite", "--blobHost", "0.0.0.0", "--queueHost", "0.0.0.0", "--tableHost", "0.0.0.0", "-l", "/data"]
+    ports:
+      - "10000:10000"
+    volumes:
+      - azurite-data:/data
+    restart: unless-stopped
+
+  seq:
+    image: datalust/seq:latest
+    environment:
+      ACCEPT_EULA: "Y"
+    ports:
+      - "8090:80"
+    volumes:
+      - seq-data:/data
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:0.30.5
+    environment:
+      OLLAMA_FLASH_ATTENTION: "1"
+      OLLAMA_NUM_PARALLEL: "2"
+      OLLAMA_KEEP_ALIVE: "-1"
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    restart: unless-stopped
+    # GPU (NVIDIA): uncomment to enable - see docs/installation.md
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+
+  ollama-init:
+    image: ollama/ollama:0.30.5
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - >
+        echo 'Waiting for Ollama...';
+        until ollama list >/dev/null 2>&1; do sleep 2; done;
+        for model in "${SENTIUM_MODEL}" "${SENTIUM_EMBEDDING_MODEL}"; do
+          echo "Pulling $$model...";
+          until ollama pull "$$model"; do echo "Pull of $$model failed; retrying in 5s..."; sleep 5; done;
+        done;
+        echo 'All models ready.'
+    restart: "no"
+
+  registry:
     build:
       context: .
-      dockerfile: services/IdentityProvider/IdentityProvider.Api/Dockerfile
-    ports:
-      - "7001:80"
+      dockerfile: src/services/Registry/Sentium.Registry.Api/Dockerfile
+    extra_hosts: *extra-hosts
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
+      <<: *service-env
+      ConnectionStrings__registrydb: Server=sql,1433;Database=registrydb;User ID=sa;Password=${SQL_PASSWORD};TrustServerCertificate=true;Encrypt=false
+      ConnectionStrings__redis: redis:6379
+      ConnectionStrings__nats: nats://nats:4222
+    depends_on:
+      sql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      nats:
+        condition: service_started
     restart: unless-stopped
+
+  identity:
+    build:
+      context: .
+      dockerfile: src/services/Identity/Sentium.Identity.Api/Dockerfile
+    extra_hosts: *extra-hosts
+    environment:
+      <<: *service-env
+      ConnectionStrings__identitydb: Server=sql,1433;Database=identitydb;User ID=sa;Password=${SQL_PASSWORD};TrustServerCertificate=true;Encrypt=false
+      ConnectionStrings__redis: redis:6379
+      ConnectionStrings__nats: nats://nats:4222
+      Identity__Issuer: http://host.docker.internal:${IDENTITY_HTTP_PORT:-8081}/
+      Identity__GatewayBffSecret: ${GATEWAY_BFF_SECRET}
+      Identity__ServiceWorkerSecret: ${SERVICE_WORKER_SECRET}
+      Identity__GatewayRedirectUri: https://localhost:${GATEWAY_HTTPS_PORT:-8443}/bff/callback
+      Identity__GatewayPostLogoutUri: https://localhost:${GATEWAY_HTTPS_PORT:-8443}/bff/logged-out
+      Identity__LoginUrl: /login
+    ports:
+      - "${IDENTITY_HTTP_PORT:-8081}:8080"
+    depends_on:
+      sql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      nats:
+        condition: service_started
+    restart: unless-stopped
+
+  sentinel:
+    build:
+      context: .
+      dockerfile: src/services/Sentinel/Sentium.Sentinel.Api/Dockerfile
+    extra_hosts: *extra-hosts
+    environment:
+      <<: *service-env
+      ConnectionStrings__sentineldb: Server=sql,1433;Database=sentineldb;User ID=sa;Password=${SQL_PASSWORD};TrustServerCertificate=true;Encrypt=false
+      ConnectionStrings__redis: redis:6379
+      ConnectionStrings__nats: nats://nats:4222
+      AI__OllamaBaseUrl: http://ollama:11434
+      AI__ModelName: ${SENTIUM_MODEL}
+    depends_on:
+      sql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      nats:
+        condition: service_started
+      registry:
+        condition: service_started
+      ollama:
+        condition: service_healthy
+    restart: unless-stopped
+
+  sandbox:
+    build:
+      context: .
+      dockerfile: src/services/Sandbox/Sentium.Sandbox.Api/Dockerfile
+    extra_hosts: *extra-hosts
+    environment:
+      <<: *service-env
+      ConnectionStrings__sandboxdb: Server=sql,1433;Database=sandboxdb;User ID=sa;Password=${SQL_PASSWORD};TrustServerCertificate=true;Encrypt=false
+      ConnectionStrings__nats: nats://nats:4222
+      ConnectionStrings__workspace-storage: ${AZURITE_CONNECTION}
+      DOCKER_HOST: unix:///var/run/docker.sock
+      Sandbox__DockerHost: unix:///var/run/docker.sock
+      Sandbox__JobBaseDirectory: ${SANDBOX_JOBS_DIR:-/tmp/sentium-sandbox}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${SANDBOX_JOBS_DIR:-/tmp/sentium-sandbox}:${SANDBOX_JOBS_DIR:-/tmp/sentium-sandbox}
+    depends_on:
+      sql:
+        condition: service_healthy
+      nats:
+        condition: service_started
+      sentinel:
+        condition: service_started
+      azurite:
+        condition: service_started
+    restart: unless-stopped
+
+  agent-runtime:
+    build:
+      context: .
+      dockerfile: src/services/AgentRuntime/Sentium.AgentRuntime.Api/Dockerfile
+    extra_hosts: *extra-hosts
+    environment:
+      <<: *service-env
+      ConnectionStrings__agentruntimedb: Server=sql,1433;Database=agentruntimedb;User ID=sa;Password=${SQL_PASSWORD};TrustServerCertificate=true;Encrypt=false
+      ConnectionStrings__redis: redis:6379
+      ConnectionStrings__nats: nats://nats:4222
+      ConnectionStrings__qdrant: Endpoint=http://qdrant:6334;Key=${QDRANT_API_KEY}
+      ConnectionStrings__workspace-storage: ${AZURITE_CONNECTION}
+      AI__OllamaBaseUrl: http://ollama:11434
+      AI__ModelName: ${SENTIUM_MODEL}
+      Rag__EmbeddingModelName: ${SENTIUM_EMBEDDING_MODEL}
+    depends_on:
+      sql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      nats:
+        condition: service_started
+      qdrant:
+        condition: service_started
+      azurite:
+        condition: service_started
+      registry:
+        condition: service_started
+      sentinel:
+        condition: service_started
+      sandbox:
+        condition: service_started
+      ollama:
+        condition: service_healthy
+    restart: unless-stopped
+
+  watchdog:
+    build:
+      context: .
+      dockerfile: src/services/Watchdog/Sentium.Watchdog.Api/Dockerfile
+    extra_hosts: *extra-hosts
+    environment:
+      <<: *service-env
+      ConnectionStrings__redis: redis:6379
+      ConnectionStrings__nats: nats://nats:4222
+      ConnectionStrings__sql: Server=sql,1433;User ID=sa;Password=${SQL_PASSWORD};TrustServerCertificate=true;Encrypt=false
+      ConnectionStrings__qdrant: Endpoint=http://qdrant:6334;Key=${QDRANT_API_KEY}
+      ConnectionStrings__ollama: http://ollama:11434
+    depends_on:
+      nats:
+        condition: service_started
+      redis:
+        condition: service_healthy
+      registry:
+        condition: service_started
+    restart: unless-stopped
+
+  gateway:
+    build:
+      context: .
+      dockerfile: src/services/Gateway/Dockerfile
+    extra_hosts: *extra-hosts
+    environment:
+      <<: *service-env
+      Identity__GatewayBffSecret: ${GATEWAY_BFF_SECRET}
+      Frontend__Origin: http://localhost:${PORTAL_PORT:-5173}
+      Cors__Origins__0: http://localhost:${PORTAL_PORT:-5173}
+      ASPNETCORE_Kestrel__Certificates__Default__Path: /https/sentium.pfx
+      ASPNETCORE_Kestrel__Certificates__Default__Password: ${CERT_PASSWORD}
+    ports:
+      - "${GATEWAY_HTTPS_PORT:-8443}:8443"
+    volumes:
+      - ./certs:/https:ro
+    depends_on:
+      identity:
+        condition: service_started
+      registry:
+        condition: service_started
+      sentinel:
+        condition: service_started
+      sandbox:
+        condition: service_started
+      agent-runtime:
+        condition: service_started
+      watchdog:
+        condition: service_started
+    restart: unless-stopped
+
+  portal:
+    build:
+      context: .
+      dockerfile: src/clients/sentium-portal/Dockerfile
+      args:
+        VITE_API_BASE: https://localhost:${GATEWAY_HTTPS_PORT:-8443}
+    ports:
+      - "${PORTAL_PORT:-5173}:80"
+    depends_on:
+      gateway:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  sql-data:
+  redis-data:
+  nats-data:
+  qdrant-data:
+  azurite-data:
+  seq-data:
+  ollama-data:
