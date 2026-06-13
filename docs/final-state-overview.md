@@ -3,7 +3,7 @@
 > Counterpart to [initial-concept-proposal.md](initial-concept-proposal.md), written now that
 > development is complete. It records the system **as actually built** and how it diverged from the
 > original proposal. Sequence/flow diagrams for each capability live in
-> [new-diagrams/](new-diagrams/).
+> [diagrams/](diagrams/).
 
 ### Core Idea
 
