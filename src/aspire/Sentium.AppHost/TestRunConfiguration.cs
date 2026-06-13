@@ -31,12 +31,17 @@ internal static class TestRunConfiguration
 
         var blobs = storage.AddBlobs(ResourceNames.WorkspaceBlobs);
 
+        var seq = builder.AddSeq(ResourceNames.Seq)
+            .ExcludeFromManifest()
+            .WithEnvironment(EnvConfig.Keys.AcceptEula, EnvConfig.Values.Yes);
+
         var ollama = builder.AddOllama(ResourceNames.Ollama)
             .WithImage("ollama/ollama", "0.30.5")
             .WithEndpoint("http", e => e.Port = 11434);
 
         var identityApi = builder.AddProject<Projects.Sentium_Identity_Api>(ServiceNames.Identity)
             .WithReference(identityDb).WaitFor(identityDb)
+            .WithReference(seq).WaitFor(seq)
             .WithReference(nats).WaitFor(nats)
             .WithReference(redis).WaitFor(redis)
             .WithEnvironment("ASPNETCORE_ENVIRONMENT", "Testing")
@@ -58,6 +63,7 @@ internal static class TestRunConfiguration
 
         var registryApi = builder.AddProject<Projects.Sentium_Registry_Api>(ServiceNames.Registry)
             .WithReference(registryDb).WaitFor(registryDb)
+            .WithReference(seq).WaitFor(seq)
             .WithReference(nats).WaitFor(nats)
             .WithReference(redis).WaitFor(redis)
             .WithReference(identityApi).WaitFor(identityApi)
@@ -72,6 +78,7 @@ internal static class TestRunConfiguration
 
         var sentinelApi = builder.AddProject<Projects.Sentium_Sentinel_Api>(ServiceNames.Sentinel)
             .WithReference(nats).WaitFor(nats)
+            .WithReference(seq).WaitFor(seq)
             .WithReference(sentinelDb).WaitFor(sentinelDb)
             .WithReference(identityApi).WaitFor(identityApi)
             .WithReference(registryApi).WaitFor(registryApi)
@@ -91,6 +98,7 @@ internal static class TestRunConfiguration
 
         var sandboxApi = builder.AddProject<Projects.Sentium_Sandbox_Api>(ServiceNames.Sandbox)
             .WithReference(nats).WaitFor(nats)
+            .WithReference(seq).WaitFor(seq)
             .WithReference(blobs).WaitFor(blobs)
             .WithReference(sandboxDb).WaitFor(sandboxDb)
             .WithReference(sentinelApi).WaitFor(sentinelApi)
@@ -107,6 +115,7 @@ internal static class TestRunConfiguration
 
         var agentRuntimeApi = builder.AddProject<Projects.Sentium_AgentRuntime_Api>(ServiceNames.AgentRuntime)
             .WithReference(nats).WaitFor(nats)
+            .WithReference(seq).WaitFor(seq)
             .WithReference(agentRuntimeDb).WaitFor(agentRuntimeDb)
             .WithReference(redis).WaitFor(redis)
             .WithReference(qdrant).WaitFor(qdrant)
@@ -130,6 +139,7 @@ internal static class TestRunConfiguration
 
         var watchdogApi = builder.AddProject<Projects.Sentium_Watchdog_Api>(ServiceNames.Watchdog)
             .WithReference(nats).WaitFor(nats)
+            .WithReference(seq).WaitFor(seq)
             .WithReference(sql).WaitFor(sql)
             .WithReference(redis).WaitFor(redis)
             .WithReference(qdrant)

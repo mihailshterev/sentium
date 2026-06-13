@@ -12,9 +12,9 @@ namespace Sentium.Identity.Infrastructure.Identity.OpenIddict;
 
 public sealed class OpenIddictWorker(
     IServiceProvider serviceProvider,
-    IConfiguration configuration) : IHostedLifecycleService
+    IConfiguration configuration) : IHostedService
 {
-    public async Task StartingAsync(CancellationToken cancellationToken)
+    public async Task StartAsync(CancellationToken cancellationToken)
     {
         await using var scope = serviceProvider.CreateAsyncScope();
 
@@ -93,11 +93,7 @@ public sealed class OpenIddictWorker(
         }
     }
 
-    public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
-    public Task StartedAsync(CancellationToken cancellationToken) => Task.CompletedTask;
-    public Task StoppingAsync(CancellationToken cancellationToken) => Task.CompletedTask;
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
-    public Task StoppedAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
     private static async Task SeedRolesAsync(IServiceProvider services, CancellationToken ct)
     {
