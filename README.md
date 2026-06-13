@@ -167,6 +167,11 @@ Every service follows the same clean-architecture layering:
 
 ## Getting started
 
+> **Full installation guide:** [docs/installation.md](docs/installation.md) covers all three
+> ways to run Sentium - **.NET Aspire** (recommended for development), **Docker Compose**
+> (self-hosted deployment), and **front-end only** - with prerequisites, configuration reference,
+> GPU acceleration, platform notes, and troubleshooting. The quick paths below get you started.
+
 ### Prerequisites
 
 - **.NET 10 SDK**
@@ -188,6 +193,44 @@ Then open the **Aspire dashboard** (the URL is printed on startup) to see every 
 - **Identity UI** - `http://localhost:5174`
 
 > First start takes a while: Docker images and the Ollama models are downloaded. Subsequent starts reuse the persisted data volumes.
+
+### Run with Docker Compose
+
+If you'd rather self-host the whole platform with plain Docker (no .NET SDK on the host), a complete [`docker-compose.yml`](docker-compose.yml) builds every service image and starts all infrastructure. It wires the services together with the same connection strings and service-discovery keys that Aspire injects.
+
+**Prerequisites:** Docker (with the Compose plugin) and the .NET SDK **only** for the one-time dev-certificate step below.
+
+```bash
+# 1. Configure secrets and ports
+cp .env.example .env            # then edit the secrets in .env
+
+# 2. Generate the Gateway's TLS dev certificate (needed for the secure BFF auth cookie),
+#    using the same password you set for CERT_PASSWORD in .env, and trust it locally:
+mkdir certs            # dotnet dev-certs does not create the target directory
+dotnet dev-certs https -ep certs/sentium.pfx -p <CERT_PASSWORD>
+dotnet dev-certs https --trust
+
+# 3. Build and start everything
+docker compose up --build
+```
+
+Once the stack is healthy:
+
+- **Portal** - `http://localhost:5173`
+- **Gateway (API/BFF)** - `https://localhost:8443`
+- **Identity (OIDC + login UI)** - `http://localhost:8081`
+- **Seq (logs)** - `http://localhost:8090`, **Qdrant** - `http://localhost:6333/dashboard`
+
+Services apply their EF Core migrations automatically on first start, and a one-shot `ollama-init` container pulls the chat + embedding models into a persistent volume.
+
+**Notes & caveats**
+
+- **Trust model / OIDC.** The Identity server is the canonical OIDC issuer and must be reachable under the _same_ URL from both your browser and the back-end containers. Compose uses `host.docker.internal` for this, which works out of the box on **Docker Desktop**. On native Linux, the `host.docker.internal:host-gateway` mapping is included, but you must also let your own browser resolve it (e.g. add `127.0.0.1 host.docker.internal` to `/etc/hosts`).
+- **HTTPS for the auth cookie.** The Gateway terminates TLS (step 2) so the BFF cookie can be issued as `Secure`/`SameSite=None` across the portal origin. This mirrors how the Aspire setup runs over HTTPS.
+- **Code sandbox.** The Sandbox mounts the host Docker socket and a job directory that must share an identical path on host and container (`SANDBOX_JOBS_DIR`). This works on Linux/macOS and the WSL2 backend; Windows users should point it at a path inside WSL2.
+- **GPU.** Local inference is slow on CPU. Uncomment the NVIDIA `deploy` block on the `ollama` service (requires the NVIDIA Container Toolkit) for GPU acceleration.
+
+> The Aspire AppHost remains the recommended path for day-to-day development (richer dashboard, hot reload, no cert/issuer setup). Docker Compose targets self-hosted deployment and wider adoption.
 
 ### Front-end only (against a running gateway)
 
