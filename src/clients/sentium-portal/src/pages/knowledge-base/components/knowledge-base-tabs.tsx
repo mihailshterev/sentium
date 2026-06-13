@@ -180,9 +180,7 @@ export const AgentLearningsTab = () => {
           <BrainCircuit size={15} className={styles.cardIconPurple} />
           <div>
             <p className={styles.cardTitle}>Captured Learnings</p>
-            <p className={styles.cardSubtitle}>
-              Knowledge captured by agents during interactions — auto-ingested into the vector knowledge base
-            </p>
+            <p className={styles.cardSubtitle}>Knowledge captured by agents during interactions</p>
           </div>
         </div>
         {stats && <span className={styles.pillPurple}>{stats.totalLearnings} total</span>}
