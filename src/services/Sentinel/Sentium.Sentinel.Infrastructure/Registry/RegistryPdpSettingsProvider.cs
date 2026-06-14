@@ -22,7 +22,7 @@ public sealed class RegistryPdpSettingsProvider(
         try
         {
             return await cache.GetOrCreateAsync(
-                CacheKeys.SettingsFor(SettingsKeys.Pdp, null),
+                SentinelSettingsCacheKeys.PdpRuntime(null),
                 async token =>
                 {
                     var client = httpClientFactory.CreateClient(ServiceNames.Registry);

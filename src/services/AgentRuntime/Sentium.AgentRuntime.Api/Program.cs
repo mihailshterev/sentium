@@ -25,7 +25,7 @@ builder.Services.AddControllers(options => options.Filters.Add<FluentValidationF
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
 builder.AddNatsClient(ResourceNames.Nats);
-builder.AddRedisDistributedCache(ResourceNames.Redis);
+builder.AddSentiumDistributedCache(ResourceNames.Redis);
 builder.AddQdrantClient(ResourceNames.Qdrant);
 
 builder.AddAzureBlobServiceClient(ResourceNames.WorkspaceBlobs);

@@ -65,6 +65,7 @@ public static class ServiceCollectionExtensions
         }).AddHttpMessageHandler<InternalApiKeyDelegatingHandler>();
 
         services.AddSingleton<IPdpRuntimeSettingsProvider, RegistryPdpSettingsProvider>();
+        services.AddSingleton<ISettingsCacheInvalidationHandler, PdpSettingsCacheInvalidationHandler>();
         builder.AddSettingsSyncWorker();
 
         return builder;

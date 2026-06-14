@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Logging;
 using Sentium.AgentRuntime.Core.Registry;
-using Sentium.Shared.Constants;
 
 namespace Sentium.AgentRuntime.Infrastructure.Registry;
 
@@ -21,7 +20,7 @@ public sealed class RegistrySettingsService(
         try
         {
             return await cache.GetOrCreateAsync(
-                CacheKeys.SettingsFor(SettingsKeys.Harness, userId),
+                AgentRuntimeSettingsCacheKeys.Snapshot(userId),
                 async token =>
                 {
                     var snapshot = await registryClient.GetSettingsAsync(userId, token);
@@ -29,6 +28,7 @@ public sealed class RegistrySettingsService(
                     return snapshot ?? throw new InvalidOperationException("Registry did not return settings");
                 },
                 CacheOptions,
+                tags: [AgentRuntimeSettingsCacheKeys.SnapshotTag],
                 cancellationToken: ct);
         }
         catch (OperationCanceledException)

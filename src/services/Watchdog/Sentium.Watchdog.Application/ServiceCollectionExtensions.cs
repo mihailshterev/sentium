@@ -42,6 +42,7 @@ public static class ServiceCollectionExtensions
         }).AddHttpMessageHandler<InternalApiKeyDelegatingHandler>();
 
         services.AddSingleton<IWatchdogSettingsProvider, RegistryWatchdogSettingsProvider>();
+        services.AddSingleton<ISettingsCacheInvalidationHandler, WatchdogSettingsCacheInvalidationHandler>();
 
         services.AddSingleton<IWatchdog, WatchdogService>();
         services.AddSingleton<IServiceHealthStateStore, ServiceHealthStateStore>();

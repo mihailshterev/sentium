@@ -36,7 +36,7 @@ public sealed class SettingsService(
         var scopeUserId = ScopeUserId(descriptor, userId);
 
         return await cache.GetOrCreateAsync(
-            CacheKeys.SettingsFor(descriptor.Key, scopeUserId),
+            RegistrySettingsCacheKeys.Envelope(descriptor.Key, scopeUserId),
             async token => await LoadAsync(descriptor, scopeUserId, token),
             CacheOptions,
             cancellationToken: ct
@@ -77,9 +77,8 @@ public sealed class SettingsService(
             await repository.UpdateAsync(entity, ct);
         }
 
-        var cacheKey = CacheKeys.SettingsFor(descriptor.Key, scopeUserId);
-        await cache.RemoveAsync(cacheKey, ct);
-        await eventBus.PublishAsync(NatsSubjects.SettingsInvalidated, new SettingsInvalidatedEvent(cacheKey, DateTimeOffset.UtcNow), ct: ct);
+        await cache.RemoveAsync(RegistrySettingsCacheKeys.Envelope(descriptor.Key, scopeUserId), ct);
+        await eventBus.PublishAsync(NatsSubjects.SettingsInvalidated, new SettingsInvalidatedEvent(descriptor.Key, scopeUserId, DateTimeOffset.UtcNow), ct: ct);
 
         logger.LogInformation("Settings '{Key}' updated for {Scope} by {By}; cache invalidated", descriptor.Key, scopeUserId?.ToString() ?? "global", updatedBy ?? "system");
 
