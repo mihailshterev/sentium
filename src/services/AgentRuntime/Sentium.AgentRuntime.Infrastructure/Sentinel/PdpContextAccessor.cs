@@ -26,7 +26,7 @@ public interface IPdpContextAccessor
 }
 
 /// <summary>
-/// AsyncLocal-based implementation — safe across async continuations within the same logical call context.
+/// AsyncLocal-based implementation - safe across async continuations within the same logical call context.
 /// </summary>
 public sealed class PdpContextAccessor : IPdpContextAccessor
 {

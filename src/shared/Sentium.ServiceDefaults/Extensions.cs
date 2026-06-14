@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
@@ -155,6 +156,14 @@ public static class Extensions
         };
 
         return context.Response.WriteAsync(JsonSerializer.Serialize(payload, HealthJsonOptions));
+    }
+
+    public static TBuilder AddSentiumDistributedCache<TBuilder>(this TBuilder builder, string connectionName) where TBuilder : IHostApplicationBuilder
+    {
+        builder.AddRedisDistributedCache(connectionName);
+        builder.Services.Configure<RedisCacheOptions>(options => options.InstanceName = $"{builder.Environment.ApplicationName}:");
+
+        return builder;
     }
 
     public static IHostApplicationBuilder AddAuthenticationDefaults(this IHostApplicationBuilder builder)

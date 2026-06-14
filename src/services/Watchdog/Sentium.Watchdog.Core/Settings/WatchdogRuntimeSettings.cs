@@ -9,6 +9,9 @@ public sealed record WatchdogRuntimeSettings
     public int SampleHistorySize { get; init; } = 60;
 }
 
+/// <summary>
+/// Supplies the current watchdog runtime settings (poll interval, thresholds, history size).
+/// </summary>
 public interface IWatchdogSettingsProvider
 {
     ValueTask<WatchdogRuntimeSettings> GetAsync(CancellationToken ct = default);

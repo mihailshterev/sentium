@@ -22,7 +22,7 @@ public sealed class RegistryWatchdogSettingsProvider(
         try
         {
             return await cache.GetOrCreateAsync(
-                CacheKeys.SettingsFor(SettingsKeys.Watchdog, null),
+                WatchdogSettingsCacheKeys.Runtime(null),
                 async token =>
                 {
                     var client = httpClientFactory.CreateClient(ServiceNames.Registry);
