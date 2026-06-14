@@ -9,6 +9,9 @@ namespace Sentium.Watchdog.Api.Controllers;
 [Route("system")]
 public sealed class SystemMetricsController(IWatchdog watchdog) : ControllerBase
 {
+    /// <summary>
+    /// Returns a current snapshot of host system metrics.
+    /// </summary>
     [HttpGet("metrics")]
     public IActionResult GetMetrics()
     {

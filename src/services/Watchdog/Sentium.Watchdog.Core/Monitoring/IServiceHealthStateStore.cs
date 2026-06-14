@@ -1,5 +1,8 @@
 namespace Sentium.Watchdog.Core.Monitoring;
 
+/// <summary>
+/// In-memory store of the latest health status and rolling sample history per target.
+/// </summary>
 public interface IServiceHealthStateStore
 {
     /// <summary>

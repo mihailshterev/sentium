@@ -7,6 +7,9 @@ namespace Sentium.ApiGateway;
 
 public static class BffEndpoints
 {
+    /// <summary>
+    /// Maps the BFF authentication endpoints (login, logout, user) onto the <c>/bff</c> route group.
+    /// </summary>
     public static IEndpointRouteBuilder MapBffEndpoints(this IEndpointRouteBuilder app, IConfiguration configuration)
     {
         var group = app.MapGroup("/bff");
@@ -20,7 +23,8 @@ public static class BffEndpoints
             properties.Items["returnUrl"] = returnUrl ?? "/";
 
             return Results.Challenge(properties, [OpenIdConnectDefaults.AuthenticationScheme]);
-        }).AllowAnonymous();
+        }).AllowAnonymous()
+          .WithSummary("Starts OIDC login, challenging the configured identity provider.");
 
         group.MapGet("/login-complete", (string? returnUrl) =>
         {
@@ -38,7 +42,8 @@ public static class BffEndpoints
             }
 
             return Results.Redirect(target);
-        }).RequireAuthorization("authenticated");
+        }).RequireAuthorization("authenticated")
+          .WithSummary("OIDC return endpoint; redirects to a validated frontend URL after sign-in.");
 
         group.MapGet("/user", async (HttpContext context) =>
         {
@@ -55,13 +60,15 @@ public static class BffEndpoints
                 name = result.Principal.FindFirstValue(ClaimTypes.Name),
                 roles = result.Principal.Claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value).ToArray()
             });
-        }).AllowAnonymous();
+        }).AllowAnonymous()
+          .WithSummary("Returns the current authenticated user's claims, or 401 if no session.");
 
         group.MapPost("/logout", () =>
         {
             var frontendOrigin = configuration["Frontend:Origin"] ?? "http://localhost:5173";
             return Results.SignOut(new AuthenticationProperties { RedirectUri = frontendOrigin }, [CookieAuthenticationDefaults.AuthenticationScheme, OpenIdConnectDefaults.AuthenticationScheme]);
-        }).RequireAuthorization("authenticated");
+        }).RequireAuthorization("authenticated")
+          .WithSummary("Signs the user out of the cookie and OIDC schemes.");
 
         return app;
     }

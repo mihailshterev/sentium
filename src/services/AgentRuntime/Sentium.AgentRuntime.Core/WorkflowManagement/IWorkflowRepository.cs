@@ -2,6 +2,9 @@ using Sentium.AgentRuntime.Core.Dtos;
 
 namespace Sentium.AgentRuntime.Core.WorkflowManagement;
 
+/// <summary>
+/// Persistence-layer CRUD operations for agent workflows.
+/// </summary>
 public interface IWorkflowRepository
 {
     Task<IReadOnlyList<WorkflowResponse>> GetWorkflowsAsync(CancellationToken ct = default);

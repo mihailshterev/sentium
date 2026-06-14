@@ -24,6 +24,9 @@ public sealed class WatchdogStreamController(IEventBus eventBus, ILogger<Watchdo
         Converters = { new JsonStringEnumConverter() }
     };
 
+    /// <summary>
+    /// Opens the Server-Sent Events stream of live health and incident updates.
+    /// </summary>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task Stream(CancellationToken ct)
