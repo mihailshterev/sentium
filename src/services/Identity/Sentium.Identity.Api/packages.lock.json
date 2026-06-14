@@ -914,6 +914,7 @@
       "sentium.servicedefaults": {
         "type": "Project",
         "dependencies": {
+          "Aspire.StackExchange.Redis.DistributedCaching": "[13.4.3, )",
           "Microsoft.AspNetCore.Authentication.JwtBearer": "[10.0.1, )",
           "Microsoft.Extensions.Http.Resilience": "[10.7.0, )",
           "Microsoft.Extensions.ServiceDiscovery": "[10.2.0, )",

@@ -101,6 +101,7 @@ public static class ServiceCollectionExtensions
         }).AddHttpMessageHandler<InternalApiKeyDelegatingHandler>();
 
         services.AddScoped<IRegistrySettingsService, RegistrySettingsService>();
+        services.AddSingleton<ISettingsCacheInvalidationHandler, AgentSettingsCacheInvalidationHandler>();
         builder.AddSettingsSyncWorker();
 
         services.AddSingleton<IEmbeddingService, OllamaEmbeddingService>();

@@ -13,7 +13,7 @@ builder.AddAuthenticationDefaults();
 builder.AddRoleAuthorization();
 
 builder.AddNatsClient(ResourceNames.Nats);
-builder.AddRedisDistributedCache(ResourceNames.Redis);
+builder.AddSentiumDistributedCache(ResourceNames.Redis);
 
 builder.Services.AddSentiumProblemDetails();
 builder.Services.AddOpenApi();

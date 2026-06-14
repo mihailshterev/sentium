@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Sentium.Infrastructure.Messaging;
@@ -8,15 +7,21 @@ using Sentium.Shared.Events;
 namespace Sentium.Infrastructure.Settings;
 
 /// <summary>
-/// Subscribes to the Registry's cache-invalidation event and evicts the local L1 entry
-/// so this service instance always sees fresh settings on the next read.
-/// L2 (Redis) is already evicted by Registry itself; this worker only clears L1.
+/// Subscribes to the Registry's semantic settings-invalidation event and lets this service's
+/// registered <see cref="ISettingsCacheInvalidationHandler"/>s evict their own cache entries, so the
+/// instance always sees fresh settings on the next read.
+/// <para/>
+/// The worker is intentionally generic: it knows nothing about cache keys. Each service translates
+/// the <c>(Key, UserId)</c> identity to its own private key(s) via its handler(s), which keeps cache
+/// keys out of the cross-service contract (different services may cache different shapes).
 /// </summary>
 public sealed class SettingsSyncWorker(
     IEventBus eventBus,
-    HybridCache hybridCache,
+    IEnumerable<ISettingsCacheInvalidationHandler> handlers,
     ILogger<SettingsSyncWorker> logger) : BackgroundService
 {
+    private readonly ISettingsCacheInvalidationHandler[] _handlers = [.. handlers];
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("SettingsSyncWorker started - listening on {Subject}", NatsSubjects.SettingsInvalidated);
@@ -32,19 +37,7 @@ public sealed class SettingsSyncWorker(
                         continue;
                     }
 
-                    try
-                    {
-                        await hybridCache.RemoveAsync(msg.Data.CacheKey, stoppingToken);
-
-                        logger.LogInformation(
-                            "L1 cache evicted for key '{Key}' (settings updated at {At})",
-                            msg.Data.CacheKey,
-                            msg.Data.InvalidatedAt);
-                    }
-                    catch (Exception ex) when (ex is not OperationCanceledException)
-                    {
-                        logger.LogError(ex, "Failed to evict cache key '{Key}'", msg.Data.CacheKey);
-                    }
+                    await InvalidateAsync(msg.Data, stoppingToken);
                 }
             }
             catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
@@ -56,6 +49,33 @@ public sealed class SettingsSyncWorker(
                 logger.LogError(ex, "SettingsSyncWorker subscription failed; restarting in 5 s");
                 await Task.Delay(TimeSpan.FromSeconds(5), stoppingToken);
             }
+        }
+    }
+
+    private async Task InvalidateAsync(SettingsInvalidatedEvent evt, CancellationToken ct)
+    {
+        var handled = false;
+
+        foreach (var handler in _handlers)
+        {
+            try
+            {
+                handled |= await handler.TryInvalidateAsync(evt.Key, evt.UserId, ct);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.LogError(ex, "Handler {Handler} failed to evict settings '{Key}' (scope {Scope})",
+                    handler.GetType().Name, evt.Key, evt.UserId?.ToString() ?? "global");
+            }
+        }
+
+        if (handled)
+        {
+            logger.LogInformation(
+                "Cache evicted for settings '{Key}' (scope {Scope}, updated at {At})",
+                evt.Key,
+                evt.UserId?.ToString() ?? "global",
+                evt.InvalidatedAt);
         }
     }
 }
