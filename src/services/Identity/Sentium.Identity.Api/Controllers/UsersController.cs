@@ -2,6 +2,7 @@
 using Sentium.Identity.Application.Abstractions;
 using Sentium.Identity.Core.Dtos;
 using Sentium.Identity.Core.Security;
+using Sentium.Shared.Results;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OpenIddict.Abstractions;
@@ -24,10 +25,9 @@ public sealed class UsersController(IUserService userService, IUserClaimsService
     [HttpGet]
     [Authorize(Roles = Roles.Sovereign)]
     [ProducesResponseType(typeof(PagedResponse<UserResponse>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetAllUsers([FromQuery] int page = 1, [FromQuery] int pageSize = 20, CancellationToken ct = default)
+    public async Task<IActionResult> GetAllUsers([FromQuery] int page = 1, [FromQuery] int pageSize = PaginationQuery.DefaultPageSize, CancellationToken ct = default)
     {
-        page = Math.Max(1, page);
-        pageSize = Math.Clamp(pageSize, 1, 100);
+        (page, pageSize) = new PaginationQuery { Page = page, PageSize = pageSize }.Normalize();
 
         var (users, totalCount) = await userService.GetPagedUsersAsync(page, pageSize, ct);
 
@@ -53,8 +53,7 @@ public sealed class UsersController(IUserService userService, IUserClaimsService
                 u.IsLockedOut);
         }).ToList();
 
-        var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
-        return Ok(new PagedResponse<UserResponse>(items, totalCount, page, pageSize, totalPages));
+        return Ok(PagedResponse<UserResponse>.Create(items, totalCount, page, pageSize));
     }
 
     /// <summary>

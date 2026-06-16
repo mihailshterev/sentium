@@ -15,15 +15,20 @@ namespace Sentium.AgentRuntime.Api.Controllers;
 public sealed class AgentsController(IAgentService agentService) : ControllerBase
 {
     /// <summary>
-    /// Returns a list of all agents
+    /// Returns a page of agents (newest first).
     /// </summary>
+    /// <param name="page">1-based page number (default: 1).</param>
+    /// <param name="pageSize">Number of items per page (default: 20, max: 100).</param>
     /// <param name="ct">Cancellation token</param>
-    /// <returns>List of agents</returns>
+    /// <returns>A paginated list of agents.</returns>
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async ValueTask<ActionResult<IReadOnlyList<AgentResponse>>> GetAgents(CancellationToken ct)
+    [ProducesResponseType(typeof(PagedResponse<AgentResponse>), StatusCodes.Status200OK)]
+    public async ValueTask<ActionResult<PagedResponse<AgentResponse>>> GetAgents(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = PaginationQuery.DefaultPageSize,
+        CancellationToken ct = default)
     {
-        var agents = await agentService.GetAgentsAsync(ct);
+        var agents = await agentService.GetAgentsPagedAsync(page, pageSize, ct);
         return Ok(agents);
     }
 

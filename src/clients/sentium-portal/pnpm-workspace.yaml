@@ -7,6 +7,7 @@ trustPolicyIgnoreAfter: 129600
 overrides:
   vite-plugin-sass-dts>vite: "$vite"
   "minimatch@>=5>brace-expansion": ">=5.0.6"
+  eslint-plugin-react-hooks>@babel/core: "$@babel/core"
 
 allowBuilds:
   "@parcel/watcher": false

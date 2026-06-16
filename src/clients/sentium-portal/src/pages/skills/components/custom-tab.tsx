@@ -4,6 +4,7 @@ import styles from "../skills.module.scss";
 import { useSkills } from "../../../hooks/useSkills";
 import type { AgentSkill } from "../../../types/skills";
 import EmptyState from "../../../components/ui/empty-state";
+import LoadMore from "../../../components/ui/load-more";
 import SkillCard from "./skill-card";
 import StatusMessage from "../../../components/ui/status-message";
 import ConfirmDialog from "../../../components/ui/confirm-dialog";
@@ -12,6 +13,9 @@ const CustomTab = () => {
   const {
     skills,
     isLoading,
+    hasMore,
+    loadMore,
+    isLoadingMore,
     createSkill,
     isCreating,
     updateSkill,
@@ -20,7 +24,7 @@ const CustomTab = () => {
     deleteSkill,
     isDeleting,
     deletingId,
-  } = useSkills();
+  } = useSkills(0);
   const customSkills = skills.filter((s) => s.skillType === 0);
 
   const [showForm, setShowForm] = useState(false);
@@ -140,7 +144,7 @@ const CustomTab = () => {
               <label className={styles.label}>Description</label>
               <input
                 className={styles.input}
-                placeholder="When to use this skill — seen by agents"
+                placeholder="When to use this skill - seen by agents"
                 value={form.description}
                 onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
               />
@@ -196,6 +200,7 @@ const CustomTab = () => {
               pillClass={styles.pillPurple}
             />
           ))}
+          <LoadMore hasMore={hasMore} isLoading={isLoadingMore} onLoadMore={loadMore} />
         </div>
       </div>
 

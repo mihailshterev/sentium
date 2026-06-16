@@ -1,5 +1,6 @@
 import { Plus, MessageSquare, Trash2, FolderOpen, FileText, ChevronDown, ChevronRight, Loader2 } from "lucide-react";
 import styles from "../assistant.module.scss";
+import InfiniteScrollSentinel from "../../../components/ui/infinite-scroll-sentinel";
 import type { ConversationSummary } from "../../../types/assistant";
 import type { Workspace, WorkspaceFile } from "../../../types/workspace";
 
@@ -14,6 +15,9 @@ interface ConversationSidebarProps {
   conversationGroups: ConversationGroup[];
   activeConversationId: string | null;
   isCreating: boolean;
+  hasMoreConversations?: boolean;
+  isLoadingMoreConversations: boolean;
+  onLoadMoreConversations: () => void;
   wsContextOpen: boolean;
   workspaces: Workspace[];
   expandedWorkspace: string | null;
@@ -33,6 +37,9 @@ const ConversationSidebar = ({
   conversationGroups,
   activeConversationId,
   isCreating,
+  hasMoreConversations,
+  isLoadingMoreConversations,
+  onLoadMoreConversations,
   wsContextOpen,
   workspaces,
   expandedWorkspace,
@@ -90,6 +97,12 @@ const ConversationSidebar = ({
             ))}
           </div>
         ))}
+
+        <InfiniteScrollSentinel
+          hasMore={!!hasMoreConversations}
+          isLoading={isLoadingMoreConversations}
+          onLoadMore={onLoadMoreConversations}
+        />
       </div>
 
       <div className={styles.wsContextSection}>

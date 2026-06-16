@@ -1,3 +1,5 @@
+using Sentium.Shared.Results;
+
 namespace Sentium.AgentRuntime.Core.Learnings;
 
 /// <summary>
@@ -8,10 +10,10 @@ namespace Sentium.AgentRuntime.Core.Learnings;
 public interface IAgentLearningService
 {
     /// <summary>
-    /// Returns paginated learnings, optionally filtered by agent name.
+    /// Returns a page of learnings, optionally filtered by agent name.
     /// Results are ordered newest-first.
     /// </summary>
-    Task<IReadOnlyList<AgentLearningResponse>> GetLearningsAsync(string? agentName = null, int count = 50, CancellationToken ct = default);
+    Task<PagedResponse<AgentLearningResponse>> GetLearningsAsync(string? agentName, int page, int pageSize, CancellationToken ct = default);
 
     /// <summary>
     /// Returns aggregate statistics across all learnings.

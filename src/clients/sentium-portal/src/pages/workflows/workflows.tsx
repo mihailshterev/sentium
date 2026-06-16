@@ -5,11 +5,12 @@ import styles from "./workflows.module.scss";
 import useWorkflows from "../../hooks/useWorkflows";
 import PageHeader from "../../components/ui/page-header";
 import EmptyState from "../../components/ui/empty-state";
+import LoadMore from "../../components/ui/load-more";
 import WorkflowCard from "./components/workflow-card";
 import ConfirmDialog from "../../components/ui/confirm-dialog";
 
 const WorkflowsList = () => {
-  const { workflows, isLoading, deleteWorkflow } = useWorkflows();
+  const { workflows, totalCount, isLoading, hasMore, loadMore, isLoadingMore, deleteWorkflow } = useWorkflows();
   const navigate = useNavigate();
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
@@ -31,7 +32,7 @@ const WorkflowsList = () => {
           <div className={styles.headerRight}>
             <div className={styles.headerBadge}>
               <GitBranch size={13} />
-              <span>{workflows.length} workflows</span>
+              <span>{totalCount} workflows</span>
             </div>
             <button className={styles.createBtn} onClick={() => navigate("/workflows/new")}>
               <Plus size={14} />
@@ -77,6 +78,7 @@ const WorkflowsList = () => {
                 />
               ))}
             </div>
+            <LoadMore hasMore={hasMore} isLoading={isLoadingMore} onLoadMore={loadMore} />
           </div>
         )}
       </div>

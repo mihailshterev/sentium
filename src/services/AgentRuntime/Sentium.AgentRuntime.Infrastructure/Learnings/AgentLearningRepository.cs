@@ -7,7 +7,7 @@ namespace Sentium.AgentRuntime.Infrastructure.Learnings;
 
 public sealed class AgentLearningRepository(AgentRuntimeDbContext context) : IAgentLearningRepository
 {
-    public async Task<IReadOnlyList<AgentLearningResponse>> GetAllAsync(string? agentName = null, int count = 50, CancellationToken ct = default)
+    public async Task<(IReadOnlyList<AgentLearningResponse> Items, int TotalCount)> GetAllAsync(string? agentName, int page, int pageSize, CancellationToken ct = default)
     {
         var query = context.AgentLearnings.AsNoTracking();
 
@@ -16,13 +16,18 @@ public sealed class AgentLearningRepository(AgentRuntimeDbContext context) : IAg
             query = query.Where(l => l.AgentName == agentName);
         }
 
-        return await query
+        var total = await query.CountAsync(ct);
+        var items = await query
             .OrderByDescending(l => l.CapturedAt)
-            .Take(count)
+            .ThenByDescending(l => l.Id)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .Select(l => new AgentLearningResponse(
                 l.Id, l.AgentName, l.Content, l.Tags,
                 l.ConversationId, l.CapturedAt, l.IsIngested, l.IsGlobal))
             .ToListAsync(ct);
+
+        return (items, total);
     }
 
     public async Task<AgentLearningStats> GetStatsAsync(CancellationToken ct = default)

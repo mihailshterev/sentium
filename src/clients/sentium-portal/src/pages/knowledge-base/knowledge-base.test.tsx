@@ -43,7 +43,11 @@ const defaultKbHook = {
 
 const defaultLearningsHook = {
   learnings: [mockLearning],
+  hasMore: false,
+  loadMore: vi.fn(),
+  isLoadingMore: false,
   isLoading: false,
+  isFetching: false,
   error: null,
   stats: mockStats,
   isStatsLoading: false,

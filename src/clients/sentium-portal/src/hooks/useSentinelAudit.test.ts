@@ -15,15 +15,21 @@ const record = { id: "r1" } as never;
 const stats = { total: 1 } as never;
 
 beforeEach(() => {
-  vi.spyOn(sentinelService, "fetchAuditLog").mockResolvedValue([record]);
+  vi.spyOn(sentinelService, "fetchAuditLog").mockResolvedValue({
+    items: [record],
+    totalCount: 1,
+    page: 1,
+    pageSize: 20,
+    totalPages: 1,
+  });
   vi.spyOn(sentinelService, "fetchAuditStats").mockResolvedValue(stats);
 });
 
 describe("useSentinelAudit", () => {
-  it("requests the audit log with the provided count", async () => {
+  it("requests the audit log with the provided page size", async () => {
     const { result } = renderHook(() => useSentinelAudit(42), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
-    expect(sentinelService.fetchAuditLog).toHaveBeenCalledWith(42);
+    expect(sentinelService.fetchAuditLog).toHaveBeenCalledWith(1, 42);
     expect(result.current.records).toEqual([record]);
   });
 

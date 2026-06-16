@@ -1,4 +1,5 @@
 using Sentium.AgentRuntime.Core.Dtos;
+using Sentium.Shared.Results;
 
 namespace Sentium.AgentRuntime.Core.Conversations;
 
@@ -7,7 +8,10 @@ namespace Sentium.AgentRuntime.Core.Conversations;
 /// </summary>
 public interface IConversationService
 {
-    Task<IReadOnlyList<ConversationSummary>> GetConversationsAsync(CancellationToken ct = default);
+    /// <summary>
+    /// Returns a page of conversation summaries (newest first).
+    /// </summary>
+    Task<PagedResponse<ConversationSummary>> GetConversationsAsync(int page, int pageSize, CancellationToken ct = default);
     Task<ConversationResponse?> GetConversationAsync(Guid conversationId, CancellationToken ct = default);
     Task<ConversationSummary> CreateConversationAsync(CreateConversationRequest request, CancellationToken ct = default);
     Task<bool> DeleteConversationAsync(Guid conversationId, CancellationToken ct = default);

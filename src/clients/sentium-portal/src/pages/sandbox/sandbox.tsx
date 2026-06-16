@@ -1,21 +1,12 @@
 import { useNavigate } from "react-router";
-import {
-  Activity,
-  ChevronLeft,
-  ChevronRight,
-  Loader,
-  RefreshCw,
-  Search,
-  ShieldOff,
-  Terminal,
-  XCircle,
-} from "lucide-react";
+import { Activity, Loader, RefreshCw, Search, ShieldOff, Terminal, XCircle } from "lucide-react";
 import styles from "./sandbox.module.scss";
 import { useSandboxExecutions } from "../../hooks/useSandboxExecutions";
 import { useSandboxStats } from "../../hooks/useSandboxStats";
 import PageHeader from "../../components/ui/page-header";
 import StatCard from "../../components/ui/stat-card";
 import EmptyState from "../../components/ui/empty-state";
+import LoadMore from "../../components/ui/load-more";
 import RunRow from "./components/run-row";
 import type { SandboxLanguage, SandboxStatusFilter } from "../../types/sandbox";
 
@@ -36,9 +27,9 @@ const Sandbox = () => {
   const navigate = useNavigate();
   const {
     executions,
-    totalPages,
-    page,
-    setPage,
+    hasMore,
+    loadMore,
+    isLoadingMore,
     status,
     setStatus,
     language,
@@ -150,26 +141,9 @@ const Sandbox = () => {
             {executions.map((run) => (
               <RunRow key={run.jobId} run={run} onOpen={openRun} />
             ))}
+            <LoadMore hasMore={hasMore} isLoading={isLoadingMore} onLoadMore={loadMore} />
           </div>
         </div>
-
-        {totalPages > 1 && (
-          <div className={styles.pagination}>
-            <button className={styles.pageBtn} onClick={() => setPage(page - 1)} disabled={page <= 1 || isFetching}>
-              <ChevronLeft size={13} />
-            </button>
-            <span className={styles.pageInfo}>
-              {page} / {totalPages}
-            </span>
-            <button
-              className={styles.pageBtn}
-              onClick={() => setPage(page + 1)}
-              disabled={page >= totalPages || isFetching}
-            >
-              <ChevronRight size={13} />
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );

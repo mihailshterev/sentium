@@ -14,9 +14,9 @@ public interface IWorkflowRunRepository
     Task AddAsync(WorkflowRun run, CancellationToken ct = default);
 
     /// <summary>
-    /// Returns the <paramref name="count"/> most recent runs, ordered newest first.
+    /// Returns a page of runs (newest first) plus the total count.
     /// </summary>
-    Task<IReadOnlyList<WorkflowRunResponse>> GetRecentAsync(int count = 20, CancellationToken ct = default);
+    Task<(IReadOnlyList<WorkflowRunResponse> Items, int TotalCount)> GetPagedAsync(int page, int pageSize, CancellationToken ct = default);
 
     /// <summary>
     /// Returns the run with the given <paramref name="id"/>, or <see langword="null"/> if not found.

@@ -58,7 +58,7 @@ describe("useSandboxExecutions fetching", () => {
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.executions).toHaveLength(1);
     expect(result.current.totalCount).toBe(1);
-    expect(result.current.totalPages).toBe(1);
+    expect(result.current.hasMore).toBe(false);
   });
 
   it("requests page 1 with default page size initially", async () => {
@@ -70,15 +70,11 @@ describe("useSandboxExecutions fetching", () => {
 });
 
 describe("useSandboxExecutions filtering", () => {
-  it("changing the status filter resets to page 1 and forwards the status", async () => {
+  it("changing the status filter starts a fresh list and forwards the status", async () => {
     const { result } = renderHook(() => useSandboxExecutions(), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    act(() => result.current.setPage(2));
-    await waitFor(() => expect(result.current.page).toBe(2));
-
     act(() => result.current.setStatus("Failed"));
-    expect(result.current.page).toBe(1);
     expect(result.current.status).toBe("Failed");
 
     await waitFor(() =>

@@ -1168,7 +1168,10 @@
         }
       },
       "sentium.sandbox.core": {
-        "type": "Project"
+        "type": "Project",
+        "dependencies": {
+          "Sentium.Shared": "[1.0.0, )"
+        }
       },
       "sentium.shared": {
         "type": "Project"

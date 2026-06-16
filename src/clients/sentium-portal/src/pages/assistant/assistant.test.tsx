@@ -32,6 +32,10 @@ const mockConversation: ConversationSummary = {
 
 const defaultConversationsHook = {
   conversations: [mockConversation],
+  isLoading: false,
+  hasMore: false,
+  loadMore: vi.fn(),
+  isLoadingMore: false,
   createConversation: vi.fn().mockResolvedValue({ id: "conv-new" }),
   isCreating: false,
   deleteConversation: vi.fn(),

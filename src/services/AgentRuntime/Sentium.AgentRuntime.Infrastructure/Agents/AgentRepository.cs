@@ -3,6 +3,7 @@ using Sentium.AgentRuntime.Core.Dtos;
 using Sentium.AgentRuntime.Core.Entities;
 using Sentium.AgentRuntime.Infrastructure.Data;
 using Sentium.AgentRuntime.Infrastructure.Projections;
+using Sentium.Shared.Results;
 using Microsoft.EntityFrameworkCore;
 
 namespace Sentium.AgentRuntime.Infrastructure.Agents;
@@ -34,8 +35,25 @@ public sealed class AgentRepository(AgentRuntimeDbContext context) : IAgentRepos
         return await context.Agents
             .AsNoTracking()
             .OrderByDescending(a => a.CreatedAt)
+            .Take(PaginationQuery.MaxListCap)
             .Select(AgentProjections.ToResponse())
             .ToListAsync(ct);
+    }
+
+    public async Task<(IReadOnlyList<AgentResponse> Items, int TotalCount)> GetPagedAsync(int page, int pageSize, CancellationToken ct = default)
+    {
+        var query = context.Agents.AsNoTracking();
+
+        var total = await query.CountAsync(ct);
+        var items = await query
+            .OrderByDescending(a => a.CreatedAt)
+            .ThenByDescending(a => a.Id)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(AgentProjections.ToResponse())
+            .ToListAsync(ct);
+
+        return (items, total);
     }
 
     public async Task<AgentResponse?> GetAgentByNameAsync(string name, CancellationToken ct = default)

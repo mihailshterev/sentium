@@ -22,7 +22,13 @@ const mockConversation: ConversationSummary = {
 };
 
 beforeEach(() => {
-  vi.spyOn(agentRuntimeService, "fetchConversations").mockResolvedValue([mockConversation]);
+  vi.spyOn(agentRuntimeService, "fetchConversations").mockResolvedValue({
+    items: [mockConversation],
+    totalCount: 1,
+    page: 1,
+    pageSize: 20,
+    totalPages: 1,
+  });
   vi.spyOn(agentRuntimeService, "createConversation").mockResolvedValue({ id: "conv-2" });
   vi.spyOn(agentRuntimeService, "deleteConversation").mockResolvedValue(undefined);
 });

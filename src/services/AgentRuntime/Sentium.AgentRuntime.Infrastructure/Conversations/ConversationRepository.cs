@@ -9,13 +9,20 @@ namespace Sentium.AgentRuntime.Infrastructure.Conversations;
 
 public sealed class ConversationRepository(AgentRuntimeDbContext context) : IConversationRepository
 {
-    public async Task<IReadOnlyList<ConversationSummary>> GetConversationsAsync(CancellationToken ct = default)
+    public async Task<(IReadOnlyList<ConversationSummary> Items, int TotalCount)> GetConversationsAsync(int page, int pageSize, CancellationToken ct = default)
     {
-        return await context.Conversations
-            .AsNoTracking()
+        var query = context.Conversations.AsNoTracking();
+
+        var total = await query.CountAsync(ct);
+        var items = await query
             .OrderByDescending(c => c.CreatedAt)
+            .ThenByDescending(c => c.Id)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .Select(c => new ConversationSummary(c.Id, c.Title, c.Model, c.CreatedAt))
             .ToListAsync(ct);
+
+        return (items, total);
     }
 
     public async Task<ConversationResponse?> GetConversationAsync(Guid conversationId, CancellationToken ct = default)

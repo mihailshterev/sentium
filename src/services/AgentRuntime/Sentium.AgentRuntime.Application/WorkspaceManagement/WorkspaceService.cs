@@ -22,6 +22,21 @@ public sealed class WorkspaceService(
             CacheTag,
             ct);
 
+    public async Task<PagedResponse<WorkspaceDto>> GetWorkspacesPagedAsync(int page, int pageSize, CancellationToken ct = default)
+    {
+        (page, pageSize) = new PaginationQuery { Page = page, PageSize = pageSize }.Normalize();
+
+        return await cache.GetOrCreateAsync(
+            $"{CacheTag}:page:{page}:{pageSize}",
+            async token =>
+            {
+                var (items, total) = await repository.GetPagedAsync(page, pageSize, token);
+                return PagedResponse<WorkspaceDto>.Create(items, total, page, pageSize);
+            },
+            CacheTag,
+            ct);
+    }
+
     public async Task<WorkspaceDto?> GetWorkspaceAsync(Guid id, CancellationToken ct = default)
         => await cache.GetOrCreateAsync(
             $"{CacheTag}:{id}",

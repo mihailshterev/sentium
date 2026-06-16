@@ -19,15 +19,20 @@ public sealed class WorkspacesController(IWorkspaceService workspaceService) : C
     private const long MaxFileSizeBytes = 100 * 1024 * 1024;
 
     /// <summary>
-    /// Retrieves all workspaces.
+    /// Retrieves a page of workspaces (most recent first).
     /// </summary>
+    /// <param name="page">1-based page number (default: 1).</param>
+    /// <param name="pageSize">Number of items per page (default: 20, max: 100).</param>
     /// <param name="ct">A cancellation token.</param>
-    /// <returns>An HTTP 200 response containing a list of workspace DTOs.</returns>
+    /// <returns>An HTTP 200 response containing a paginated list of workspace DTOs.</returns>
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetWorkspaces(CancellationToken ct)
+    [ProducesResponseType(typeof(PagedResponse<WorkspaceDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetWorkspaces(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = PaginationQuery.DefaultPageSize,
+        CancellationToken ct = default)
     {
-        var workspaces = await workspaceService.GetWorkspacesAsync(ct);
+        var workspaces = await workspaceService.GetWorkspacesPagedAsync(page, pageSize, ct);
         return Ok(workspaces);
     }
 

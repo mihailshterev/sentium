@@ -3,9 +3,10 @@ import { useParams, useNavigate } from "react-router";
 import { Zap, CheckCircle, Circle, Loader, Terminal, History, Orbit } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import styles from "./agent-orchestration.module.scss";
-import { fetchWorkflowRuns, fetchWorkspaces } from "../../services/agentRuntime.service";
+import { fetchWorkflowRunsPaged, fetchWorkspaces } from "../../services/agentRuntime.service";
 import useWorkflows from "../../hooks/useWorkflows";
 import { useWorkflowRun } from "../../hooks/useWorkflowRuns";
+import { useInfiniteList } from "../../hooks/useInfiniteList";
 import type { Phase, LogEntry } from "../../types/orchestration";
 import type { WorkflowRecord } from "../../types/workflows";
 import type { WorkflowRun } from "../../types/workflows";
@@ -71,15 +72,19 @@ const AgentOrchestration = () => {
   const { run: selectedRun, isLoading: runLoading, error: runError } = useWorkflowRun(runId);
 
   const { data: workspaces = [] } = useQuery({
-    queryKey: ["workspaces"],
+    queryKey: ["workspaces", "options"],
     queryFn: fetchWorkspaces,
   });
 
-  const { data: workflowRuns = [], refetch: refetchRuns } = useQuery({
-    queryKey: ["workflowRuns"],
-    queryFn: () => fetchWorkflowRuns(30),
+  const {
+    items: workflowRuns,
+    refetch: refetchRuns,
+    hasMore: hasMoreRuns,
+    loadMore: loadMoreRuns,
+    isLoadingMore: isLoadingMoreRuns,
+  } = useInfiniteList<WorkflowRun>(["workflowRuns"], fetchWorkflowRunsPaged, {
     enabled: sidebarView === "history",
-    refetchInterval: sidebarView === "history" ? 15_000 : false,
+    refetchInterval: sidebarView === "history" ? 15_000 : undefined,
   });
 
   const toggleThought = (id: string) =>
@@ -204,7 +209,7 @@ const AgentOrchestration = () => {
           <div className={styles.logPanelHeader}>
             <span className={`${styles.logDot} ${isRunning ? styles.logDotActive : ""}`} />
             <span className={styles.logPanelTitle}>
-              {selectedRun ? `Replay — ${formatRunTrigger(selectedRun.triggerType)}` : "Output"}
+              {selectedRun ? `Replay - ${formatRunTrigger(selectedRun.triggerType)}` : "Output"}
             </span>
             {displayPhase === "COMPLETE" && !isRunning && !viewingRun && (
               <span className={styles.completeBadge}>
@@ -275,6 +280,9 @@ const AgentOrchestration = () => {
           workflows={workflows}
           workspaces={workspaces}
           workflowRuns={workflowRuns}
+          hasMoreRuns={hasMoreRuns}
+          isLoadingMoreRuns={isLoadingMoreRuns}
+          onLoadMoreRuns={loadMoreRuns}
           selectedWorkflow={selectedWorkflow}
           selectedWorkspaceId={selectedWorkspaceId}
           scenarioInput={scenarioInput}

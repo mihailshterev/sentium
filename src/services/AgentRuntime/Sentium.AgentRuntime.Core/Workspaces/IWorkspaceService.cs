@@ -14,6 +14,11 @@ public interface IWorkspaceService
     Task<IReadOnlyList<WorkspaceDto>> GetWorkspacesAsync(CancellationToken ct = default);
 
     /// <summary>
+    /// Retrieves a page of workspaces (most recent first).
+    /// </summary>
+    Task<PagedResponse<WorkspaceDto>> GetWorkspacesPagedAsync(int page, int pageSize, CancellationToken ct = default);
+
+    /// <summary>
     /// Retrieves a specific workspace by its identifier.
     /// </summary>
     /// <returns>The workspace DTO if found; otherwise <c>null</c>.</returns>
