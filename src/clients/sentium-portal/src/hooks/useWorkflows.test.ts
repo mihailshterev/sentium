@@ -24,7 +24,13 @@ const mockWorkflow: WorkflowRecord = {
 };
 
 beforeEach(() => {
-  vi.spyOn(agentRuntimeService, "fetchWorkflows").mockResolvedValue([mockWorkflow]);
+  vi.spyOn(agentRuntimeService, "fetchWorkflowsPaged").mockResolvedValue({
+    items: [mockWorkflow],
+    totalCount: 1,
+    page: 1,
+    pageSize: 100,
+    totalPages: 1,
+  });
   vi.spyOn(agentRuntimeService, "createWorkflow").mockResolvedValue(mockWorkflow);
   vi.spyOn(agentRuntimeService, "updateWorkflow").mockResolvedValue({ ...mockWorkflow, name: "Updated" });
   vi.spyOn(agentRuntimeService, "deleteWorkflow").mockResolvedValue(undefined);
@@ -44,14 +50,14 @@ describe("useWorkflows fetching", () => {
   });
 
   it("calls fetchWorkflows exactly once on mount", async () => {
-    const spy = vi.spyOn(agentRuntimeService, "fetchWorkflows");
+    const spy = vi.spyOn(agentRuntimeService, "fetchWorkflowsPaged");
     const { result } = renderHook(() => useWorkflows(), { wrapper: createWrapper() });
     await waitFor(() => !result.current.isLoading);
     expect(spy).toHaveBeenCalledTimes(1);
   });
 
   it("falls back to empty array on fetch error", async () => {
-    vi.spyOn(agentRuntimeService, "fetchWorkflows").mockRejectedValueOnce(new Error("Network error"));
+    vi.spyOn(agentRuntimeService, "fetchWorkflowsPaged").mockRejectedValueOnce(new Error("Network error"));
     const { result } = renderHook(() => useWorkflows(), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.workflows).toEqual([]);

@@ -38,6 +38,21 @@ public sealed class AgentService(
             CacheTag,
             ct);
 
+    public async ValueTask<PagedResponse<AgentResponse>> GetAgentsPagedAsync(int page, int pageSize, CancellationToken ct = default)
+    {
+        (page, pageSize) = new PaginationQuery { Page = page, PageSize = pageSize }.Normalize();
+
+        return await cache.GetOrCreateAsync(
+            $"{CacheTag}:page:{page}:{pageSize}",
+            async token =>
+            {
+                var (items, total) = await repository.GetPagedAsync(page, pageSize, token);
+                return PagedResponse<AgentResponse>.Create(items, total, page, pageSize);
+            },
+            CacheTag,
+            ct);
+    }
+
     public async ValueTask<AgentResponse?> GetAgentByIdAsync(Guid agentId, CancellationToken ct = default)
         => await cache.GetOrCreateAsync(
             $"{CacheTag}:{agentId}",

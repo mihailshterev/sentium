@@ -289,6 +289,12 @@
         "contentHash": "s2PcxHK4IYQ6gmD3VSBkym9tWGkFisKjcjWBdl7a+n4Yy66ae4beJ1ZdjDp060SSll4W3Rt4H2LW87dWckv+QQ=="
       },
       "sentium.sandbox.core": {
+        "type": "Project",
+        "dependencies": {
+          "Sentium.Shared": "[1.0.0, )"
+        }
+      },
+      "sentium.shared": {
         "type": "Project"
       }
     },

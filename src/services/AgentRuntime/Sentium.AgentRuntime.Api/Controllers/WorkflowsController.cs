@@ -1,5 +1,6 @@
 using Sentium.AgentRuntime.Core.Dtos;
 using Sentium.AgentRuntime.Core.WorkflowManagement;
+using Sentium.Shared.Results;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,30 +15,42 @@ namespace Sentium.AgentRuntime.Api.Controllers;
 public sealed class WorkflowsController(IWorkflowService workflowService, IWorkflowRunRepository runRepository) : ControllerBase
 {
     /// <summary>
-    /// Returns a list of all workflows
+    /// Returns a page of workflows (newest first).
     /// </summary>
+    /// <param name="page">1-based page number (default: 1).</param>
+    /// <param name="pageSize">Number of items per page (default: 20, max: 100).</param>
     /// <param name="ct">Cancellation token</param>
-    /// <returns>List of workflows</returns>
+    /// <returns>A paginated list of workflows.</returns>
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<IReadOnlyList<WorkflowResponse>>> GetWorkflows(CancellationToken ct)
+    [ProducesResponseType(typeof(PagedResponse<WorkflowResponse>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResponse<WorkflowResponse>>> GetWorkflows(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = PaginationQuery.DefaultPageSize,
+        CancellationToken ct = default)
     {
-        var workflows = await workflowService.GetWorkflowsAsync(ct);
+        var workflows = await workflowService.GetWorkflowsPagedAsync(page, pageSize, ct);
         return Ok(workflows);
     }
 
     /// <summary>
-    /// Returns a list of recent workflow runs, ordered by start time descending. The count parameter limits the number of runs returned, with a maximum of 100.
+    /// Returns a page of workflow runs, ordered by start time descending.
     /// </summary>
-    /// <param name="count">The maximum number of workflow runs to return (default is 20, maximum is 100).</param>
+    /// <param name="page">1-based page number (default: 1).</param>
+    /// <param name="pageSize">Number of runs per page (default: 20, max: 100).</param>
     /// <param name="ct">Cancellation token.</param>
-    /// <returns>A list of recent workflow runs.</returns>
+    /// <returns>A paginated list of workflow runs.</returns>
     [HttpGet("runs")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<IReadOnlyList<WorkflowRunResponse>>> GetWorkflowRuns([FromQuery] int count = 20, CancellationToken ct = default)
+    [ProducesResponseType(typeof(PagedResponse<WorkflowRunResponse>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResponse<WorkflowRunResponse>>> GetWorkflowRuns(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = PaginationQuery.DefaultPageSize,
+        CancellationToken ct = default)
     {
-        var runs = await runRepository.GetRecentAsync(Math.Min(count, 100), ct);
-        return Ok(runs);
+        var query = new PaginationQuery { Page = page, PageSize = pageSize };
+        (page, pageSize) = query.Normalize();
+
+        var (runs, total) = await runRepository.GetPagedAsync(page, pageSize, ct);
+        return Ok(PagedResponse<WorkflowRunResponse>.Create(runs, total, page, pageSize));
     }
 
     /// <summary>

@@ -7,6 +7,7 @@ using Sentium.Sentinel.Api.Controllers;
 using Sentium.Sentinel.Core.Audit;
 using Sentium.Sentinel.Core.Dtos;
 using Sentium.Sentinel.Core.Policies;
+using Sentium.Shared.Results;
 using Xunit;
 
 namespace Sentium.Tests.Unit.Sentinel;
@@ -50,24 +51,25 @@ public sealed class PolicyControllerTests
         await _auditLog.RecordAsync(MakeAuditRecord(), ct);
 
         // Act
-        var result = await _controller.GetAudit(10, ct);
+        var result = await _controller.GetAudit(1, 10, ct);
 
         // Assert
         result.Should().BeOfType<OkObjectResult>()
-            .Which.Value.As<IReadOnlyList<AuditRecord>>().Should().HaveCount(1);
+            .Which.Value.As<PagedResponse<AuditRecord>>().Items.Should().HaveCount(1);
     }
 
     [Fact]
-    public async Task GetAudit_ClampsCount_ToMax500()
+    public async Task GetAudit_ClampsPageSize_ToMax100()
     {
         // Arrange
         var ct = TestContext.Current.CancellationToken;
 
-        // Act - request 999 but the controller clamps to 500
-        var result = await _controller.GetAudit(999, ct);
+        // Act - request 999 but the controller clamps page size to 100
+        var result = await _controller.GetAudit(1, 999, ct);
 
-        // Assert - just verify it returns OK without error
-        result.Should().BeOfType<OkObjectResult>();
+        // Assert
+        result.Should().BeOfType<OkObjectResult>()
+            .Which.Value.As<PagedResponse<AuditRecord>>().PageSize.Should().Be(100);
     }
 
     [Fact]
@@ -79,11 +81,11 @@ public sealed class PolicyControllerTests
         await _auditLog.RecordAsync(record, ct);
 
         // Act
-        var result = await _controller.GetAuditByAgent(record.AgentId, 50, ct);
+        var result = await _controller.GetAuditByAgent(record.AgentId, 1, 50, ct);
 
         // Assert
         result.Should().BeOfType<OkObjectResult>()
-            .Which.Value.As<IReadOnlyList<AuditRecord>>().Should().ContainSingle();
+            .Which.Value.As<PagedResponse<AuditRecord>>().Items.Should().ContainSingle();
     }
 
     [Fact]

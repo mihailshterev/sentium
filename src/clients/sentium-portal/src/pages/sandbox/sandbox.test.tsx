@@ -26,10 +26,9 @@ const run: SandboxExecutionLog = {
 const baseExec = {
   executions: [] as SandboxExecutionLog[],
   totalCount: 0,
-  totalPages: 1,
-  page: 1,
-  setPage: vi.fn(),
-  pageSize: 20,
+  hasMore: false,
+  loadMore: vi.fn(),
+  isLoadingMore: false,
   status: null,
   setStatus: vi.fn(),
   language: null,
@@ -108,14 +107,12 @@ describe("Sandbox toolbar", () => {
 });
 
 describe("Sandbox pagination", () => {
-  it("shows pagination and advances the page", () => {
-    const setPage = vi.fn();
-    setExec({ totalPages: 3, page: 1, setPage });
+  it("shows Load more and fetches the next page when clicked", () => {
+    const loadMore = vi.fn();
+    setExec({ executions: [run], hasMore: true, loadMore });
     render(<Sandbox />);
-    expect(screen.getByText("1 / 3")).toBeInTheDocument();
-    const buttons = screen.getAllByRole("button");
-    const next = buttons[buttons.length - 1];
-    fireEvent.click(next);
-    expect(setPage).toHaveBeenCalledWith(2);
+    const loadMoreBtn = screen.getByRole("button", { name: /load more/i });
+    fireEvent.click(loadMoreBtn);
+    expect(loadMore).toHaveBeenCalled();
   });
 });

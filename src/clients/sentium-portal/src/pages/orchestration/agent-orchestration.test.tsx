@@ -14,10 +14,20 @@ vi.mock("../../services/agentRuntime.service", async (importOriginal) => {
   return {
     ...actual,
     fetchWorkspaces: vi.fn().mockResolvedValue([]),
-    fetchWorkflowRuns: vi.fn().mockResolvedValue([]),
+    fetchWorkflowRunsPaged: vi
+      .fn()
+      .mockResolvedValue({ items: [], totalCount: 0, page: 1, pageSize: 20, totalPages: 0 }),
     fetchWorkflowRun: vi.fn().mockResolvedValue(null),
     runWorkflowPipeline: vi.fn().mockResolvedValue({ eventId: "stream-abc" }),
   };
+});
+
+const pageOf = (items: WorkflowRun[]) => ({
+  items,
+  totalCount: items.length,
+  page: 1,
+  pageSize: 20,
+  totalPages: items.length > 0 ? 1 : 0,
 });
 
 const mockEventSource = {
@@ -52,7 +62,11 @@ const mockWorkflow: WorkflowRecord = {
 
 const defaultWorkflowsHook = {
   workflows: [mockWorkflow],
+  totalCount: 1,
   isLoading: false,
+  hasMore: false,
+  loadMore: vi.fn(),
+  isLoadingMore: false,
   createWorkflow: vi.fn(),
   isCreatingWorkflow: false,
   isCreateSuccess: false,
@@ -236,7 +250,7 @@ const mockRun: WorkflowRun = {
 
 describe("AgentOrchestration history tab", () => {
   beforeEach(() => {
-    vi.mocked(agentRuntimeService.fetchWorkflowRuns).mockResolvedValue([mockRun]);
+    vi.mocked(agentRuntimeService.fetchWorkflowRunsPaged).mockResolvedValue(pageOf([mockRun]));
   });
 
   it("shows history runs after switching to History tab", async () => {
@@ -249,7 +263,7 @@ describe("AgentOrchestration history tab", () => {
   });
 
   it("shows 'No runs recorded yet' when history is empty", async () => {
-    vi.mocked(agentRuntimeService.fetchWorkflowRuns).mockResolvedValue([]);
+    vi.mocked(agentRuntimeService.fetchWorkflowRunsPaged).mockResolvedValue(pageOf([]));
     renderOrchestration();
     fireEvent.click(screen.getByRole("button", { name: /history/i }));
     await waitFor(() => expect(screen.getByText(/no runs recorded yet/i)).toBeInTheDocument());
@@ -320,12 +334,14 @@ describe("AgentOrchestration workspace selection", () => {
 
 describe("AgentOrchestration LogEntryView rendering", () => {
   it("renders thought type log with Thinking expand button", async () => {
-    vi.mocked(agentRuntimeService.fetchWorkflowRuns).mockResolvedValue([
-      {
-        ...mockRun,
-        logs: [{ author: "PlannerAgent", text: "Deep thinking...", type: "thought" }],
-      },
-    ]);
+    vi.mocked(agentRuntimeService.fetchWorkflowRunsPaged).mockResolvedValue(
+      pageOf([
+        {
+          ...mockRun,
+          logs: [{ author: "PlannerAgent", text: "Deep thinking...", type: "thought" }],
+        },
+      ]),
+    );
     renderOrchestration();
     fireEvent.click(screen.getByRole("button", { name: /history/i }));
     await waitFor(() => {
@@ -339,7 +355,7 @@ describe("AgentOrchestration LogEntryView rendering", () => {
       ...mockRun,
       logs: [{ author: "PlannerAgent", text: "Analyzing...", type: "thought" }],
     };
-    vi.mocked(agentRuntimeService.fetchWorkflowRuns).mockResolvedValue([thoughtRun]);
+    vi.mocked(agentRuntimeService.fetchWorkflowRunsPaged).mockResolvedValue(pageOf([thoughtRun]));
     vi.mocked(agentRuntimeService.fetchWorkflowRun).mockResolvedValue(thoughtRun);
     renderOrchestration();
     fireEvent.click(screen.getByRole("button", { name: /history/i }));
@@ -356,7 +372,7 @@ describe("AgentOrchestration LogEntryView rendering", () => {
       ...mockRun,
       logs: [{ author: "ReconAgent", text: "port_scan(target='192.168.1.1')", type: "tool" }],
     };
-    vi.mocked(agentRuntimeService.fetchWorkflowRuns).mockResolvedValue([toolRun]);
+    vi.mocked(agentRuntimeService.fetchWorkflowRunsPaged).mockResolvedValue(pageOf([toolRun]));
     vi.mocked(agentRuntimeService.fetchWorkflowRun).mockResolvedValue(toolRun);
     renderOrchestration();
     fireEvent.click(screen.getByRole("button", { name: /history/i }));
@@ -369,7 +385,7 @@ describe("AgentOrchestration LogEntryView rendering", () => {
   });
 
   it("renders message type log in history run", async () => {
-    vi.mocked(agentRuntimeService.fetchWorkflowRuns).mockResolvedValue([mockRun]);
+    vi.mocked(agentRuntimeService.fetchWorkflowRunsPaged).mockResolvedValue(pageOf([mockRun]));
     vi.mocked(agentRuntimeService.fetchWorkflowRun).mockResolvedValue(mockRun);
     renderOrchestration();
     fireEvent.click(screen.getByRole("button", { name: /history/i }));
@@ -386,7 +402,7 @@ describe("AgentOrchestration LogEntryView rendering", () => {
       ...mockRun,
       logs: [{ author: "PlannerAgent", text: "Internal analysis...", type: "thought" }],
     };
-    vi.mocked(agentRuntimeService.fetchWorkflowRuns).mockResolvedValue([thoughtRun]);
+    vi.mocked(agentRuntimeService.fetchWorkflowRunsPaged).mockResolvedValue(pageOf([thoughtRun]));
     vi.mocked(agentRuntimeService.fetchWorkflowRun).mockResolvedValue(thoughtRun);
     renderOrchestration();
     fireEvent.click(screen.getByRole("button", { name: /history/i }));

@@ -26,6 +26,7 @@ public sealed class EfCoreExecutionLogRepository(SandboxDbContext dbContext) : I
         var total = await filtered.CountAsync(ct);
         var items = await filtered
             .OrderByDescending(e => e.ExecutedAt)
+            .ThenByDescending(e => e.JobId)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(ct);

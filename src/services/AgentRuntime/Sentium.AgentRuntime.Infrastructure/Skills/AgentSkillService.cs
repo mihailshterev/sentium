@@ -22,6 +22,21 @@ public sealed class AgentSkillService(
             CacheTag,
             ct).AsTask();
 
+    public Task<PagedResponse<AgentSkillDto>> GetPagedAsync(AgentSkillType? skillType, int page, int pageSize, CancellationToken ct = default)
+    {
+        (page, pageSize) = new PaginationQuery { Page = page, PageSize = pageSize }.Normalize();
+
+        return cache.GetOrCreateAsync(
+            $"{CacheTag}:page:{skillType?.ToString() ?? "all"}:{page}:{pageSize}",
+            async token =>
+            {
+                var (skills, total) = await repository.GetPagedAsync(skillType, page, pageSize, token);
+                return PagedResponse<AgentSkillDto>.Create([.. skills.Select(ToDto)], total, page, pageSize);
+            },
+            CacheTag,
+            ct).AsTask();
+    }
+
     public async Task<AgentSkillDto?> GetByIdAsync(Guid id, CancellationToken ct = default)
         => await cache.GetOrCreateAsync(
             $"{CacheTag}:{id}",

@@ -5,6 +5,7 @@ import styles from "./workspaces.module.scss";
 import type { Workspace } from "../../types/workspace";
 import PageHeader from "../../components/ui/page-header";
 import EmptyState from "../../components/ui/empty-state";
+import LoadMore from "../../components/ui/load-more";
 import WorkspaceForm from "./components/workspace-form";
 import WorkspaceCard from "./components/workspace-card";
 import ConfirmDialog from "../../components/ui/confirm-dialog";
@@ -14,8 +15,12 @@ const WorkspacesList = () => {
   const navigate = useNavigate();
   const {
     workspaces,
+    totalCount,
     isLoading,
     isError,
+    hasMore,
+    loadMore,
+    isLoadingMore,
     createWorkspace,
     isCreatingWorkspace,
     updateWorkspace,
@@ -40,7 +45,7 @@ const WorkspacesList = () => {
             <div className={styles.headerBadge}>
               <FolderOpen size={13} />
               <span>
-                {workspaces.length} workspace{workspaces.length !== 1 ? "s" : ""}
+                {totalCount} workspace{totalCount !== 1 ? "s" : ""}
               </span>
             </div>
             <button className={styles.createBtn} onClick={() => setShowCreateForm(true)}>
@@ -98,6 +103,7 @@ const WorkspacesList = () => {
                 />
               ))}
             </div>
+            <LoadMore hasMore={hasMore} isLoading={isLoadingMore} onLoadMore={loadMore} />
           </div>
         )}
       </div>

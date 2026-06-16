@@ -29,10 +29,9 @@ const mockUserNoName: UserListItem = {
 const defaultUsersHook = {
   users: [mockUser],
   totalCount: 1,
-  totalPages: 1,
-  page: 1,
-  pageSize: 20,
-  setPage: vi.fn(),
+  hasMore: false,
+  loadMore: vi.fn(),
+  isLoadingMore: false,
   isLoading: false,
   isFetching: false,
   error: null,
@@ -118,7 +117,7 @@ describe("Users list state", () => {
     expect(screen.getByText("Alice Smith")).toBeInTheDocument();
   });
 
-  it("renders — when user has no name", () => {
+  it("renders - when user has no name", () => {
     vi.spyOn(useUsersHook, "default").mockReturnValue({
       ...defaultUsersHook,
       users: [mockUserNoName],
@@ -137,7 +136,7 @@ describe("Users list state", () => {
     expect(screen.getByText("Member")).toBeInTheDocument();
   });
 
-  it("shows — for roles when user has no roles", () => {
+  it("shows - for roles when user has no roles", () => {
     vi.spyOn(useUsersHook, "default").mockReturnValue({
       ...defaultUsersHook,
       users: [{ ...mockUser, roles: [] }],

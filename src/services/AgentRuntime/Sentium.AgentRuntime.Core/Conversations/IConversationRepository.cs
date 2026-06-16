@@ -7,7 +7,10 @@ namespace Sentium.AgentRuntime.Core.Conversations;
 /// </summary>
 public interface IConversationRepository
 {
-    Task<IReadOnlyList<ConversationSummary>> GetConversationsAsync(CancellationToken ct = default);
+    /// <summary>
+    /// Returns a page of conversation summaries (newest first) plus the total count.
+    /// </summary>
+    Task<(IReadOnlyList<ConversationSummary> Items, int TotalCount)> GetConversationsAsync(int page, int pageSize, CancellationToken ct = default);
     Task<ConversationResponse?> GetConversationAsync(Guid conversationId, CancellationToken ct = default);
     Task<ConversationSummary> CreateConversationAsync(CreateConversationRequest request, CancellationToken ct = default);
     Task<bool> DeleteConversationAsync(Guid conversationId, CancellationToken ct = default);

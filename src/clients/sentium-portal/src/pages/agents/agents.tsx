@@ -6,6 +6,7 @@ import useModels from "../../hooks/useModels";
 import type { AgentRecord } from "../../types/agents";
 import PageHeader from "../../components/ui/page-header";
 import EmptyState from "../../components/ui/empty-state";
+import LoadMore from "../../components/ui/load-more";
 import AgentCard from "./components/agent-card";
 import AgentCreateForm from "./components/agent-create-form";
 import AgentEditModal from "./components/agent-edit-modal";
@@ -15,7 +16,11 @@ import StatusMessage from "../../components/ui/status-message";
 const Agents = () => {
   const {
     agents,
+    totalCount,
     isLoading,
+    hasMore,
+    loadMore,
+    isLoadingMore,
     createAgent,
     isCreatingAgent,
     isCreateSuccess,
@@ -70,7 +75,7 @@ const Agents = () => {
         right={
           <div className={styles.headerBadge}>
             <Bot size={14} />
-            <span>{agents.length} registered</span>
+            <span>{totalCount} registered</span>
           </div>
         }
       />
@@ -80,7 +85,7 @@ const Agents = () => {
           <div className={styles.panelHeader}>
             <span className={styles.activeDot}></span>
             <span>Registered Agents</span>
-            <span className={styles.agentCountBadge}>{agents.length}</span>
+            <span className={styles.agentCountBadge}>{totalCount}</span>
           </div>
 
           {deleteError && <StatusMessage variant="error" message={deleteError} />}
@@ -99,6 +104,7 @@ const Agents = () => {
             {agents.map((agent, i) => (
               <AgentCard key={agent.id} agent={agent} index={i} onEdit={openEdit} onDelete={handleDelete} />
             ))}
+            <LoadMore hasMore={hasMore} isLoading={isLoadingMore} onLoadMore={loadMore} />
           </div>
         </div>
 

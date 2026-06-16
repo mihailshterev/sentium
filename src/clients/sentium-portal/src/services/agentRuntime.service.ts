@@ -16,14 +16,15 @@ import type {
 import type { Workspace, WorkspaceFile, CreateWorkspacePayload, UpdateWorkspacePayload } from "../types/workspace";
 import type { AgentLearning, AgentLearningStats, KnowledgeBaseCollectionStats } from "../types/agentConfig";
 import type { DeleteModelResult, OllamaModel } from "../types/models";
-import type { AgentSkill, BuiltInSkill, CreateSkillPayload, UpdateSkillPayload } from "../types/skills";
+import type { AgentSkill, AgentSkillType, BuiltInSkill, CreateSkillPayload, UpdateSkillPayload } from "../types/skills";
 import { BASE_URL, client, handleUnauthorized } from "../api/client";
 import type { KnowledgeMapResponse, KnowledgeMapSearchResponse } from "../types/knowledge-map";
+import type { PagedResponse } from "../types/pagination";
 
 const BASE = "/agent-runtime";
 
-// TODO: Reorganize
-export const fetchAgents = () => client.get<AgentRecord[]>(`${BASE}/agents`);
+export const fetchAgentsPaged = (page = 1, pageSize = 100): Promise<PagedResponse<AgentRecord>> =>
+  client.get<PagedResponse<AgentRecord>>(`${BASE}/agents?page=${page}&pageSize=${pageSize}`);
 
 export const createAgent = (payload: CreateAgentPayload) => client.post<AgentRecord>(`${BASE}/agents`, payload);
 
@@ -52,7 +53,8 @@ export const pullModel = (name: string, signal?: AbortSignal): Promise<Response>
 export const deleteOllamaModel = (name: string): Promise<DeleteModelResult> =>
   client.delete<DeleteModelResult>(`${BASE}/models?name=${encodeURIComponent(name)}`);
 
-export const fetchWorkflows = () => client.get<WorkflowRecord[]>(`${BASE}/workflows`);
+export const fetchWorkflowsPaged = (page = 1, pageSize = 100): Promise<PagedResponse<WorkflowRecord>> =>
+  client.get<PagedResponse<WorkflowRecord>>(`${BASE}/workflows?page=${page}&pageSize=${pageSize}`);
 
 export const createWorkflow = (payload: WorkflowPayload) => client.post<WorkflowRecord>(`${BASE}/workflows`, payload);
 
@@ -61,7 +63,8 @@ export const updateWorkflow = ({ id, ...payload }: UpdateWorkflowPayload) =>
 
 export const deleteWorkflow = (id: string) => client.delete<void>(`${BASE}/workflows/${id}`);
 
-export const fetchConversations = () => client.get<ConversationSummary[]>(`${BASE}/conversations`);
+export const fetchConversations = (page = 1, pageSize = 20): Promise<PagedResponse<ConversationSummary>> =>
+  client.get<PagedResponse<ConversationSummary>>(`${BASE}/conversations?page=${page}&pageSize=${pageSize}`);
 
 export const fetchConversation = (id: string) => client.get<ConversationDetail>(`${BASE}/conversations/${id}`);
 
@@ -76,8 +79,11 @@ export const runDynamicWorkflow = (payload: Record<string, string>) =>
 export const runWorkflowPipeline = (payload: RunWorkflowPayload) =>
   client.post<{ eventId: string }>(`${BASE}/orchestration/run-workflow`, payload);
 
-export const fetchWorkflowRuns = (count = 15): Promise<WorkflowRun[]> =>
-  client.get<WorkflowRun[]>(`${BASE}/workflows/runs?count=${count}`);
+export const fetchWorkflowRunsPaged = (page = 1, pageSize = 20): Promise<PagedResponse<WorkflowRun>> =>
+  client.get<PagedResponse<WorkflowRun>>(`${BASE}/workflows/runs?page=${page}&pageSize=${pageSize}`);
+
+export const fetchWorkflowRuns = async (pageSize = 15): Promise<WorkflowRun[]> =>
+  (await fetchWorkflowRunsPaged(1, pageSize)).items;
 
 export const fetchWorkflowRun = (runId: string): Promise<WorkflowRun> =>
   client.get<WorkflowRun>(`${BASE}/workflows/runs/${runId}`);
@@ -110,7 +116,10 @@ export const listWorkspaceFiles = (workspaceId?: string): Promise<WorkspaceFile[
 export const deleteWorkspaceFile = (fileId: string): Promise<void> =>
   client.delete<void>(`${BASE}/workspaces/files/${fileId}`);
 
-export const fetchWorkspaces = (): Promise<Workspace[]> => client.get<Workspace[]>(`${BASE}/workspaces`);
+export const fetchWorkspacesPaged = (page = 1, pageSize = 100): Promise<PagedResponse<Workspace>> =>
+  client.get<PagedResponse<Workspace>>(`${BASE}/workspaces?page=${page}&pageSize=${pageSize}`);
+
+export const fetchWorkspaces = async (): Promise<Workspace[]> => (await fetchWorkspacesPaged(1, 100)).items;
 
 export const createWorkspace = (payload: CreateWorkspacePayload): Promise<Workspace> =>
   client.post<Workspace>(`${BASE}/workspaces`, payload);
@@ -148,12 +157,16 @@ export const uploadWorkspaceFile = async (file: File, workspaceId?: string): Pro
   return response.json() as Promise<WorkspaceFile>;
 };
 
-export const fetchAgentLearnings = (agentName?: string, count = 50): Promise<AgentLearning[]> => {
-  const params = new URLSearchParams({ count: String(count) });
+export const fetchAgentLearnings = (
+  agentName?: string,
+  page = 1,
+  pageSize = 20,
+): Promise<PagedResponse<AgentLearning>> => {
+  const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
   if (agentName) {
     params.set("agentName", agentName);
   }
-  return client.get<AgentLearning[]>(`${BASE}/agent-learnings?${params}`);
+  return client.get<PagedResponse<AgentLearning>>(`${BASE}/agent-learnings?${params}`);
 };
 
 export const fetchAgentLearningStats = (): Promise<AgentLearningStats> =>
@@ -172,7 +185,17 @@ export const deleteKnowledgeMapCollection = (collection: string): Promise<void> 
 
 export const fetchBuiltInSkills = (): Promise<BuiltInSkill[]> => client.get<BuiltInSkill[]>(`${BASE}/skills/built-in`);
 
-export const fetchSkills = (): Promise<AgentSkill[]> => client.get<AgentSkill[]>(`${BASE}/skills`);
+export const fetchSkillsPaged = (
+  skillType?: AgentSkillType,
+  page = 1,
+  pageSize = 20,
+): Promise<PagedResponse<AgentSkill>> => {
+  const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+  if (skillType !== undefined) {
+    params.set("skillType", String(skillType));
+  }
+  return client.get<PagedResponse<AgentSkill>>(`${BASE}/skills?${params}`);
+};
 
 export const createSkill = (payload: CreateSkillPayload): Promise<AgentSkill> =>
   client.post<AgentSkill>(`${BASE}/skills`, payload);

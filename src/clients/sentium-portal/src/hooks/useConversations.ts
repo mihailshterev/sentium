@@ -1,16 +1,21 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchConversations, createConversation, deleteConversation } from "../services/agentRuntime.service";
 import type { CreateConversationPayload } from "../types/assistant";
 
 const CONVERSATIONS_KEY = ["conversations"] as const;
+const PAGE_SIZE = 20;
 
 const useConversations = () => {
   const queryClient = useQueryClient();
 
-  const { data: conversations = [] } = useQuery({
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteQuery({
     queryKey: CONVERSATIONS_KEY,
-    queryFn: fetchConversations,
+    queryFn: ({ pageParam }) => fetchConversations(pageParam, PAGE_SIZE),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => (lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined),
   });
+
+  const conversations = data?.pages.flatMap((page) => page.items) ?? [];
 
   const createMutation = useMutation({
     mutationFn: (payload: CreateConversationPayload) => createConversation(payload),
@@ -24,6 +29,10 @@ const useConversations = () => {
 
   return {
     conversations,
+    isLoading,
+    hasMore: hasNextPage,
+    loadMore: () => void fetchNextPage(),
+    isLoadingMore: isFetchingNextPage,
     createConversation: createMutation.mutateAsync,
     isCreating: createMutation.isPending,
     deleteConversation: deleteMutation.mutate,

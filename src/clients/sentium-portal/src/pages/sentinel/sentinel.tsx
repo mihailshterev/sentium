@@ -5,13 +5,14 @@ import { useSentinelSettings } from "../../hooks/useSentinelSettings";
 import useOllamaModels from "../../hooks/useOllamaModels";
 import styles from "./sentinel.module.scss";
 import PageHeader from "../../components/ui/page-header";
+import LoadMore from "../../components/ui/load-more";
 import AuditRow from "./components/audit-row";
 import AlignmentGauge from "./components/alignment-gauge";
 import SovereignControls from "./components/sovereign-controls";
 import SentinelStats from "./components/sentinel-stats";
 
 const Sentinel = () => {
-  const { records, isLoading: auditLoading, refetch } = useSentinelAudit(100);
+  const { records, hasMore, loadMore, isLoadingMore, isLoading: auditLoading, refetch } = useSentinelAudit(20);
   const { stats } = useSentinelStats();
   const { settings, isUpdating, updateSettings } = useSentinelSettings();
   const { models } = useOllamaModels();
@@ -112,6 +113,8 @@ const Sentinel = () => {
                 <AuditRow key={r.id} record={r} expanded={expandedId === r.id} onToggle={() => toggle(r.id)} />
               ))}
             </div>
+
+            <LoadMore hasMore={hasMore} isLoading={isLoadingMore} onLoadMore={loadMore} />
           </div>
 
           <div className={styles.rightCol}>

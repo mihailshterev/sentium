@@ -24,7 +24,13 @@ const mockAgent: AgentRecord = {
 };
 
 beforeEach(() => {
-  vi.spyOn(agentRuntimeService, "fetchAgents").mockResolvedValue([mockAgent]);
+  vi.spyOn(agentRuntimeService, "fetchAgentsPaged").mockResolvedValue({
+    items: [mockAgent],
+    totalCount: 1,
+    page: 1,
+    pageSize: 100,
+    totalPages: 1,
+  });
   vi.spyOn(agentRuntimeService, "createAgent").mockResolvedValue(mockAgent);
   vi.spyOn(agentRuntimeService, "updateAgent").mockResolvedValue({ ...mockAgent, name: "Updated" });
   vi.spyOn(agentRuntimeService, "deleteAgent").mockResolvedValue(undefined);
@@ -44,14 +50,14 @@ describe("useAgents fetching", () => {
   });
 
   it("calls fetchAgents exactly once", async () => {
-    const spy = vi.spyOn(agentRuntimeService, "fetchAgents");
+    const spy = vi.spyOn(agentRuntimeService, "fetchAgentsPaged");
     const { result } = renderHook(() => useAgents(), { wrapper: createWrapper() });
     await waitFor(() => !result.current.isLoading);
     expect(spy).toHaveBeenCalledTimes(1);
   });
 
   it("handles fetch errors gracefully (returns empty array)", async () => {
-    vi.spyOn(agentRuntimeService, "fetchAgents").mockRejectedValueOnce(new Error("Server error"));
+    vi.spyOn(agentRuntimeService, "fetchAgentsPaged").mockRejectedValueOnce(new Error("Server error"));
     const { result } = renderHook(() => useAgents(), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.agents).toEqual([]);

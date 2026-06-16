@@ -40,7 +40,13 @@ const mockStats: AgentLearningStats = {
 };
 
 beforeEach(() => {
-  vi.mocked(agentRuntimeService.fetchAgentLearnings).mockResolvedValue([mockLearning]);
+  vi.mocked(agentRuntimeService.fetchAgentLearnings).mockResolvedValue({
+    items: [mockLearning],
+    totalCount: 1,
+    page: 1,
+    pageSize: 20,
+    totalPages: 1,
+  });
   vi.mocked(agentRuntimeService.fetchAgentLearningStats).mockResolvedValue(mockStats);
   vi.mocked(agentRuntimeService.updateAgentLearning).mockResolvedValue(mockLearning);
   vi.mocked(agentRuntimeService.deleteAgentLearning).mockResolvedValue(undefined);
@@ -63,7 +69,7 @@ describe("useAgentLearnings fetching", () => {
     const spy = vi.spyOn(agentRuntimeService, "fetchAgentLearnings");
     const { result } = renderHook(() => useAgentLearnings("SecurityAnalyst"), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
-    expect(spy).toHaveBeenCalledWith("SecurityAnalyst", 50);
+    expect(spy).toHaveBeenCalledWith("SecurityAnalyst", 1, 20);
   });
 
   it("populates stats after fetch resolves", async () => {
@@ -125,6 +131,6 @@ describe("useAgentLearnings with agentName filter", () => {
   it("uses agentName in query key when provided", async () => {
     const { result } = renderHook(() => useAgentLearnings("SecurityAnalyst"), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
-    expect(agentRuntimeService.fetchAgentLearnings).toHaveBeenCalledWith("SecurityAnalyst", 50);
+    expect(agentRuntimeService.fetchAgentLearnings).toHaveBeenCalledWith("SecurityAnalyst", 1, 20);
   });
 });

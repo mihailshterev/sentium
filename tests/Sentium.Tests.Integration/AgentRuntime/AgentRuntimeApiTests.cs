@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
 using Sentium.AgentRuntime.Core.Dtos;
+using Sentium.Shared.Results;
 using Sentium.Tests.Integration.Common;
 using Xunit;
 
@@ -41,8 +42,8 @@ public class AgentRuntimeApiTests(SentiumWebApplicationFactory<Sentium.AgentRunt
         var response = await _client.GetAsync("/agents", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var list = await response.Content.ReadFromJsonAsync<List<AgentResponse>>(Ct);
-        list.Should().Contain(a => a.Name == name);
+        var paged = await response.Content.ReadFromJsonAsync<PagedResponse<AgentResponse>>(Ct);
+        paged!.Items.Should().Contain(a => a.Name == name);
     }
 
     [Fact]

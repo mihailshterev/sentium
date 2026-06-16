@@ -3,6 +3,7 @@ using Sentium.AgentRuntime.Core.Entities;
 using Sentium.AgentRuntime.Core.Files;
 using Sentium.AgentRuntime.Core.Workspaces;
 using Sentium.AgentRuntime.Infrastructure.Data;
+using Sentium.Shared.Results;
 using Microsoft.EntityFrameworkCore;
 
 namespace Sentium.AgentRuntime.Infrastructure.WorkspaceManagement;
@@ -14,6 +15,7 @@ public sealed class WorkspaceRepository(AgentRuntimeDbContext context) : IWorksp
         return await context.Workspaces
             .AsNoTracking()
             .OrderByDescending(w => w.CreatedAt)
+            .Take(PaginationQuery.MaxListCap)
             .Select(w => new WorkspaceDto(
                 w.Id,
                 w.Name,
@@ -22,6 +24,28 @@ public sealed class WorkspaceRepository(AgentRuntimeDbContext context) : IWorksp
                 w.CreatedAt,
                 w.UpdatedAt))
             .ToListAsync(ct);
+    }
+
+    public async Task<(IReadOnlyList<WorkspaceDto> Items, int TotalCount)> GetPagedAsync(int page, int pageSize, CancellationToken ct = default)
+    {
+        var query = context.Workspaces.AsNoTracking();
+
+        var total = await query.CountAsync(ct);
+        var items = await query
+            .OrderByDescending(w => w.CreatedAt)
+            .ThenByDescending(w => w.Id)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(w => new WorkspaceDto(
+                w.Id,
+                w.Name,
+                w.Description,
+                w.Files.Count,
+                w.CreatedAt,
+                w.UpdatedAt))
+            .ToListAsync(ct);
+
+        return (items, total);
     }
 
     public async Task<WorkspaceDto?> GetWorkspaceAsync(Guid id, CancellationToken ct = default)
@@ -105,6 +129,7 @@ public sealed class WorkspaceRepository(AgentRuntimeDbContext context) : IWorksp
             .AsNoTracking()
             .Where(f => f.WorkspaceId == workspaceId)
             .OrderByDescending(f => f.CreatedAt)
+            .Take(PaginationQuery.MaxListCap)
             .Select(f => new WorkspaceFileDto(
                 f.Id, f.FileName, f.Extension, f.SizeBytes,
                 f.WorkspaceId, f.ProcessingStatus.ToString(), f.CreatedAt))
@@ -122,6 +147,7 @@ public sealed class WorkspaceRepository(AgentRuntimeDbContext context) : IWorksp
 
         return await query
             .OrderByDescending(f => f.CreatedAt)
+            .Take(PaginationQuery.MaxListCap)
             .Select(f => new WorkspaceFileDto(
                 f.Id, f.FileName, f.Extension, f.SizeBytes,
                 f.WorkspaceId, f.ProcessingStatus.ToString(), f.CreatedAt))

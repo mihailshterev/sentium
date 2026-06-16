@@ -20,10 +20,16 @@ public interface IAgentService
     ValueTask<Result<AgentResponse>> CreateAgentAsync(CreateAgentRequest request, CancellationToken ct = default);
 
     /// <summary>
-    /// Returns all agents owned by the current user.
+    /// Returns all agents owned by the current user (bounded by a safety cap). For internal use;
+    /// the API uses <see cref="GetAgentsPagedAsync"/>.
     /// </summary>
     /// <param name="ct">A cancellation token.</param>
     ValueTask<IReadOnlyList<AgentResponse>> GetAgentsAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns a page of the current user's agents (newest first).
+    /// </summary>
+    ValueTask<PagedResponse<AgentResponse>> GetAgentsPagedAsync(int page, int pageSize, CancellationToken ct = default);
 
     /// <summary>
     /// Returns the agent with the given id, or <see langword="null"/> if it does not exist for the current user.

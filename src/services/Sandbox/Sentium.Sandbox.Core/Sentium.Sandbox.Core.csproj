@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\shared\Sentium.Shared\Sentium.Shared.csproj" />
+  </ItemGroup>
+
 </Project>

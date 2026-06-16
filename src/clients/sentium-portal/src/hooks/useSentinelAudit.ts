@@ -1,23 +1,26 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchAuditLog, fetchAuditStats } from "../services/sentinel.service";
+import { useInfiniteList } from "./useInfiniteList";
 import type { AuditRecord, AuditStats } from "../types/sentinel";
 
 const POLL_INTERVAL = 5_000;
+const DEFAULT_PAGE_SIZE = 20;
 
-export const useSentinelAudit = (count = 100) => {
-  const {
-    data: records = [],
-    isLoading,
-    error,
-    refetch,
-  } = useQuery<AuditRecord[]>({
-    queryKey: ["sentinel-audit", count],
-    queryFn: () => fetchAuditLog(count),
+export const useSentinelAudit = (pageSize = DEFAULT_PAGE_SIZE) => {
+  const list = useInfiniteList<AuditRecord>(["sentinel-audit"], fetchAuditLog, {
+    pageSize,
     refetchInterval: POLL_INTERVAL,
-    retry: false,
   });
 
-  return { records, isLoading, error, refetch };
+  return {
+    records: list.items,
+    hasMore: list.hasMore,
+    loadMore: list.loadMore,
+    isLoadingMore: list.isLoadingMore,
+    isLoading: list.isLoading,
+    error: list.error,
+    refetch: list.refetch,
+  };
 };
 
 export const useSentinelStats = () => {

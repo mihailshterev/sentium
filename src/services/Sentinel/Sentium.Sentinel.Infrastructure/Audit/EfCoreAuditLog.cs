@@ -47,6 +47,35 @@ public sealed class EfCoreAuditLog(SentinelDbContext dbContext) : IAuditLog
         return entities.Select(MapToRecord).ToList();
     }
 
+    public async Task<(IReadOnlyList<AuditRecord> Items, int TotalCount)> GetPagedAsync(int page, int pageSize, CancellationToken ct = default)
+    {
+        var total = await dbContext.AuditLogs.CountAsync(ct);
+        var entities = await dbContext.AuditLogs
+            .AsNoTracking()
+            .OrderByDescending(e => e.Timestamp)
+            .ThenByDescending(e => e.Id)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(ct);
+
+        return (entities.Select(MapToRecord).ToList(), total);
+    }
+
+    public async Task<(IReadOnlyList<AuditRecord> Items, int TotalCount)> GetByAgentPagedAsync(string agentId, int page, int pageSize, CancellationToken ct = default)
+    {
+        var filtered = dbContext.AuditLogs.AsNoTracking().Where(e => e.AgentId == agentId);
+
+        var total = await filtered.CountAsync(ct);
+        var entities = await filtered
+            .OrderByDescending(e => e.Timestamp)
+            .ThenByDescending(e => e.Id)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(ct);
+
+        return (entities.Select(MapToRecord).ToList(), total);
+    }
+
     private static AuditLogEntity MapToEntity(AuditRecord record) => new()
     {
         Id = record.Id,

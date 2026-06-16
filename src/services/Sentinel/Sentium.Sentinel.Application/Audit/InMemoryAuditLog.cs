@@ -61,6 +61,36 @@ public sealed class InMemoryAuditLog : IAuditLog
     public Task<IReadOnlyList<AuditRecord>> GetByAgentAsync(string agentId, int count = 50, CancellationToken ct = default)
         => Task.FromResult(GetByAgent(agentId, count));
 
+    public Task<(IReadOnlyList<AuditRecord> Items, int TotalCount)> GetPagedAsync(int page, int pageSize, CancellationToken ct = default)
+    {
+        lock (_lock)
+        {
+            var total = _buffer.Count;
+            IReadOnlyList<AuditRecord> items = _buffer
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+            return Task.FromResult((items, total));
+        }
+    }
+
+    public Task<(IReadOnlyList<AuditRecord> Items, int TotalCount)> GetByAgentPagedAsync(string agentId, int page, int pageSize, CancellationToken ct = default)
+    {
+        lock (_lock)
+        {
+            var matches = _buffer
+                .Where(r => string.Equals(r.AgentId, agentId, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+            var total = matches.Count;
+            IReadOnlyList<AuditRecord> items = matches
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+            return Task.FromResult((items, total));
+        }
+    }
+
     public static string HashPrompt(string text)
     {
         var maxByteCount = Encoding.UTF8.GetMaxByteCount(text.Length);

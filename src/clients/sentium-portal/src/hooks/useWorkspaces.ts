@@ -1,40 +1,44 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchWorkspaces, createWorkspace, updateWorkspace, deleteWorkspace } from "../services/agentRuntime.service";
-import type { CreateWorkspacePayload, UpdateWorkspacePayload } from "../types/workspace";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  fetchWorkspacesPaged,
+  createWorkspace,
+  updateWorkspace,
+  deleteWorkspace,
+} from "../services/agentRuntime.service";
+import { useInfiniteList } from "./useInfiniteList";
+import type { Workspace, CreateWorkspacePayload, UpdateWorkspacePayload } from "../types/workspace";
 
 const WORKSPACES_KEY = ["workspaces"] as const;
 
 const useWorkspaces = () => {
   const queryClient = useQueryClient();
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: WORKSPACES_KEY });
 
-  const {
-    data: workspaces = [],
-    isLoading,
-    isError,
-  } = useQuery({
-    queryKey: WORKSPACES_KEY,
-    queryFn: fetchWorkspaces,
-  });
+  const list = useInfiniteList<Workspace>(WORKSPACES_KEY, fetchWorkspacesPaged, { pageSize: 100 });
 
   const createMutation = useMutation({
     mutationFn: (payload: CreateWorkspacePayload) => createWorkspace(payload),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: WORKSPACES_KEY }),
+    onSuccess: invalidate,
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, ...payload }: { id: string } & UpdateWorkspacePayload) => updateWorkspace(id, payload),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: WORKSPACES_KEY }),
+    onSuccess: invalidate,
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteWorkspace(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: WORKSPACES_KEY }),
+    onSuccess: invalidate,
   });
 
   return {
-    workspaces,
-    isLoading,
-    isError,
+    workspaces: list.items,
+    totalCount: list.totalCount,
+    isLoading: list.isLoading,
+    isError: !!list.error,
+    hasMore: list.hasMore,
+    loadMore: list.loadMore,
+    isLoadingMore: list.isLoadingMore,
     createWorkspace: createMutation.mutate,
     isCreatingWorkspace: createMutation.isPending,
     updateWorkspace: updateMutation.mutate,

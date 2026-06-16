@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
 using Sentium.AgentRuntime.Api.Controllers;
 using Sentium.AgentRuntime.Core.Learnings;
+using Sentium.Shared.Results;
 using Xunit;
 
 namespace Sentium.Tests.Unit.AgentRuntime;
@@ -20,19 +21,20 @@ public sealed class AgentLearningsControllerTests
     private static AgentLearningResponse MakeResponse(Guid? id = null) => new(id ?? Guid.NewGuid(), "TestAgent", "Learning content", "tag1", null, DateTimeOffset.UtcNow, true, false);
 
     [Fact]
-    public async Task GetLearnings_ReturnsOk_WithList()
+    public async Task GetLearnings_ReturnsOk_WithPagedResponse()
     {
         // Arrange
         var ct = TestContext.Current.CancellationToken;
         var learnings = new List<AgentLearningResponse> { MakeResponse() };
-        _learningService.GetLearningsAsync(null, 50, ct).Returns(learnings);
+        var paged = PagedResponse<AgentLearningResponse>.Create(learnings, 1, 1, 20);
+        _learningService.GetLearningsAsync(null, 1, 20, ct).Returns(paged);
 
         // Act
-        var result = await _controller.GetLearnings(null, 50, ct);
+        var result = await _controller.GetLearnings(null, 1, 20, ct);
 
         // Assert
         result.Result.Should().BeOfType<OkObjectResult>()
-            .Which.Value.Should().BeEquivalentTo(learnings);
+            .Which.Value.Should().Be(paged);
     }
 
     [Fact]

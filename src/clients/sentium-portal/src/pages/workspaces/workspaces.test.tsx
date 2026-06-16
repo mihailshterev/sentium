@@ -9,6 +9,7 @@ import type { Workspace, WorkspaceFile } from "../../types/workspace";
 
 vi.mock("../../services/agentRuntime.service", () => ({
   fetchWorkspaces: vi.fn(),
+  fetchWorkspacesPaged: vi.fn(),
   createWorkspace: vi.fn(),
   updateWorkspace: vi.fn(),
   deleteWorkspace: vi.fn(),
@@ -67,6 +68,13 @@ const renderWorkspaceDetail = (workspaceId = "ws-1") => {
 
 beforeEach(() => {
   vi.mocked(agentRuntimeService.fetchWorkspaces).mockResolvedValue([mockWorkspace]);
+  vi.mocked(agentRuntimeService.fetchWorkspacesPaged).mockResolvedValue({
+    items: [mockWorkspace],
+    totalCount: 1,
+    page: 1,
+    pageSize: 100,
+    totalPages: 1,
+  });
   vi.mocked(agentRuntimeService.fetchWorkspaceFiles).mockResolvedValue([mockFile]);
   vi.mocked(agentRuntimeService.createWorkspace).mockResolvedValue(mockWorkspace);
   vi.mocked(agentRuntimeService.updateWorkspace).mockResolvedValue(mockWorkspace);
@@ -314,14 +322,26 @@ describe("Workspaces upload submit", () => {
 
 describe("Workspaces empty workspace state", () => {
   it("shows 'No workspaces yet' and New Workspace button when empty", async () => {
-    vi.mocked(agentRuntimeService.fetchWorkspaces).mockResolvedValue([]);
+    vi.mocked(agentRuntimeService.fetchWorkspacesPaged).mockResolvedValue({
+      items: [],
+      totalCount: 0,
+      page: 1,
+      pageSize: 100,
+      totalPages: 0,
+    });
     renderWorkspaces();
     await waitFor(() => expect(screen.getByText(/no workspaces yet/i)).toBeInTheDocument());
     expect(screen.getAllByRole("button", { name: /new workspace/i }).length).toBeGreaterThanOrEqual(1);
   });
 
   it("opens create form via empty state New Workspace button", async () => {
-    vi.mocked(agentRuntimeService.fetchWorkspaces).mockResolvedValue([]);
+    vi.mocked(agentRuntimeService.fetchWorkspacesPaged).mockResolvedValue({
+      items: [],
+      totalCount: 0,
+      page: 1,
+      pageSize: 100,
+      totalPages: 0,
+    });
     renderWorkspaces();
     await waitFor(() => screen.getAllByRole("button", { name: /new workspace/i }));
     const btns = screen.getAllByRole("button", { name: /new workspace/i });

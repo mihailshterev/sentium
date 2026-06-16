@@ -4,6 +4,7 @@ using NSubstitute;
 using Sentium.AgentRuntime.Api.Controllers;
 using Sentium.AgentRuntime.Core.Conversations;
 using Sentium.AgentRuntime.Core.Dtos;
+using Sentium.Shared.Results;
 using Xunit;
 
 namespace Sentium.Tests.Unit.AgentRuntime;
@@ -19,18 +20,19 @@ public sealed class ConversationsControllerTests
     }
 
     [Fact]
-    public async Task GetConversations_ReturnsOkWithList()
+    public async Task GetConversations_ReturnsOkWithPagedResponse()
     {
         var conversations = new List<ConversationSummary>
         {
             new(Guid.NewGuid(), "Chat 1", "gemma3:1b", DateTime.UtcNow)
         };
-        _service.GetConversationsAsync(Arg.Any<CancellationToken>()).Returns(conversations);
+        var paged = PagedResponse<ConversationSummary>.Create(conversations, 1, 1, 20);
+        _service.GetConversationsAsync(1, 20, Arg.Any<CancellationToken>()).Returns(paged);
 
-        var result = await _controller.GetConversations(TestContext.Current.CancellationToken);
+        var result = await _controller.GetConversations(1, 20, TestContext.Current.CancellationToken);
 
         result.Result.Should().BeOfType<OkObjectResult>()
-            .Which.Value.Should().BeEquivalentTo(conversations);
+            .Which.Value.Should().Be(paged);
     }
 
     [Fact]

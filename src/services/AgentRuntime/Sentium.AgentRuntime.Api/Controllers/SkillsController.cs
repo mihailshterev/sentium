@@ -31,16 +31,23 @@ public sealed class SkillsController(
     }
 
     /// <summary>
-    /// Retrieves all custom agent skills from the repository.
+    /// Retrieves a page of custom agent skills, optionally filtered by skill type.
     /// </summary>
+    /// <param name="skillType">Optional skill-type filter (Custom or Uploaded).</param>
+    /// <param name="page">1-based page number (default: 1).</param>
+    /// <param name="pageSize">Number of items per page (default: 20, max: 100).</param>
     /// <param name="ct">The cancellation token.</param>
-    /// <returns>A collection of agent skill data transfer objects.</returns>
-    /// <response code="200">Returns the list of custom skills.</response>
+    /// <returns>A paginated collection of agent skill data transfer objects.</returns>
+    /// <response code="200">Returns the page of custom skills.</response>
     [HttpGet]
-    [ProducesResponseType(typeof(IEnumerable<AgentSkillDto>), StatusCodes.Status200OK)]
-    public async ValueTask<IActionResult> GetSkills(CancellationToken ct)
+    [ProducesResponseType(typeof(PagedResponse<AgentSkillDto>), StatusCodes.Status200OK)]
+    public async ValueTask<IActionResult> GetSkills(
+        [FromQuery] AgentSkillType? skillType = null,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = PaginationQuery.DefaultPageSize,
+        CancellationToken ct = default)
     {
-        var skills = await skillService.GetAllAsync(ct);
+        var skills = await skillService.GetPagedAsync(skillType, page, pageSize, ct);
         return Ok(skills);
     }
 
