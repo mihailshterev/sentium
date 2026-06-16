@@ -6,6 +6,7 @@ trustPolicyIgnoreAfter: 129600
 
 overrides:
   vite-plugin-sass-dts>vite: "$vite"
+  eslint-plugin-react-hooks>@babel/core: "$@babel/core"
 
 allowBuilds:
   "@parcel/watcher": false
