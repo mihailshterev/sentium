@@ -2,6 +2,7 @@ using Sentium.AgentRuntime.Core.Dtos;
 using Sentium.AgentRuntime.Core.Entities;
 using Sentium.AgentRuntime.Core.WorkflowManagement;
 using Sentium.AgentRuntime.Infrastructure.Data;
+using Sentium.Shared.Results;
 using Microsoft.EntityFrameworkCore;
 
 namespace Sentium.AgentRuntime.Infrastructure.WorkflowManagement;
@@ -14,6 +15,7 @@ public sealed class WorkflowRepository(AgentRuntimeDbContext context) : IWorkflo
             .AsNoTracking()
             .Include(w => w.WorkflowAgents)
             .OrderByDescending(w => w.CreatedAt)
+            .Take(PaginationQuery.MaxListCap)
             .Select(w => new WorkflowResponse(
                 w.Id,
                 w.UserId,
@@ -26,6 +28,33 @@ public sealed class WorkflowRepository(AgentRuntimeDbContext context) : IWorkflo
                     .Select(wa => new WorkflowAgentRef(wa.AgentId, wa.Order))
                     .ToList()))
             .ToListAsync(ct);
+    }
+
+    public async Task<(IReadOnlyList<WorkflowResponse> Items, int TotalCount)> GetPagedAsync(int page, int pageSize, CancellationToken ct = default)
+    {
+        var query = context.Workflows.AsNoTracking();
+
+        var total = await query.CountAsync(ct);
+        var items = await query
+            .Include(w => w.WorkflowAgents)
+            .OrderByDescending(w => w.CreatedAt)
+            .ThenByDescending(w => w.Id)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(w => new WorkflowResponse(
+                w.Id,
+                w.UserId,
+                w.Name,
+                w.Description,
+                w.CreatedAt,
+                w.UpdatedAt,
+                w.WorkflowAgents
+                    .OrderBy(wa => wa.Order)
+                    .Select(wa => new WorkflowAgentRef(wa.AgentId, wa.Order))
+                    .ToList()))
+            .ToListAsync(ct);
+
+        return (items, total);
     }
 
     public async Task<WorkflowResponse?> GetWorkflowAsync(Guid workflowId, CancellationToken ct = default)

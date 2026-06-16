@@ -1,35 +1,38 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchAgents, createAgent, updateAgent, deleteAgent } from "../services/agentRuntime.service";
-import type { CreateAgentPayload, UpdateAgentPayload } from "../types/agents";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { fetchAgentsPaged, createAgent, updateAgent, deleteAgent } from "../services/agentRuntime.service";
+import { useInfiniteList } from "./useInfiniteList";
+import type { AgentRecord, CreateAgentPayload, UpdateAgentPayload } from "../types/agents";
 
 const AGENTS_KEY = ["agents"] as const;
 
 const useAgents = () => {
   const queryClient = useQueryClient();
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: AGENTS_KEY });
 
-  const { data: agents = [], isLoading } = useQuery({
-    queryKey: AGENTS_KEY,
-    queryFn: fetchAgents,
-  });
+  const list = useInfiniteList<AgentRecord>(AGENTS_KEY, fetchAgentsPaged, { pageSize: 100 });
 
   const createMutation = useMutation({
     mutationFn: (payload: CreateAgentPayload) => createAgent(payload),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: AGENTS_KEY }),
+    onSuccess: invalidate,
   });
 
   const updateMutation = useMutation({
     mutationFn: (payload: UpdateAgentPayload) => updateAgent(payload),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: AGENTS_KEY }),
+    onSuccess: invalidate,
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteAgent(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: AGENTS_KEY }),
+    onSuccess: invalidate,
   });
 
   return {
-    agents,
-    isLoading,
+    agents: list.items,
+    totalCount: list.totalCount,
+    isLoading: list.isLoading,
+    hasMore: list.hasMore,
+    loadMore: list.loadMore,
+    isLoadingMore: list.isLoadingMore,
     createAgent: createMutation.mutate,
     isCreatingAgent: createMutation.isPending,
     isCreateSuccess: createMutation.isSuccess,

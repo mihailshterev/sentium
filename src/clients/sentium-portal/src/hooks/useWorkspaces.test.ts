@@ -16,7 +16,13 @@ const createWrapper = () => {
 const workspace = { id: "w1", name: "Default" } as never;
 
 beforeEach(() => {
-  vi.spyOn(agentRuntimeService, "fetchWorkspaces").mockResolvedValue([workspace]);
+  vi.spyOn(agentRuntimeService, "fetchWorkspacesPaged").mockResolvedValue({
+    items: [workspace],
+    totalCount: 1,
+    page: 1,
+    pageSize: 100,
+    totalPages: 1,
+  });
   vi.spyOn(agentRuntimeService, "createWorkspace").mockResolvedValue(workspace);
   vi.spyOn(agentRuntimeService, "updateWorkspace").mockResolvedValue(workspace);
   vi.spyOn(agentRuntimeService, "deleteWorkspace").mockResolvedValue(undefined);

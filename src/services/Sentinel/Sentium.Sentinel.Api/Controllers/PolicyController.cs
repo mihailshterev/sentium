@@ -4,6 +4,7 @@ using Sentium.Sentinel.Application.Engine;
 using Sentium.Sentinel.Core.Audit;
 using Sentium.Sentinel.Core.Dtos;
 using Sentium.Sentinel.Core.Policies;
+using Sentium.Shared.Results;
 
 namespace Sentium.Sentinel.Api.Controllers;
 
@@ -59,27 +60,47 @@ public sealed class PolicyController(
     }
 
     /// <summary>
-    /// Returns recent forensic audit records, newest first. Requires authentication.
+    /// Returns a page of forensic audit records, newest first. Requires authentication.
     /// </summary>
+    /// <param name="page">1-based page number (default: 1).</param>
+    /// <param name="pageSize">Number of records per page (default: 20, max: 100).</param>
+    /// <param name="ct">Cancellation token.</param>
     [HttpGet("audit")]
     [AuthorizeSovereign]
-    [ProducesResponseType<IReadOnlyList<AuditRecord>>(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetAudit([FromQuery] int count = 100, CancellationToken ct = default)
+    [ProducesResponseType<PagedResponse<AuditRecord>>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAudit(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = PaginationQuery.DefaultPageSize,
+        CancellationToken ct = default)
     {
-        var records = await auditLog.GetRecentAsync(Math.Min(count, 500), ct);
-        return Ok(records);
+        var query = new PaginationQuery { Page = page, PageSize = pageSize };
+        (page, pageSize) = query.Normalize();
+
+        var (records, total) = await auditLog.GetPagedAsync(page, pageSize, ct);
+        return Ok(PagedResponse<AuditRecord>.Create(records, total, page, pageSize));
     }
 
     /// <summary>
-    /// Returns audit records for a specific agent. Requires authentication.
+    /// Returns a page of audit records for a specific agent. Requires authentication.
     /// </summary>
+    /// <param name="agentId">The agent identifier.</param>
+    /// <param name="page">1-based page number (default: 1).</param>
+    /// <param name="pageSize">Number of records per page (default: 20, max: 100).</param>
+    /// <param name="ct">Cancellation token.</param>
     [HttpGet("audit/agent/{agentId}")]
     [AuthorizeSovereign]
-    [ProducesResponseType<IReadOnlyList<AuditRecord>>(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetAuditByAgent(string agentId, [FromQuery] int count = 50, CancellationToken ct = default)
+    [ProducesResponseType<PagedResponse<AuditRecord>>(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAuditByAgent(
+        string agentId,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = PaginationQuery.DefaultPageSize,
+        CancellationToken ct = default)
     {
-        var records = await auditLog.GetByAgentAsync(agentId, Math.Min(count, 200), ct);
-        return Ok(records);
+        var query = new PaginationQuery { Page = page, PageSize = pageSize };
+        (page, pageSize) = query.Normalize();
+
+        var (records, total) = await auditLog.GetByAgentPagedAsync(agentId, page, pageSize, ct);
+        return Ok(PagedResponse<AuditRecord>.Create(records, total, page, pageSize));
     }
 
     /// <summary>

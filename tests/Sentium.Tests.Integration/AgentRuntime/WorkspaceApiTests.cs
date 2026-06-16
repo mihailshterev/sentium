@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using NSubstitute;
 using Sentium.AgentRuntime.Core.Dtos;
 using Sentium.AgentRuntime.Core.Storage;
+using Sentium.Shared.Results;
 using Sentium.Tests.Integration.Common;
 using Xunit;
 
@@ -39,8 +40,8 @@ public sealed class WorkspaceApiTests(WorkspaceApiFactory factory) : IClassFixtu
         var response = await _client.GetAsync("/workspaces", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var list = await response.Content.ReadFromJsonAsync<List<WorkspaceDto>>(Ct);
-        list.Should().Contain(w => w.Name == name);
+        var paged = await response.Content.ReadFromJsonAsync<PagedResponse<WorkspaceDto>>(Ct);
+        paged!.Items.Should().Contain(w => w.Name == name);
     }
 
     [Fact]

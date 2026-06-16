@@ -4,7 +4,6 @@ import { MemoryRouter, Routes, Route } from "react-router";
 import WorkflowsList from "./workflows";
 import WorkflowBuilder from "./workflow-builder";
 
-// Mock the hooks
 vi.mock("../../hooks/useWorkflows");
 vi.mock("../../hooks/useAgents");
 
@@ -16,7 +15,11 @@ const mockUseAgents = vi.mocked(useAgents);
 
 const baseWorkflowsReturn = {
   workflows: [],
+  totalCount: 0,
   isLoading: false,
+  hasMore: false,
+  loadMore: vi.fn(),
+  isLoadingMore: false,
   createWorkflow: vi.fn(),
   isCreatingWorkflow: false,
   isCreateSuccess: false,
@@ -35,7 +38,11 @@ const baseWorkflowsReturn = {
 
 const baseAgentsReturn = {
   agents: [],
+  totalCount: 0,
   isLoading: false,
+  hasMore: false,
+  loadMore: vi.fn(),
+  isLoadingMore: false,
   createAgent: vi.fn(),
   isCreatingAgent: false,
   isCreateSuccess: false,

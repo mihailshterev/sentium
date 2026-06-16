@@ -5,21 +5,19 @@ import {
   fetchAgentLearningStats,
   updateAgentLearning,
 } from "../services/agentRuntime.service";
-
-const LEARNINGS_KEY = (agentName?: string, count?: number) =>
-  ["agent-learnings", agentName ?? "all", count ?? 50] as const;
+import { useInfiniteList } from "./useInfiniteList";
+import type { AgentLearning } from "../types/agentConfig";
 
 const STATS_KEY = ["agent-learnings", "stats"] as const;
 
-export const useAgentLearnings = (agentName?: string, count = 50) => {
+export const useAgentLearnings = (agentName?: string, pageSize = 20) => {
   const qc = useQueryClient();
 
-  const query = useQuery({
-    queryKey: LEARNINGS_KEY(agentName, count),
-    queryFn: () => fetchAgentLearnings(agentName, count),
-    staleTime: 15_000,
-    retry: 1,
-  });
+  const list = useInfiniteList<AgentLearning>(
+    ["agent-learnings", agentName ?? "all"],
+    (page, ps) => fetchAgentLearnings(agentName, page, ps),
+    { pageSize, staleTime: 15_000 },
+  );
 
   const statsQuery = useQuery({
     queryKey: STATS_KEY,
@@ -44,9 +42,13 @@ export const useAgentLearnings = (agentName?: string, count = 50) => {
   });
 
   return {
-    learnings: query.data ?? [],
-    isLoading: query.isLoading,
-    error: query.error,
+    learnings: list.items,
+    hasMore: list.hasMore,
+    loadMore: list.loadMore,
+    isLoadingMore: list.isLoadingMore,
+    isLoading: list.isLoading,
+    isFetching: list.isFetching,
+    error: list.error,
     stats: statsQuery.data,
     isStatsLoading: statsQuery.isLoading,
     updateLearning: updateMutation.mutate,

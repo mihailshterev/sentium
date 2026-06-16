@@ -4,6 +4,7 @@ import styles from "../skills.module.scss";
 import { useSkills } from "../../../hooks/useSkills";
 import type { AgentSkill } from "../../../types/skills";
 import EmptyState from "../../../components/ui/empty-state";
+import LoadMore from "../../../components/ui/load-more";
 import StatusMessage from "../../../components/ui/status-message";
 import SkillCard from "./skill-card";
 
@@ -11,6 +12,9 @@ const UploadedTab = () => {
   const {
     skills,
     isLoading,
+    hasMore,
+    loadMore,
+    isLoadingMore,
     uploadSkill,
     isUploading,
     updateSkill,
@@ -19,7 +23,7 @@ const UploadedTab = () => {
     deleteSkill,
     isDeleting,
     deletingId,
-  } = useSkills();
+  } = useSkills(1);
   const uploadedSkills = skills.filter((s) => s.skillType === 1);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -72,7 +76,7 @@ const UploadedTab = () => {
           <Upload size={15} className={styles.cardIconGreen} />
           <div>
             <p className={styles.cardTitle}>Uploaded Skills</p>
-            <p className={styles.cardSubtitle}>Skills loaded from Markdown (.md) files — editable after upload</p>
+            <p className={styles.cardSubtitle}>Skills loaded from Markdown (.md) files - editable after upload</p>
           </div>
         </div>
         <div className={styles.headerActions}>
@@ -108,7 +112,7 @@ const UploadedTab = () => {
           <EmptyState
             icon={<BookOpen size={32} />}
             title="No uploaded skills yet"
-            hint="Upload a Markdown file — the content becomes the skill instructions."
+            hint="Upload a Markdown file - the content becomes the skill instructions."
           />
         )}
 
@@ -183,6 +187,7 @@ const UploadedTab = () => {
               />
             ),
           )}
+          <LoadMore hasMore={hasMore} isLoading={isLoadingMore} onLoadMore={loadMore} />
         </div>
       </div>
     </div>

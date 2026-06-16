@@ -1,6 +1,7 @@
 using Sentium.AgentRuntime.Core.Dtos;
 using Sentium.AgentRuntime.Core.WorkflowManagement;
 using Sentium.Infrastructure.Caching;
+using Sentium.Shared.Results;
 
 namespace Sentium.AgentRuntime.Application.WorkflowManagement;
 
@@ -16,6 +17,21 @@ public sealed class WorkflowService(
             async token => await repository.GetWorkflowsAsync(token),
             CacheTag,
             ct);
+
+    public async Task<PagedResponse<WorkflowResponse>> GetWorkflowsPagedAsync(int page, int pageSize, CancellationToken ct = default)
+    {
+        (page, pageSize) = new PaginationQuery { Page = page, PageSize = pageSize }.Normalize();
+
+        return await cache.GetOrCreateAsync(
+            $"{CacheTag}:page:{page}:{pageSize}",
+            async token =>
+            {
+                var (items, total) = await repository.GetPagedAsync(page, pageSize, token);
+                return PagedResponse<WorkflowResponse>.Create(items, total, page, pageSize);
+            },
+            CacheTag,
+            ct);
+    }
 
     public async Task<WorkflowResponse?> GetWorkflowAsync(Guid workflowId, CancellationToken ct = default)
         => await cache.GetOrCreateAsync(

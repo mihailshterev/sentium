@@ -16,7 +16,13 @@ const createWrapper = () => {
 const skill = { id: "s1", name: "summarize" } as never;
 
 beforeEach(() => {
-  vi.spyOn(agentRuntimeService, "fetchSkills").mockResolvedValue([skill]);
+  vi.spyOn(agentRuntimeService, "fetchSkillsPaged").mockResolvedValue({
+    items: [skill],
+    totalCount: 1,
+    page: 1,
+    pageSize: 20,
+    totalPages: 1,
+  });
   vi.spyOn(agentRuntimeService, "fetchBuiltInSkills").mockResolvedValue([skill]);
   vi.spyOn(agentRuntimeService, "createSkill").mockResolvedValue(skill);
   vi.spyOn(agentRuntimeService, "updateSkill").mockResolvedValue(skill);
@@ -26,14 +32,14 @@ beforeEach(() => {
 
 describe("useSkills", () => {
   it("loads user skills and built-in skills", async () => {
-    const { result } = renderHook(() => useSkills(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useSkills(0), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.skills).toEqual([skill]);
     await waitFor(() => expect(result.current.builtInSkills).toEqual([skill]));
   });
 
   it("creates a skill", async () => {
-    const { result } = renderHook(() => useSkills(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useSkills(0), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     await act(async () => {
       await result.current.createSkill({ name: "x" } as never);
@@ -42,7 +48,7 @@ describe("useSkills", () => {
   });
 
   it("updates a skill by id", async () => {
-    const { result } = renderHook(() => useSkills(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useSkills(0), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     await act(async () => {
       await result.current.updateSkill({ id: "s1", payload: { name: "y" } as never });
@@ -51,7 +57,7 @@ describe("useSkills", () => {
   });
 
   it("deletes a skill", async () => {
-    const { result } = renderHook(() => useSkills(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useSkills(0), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     await act(async () => {
       await result.current.deleteSkill("s1");
@@ -60,7 +66,7 @@ describe("useSkills", () => {
   });
 
   it("uploads a skill file", async () => {
-    const { result } = renderHook(() => useSkills(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useSkills(0), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     const file = new File(["x"], "skill.json");
     await act(async () => {

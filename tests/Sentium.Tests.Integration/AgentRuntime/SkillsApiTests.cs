@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
 using Sentium.AgentRuntime.Core.Skills;
+using Sentium.Shared.Results;
 using Sentium.Tests.Integration.Common;
 using Xunit;
 
@@ -45,8 +46,8 @@ public sealed class SkillsApiTests(SentiumWebApplicationFactory<Sentium.AgentRun
         var response = await _client.GetAsync("/skills", Ct);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var skills = await response.Content.ReadFromJsonAsync<List<AgentSkillDto>>(Ct);
-        skills.Should().Contain(s => s.Name == name);
+        var paged = await response.Content.ReadFromJsonAsync<PagedResponse<AgentSkillDto>>(Ct);
+        paged!.Items.Should().Contain(s => s.Name == name);
     }
 
     [Fact]

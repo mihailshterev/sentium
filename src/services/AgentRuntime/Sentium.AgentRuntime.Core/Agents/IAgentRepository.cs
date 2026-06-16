@@ -15,10 +15,16 @@ public interface IAgentRepository
     Task<AgentResponse> CreateAgentAsync(CreateAgentRequest request, CancellationToken ct = default);
 
     /// <summary>
-    /// Returns all of the current user's agents.
+    /// Returns all of the current user's agents (bounded by a safety cap). Used by internal
+    /// callers that need the full set; the API surface uses <see cref="GetPagedAsync"/>.
     /// </summary>
     /// <param name="ct">A cancellation token.</param>
     Task<IReadOnlyList<AgentResponse>> GetAgentsAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns a page of the current user's agents (newest first) plus the total count.
+    /// </summary>
+    Task<(IReadOnlyList<AgentResponse> Items, int TotalCount)> GetPagedAsync(int page, int pageSize, CancellationToken ct = default);
 
     /// <summary>
     /// Returns the agent with the given id, or <see langword="null"/> if it does not exist for the current user.

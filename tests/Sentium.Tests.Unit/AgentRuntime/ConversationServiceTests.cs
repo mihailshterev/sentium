@@ -18,7 +18,7 @@ public sealed class ConversationServiceTests
     }
 
     [Fact]
-    public async Task GetConversationsAsync_ReturnsConversationSummaries_WhenCalled()
+    public async Task GetConversationsAsync_ReturnsPagedConversationSummaries_WhenCalled()
     {
         // Arrange
         var ct = TestContext.Current.CancellationToken;
@@ -26,14 +26,17 @@ public sealed class ConversationServiceTests
         {
             new(Guid.NewGuid(), "Chat 1", "gemma3:1b", DateTime.UtcNow)
         };
-        _repository.GetConversationsAsync(ct).Returns(expected);
+        _repository.GetConversationsAsync(1, 20, ct).Returns((expected, expected.Count));
 
         // Act
-        var result = await _service.GetConversationsAsync(ct);
+        var result = await _service.GetConversationsAsync(1, 20, ct);
 
         // Assert
-        result.Should().BeEquivalentTo(expected);
-        await _repository.Received(1).GetConversationsAsync(ct);
+        result.Items.Should().BeEquivalentTo(expected);
+        result.TotalCount.Should().Be(expected.Count);
+        result.Page.Should().Be(1);
+        result.PageSize.Should().Be(20);
+        await _repository.Received(1).GetConversationsAsync(1, 20, ct);
     }
 
     [Fact]

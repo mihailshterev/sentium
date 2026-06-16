@@ -18,7 +18,11 @@ const mockAgent: AgentRecord = {
 
 const defaultAgentsHook = {
   agents: [mockAgent],
+  totalCount: 1,
   isLoading: false,
+  hasMore: false,
+  loadMore: vi.fn(),
+  isLoadingMore: false,
   createAgent: vi.fn(),
   isCreatingAgent: false,
   isCreateSuccess: false,

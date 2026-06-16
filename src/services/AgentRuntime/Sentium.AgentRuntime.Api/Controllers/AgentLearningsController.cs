@@ -1,4 +1,5 @@
 using Sentium.AgentRuntime.Core.Learnings;
+using Sentium.Shared.Results;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,20 +14,22 @@ namespace Sentium.AgentRuntime.Api.Controllers;
 public sealed class AgentLearningsController(IAgentLearningService learningService) : ControllerBase
 {
     /// <summary>
-    /// Returns captured learnings. Optionally filter by agent name.
+    /// Returns a page of captured learnings (newest first). Optionally filter by agent name.
     /// </summary>
     /// <param name="agentName">Optional agent name to filter learnings.</param>
-    /// <param name="count">Number of learnings to return (default 50).</param>
+    /// <param name="page">1-based page number (default: 1).</param>
+    /// <param name="pageSize">Number of learnings per page (default: 20, max: 100).</param>
     /// <param name="ct">Cancellation token.</param>
-    /// <returns>A list of captured learnings.</returns>
+    /// <returns>A paginated list of captured learnings.</returns>
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<IReadOnlyList<AgentLearningResponse>>> GetLearnings(
+    [ProducesResponseType(typeof(PagedResponse<AgentLearningResponse>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResponse<AgentLearningResponse>>> GetLearnings(
         [FromQuery] string? agentName,
-        [FromQuery] int count = 50,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = PaginationQuery.DefaultPageSize,
         CancellationToken ct = default)
     {
-        var results = await learningService.GetLearningsAsync(agentName, count, ct);
+        var results = await learningService.GetLearningsAsync(agentName, page, pageSize, ct);
         return Ok(results);
     }
 

@@ -41,19 +41,20 @@ public sealed class SkillsControllerTests
     }
 
     [Fact]
-    public async Task GetSkills_ReturnsOk_WithAllSkills()
+    public async Task GetSkills_ReturnsOk_WithPagedSkills()
     {
         // Arrange
         var ct = TestContext.Current.CancellationToken;
         var skills = new List<AgentSkillDto> { MakeDto() };
-        _skillService.GetAllAsync(ct).Returns(skills);
+        var paged = PagedResponse<AgentSkillDto>.Create(skills, 1, 1, 20);
+        _skillService.GetPagedAsync(null, 1, 20, ct).Returns(paged);
 
         // Act
-        var result = await _controller.GetSkills(ct);
+        var result = await _controller.GetSkills(null, 1, 20, ct);
 
         // Assert
         result.Should().BeOfType<OkObjectResult>()
-            .Which.Value.Should().BeEquivalentTo(skills);
+            .Which.Value.Should().Be(paged);
     }
 
     [Fact]

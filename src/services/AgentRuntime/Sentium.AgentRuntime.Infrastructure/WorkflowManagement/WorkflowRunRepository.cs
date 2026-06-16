@@ -15,14 +15,21 @@ public sealed class WorkflowRunRepository(AgentRuntimeDbContext context) : IWork
         await context.SaveChangesAsync(ct);
     }
 
-    public async Task<IReadOnlyList<WorkflowRunResponse>> GetRecentAsync(int count = 20, CancellationToken ct = default)
-        => await context.WorkflowRuns
+    public async Task<(IReadOnlyList<WorkflowRunResponse> Items, int TotalCount)> GetPagedAsync(int page, int pageSize, CancellationToken ct = default)
+    {
+        var total = await context.WorkflowRuns.CountAsync(ct);
+        var items = await context.WorkflowRuns
             .AsNoTracking()
             .OrderByDescending(r => r.StartedAt)
-            .Take(count)
+            .ThenByDescending(r => r.Id)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
             .AsAsyncEnumerable()
             .Select(WorkflowRunProjections.ToResponse)
             .ToListAsync(ct);
+
+        return (items, total);
+    }
 
     public async Task<WorkflowRunResponse?> GetByIdAsync(Guid id, CancellationToken ct = default)
     {

@@ -15,24 +15,24 @@ beforeEach(() => {
 });
 
 describe("fetchAuditLog()", () => {
-  it("defaults the count to 100", async () => {
+  it("defaults to the first page", async () => {
     vi.mocked(client.get).mockResolvedValueOnce([]);
     await sentinelService.fetchAuditLog();
-    expect(client.get).toHaveBeenCalledWith("/sentinel/policy/audit?count=100");
+    expect(client.get).toHaveBeenCalledWith("/sentinel/policy/audit?page=1&pageSize=20");
   });
 
-  it("passes through an explicit count", async () => {
+  it("passes through an explicit page and page size", async () => {
     vi.mocked(client.get).mockResolvedValueOnce([]);
-    await sentinelService.fetchAuditLog(25);
-    expect(client.get).toHaveBeenCalledWith("/sentinel/policy/audit?count=25");
+    await sentinelService.fetchAuditLog(2, 25);
+    expect(client.get).toHaveBeenCalledWith("/sentinel/policy/audit?page=2&pageSize=25");
   });
 });
 
 describe("fetchAuditByAgent()", () => {
-  it("encodes the agent id and defaults count to 50", async () => {
+  it("encodes the agent id and defaults to the first page", async () => {
     vi.mocked(client.get).mockResolvedValueOnce([]);
     await sentinelService.fetchAuditByAgent("agent/7");
-    expect(client.get).toHaveBeenCalledWith("/sentinel/policy/audit/agent/agent%2F7?count=50");
+    expect(client.get).toHaveBeenCalledWith("/sentinel/policy/audit/agent/agent%2F7?page=1&pageSize=20");
   });
 });
 

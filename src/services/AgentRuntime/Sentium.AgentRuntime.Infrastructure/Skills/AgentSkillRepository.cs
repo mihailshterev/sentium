@@ -1,6 +1,7 @@
 using Sentium.AgentRuntime.Core.Entities;
 using Sentium.AgentRuntime.Core.Skills;
 using Sentium.AgentRuntime.Infrastructure.Data;
+using Sentium.Shared.Results;
 using Microsoft.EntityFrameworkCore;
 
 namespace Sentium.AgentRuntime.Infrastructure.Skills;
@@ -11,7 +12,28 @@ public sealed class AgentSkillRepository(AgentRuntimeDbContext context) : IAgent
         => await context.AgentSkills
             .AsNoTracking()
             .OrderByDescending(s => s.CreatedAt)
+            .Take(PaginationQuery.MaxListCap)
             .ToListAsync(ct);
+
+    public async Task<(IReadOnlyList<AgentSkill> Items, int TotalCount)> GetPagedAsync(AgentSkillType? skillType, int page, int pageSize, CancellationToken ct = default)
+    {
+        var query = context.AgentSkills.AsNoTracking();
+
+        if (skillType is { } type)
+        {
+            query = query.Where(s => s.SkillType == type);
+        }
+
+        var total = await query.CountAsync(ct);
+        var items = await query
+            .OrderByDescending(s => s.CreatedAt)
+            .ThenByDescending(s => s.Id)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(ct);
+
+        return (items, total);
+    }
 
     public async Task<AgentSkill?> GetByIdAsync(Guid id, CancellationToken ct = default)
         => await context.AgentSkills.FindAsync([id], ct);

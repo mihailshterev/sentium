@@ -23,19 +23,20 @@ public sealed class WorkspacesControllerTests
         new(id ?? Guid.NewGuid(), name, null, 0, DateTime.UtcNow, DateTime.UtcNow);
 
     [Fact]
-    public async Task GetWorkspaces_ReturnsOk_WithList()
+    public async Task GetWorkspaces_ReturnsOk_WithPagedResponse()
     {
         // Arrange
         var ct = TestContext.Current.CancellationToken;
         var workspaces = new List<WorkspaceDto> { MakeDto() };
-        _workspaceService.GetWorkspacesAsync(ct).Returns(workspaces);
+        var paged = PagedResponse<WorkspaceDto>.Create(workspaces, 1, 1, 20);
+        _workspaceService.GetWorkspacesPagedAsync(1, 20, ct).Returns(paged);
 
         // Act
-        var result = await _controller.GetWorkspaces(ct);
+        var result = await _controller.GetWorkspaces(1, 20, ct);
 
         // Assert
         result.Should().BeOfType<OkObjectResult>()
-            .Which.Value.Should().BeEquivalentTo(workspaces);
+            .Which.Value.Should().Be(paged);
     }
 
     [Fact]

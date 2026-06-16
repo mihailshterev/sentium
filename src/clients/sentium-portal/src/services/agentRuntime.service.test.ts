@@ -21,10 +21,10 @@ beforeEach(() => {
 });
 
 describe("agentRuntime.service agents", () => {
-  it("fetchAgents calls client.get with correct path", async () => {
-    vi.mocked(client.get).mockResolvedValueOnce([]);
-    await service.fetchAgents();
-    expect(client.get).toHaveBeenCalledWith("/agent-runtime/agents");
+  it("fetchAgentsPaged calls client.get with correct path", async () => {
+    vi.mocked(client.get).mockResolvedValueOnce({ items: [], totalCount: 0, page: 1, pageSize: 100, totalPages: 0 });
+    await service.fetchAgentsPaged();
+    expect(client.get).toHaveBeenCalledWith("/agent-runtime/agents?page=1&pageSize=100");
   });
 
   it("createAgent posts payload to correct path", async () => {
@@ -98,10 +98,10 @@ describe("agentRuntime.service pullModel()", () => {
 });
 
 describe("agentRuntime.service workflows", () => {
-  it("fetchWorkflows calls client.get with correct path", async () => {
-    vi.mocked(client.get).mockResolvedValueOnce([]);
-    await service.fetchWorkflows();
-    expect(client.get).toHaveBeenCalledWith("/agent-runtime/workflows");
+  it("fetchWorkflowsPaged calls client.get with correct path", async () => {
+    vi.mocked(client.get).mockResolvedValueOnce({ items: [], totalCount: 0, page: 1, pageSize: 100, totalPages: 0 });
+    await service.fetchWorkflowsPaged();
+    expect(client.get).toHaveBeenCalledWith("/agent-runtime/workflows?page=1&pageSize=100");
   });
 
   it("createWorkflow posts to /workflows", async () => {
@@ -135,7 +135,7 @@ describe("agentRuntime.service conversations", () => {
   it("fetchConversations calls client.get with correct path", async () => {
     vi.mocked(client.get).mockResolvedValueOnce([]);
     await service.fetchConversations();
-    expect(client.get).toHaveBeenCalledWith("/agent-runtime/conversations");
+    expect(client.get).toHaveBeenCalledWith("/agent-runtime/conversations?page=1&pageSize=20");
   });
 
   it("fetchConversation calls client.get with id in path", async () => {
@@ -162,7 +162,9 @@ describe("agentRuntime.service agent learnings", () => {
   it("fetchAgentLearnings calls correct endpoint without agentName filter", async () => {
     vi.mocked(client.get).mockResolvedValueOnce([]);
     await service.fetchAgentLearnings();
-    expect(client.get).toHaveBeenCalledWith(expect.stringContaining("/agent-runtime/agent-learnings?count=50"));
+    expect(client.get).toHaveBeenCalledWith(
+      expect.stringContaining("/agent-runtime/agent-learnings?page=1&pageSize=20"),
+    );
   });
 
   it("fetchAgentLearnings includes agentName param when provided", async () => {

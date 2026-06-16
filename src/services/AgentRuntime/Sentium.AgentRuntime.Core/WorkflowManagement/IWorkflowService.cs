@@ -1,4 +1,5 @@
 using Sentium.AgentRuntime.Core.Dtos;
+using Sentium.Shared.Results;
 
 namespace Sentium.AgentRuntime.Core.WorkflowManagement;
 
@@ -8,6 +9,7 @@ namespace Sentium.AgentRuntime.Core.WorkflowManagement;
 public interface IWorkflowService
 {
     Task<IReadOnlyList<WorkflowResponse>> GetWorkflowsAsync(CancellationToken ct = default);
+    Task<PagedResponse<WorkflowResponse>> GetWorkflowsPagedAsync(int page, int pageSize, CancellationToken ct = default);
     Task<WorkflowResponse?> GetWorkflowAsync(Guid workflowId, CancellationToken ct = default);
     Task<WorkflowResponse> CreateWorkflowAsync(CreateWorkflowRequest request, CancellationToken ct = default);
     Task<bool> UpdateWorkflowAsync(Guid workflowId, UpdateWorkflowRequest request, CancellationToken ct = default);

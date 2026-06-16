@@ -1,6 +1,7 @@
 using Sentium.AgentRuntime.Core.Conversations;
 using Sentium.AgentRuntime.Core.Dtos;
 using Sentium.Infrastructure.Caching;
+using Sentium.Shared.Results;
 
 namespace Sentium.AgentRuntime.Application.Conversations;
 
@@ -10,12 +11,21 @@ public sealed class ConversationService(
 {
     private const string CacheTag = "conversations";
 
-    public async Task<IReadOnlyList<ConversationSummary>> GetConversationsAsync(CancellationToken ct = default)
-        => await cache.GetOrCreateAsync(
-            $"{CacheTag}:all",
-            async token => await repository.GetConversationsAsync(token),
+    public async Task<PagedResponse<ConversationSummary>> GetConversationsAsync(int page, int pageSize, CancellationToken ct = default)
+    {
+        var query = new PaginationQuery { Page = page, PageSize = pageSize };
+        (page, pageSize) = query.Normalize();
+
+        return await cache.GetOrCreateAsync(
+            $"{CacheTag}:page:{page}:{pageSize}",
+            async token =>
+            {
+                var (items, total) = await repository.GetConversationsAsync(page, pageSize, token);
+                return PagedResponse<ConversationSummary>.Create(items, total, page, pageSize);
+            },
             CacheTag,
             ct);
+    }
 
     public async Task<ConversationResponse?> GetConversationAsync(Guid conversationId, CancellationToken ct = default)
         => await cache.GetOrCreateAsync(

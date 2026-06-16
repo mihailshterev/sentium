@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { UsersRound, RefreshCw, AlertCircle, UserX, ChevronLeft, ChevronRight } from "lucide-react";
+import { UsersRound, RefreshCw, AlertCircle, UserX } from "lucide-react";
 import styles from "./users.module.scss";
 import { ROLE_HIERARCHY, type Role } from "../../utils/roles";
 import { useRole } from "../../hooks/useRole";
@@ -7,6 +7,7 @@ import { useAuthStore } from "../../stores/auth-store";
 import useUsers from "../../hooks/useUsers";
 import PageHeader from "../../components/ui/page-header";
 import EmptyState from "../../components/ui/empty-state";
+import LoadMore from "../../components/ui/load-more";
 import SkeletonRows from "./components/skeleton-rows";
 import UserRow from "./components/user-row";
 import ConfirmDialog from "../../components/ui/confirm-dialog"; // Added import
@@ -25,9 +26,9 @@ export default function Users() {
   const {
     users,
     totalCount,
-    totalPages,
-    page,
-    setPage,
+    hasMore,
+    loadMore,
+    isLoadingMore,
     isLoading,
     isFetching,
     error,
@@ -170,27 +171,7 @@ export default function Users() {
             )}
           </div>
 
-          {totalPages > 1 && (
-            <div className={styles.pagination}>
-              <button
-                className={styles.pageBtn}
-                onClick={() => setPage((p) => p - 1)}
-                disabled={page <= 1 || isFetching}
-              >
-                <ChevronLeft size={13} />
-              </button>
-              <span className={styles.pageInfo}>
-                {page} / {totalPages}
-              </span>
-              <button
-                className={styles.pageBtn}
-                onClick={() => setPage((p) => p + 1)}
-                disabled={page >= totalPages || isFetching}
-              >
-                <ChevronRight size={13} />
-              </button>
-            </div>
-          )}
+          <LoadMore hasMore={hasMore} isLoading={isLoadingMore} onLoadMore={loadMore} />
         </div>
       </div>
 

@@ -4,6 +4,7 @@ using NSubstitute;
 using Sentium.AgentRuntime.Api.Controllers;
 using Sentium.AgentRuntime.Core.Dtos;
 using Sentium.AgentRuntime.Core.WorkflowManagement;
+using Sentium.Shared.Results;
 using Xunit;
 
 namespace Sentium.Tests.Unit.AgentRuntime;
@@ -23,35 +24,39 @@ public sealed class WorkflowsControllerTests
         new(id ?? Guid.NewGuid(), Guid.NewGuid(), "WF", "desc", DateTime.UtcNow, DateTime.UtcNow, []);
 
     [Fact]
-    public async Task GetWorkflows_ReturnsOkWithList()
+    public async Task GetWorkflows_ReturnsOkWithPagedResponse()
     {
         var list = new List<WorkflowResponse> { MakeResponse() };
-        _workflowService.GetWorkflowsAsync(Arg.Any<CancellationToken>()).Returns(list);
+        var paged = PagedResponse<WorkflowResponse>.Create(list, 1, 1, 20);
+        _workflowService.GetWorkflowsPagedAsync(1, 20, Arg.Any<CancellationToken>()).Returns(paged);
 
-        var result = await _controller.GetWorkflows(TestContext.Current.CancellationToken);
+        var result = await _controller.GetWorkflows(1, 20, TestContext.Current.CancellationToken);
 
         result.Result.Should().BeOfType<OkObjectResult>()
-            .Which.Value.Should().BeEquivalentTo(list);
+            .Which.Value.Should().Be(paged);
     }
 
     [Fact]
-    public async Task GetWorkflowRuns_DefaultCount_ReturnsCapped()
+    public async Task GetWorkflowRuns_ReturnsPagedResponse()
     {
-        _runRepository.GetRecentAsync(20, Arg.Any<CancellationToken>()).Returns([]);
+        var empty = (IReadOnlyList<WorkflowRunResponse>)new List<WorkflowRunResponse>();
+        _runRepository.GetPagedAsync(1, 20, Arg.Any<CancellationToken>()).Returns((empty, 0));
 
-        await _controller.GetWorkflowRuns(20, TestContext.Current.CancellationToken);
+        var result = await _controller.GetWorkflowRuns(1, 20, TestContext.Current.CancellationToken);
 
-        await _runRepository.Received(1).GetRecentAsync(20, Arg.Any<CancellationToken>());
+        result.Result.Should().BeOfType<OkObjectResult>();
+        await _runRepository.Received(1).GetPagedAsync(1, 20, Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task GetWorkflowRuns_CountExceeds100_CapAt100()
+    public async Task GetWorkflowRuns_PageSizeExceeds100_ClampsTo100()
     {
-        _runRepository.GetRecentAsync(100, Arg.Any<CancellationToken>()).Returns([]);
+        var empty = (IReadOnlyList<WorkflowRunResponse>)new List<WorkflowRunResponse>();
+        _runRepository.GetPagedAsync(1, 100, Arg.Any<CancellationToken>()).Returns((empty, 0));
 
-        await _controller.GetWorkflowRuns(500, TestContext.Current.CancellationToken);
+        await _controller.GetWorkflowRuns(1, 500, TestContext.Current.CancellationToken);
 
-        await _runRepository.Received(1).GetRecentAsync(100, Arg.Any<CancellationToken>());
+        await _runRepository.Received(1).GetPagedAsync(1, 100, Arg.Any<CancellationToken>());
     }
 
     [Fact]

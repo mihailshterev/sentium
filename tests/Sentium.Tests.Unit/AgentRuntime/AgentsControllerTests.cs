@@ -23,20 +23,21 @@ public sealed class AgentsControllerTests
         new(id ?? Guid.NewGuid(), name, "Desc", "gemma3:1b", DateTime.UtcNow, DateTime.UtcNow);
 
     [Fact]
-    public async Task GetAgents_ReturnsOkWithList_WhenCalled()
+    public async Task GetAgents_ReturnsOkWithPagedResponse_WhenCalled()
     {
         // Arrange
         var ct = TestContext.Current.CancellationToken;
         var agents = new List<AgentResponse> { MakeResponse() };
-        _agentService.GetAgentsAsync(ct).Returns(agents);
+        var paged = PagedResponse<AgentResponse>.Create(agents, 1, 1, 20);
+        _agentService.GetAgentsPagedAsync(1, 20, ct).Returns(paged);
 
         // Act
-        var result = await _controller.GetAgents(ct);
+        var result = await _controller.GetAgents(1, 20, ct);
 
         // Assert
         result.Result.Should().BeOfType<OkObjectResult>()
-            .Which.Value.Should().BeEquivalentTo(agents);
-        await _agentService.Received(1).GetAgentsAsync(ct);
+            .Which.Value.Should().Be(paged);
+        await _agentService.Received(1).GetAgentsPagedAsync(1, 20, ct);
     }
 
     [Fact]

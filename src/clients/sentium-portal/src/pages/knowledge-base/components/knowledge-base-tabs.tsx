@@ -5,6 +5,7 @@ import { useAgentLearnings } from "../../../hooks/useAgentLearnings";
 import { useKnowledgeBaseStats } from "../../../hooks/useKnowledgeBaseStats";
 import ConfirmDialog from "../../../components/ui/confirm-dialog";
 import EmptyState from "../../../components/ui/empty-state";
+import LoadMore from "../../../components/ui/load-more";
 import LearningCard from "./learning-card";
 
 const formatDate = (iso: string) => {
@@ -165,8 +166,19 @@ export const GlobalContextTab = () => {
 export const AgentLearningsTab = () => {
   const [agentFilter, setAgentFilter] = useState<string>("");
   const [scopeFilter, setScopeFilter] = useState<"all" | "global" | "private">("all");
-  const { learnings, isLoading, stats, updateLearning, isUpdating, updatingId, deleteLearning, isDeleting } =
-    useAgentLearnings(agentFilter || undefined, 100);
+  const {
+    learnings,
+    hasMore,
+    loadMore,
+    isLoadingMore,
+    isLoading,
+    stats,
+    updateLearning,
+    isUpdating,
+    updatingId,
+    deleteLearning,
+    isDeleting,
+  } = useAgentLearnings(agentFilter || undefined, 20);
 
   const agentNames = stats ? Object.keys(stats.learningsByAgent) : [];
 
@@ -243,6 +255,8 @@ export const AgentLearningsTab = () => {
             ))}
           </div>
         )}
+
+        <LoadMore hasMore={hasMore} isLoading={isLoadingMore} onLoadMore={loadMore} />
       </div>
     </div>
   );

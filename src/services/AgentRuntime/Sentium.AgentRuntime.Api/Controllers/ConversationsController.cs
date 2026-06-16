@@ -1,5 +1,6 @@
 using Sentium.AgentRuntime.Core.Conversations;
 using Sentium.AgentRuntime.Core.Dtos;
+using Sentium.Shared.Results;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,15 +15,20 @@ namespace Sentium.AgentRuntime.Api.Controllers;
 public sealed class ConversationsController(IConversationService conversationService) : ControllerBase
 {
     /// <summary>
-    /// Returns a list of conversations. Optionally filter by agent name or session ID.
+    /// Returns a page of conversations (newest first).
     /// </summary>
+    /// <param name="page">1-based page number (default: 1).</param>
+    /// <param name="pageSize">Number of items per page (default: 20, max: 100).</param>
     /// <param name="ct">Cancellation token.</param>
-    /// <returns>List of conversations.</returns>
+    /// <returns>A paginated list of conversations.</returns>
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<IReadOnlyList<ConversationSummary>>> GetConversations(CancellationToken ct)
+    [ProducesResponseType(typeof(PagedResponse<ConversationSummary>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResponse<ConversationSummary>>> GetConversations(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = PaginationQuery.DefaultPageSize,
+        CancellationToken ct = default)
     {
-        var conversations = await conversationService.GetConversationsAsync(ct);
+        var conversations = await conversationService.GetConversationsAsync(page, pageSize, ct);
         return Ok(conversations);
     }
 

@@ -1,5 +1,6 @@
 import { client } from "../api/client";
 import type { AuditRecord, AuditStats, PdpSettings, UpdatePdpSettingsPayload } from "../types/sentinel";
+import type { PagedResponse } from "../types/pagination";
 
 const BASE = "/sentinel";
 
@@ -10,11 +11,13 @@ interface SettingsEnvelope<T> {
   updatedBy: string | null;
 }
 
-export const fetchAuditLog = (count = 100): Promise<AuditRecord[]> =>
-  client.get<AuditRecord[]>(`${BASE}/policy/audit?count=${count}`);
+export const fetchAuditLog = (page = 1, pageSize = 20): Promise<PagedResponse<AuditRecord>> =>
+  client.get<PagedResponse<AuditRecord>>(`${BASE}/policy/audit?page=${page}&pageSize=${pageSize}`);
 
-export const fetchAuditByAgent = (agentId: string, count = 50): Promise<AuditRecord[]> =>
-  client.get<AuditRecord[]>(`${BASE}/policy/audit/agent/${encodeURIComponent(agentId)}?count=${count}`);
+export const fetchAuditByAgent = (agentId: string, page = 1, pageSize = 20): Promise<PagedResponse<AuditRecord>> =>
+  client.get<PagedResponse<AuditRecord>>(
+    `${BASE}/policy/audit/agent/${encodeURIComponent(agentId)}?page=${page}&pageSize=${pageSize}`,
+  );
 
 export const fetchAuditStats = (): Promise<AuditStats> => client.get<AuditStats>(`${BASE}/policy/audit/stats`);
 

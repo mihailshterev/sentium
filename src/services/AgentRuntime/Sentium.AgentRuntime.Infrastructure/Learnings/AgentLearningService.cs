@@ -4,6 +4,7 @@ using Sentium.AgentRuntime.Core.Learnings;
 using Sentium.AgentRuntime.Core.Rag;
 using Sentium.AgentRuntime.Core.Rag.Models;
 using Sentium.Infrastructure.Caching;
+using Sentium.Shared.Results;
 
 namespace Sentium.AgentRuntime.Infrastructure.Learnings;
 
@@ -21,15 +22,25 @@ public sealed class AgentLearningService(
     private const string CacheTag = "learnings";
     private const float RecallScoreThreshold = 0.35f;
 
-    public async Task<IReadOnlyList<AgentLearningResponse>> GetLearningsAsync(
-        string? agentName = null,
-        int count = 50,
+    public async Task<PagedResponse<AgentLearningResponse>> GetLearningsAsync(
+        string? agentName,
+        int page,
+        int pageSize,
         CancellationToken ct = default)
-        => await cache.GetOrCreateAsync(
-            $"{CacheTag}:{agentName ?? "all"}:{count}",
-            async token => await repository.GetAllAsync(agentName, count, token),
+    {
+        var query = new PaginationQuery { Page = page, PageSize = pageSize };
+        (page, pageSize) = query.Normalize();
+
+        return await cache.GetOrCreateAsync(
+            $"{CacheTag}:{agentName ?? "all"}:page:{page}:{pageSize}",
+            async token =>
+            {
+                var (items, total) = await repository.GetAllAsync(agentName, page, pageSize, token);
+                return PagedResponse<AgentLearningResponse>.Create(items, total, page, pageSize);
+            },
             CacheTag,
             ct);
+    }
 
     public async Task<AgentLearningStats> GetStatsAsync(CancellationToken ct = default)
         => await cache.GetOrCreateAsync(

@@ -1,5 +1,6 @@
 import { Play, GitBranch, FolderOpen, Loader, History, Sparkles, Layers } from "lucide-react";
 import styles from "../agent-orchestration.module.scss";
+import InfiniteScrollSentinel from "../../../components/ui/infinite-scroll-sentinel";
 import type { WorkflowRecord } from "../../../types/workflows";
 import type { WorkflowRun } from "../../../types/workflows";
 import type { Phase } from "../../../types/orchestration";
@@ -18,6 +19,9 @@ interface ExecuteSidebarProps {
   workflows: WorkflowRecord[];
   workspaces: Workspace[];
   workflowRuns: WorkflowRun[];
+  hasMoreRuns: boolean;
+  isLoadingMoreRuns: boolean;
+  onLoadMoreRuns: () => void;
   selectedWorkflow: WorkflowRecord | null;
   selectedWorkspaceId: string;
   scenarioInput: string;
@@ -42,6 +46,9 @@ const ExecuteSidebar = ({
   workflows,
   workspaces,
   workflowRuns,
+  hasMoreRuns,
+  isLoadingMoreRuns,
+  onLoadMoreRuns,
   selectedWorkflow,
   selectedWorkspaceId,
   scenarioInput,
@@ -256,6 +263,7 @@ const ExecuteSidebar = ({
                 </div>
               </button>
             ))}
+            <InfiniteScrollSentinel hasMore={hasMoreRuns} isLoading={isLoadingMoreRuns} onLoadMore={onLoadMoreRuns} />
           </div>
         </div>
       )}

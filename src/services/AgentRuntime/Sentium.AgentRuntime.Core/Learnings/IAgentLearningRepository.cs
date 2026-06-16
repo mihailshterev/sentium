@@ -8,13 +8,15 @@ namespace Sentium.AgentRuntime.Core.Learnings;
 public interface IAgentLearningRepository
 {
     /// <summary>
-    /// Retrieves a list of learning responses, optionally filtered by agent name.
+    /// Retrieves a page of learning responses (newest first) plus the total count,
+    /// optionally filtered by agent name.
     /// </summary>
     /// <param name="agentName">The optional name of the agent to filter by.</param>
-    /// <param name="count">The maximum number of records to return. Defaults to 50.</param>
+    /// <param name="page">1-based page number.</param>
+    /// <param name="pageSize">Number of records per page.</param>
     /// <param name="ct">The cancellation token.</param>
-    /// <returns>A read-only list of <see cref="AgentLearningResponse"/> objects.</returns>
-    Task<IReadOnlyList<AgentLearningResponse>> GetAllAsync(string? agentName = null, int count = 50, CancellationToken ct = default);
+    /// <returns>A page of <see cref="AgentLearningResponse"/> objects with the total count.</returns>
+    Task<(IReadOnlyList<AgentLearningResponse> Items, int TotalCount)> GetAllAsync(string? agentName, int page, int pageSize, CancellationToken ct = default);
 
     /// <summary>
     /// Gets statistical information regarding stored agent learnings.

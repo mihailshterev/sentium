@@ -46,23 +46,29 @@ describe("agentRuntime.service client endpoints", () => {
     expect(client.delete).toHaveBeenCalledWith("/agent-runtime/workflows/1");
   });
 
-  it("workflow runs use a count query and id path", async () => {
-    vi.mocked(client.get).mockResolvedValue([] as never);
+  it("workflow runs use a paged query and id path", async () => {
+    vi.mocked(client.get).mockResolvedValue({ items: [], totalCount: 0, page: 1, pageSize: 5, totalPages: 0 } as never);
     await svc.fetchWorkflowRuns(5);
     await svc.fetchWorkflowRun("r1");
-    expect(client.get).toHaveBeenCalledWith("/agent-runtime/workflows/runs?count=5");
+    expect(client.get).toHaveBeenCalledWith("/agent-runtime/workflows/runs?page=1&pageSize=5");
     expect(client.get).toHaveBeenCalledWith("/agent-runtime/workflows/runs/r1");
   });
 
   it("conversation CRUD hits the right endpoints", async () => {
-    vi.mocked(client.get).mockResolvedValue([] as never);
+    vi.mocked(client.get).mockResolvedValue({
+      items: [],
+      totalCount: 0,
+      page: 1,
+      pageSize: 20,
+      totalPages: 0,
+    } as never);
     vi.mocked(client.post).mockResolvedValue({} as never);
     vi.mocked(client.delete).mockResolvedValue(undefined as never);
     await svc.fetchConversations();
     await svc.fetchConversation("c1");
     await svc.createConversation({ title: "t" } as never);
     await svc.deleteConversation("c1");
-    expect(client.get).toHaveBeenCalledWith("/agent-runtime/conversations");
+    expect(client.get).toHaveBeenCalledWith("/agent-runtime/conversations?page=1&pageSize=20");
     expect(client.get).toHaveBeenCalledWith("/agent-runtime/conversations/c1");
     expect(client.delete).toHaveBeenCalledWith("/agent-runtime/conversations/c1");
   });
@@ -96,12 +102,12 @@ describe("agentRuntime.service client endpoints", () => {
     vi.mocked(client.put).mockResolvedValue({} as never);
     vi.mocked(client.delete).mockResolvedValue(undefined as never);
     await svc.fetchAgentLearnings();
-    await svc.fetchAgentLearnings("Analyzer", 10);
+    await svc.fetchAgentLearnings("Analyzer", 2, 10);
     await svc.fetchAgentLearningStats();
     await svc.updateAgentLearning("l1", { content: "c", tags: "t" });
     await svc.deleteAgentLearning("l1");
-    expect(client.get).toHaveBeenCalledWith("/agent-runtime/agent-learnings?count=50");
-    expect(client.get).toHaveBeenCalledWith("/agent-runtime/agent-learnings?count=10&agentName=Analyzer");
+    expect(client.get).toHaveBeenCalledWith("/agent-runtime/agent-learnings?page=1&pageSize=20");
+    expect(client.get).toHaveBeenCalledWith("/agent-runtime/agent-learnings?page=2&pageSize=10&agentName=Analyzer");
     expect(client.get).toHaveBeenCalledWith("/agent-runtime/agent-learnings/stats");
     expect(client.put).toHaveBeenCalledWith("/agent-runtime/agent-learnings/l1", { content: "c", tags: "t" });
   });
@@ -126,7 +132,7 @@ describe("agentRuntime.service client endpoints", () => {
     vi.mocked(client.put).mockResolvedValue(undefined as never);
     vi.mocked(client.delete).mockResolvedValue(undefined as never);
     await svc.fetchBuiltInSkills();
-    await svc.fetchSkills();
+    await svc.fetchSkillsPaged();
     await svc.createSkill({ name: "s" } as never);
     await svc.updateSkill("s1", { name: "s" } as never);
     await svc.deleteSkill("s1");

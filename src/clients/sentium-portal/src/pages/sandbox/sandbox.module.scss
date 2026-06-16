@@ -377,46 +377,6 @@
   justify-self: end;
 }
 
-.pagination {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-}
-
-.pageBtn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
-  color: var(--text-secondary);
-  background: var(--bg-surface);
-  border: 1px solid var(--border-subtle);
-  cursor: pointer;
-  transition:
-    background 0.15s,
-    border-color 0.15s;
-}
-
-.pageBtn:hover:not(:disabled) {
-  background: var(--bg-hover);
-  border-color: var(--border-color);
-}
-.pageBtn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.pageInfo {
-  font-size: 0.76rem;
-  color: var(--text-muted);
-  font-family: "JetBrains Mono", monospace;
-  min-width: 56px;
-  text-align: center;
-}
-
 .langChip {
   font-size: 0.62rem;
   font-weight: 600;

@@ -70,6 +70,9 @@ const Assistant = () => {
     createConversation,
     deleteConversation: deleteConversationMutate,
     isCreating,
+    hasMore: hasMoreConversations,
+    loadMore: loadMoreConversations,
+    isLoadingMore: isLoadingMoreConversations,
   } = useConversations();
 
   const { models } = useModels();
@@ -205,7 +208,7 @@ const Assistant = () => {
   const [randomizedSuggestions] = useState(() => [...SUGGESTIONS_POOL].sort(() => 0.5 - Math.random()).slice(0, 4));
 
   const { data: workspaces = [] } = useQuery({
-    queryKey: ["workspaces"],
+    queryKey: ["workspaces", "options"],
     queryFn: fetchWorkspaces,
     enabled: wsContextOpen,
   });
@@ -475,6 +478,9 @@ const Assistant = () => {
         conversationGroups={conversationGroups}
         activeConversationId={routeConversationId ?? activeConversationId}
         isCreating={isCreating}
+        hasMoreConversations={hasMoreConversations}
+        isLoadingMoreConversations={isLoadingMoreConversations}
+        onLoadMoreConversations={loadMoreConversations}
         wsContextOpen={wsContextOpen}
         workspaces={workspaces}
         expandedWorkspace={expandedWorkspace}

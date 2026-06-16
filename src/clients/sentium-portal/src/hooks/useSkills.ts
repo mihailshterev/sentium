@@ -3,24 +3,25 @@ import {
   createSkill,
   deleteSkill,
   fetchBuiltInSkills,
-  fetchSkills,
+  fetchSkillsPaged,
   updateSkill,
   uploadSkillFile,
 } from "../services/agentRuntime.service";
-import type { CreateSkillPayload, UpdateSkillPayload } from "../types/skills";
+import { useInfiniteList } from "./useInfiniteList";
+import type { AgentSkill, AgentSkillType, CreateSkillPayload, UpdateSkillPayload } from "../types/skills";
 
 const SKILLS_KEY = ["skills"] as const;
 const BUILT_IN_KEY = ["skills", "built-in"] as const;
 
-export const useSkills = () => {
+export const useSkills = (skillType?: AgentSkillType) => {
   const qc = useQueryClient();
+  const invalidate = () => qc.invalidateQueries({ queryKey: SKILLS_KEY });
 
-  const query = useQuery({
-    queryKey: SKILLS_KEY,
-    queryFn: fetchSkills,
-    staleTime: 30_000,
-    retry: 1,
-  });
+  const list = useInfiniteList<AgentSkill>(
+    [...SKILLS_KEY, skillType ?? "all"],
+    (page, pageSize) => fetchSkillsPaged(skillType, page, pageSize),
+    { enabled: skillType !== undefined },
+  );
 
   const builtInQuery = useQuery({
     queryKey: BUILT_IN_KEY,
@@ -31,29 +32,32 @@ export const useSkills = () => {
 
   const createMutation = useMutation({
     mutationFn: (payload: CreateSkillPayload) => createSkill(payload),
-    onSuccess: () => qc.invalidateQueries({ queryKey: SKILLS_KEY }),
+    onSuccess: invalidate,
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, payload }: { id: string; payload: UpdateSkillPayload }) => updateSkill(id, payload),
-    onSuccess: () => qc.invalidateQueries({ queryKey: SKILLS_KEY }),
+    onSuccess: invalidate,
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteSkill(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: SKILLS_KEY }),
+    onSuccess: invalidate,
   });
 
   const uploadMutation = useMutation({
     mutationFn: (file: File) => uploadSkillFile(file),
-    onSuccess: () => qc.invalidateQueries({ queryKey: SKILLS_KEY }),
+    onSuccess: invalidate,
   });
 
   return {
-    skills: query.data ?? [],
-    isLoading: query.isLoading,
-    error: query.error,
-    refetch: query.refetch,
+    skills: list.items,
+    isLoading: list.isLoading,
+    error: list.error,
+    refetch: list.refetch,
+    hasMore: list.hasMore,
+    loadMore: list.loadMore,
+    isLoadingMore: list.isLoadingMore,
 
     builtInSkills: builtInQuery.data ?? [],
     isBuiltInLoading: builtInQuery.isLoading,

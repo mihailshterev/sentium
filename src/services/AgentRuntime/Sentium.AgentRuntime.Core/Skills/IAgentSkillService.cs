@@ -13,6 +13,12 @@ public interface IAgentSkillService
     Task<IReadOnlyList<AgentSkillDto>> GetAllAsync(CancellationToken ct = default);
 
     /// <summary>
+    /// Returns a page of user-defined skills (newest first), optionally filtered to a single
+    /// <paramref name="skillType"/>.
+    /// </summary>
+    Task<PagedResponse<AgentSkillDto>> GetPagedAsync(AgentSkillType? skillType, int page, int pageSize, CancellationToken ct = default);
+
+    /// <summary>
     /// Returns the skill with the given <paramref name="id"/>, or <see langword="null"/> if none exists.
     /// </summary>
     Task<AgentSkillDto?> GetByIdAsync(Guid id, CancellationToken ct = default);
