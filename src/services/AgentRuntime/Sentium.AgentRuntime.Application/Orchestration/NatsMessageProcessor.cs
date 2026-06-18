@@ -51,6 +51,12 @@ public sealed class NatsMessageProcessor(
 
     private async Task ProcessMessageAsync(NatsMsg<byte[]> msg, CancellationToken ct)
     {
+        if (msg.Data is null || msg.Data.Length == 0)
+        {
+            logger.LogWarning("Received empty NATS message on {Subject}; skipping.", msg.Subject);
+            return;
+        }
+
         WorkflowTrigger? trigger = null;
         try
         {
@@ -58,7 +64,7 @@ public sealed class NatsMessageProcessor(
             scope.ServiceProvider.GetRequiredService<SystemScopeContext>().Activate();
             var orchestrator = scope.ServiceProvider.GetRequiredService<IOrchestrator>();
 
-            var payloadString = Encoding.UTF8.GetString(msg.Data!);
+            var payloadString = Encoding.UTF8.GetString(msg.Data);
 
             logger.LogInformation("Triggering Workflow for Subject: {Subject}", msg.Subject);
 
@@ -66,7 +72,8 @@ public sealed class NatsMessageProcessor(
             {
                 TriggerType = msg.Subject,
                 Payload = payloadString,
-                UserId = TryParseUserId(payloadString)
+                UserId = TryParseUserId(payloadString),
+                StreamId = TryParseStreamId(payloadString) ?? msg.Subject
             };
 
             var startedAt = DateTime.UtcNow;
@@ -112,11 +119,11 @@ public sealed class NatsMessageProcessor(
             {
                 try
                 {
-                    await bus.StreamAgentUpdateAsync(trigger.TriggerType, "System", AgentUpdateTypes.Done, AgentUpdateTypes.Done, ct);
+                    await bus.StreamAgentUpdateAsync(trigger.StreamId, "System", AgentUpdateTypes.Done, AgentUpdateTypes.Done, ct);
                 }
                 catch (Exception ex)
                 {
-                    logger.LogWarning(ex, "Failed to publish done signal for {TriggerType}", trigger.TriggerType);
+                    logger.LogWarning(ex, "Failed to publish done signal for {StreamId}", trigger.StreamId);
                 }
             }
         }
@@ -145,6 +152,25 @@ public sealed class NatsMessageProcessor(
         catch (JsonException ex)
         {
             logger.LogDebug(ex, "Could not parse userId from workflow trigger payload; treating as system-scoped.");
+        }
+
+        return null;
+    }
+
+    private string? TryParseStreamId(string payload)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(payload);
+            if (doc.RootElement.TryGetProperty("streamId", out var prop) && prop.ValueKind == JsonValueKind.String)
+            {
+                var value = prop.GetString();
+                return string.IsNullOrWhiteSpace(value) ? null : value;
+            }
+        }
+        catch (JsonException ex)
+        {
+            logger.LogDebug(ex, "Could not parse streamId from workflow trigger payload; falling back to the trigger subject.");
         }
 
         return null;

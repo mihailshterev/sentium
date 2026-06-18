@@ -159,18 +159,7 @@ internal sealed class AgenticRefinementLoop(IAgentFactory factory, IEventBus nat
             {
                 var author = e.Update.AuthorName ?? "Squad";
 
-                if (e.Update.Contents.OfType<TextReasoningContent>().FirstOrDefault() is { } reasoning && !string.IsNullOrEmpty(reasoning.Text))
-                {
-                    await nats.StreamAgentUpdateAsync(trigger.TriggerType, author, reasoning.Text, AgentUpdateTypes.Thought, ct);
-                    streamLog.Add(author, reasoning.Text, AgentUpdateTypes.Thought);
-                }
-
-                foreach (var call in e.Update.Contents.OfType<FunctionCallContent>())
-                {
-                    var toolLabel = $"Calling {call.Name}...";
-                    await nats.StreamAgentUpdateAsync(trigger.TriggerType, author, toolLabel, AgentUpdateTypes.Tool, ct);
-                    streamLog.Add(author, toolLabel, AgentUpdateTypes.Tool);
-                }
+                await AgentStreamEmitter.EmitReasoningAndToolsAsync(nats, streamLog, trigger.StreamId, author, e.Update.Contents, ct);
 
                 if (!string.IsNullOrEmpty(e.Update.Text))
                 {
@@ -180,7 +169,7 @@ internal sealed class AgenticRefinementLoop(IAgentFactory factory, IEventBus nat
                     }
 
                     transcript[^1].Text.Append(e.Update.Text);
-                    await nats.StreamAgentUpdateAsync(trigger.TriggerType, author, e.Update.Text, ct);
+                    await nats.StreamAgentUpdateAsync(trigger.StreamId, author, e.Update.Text, ct);
                     streamLog.Add(author, e.Update.Text, AgentUpdateTypes.Message);
                 }
             }
@@ -357,7 +346,7 @@ internal sealed class AgenticRefinementLoop(IAgentFactory factory, IEventBus nat
 
     private async Task EmitStatusAsync(WorkflowTrigger trigger, string author, string text, StreamLogAccumulator streamLog, CancellationToken ct)
     {
-        await nats.StreamAgentUpdateAsync(trigger.TriggerType, author, text, AgentUpdateTypes.Status, ct);
+        await nats.StreamAgentUpdateAsync(trigger.StreamId, author, text, AgentUpdateTypes.Status, ct);
         streamLog.Add(author, text, AgentUpdateTypes.Status);
     }
 

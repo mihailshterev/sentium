@@ -41,58 +41,6 @@ public static partial class LlmParser
     [GeneratedRegex(@"RESPONSIBLE[_ ]AGENTS?:\s*(.*)", RegexOptions.IgnoreCase)]
     private static partial Regex ResponsibleAgentsRegex();
 
-    public static List<string> ParseAgentRoles(string llmOutput, Dictionary<string, string> dbAgentMap, IAgentRegistry registry)
-    {
-        ArgumentNullException.ThrowIfNull(llmOutput);
-        ArgumentNullException.ThrowIfNull(dbAgentMap);
-        ArgumentNullException.ThrowIfNull(registry);
-
-        try
-        {
-            var arrayJson = ExtractJsonArray(llmOutput);
-            if (arrayJson is null)
-            {
-                return [];
-            }
-
-            var parsed = JsonSerializer.Deserialize<List<string>>(arrayJson, JsonOptions);
-            if (parsed is null)
-            {
-                return [];
-            }
-
-            var registeredNames = registry.GetRegisteredNames();
-
-            var resolvedSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            var resolved = new List<string>();
-            foreach (var p in parsed)
-            {
-                var dbMatch = dbAgentMap.Keys.FirstOrDefault(k => EqualsIgnoringSpaces(k.AsSpan(), p.AsSpan()));
-                if (dbMatch is not null)
-                {
-                    if (resolvedSet.Add(dbMatch))
-                    {
-                        resolved.Add(dbMatch);
-                    }
-
-                    continue;
-                }
-
-                var registryMatch = registeredNames.FirstOrDefault(r => EqualsIgnoringSpaces(r.AsSpan(), p.AsSpan()));
-                if (registryMatch is not null && resolvedSet.Add(registryMatch))
-                {
-                    resolved.Add(registryMatch);
-                }
-            }
-
-            return resolved;
-        }
-        catch
-        {
-            return [];
-        }
-    }
-
     public static List<AgentAssignment> ParseAgentAssignments(string llmOutput, Dictionary<string, string> dbAgentMap, IAgentRegistry registry)
     {
         ArgumentNullException.ThrowIfNull(llmOutput);

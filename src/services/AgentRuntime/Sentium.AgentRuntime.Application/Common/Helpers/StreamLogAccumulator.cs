@@ -14,11 +14,13 @@ public sealed class StreamLogAccumulator
 
     private readonly StringBuilder _activeBuffer = new();
 
+    private bool _activeDirty;
+
     public IReadOnlyList<WorkflowLogEntry> Entries
     {
         get
         {
-            SyncActiveEntry();
+            FlushActiveEntry();
             return _entries;
         }
     }
@@ -30,23 +32,25 @@ public sealed class StreamLogAccumulator
         if (isMergeable && _entries.Count > 0 && _entries[^1].Author == author && _entries[^1].Type == type)
         {
             _activeBuffer.Append(text);
+            _activeDirty = true;
+            return;
         }
-        else
-        {
-            SyncActiveEntry();
 
-            _activeBuffer.Clear();
-            _activeBuffer.Append(text);
+        FlushActiveEntry();
 
-            _entries.Add(new WorkflowLogEntry(author, text, type));
-        }
+        _activeBuffer.Clear();
+        _activeBuffer.Append(text);
+        _activeDirty = false;
+
+        _entries.Add(new WorkflowLogEntry(author, text, type));
     }
 
-    private void SyncActiveEntry()
+    private void FlushActiveEntry()
     {
-        if (_entries.Count > 0 && _activeBuffer.Length > _entries[^1].Text.Length)
+        if (_activeDirty && _entries.Count > 0)
         {
             _entries[^1] = _entries[^1] with { Text = _activeBuffer.ToString() };
+            _activeDirty = false;
         }
     }
 }
