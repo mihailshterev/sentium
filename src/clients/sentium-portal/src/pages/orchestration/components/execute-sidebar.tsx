@@ -256,7 +256,7 @@ const ExecuteSidebar = ({
               >
                 <div className={styles.runItemHeader}>
                   <span className={styles.runTrigger}>{formatRunTrigger(run.triggerType)}</span>
-                  <span className={styles.runLogs}>{run.logs.length} entries</span>
+                  <span className={styles.runLogs}>{run.logCount ?? run.logs?.length ?? 0} entries</span>
                 </div>
                 <div className={styles.runMeta}>
                   <span>{formatRunLabel(run)}</span>

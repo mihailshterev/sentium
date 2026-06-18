@@ -14,9 +14,6 @@ public static partial class LlmParser
         PropertyNameCaseInsensitive = true
     };
 
-    [GeneratedRegex(@"\[\s*.*?\s*\]", RegexOptions.Singleline)]
-    private static partial Regex JsonArrayRegex();
-
     [GeneratedRegex(@"RISK:\s*(.*)", RegexOptions.IgnoreCase)]
     private static partial Regex RiskRegex();
 
@@ -52,14 +49,13 @@ public static partial class LlmParser
 
         try
         {
-            var cleanJson = CleanJsonRegex().Replace(llmOutput, "$1").Trim();
-            var match = JsonArrayRegex().Match(cleanJson);
-            if (!match.Success)
+            var arrayJson = ExtractJsonArray(llmOutput);
+            if (arrayJson is null)
             {
                 return [];
             }
 
-            var parsed = JsonSerializer.Deserialize<List<string>>(match.Value, JsonOptions);
+            var parsed = JsonSerializer.Deserialize<List<string>>(arrayJson, JsonOptions);
             if (parsed is null)
             {
                 return [];

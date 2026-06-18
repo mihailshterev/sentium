@@ -202,7 +202,7 @@ describe("Navbar logout", () => {
     useAuthStore.setState({
       user: { sub: "u1", email: "user@example.com", name: "User", roles: ["Member"] },
       status: AUTH_STATUS.AUTHENTICATED,
-      logout: logoutSpy as unknown as () => void,
+      logout: logoutSpy as unknown as () => Promise<void>,
     });
 
     renderNav();

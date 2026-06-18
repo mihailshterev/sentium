@@ -328,32 +328,8 @@ internal sealed class AgenticRefinementLoop(IAgentFactory factory, IEventBus nat
         CancellationToken ct)
     {
         var validatorSession = await validator.CreateSessionAsync(ct);
-        var output = new StringBuilder();
 
-        await foreach (var update in validator.RunStreamingAsync(validationInput, validatorSession, cancellationToken: ct))
-        {
-            if (update.Contents.OfType<TextReasoningContent>().FirstOrDefault() is { } reasoning && !string.IsNullOrEmpty(reasoning.Text))
-            {
-                await nats.StreamAgentUpdateAsync(trigger.TriggerType, AgentRole.Validator, reasoning.Text, AgentUpdateTypes.Thought, ct);
-                streamLog.Add(AgentRole.Validator, reasoning.Text, AgentUpdateTypes.Thought);
-            }
-
-            foreach (var call in update.Contents.OfType<FunctionCallContent>())
-            {
-                var toolLabel = $"Calling {call.Name}...";
-                await nats.StreamAgentUpdateAsync(trigger.TriggerType, AgentRole.Validator, toolLabel, AgentUpdateTypes.Tool, ct);
-                streamLog.Add(AgentRole.Validator, toolLabel, AgentUpdateTypes.Tool);
-            }
-
-            if (!string.IsNullOrEmpty(update.Text))
-            {
-                output.Append(update.Text);
-                await nats.StreamAgentUpdateAsync(trigger.TriggerType, AgentRole.Validator, update.Text, ct);
-                streamLog.Add(AgentRole.Validator, update.Text, AgentUpdateTypes.Message);
-            }
-        }
-
-        return output.ToString();
+        return await AgentTurnStreamer.RunAsync(validator, validationInput, validatorSession, trigger, AgentRole.Validator, nats, streamLog, ct);
     }
 
     /// <summary>

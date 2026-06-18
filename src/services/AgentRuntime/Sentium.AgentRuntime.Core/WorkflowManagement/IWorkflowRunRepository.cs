@@ -14,9 +14,10 @@ public interface IWorkflowRunRepository
     Task AddAsync(WorkflowRun run, CancellationToken ct = default);
 
     /// <summary>
-    /// Returns a page of runs (newest first) plus the total count.
+    /// Returns a page of run summaries (newest first) plus the total count. Summaries omit the
+    /// per-run log transcript; use <see cref="GetByIdAsync"/> for the full run including logs.
     /// </summary>
-    Task<(IReadOnlyList<WorkflowRunResponse> Items, int TotalCount)> GetPagedAsync(int page, int pageSize, CancellationToken ct = default);
+    Task<(IReadOnlyList<WorkflowRunSummaryResponse> Items, int TotalCount)> GetPagedAsync(int page, int pageSize, CancellationToken ct = default);
 
     /// <summary>
     /// Returns the run with the given <paramref name="id"/>, or <see langword="null"/> if not found.

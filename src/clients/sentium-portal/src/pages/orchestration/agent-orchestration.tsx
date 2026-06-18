@@ -156,7 +156,7 @@ const AgentOrchestration = () => {
 
   const viewingRun = !!runId;
   const isRunning = !viewingRun && storeRunning;
-  const displayLogs = viewingRun && selectedRun ? coalesceLog(selectedRun.logs) : logs;
+  const displayLogs = viewingRun && selectedRun ? coalesceLog(selectedRun.logs ?? []) : logs;
   const displayPhase: Phase = viewingRun ? "COMPLETE" : phase;
   const displayPhaseIndex = PHASE_ORDER.indexOf(displayPhase);
   const isDynamicPhase = storeRunning ? isDynamicRun : executeMode === "dynamic";

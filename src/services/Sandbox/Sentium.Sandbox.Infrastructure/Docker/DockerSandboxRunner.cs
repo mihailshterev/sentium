@@ -94,7 +94,7 @@ internal sealed class DockerSandboxRunner(
 
             logger.LogInformation("Created sandbox container {ContainerShortId} for job {JobId} (Language={Language})", ShortId(containerId), jobContext.JobId, request.Language);
 
-            var attachStream = await dockerClient.Containers.AttachContainerAsync(
+            using var attachStream = await dockerClient.Containers.AttachContainerAsync(
                 containerId,
                 tty: false,
                 new ContainerAttachParameters { Stdout = true, Stderr = true, Stream = true },

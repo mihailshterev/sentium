@@ -41,3 +41,15 @@ public sealed record WorkflowRunResponse(
     DateTime StartedAt,
     DateTime CompletedAt,
     IReadOnlyList<WorkflowLogEntry> Logs);
+
+public sealed record WorkflowRunSummaryResponse(
+    Guid Id,
+    Guid? WorkflowId,
+    string TriggerType,
+    string TriggerPayload,
+    string Explanation,
+    string Risk,
+    string Recommendation,
+    DateTime StartedAt,
+    DateTime CompletedAt,
+    int LogCount);

@@ -40,8 +40,8 @@ public sealed class WorkflowsController(IWorkflowService workflowService, IWorkf
     /// <param name="ct">Cancellation token.</param>
     /// <returns>A paginated list of workflow runs.</returns>
     [HttpGet("runs")]
-    [ProducesResponseType(typeof(PagedResponse<WorkflowRunResponse>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<PagedResponse<WorkflowRunResponse>>> GetWorkflowRuns(
+    [ProducesResponseType(typeof(PagedResponse<WorkflowRunSummaryResponse>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<PagedResponse<WorkflowRunSummaryResponse>>> GetWorkflowRuns(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = PaginationQuery.DefaultPageSize,
         CancellationToken ct = default)
@@ -50,7 +50,7 @@ public sealed class WorkflowsController(IWorkflowService workflowService, IWorkf
         (page, pageSize) = query.Normalize();
 
         var (runs, total) = await runRepository.GetPagedAsync(page, pageSize, ct);
-        return Ok(PagedResponse<WorkflowRunResponse>.Create(runs, total, page, pageSize));
+        return Ok(PagedResponse<WorkflowRunSummaryResponse>.Create(runs, total, page, pageSize));
     }
 
     /// <summary>

@@ -1,6 +1,8 @@
+using Sentium.Shared.Auditing;
+
 namespace Sentium.AgentRuntime.Core.Entities;
 
-public sealed class Message
+public sealed class Message : INonAudited
 {
     public Guid Id { get; set; }
     public Guid ConversationId { get; set; }
