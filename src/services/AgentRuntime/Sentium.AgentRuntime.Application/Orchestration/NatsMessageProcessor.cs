@@ -8,91 +8,36 @@ using Sentium.AgentRuntime.Core.WorkflowManagement;
 using Sentium.AgentRuntime.Core.Workflows;
 using Sentium.Infrastructure.Messaging;
 using Sentium.Infrastructure.Security;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using NATS.Client.Core;
 
 namespace Sentium.AgentRuntime.Application.Orchestration;
 
 public sealed class NatsMessageProcessor(
     IEventBus bus,
     IServiceScopeFactory scopeFactory,
+    IConfiguration configuration,
     ILogger<NatsMessageProcessor> logger) : BackgroundService
 {
+    private const int DefaultMaxConcurrency = 4;
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        logger.LogInformation("NATS Message Processor is starting and listening for events...");
+        var maxConcurrency = ResolveMaxConcurrency();
+        logger.LogInformation("NATS Message Processor is starting and listening for events (max concurrency {MaxConcurrency})...", maxConcurrency);
 
         try
         {
-            await bus.SubscribeAsync<byte[]>(WorkflowEvents.AllEvents, async (msg) =>
-            {
-                WorkflowTrigger? trigger = null;
-                try
-                {
-                    using var scope = scopeFactory.CreateScope();
-                    scope.ServiceProvider.GetRequiredService<SystemScopeContext>().Activate();
-                    var orchestrator = scope.ServiceProvider.GetRequiredService<IOrchestrator>();
+            var stream = bus.SubscribeStreamAsync<byte[]>(WorkflowEvents.AllEvents, ct: stoppingToken);
 
-                    var payloadString = Encoding.UTF8.GetString(msg.Data!);
-
-                    logger.LogInformation("Triggering Workflow for Subject: {Subject}", msg.Subject);
-
-                    trigger = new WorkflowTrigger
-                    {
-                        TriggerType = msg.Subject,
-                        Payload = payloadString,
-                        UserId = TryParseUserId(payloadString)
-                    };
-
-                    var startedAt = DateTime.Now;
-                    var result = await orchestrator.RunAsync(trigger, stoppingToken);
-                    var completedAt = DateTime.Now;
-
-                    logger.LogInformation("Workflow Complete. Result: {Explanation}", result.Explanation);
-
-                    try
-                    {
-                        var runRepo = scope.ServiceProvider.GetRequiredService<IWorkflowRunRepository>();
-                        await runRepo.AddAsync(new WorkflowRun
-                        {
-                            Id = Guid.NewGuid(),
-                            UserId = result.UserId,
-                            WorkflowId = result.WorkflowId,
-                            TriggerType = trigger.TriggerType,
-                            TriggerPayload = payloadString,
-                            Explanation = result.Explanation ?? string.Empty,
-                            Risk = result.Risk?.ToString() ?? string.Empty,
-                            Recommendation = result.Recommendation?.ToString() ?? string.Empty,
-                            StartedAt = startedAt,
-                            CompletedAt = completedAt,
-                            Logs = [.. result.StreamLog]
-                        }, stoppingToken);
-                    }
-                    catch (Exception ex)
-                    {
-                        logger.LogError(ex, "Failed to persist workflow run result.");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    logger.LogError(ex, "Error processing NATS message on {Subject}", msg.Subject);
-                }
-                finally
-                {
-                    if (trigger is not null)
-                    {
-                        try
-                        {
-                            await bus.StreamAgentUpdateAsync(trigger.TriggerType, "System", AgentUpdateTypes.Done, AgentUpdateTypes.Done, stoppingToken);
-                        }
-                        catch (Exception ex)
-                        {
-                            logger.LogWarning(ex, "Failed to publish done signal for {TriggerType}", trigger.TriggerType);
-                        }
-                    }
-                }
-            }, stoppingToken);
+            await Parallel.ForEachAsync(
+                stream,
+                new ParallelOptions { MaxDegreeOfParallelism = maxConcurrency, CancellationToken = stoppingToken },
+                async (msg, ct) => await ProcessMessageAsync(msg, ct)
+            );
         }
         catch (OperationCanceledException)
         {
@@ -102,6 +47,96 @@ public sealed class NatsMessageProcessor(
         {
             logger.LogCritical(ex, "NATS Message Processor encountered a fatal error.");
         }
+    }
+
+    private async Task ProcessMessageAsync(NatsMsg<byte[]> msg, CancellationToken ct)
+    {
+        if (msg.Data is null || msg.Data.Length == 0)
+        {
+            logger.LogWarning("Received empty NATS message on {Subject}; skipping.", msg.Subject);
+            return;
+        }
+
+        WorkflowTrigger? trigger = null;
+        try
+        {
+            using var scope = scopeFactory.CreateScope();
+            scope.ServiceProvider.GetRequiredService<SystemScopeContext>().Activate();
+            var orchestrator = scope.ServiceProvider.GetRequiredService<IOrchestrator>();
+
+            var payloadString = Encoding.UTF8.GetString(msg.Data);
+
+            logger.LogInformation("Triggering Workflow for Subject: {Subject}", msg.Subject);
+
+            trigger = new WorkflowTrigger
+            {
+                TriggerType = msg.Subject,
+                Payload = payloadString,
+                UserId = TryParseUserId(payloadString),
+                StreamId = TryParseStreamId(payloadString) ?? msg.Subject
+            };
+
+            var startedAt = DateTime.UtcNow;
+            var result = await orchestrator.RunAsync(trigger, ct);
+            var completedAt = DateTime.UtcNow;
+
+            logger.LogInformation("Workflow Complete. Result: {Explanation}", result.Explanation);
+
+            try
+            {
+                var runRepo = scope.ServiceProvider.GetRequiredService<IWorkflowRunRepository>();
+                await runRepo.AddAsync(new WorkflowRun
+                {
+                    Id = Guid.NewGuid(),
+                    UserId = result.UserId,
+                    WorkflowId = result.WorkflowId,
+                    TriggerType = trigger.TriggerType,
+                    TriggerPayload = payloadString,
+                    Explanation = result.Explanation ?? string.Empty,
+                    Risk = result.Risk?.ToString() ?? string.Empty,
+                    Recommendation = result.Recommendation?.ToString() ?? string.Empty,
+                    StartedAt = startedAt,
+                    CompletedAt = completedAt,
+                    Logs = [.. result.StreamLog]
+                }, ct);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Failed to persist workflow run result.");
+            }
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Error processing NATS message on {Subject}", msg.Subject);
+        }
+        finally
+        {
+            if (trigger is not null)
+            {
+                try
+                {
+                    await bus.StreamAgentUpdateAsync(trigger.StreamId, "System", AgentUpdateTypes.Done, AgentUpdateTypes.Done, ct);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogWarning(ex, "Failed to publish done signal for {StreamId}", trigger.StreamId);
+                }
+            }
+        }
+    }
+
+    private int ResolveMaxConcurrency()
+    {
+        if (int.TryParse(configuration["Orchestration:MaxConcurrentWorkflows"], out var configured) && configured > 0)
+        {
+            return configured;
+        }
+
+        return DefaultMaxConcurrency;
     }
 
     private Guid? TryParseUserId(string payload)
@@ -117,6 +152,25 @@ public sealed class NatsMessageProcessor(
         catch (JsonException ex)
         {
             logger.LogDebug(ex, "Could not parse userId from workflow trigger payload; treating as system-scoped.");
+        }
+
+        return null;
+    }
+
+    private string? TryParseStreamId(string payload)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(payload);
+            if (doc.RootElement.TryGetProperty("streamId", out var prop) && prop.ValueKind == JsonValueKind.String)
+            {
+                var value = prop.GetString();
+                return string.IsNullOrWhiteSpace(value) ? null : value;
+            }
+        }
+        catch (JsonException ex)
+        {
+            logger.LogDebug(ex, "Could not parse streamId from workflow trigger payload; falling back to the trigger subject.");
         }
 
         return null;

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
+using System.Collections.Concurrent;
 using System.Globalization;
 using System.Text.Json;
 
@@ -13,6 +14,8 @@ public sealed class TokenRefreshService(
     IOptionsMonitor<OpenIdConnectOptions> oidcOptions,
     ILogger<TokenRefreshService> logger)
 {
+    private static readonly ConcurrentDictionary<string, Lazy<Task<RefreshedTokens?>>> InflightRefreshes = new(StringComparer.Ordinal);
+
     public async Task<bool> TryRefreshAsync(HttpContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -23,11 +26,33 @@ public sealed class TokenRefreshService(
             return false;
         }
 
+        var inflight = InflightRefreshes.GetOrAdd(refreshToken, key => new Lazy<Task<RefreshedTokens?>>(() => RequestNewTokensAsync(context, key)));
+
+        RefreshedTokens? tokens;
+        try
+        {
+            tokens = await inflight.Value;
+        }
+        finally
+        {
+            InflightRefreshes.TryRemove(refreshToken, out _);
+        }
+
+        if (tokens is null)
+        {
+            return false;
+        }
+
+        return await PersistTokensAsync(context, tokens);
+    }
+
+    private async Task<RefreshedTokens?> RequestNewTokensAsync(HttpContext context, string refreshToken)
+    {
         var options = oidcOptions.Get(OpenIdConnectDefaults.AuthenticationScheme);
 
         if (options.ConfigurationManager is not Microsoft.IdentityModel.Protocols.IConfigurationManager<OpenIdConnectConfiguration> configManager)
         {
-            return false;
+            return null;
         }
 
         OpenIdConnectConfiguration oidcConfig;
@@ -38,13 +63,13 @@ public sealed class TokenRefreshService(
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Token refresh failed: could not retrieve OpenID Connect configuration.");
-            return false;
+            return null;
         }
 
         if (string.IsNullOrEmpty(oidcConfig.TokenEndpoint))
         {
             logger.LogWarning("Token refresh failed: OpenID Connect configuration has no token endpoint.");
-            return false;
+            return null;
         }
 
         var client = httpClientFactory.CreateClient("IdpClient");
@@ -64,13 +89,13 @@ public sealed class TokenRefreshService(
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Token refresh failed: request to the token endpoint threw.");
-            return false;
+            return null;
         }
 
         if (!response.IsSuccessStatusCode)
         {
             logger.LogWarning("Token refresh failed: token endpoint returned {StatusCode}.", response.StatusCode);
-            return false;
+            return null;
         }
 
         JsonElement tokenData;
@@ -81,19 +106,19 @@ public sealed class TokenRefreshService(
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Token refresh failed: could not parse the token endpoint response.");
-            return false;
+            return null;
         }
 
         if (!tokenData.TryGetProperty("access_token", out var accessTokenProp))
         {
             logger.LogWarning("Token refresh failed: token endpoint response contained no access_token.");
-            return false;
+            return null;
         }
         var newAccessToken = accessTokenProp.GetString();
         if (string.IsNullOrEmpty(newAccessToken))
         {
             logger.LogWarning("Token refresh failed: token endpoint returned an empty access_token.");
-            return false;
+            return null;
         }
 
         var newRefreshToken = tokenData.TryGetProperty("refresh_token", out var rtProp)
@@ -103,6 +128,11 @@ public sealed class TokenRefreshService(
         var expiresIn = tokenData.TryGetProperty("expires_in", out var eiProp) ? eiProp.GetInt32() : 3600;
         var newExpiresAt = DateTimeOffset.UtcNow.AddSeconds(expiresIn).ToString("r", CultureInfo.InvariantCulture);
 
+        return new RefreshedTokens(newAccessToken, newRefreshToken, newExpiresAt);
+    }
+
+    private async Task<bool> PersistTokensAsync(HttpContext context, RefreshedTokens tokens)
+    {
         var authResult = await context.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         if (authResult.Principal is null)
         {
@@ -110,9 +140,9 @@ public sealed class TokenRefreshService(
             return false;
         }
 
-        authResult.Properties!.UpdateTokenValue("access_token", newAccessToken);
-        authResult.Properties!.UpdateTokenValue("refresh_token", newRefreshToken);
-        authResult.Properties!.UpdateTokenValue("expires_at", newExpiresAt);
+        authResult.Properties!.UpdateTokenValue("access_token", tokens.AccessToken);
+        authResult.Properties!.UpdateTokenValue("refresh_token", tokens.RefreshToken);
+        authResult.Properties!.UpdateTokenValue("expires_at", tokens.ExpiresAt);
 
         await context.SignInAsync(
             CookieAuthenticationDefaults.AuthenticationScheme,
@@ -121,4 +151,6 @@ public sealed class TokenRefreshService(
 
         return true;
     }
+
+    private sealed record RefreshedTokens(string AccessToken, string RefreshToken, string ExpiresAt);
 }

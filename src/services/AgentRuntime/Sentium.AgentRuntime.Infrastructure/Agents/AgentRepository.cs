@@ -60,15 +60,34 @@ public sealed class AgentRepository(AgentRuntimeDbContext context) : IAgentRepos
     {
         return await context.Agents
             .AsNoTracking()
-            .Where(a => a.Name.ToLower() == name.ToLower())
+            .Where(a => a.Name == name)
+            .Select(AgentProjections.ToResponse())
+            .FirstOrDefaultAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<AgentResponse>> GetAgentsForUserAsync(Guid? userId, CancellationToken ct = default)
+    {
+        return await context.Agents
+            .AsNoTracking()
+            .Where(a => a.UserId == userId)
+            .OrderByDescending(a => a.CreatedAt)
+            .Take(PaginationQuery.MaxListCap)
+            .Select(AgentProjections.ToResponse())
+            .ToListAsync(ct);
+    }
+
+    public async Task<AgentResponse?> GetAgentByNameForUserAsync(string name, Guid? userId, CancellationToken ct = default)
+    {
+        return await context.Agents
+            .AsNoTracking()
+            .Where(a => a.UserId == userId && a.Name == name)
             .Select(AgentProjections.ToResponse())
             .FirstOrDefaultAsync(ct);
     }
 
     public Task<bool> NameExistsAsync(string name, Guid? excludeId = null, CancellationToken ct = default)
     {
-        var normalized = name?.ToLower();
-        return context.Agents.AnyAsync(a => a.Name.ToLower() == normalized && (excludeId == null || a.Id != excludeId.Value), ct);
+        return context.Agents.AnyAsync(a => a.Name == name && (excludeId == null || a.Id != excludeId.Value), ct);
     }
 
     public async Task<AgentResponse?> GetAgentByIdAsync(Guid agentId, CancellationToken ct = default)

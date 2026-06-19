@@ -192,7 +192,7 @@ public static class ServiceCollectionExtensions
             retries: 0
         );
 
-        services.AddScoped<IPdpContextAccessor, PdpContextAccessor>();
+        services.AddSingleton<IPdpContextAccessor, PdpContextAccessor>();
 
         services.AddHttpContextAccessor();
         services.AddScoped<SystemScopeContext>();

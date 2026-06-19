@@ -20,7 +20,6 @@ using Sentium.Shared.Constants;
 namespace Sentium.AgentRuntime.Infrastructure.Agents;
 
 public sealed class CompositeAgentFactory(
-    IChatClient defaultChatClient,
     OllamaOptions ollamaOptions,
     IAgentToolProvider agentToolProvider,
     IAgentRepository agentRepository,
@@ -35,14 +34,10 @@ public sealed class CompositeAgentFactory(
     ILogger<CompositeAgentFactory> logger) : IAgentFactory, IDisposable
 {
     private readonly ConcurrentDictionary<string, IChatClient> clientCache = new();
-    private bool defaultInitialized;
-    private readonly Lock syncLock = new();
 
     public async Task<AIAgent> CreateAsync(string agentName, string? overrideInstructions = null, string? overrideModel = null, Guid? actingUserId = null, CancellationToken ct = default)
     {
-        EnsureDefaultIsHarnessed();
-
-        var definition = await ResolveDefinitionAsync(agentName, ct);
+        var definition = await ResolveDefinitionAsync(agentName, actingUserId, ct);
         if (definition is null)
         {
             throw new InvalidOperationException($"Agent '{agentName}' could not be resolved.");
@@ -99,7 +94,7 @@ public sealed class CompositeAgentFactory(
         }
         else if (isOrchestrator)
         {
-            var dbAgents = await agentRepository.GetAgentsAsync(ct);
+            var dbAgents = actingUserId is { } orchestratorUser ? await agentRepository.GetAgentsForUserAsync(orchestratorUser, ct) : await agentRepository.GetAgentsAsync(ct);
             baseInstructions = OrchestratorTemplate.Build(agentRegistry, dbAgents);
         }
         else
@@ -128,7 +123,7 @@ public sealed class CompositeAgentFactory(
         return new ChatClientAgent(harnessedClient, options);
     }
 
-    private async Task<IAgent?> ResolveDefinitionAsync(string agentName, CancellationToken ct)
+    private async Task<IAgent?> ResolveDefinitionAsync(string agentName, Guid? actingUserId, CancellationToken ct)
     {
         var keyedAgent = serviceProvider.GetKeyedService<IAgent>(agentName);
         if (keyedAgent is not null)
@@ -136,7 +131,7 @@ public sealed class CompositeAgentFactory(
             return keyedAgent;
         }
 
-        var dbAgent = await agentRepository.GetAgentByNameAsync(agentName, ct);
+        var dbAgent = actingUserId is { } uid ? await agentRepository.GetAgentByNameForUserAsync(agentName, uid, ct) : await agentRepository.GetAgentByNameAsync(agentName, ct);
 
         if (dbAgent is not null)
         {
@@ -146,38 +141,15 @@ public sealed class CompositeAgentFactory(
         return null;
     }
 
-    private void EnsureDefaultIsHarnessed()
-    {
-        if (defaultInitialized)
-        {
-            return;
-        }
-
-        lock (syncLock)
-        {
-            if (defaultInitialized)
-            {
-                return;
-            }
-
-#pragma warning disable CA2000 // Dispose objects before losing scope
-            var harnessedDefault = new HarnessedChatClient(defaultChatClient, registrySettingsService, pdpContext)
-                .WithLearnings(learningService, pdpContext);
-#pragma warning restore CA2000 // Dispose objects before losing scope
-            clientCache.TryAdd(ollamaOptions.DefaultModel, harnessedDefault);
-            defaultInitialized = true;
-        }
-    }
-
     private IChatClient GetHarnessedClient(string? model)
     {
         var targetModel = !string.IsNullOrWhiteSpace(model) ? model : ollamaOptions.DefaultModel;
 
         return clientCache.GetOrAdd(targetModel, m =>
         {
-            if (logger.IsEnabled(LogLevel.Information))
+            if (logger.IsEnabled(LogLevel.Debug))
             {
-                logger.LogInformation("Building harnessed client for model: {Model}", m);
+                logger.LogDebug("Building harnessed client for model: {Model}", m);
             }
 
             var httpClient = httpClientFactory.CreateClient(ResourceNames.Ollama);

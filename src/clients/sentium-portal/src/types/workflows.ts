@@ -47,5 +47,6 @@ export interface WorkflowRun {
   recommendation: string;
   startedAt: string;
   completedAt: string;
-  logs: LogEntry[];
+  logs?: LogEntry[];
+  logCount?: number;
 }

@@ -9,7 +9,7 @@ public sealed class WorkflowService(
     IWorkflowRepository repository,
     IScopedCache cache) : IWorkflowService
 {
-    private const string CacheTag = "workflows";
+    public const string CacheTag = "workflows";
 
     public async Task<IReadOnlyList<WorkflowResponse>> GetWorkflowsAsync(CancellationToken ct = default)
         => await cache.GetOrCreateAsync(

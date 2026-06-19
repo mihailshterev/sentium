@@ -25,19 +25,14 @@ public sealed class DynamicCustomWorkflow(
         using var doc = JsonDocument.Parse(trigger.Payload);
         var root = doc.RootElement;
 
-        var activity = root.TryGetProperty("activity", out var activityProp)
-            ? activityProp.GetString() ?? trigger.Payload
-            : trigger.Payload;
+        var activity = root.TryGetProperty("activity", out var activityProp) ? activityProp.GetString() ?? trigger.Payload : trigger.Payload;
 
         if (!root.TryGetProperty("workflowId", out var workflowIdProp) || !workflowIdProp.TryGetGuid(out var workflowId))
         {
             return new WorkflowResult { Explanation = "Custom workflow trigger is missing a valid workflowId." };
         }
 
-        if (root.TryGetProperty("workspaceId", out var wsProp) && wsProp.ValueKind == JsonValueKind.String && Guid.TryParse(wsProp.GetString(), out _))
-        {
-            activity = $"{activity}\n\n[Workspace context: ID = {wsProp.GetString()}. Use list_workspaces and list_workspace_files tools to discover and read files in this workspace before answering.]";
-        }
+        activity = WorkspaceContextPrompt.Augment(activity, WorkspaceContextPrompt.TryExtract(trigger.Payload));
 
         var workflowDef = await workflowService.GetWorkflowAsync(workflowId, ct);
         if (workflowDef is null)
@@ -92,7 +87,7 @@ public sealed class DynamicCustomWorkflow(
         if (duplicateNames.Count > 0)
         {
             var warning = $"Warning: workflow '{workflowDef.Name}' has duplicate agent names ({string.Join(", ", duplicateNames)}). Targeted re-runs and per-agent attribution may be unreliable - give each agent a unique name.";
-            await nats.StreamAgentUpdateAsync(trigger.TriggerType, "System", warning, AgentUpdateTypes.Status, ct);
+            await nats.StreamAgentUpdateAsync(trigger.StreamId, "System", warning, AgentUpdateTypes.Status, ct);
             streamLog.Add("System", warning, AgentUpdateTypes.Status);
         }
 

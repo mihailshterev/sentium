@@ -1,4 +1,6 @@
 using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.Extensions.Hosting;
@@ -38,12 +40,28 @@ public sealed class InternalApiKeyAuthenticationHandler(
 
         var header = Request.Headers[CommonHeaderNames.InternalToken].ToString();
 
-        if (header == expected)
+        if (FixedTimeEquals(header, expected))
         {
             return Task.FromResult(AuthenticateResult.Success(CreateTicket()));
         }
 
         return Task.FromResult(AuthenticateResult.NoResult());
+    }
+
+    /// <summary>
+    /// Compares the supplied token against the expected key in constant time to avoid leaking
+    /// length/prefix information through timing. The length comparison is computed over fixed-size
+    /// SHA-256 digests so it does not itself short-circuit on differing input lengths.
+    /// </summary>
+    private static bool FixedTimeEquals(string actual, string expected)
+    {
+        Span<byte> actualHash = stackalloc byte[SHA256.HashSizeInBytes];
+        Span<byte> expectedHash = stackalloc byte[SHA256.HashSizeInBytes];
+
+        SHA256.HashData(Encoding.UTF8.GetBytes(actual), actualHash);
+        SHA256.HashData(Encoding.UTF8.GetBytes(expected), expectedHash);
+
+        return CryptographicOperations.FixedTimeEquals(actualHash, expectedHash);
     }
 
     private AuthenticationTicket CreateTicket()

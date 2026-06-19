@@ -8,7 +8,7 @@ interface AuthState {
   status: AuthStatus;
   checkAuth: () => Promise<void>;
   login: (returnUrl?: string) => void;
-  logout: () => void;
+  logout: () => Promise<void>;
   updateUser: (patch: Partial<Pick<User, "name" | "email">>) => void;
 }
 

@@ -39,7 +39,7 @@ public sealed class WorkflowsControllerTests
     [Fact]
     public async Task GetWorkflowRuns_ReturnsPagedResponse()
     {
-        var empty = (IReadOnlyList<WorkflowRunResponse>)new List<WorkflowRunResponse>();
+        var empty = (IReadOnlyList<WorkflowRunSummaryResponse>)new List<WorkflowRunSummaryResponse>();
         _runRepository.GetPagedAsync(1, 20, Arg.Any<CancellationToken>()).Returns((empty, 0));
 
         var result = await _controller.GetWorkflowRuns(1, 20, TestContext.Current.CancellationToken);
@@ -51,7 +51,7 @@ public sealed class WorkflowsControllerTests
     [Fact]
     public async Task GetWorkflowRuns_PageSizeExceeds100_ClampsTo100()
     {
-        var empty = (IReadOnlyList<WorkflowRunResponse>)new List<WorkflowRunResponse>();
+        var empty = (IReadOnlyList<WorkflowRunSummaryResponse>)new List<WorkflowRunSummaryResponse>();
         _runRepository.GetPagedAsync(1, 100, Arg.Any<CancellationToken>()).Returns((empty, 0));
 
         await _controller.GetWorkflowRuns(1, 500, TestContext.Current.CancellationToken);

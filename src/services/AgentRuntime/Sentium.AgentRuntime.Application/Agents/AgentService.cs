@@ -1,3 +1,4 @@
+using Sentium.AgentRuntime.Application.WorkflowManagement;
 using Sentium.AgentRuntime.Core.Agents;
 using Sentium.AgentRuntime.Core.Dtos;
 using Sentium.Infrastructure.Caching;
@@ -92,6 +93,7 @@ public sealed class AgentService(
         if (deleted)
         {
             await cache.InvalidateTagAsync(CacheTag, ct);
+            await cache.InvalidateTagAsync(WorkflowService.CacheTag, ct);
         }
 
         return deleted;

@@ -112,13 +112,27 @@ public sealed class KnowledgeBaseSearchTool(
             else if (root.TryGetProperty("input", out var i)) query = i.GetString() ?? string.Empty;
             else if (root.TryGetProperty("text", out var t)) query = t.GetString() ?? string.Empty;
 
-            var topK = root.TryGetProperty("topK", out var k) && k.TryGetInt32(out var n) ? Math.Clamp(n, 1, 20) : ragOptions.DefaultTopK;
+            var topK = root.TryGetProperty("topK", out var k) && TryReadInt(k, out var n) ? Math.Clamp(n, 1, 20) : ragOptions.DefaultTopK;
 
             return (query, topK);
         }
         catch (JsonException)
         {
             return (trimmed, ragOptions.DefaultTopK);
+        }
+    }
+
+    private static bool TryReadInt(JsonElement element, out int value)
+    {
+        switch (element.ValueKind)
+        {
+            case JsonValueKind.Number:
+                return element.TryGetInt32(out value);
+            case JsonValueKind.String:
+                return int.TryParse(element.GetString(), out value);
+            default:
+                value = 0;
+                return false;
         }
     }
 

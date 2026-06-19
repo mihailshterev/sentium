@@ -1,12 +1,8 @@
-using System.Text;
-using System.Text.Json;
 using Sentium.AgentRuntime.Application.Common.Helpers;
-using Sentium.AgentRuntime.Application.Extensions;
 using Sentium.AgentRuntime.Core.Agents;
 using Sentium.AgentRuntime.Core.Workflows;
 using Sentium.Infrastructure.Messaging;
 using Microsoft.Agents.AI;
-using Microsoft.Extensions.AI;
 
 namespace Sentium.AgentRuntime.Application.Workflows;
 
@@ -22,19 +18,9 @@ public sealed class DynamicDiscoveryWorkflow(
     {
         ArgumentNullException.ThrowIfNull(trigger);
 
-        string? workspaceContext = null;
-        try
-        {
-            using var payloadDoc = JsonDocument.Parse(trigger.Payload);
-            var root = payloadDoc.RootElement;
-            if (root.TryGetProperty("workspaceId", out var wsProp) && wsProp.ValueKind == JsonValueKind.String && Guid.TryParse(wsProp.GetString(), out _))
-            {
-                workspaceContext = wsProp.GetString();
-            }
-        }
-        catch { }
+        var workspaceContext = WorkspaceContextPrompt.TryExtract(trigger.Payload);
 
-        var dbAgents = await agentRepository.GetAgentsAsync(ct);
+        var dbAgents = await agentRepository.GetAgentsForUserAsync(trigger.UserId, ct);
         var dbAgentMap = dbAgents.ToDictionary(a => a.Name, a => a.Description, StringComparer.OrdinalIgnoreCase);
         var dbAgentModelMap = dbAgents.ToDictionary(a => a.Name, a => a.Model, StringComparer.OrdinalIgnoreCase);
 
@@ -42,35 +28,11 @@ public sealed class DynamicDiscoveryWorkflow(
         var orchestratorSession = await orchestrator.CreateSessionAsync(ct);
 
         var streamLog = new StreamLogAccumulator();
-        var rawPlanBuilder = new StringBuilder();
-        var orchestratorInput = workspaceContext is not null
-            ? $"{trigger.Payload}\n\n[Workspace context: ID = {workspaceContext}. Use list_workspaces and list_workspace_files tools to explore available files.]"
-            : trigger.Payload;
+        var input = WorkspaceContextPrompt.Augment(trigger.Payload, workspaceContext);
 
-        await foreach (var update in orchestrator.RunStreamingAsync(orchestratorInput, orchestratorSession, cancellationToken: ct))
-        {
-            if (update.Contents.OfType<TextReasoningContent>().FirstOrDefault() is { } reasoning && !string.IsNullOrEmpty(reasoning.Text))
-            {
-                await nats.StreamAgentUpdateAsync(trigger.TriggerType, AgentRole.Orchestrator, reasoning.Text, AgentUpdateTypes.Thought, ct);
-                streamLog.Add(AgentRole.Orchestrator, reasoning.Text, AgentUpdateTypes.Thought);
-            }
+        var rawPlan = await AgentTurnStreamer.RunAsync(orchestrator, input, orchestratorSession, trigger, AgentRole.Orchestrator, nats, streamLog, ct);
 
-            foreach (var call in update.Contents.OfType<FunctionCallContent>())
-            {
-                var toolLabel = $"Calling {call.Name}...";
-                await nats.StreamAgentUpdateAsync(trigger.TriggerType, AgentRole.Orchestrator, toolLabel, AgentUpdateTypes.Tool, ct);
-                streamLog.Add(AgentRole.Orchestrator, toolLabel, AgentUpdateTypes.Tool);
-            }
-
-            if (!string.IsNullOrEmpty(update.Text))
-            {
-                rawPlanBuilder.Append(update.Text);
-                await nats.StreamAgentUpdateAsync(trigger.TriggerType, AgentRole.Orchestrator, update.Text, ct);
-                streamLog.Add(AgentRole.Orchestrator, update.Text, AgentUpdateTypes.Message);
-            }
-        }
-
-        var assignments = LlmParser.ParseAgentAssignments(rawPlanBuilder.ToString(), dbAgentMap, registry);
+        var assignments = LlmParser.ParseAgentAssignments(rawPlan, dbAgentMap, registry);
         if (assignments.Count == 0)
         {
             return new WorkflowResult { Explanation = "Orchestrator failed to identify required agents.", StreamLog = streamLog.Entries, UserId = trigger.UserId };
@@ -96,12 +58,8 @@ public sealed class DynamicDiscoveryWorkflow(
             roster.Add(new SquadMember(role, baseInstructions));
         }
 
-        var squadInput = workspaceContext is not null
-            ? $"{trigger.Payload}\n\n[Workspace context: ID = {workspaceContext}. Use list_workspaces and list_workspace_files tools to explore available files.]"
-            : trigger.Payload;
-
         var loop = new AgenticRefinementLoop(factory, nats);
-        var outcome = await loop.RunAsync(trigger, "dynamic-squad", squadAgents, squadInput, streamLog, ct, roster);
+        var outcome = await loop.RunAsync(trigger, "dynamic-squad", squadAgents, input, streamLog, ct, roster);
 
         return LlmParser.ParseWorkflowResult(outcome.ValidatorOutput, outcome.SquadText, rosterNames, streamLog.Entries, trigger.UserId);
     }

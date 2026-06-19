@@ -41,12 +41,14 @@ public sealed class OrchestrationController(
     {
         var user = User.Identity?.Name ?? "Unknown";
 
+        var streamId = Guid.NewGuid().ToString("N");
+
         var payload = customInput ?? new DynamicWorkflowActivity("Manual trigger", user);
         var payloadNode = JsonNode.Parse(JsonSerializer.Serialize(payload))?.AsObject() ?? new JsonObject();
         payloadNode["userId"] = currentUser.UserId?.ToString();
+        payloadNode["streamId"] = streamId;
 
-        var activityNode = payloadNode["activity"];
-        if (activityNode is not null)
+        if (payloadNode["activity"] is JsonValue activityNode && activityNode.GetValueKind() == JsonValueKind.String)
         {
             var activityText = activityNode.GetValue<string>();
             if (!string.IsNullOrWhiteSpace(activityText))
@@ -64,7 +66,7 @@ public sealed class OrchestrationController(
             logger.LogInformation("Dynamic workflow triggered by {User}", user);
         }
 
-        return Accepted(new WorkflowAcceptedResponse(WorkflowEvents.Dynamic));
+        return Accepted(new WorkflowAcceptedResponse(streamId));
     }
 
     /// <summary>
@@ -88,18 +90,21 @@ public sealed class OrchestrationController(
 
         var enhancedScenario = await EnhanceIfEnabledAsync(request.Scenario, ct);
 
+        var streamId = Guid.NewGuid().ToString("N");
+
         var payload = new WorkflowTriggerPayload(
             Activity: enhancedScenario,
             WorkflowId: workflow.Id,
             WorkflowName: workflow.Name,
             Agents: workflow.Agents.Select(a => a.AgentId).ToList(),
             WorkspaceId: request.WorkspaceId,
-            UserId: currentUser.UserId);
+            UserId: currentUser.UserId,
+            StreamId: streamId);
 
         var jsonPayload = JsonSerializer.Serialize(payload);
         await eventBus.PublishAsync(WorkflowEvents.CustomWorkflow, jsonPayload, ct: ct);
 
-        return Accepted(new WorkflowAcceptedResponse(WorkflowEvents.CustomWorkflow));
+        return Accepted(new WorkflowAcceptedResponse(streamId));
     }
 
     /// <summary>

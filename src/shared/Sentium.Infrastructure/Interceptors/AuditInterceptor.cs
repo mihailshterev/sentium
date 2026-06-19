@@ -1,22 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging;
+using Sentium.Shared.Auditing;
 
 namespace Sentium.Infrastructure.Interceptors;
 
 public class AuditInterceptor(ILogger<AuditInterceptor> logger) : SaveChangesInterceptor
 {
-    private static readonly string[] SensitiveProperties =
-    [
-        "PasswordHash",
-        "SecurityStamp",
-        "ConcurrencyStamp",
-        "TwoFactorEnabled",
-        "PhoneNumber",
-        "Token",
-        "Secret"
-    ];
-
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
     {
         ArgumentNullException.ThrowIfNull(eventData);
@@ -40,31 +30,34 @@ public class AuditInterceptor(ILogger<AuditInterceptor> logger) : SaveChangesInt
             return;
         }
 
+        if (!logger.IsEnabled(LogLevel.Information))
+        {
+            return;
+        }
+
         var entries = context.ChangeTracker.Entries()
             .Where(e => e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted)
-            // Excluding agent conversation messages
-            .Where(e => e.Entity.GetType().Name != "Message")
+            .Where(e => e.Entity is not INonAudited)
             .Select(e => new
             {
                 Entity = e.Entity.GetType().Name,
                 Action = e.State.ToString(),
-                Changes = e.Properties
+                Key = string.Join(
+                    ",",
+                    e.Properties.Where(p => p.Metadata.IsPrimaryKey()).Select(p => p.CurrentValue?.ToString() ?? "null")),
+                ChangedProperties = e.Properties
                     .Where(p => p.IsModified || e.State == EntityState.Added)
-                    .Where(p => !SensitiveProperties.Contains(p.Metadata.Name))
-                    .ToDictionary(
-                        p => p.Metadata.Name,
-                        p => new { Old = p.OriginalValue, New = p.CurrentValue }
-                    )
+                    .Select(p => p.Metadata.Name)
+                    .ToArray()
             })
-            .Where(x => x.Changes.Count > 0)
+            .Where(x => x.ChangedProperties.Length > 0)
             .ToList();
 
         foreach (var entry in entries)
         {
-            if (logger.IsEnabled(LogLevel.Information))
-            {
-                logger.LogInformation("AUDIT: {Action} on {Entity} {@Details}", entry.Action, entry.Entity, entry);
-            }
+            logger.LogInformation(
+                "AUDIT: {Action} on {Entity} (key={Key}) changed [{ChangedProperties}]",
+                entry.Action, entry.Entity, entry.Key, string.Join(", ", entry.ChangedProperties));
         }
     }
 }

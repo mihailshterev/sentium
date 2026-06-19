@@ -15,7 +15,7 @@ public sealed class WorkflowRunRepository(AgentRuntimeDbContext context) : IWork
         await context.SaveChangesAsync(ct);
     }
 
-    public async Task<(IReadOnlyList<WorkflowRunResponse> Items, int TotalCount)> GetPagedAsync(int page, int pageSize, CancellationToken ct = default)
+    public async Task<(IReadOnlyList<WorkflowRunSummaryResponse> Items, int TotalCount)> GetPagedAsync(int page, int pageSize, CancellationToken ct = default)
     {
         var total = await context.WorkflowRuns.CountAsync(ct);
         var items = await context.WorkflowRuns
@@ -24,8 +24,7 @@ public sealed class WorkflowRunRepository(AgentRuntimeDbContext context) : IWork
             .ThenByDescending(r => r.Id)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .AsAsyncEnumerable()
-            .Select(WorkflowRunProjections.ToResponse)
+            .Select(WorkflowRunProjections.ToSummary)
             .ToListAsync(ct);
 
         return (items, total);

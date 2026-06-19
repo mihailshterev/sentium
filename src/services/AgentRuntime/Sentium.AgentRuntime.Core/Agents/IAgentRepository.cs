@@ -41,6 +41,26 @@ public interface IAgentRepository
     Task<AgentResponse?> GetAgentByNameAsync(string name, CancellationToken ct = default);
 
     /// <summary>
+    /// Returns all agents owned by <paramref name="userId"/> (bounded by a safety cap), independent of the
+    /// ambient data scope. Used by background/system callers (e.g. workflow discovery) that bypass the
+    /// per-user query filter but must still restrict results to the user the run acts on behalf of, to
+    /// avoid exposing other tenants' agents.
+    /// </summary>
+    /// <param name="userId">The owning user; a <see langword="null"/> id matches no agents.</param>
+    /// <param name="ct">A cancellation token.</param>
+    Task<IReadOnlyList<AgentResponse>> GetAgentsForUserAsync(Guid? userId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Returns the agent with the given name (case-insensitive) owned by <paramref name="userId"/>, or
+    /// <see langword="null"/>. Use from background/system callers so name resolution is unambiguous per
+    /// user even when the per-user query filter is bypassed.
+    /// </summary>
+    /// <param name="name">The agent name to look up.</param>
+    /// <param name="userId">The owning user; a <see langword="null"/> id matches no agents.</param>
+    /// <param name="ct">A cancellation token.</param>
+    Task<AgentResponse?> GetAgentByNameForUserAsync(string name, Guid? userId, CancellationToken ct = default);
+
+    /// <summary>
     /// Determines whether the current user already has an agent with the given name (case-insensitive),
     /// used to enforce name uniqueness before a create or update.
     /// </summary>
