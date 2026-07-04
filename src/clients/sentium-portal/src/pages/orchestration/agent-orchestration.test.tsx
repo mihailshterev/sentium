@@ -418,7 +418,7 @@ describe("AgentOrchestration LogEntryView rendering", () => {
 });
 
 describe("AgentOrchestration SSE stream", () => {
-  it("triggers onerror handler and sets phase to COMPLETE", async () => {
+  it("finalizes the run with an error outcome after the reconnect limit is exceeded", async () => {
     lastEventSourceInstance = null;
     vi.mocked(agentRuntimeService.runWorkflowPipeline).mockResolvedValue({ eventId: "evt-123" });
     renderOrchestration();
@@ -432,7 +432,12 @@ describe("AgentOrchestration SSE stream", () => {
         esi1.onerror();
       }
     }
-    await waitFor(() => expect(screen.getByText("Complete")).toBeInTheDocument());
+    await waitFor(() => {
+      const state = useOrchestrationRunStore.getState();
+      expect(state.phase).toBe("COMPLETE");
+      expect(state.isRunning).toBe(false);
+      expect(state.lastOutcome).toBe("error");
+    });
   });
 
   it("processes SSE message events", async () => {
