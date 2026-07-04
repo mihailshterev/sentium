@@ -27,16 +27,16 @@ public sealed class CodeExecutionSandboxTool(
     private readonly IPdpContextAccessor _pdpContext = pdpContext ?? throw new ArgumentNullException(nameof(pdpContext));
     private readonly ILogger<CodeExecutionSandboxTool> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-    /// <inheritdoc />
     public string Name => "execute_code_sandbox";
 
-    /// <inheritdoc />
-    public string Description =>
-        "Executes code (Python or Node.js) safely within an isolated, ephemeral sandbox environment. " +
-        "Input MUST be a JSON object containing 'language' (\"Python\" or \"Node\") and 'code'. " +
-        "Example: { \"language\": \"Python\", \"code\": \"print('test')\" }";
+    public string Description => "Executes code (Python or Node.js) safely within an isolated, ephemeral sandbox environment. USE NO EXTERNAL LIBRARIES. ONLY NATIVE LANGUAGE ONES.";
 
-    /// <inheritdoc />
+    public IReadOnlyList<AgentToolParameter> Parameters { get; } =
+    [
+        new("language", "The script language.", EnumValues: ["Python", "Node"]),
+        new("code", "The source code to execute. USE NO EXTERNAL LIBRARIES. ONLY NATIVE LANGUAGE ONES."),
+    ];
+
     public async Task<string> ExecuteAsync(string input, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(input))

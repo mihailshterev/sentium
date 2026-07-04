@@ -23,8 +23,9 @@ public sealed class RecallLearningsTool(
 
     public string Description =>
         "Search the shared library of agent learnings - reusable patterns, optimizations, and fixes captured from past runs. " +
-        "Use this before tackling a non-trivial task to reuse a proven approach instead of starting from scratch. " +
-        "Input: a plain-text description of the problem or topic.";
+        "Use this before tackling a non-trivial task to reuse a proven approach instead of starting from scratch.";
+
+    public IReadOnlyList<AgentToolParameter> Parameters { get; } = [new("query", "A plain-text description of the problem or topic to find prior learnings about.")];
 
     public async Task<string> ExecuteAsync(string input, CancellationToken ct)
     {

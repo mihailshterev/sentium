@@ -21,6 +21,8 @@ public sealed class RecallMemoryTool(
         "Searches your personal long-term memory for facts about the user, preferences, or past project notes. " +
         "Use this when you need to remember something the user told you in a previous session.";
 
+    public IReadOnlyList<AgentToolParameter> Parameters { get; } = [new("query", "What to search your long-term memory for - a topic, fact, name, or keywords.")];
+
     public async Task<string> ExecuteAsync(string input, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(input))

@@ -20,6 +20,15 @@ public interface IAgentTool
     string Description { get; }
 
     /// <summary>
+    /// Gets the arguments this tool accepts. These are turned into the JSON schema advertised to the
+    /// model, so it knows exactly what to send. Tools that take no arguments leave this empty (the
+    /// default). The parameter names must match what <see cref="ExecuteAsync"/> expects to parse out of
+    /// its input: for a single parameter the raw value is passed through; for multiple parameters the
+    /// arguments are passed as a JSON object whose property names are these parameter names.
+    /// </summary>
+    IReadOnlyList<AgentToolParameter> Parameters => [];
+
+    /// <summary>
     /// Executes the tool's logic asynchronously.
     /// </summary>
     /// <param name="input">The raw input string provided by the agent (usually JSON-formatted arguments).</param>

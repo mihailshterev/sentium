@@ -9,6 +9,7 @@ public sealed class DiagnosticToolDecorator(AIFunction innerFunction, ILogger lo
     public override string Name => innerFunction.Name;
     public override string Description => innerFunction.Description;
     public override JsonSerializerOptions JsonSerializerOptions => innerFunction.JsonSerializerOptions;
+    public override JsonElement JsonSchema => innerFunction.JsonSchema;
 
     protected override async ValueTask<object?> InvokeCoreAsync(AIFunctionArguments arguments, CancellationToken cancellationToken)
     {
