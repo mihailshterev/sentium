@@ -7,52 +7,52 @@ importers:
     configDependencies: {}
     packageManagerDependencies:
       '@pnpm/exe':
-        specifier: 11.0.6
-        version: 11.0.6
+        specifier: 11.9.0
+        version: 11.9.0
       pnpm:
-        specifier: 11.0.6
-        version: 11.0.6
+        specifier: 11.9.0
+        version: 11.9.0
 
 packages:
 
-  '@pnpm/exe@11.0.6':
-    resolution: {integrity: sha512-nbYaKDJRlEiWWIOT2GaUGx21aRceAM0MolAWd8XSH7WR0wllYE1sE1wCHREaQU4K6QY0CCAKq2o/3SODNtySGw==}
+  '@pnpm/exe@11.9.0':
+    resolution: {integrity: sha512-pPPOpR79qW3nsNhlyDIdfstli4Bi78mk8r22ySxpFRwMbO8KXSjGrVzGmJBsVX39NnJTh7/WADj527nZhG9H9g==}
     hasBin: true
 
-  '@pnpm/linux-arm64@11.0.6':
-    resolution: {integrity: sha512-SAzMgqXIwUDc1GkcaEq7A39MXk5FQEh0n/cz8M9H8s5ChlrmVfKOJSfFl7pX2KvFuAEc0NEtjnyaDMMWoXNhzg==}
+  '@pnpm/linux-arm64@11.9.0':
+    resolution: {integrity: sha512-XYmY2qadHauBA3QaHi2R7fI6kt5Flje0WHz9MVrbH0kVH/XLpfOLnwPeE1+EX6K/nDa2CBvzp35VjYCNGFJa9A==}
     cpu: [arm64]
     os: [linux]
 
-  '@pnpm/linux-x64@11.0.6':
-    resolution: {integrity: sha512-DZbtSAWkFAkldW07WNaXQfk2KYZK1OlyPtABHHuzdtdKGe6VM4qWrZWFcdm4ngbcBeXVwlQGzOUw2wsQfWZp9A==}
+  '@pnpm/linux-x64@11.9.0':
+    resolution: {integrity: sha512-fl7W5imnSmmgXIqMQFZ/rPaVvk9OkKF8/anqHZE3XEDfWcn3BlWGndyOEas/JN7u2BXWYjs63DJZ3rnG6WOhLA==}
     cpu: [x64]
     os: [linux]
 
-  '@pnpm/linuxstatic-arm64@11.0.6':
-    resolution: {integrity: sha512-eLV4GDiDRmonFCDBYbJ3v6IZLBd2XNjBkQgw+704G6G3h7T1GVEBMNISouCldSZAYYVBCzv47F+VSnpnqORZRw==}
+  '@pnpm/linuxstatic-arm64@11.9.0':
+    resolution: {integrity: sha512-fif8xbnzVEAIlvaU4yIgWKXeXYb4Kj6WMEl/KvM2x1Rp3AKAjBW/53SGzxO4cZP9doAqUzOIpMRGFVbHGeMDRw==}
     cpu: [arm64]
     os: [linux]
     libc: [musl]
 
-  '@pnpm/linuxstatic-x64@11.0.6':
-    resolution: {integrity: sha512-lTOOx34uJDvtOlrirqXFOz2lWf1NrcDf+FpzA/rynupj2+Bpx9ACbZF8FquXomSOGccPyQcM7dltkOoCSR7Auw==}
+  '@pnpm/linuxstatic-x64@11.9.0':
+    resolution: {integrity: sha512-9dKu3QdShqOpnWrjW9owARpIJeP0ul8UgIIbBUv8VDGEYibt+g49zQsNaD7SdMD3WeRSjExPQ1zIhplzr5cwvQ==}
     cpu: [x64]
     os: [linux]
     libc: [musl]
 
-  '@pnpm/macos-arm64@11.0.6':
-    resolution: {integrity: sha512-QSOpcD1jeUhNqm7H/uJImtaBwF0qX/RqM4KFhfWL3Sr/aarPunJahYwLsT2yAPojHApP+2ogj4+GYMmhedmVgQ==}
+  '@pnpm/macos-arm64@11.9.0':
+    resolution: {integrity: sha512-MWzBTgeI5p3odjdVltYvFXaSWAjF2Xk5YaxiP/u2RmW8N6PHsLyIyj37Ds992CrXgFM8fO1RpvsEirozhsD6KA==}
     cpu: [arm64]
     os: [darwin]
 
-  '@pnpm/win-arm64@11.0.6':
-    resolution: {integrity: sha512-T9MbeQcic4u89tRY2Rrgz8XA7JINTiywpQXJMtI0IOLPXLPcFhonmUToBdNBDxAZ/6dNjm5VnTK955CA5gU2dA==}
+  '@pnpm/win-arm64@11.9.0':
+    resolution: {integrity: sha512-u/QxEcbKJZxC1t3zUYCZiHzu7TaZ/iXc6EGZoQjkeVT0LXmEVR6ypcK3ByjhIqbxQ3HGX75gnpIpR+VjRjubfw==}
     cpu: [arm64]
     os: [win32]
 
-  '@pnpm/win-x64@11.0.6':
-    resolution: {integrity: sha512-u5mtdJsbYAIfzLeC3QU0SEGYjfAJ5fh8+HifnwoxUPMVS64VIssXf2tJV4Ay79rXjgAhYgdJejBv5/C7nlzhnw==}
+  '@pnpm/win-x64@11.9.0':
+    resolution: {integrity: sha512-HqJVHmZG5UKfLi38AjMl2azVmq87TlWRhwSW+f4q9LLaZeAkFyIZ7LY/pN6mh4VlH9yWj90C+tsb1yKiy7OKnw==}
     cpu: [x64]
     os: [win32]
 
@@ -116,45 +116,45 @@ packages:
     resolution: {integrity: sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ==}
     engines: {node: '>=8'}
 
-  pnpm@11.0.6:
-    resolution: {integrity: sha512-l/kG4dor7aw9+DytrgS0dToTAJLdSdVc02glrT5iPp3z+XdU+PJZ5pkXKjYPrFaazy+Qjncyva4+3bLc9+Eh/Q==}
+  pnpm@11.9.0:
+    resolution: {integrity: sha512-vWgtXQP+Ul73yf1ngMaITR51asTJyf4AxTh4KCQxDc+Q493E9Tg18G3669UIXkGFXgvLs7YN4qxburieUDbwOw==}
     engines: {node: '>=22.13'}
     hasBin: true
 
 snapshots:
 
-  '@pnpm/exe@11.0.6':
+  '@pnpm/exe@11.9.0':
     dependencies:
       '@reflink/reflink': 0.1.19
       detect-libc: 2.1.2
     optionalDependencies:
-      '@pnpm/linux-arm64': 11.0.6
-      '@pnpm/linux-x64': 11.0.6
-      '@pnpm/linuxstatic-arm64': 11.0.6
-      '@pnpm/linuxstatic-x64': 11.0.6
-      '@pnpm/macos-arm64': 11.0.6
-      '@pnpm/win-arm64': 11.0.6
-      '@pnpm/win-x64': 11.0.6
+      '@pnpm/linux-arm64': 11.9.0
+      '@pnpm/linux-x64': 11.9.0
+      '@pnpm/linuxstatic-arm64': 11.9.0
+      '@pnpm/linuxstatic-x64': 11.9.0
+      '@pnpm/macos-arm64': 11.9.0
+      '@pnpm/win-arm64': 11.9.0
+      '@pnpm/win-x64': 11.9.0
 
-  '@pnpm/linux-arm64@11.0.6':
+  '@pnpm/linux-arm64@11.9.0':
     optional: true
 
-  '@pnpm/linux-x64@11.0.6':
+  '@pnpm/linux-x64@11.9.0':
     optional: true
 
-  '@pnpm/linuxstatic-arm64@11.0.6':
+  '@pnpm/linuxstatic-arm64@11.9.0':
     optional: true
 
-  '@pnpm/linuxstatic-x64@11.0.6':
+  '@pnpm/linuxstatic-x64@11.9.0':
     optional: true
 
-  '@pnpm/macos-arm64@11.0.6':
+  '@pnpm/macos-arm64@11.9.0':
     optional: true
 
-  '@pnpm/win-arm64@11.0.6':
+  '@pnpm/win-arm64@11.9.0':
     optional: true
 
-  '@pnpm/win-x64@11.0.6':
+  '@pnpm/win-x64@11.9.0':
     optional: true
 
   '@reflink/reflink-darwin-arm64@0.1.19':
@@ -194,7 +194,7 @@ snapshots:
 
   detect-libc@2.1.2: {}
 
-  pnpm@11.0.6: {}
+  pnpm@11.9.0: {}
 
 ---
 lockfileVersion: '9.0'
@@ -203,10 +203,20 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+catalogs:
+  default:
+    '@babel/core':
+      specifier: 7.29.7
+      version: 7.29.7
+    vite:
+      specifier: 8.0.16
+      version: 8.0.16
+
 overrides:
   vite-plugin-sass-dts>vite: 8.0.16
   minimatch@>=5>brace-expansion: '>=5.0.6'
   eslint-plugin-react-hooks>@babel/core: 7.29.7
+  undici@>=7.0.0 <7.28.0: 7.28.0
 
 importers:
 
@@ -265,7 +275,7 @@ importers:
         version: 5.0.12(@types/react@19.2.14)(react@19.2.0)
     devDependencies:
       '@babel/core':
-        specifier: 7.29.7
+        specifier: 'catalog:'
         version: 7.29.7
       '@eslint/js':
         specifier: 9.39.4
@@ -331,7 +341,7 @@ importers:
         specifier: 8.59.4
         version: 8.59.4(eslint@10.3.0)(typescript@5.9.3)
       vite:
-        specifier: 8.0.16
+        specifier: 'catalog:'
         version: 8.0.16(@types/node@24.12.0)(sass-embedded@1.97.3)(sass@1.97.3)
       vite-plugin-sass-dts:
         specifier: 1.3.35
@@ -359,10 +369,6 @@ packages:
 
   '@asamuzakjp/nwsapi@2.3.9':
     resolution: {integrity: sha512-n8GuYSrI9bF7FFZ/SjhwevlHc8xaVlb/7HmHelnc/PZXBD2ZR49NnN9sMMuDdEGPeeRQ5d0hqlSlEpgCX3Wl0Q==}
-
-  '@babel/code-frame@7.29.0':
-    resolution: {integrity: sha512-9NhCeYjq9+3uxgdtp20LSiJXJvN0FeCtNGpJxuMFZ1Kv3cWUNb6DOhJwUvcVCzKGR66cw4njwM6hrJLqgOwbcw==}
-    engines: {node: '>=6.9.0'}
 
   '@babel/code-frame@7.29.7':
     resolution: {integrity: sha512-Aup7aUOfpbAUg2ROOJN6Iw5f9DMBlzu0mIkm/malLQFN/YQgO48wCj0Kxa3sEHJvPVFg7siR+qRInwXd2qhQKw==}
@@ -2398,8 +2404,8 @@ packages:
   undici-types@7.16.0:
     resolution: {integrity: sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw==}
 
-  undici@7.25.0:
-    resolution: {integrity: sha512-xXnp4kTyor2Zq+J1FfPI6Eq3ew5h6Vl0F/8d9XU5zZQf1tX9s2Su1/3PiMmUANFULpmksxkClamIZcaUqryHsQ==}
+  undici@7.28.0:
+    resolution: {integrity: sha512-cRZYrTDwWznlnRiPjggAGxZXanty6M8RV1ff8Wm4LWXBp7/IG8v5DnOm74DtUBp9OONpK75YlPnIjQqX0dBDtA==}
     engines: {node: '>=20.18.1'}
 
   unified@11.0.5:
@@ -2628,12 +2634,6 @@ snapshots:
   '@asamuzakjp/generational-cache@1.0.1': {}
 
   '@asamuzakjp/nwsapi@2.3.9': {}
-
-  '@babel/code-frame@7.29.0':
-    dependencies:
-      '@babel/helper-validator-identifier': 7.28.5
-      js-tokens: 4.0.0
-      picocolors: 1.1.1
 
   '@babel/code-frame@7.29.7':
     dependencies:
@@ -3044,7 +3044,7 @@ snapshots:
 
   '@testing-library/dom@10.4.1':
     dependencies:
-      '@babel/code-frame': 7.29.0
+      '@babel/code-frame': 7.29.7
       '@babel/runtime': 7.29.2
       '@types/aria-query': 5.0.4
       aria-query: 5.3.0
@@ -3998,7 +3998,7 @@ snapshots:
       saxes: 6.0.0
       symbol-tree: 3.2.4
       tough-cookie: 6.0.1
-      undici: 7.25.0
+      undici: 7.28.0
       w3c-xmlserializer: 5.0.0
       webidl-conversions: 8.0.1
       whatwg-mimetype: 5.0.0
@@ -4752,7 +4752,7 @@ snapshots:
 
   undici-types@7.16.0: {}
 
-  undici@7.25.0: {}
+  undici@7.28.0: {}
 
   unified@11.0.5:
     dependencies:
