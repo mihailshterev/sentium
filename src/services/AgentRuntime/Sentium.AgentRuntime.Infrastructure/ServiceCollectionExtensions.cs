@@ -53,16 +53,38 @@ public static class ServiceCollectionExtensions
 
         services.AddSingleton(new OllamaOptions { BaseUrl = ollamaUri, DefaultModel = modelName });
 
+        var ollamaTotalTimeout = ResolveTimeout(configuration, "AI:OllamaTimeout", TimeSpan.FromMinutes(30));
+        var ollamaAttemptTimeout = ResolveTimeout(configuration, "AI:OllamaAttemptTimeout", TimeSpan.FromMinutes(10));
+
         services.AddHttpClient(ResourceNames.Ollama, client =>
         {
             client.BaseAddress = ollamaUri;
-            client.Timeout = TimeSpan.FromMinutes(10);
+            client.Timeout = ollamaTotalTimeout;
         })
         .AddLongRunningResilienceHandler(
-            totalTimeout: TimeSpan.FromMinutes(10),
-            attemptTimeout: TimeSpan.FromMinutes(3),
+            totalTimeout: ollamaTotalTimeout,
+            attemptTimeout: ollamaAttemptTimeout,
             retries: 0
         );
+
+        static TimeSpan ResolveTimeout(IConfiguration cfg, string key, TimeSpan fallback)
+        {
+            var raw = cfg[key];
+            if (!string.IsNullOrWhiteSpace(raw))
+            {
+                if (TimeSpan.TryParse(raw, out var asTimeSpan) && asTimeSpan > TimeSpan.Zero)
+                {
+                    return asTimeSpan;
+                }
+
+                if (double.TryParse(raw, out var asMinutes) && asMinutes > 0)
+                {
+                    return TimeSpan.FromMinutes(asMinutes);
+                }
+            }
+
+            return fallback;
+        }
 
         services.AddChatClient(sp =>
         {

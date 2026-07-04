@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
-import { Zap, CheckCircle, Circle, Loader, Terminal, History, Orbit } from "lucide-react";
+import { Zap, CheckCircle, Circle, Loader, Terminal, History, Orbit, Square } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import styles from "./agent-orchestration.module.scss";
 import { fetchWorkflowRunsPaged, fetchWorkspaces } from "../../services/agentRuntime.service";
@@ -56,8 +56,12 @@ const AgentOrchestration = () => {
     phase,
     isRunning: storeRunning,
     isDynamicRun,
+    connection,
+    runStartedAt,
+    lastOutcome,
     startPredefined,
     startDynamic,
+    stopRun,
   } = useOrchestrationRunStore();
 
   const [sidebarView, setSidebarView] = useState<"execute" | "history">(runId ? "history" : "execute");
@@ -105,6 +109,18 @@ const AgentOrchestration = () => {
     }
     wasRunning.current = storeRunning;
   }, [storeRunning, phase, refetchRuns]);
+
+  const [elapsedMs, setElapsedMs] = useState(0);
+  useEffect(() => {
+    if (!storeRunning || runStartedAt == null) {
+      return;
+    }
+    const id = setInterval(() => setElapsedMs(Date.now() - runStartedAt), 1000);
+    return () => {
+      clearInterval(id);
+      setElapsedMs(0);
+    };
+  }, [storeRunning, runStartedAt]);
 
   const leaveReplay = () => {
     setSidebarView("execute");
@@ -169,6 +185,51 @@ const AgentOrchestration = () => {
 
   const formatRunTrigger = (type: string) => type.split(".").filter(Boolean).pop() ?? type;
 
+  const formatElapsed = (ms: number) => {
+    const total = Math.max(0, Math.floor(ms / 1000));
+    return `${Math.floor(total / 60)}:${(total % 60).toString().padStart(2, "0")}`;
+  };
+
+  const renderRunIndicator = () => {
+    if (connection === "streaming") {
+      return (
+        <div className={styles.streamingIndicator}>
+          <span className={styles.cursor} />
+          <span className={styles.streamingLabel}>Streaming…</span>
+        </div>
+      );
+    }
+
+    if (connection === "stopping") {
+      return (
+        <div className={styles.streamingIndicator}>
+          <Loader size={13} className={styles.spinIcon} />
+          <span className={styles.streamingLabel}>Stopping…</span>
+        </div>
+      );
+    }
+
+    const label =
+      connection === "starting" ? "Queued…" : connection === "connecting" ? "Connecting…" : "Warming up agents";
+
+    return (
+      <div className={styles.streamingIndicator}>
+        <span className={styles.thinkingDots}>
+          <span className={styles.thinkingDot} />
+          <span className={styles.thinkingDot} />
+          <span className={styles.thinkingDot} />
+        </span>
+        <span className={styles.streamingLabel}>{label}</span>
+        {connection === "waiting" && (
+          <>
+            <span className={styles.streamingHint}>local models may take a moment</span>
+            <span className={styles.streamingElapsed}>{formatElapsed(elapsedMs)}</span>
+          </>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className={styles.container}>
       <PageHeader
@@ -211,15 +272,32 @@ const AgentOrchestration = () => {
             <span className={styles.logPanelTitle}>
               {selectedRun ? `Replay - ${formatRunTrigger(selectedRun.triggerType)}` : "Output"}
             </span>
-            {displayPhase === "COMPLETE" && !isRunning && !viewingRun && (
+            {displayPhase === "COMPLETE" && !isRunning && !viewingRun && lastOutcome === "completed" && (
               <span className={styles.completeBadge}>
                 <CheckCircle size={11} /> Complete
+              </span>
+            )}
+            {displayPhase === "COMPLETE" && !isRunning && !viewingRun && lastOutcome === "stopped" && (
+              <span className={styles.stoppedBadge}>
+                <Square size={10} fill="currentColor" /> Stopped
               </span>
             )}
             {selectedRun && (
               <span className={styles.historyBadge}>
                 <History size={10} /> {formatRunLabel(selectedRun)}
               </span>
+            )}
+            {isRunning && (
+              <button
+                type="button"
+                className={styles.stopBtn}
+                onClick={stopRun}
+                disabled={connection === "stopping"}
+                title="Stop run"
+              >
+                <Square size={12} fill="currentColor" />
+                {connection === "stopping" ? "Stopping…" : "Stop"}
+              </button>
             )}
           </div>
 
@@ -265,12 +343,7 @@ const AgentOrchestration = () => {
                 />
               );
             })}
-            {isRunning && (
-              <div className={styles.streamingIndicator}>
-                <span className={styles.cursor} />
-                <span className={styles.streamingLabel}>Streaming...</span>
-              </div>
-            )}
+            {isRunning && renderRunIndicator()}
           </div>
         </main>
 
@@ -288,6 +361,7 @@ const AgentOrchestration = () => {
           scenarioInput={scenarioInput}
           activeRunId={runId}
           isRunning={isRunning}
+          connection={connection}
           phase={phase}
           onSetSidebarView={setSidebarView}
           onSetExecuteMode={setExecuteMode}
@@ -296,6 +370,7 @@ const AgentOrchestration = () => {
           onSetScenarioInput={setScenarioInput}
           onRunWorkflow={runWorkflow}
           onRunDynamic={runDynamic}
+          onStopRun={stopRun}
           onLoadRun={loadRun}
           formatRunLabel={formatRunLabel}
           formatRunTrigger={formatRunTrigger}

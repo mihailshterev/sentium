@@ -20,6 +20,7 @@ const LogTypes = {
   TOOL: "tool",
   MESSAGE: "message",
   STATUS: "status",
+  ERROR: "error",
 };
 
 const statusMeta = (text: string): { dot: string; Icon: ElementType } => {
@@ -44,6 +45,8 @@ const dotClassFor = (log: LogEntry): string => {
       return styles.timelineDotTool;
     case LogTypes.STATUS:
       return statusMeta(log.text).dot;
+    case LogTypes.ERROR:
+      return styles.timelineDotFail;
     default:
       return styles.timelineDotMessage;
   }
@@ -58,6 +61,15 @@ const LogEntryView = ({
   isActiveThought = false,
 }: LogEntryViewProps) => {
   const renderBody = () => {
+    if (log.type === LogTypes.ERROR) {
+      return (
+        <div className={styles.statusRow}>
+          <XCircle size={12} />
+          <span>{log.text}</span>
+        </div>
+      );
+    }
+
     if (log.type === LogTypes.STATUS) {
       const { Icon } = statusMeta(log.text);
       return (
