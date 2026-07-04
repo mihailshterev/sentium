@@ -28,7 +28,7 @@ const WorkflowBuilder = () => {
     isUpdateError,
     updateWorkflowError,
   } = useWorkflows();
-  const { agents } = useAgents();
+  const { agents, isLoading: isLoadingAgents } = useAgents();
 
   const selectedWorkflow = workflowId ? (workflows.find((w) => w.id === workflowId) ?? null) : null;
 
@@ -72,12 +72,12 @@ const WorkflowBuilder = () => {
     />
   );
 
-  if (!isCreate && !selectedWorkflow) {
+  if (!isCreate && (isLoadingAgents || !selectedWorkflow)) {
     return (
       <div className={styles.container}>
         {header}
         <div className={styles.builderBody}>
-          {isLoading ? (
+          {isLoading || isLoadingAgents ? (
             <EmptyState icon={<Loader size={20} className={styles.spinIcon} />} title="Loading workflow..." />
           ) : (
             <EmptyState
