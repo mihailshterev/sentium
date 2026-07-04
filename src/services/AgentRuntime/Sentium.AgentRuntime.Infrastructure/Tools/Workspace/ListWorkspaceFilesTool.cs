@@ -19,9 +19,9 @@ public sealed class ListWorkspaceFilesTool(AgentRuntimeDbContext dbContext) : IA
 
     public string Name => "list_workspace_files";
 
-    public string Description => "Lists all files available in a workspace. " +
-                                 "Accepts a workspace ID (GUID) or workspace name as input. " +
-                                 "Call this tool with either: {\"input\": \"<workspace-guid>\"} or {\"input\": \"<workspace-name>\"}";
+    public string Description => "Lists all files available in a workspace, identified by its ID (GUID) or name.";
+
+    public IReadOnlyList<AgentToolParameter> Parameters { get; } = [new("workspace", "The workspace ID (GUID) or workspace name to list files from.")];
 
     public async Task<string> ExecuteAsync(string input, CancellationToken ct)
     {

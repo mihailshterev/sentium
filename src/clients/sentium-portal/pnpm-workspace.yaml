@@ -4,10 +4,15 @@ blockExoticSubdeps: true
 trustPolicy: no-downgrade
 trustPolicyIgnoreAfter: 129600
 
+catalog:
+  vite: "8.0.16"
+  "@babel/core": "7.29.7"
+
 overrides:
-  vite-plugin-sass-dts>vite: "$vite"
+  vite-plugin-sass-dts>vite: "catalog:"
   "minimatch@>=5>brace-expansion": ">=5.0.6"
-  eslint-plugin-react-hooks>@babel/core: "$@babel/core"
+  eslint-plugin-react-hooks>@babel/core: "catalog:"
+  "undici@>=7.0.0 <7.28.0": "7.28.0"
 
 allowBuilds:
   "@parcel/watcher": false

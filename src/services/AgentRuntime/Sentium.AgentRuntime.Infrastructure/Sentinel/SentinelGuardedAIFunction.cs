@@ -20,6 +20,7 @@ public sealed class SentinelGuardedAIFunction(
     public override string Name => inner.Name;
     public override string Description => inner.Description;
     public override JsonSerializerOptions JsonSerializerOptions => inner.JsonSerializerOptions;
+    public override JsonElement JsonSchema => inner.JsonSchema;
 
     protected override async ValueTask<object?> InvokeCoreAsync(AIFunctionArguments arguments, CancellationToken cancellationToken)
     {

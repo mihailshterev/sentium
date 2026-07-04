@@ -1,9 +1,10 @@
-import { Play, GitBranch, FolderOpen, Loader, History, Sparkles, Layers } from "lucide-react";
+import { Play, GitBranch, FolderOpen, Square, History, Sparkles, Layers } from "lucide-react";
 import styles from "../agent-orchestration.module.scss";
 import InfiniteScrollSentinel from "../../../components/ui/infinite-scroll-sentinel";
 import type { WorkflowRecord } from "../../../types/workflows";
 import type { WorkflowRun } from "../../../types/workflows";
 import type { Phase } from "../../../types/orchestration";
+import type { RunConnection } from "../../../stores/orchestration-run-store";
 
 interface Workspace {
   id: string;
@@ -27,6 +28,7 @@ interface ExecuteSidebarProps {
   scenarioInput: string;
   activeRunId?: string;
   isRunning: boolean;
+  connection: RunConnection;
   phase: Phase;
   onSetSidebarView: (view: "execute" | "history") => void;
   onSetExecuteMode: (mode: ExecuteMode) => void;
@@ -35,6 +37,7 @@ interface ExecuteSidebarProps {
   onSetScenarioInput: (value: string) => void;
   onRunWorkflow: () => void;
   onRunDynamic: () => void;
+  onStopRun: () => void;
   onLoadRun: (run: WorkflowRun) => void;
   formatRunLabel: (run: WorkflowRun) => string;
   formatRunTrigger: (type: string) => string;
@@ -54,6 +57,7 @@ const ExecuteSidebar = ({
   scenarioInput,
   activeRunId,
   isRunning,
+  connection,
   onSetSidebarView,
   onSetExecuteMode,
   onSelectWorkflow,
@@ -61,10 +65,31 @@ const ExecuteSidebar = ({
   onSetScenarioInput,
   onRunWorkflow,
   onRunDynamic,
+  onStopRun,
   onLoadRun,
   formatRunLabel,
   formatRunTrigger,
 }: ExecuteSidebarProps) => {
+  const isStopping = connection === "stopping";
+
+  const statusLabel = !isRunning
+    ? "Idle"
+    : connection === "starting"
+      ? "Queued"
+      : connection === "connecting"
+        ? "Connecting"
+        : connection === "waiting"
+          ? "Warming up"
+          : connection === "stopping"
+            ? "Stopping"
+            : "Streaming";
+
+  const stopButton = (
+    <button type="button" className={styles.stopWorkflowBtn} onClick={onStopRun} disabled={isStopping}>
+      <Square size={13} fill="currentColor" />
+      {isStopping ? "Stopping…" : "Stop run"}
+    </button>
+  );
   const workspaceSelect = (
     <select
       className={styles.workspaceSelect}
@@ -181,10 +206,14 @@ const ExecuteSidebar = ({
                       rows={3}
                       disabled={isRunning}
                     />
-                    <button className={styles.runWorkflowBtn} onClick={onRunWorkflow} disabled={isRunning}>
-                      {isRunning ? <Loader size={13} className={styles.spinIcon} /> : <Play size={13} />}
-                      {isRunning ? "Running..." : "Execute Workflow"}
-                    </button>
+                    {isRunning ? (
+                      stopButton
+                    ) : (
+                      <button className={styles.runWorkflowBtn} onClick={onRunWorkflow}>
+                        <Play size={13} />
+                        Execute Workflow
+                      </button>
+                    )}
                   </div>
                 </>
               )}
@@ -224,14 +253,18 @@ const ExecuteSidebar = ({
                 rows={4}
                 disabled={isRunning}
               />
-              <button
-                className={`${styles.runWorkflowBtn} ${styles.runDynamicBtn}`}
-                onClick={onRunDynamic}
-                disabled={isRunning || !scenarioInput.trim()}
-              >
-                {isRunning ? <Loader size={13} className={styles.spinIcon} /> : <Sparkles size={13} />}
-                {isRunning ? "Running..." : "Run Dynamic"}
-              </button>
+              {isRunning ? (
+                stopButton
+              ) : (
+                <button
+                  className={`${styles.runWorkflowBtn} ${styles.runDynamicBtn}`}
+                  onClick={onRunDynamic}
+                  disabled={!scenarioInput.trim()}
+                >
+                  <Sparkles size={13} />
+                  Run Dynamic
+                </button>
+              )}
             </div>
           )}
         </>
@@ -277,9 +310,7 @@ const ExecuteSidebar = ({
           </div>
           <div className={styles.connRow}>
             <span className={styles.connKey}>Status</span>
-            <span className={`${styles.connVal} ${isRunning ? styles.connValActive : ""}`}>
-              {isRunning ? "Streaming" : "Idle"}
-            </span>
+            <span className={`${styles.connVal} ${isRunning ? styles.connValActive : ""}`}>{statusLabel}</span>
           </div>
         </div>
       </div>

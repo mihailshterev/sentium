@@ -33,6 +33,13 @@ public sealed class CaptureAgentLearningTool(
         "Global requests are validated by the platform and may be kept private if they don't qualify. " +
         "The content should be self-contained, written in markdown, and valuable for future retrieval.";
 
+    public IReadOnlyList<AgentToolParameter> Parameters { get; } =
+    [
+        new("content", "The learning text - a self-contained insight, pattern, or fix, written in markdown."),
+        new("tags", "Optional comma-separated tags for retrieval.", Required: false),
+        new("scope", "'user' (default) or 'global' for an abstracted, reusable pattern with no user-specific details.", Required: false),
+    ];
+
     public async Task<string> ExecuteAsync(string input, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(input))

@@ -12,22 +12,17 @@ namespace Sentium.AgentRuntime.Infrastructure.Tools.Workspace;
 [AgentToolPolicy(RiskLevel = ToolRiskLevel.Medium)]
 public sealed class ReadWorkspaceFileContentTool(AgentRuntimeDbContext dbContext, ILocalFileService fileService) : IAgentTool
 {
-    private static readonly JsonSerializerOptions jsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true
-    };
-
     public string Name => "read_file_content";
 
-    public string Description => "Reads the text content of a specific file from the workspace. " +
-                                 "Call this tool in the following format: {\"input\": \"The guid of the file\"}";
+    public string Description => "Reads the text content of a specific file from the workspace, identified by its GUID.";
+
+    public IReadOnlyList<AgentToolParameter> Parameters { get; } = [new("fileId", "The GUID of the file to read (from list_workspace_files).")];
 
     public async Task<string> ExecuteAsync(string input, CancellationToken ct)
     {
         try
         {
-            var request = JsonSerializer.Deserialize<ReadWorkspaceFileRequest>(input, jsonOptions);
-            if (request is null || !Guid.TryParse(request.Input, out var guid))
+            if (!TryExtractGuid(input, out var guid))
             {
                 return "Error: A valid file GUID is required.";
             }
@@ -50,5 +45,46 @@ public sealed class ReadWorkspaceFileContentTool(AgentRuntimeDbContext dbContext
         }
     }
 
-    private sealed record ReadWorkspaceFileRequest(string Input);
+    private static bool TryExtractGuid(string input, out Guid guid)
+    {
+        guid = Guid.Empty;
+
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            return false;
+        }
+
+        var trimmed = input.Trim();
+        if (Guid.TryParse(trimmed, out guid))
+        {
+            return true;
+        }
+
+        if (!trimmed.StartsWith('{'))
+        {
+            return false;
+        }
+
+        try
+        {
+            using var doc = JsonDocument.Parse(trimmed);
+            foreach (var key in GuidKeys)
+            {
+                if (doc.RootElement.TryGetProperty(key, out var value)
+                    && value.ValueKind == JsonValueKind.String
+                    && Guid.TryParse(value.GetString(), out guid))
+                {
+                    return true;
+                }
+            }
+        }
+        catch (JsonException)
+        {
+            // Not JSON after all - fall through to failure.
+        }
+
+        return false;
+    }
+
+    private static readonly string[] GuidKeys = ["input", "fileId", "id", "guid", "fileGuid"];
 }

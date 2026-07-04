@@ -24,8 +24,9 @@ public sealed class StoreMemoryTool(
 
     public string Description =>
         "Saves a PERSONAL fact or preference the USER explicitly asked you to remember (their name, a setting, a standing instruction) to long-term memory. " +
-        "Input format: {\"input\": \"Your fact here\"}. " +
         "Do NOT use this for things YOU figured out - patterns, conclusions, designs, fixes, or reusable approaches belong in capture_agent_learning instead.";
+
+    public IReadOnlyList<AgentToolParameter> Parameters { get; } = [new("content", "The exact fact or preference to remember, written as a self-contained sentence.")];
 
     public async Task<string> ExecuteAsync(string input, CancellationToken ct)
     {

@@ -13,10 +13,6 @@ namespace Sentium.AgentRuntime.Infrastructure.Tools;
 /// <summary>
 /// Agent tool that performs a semantic similarity search against the RAG knowledge base
 /// and returns formatted snippets with source citations.
-/// <para>
-/// Registered globally (no <c>AllowedAgents</c> restriction) so every agent can autonomously
-/// call this tool when it needs factual context.
-/// </para>
 /// </summary>
 [AgentToolPolicy(
     AllowedAgents = [],
@@ -31,14 +27,15 @@ public sealed class KnowledgeBaseSearchTool(
 {
     private readonly RagOptions ragOptions = options.Value;
 
-    /// <inheritdoc />
     public string Name => "knowledge_base_search";
 
-    /// <inheritdoc />
-    public string Description =>
-        "Search ALL of your knowledge - the shared knowledge base, your captured learnings, and your saved memories - for relevant context. " +
-        "Input should be a JSON object with 'query' (the search string) and optional 'topK' (number of results). " +
-        "Example: { \"query\": \"resource lock conflicts\", \"topK\": 5 }";
+    public string Description => "Search ALL of your knowledge - the shared knowledge base, your captured learnings, and your saved memories - for relevant context.";
+
+    public IReadOnlyList<AgentToolParameter> Parameters { get; } =
+    [
+        new("query", "The search string describing what you are looking for."),
+        new("topK", "Maximum number of results to return (1-20).", AgentToolParameterType.Integer, Required: false),
+    ];
 
     public async Task<string> ExecuteAsync(string input, CancellationToken ct)
     {

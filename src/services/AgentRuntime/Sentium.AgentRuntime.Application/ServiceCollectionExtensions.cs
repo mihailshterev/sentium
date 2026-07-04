@@ -19,7 +19,13 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddAgentRuntimeApplication(this IServiceCollection services)
     {
         services.AddSingleton<IEventBus, NatsEventBus>();
+        services.AddSingleton<IWorkflowExecutionRegistry, WorkflowExecutionRegistry>();
         services.AddHostedService<NatsMessageProcessor>();
+
+        services.AddSingleton<StreamRelay>();
+        services.AddSingleton<IStreamRelay>(sp => sp.GetRequiredService<StreamRelay>());
+        services.AddHostedService(sp => sp.GetRequiredService<StreamRelay>());
+
         services.AddTransient<IAgentService, AgentService>();
         services.AddTransient<IConversationService, ConversationService>();
         services.AddTransient<IWorkflowService, WorkflowService>();

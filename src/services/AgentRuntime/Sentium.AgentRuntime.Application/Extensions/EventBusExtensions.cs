@@ -7,12 +7,12 @@ namespace Sentium.AgentRuntime.Application.Extensions;
 
 public static class EventBusExtensions
 {
-    public static Task StreamAgentUpdateAsync(this IEventBus bus, string type, string author, string text, CancellationToken ct = default)
-        => StreamAgentUpdateAsync(bus, type, author, text, AgentUpdateTypes.Message, ct);
+    public static Task StreamAgentUpdateAsync(this IEventBus bus, string streamId, string author, string text, CancellationToken ct = default)
+        => StreamAgentUpdateAsync(bus, streamId, author, text, AgentUpdateTypes.Message, ct);
 
-    public static Task StreamAgentUpdateAsync(this IEventBus bus, string type, string author, string text, string updateType, CancellationToken ct = default)
+    public static Task StreamAgentUpdateAsync(this IEventBus bus, string streamId, string author, string text, string updateType, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(bus);
-        return bus.PublishAsync($"stream.{type}", new AgentStreamUpdate(author, text, updateType), serializer: NatsJsonSerializer<AgentStreamUpdate>.Default, ct: ct);
+        return bus.PublishAsync($"stream.{streamId}", new AgentStreamUpdate(author, text, updateType), serializer: NatsJsonSerializer<AgentStreamUpdate>.Default, ct: ct);
     }
 }

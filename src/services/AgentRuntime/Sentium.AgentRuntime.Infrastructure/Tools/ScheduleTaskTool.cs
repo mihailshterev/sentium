@@ -17,8 +17,15 @@ public sealed class ScheduleTaskTool(ISchedulerFactory schedulerFactory, ILogger
         "CRITICAL ARGS MODELING RULES:\n" +
         "1. 'CronExpression' MUST use 6-field Quartz syntax (e.g., '0 * * * * ?' to run every minute). Never use 5-field Linux crontab format.\n" +
         "2. Provide a descriptive string identifier for 'JobName' (DO NOT use 'task_name').\n" +
-        "3. 'Language' must be explicitly matched to string values: 'Python' or 'NodeJs'.\n" +
-        "Input MUST strictly match this property schema structure.";
+        "3. 'language' must be explicitly matched to string values: 'Python' or 'NodeJs'.";
+
+    public IReadOnlyList<AgentToolParameter> Parameters { get; } =
+    [
+        new("jobName", "A descriptive identifier for the scheduled job."),
+        new("cronExpression", "6-field Quartz cron expression, e.g. '0 * * * * ?' for every minute. Never 5-field Linux crontab."),
+        new("code", "The Python/Node.js script to run on the schedule."),
+        new("language", "The script language.", EnumValues: ["Python", "NodeJs"]),
+    ];
 
     private readonly JsonSerializerOptions options = new()
     {
@@ -37,7 +44,10 @@ public sealed class ScheduleTaskTool(ISchedulerFactory schedulerFactory, ILogger
 
     public async Task<string> ExecuteAsync(string input, CancellationToken ct)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(input);
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            return "Error: No schedule arguments provided. Supply a JSON object with 'JobName', 'CronExpression', 'Code', and 'Language'.";
+        }
 
         try
         {

@@ -7,25 +7,6 @@ namespace Sentium.AgentRuntime.Infrastructure.Tools;
 /// <summary>
 /// An agent tool that reads and returns the full text content of files from a local workspace directory.
 /// </summary>
-/// <remarks>
-/// <para>
-/// This tool is marked as <see cref="ToolRiskLevel.Medium"/> risk and enforces strict security:
-/// - Only files within the <c>user_workspace</c> directory can be accessed (path traversal prevention).
-/// - Only text-based file extensions are allowed (see <see cref="allowedExtensions"/>).
-/// - File size is limited to 2 MB to prevent memory exhaustion.
-/// </para>
-/// <para>
-/// Input format: A relative file path within the workspace.
-/// - Input: <c>{"input": "logs/error.log"}</c>
-/// - Input: <c>{"input": "config.json"}</c>
-/// </para>
-/// <para>
-/// Output: The full plain-text content of the file, or an error message if validation fails.
-/// </para>
-/// <para>
-/// Supported file extensions: .txt, .md, .json, .xml, .csv, .log, .yaml, .yml, .js, .ts, .py, .cs, .html, .css, .sql
-/// </para>
-/// </remarks>
 [AgentToolPolicy(
     AllowedAgents = [],
     RiskLevel = ToolRiskLevel.Medium,
@@ -41,9 +22,6 @@ public sealed class ReadFileTool : IAgentTool
         ".js", ".ts", ".py", ".cs", ".html", ".css", ".sql"
     };
 
-    /// <summary>
-    /// Initializes the read file tool and creates the workspace directory if it does not exist.
-    /// </summary>
     public ReadFileTool()
     {
         workspaceRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "user_workspace"));
@@ -54,15 +32,12 @@ public sealed class ReadFileTool : IAgentTool
         }
     }
 
-    /// <inheritdoc/>
     public string Name => "read_file";
 
-    /// <inheritdoc/>
-    public string Description =>
-        "Reads and returns the full text content of a file. " +
-        "Input must be a relative path (e.g., 'logs/error.log') within the allowed workspace in this format {\"input\": \"relative/path/to/file\"}.";
+    public string Description => "Reads and returns the full text content of a file within the allowed workspace.";
 
-    /// <inheritdoc/>
+    public IReadOnlyList<AgentToolParameter> Parameters { get; } = [new("path", "Relative path to the file within the workspace, e.g. 'logs/error.log'.")];
+
     public async Task<string> ExecuteAsync(string input, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(input))
@@ -74,7 +49,6 @@ public sealed class ReadFileTool : IAgentTool
         {
             var absolutePath = Path.GetFullPath(Path.Combine(workspaceRoot, input));
 
-            // Security check: prevent path traversal attacks
             if (!absolutePath.StartsWith(workspaceRoot, StringComparison.OrdinalIgnoreCase))
             {
                 return "Security Error: Access denied. You cannot access files outside the workspace.";

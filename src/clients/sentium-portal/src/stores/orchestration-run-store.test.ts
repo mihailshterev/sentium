@@ -40,6 +40,7 @@ beforeEach(() => {
   vi.stubGlobal("EventSource", FakeEventSource as unknown as typeof EventSource);
   vi.spyOn(agentRuntimeService, "runWorkflowPipeline").mockResolvedValue({ eventId: "e1" });
   vi.spyOn(agentRuntimeService, "runDynamicWorkflow").mockResolvedValue({ eventId: "e2" });
+  vi.spyOn(agentRuntimeService, "cancelOrchestrationRun").mockResolvedValue(undefined);
   resetStore();
 });
 
@@ -151,16 +152,50 @@ describe("stream message handling", () => {
 });
 
 describe("stopRun / resetRun", () => {
-  it("stopRun closes the stream and completes", async () => {
+  it("stopRun requests backend cancellation and enters the stopping state", async () => {
     await useOrchestrationRunStore.getState().startPredefined({ workflowId: "w1", scenario: "s" });
-    const src = FakeEventSource.last();
 
     useOrchestrationRunStore.getState().stopRun();
 
     const state = useOrchestrationRunStore.getState();
+    expect(state.connection).toBe("stopping");
+    expect(state.isRunning).toBe(true);
+    expect(agentRuntimeService.cancelOrchestrationRun).toHaveBeenCalledWith("e1");
+  });
+
+  it("stopRun finalizes as stopped when the backend confirms cancellation", async () => {
+    await useOrchestrationRunStore.getState().startPredefined({ workflowId: "w1", scenario: "s" });
+    const src = FakeEventSource.last();
+
+    useOrchestrationRunStore.getState().stopRun();
+    src.emit(JSON.stringify({ Type: "cancelled" }));
+
+    const state = useOrchestrationRunStore.getState();
     expect(state.phase).toBe("COMPLETE");
     expect(state.isRunning).toBe(false);
+    expect(state.lastOutcome).toBe("stopped");
     expect(src.closed).toBe(true);
+  });
+
+  it("stopRun finalizes as stopped via the fallback timer if the backend never confirms", async () => {
+    await useOrchestrationRunStore.getState().startPredefined({ workflowId: "w1", scenario: "s" });
+    const src = FakeEventSource.last();
+
+    vi.useFakeTimers();
+    try {
+      useOrchestrationRunStore.getState().stopRun();
+      expect(useOrchestrationRunStore.getState().isRunning).toBe(true);
+
+      await vi.advanceTimersByTimeAsync(8_000);
+
+      const state = useOrchestrationRunStore.getState();
+      expect(state.phase).toBe("COMPLETE");
+      expect(state.isRunning).toBe(false);
+      expect(state.lastOutcome).toBe("stopped");
+      expect(src.closed).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("resetRun is a no-op while a run is in progress", () => {

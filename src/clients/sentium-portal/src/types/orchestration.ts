@@ -1,7 +1,7 @@
 export interface LogEntry {
   author: string;
   text: string;
-  type: "message" | "thought" | "tool" | "approval" | "status";
+  type: "message" | "thought" | "tool" | "approval" | "status" | "error";
 }
 
 export interface WorkflowRecord {

@@ -14,26 +14,6 @@ namespace Sentium.AgentRuntime.Infrastructure.Tools.Workspace;
 /// <summary>
 /// An agent tool that saves a new text file to a workspace.
 /// </summary>
-/// <remarks>
-/// <para>
-/// This tool is marked as <see cref="ToolRiskLevel.Medium"/> risk because it creates new resources
-/// in cloud storage and the database.
-/// </para>
-/// <para>
-/// Input format: A JSON object with three required properties:
-/// - <c>workspace</c>: Workspace ID (GUID) or workspace name (case-insensitive).
-/// - <c>fileName</c>: The desired filename (e.g., "analysis.md"). Extension must be allowed (see <see cref="AllowedFileTypes"/>).
-/// - <c>content</c>: The plain-text file content to save.
-/// </para>
-/// <para>
-/// Example input:
-/// <c>{"input": "{\"workspace\": \"my-project\", \"fileName\": \"notes.md\", \"content\": \"# Project Notes\\n...\"}"}</c>
-/// </para>
-/// <para>
-/// Output: Success message with the file ID, or an error message if validation or upload fails.
-/// After successful save, the file is automatically queued for RAG ingestion.
-/// </para>
-/// </remarks>
 [AgentToolPolicy(RiskLevel = ToolRiskLevel.Medium)]
 public sealed class WriteWorkspaceFileTool(AgentRuntimeDbContext dbContext, ILocalFileService fileService, IEventBus eventBus) : IAgentTool
 {
@@ -42,15 +22,17 @@ public sealed class WriteWorkspaceFileTool(AgentRuntimeDbContext dbContext, ILoc
         PropertyNameCaseInsensitive = true
     };
 
-    /// <inheritdoc/>
     public string Name => "write_workspace_file";
 
-    /// <inheritdoc/>
-    public string Description => "Saves a new text file to a workspace. " +
-                                 "Accepts workspace ID (GUID) or workspace name. " +
-                                 "Call this tool with: {\"input\": \"{\\\"workspace\\\": \\\"name-or-guid\\\", \\\"fileName\\\": \\\"example.md\\\", \\\"content\\\": \\\"text content\\\"}\"}";
+    public string Description => "Saves a new text file to a workspace. Accepts a workspace ID (GUID) or workspace name.";
 
-    /// <inheritdoc/>
+    public IReadOnlyList<AgentToolParameter> Parameters { get; } =
+    [
+        new("workspace", "The target workspace ID (GUID) or workspace name."),
+        new("fileName", "The file name to create, e.g. 'analysis.md'. The extension must be an allowed type."),
+        new("content", "The plain-text content to save in the file."),
+    ];
+
     public async Task<string> ExecuteAsync(string input, CancellationToken ct)
     {
         try

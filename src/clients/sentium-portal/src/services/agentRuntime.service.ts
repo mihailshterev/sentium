@@ -79,6 +79,9 @@ export const runDynamicWorkflow = (payload: Record<string, string>) =>
 export const runWorkflowPipeline = (payload: RunWorkflowPayload) =>
   client.post<{ eventId: string }>(`${BASE}/orchestration/run-workflow`, payload);
 
+export const cancelOrchestrationRun = (streamId: string) =>
+  client.post<void>(`${BASE}/orchestration/cancel/${streamId}`, {});
+
 export const fetchWorkflowRunsPaged = (page = 1, pageSize = 20): Promise<PagedResponse<WorkflowRun>> =>
   client.get<PagedResponse<WorkflowRun>>(`${BASE}/workflows/runs?page=${page}&pageSize=${pageSize}`);
 
