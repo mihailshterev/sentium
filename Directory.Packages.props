@@ -4,7 +4,7 @@
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
     <AspireVersion>13.4.3</AspireVersion>
     <EntityFrameworkCoreVersion>10.0.9</EntityFrameworkCoreVersion>
-    <AgentFrameworkVersion>1.21.0</AgentFrameworkVersion>
+    <AgentFrameworkVersion>1.22.0</AgentFrameworkVersion>
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Aspire.Hosting.Docker" Version="$(AspireVersion)" />
