@@ -9,7 +9,7 @@ interface SortableAgentProps {
   onRemove: (sortId: string) => void;
 }
 
-const SortableAgent = ({ item, onRemove }: SortableAgentProps) => {
+export function SortableAgent({ item, onRemove }: SortableAgentProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.sortId });
 
   const style = {
@@ -36,6 +36,4 @@ const SortableAgent = ({ item, onRemove }: SortableAgentProps) => {
       </button>
     </div>
   );
-};
-
-export default SortableAgent;
+}

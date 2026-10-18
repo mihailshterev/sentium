@@ -6,7 +6,7 @@ interface ThemeToggleProps {
   className?: string;
 }
 
-const ThemeToggle = ({ className }: ThemeToggleProps) => {
+export function ThemeToggle({ className }: ThemeToggleProps) {
   const preference = useThemeStore((s) => s.preference);
   const toggle = useThemeStore((s) => s.toggle);
 
@@ -28,6 +28,4 @@ const ThemeToggle = ({ className }: ThemeToggleProps) => {
       </span>
     </button>
   );
-};
-
-export default ThemeToggle;
+}

@@ -5,7 +5,7 @@ const REFRESH_INTERVAL = 5000;
 
 const SYSTEM_METRICS_KEY = ["system-metrics"] as const;
 
-const useSystemMetrics = () => {
+export function useSystemMetrics() {
   const {
     data: metrics,
     isLoading,
@@ -20,6 +20,6 @@ const useSystemMetrics = () => {
   });
 
   return { metrics, isLoading, isRefetching, error, refetch };
-};
+}
 
-export default useSystemMetrics;
+

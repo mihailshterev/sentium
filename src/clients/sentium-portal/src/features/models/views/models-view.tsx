@@ -1,15 +1,15 @@
 import { useState } from "react";
 import { BrainCircuit, RefreshCw, HardDrive, Info, Lock, X, Loader } from "lucide-react";
 import styles from "../models.module.scss";
-import useOllamaModels from "@/features/models/hooks/useOllamaModels";
+import { useOllamaModels } from "@/features/models/hooks/useOllamaModels";
 import { useRole } from "@/shared/auth/hooks/useRole";
-import PageHeader from "@/shared/ui/page-header";
-import EmptyState from "@/shared/ui/empty-state";
-import ModelCard from "../components/model-card";
-import PullModelForm from "../components/pull-model-form";
-import ConfirmDialog from "@/shared/ui/confirm-dialog";
+import { PageHeader } from "@/shared/ui/page-header";
+import { EmptyState } from "@/shared/ui/empty-state";
+import { ModelCard } from "../components/model-card";
+import { PullModelForm } from "../components/pull-model-form";
+import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
 
-const Models = () => {
+export function ModelsView() {
   const {
     models,
     isLoading,
@@ -152,6 +152,6 @@ const Models = () => {
       />
     </div>
   );
-};
+}
 
-export default Models;
+

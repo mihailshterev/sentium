@@ -2,7 +2,7 @@ import { Trash2, ShieldMinus } from "lucide-react";
 import styles from "../users.module.scss";
 import type { UserListItem } from "../../auth/api/identity.service";
 import type { Role } from "../../../shared/utils/roles";
-import RoleBadge from "./role-badge";
+import { RoleBadge } from "./role-badge";
 
 interface UserRowProps {
   user: UserListItem;
@@ -27,7 +27,7 @@ function getAvatarColor(id: string): string {
   return styles[AVATAR_COLORS[id.charCodeAt(0) % AVATAR_COLORS.length]];
 }
 
-const UserRow = ({
+export function UserRow({
   user,
   isSelf,
   isSovereign,
@@ -36,7 +36,7 @@ const UserRow = ({
   onAssignRole,
   onRemoveRole,
   onDeleteUser,
-}: UserRowProps) => (
+}: UserRowProps) { return (
   <div className={`${styles.userRow} ${isPending ? styles.pending : ""}`}>
     <div className={`${styles.userAvatar} ${getAvatarColor(user.id)}`}>{getInitials(user)}</div>
 
@@ -109,6 +109,6 @@ const UserRow = ({
       </span>
     )}
   </div>
-);
+); }
 
-export default UserRow;
+

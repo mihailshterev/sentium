@@ -1,1 +1,1 @@
-export { default } from "./views/sandbox-view";
+export { SandboxView } from "./views/sandbox-view";

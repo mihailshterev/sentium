@@ -6,7 +6,7 @@ interface RunScriptProps {
   entry: SandboxExecutionLog;
 }
 
-const RunScript = ({ entry }: RunScriptProps) => (
+export function RunScript({ entry }: RunScriptProps) { return (
   <div className={styles.auditBody}>
     <div>
       <p className={styles.codeLabel}>Source Code</p>
@@ -39,6 +39,6 @@ const RunScript = ({ entry }: RunScriptProps) => (
       </>
     )}
   </div>
-);
+); }
 
-export default RunScript;
+

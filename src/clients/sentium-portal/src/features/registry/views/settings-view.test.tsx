@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import SettingsPage from "./settings-view";
+import { SettingsView as SettingsPage } from "./settings-view";
 import * as useSystemSettingsHook from "@/features/registry/hooks/useSystemSettings";
 import type { Settings } from "../types/settings";
 

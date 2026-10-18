@@ -1,6 +1,6 @@
 import { Activity, CheckCircle, XCircle, AlertTriangle, ShieldAlert } from "lucide-react";
 import styles from "../watchdog.module.scss";
-import StatCard from "@/shared/ui/stat-card";
+import { StatCard } from "@/shared/ui/stat-card";
 import type { ServiceStatus } from "@/features/watchdog/types/serviceHealth";
 
 interface SummaryStatsProps {
@@ -25,7 +25,7 @@ const overallText = (status: ServiceStatus) => {
   }
 };
 
-const SummaryStats = ({ total, healthy, degraded, unhealthy, openIncidents, overallStatus }: SummaryStatsProps) => {
+export function SummaryStats({ total, healthy, degraded, unhealthy, openIncidents, overallStatus }: SummaryStatsProps) {
   const badgeClass =
     overallStatus === "Healthy"
       ? styles.overallBadgeGreen
@@ -67,6 +67,6 @@ const SummaryStats = ({ total, healthy, degraded, unhealthy, openIncidents, over
       </div>
     </div>
   );
-};
+}
 
-export default SummaryStats;
+

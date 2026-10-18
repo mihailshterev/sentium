@@ -8,7 +8,7 @@ interface PageHeaderProps {
   className?: string;
 }
 
-const PageHeader = ({ icon, title, subtitle, right, className }: PageHeaderProps) => {
+export function PageHeader({ icon, title, subtitle, right, className }: PageHeaderProps) {
   return (
     <div className={`${styles.header} ${className ?? ""}`}>
       <div className={styles.headerLeft}>
@@ -21,6 +21,4 @@ const PageHeader = ({ icon, title, subtitle, right, className }: PageHeaderProps
       {right && <div className={styles.right}>{right}</div>}
     </div>
   );
-};
-
-export default PageHeader;
+}

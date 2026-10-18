@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import WelcomeScreen from "./welcome-screen";
+import { WelcomeScreen } from "./welcome-screen";
 import * as useProfileHook from "@/features/profile/hooks/useProfile";
 
 beforeEach(() => {
-  vi.spyOn(useProfileHook, "default").mockReturnValue({
+  vi.spyOn(useProfileHook, "useProfile").mockReturnValue({
     profile: { firstName: "Alice" },
-  } as unknown as ReturnType<typeof useProfileHook.default>);
+  } as unknown as ReturnType<typeof useProfileHook.useProfile>);
 });
 
 describe("WelcomeScreen", () => {
@@ -29,9 +29,9 @@ describe("WelcomeScreen", () => {
   });
 
   it("renders without a name when the profile has none", () => {
-    vi.spyOn(useProfileHook, "default").mockReturnValue({
+    vi.spyOn(useProfileHook, "useProfile").mockReturnValue({
       profile: undefined,
-    } as unknown as ReturnType<typeof useProfileHook.default>);
+    } as unknown as ReturnType<typeof useProfileHook.useProfile>);
     render(<WelcomeScreen suggestions={[]} onSelectSuggestion={() => {}} />);
     expect(screen.getByRole("heading", { level: 1 })).toBeInTheDocument();
   });

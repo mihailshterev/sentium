@@ -7,7 +7,7 @@ interface ProgressGroupProps {
   fillClass: string;
 }
 
-const ProgressGroup = ({ name, value, percent, fillClass }: ProgressGroupProps) => (
+export function ProgressGroup({ name, value, percent, fillClass }: ProgressGroupProps) { return (
   <div className={styles.progressGroup}>
     <div className={styles.progressLabel}>
       <span className={styles.progressName}>{name}</span>
@@ -17,6 +17,6 @@ const ProgressGroup = ({ name, value, percent, fillClass }: ProgressGroupProps) 
       <div className={`${styles.progressFill} ${fillClass}`} style={{ width: `${Math.min(percent, 100)}%` }} />
     </div>
   </div>
-);
+); }
 
-export default ProgressGroup;
+

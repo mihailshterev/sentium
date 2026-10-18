@@ -3,10 +3,10 @@ import { Bot, BrainCircuit, Database, FlaskConical, Loader, RefreshCw, Trash2, X
 import styles from "../knowledge-base.module.scss";
 import { useAgentLearnings } from "@/features/knowledge-base/hooks/useAgentLearnings";
 import { useKnowledgeBaseStats } from "@/features/knowledge-base/hooks/useKnowledgeBaseStats";
-import ConfirmDialog from "@/shared/ui/confirm-dialog";
-import EmptyState from "@/shared/ui/empty-state";
-import LoadMore from "@/shared/ui/load-more";
-import LearningCard from "./learning-card";
+import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
+import { EmptyState } from "@/shared/ui/empty-state";
+import { LoadMore } from "@/shared/ui/load-more";
+import { LearningCard } from "./learning-card";
 
 const formatDate = (iso: string) => {
   const d = new Date(iso);

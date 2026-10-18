@@ -21,7 +21,7 @@ interface Envelope {
   data?: StatusPayload;
 }
 
-const useWatchdogStream = () => {
+export function useWatchdogStream() {
   const queryClient = useQueryClient();
   const [isLive, setIsLive] = useState(false);
   const sourceRef = useRef<EventSource | null>(null);
@@ -79,6 +79,6 @@ const useWatchdogStream = () => {
   }, [queryClient]);
 
   return { isLive };
-};
+}
 
-export default useWatchdogStream;
+

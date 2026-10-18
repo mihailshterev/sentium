@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
-import useSystemOverview from "./useSystemOverview";
+import { useSystemOverview } from "./useSystemOverview";
 import * as watchdogService from "@/features/watchdog/api/watchdog.service";
 
 const createWrapper = () => {

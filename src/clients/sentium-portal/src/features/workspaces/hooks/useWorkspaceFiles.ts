@@ -14,7 +14,7 @@ const STATUS_POLL_MS = 4000;
 const filesKey = (workspaceId: string | undefined) => ["workspaceFiles", workspaceId] as const;
 const workspacesKey = ["workspaces"] as const;
 
-const useWorkspaceFiles = (workspaceId: string | undefined) => {
+export function useWorkspaceFiles(workspaceId: string | undefined) {
   const queryClient = useQueryClient();
 
   const {
@@ -56,6 +56,6 @@ const useWorkspaceFiles = (workspaceId: string | undefined) => {
     resetUpload: uploadMutation.reset,
     deleteFile: deleteMutation.mutate,
   };
-};
+}
 
-export default useWorkspaceFiles;
+

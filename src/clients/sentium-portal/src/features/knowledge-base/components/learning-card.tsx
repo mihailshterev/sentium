@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Check, Globe, Loader, Lock, Pencil, Trash2, X } from "lucide-react";
 import styles from "../knowledge-base.module.scss";
-import ConfirmDialog from "@/shared/ui/confirm-dialog";
+import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
 
 interface LearningCardProps {
   learning: {
@@ -20,7 +20,7 @@ interface LearningCardProps {
   formatDate: (iso: string) => string;
 }
 
-const LearningCard = ({ learning: l, isSaving, isDeleting, onSave, onDelete, formatDate }: LearningCardProps) => {
+export function LearningCard({ learning: l, isSaving, isDeleting, onSave, onDelete, formatDate }: LearningCardProps) {
   const [editing, setEditing] = useState(false);
   const [editContent, setEditContent] = useState(l.content);
   const [editTags, setEditTags] = useState(l.tags);
@@ -141,6 +141,6 @@ const LearningCard = ({ learning: l, isSaving, isDeleting, onSave, onDelete, for
       />
     </div>
   );
-};
+}
 
-export default LearningCard;
+

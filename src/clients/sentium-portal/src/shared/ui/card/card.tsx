@@ -5,7 +5,7 @@ interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   interactive?: boolean;
 }
 
-const Card = ({ padded = false, interactive = false, className, children, ...rest }: CardProps) => {
+export function Card({ padded = false, interactive = false, className, children, ...rest }: CardProps) {
   const classes = [styles.card, padded ? styles.padded : "", interactive ? styles.interactive : "", className ?? ""]
     .filter(Boolean)
     .join(" ");
@@ -14,6 +14,4 @@ const Card = ({ padded = false, interactive = false, className, children, ...res
       {children}
     </div>
   );
-};
-
-export default Card;
+}

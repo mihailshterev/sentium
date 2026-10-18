@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { DndContext } from "@dnd-kit/core";
 import { SortableContext } from "@dnd-kit/sortable";
-import SortableAgent from "./sortable-agent";
+import { SortableAgent } from "./sortable-agent";
 import type { SortableAgentItem } from "@/features/workflows/types/workflows";
 
 const item: SortableAgentItem = {

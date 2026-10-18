@@ -1,7 +1,7 @@
 import { CheckCircle, Siren, ShieldOff } from "lucide-react";
 import styles from "../sentinel.module.scss";
 
-const EffectBadge = ({ allowed, effect }: { allowed: boolean; effect: string }) => {
+export function EffectBadge({ allowed, effect }: { allowed: boolean; effect: string }) {
   if (allowed) {
     return (
       <span className={`${styles.effectBadge} ${styles.effectAllow}`}>
@@ -21,6 +21,6 @@ const EffectBadge = ({ allowed, effect }: { allowed: boolean; effect: string }) 
       <ShieldOff size={11} /> Deny
     </span>
   );
-};
+}
 
-export default EffectBadge;
+

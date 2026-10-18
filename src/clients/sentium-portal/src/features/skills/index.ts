@@ -1,1 +1,1 @@
-export { default } from "./views/skills-view";
+export { SkillsView } from "./views/skills-view";

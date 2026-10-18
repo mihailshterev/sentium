@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
-import useConversations from "./useConversations";
+import { useConversations } from "./useConversations";
 import * as agentRuntimeService from "@/features/assistant/api/assistant.service";
 import type { ConversationSummary } from "@/features/assistant/types/assistant";
 

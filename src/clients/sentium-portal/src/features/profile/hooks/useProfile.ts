@@ -6,7 +6,7 @@ const PROFILE_KEY = ["profile"] as const;
 
 type UpdateProfilePayload = { firstName: string; lastName?: string | null; email: string };
 
-const useProfile = () => {
+export function useProfile() {
   const queryClient = useQueryClient();
   const updateAuthUser = useAuthStore((s) => s.updateUser);
 
@@ -33,6 +33,6 @@ const useProfile = () => {
     isSaveSuccess: updateMutation.isSuccess,
     resetSave: updateMutation.reset,
   };
-};
+}
 
-export default useProfile;
+

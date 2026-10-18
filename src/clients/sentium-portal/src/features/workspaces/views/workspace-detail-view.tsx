@@ -12,12 +12,12 @@ import {
   AlertCircle,
 } from "lucide-react";
 import styles from "../workspaces.module.scss";
-import useWorkspaces from "@/features/workspaces/hooks/useWorkspaces";
-import useWorkspaceFiles from "@/features/workspaces/hooks/useWorkspaceFiles";
+import { useWorkspaces } from "@/features/workspaces/hooks/useWorkspaces";
+import { useWorkspaceFiles } from "@/features/workspaces/hooks/useWorkspaceFiles";
 import type { WorkspaceFile } from "@/features/workspaces/types/workspace";
-import PageHeader from "@/shared/ui/page-header";
-import WorkspaceForm from "../components/workspace-form";
-import ConfirmDialog from "@/shared/ui/confirm-dialog";
+import { PageHeader } from "@/shared/ui/page-header";
+import { WorkspaceForm } from "../components/workspace-form";
+import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
 import { formatBytesToMb, formatDateTimeShort } from "@/shared/utils/formatters";
 
 const ALLOWED_EXTENSIONS = [
@@ -62,7 +62,7 @@ const statusBadgeClass = (status: WorkspaceFile["processingStatus"]) => {
   }
 };
 
-const WorkspaceDetail = () => {
+export function WorkspaceDetailView() {
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -329,7 +329,7 @@ const WorkspaceDetail = () => {
       />
     </div>
   );
-};
+}
 
 interface FileTreeItemProps {
   file: WorkspaceFile;
@@ -353,5 +353,3 @@ const FileTreeItem = ({ file, onDelete }: FileTreeItemProps) => (
     </button>
   </div>
 );
-
-export default WorkspaceDetail;

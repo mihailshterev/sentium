@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import Skills from "./skills-view";
+import { SkillsView as Skills } from "./skills-view";
 import * as useSkillsHook from "@/features/skills/hooks/useSkills";
 
 const builtIn = { name: "Summarize", description: "Summarizes text", instructions: "Do it well" };

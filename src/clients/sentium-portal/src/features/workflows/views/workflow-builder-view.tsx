@@ -2,14 +2,14 @@ import { useMemo } from "react";
 import { useNavigate, useParams } from "react-router";
 import { ArrowLeft, GitBranch, Loader } from "lucide-react";
 import styles from "../workflows.module.scss";
-import useWorkflows from "@/features/workflows/hooks/useWorkflows";
-import useAgents from "@/features/agents/hooks/useAgents";
+import { useWorkflows } from "@/features/workflows/hooks/useWorkflows";
+import { useAgents } from "@/features/agents/hooks/useAgents";
 import type { SortableAgentItem } from "@/features/workflows/types/workflows";
-import PageHeader from "@/shared/ui/page-header";
-import EmptyState from "@/shared/ui/empty-state";
-import WorkflowEditor from "../components/workflow-editor";
+import { PageHeader } from "@/shared/ui/page-header";
+import { EmptyState } from "@/shared/ui/empty-state";
+import { WorkflowEditor } from "../components/workflow-editor";
 
-const WorkflowBuilder = () => {
+export function WorkflowBuilderView() {
   const { workflowId } = useParams<{ workflowId?: string }>();
   const navigate = useNavigate();
   const isCreate = !workflowId;
@@ -128,6 +128,4 @@ const WorkflowBuilder = () => {
       </div>
     </div>
   );
-};
-
-export default WorkflowBuilder;
+}

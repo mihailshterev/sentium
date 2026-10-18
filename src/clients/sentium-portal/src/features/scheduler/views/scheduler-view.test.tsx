@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
-import Scheduler from "./scheduler-view";
+import { SchedulerView as Scheduler } from "./scheduler-view";
 import * as schedulerHooks from "@/features/scheduler/hooks/useScheduler";
 import type { CronJobRecord } from "@/features/scheduler/types/scheduler";
 

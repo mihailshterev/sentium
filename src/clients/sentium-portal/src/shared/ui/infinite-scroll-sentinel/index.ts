@@ -1,1 +1,1 @@
-export { default, default as InfiniteScrollSentinel } from "./infinite-scroll-sentinel";
+export { InfiniteScrollSentinel } from "./infinite-scroll-sentinel";

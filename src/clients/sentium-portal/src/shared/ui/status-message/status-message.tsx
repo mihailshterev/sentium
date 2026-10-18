@@ -14,13 +14,11 @@ const VARIANT_CLASS: Record<StatusMessageVariant, string> = {
   loading: styles.loading,
 };
 
-const StatusMessage = ({ variant, icon, message }: StatusMessageProps) => {
+export function StatusMessage({ variant, icon, message }: StatusMessageProps) {
   return (
     <div className={`${styles.msg} ${VARIANT_CLASS[variant]}`}>
       {icon}
       <span>{message}</span>
     </div>
   );
-};
-
-export default StatusMessage;
+}

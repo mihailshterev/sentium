@@ -9,7 +9,7 @@ interface AgentCardProps {
   onDelete: (agentId: string) => void;
 }
 
-export default function AgentCard({ agent, index, onEdit, onDelete }: AgentCardProps) {
+export function AgentCard({ agent, index, onEdit, onDelete }: AgentCardProps) {
   return (
     <div className={styles.agentCard}>
       <div className={styles.agentCardLeft}>

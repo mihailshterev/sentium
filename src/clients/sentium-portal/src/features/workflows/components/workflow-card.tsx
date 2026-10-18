@@ -10,7 +10,7 @@ interface WorkflowCardProps {
   onDelete: (workflowId: string) => void;
 }
 
-const WorkflowCard = ({ workflow, isActive, onSelect, onEdit, onDelete }: WorkflowCardProps) => {
+export function WorkflowCard({ workflow, isActive, onSelect, onEdit, onDelete }: WorkflowCardProps) {
   return (
     <div
       className={`${styles.workflowCard} ${isActive ? styles.workflowCardActive : ""}`}
@@ -53,6 +53,4 @@ const WorkflowCard = ({ workflow, isActive, onSelect, onEdit, onDelete }: Workfl
       </div>
     </div>
   );
-};
-
-export default WorkflowCard;
+}

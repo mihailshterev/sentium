@@ -1,9 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import ServiceHealthPanel from "./service-health-panel";
-import VitalsStrip from "./vitals-strip";
-import SecurityPanel from "./security-panel";
-import WorkflowRunsFeed from "./workflow-runs-feed";
+import { ServiceHealthPanel } from "./service-health-panel";
+import { VitalsStrip } from "./vitals-strip";
+import { SecurityPanel } from "./security-panel";
+import { WorkflowRunsFeed } from "./workflow-runs-feed";
 import type { ServiceHealthStatus } from "@/features/watchdog/types/serviceHealth";
 import type { SystemMetrics } from "@/features/system/types/system";
 import type { AuditStats } from "@/features/sentinel/types/sentinel";

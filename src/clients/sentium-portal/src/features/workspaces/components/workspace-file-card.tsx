@@ -3,7 +3,7 @@ import { FileText, Trash2 } from "lucide-react";
 import styles from "../workspaces.module.scss";
 import type { WorkspaceFile } from "@/features/workspaces/types/workspace";
 import { formatBytesToMb, formatDateTimeShort } from "../../../shared/utils/formatters";
-import ConfirmDialog from "@/shared/ui/confirm-dialog";
+import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
 
 const statusClass = (status: WorkspaceFile["processingStatus"]) => {
   switch (status) {
@@ -23,7 +23,7 @@ interface WorkspaceFileCardProps {
   onDelete: (id: string) => void;
 }
 
-const WorkspaceFileCard = ({ file, onDelete }: WorkspaceFileCardProps) => {
+export function WorkspaceFileCard({ file, onDelete }: WorkspaceFileCardProps) {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
   const handleConfirmDelete = () => {
@@ -61,6 +61,4 @@ const WorkspaceFileCard = ({ file, onDelete }: WorkspaceFileCardProps) => {
       />
     </div>
   );
-};
-
-export default WorkspaceFileCard;
+}

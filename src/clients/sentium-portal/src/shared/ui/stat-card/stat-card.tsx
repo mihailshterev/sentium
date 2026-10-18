@@ -27,7 +27,7 @@ const CHIP_MAP: Record<StatCardChipVariant, string> = {
   amber: styles.chipAmber,
 };
 
-const StatCard = ({ icon, value, label, iconColor = "green", chip, chipVariant = "green" }: StatCardProps) => {
+export function StatCard({ icon, value, label, iconColor = "green", chip, chipVariant = "green" }: StatCardProps) {
   return (
     <div className={styles.card}>
       <div className={`${styles.icon} ${COLOR_MAP[iconColor]}`}>{icon}</div>
@@ -38,6 +38,4 @@ const StatCard = ({ icon, value, label, iconColor = "green", chip, chipVariant =
       {chip && <span className={`${styles.chip} ${CHIP_MAP[chipVariant]}`}>{chip}</span>}
     </div>
   );
-};
-
-export default StatCard;
+}

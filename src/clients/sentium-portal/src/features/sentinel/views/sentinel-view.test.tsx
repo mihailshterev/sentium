@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import Sentinel from "./sentinel-view";
+import { SentinelView as Sentinel } from "./sentinel-view";
 import * as auditHook from "@/features/sentinel/hooks/useSentinelAudit";
 import * as settingsHook from "@/features/sentinel/hooks/useSentinelSettings";
 import * as modelsHook from "@/features/models/hooks/useOllamaModels";
@@ -75,9 +75,9 @@ beforeEach(() => {
     error: null,
   } as unknown as ReturnType<typeof auditHook.useSentinelStats>);
   setSettings(settings);
-  vi.spyOn(modelsHook, "default").mockReturnValue({
+  vi.spyOn(modelsHook, "useOllamaModels").mockReturnValue({
     models: [{ name: "gemma" }],
-  } as unknown as ReturnType<typeof modelsHook.default>);
+  } as unknown as ReturnType<typeof modelsHook.useOllamaModels>);
 });
 
 describe("Sentinel states", () => {

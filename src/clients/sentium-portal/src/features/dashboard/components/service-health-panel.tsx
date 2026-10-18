@@ -1,6 +1,6 @@
 import { Activity } from "lucide-react";
 import styles from "../dashboard.module.scss";
-import EmptyState from "@/shared/ui/empty-state";
+import { EmptyState } from "@/shared/ui/empty-state";
 import type { ServiceHealthStatus } from "@/features/watchdog/types/serviceHealth";
 
 interface ServiceHealthPanelProps {
@@ -42,7 +42,7 @@ const SkeletonRow = () => (
   </div>
 );
 
-const ServiceHealthPanel = ({ services, loading }: ServiceHealthPanelProps) => {
+export function ServiceHealthPanel({ services, loading }: ServiceHealthPanelProps) {
   const healthyCount = services.filter((s) => s.status === "Healthy").length;
 
   return (
@@ -70,6 +70,6 @@ const ServiceHealthPanel = ({ services, loading }: ServiceHealthPanelProps) => {
       </div>
     </section>
   );
-};
+}
 
-export default ServiceHealthPanel;
+

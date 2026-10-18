@@ -1,22 +1,22 @@
 import { useNavigate } from "react-router";
 import styles from "../dashboard.module.scss";
-import useAgents from "@/features/agents/hooks/useAgents";
-import useWorkflows from "@/features/workflows/hooks/useWorkflows";
-import useWorkflowRuns from "@/features/workflows/hooks/useWorkflowRuns";
-import useServiceHealth from "@/features/watchdog/hooks/useServiceHealth";
-import useSystemMetrics from "@/features/watchdog/hooks/useSystemMetrics";
+import { useAgents } from "@/features/agents/hooks/useAgents";
+import { useWorkflows } from "@/features/workflows/hooks/useWorkflows";
+import { useWorkflowRuns } from "@/features/workflows/hooks/useWorkflowRuns";
+import { useServiceHealth } from "@/features/watchdog/hooks/useServiceHealth";
+import { useSystemMetrics } from "@/features/watchdog/hooks/useSystemMetrics";
 import { useSentinelStats } from "@/features/sentinel/hooks/useSentinelAudit";
-import useOllamaModels from "@/features/models/hooks/useOllamaModels";
+import { useOllamaModels } from "@/features/models/hooks/useOllamaModels";
 import { useSchedulerJobs } from "@/features/scheduler/hooks/useScheduler";
 import { useKnowledgeBaseStats } from "@/features/knowledge-base/hooks/useKnowledgeBaseStats";
-import PageHeader from "@/shared/ui/page-header";
-import StatCardsRow from "../components/stat-cards-row";
-import VitalsStrip from "../components/vitals-strip";
-import WorkflowRunsFeed from "../components/workflow-runs-feed";
-import ServiceHealthPanel from "../components/service-health-panel";
-import SecurityPanel from "../components/security-panel";
+import { PageHeader } from "@/shared/ui/page-header";
+import { StatCardsRow } from "../components/stat-cards-row";
+import { VitalsStrip } from "../components/vitals-strip";
+import { WorkflowRunsFeed } from "../components/workflow-runs-feed";
+import { ServiceHealthPanel } from "../components/service-health-panel";
+import { SecurityPanel } from "../components/security-panel";
 
-const Dashboard = () => {
+export function DashboardView() {
   const navigate = useNavigate();
 
   const { agents, isLoading: agentsLoading } = useAgents();
@@ -78,6 +78,6 @@ const Dashboard = () => {
       </div>
     </div>
   );
-};
+}
 
-export default Dashboard;
+

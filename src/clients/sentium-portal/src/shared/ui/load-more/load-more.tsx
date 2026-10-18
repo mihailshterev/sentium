@@ -7,7 +7,7 @@ interface LoadMoreProps {
   onLoadMore: () => void;
 }
 
-const LoadMore = ({ hasMore, isLoading, onLoadMore }: LoadMoreProps) => {
+export function LoadMore({ hasMore, isLoading, onLoadMore }: LoadMoreProps) {
   if (!hasMore) {
     return null;
   }
@@ -26,6 +26,4 @@ const LoadMore = ({ hasMore, isLoading, onLoadMore }: LoadMoreProps) => {
       </button>
     </div>
   );
-};
-
-export default LoadMore;
+}

@@ -1,6 +1,6 @@
 import { Plus, MessageSquare, Trash2, FolderOpen, FileText, ChevronDown, ChevronRight, Loader2 } from "lucide-react";
 import styles from "../assistant.module.scss";
-import InfiniteScrollSentinel from "@/shared/ui/infinite-scroll-sentinel";
+import { InfiniteScrollSentinel } from "@/shared/ui/infinite-scroll-sentinel";
 import type { ConversationSummary } from "@/features/assistant/types/assistant";
 import type { Workspace, WorkspaceFile } from "@/features/workspaces/types/workspace";
 
@@ -31,7 +31,7 @@ interface ConversationSidebarProps {
   onInjectFileContext: (fileName: string, fileId: string) => void;
 }
 
-const ConversationSidebar = ({
+export function ConversationSidebar({
   isOpen,
   conversations,
   conversationGroups,
@@ -51,7 +51,7 @@ const ConversationSidebar = ({
   onToggleExpandWorkspace,
   onInjectWorkspaceContext,
   onInjectFileContext,
-}: ConversationSidebarProps) => {
+}: ConversationSidebarProps) {
   return (
     <aside className={`${styles.sidebar} ${isOpen ? styles.sidebarOpen : ""}`}>
       <div className={styles.sidebarHeader}>
@@ -162,6 +162,6 @@ const ConversationSidebar = ({
       </div>
     </aside>
   );
-};
+}
 
-export default ConversationSidebar;
+

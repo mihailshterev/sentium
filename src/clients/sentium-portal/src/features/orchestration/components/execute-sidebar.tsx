@@ -1,6 +1,6 @@
 import { Play, GitBranch, FolderOpen, Square, History, Sparkles, Layers } from "lucide-react";
 import styles from "../agent-orchestration.module.scss";
-import InfiniteScrollSentinel from "@/shared/ui/infinite-scroll-sentinel";
+import { InfiniteScrollSentinel } from "@/shared/ui/infinite-scroll-sentinel";
 import type { WorkflowRecord } from "@/features/workflows/types/workflows";
 import type { WorkflowRun } from "@/features/workflows/types/workflows";
 import type { Phase } from "@/features/orchestration/types/orchestration";
@@ -43,7 +43,7 @@ interface ExecuteSidebarProps {
   formatRunTrigger: (type: string) => string;
 }
 
-const ExecuteSidebar = ({
+export function ExecuteSidebar({
   sidebarView,
   executeMode,
   workflows,
@@ -69,7 +69,7 @@ const ExecuteSidebar = ({
   onLoadRun,
   formatRunLabel,
   formatRunTrigger,
-}: ExecuteSidebarProps) => {
+}: ExecuteSidebarProps) {
   const isStopping = connection === "stopping";
 
   const statusLabel = !isRunning
@@ -316,6 +316,6 @@ const ExecuteSidebar = ({
       </div>
     </aside>
   );
-};
+}
 
-export default ExecuteSidebar;
+

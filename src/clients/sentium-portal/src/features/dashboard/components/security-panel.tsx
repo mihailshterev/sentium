@@ -18,7 +18,7 @@ function scoreColor(score: number): string {
   return "var(--accent-red)";
 }
 
-const SecurityPanel = ({ stats, loading, onNavigate }: SecurityPanelProps) => (
+export function SecurityPanel({ stats, loading, onNavigate }: SecurityPanelProps) { return (
   <section className={styles.section}>
     <div className={styles.sectionHeader}>
       <div className={styles.sectionTitleRow}>
@@ -74,6 +74,6 @@ const SecurityPanel = ({ stats, loading, onNavigate }: SecurityPanelProps) => (
       </button>
     </div>
   </section>
-);
+); }
 
-export default SecurityPanel;
+

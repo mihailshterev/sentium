@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertCircle, CheckCircle2, Mail, Save, UserRound } from "lucide-react";
 import styles from "../profile.module.scss";
 import type { UserProfile } from "../../auth/api/identity.service";
-import StatusMessage from "@/shared/ui/status-message";
+import { StatusMessage } from "@/shared/ui/status-message";
 import { userProfileSchema, type UserProfileFormData } from "../schemas/user.profile";
 
 type UpdateProfilePayload = { firstName: string; lastName?: string | null; email: string };
@@ -18,14 +18,14 @@ interface ProfileEditFormProps {
   resetSave: () => void;
 }
 
-const ProfileEditForm = ({
+export function ProfileEditForm({
   profile,
   updateProfile,
   isSaving,
   saveError,
   isSaveSuccess,
   resetSave,
-}: ProfileEditFormProps) => {
+}: ProfileEditFormProps) {
   const { register, handleSubmit } = useForm<UserProfileFormData>({
     resolver: zodResolver(userProfileSchema),
     defaultValues: {
@@ -113,6 +113,6 @@ const ProfileEditForm = ({
       </div>
     </form>
   );
-};
+}
 
-export default ProfileEditForm;
+

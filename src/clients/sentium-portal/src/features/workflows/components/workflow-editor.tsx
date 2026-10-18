@@ -5,8 +5,8 @@ import { DndContext, closestCenter, type DragEndEvent, PointerSensor, useSensor,
 import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { Plus, Bot, Loader, CheckCircle, AlertCircle, Search } from "lucide-react";
 import styles from "../workflows.module.scss";
-import StatusMessage from "@/shared/ui/status-message";
-import SortableAgent from "./sortable-agent";
+import { StatusMessage } from "@/shared/ui/status-message";
+import { SortableAgent } from "./sortable-agent";
 import type { AgentRecord } from "@/features/agents/types/agents";
 import type { WorkflowRecord, SortableAgentItem } from "@/features/workflows/types/workflows";
 import { workflowEditorSchema, type WorkflowEditorFormData } from "../schemas/workflow.editor";
@@ -29,7 +29,7 @@ interface WorkflowEditorProps {
   initialDescription: string;
 }
 
-const WorkflowEditor = ({
+export function WorkflowEditor({
   selectedWorkflow,
   agents,
   isCreatingWorkflow,
@@ -45,7 +45,7 @@ const WorkflowEditor = ({
   initialFormAgents,
   initialName,
   initialDescription,
-}: WorkflowEditorProps) => {
+}: WorkflowEditorProps) {
   const [formAgents, setFormAgents] = useState<SortableAgentItem[]>(initialFormAgents);
   const [agentSearch, setAgentSearch] = useState("");
 
@@ -283,6 +283,4 @@ const WorkflowEditor = ({
       </form>
     </div>
   );
-};
-
-export default WorkflowEditor;
+}

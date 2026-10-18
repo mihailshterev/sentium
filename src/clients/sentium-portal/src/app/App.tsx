@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 import { AUTH_STATUS } from "@/shared/utils/constants";
 
-export default function App() {
+export function App() {
   const { checkAuth, status } = useAuthStore();
   const content = useRoutes(routes);
 

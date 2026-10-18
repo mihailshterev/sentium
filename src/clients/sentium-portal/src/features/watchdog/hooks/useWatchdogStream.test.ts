@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
-import useWatchdogStream from "./useWatchdogStream";
+import { useWatchdogStream } from "./useWatchdogStream";
 import { SERVICE_HEALTH_KEY } from "./useServiceHealth";
 import { INCIDENTS_KEY } from "./useIncidents";
 

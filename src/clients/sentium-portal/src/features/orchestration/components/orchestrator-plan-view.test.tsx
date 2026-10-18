@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
-import OrchestratorPlanView from "./orchestrator-plan-view";
-import LogEntryView from "./log-entry-view";
+import { OrchestratorPlanView } from "./orchestrator-plan-view";
+import { LogEntryView } from "./log-entry-view";
 import type { LogEntry } from "@/features/orchestration/types/orchestration";
 import { parseAssignments } from "../../../shared/utils/agent-helpers";
 

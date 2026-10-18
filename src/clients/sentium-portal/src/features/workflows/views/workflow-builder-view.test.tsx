@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import WorkflowBuilder from "./workflow-builder-view";
+import { WorkflowBuilderView as WorkflowBuilder } from "./workflow-builder-view";
 import * as useWorkflowsHook from "@/features/workflows/hooks/useWorkflows";
 import * as useAgentsHook from "@/features/agents/hooks/useAgents";
 import type { WorkflowRecord } from "@/features/workflows/types/workflows";
@@ -34,7 +34,7 @@ const createWorkflow = vi.fn();
 const updateWorkflow = vi.fn();
 
 const setWorkflows = (overrides: Record<string, unknown> = {}) =>
-  vi.spyOn(useWorkflowsHook, "default").mockReturnValue({
+  vi.spyOn(useWorkflowsHook, "useWorkflows").mockReturnValue({
     workflows: [existing],
     isLoading: false,
     createWorkflow,
@@ -49,7 +49,7 @@ const setWorkflows = (overrides: Record<string, unknown> = {}) =>
     updateWorkflowError: null,
     deleteWorkflow: vi.fn(),
     ...overrides,
-  } as unknown as ReturnType<typeof useWorkflowsHook.default>);
+  } as unknown as ReturnType<typeof useWorkflowsHook.useWorkflows>);
 
 beforeEach(() => {
   navigate.mockReset();
@@ -57,10 +57,10 @@ beforeEach(() => {
   updateWorkflow.mockReset();
   routeParams = {};
   setWorkflows();
-  vi.spyOn(useAgentsHook, "default").mockReturnValue({
+  vi.spyOn(useAgentsHook, "useAgents").mockReturnValue({
     agents: [agent],
     isLoading: false,
-  } as unknown as ReturnType<typeof useAgentsHook.default>);
+  } as unknown as ReturnType<typeof useAgentsHook.useAgents>);
 });
 
 describe("WorkflowBuilder", () => {

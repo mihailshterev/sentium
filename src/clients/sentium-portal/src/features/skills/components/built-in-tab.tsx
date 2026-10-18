@@ -3,9 +3,9 @@ import { ChevronDown, ChevronUp, Cpu, Loader } from "lucide-react";
 import styles from "../skills.module.scss";
 import { useSkills } from "@/features/skills/hooks/useSkills";
 import type { BuiltInSkill } from "@/features/skills/types/skills";
-import EmptyState from "@/shared/ui/empty-state";
+import { EmptyState } from "@/shared/ui/empty-state";
 
-const BuiltInTab = () => {
+export function BuiltInTab() {
   const { builtInSkills, isBuiltInLoading } = useSkills();
   const [expanded, setExpanded] = useState<string | null>(null);
 
@@ -58,6 +58,6 @@ const BuiltInTab = () => {
       </div>
     </div>
   );
-};
+}
 
-export default BuiltInTab;
+

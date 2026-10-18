@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import Navbar from "./navbar";
+import { Navbar } from "./navbar";
 import { useAuthStore } from "@/shared/auth/state/auth-store";
 import { AUTH_STATUS } from "@/shared/utils/constants";
 

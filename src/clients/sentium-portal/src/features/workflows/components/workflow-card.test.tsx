@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import WorkflowCard from "./workflow-card";
+import { WorkflowCard } from "./workflow-card";
 import type { WorkflowRecord } from "@/features/workflows/types/workflows";
 
 const workflow = (overrides: Partial<WorkflowRecord> = {}): WorkflowRecord =>

@@ -14,7 +14,7 @@ interface TabsProps {
   className?: string;
 }
 
-const Tabs = ({ tabs, active, onChange, className }: TabsProps) => {
+export function Tabs({ tabs, active, onChange, className }: TabsProps) {
   return (
     <div className={`${styles.tabs} ${className ?? ""}`} role="tablist">
       {tabs.map((tab) => (
@@ -32,6 +32,4 @@ const Tabs = ({ tabs, active, onChange, className }: TabsProps) => {
       ))}
     </div>
   );
-};
-
-export default Tabs;
+}

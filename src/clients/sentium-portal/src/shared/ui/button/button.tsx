@@ -12,7 +12,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   fullWidth?: boolean;
 }
 
-const Button = ({
+export function Button({
   variant = "secondary",
   size = "md",
   loading = false,
@@ -22,7 +22,7 @@ const Button = ({
   children,
   disabled,
   ...rest
-}: ButtonProps) => {
+}: ButtonProps) {
   const classes = [styles.btn, styles[variant], styles[size], fullWidth ? styles.fullWidth : "", className ?? ""]
     .filter(Boolean)
     .join(" ");
@@ -33,6 +33,4 @@ const Button = ({
       {children != null && <span className={styles.label}>{children}</span>}
     </button>
   );
-};
-
-export default Button;
+}

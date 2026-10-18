@@ -6,7 +6,7 @@ interface MetadataBadgesProps {
   entry: SandboxExecutionLog;
 }
 
-const MetadataBadges = ({ entry }: MetadataBadgesProps) => (
+export function MetadataBadges({ entry }: MetadataBadgesProps) { return (
   <div className={styles.badges}>
     {entry.policyDenied ? (
       <span className={`${styles.badge} ${styles.badgeDenied}`}>
@@ -39,6 +39,6 @@ const MetadataBadges = ({ entry }: MetadataBadgesProps) => (
       <Cpu size={11} /> 0.5 vCPU
     </span>
   </div>
-);
+); }
 
-export default MetadataBadges;
+

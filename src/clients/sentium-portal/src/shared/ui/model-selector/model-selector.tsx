@@ -13,7 +13,7 @@ interface ModelSelectorProps {
   variant?: "field" | "chip";
 }
 
-const ModelSelector = ({
+export function ModelSelector({
   id,
   className,
   models,
@@ -22,7 +22,7 @@ const ModelSelector = ({
   placeholder,
   disabled,
   variant = "field",
-}: ModelSelectorProps) => {
+}: ModelSelectorProps) {
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -136,6 +136,4 @@ const ModelSelector = ({
       )}
     </div>
   );
-};
-
-export default ModelSelector;
+}

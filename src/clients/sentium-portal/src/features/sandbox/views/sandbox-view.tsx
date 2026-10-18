@@ -3,11 +3,11 @@ import { Activity, Loader, RefreshCw, Search, ShieldOff, Terminal, XCircle } fro
 import styles from "../sandbox.module.scss";
 import { useSandboxExecutions } from "@/features/sandbox/hooks/useSandboxExecutions";
 import { useSandboxStats } from "@/features/sandbox/hooks/useSandboxStats";
-import PageHeader from "@/shared/ui/page-header";
-import StatCard from "@/shared/ui/stat-card";
-import EmptyState from "@/shared/ui/empty-state";
-import LoadMore from "@/shared/ui/load-more";
-import RunRow from "../components/run-row";
+import { PageHeader } from "@/shared/ui/page-header";
+import { StatCard } from "@/shared/ui/stat-card";
+import { EmptyState } from "@/shared/ui/empty-state";
+import { LoadMore } from "@/shared/ui/load-more";
+import { RunRow } from "../components/run-row";
 import type { SandboxLanguage, SandboxStatusFilter } from "@/features/sandbox/types/sandbox";
 
 const STATUS_FILTERS: { value: SandboxStatusFilter | null; label: string }[] = [
@@ -23,7 +23,7 @@ const LANGUAGE_FILTERS: { value: SandboxLanguage | null; label: string }[] = [
   { value: "Node", label: "Node" },
 ];
 
-const Sandbox = () => {
+export function SandboxView() {
   const navigate = useNavigate();
   const {
     executions,
@@ -147,6 +147,6 @@ const Sandbox = () => {
       </div>
     </div>
   );
-};
+}
 
-export default Sandbox;
+

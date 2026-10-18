@@ -1,2 +1,2 @@
-export { default, default as Tabs } from "./tabs";
+export { Tabs } from "./tabs";
 export type { TabItem } from "./tabs";

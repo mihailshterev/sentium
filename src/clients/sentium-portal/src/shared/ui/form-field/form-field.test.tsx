@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import FormField from "./form-field";
+import { FormField } from "./form-field";
 
 describe("FormField", () => {
   it("renders the label and its child control", () => {

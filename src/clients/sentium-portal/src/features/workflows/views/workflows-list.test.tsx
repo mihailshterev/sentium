@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, within } from "@testing-library/react";
-import WorkflowsList from "./workflows-view";
+import { WorkflowsView as WorkflowsList } from "./workflows-view";
 import * as useWorkflowsHook from "@/features/workflows/hooks/useWorkflows";
 import type { WorkflowRecord } from "@/features/workflows/types/workflows";
 
@@ -14,7 +14,7 @@ const workflow = { id: "wf1", name: "Pipeline", description: "d", agents: [{ id:
 const deleteWorkflow = vi.fn();
 
 const setHook = (overrides: Record<string, unknown> = {}) =>
-  vi.spyOn(useWorkflowsHook, "default").mockReturnValue({
+  vi.spyOn(useWorkflowsHook, "useWorkflows").mockReturnValue({
     workflows: [workflow],
     isLoading: false,
     isError: false,
@@ -22,7 +22,7 @@ const setHook = (overrides: Record<string, unknown> = {}) =>
     createWorkflow: vi.fn(),
     updateWorkflow: vi.fn(),
     ...overrides,
-  } as unknown as ReturnType<typeof useWorkflowsHook.default>);
+  } as unknown as ReturnType<typeof useWorkflowsHook.useWorkflows>);
 
 beforeEach(() => {
   navigate.mockReset();

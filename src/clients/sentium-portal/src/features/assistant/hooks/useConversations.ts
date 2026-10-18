@@ -5,7 +5,7 @@ import type { CreateConversationPayload } from "@/features/assistant/types/assis
 const CONVERSATIONS_KEY = ["conversations"] as const;
 const PAGE_SIZE = 20;
 
-const useConversations = () => {
+export function useConversations() {
   const queryClient = useQueryClient();
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteQuery({
@@ -38,6 +38,6 @@ const useConversations = () => {
     deleteConversation: deleteMutation.mutate,
     isDeleting: deleteMutation.isPending,
   };
-};
+}
 
-export default useConversations;
+

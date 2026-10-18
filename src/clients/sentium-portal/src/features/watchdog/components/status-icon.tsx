@@ -2,7 +2,7 @@ import { CheckCircle, XCircle, AlertCircle, AlertTriangle } from "lucide-react";
 import styles from "../watchdog.module.scss";
 import type { ServiceStatus } from "@/features/watchdog/types/serviceHealth";
 
-const StatusIcon = ({ status }: { status: ServiceStatus }) => {
+export function StatusIcon({ status }: { status: ServiceStatus }) {
   if (status === "Healthy") {
     return <CheckCircle size={14} className={styles.iconHealthy} />;
   }
@@ -16,6 +16,6 @@ const StatusIcon = ({ status }: { status: ServiceStatus }) => {
   }
 
   return <AlertCircle size={14} className={styles.iconUnknown} />;
-};
+}
 
-export default StatusIcon;
+

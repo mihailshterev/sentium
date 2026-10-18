@@ -2,7 +2,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { X, Loader2 } from "lucide-react";
 import styles from "../workspaces.module.scss";
-import StatusMessage from "@/shared/ui/status-message";
+import { StatusMessage } from "@/shared/ui/status-message";
 import { workspaceFormSchema, type WorkspaceFormData } from "../schemas/workspace.form";
 
 interface WorkspaceFormProps {
@@ -14,7 +14,7 @@ interface WorkspaceFormProps {
   error?: string | null;
 }
 
-const WorkspaceForm = ({ initial, onSubmit, onCancel, isPending, title, error }: WorkspaceFormProps) => {
+export function WorkspaceForm({ initial, onSubmit, onCancel, isPending, title, error }: WorkspaceFormProps) {
   const { register, handleSubmit } = useForm<WorkspaceFormData>({
     resolver: zodResolver(workspaceFormSchema),
     defaultValues: { name: initial?.name ?? "", description: initial?.description ?? "" },
@@ -72,6 +72,4 @@ const WorkspaceForm = ({ initial, onSubmit, onCancel, isPending, title, error }:
       </div>
     </div>
   );
-};
-
-export default WorkspaceForm;
+}

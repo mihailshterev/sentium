@@ -5,7 +5,7 @@ import type { AgentRecord, CreateAgentPayload, UpdateAgentPayload } from "@/feat
 
 const AGENTS_KEY = ["agents"] as const;
 
-const useAgents = () => {
+export function useAgents() {
   const queryClient = useQueryClient();
   const invalidate = () => queryClient.invalidateQueries({ queryKey: AGENTS_KEY });
 
@@ -48,6 +48,4 @@ const useAgents = () => {
     deleteAgent: deleteMutation.mutate,
     isDeletingAgent: deleteMutation.isPending,
   };
-};
-
-export default useAgents;
+}

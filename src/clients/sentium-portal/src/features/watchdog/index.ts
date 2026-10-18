@@ -1,1 +1,1 @@
-export { default } from "./views/watchdog-view";
+export { WatchdogView } from "./views/watchdog-view";

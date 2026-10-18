@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import Assistant from "./assistant-view";
+import { AssistantView as Assistant } from "./assistant-view";
 import * as useConversationsHook from "@/features/assistant/hooks/useConversations";
 import * as useModelsHook from "@/features/models/hooks/useModels";
 import * as assistantService from "@/features/assistant/api/assistant.service";
@@ -75,8 +75,8 @@ beforeEach(() => {
     isStreaming: false,
     streamingConversationId: null,
   });
-  vi.spyOn(useConversationsHook, "default").mockReturnValue(defaultConversationsHook);
-  vi.spyOn(useModelsHook, "default").mockReturnValue(defaultModelsHook);
+  vi.spyOn(useConversationsHook, "useConversations").mockReturnValue(defaultConversationsHook);
+  vi.spyOn(useModelsHook, "useModels").mockReturnValue(defaultModelsHook);
 });
 
 describe("Assistant – initial render", () => {
@@ -128,7 +128,7 @@ describe("Assistant model selection", () => {
   });
 
   it("shows 'No model selected' status when no models are available", () => {
-    vi.spyOn(useModelsHook, "default").mockReturnValue({ ...defaultModelsHook, models: [] });
+    vi.spyOn(useModelsHook, "useModels").mockReturnValue({ ...defaultModelsHook, models: [] });
     useConversationStore.setState((s) => ({ ...s, model: "" }));
     renderAssistant();
     expect(screen.getByPlaceholderText(/model name/i)).toBeInTheDocument();
@@ -143,7 +143,7 @@ describe("Assistant model selection", () => {
   });
 
   it("updates model in text input when no models and user types", () => {
-    vi.spyOn(useModelsHook, "default").mockReturnValue({ ...defaultModelsHook, models: [] });
+    vi.spyOn(useModelsHook, "useModels").mockReturnValue({ ...defaultModelsHook, models: [] });
     useConversationStore.setState((s) => ({ ...s, model: "" }));
     renderAssistant();
     const modelInput = screen.getByPlaceholderText(/model name/i) as HTMLInputElement;
@@ -161,7 +161,7 @@ describe("Assistant conversation loading", () => {
 
   it("deletes a conversation when delete button is clicked", async () => {
     const deleteConversation = vi.fn();
-    vi.spyOn(useConversationsHook, "default").mockReturnValue({
+    vi.spyOn(useConversationsHook, "useConversations").mockReturnValue({
       ...defaultConversationsHook,
       deleteConversation,
     });
@@ -210,7 +210,7 @@ describe("Assistant workspace context panel", () => {
 
 describe("Assistant empty state", () => {
   it("shows empty state with no conversations", () => {
-    vi.spyOn(useConversationsHook, "default").mockReturnValue({
+    vi.spyOn(useConversationsHook, "useConversations").mockReturnValue({
       ...defaultConversationsHook,
       conversations: [],
     });
@@ -227,7 +227,7 @@ describe("Assistant new conversation button", () => {
 
   it("calls createConversation when New conversation button is clicked", async () => {
     const createConversation = vi.fn().mockResolvedValue({ id: "conv-new" });
-    vi.spyOn(useConversationsHook, "default").mockReturnValue({
+    vi.spyOn(useConversationsHook, "useConversations").mockReturnValue({
       ...defaultConversationsHook,
       createConversation,
     });
@@ -384,7 +384,7 @@ describe("Assistant conversation display", () => {
 describe("Assistant conversation deletion", () => {
   it("calls deleteConversation when trash button is clicked", async () => {
     const deleteConversation = vi.fn();
-    vi.spyOn(useConversationsHook, "default").mockReturnValue({
+    vi.spyOn(useConversationsHook, "useConversations").mockReturnValue({
       ...defaultConversationsHook,
       deleteConversation,
     });
@@ -403,7 +403,7 @@ describe("Assistant conversation deletion", () => {
         options?.onSuccess?.(undefined as unknown as void, _id, undefined);
       },
     );
-    vi.spyOn(useConversationsHook, "default").mockReturnValue({
+    vi.spyOn(useConversationsHook, "useConversations").mockReturnValue({
       ...defaultConversationsHook,
       deleteConversation: deleteConversationMock,
     });
@@ -462,7 +462,7 @@ describe("Assistant workspace context panel", () => {
 
 describe("Assistant model input when no models list", () => {
   it("renders text input for model when no models returned", () => {
-    vi.spyOn(useModelsHook, "default").mockReturnValue({ ...defaultModelsHook, models: [] });
+    vi.spyOn(useModelsHook, "useModels").mockReturnValue({ ...defaultModelsHook, models: [] });
     useConversationStore.setState((s) => ({ ...s, model: "" }));
     renderAssistant();
     expect(screen.getByPlaceholderText(/model name/i)).toBeInTheDocument();

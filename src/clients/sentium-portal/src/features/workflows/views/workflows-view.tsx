@@ -2,14 +2,14 @@ import { useState } from "react";
 import { useNavigate } from "react-router";
 import { Plus, GitBranch, Loader } from "lucide-react";
 import styles from "../workflows.module.scss";
-import useWorkflows from "@/features/workflows/hooks/useWorkflows";
-import PageHeader from "@/shared/ui/page-header";
-import EmptyState from "@/shared/ui/empty-state";
-import LoadMore from "@/shared/ui/load-more";
-import WorkflowCard from "../components/workflow-card";
-import ConfirmDialog from "@/shared/ui/confirm-dialog";
+import { useWorkflows } from "@/features/workflows/hooks/useWorkflows";
+import { PageHeader } from "@/shared/ui/page-header";
+import { EmptyState } from "@/shared/ui/empty-state";
+import { LoadMore } from "@/shared/ui/load-more";
+import { WorkflowCard } from "../components/workflow-card";
+import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
 
-const WorkflowsList = () => {
+export function WorkflowsView() {
   const { workflows, totalCount, isLoading, hasMore, loadMore, isLoadingMore, deleteWorkflow } = useWorkflows();
   const navigate = useNavigate();
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
@@ -94,6 +94,4 @@ const WorkflowsList = () => {
       />
     </div>
   );
-};
-
-export default WorkflowsList;
+}

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import LogEntryView from "./log-entry-view";
+import { LogEntryView } from "./log-entry-view";
 import type { LogEntry } from "@/features/orchestration/types/orchestration";
 
 const getRoleClass = () => "roleSystem";

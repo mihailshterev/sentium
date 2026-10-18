@@ -1,19 +1,19 @@
 import { useState } from "react";
 import { Bot, Plus, Loader } from "lucide-react";
 import styles from "../agents.module.scss";
-import useAgents from "@/features/agents/hooks/useAgents";
-import useModels from "@/features/models/hooks/useModels";
+import { useAgents } from "@/features/agents/hooks/useAgents";
+import { useModels } from "@/features/models/hooks/useModels";
 import type { AgentRecord } from "@/features/agents/types/agents";
-import PageHeader from "@/shared/ui/page-header";
-import EmptyState from "@/shared/ui/empty-state";
-import LoadMore from "@/shared/ui/load-more";
-import AgentCard from "../components/agent-card";
-import AgentCreateForm from "../components/agent-create-form";
-import AgentEditModal from "../components/agent-edit-modal";
-import ConfirmDialog from "@/shared/ui/confirm-dialog";
-import StatusMessage from "@/shared/ui/status-message";
+import { PageHeader } from "@/shared/ui/page-header";
+import { EmptyState } from "@/shared/ui/empty-state";
+import { LoadMore } from "@/shared/ui/load-more";
+import { AgentCard } from "../components/agent-card";
+import { AgentCreateForm } from "../components/agent-create-form";
+import { AgentEditModal } from "../components/agent-edit-modal";
+import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
+import { StatusMessage } from "@/shared/ui/status-message";
 
-export default function Agents() {
+export function AgentsView() {
   const {
     agents,
     totalCount,

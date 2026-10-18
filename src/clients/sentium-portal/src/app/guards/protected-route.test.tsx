@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
-import ProtectedRoute from "./protected-route";
+import { ProtectedRoute } from "./protected-route";
 import { useAuthStore } from "@/shared/auth/state/auth-store";
 import { AUTH_STATUS } from "@/shared/utils/constants";
 

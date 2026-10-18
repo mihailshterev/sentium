@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import Profile from "./profile-view";
+import { ProfileView as Profile } from "./profile-view";
 import { useAuthStore } from "@/shared/auth/state/auth-store";
 import * as useProfileHook from "@/features/profile/hooks/useProfile";
 import * as useRoleHook from "@/shared/auth/hooks/useRole";
@@ -54,13 +54,13 @@ beforeEach(() => {
     user: { sub: "u1", email: "alice@example.com", name: "Alice", roles: ["Member"] },
     status: "authenticated",
   });
-  vi.spyOn(useProfileHook, "default").mockReturnValue(defaultProfileHook);
+  vi.spyOn(useProfileHook, "useProfile").mockReturnValue(defaultProfileHook);
   vi.spyOn(useRoleHook, "useRole").mockReturnValue(defaultRoleHook);
 });
 
 describe("Profile – loading state", () => {
   it("renders a skeleton when loading", () => {
-    vi.spyOn(useProfileHook, "default").mockReturnValue({ ...defaultProfileHook, isLoading: true, profile: null });
+    vi.spyOn(useProfileHook, "useProfile").mockReturnValue({ ...defaultProfileHook, isLoading: true, profile: null });
     renderProfile();
     expect(screen.queryByLabelText(/first name/i)).not.toBeInTheDocument();
   });
@@ -90,7 +90,7 @@ describe("Profile loaded state", () => {
   });
 
   it("handles a profile with no lastName (shows email as display name)", () => {
-    vi.spyOn(useProfileHook, "default").mockReturnValue({
+    vi.spyOn(useProfileHook, "useProfile").mockReturnValue({
       ...defaultProfileHook,
       profile: { ...mockProfile, firstName: "", lastName: null },
     });
@@ -105,7 +105,7 @@ describe("Profile loaded state", () => {
   });
 
   it("does not render the edit form when profile is null", () => {
-    vi.spyOn(useProfileHook, "default").mockReturnValue({ ...defaultProfileHook, profile: null });
+    vi.spyOn(useProfileHook, "useProfile").mockReturnValue({ ...defaultProfileHook, profile: null });
     renderProfile();
     expect(screen.queryByLabelText(/first name/i)).not.toBeInTheDocument();
   });
@@ -114,7 +114,7 @@ describe("Profile loaded state", () => {
 describe("Profile form interactions", () => {
   it("calls updateProfile with trimmed values on save", async () => {
     const updateProfile = vi.fn().mockResolvedValue(undefined);
-    vi.spyOn(useProfileHook, "default").mockReturnValue({ ...defaultProfileHook, updateProfile });
+    vi.spyOn(useProfileHook, "useProfile").mockReturnValue({ ...defaultProfileHook, updateProfile });
     renderProfile();
     fireEvent.change(screen.getByLabelText(/first name/i), { target: { value: "  Bob  " } });
     fireEvent.submit(document.querySelector("form")!);
@@ -122,13 +122,13 @@ describe("Profile form interactions", () => {
   });
 
   it("shows isSaving state on the save button", () => {
-    vi.spyOn(useProfileHook, "default").mockReturnValue({ ...defaultProfileHook, isSaving: true });
+    vi.spyOn(useProfileHook, "useProfile").mockReturnValue({ ...defaultProfileHook, isSaving: true });
     renderProfile();
     expect(screen.getByRole("button", { name: /saving/i })).toBeDisabled();
   });
 
   it("shows save error banner when saveError is set", () => {
-    vi.spyOn(useProfileHook, "default").mockReturnValue({
+    vi.spyOn(useProfileHook, "useProfile").mockReturnValue({
       ...defaultProfileHook,
       saveError: new Error("Server rejected the update"),
     });
@@ -137,14 +137,14 @@ describe("Profile form interactions", () => {
   });
 
   it("shows success banner when isSaveSuccess is true", () => {
-    vi.spyOn(useProfileHook, "default").mockReturnValue({ ...defaultProfileHook, isSaveSuccess: true });
+    vi.spyOn(useProfileHook, "useProfile").mockReturnValue({ ...defaultProfileHook, isSaveSuccess: true });
     renderProfile();
     expect(screen.getByText(/profile updated successfully/i)).toBeInTheDocument();
   });
 
   it("trims lastName to null when left empty", async () => {
     const updateProfile = vi.fn().mockResolvedValue(undefined);
-    vi.spyOn(useProfileHook, "default").mockReturnValue({ ...defaultProfileHook, updateProfile });
+    vi.spyOn(useProfileHook, "useProfile").mockReturnValue({ ...defaultProfileHook, updateProfile });
     renderProfile();
     fireEvent.change(screen.getByLabelText(/last name/i), { target: { value: "" } });
     fireEvent.submit(document.querySelector("form")!);

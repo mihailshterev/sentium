@@ -3,7 +3,7 @@ import { Brain, ChevronDown, Wrench, CheckCircle2, XCircle, RefreshCw, AlertTria
 import type { ElementType } from "react";
 import styles from "../agent-orchestration.module.scss";
 import type { LogEntry } from "@/features/orchestration/types/orchestration";
-import OrchestratorPlanView from "./orchestrator-plan-view";
+import { OrchestratorPlanView } from "./orchestrator-plan-view";
 import { parseAssignments } from "../../../shared/utils/agent-helpers";
 
 interface LogEntryViewProps {
@@ -52,14 +52,14 @@ const dotClassFor = (log: LogEntry): string => {
   }
 };
 
-const LogEntryView = ({
+export function LogEntryView({
   log,
   entryId,
   expanded,
   onToggle,
   getRoleClass,
   isActiveThought = false,
-}: LogEntryViewProps) => {
+}: LogEntryViewProps) {
   const renderBody = () => {
     if (log.type === LogTypes.ERROR) {
       return (
@@ -159,6 +159,6 @@ const LogEntryView = ({
       <div className={styles.timelineContent}>{renderBody()}</div>
     </div>
   );
-};
+}
 
-export default LogEntryView;
+

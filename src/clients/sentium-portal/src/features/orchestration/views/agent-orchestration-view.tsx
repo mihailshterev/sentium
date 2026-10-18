@@ -5,16 +5,16 @@ import { useQuery } from "@tanstack/react-query";
 import styles from "../agent-orchestration.module.scss";
 import { fetchWorkflowRunsPaged } from "@/features/workflows/api/workflows.service";
 import { fetchWorkspaces } from "@/features/workspaces/api/workspaces.service";
-import useWorkflows from "@/features/workflows/hooks/useWorkflows";
+import { useWorkflows } from "@/features/workflows/hooks/useWorkflows";
 import { useWorkflowRun } from "@/features/workflows/hooks/useWorkflowRuns";
 import { useInfiniteList } from "@/shared/hooks/useInfiniteList";
 import type { Phase, LogEntry } from "@/features/orchestration/types/orchestration";
 import type { WorkflowRecord } from "@/features/workflows/types/workflows";
 import type { WorkflowRun } from "@/features/workflows/types/workflows";
 import { useOrchestrationRunStore } from "@/features/orchestration/state/orchestration-run-store";
-import PageHeader from "@/shared/ui/page-header";
-import LogEntryView from "../components/log-entry-view";
-import ExecuteSidebar, { type ExecuteMode } from "../components/execute-sidebar";
+import { PageHeader } from "@/shared/ui/page-header";
+import { LogEntryView } from "../components/log-entry-view";
+import { ExecuteSidebar, type ExecuteMode } from "../components/execute-sidebar";
 
 const ALL_PHASE_STEPS: { key: Phase; label: string; icon: React.ElementType }[] = [
   { key: "PLANNING", label: "Plan", icon: Circle },
@@ -47,7 +47,7 @@ function coalesceLog(entries: LogEntry[]): LogEntry[] {
   return result;
 }
 
-const AgentOrchestration = () => {
+export function AgentOrchestrationView() {
   const { workflows } = useWorkflows();
   const { runId } = useParams<{ runId?: string }>();
   const navigate = useNavigate();
@@ -379,6 +379,6 @@ const AgentOrchestration = () => {
       </div>
     </div>
   );
-};
+}
 
-export default AgentOrchestration;
+

@@ -5,7 +5,7 @@ import type { ServiceHealthStatus } from "@/features/watchdog/types/serviceHealt
 const POLL_INTERVAL = 15_000;
 export const SERVICE_HEALTH_KEY = ["service-health"] as const;
 
-const useServiceHealth = () => {
+export function useServiceHealth() {
   const {
     data: services = [],
     isLoading,
@@ -19,6 +19,6 @@ const useServiceHealth = () => {
   });
 
   return { services, isLoading, error, refetch };
-};
+}
 
-export default useServiceHealth;
+

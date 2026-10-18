@@ -1,1 +1,1 @@
-export { default } from "./views/agent-orchestration-view";
+export { AgentOrchestrationView } from "./views/agent-orchestration-view";

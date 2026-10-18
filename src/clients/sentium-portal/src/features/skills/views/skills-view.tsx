@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { Bot, Cpu, Upload, Zap } from "lucide-react";
 import styles from "../skills.module.scss";
-import PageHeader from "@/shared/ui/page-header";
-import BuiltInTab from "../components/built-in-tab";
-import CustomTab from "../components/custom-tab";
-import UploadedTab from "../components/uploaded-tab";
+import { PageHeader } from "@/shared/ui/page-header";
+import { BuiltInTab } from "../components/built-in-tab";
+import { CustomTab } from "../components/custom-tab";
+import { UploadedTab } from "../components/uploaded-tab";
 
 type Tab = "built-in" | "custom" | "uploaded";
 
-const Skills = () => {
+export function SkillsView() {
   const [activeTab, setActiveTab] = useState<Tab>("built-in");
 
   return (
@@ -53,6 +53,6 @@ const Skills = () => {
       </div>
     </div>
   );
-};
+}
 
-export default Skills;
+

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import Dashboard from "./dashboard-view";
+import { DashboardView as Dashboard } from "./dashboard-view";
 import * as useAgentsHook from "@/features/agents/hooks/useAgents";
 import * as useWorkflowsHook from "@/features/workflows/hooks/useWorkflows";
 import * as useServiceHealthHook from "@/features/watchdog/hooks/useServiceHealth";
@@ -114,20 +114,20 @@ const renderDashboard = (path = "/") => {
 };
 
 beforeEach(() => {
-  vi.spyOn(useAgentsHook, "default").mockReturnValue(defaultAgentsHook as ReturnType<typeof useAgentsHook.default>);
-  vi.spyOn(useWorkflowsHook, "default").mockReturnValue(
-    defaultWorkflowsHook as ReturnType<typeof useWorkflowsHook.default>,
+  vi.spyOn(useAgentsHook, "useAgents").mockReturnValue(defaultAgentsHook as ReturnType<typeof useAgentsHook.useAgents>);
+  vi.spyOn(useWorkflowsHook, "useWorkflows").mockReturnValue(
+    defaultWorkflowsHook as ReturnType<typeof useWorkflowsHook.useWorkflows>,
   );
-  vi.spyOn(useServiceHealthHook, "default").mockReturnValue(defaultHealthHook);
-  vi.spyOn(useWorkflowRunsHook, "default").mockReturnValue(defaultRunsHook);
-  vi.spyOn(useSystemMetricsHook, "default").mockReturnValue(
-    defaultMetricsHook as unknown as ReturnType<typeof useSystemMetricsHook.default>,
+  vi.spyOn(useServiceHealthHook, "useServiceHealth").mockReturnValue(defaultHealthHook);
+  vi.spyOn(useWorkflowRunsHook, "useWorkflowRuns").mockReturnValue(defaultRunsHook);
+  vi.spyOn(useSystemMetricsHook, "useSystemMetrics").mockReturnValue(
+    defaultMetricsHook as unknown as ReturnType<typeof useSystemMetricsHook.useSystemMetrics>,
   );
   vi.spyOn(useSentinelAuditHook, "useSentinelStats").mockReturnValue(
     defaultSentinelHook as unknown as ReturnType<typeof useSentinelAuditHook.useSentinelStats>,
   );
-  vi.spyOn(useOllamaModelsHook, "default").mockReturnValue(
-    defaultModelsHook as unknown as ReturnType<typeof useOllamaModelsHook.default>,
+  vi.spyOn(useOllamaModelsHook, "useOllamaModels").mockReturnValue(
+    defaultModelsHook as unknown as ReturnType<typeof useOllamaModelsHook.useOllamaModels>,
   );
   vi.spyOn(useSchedulerHook, "useSchedulerJobs").mockReturnValue(
     defaultSchedulerHook as unknown as ReturnType<typeof useSchedulerHook.useSchedulerJobs>,
@@ -167,8 +167,8 @@ describe("Dashboard initial render", () => {
 
 describe("Dashboard loading state", () => {
   it("shows loading skeleton in stat cards when agents are loading", () => {
-    vi.spyOn(useAgentsHook, "default").mockReturnValue({ ...defaultAgentsHook, isLoading: true } as ReturnType<
-      typeof useAgentsHook.default
+    vi.spyOn(useAgentsHook, "useAgents").mockReturnValue({ ...defaultAgentsHook, isLoading: true } as ReturnType<
+      typeof useAgentsHook.useAgents
     >);
     renderDashboard();
     expect(screen.getByText("Service Health")).toBeInTheDocument();
@@ -177,7 +177,7 @@ describe("Dashboard loading state", () => {
 
 describe("Dashboard workflow runs feed", () => {
   it("shows 'No workflow runs yet' when runs list is empty", () => {
-    vi.spyOn(useWorkflowRunsHook, "default").mockReturnValue({ runs: [], isLoading: false });
+    vi.spyOn(useWorkflowRunsHook, "useWorkflowRuns").mockReturnValue({ runs: [], isLoading: false });
     renderDashboard();
     expect(screen.getByText(/no workflow runs yet/i)).toBeInTheDocument();
   });
@@ -195,13 +195,13 @@ describe("Dashboard service health", () => {
   });
 
   it("shows 'No services monitored' when services list is empty", () => {
-    vi.spyOn(useServiceHealthHook, "default").mockReturnValue({ ...defaultHealthHook, services: [] });
+    vi.spyOn(useServiceHealthHook, "useServiceHealth").mockReturnValue({ ...defaultHealthHook, services: [] });
     renderDashboard();
     expect(screen.getByText("No services monitored")).toBeInTheDocument();
   });
 
   it("shows 'Unhealthy' status for unhealthy services", () => {
-    vi.spyOn(useServiceHealthHook, "default").mockReturnValue({
+    vi.spyOn(useServiceHealthHook, "useServiceHealth").mockReturnValue({
       ...defaultHealthHook,
       services: [unhealthyService],
     });

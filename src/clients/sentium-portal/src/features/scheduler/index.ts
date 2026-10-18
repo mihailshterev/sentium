@@ -1,1 +1,1 @@
-export { default } from "./views/scheduler-view";
+export { SchedulerView } from "./views/scheduler-view";

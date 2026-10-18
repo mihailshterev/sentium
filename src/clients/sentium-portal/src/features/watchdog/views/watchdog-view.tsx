@@ -1,16 +1,16 @@
 import { RefreshCw, Activity, Zap, Server, Database, ShieldAlert } from "lucide-react";
 import styles from "../watchdog.module.scss";
-import useServiceHealth from "@/features/watchdog/hooks/useServiceHealth";
-import useSystemMetrics from "@/features/watchdog/hooks/useSystemMetrics";
-import useSystemOverview from "@/features/watchdog/hooks/useSystemOverview";
-import useIncidents from "@/features/watchdog/hooks/useIncidents";
-import useWatchdogStream from "@/features/watchdog/hooks/useWatchdogStream";
+import { useServiceHealth } from "@/features/watchdog/hooks/useServiceHealth";
+import { useSystemMetrics } from "@/features/watchdog/hooks/useSystemMetrics";
+import { useSystemOverview } from "@/features/watchdog/hooks/useSystemOverview";
+import { useIncidents } from "@/features/watchdog/hooks/useIncidents";
+import { useWatchdogStream } from "@/features/watchdog/hooks/useWatchdogStream";
 import { useRole } from "@/shared/auth/hooks/useRole";
-import PageHeader from "@/shared/ui/page-header";
-import ServiceRow from "../components/service-row";
-import SummaryStats from "../components/summary-stats";
-import IncidentTimeline from "../components/incident-timeline";
-import WatchdogConfigPanel from "../components/watchdog-config-panel";
+import { PageHeader } from "@/shared/ui/page-header";
+import { ServiceRow } from "../components/service-row";
+import { SummaryStats } from "../components/summary-stats";
+import { IncidentTimeline } from "../components/incident-timeline";
+import { WatchdogConfigPanel } from "../components/watchdog-config-panel";
 import type { ServiceHealthStatus, ServiceStatus } from "@/features/watchdog/types/serviceHealth";
 
 const countBy = (services: ServiceHealthStatus[], status: ServiceStatus) =>
@@ -66,7 +66,7 @@ const HealthTable = ({
   </section>
 );
 
-const Watchdog = () => {
+export function WatchdogView() {
   const { services, isLoading: healthLoading, refetch } = useServiceHealth();
   const { metrics, isLoading: metricsLoading, isRefetching } = useSystemMetrics();
   const { overview } = useSystemOverview();
@@ -203,6 +203,6 @@ const Watchdog = () => {
       </div>
     </div>
   );
-};
+}
 
-export default Watchdog;
+

@@ -4,8 +4,8 @@ import styles from "../assistant.module.scss";
 import { ChevronRight, ChevronDown, BotMessageSquare, Loader } from "lucide-react";
 import { fetchConversation } from "@/features/assistant/api/assistant.service";
 import { fetchWorkspaces, fetchWorkspaceFiles } from "@/features/workspaces/api/workspaces.service";
-import useConversations from "@/features/assistant/hooks/useConversations";
-import useModels from "@/features/models/hooks/useModels";
+import { useConversations } from "@/features/assistant/hooks/useConversations";
+import { useModels } from "@/features/models/hooks/useModels";
 import type {
   ConversationMessage,
   ConversationMessageDto,
@@ -15,14 +15,14 @@ import type { Workspace } from "@/features/workspaces/types/workspace";
 import { useConversationStore } from "@/features/assistant/state/assistant-conversation-store";
 import { SUGGESTIONS_POOL } from "@/shared/utils/constants";
 import { useQuery } from "@tanstack/react-query";
-import PageHeader from "@/shared/ui/page-header";
-import MessageBubble from "../components/message-bubble";
+import { PageHeader } from "@/shared/ui/page-header";
+import { MessageBubble } from "../components/message-bubble";
 import { STATUS_MESSAGES } from "../status-messages";
-import WelcomeScreen from "../components/welcome-screen";
-import ChatInputBar from "../components/chat-input-bar";
-import ConversationSidebar from "../components/conversation-sidebar";
-import ConfirmDialog from "@/shared/ui/confirm-dialog";
-import StatusMessage from "@/shared/ui/status-message";
+import { WelcomeScreen } from "../components/welcome-screen";
+import { ChatInputBar } from "../components/chat-input-bar";
+import { ConversationSidebar } from "../components/conversation-sidebar";
+import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
+import { StatusMessage } from "@/shared/ui/status-message";
 
 type ContextPill = { type: "workspace" | "file"; id: string; label: string };
 
@@ -56,7 +56,7 @@ const groupConversationsByDate = (convs: ConversationSummary[]) => {
   return groups.filter((g) => g.items.length > 0);
 };
 
-const Assistant = () => {
+export function AssistantView() {
   const {
     activeConversationId,
     messages,
@@ -512,6 +512,6 @@ const Assistant = () => {
       />
     </div>
   );
-};
+}
 
-export default Assistant;
+

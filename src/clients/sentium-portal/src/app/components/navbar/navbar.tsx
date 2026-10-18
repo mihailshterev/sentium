@@ -27,8 +27,8 @@ import { useAuthStore } from "@/shared/auth/state/auth-store";
 import { useConversationStore } from "@/features/assistant/state/assistant-conversation-store";
 import { useOrchestrationRunStore } from "@/features/orchestration/state/orchestration-run-store";
 import { useRole } from "@/shared/auth/hooks/useRole";
-import useProfile from "@/features/profile/hooks/useProfile";
-import ThemeToggle from "@/shared/ui/theme-toggle";
+import { useProfile } from "@/features/profile/hooks/useProfile";
+import { ThemeToggle } from "@/shared/ui/theme-toggle";
 
 interface NavLinkItem {
   to: string;
@@ -83,7 +83,7 @@ const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
-const Navbar = () => {
+export function Navbar() {
   const logout = useAuthStore((s) => s.logout);
   const user = useAuthStore((s) => s.user);
   const { isSovereign, highestRole } = useRole();
@@ -198,6 +198,4 @@ const Navbar = () => {
       </div>
     </nav>
   );
-};
-
-export default Navbar;
+}

@@ -2,10 +2,10 @@ import { ShieldUser } from "lucide-react";
 import styles from "../profile.module.scss";
 import { useRole } from "@/shared/auth/hooks/useRole";
 import { AnimatedBg } from "@/shared/ui/animated-bg";
-import useProfile from "@/features/profile/hooks/useProfile";
-import ProfileEditForm from "../components/profile-edit-form";
+import { useProfile } from "@/features/profile/hooks/useProfile";
+import { ProfileEditForm } from "../components/profile-edit-form";
 
-export default function Profile() {
+export function ProfileView() {
   const { highestRole } = useRole();
   const { profile, isLoading, updateProfile, isSaving, saveError, isSaveSuccess, resetSave } = useProfile();
 

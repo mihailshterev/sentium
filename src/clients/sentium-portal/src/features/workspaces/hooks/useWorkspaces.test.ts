@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
-import useWorkspaces from "./useWorkspaces";
+import { useWorkspaces } from "./useWorkspaces";
 import * as agentRuntimeService from "@/features/workspaces/api/workspaces.service";
 
 const createWrapper = () => {

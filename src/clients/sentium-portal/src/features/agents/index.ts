@@ -1,1 +1,1 @@
-export { default } from "./views/agents-view";
+export { AgentsView } from "./views/agents-view";

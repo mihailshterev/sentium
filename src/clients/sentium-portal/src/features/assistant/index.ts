@@ -1,1 +1,1 @@
-export { default } from "./views/assistant-view";
+export { AssistantView } from "./views/assistant-view";

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Sparkles, Lightbulb, Compass, Zap, Telescope, FlaskConical, Rocket } from "lucide-react";
-import useProfile from "@/features/profile/hooks/useProfile";
+import { useProfile } from "@/features/profile/hooks/useProfile";
 import styles from "../assistant.module.scss";
 
 interface WelcomeScreenProps {
@@ -112,7 +112,7 @@ function getPeriod(): "morning" | "afternoon" | "evening" | "night" {
   return "night";
 }
 
-const WelcomeScreen = ({ suggestions, onSelectSuggestion }: WelcomeScreenProps) => {
+export function WelcomeScreen({ suggestions, onSelectSuggestion }: WelcomeScreenProps) {
   const { profile } = useProfile();
   const firstName = profile?.firstName ? `, ${profile.firstName}` : "";
 
@@ -136,6 +136,6 @@ const WelcomeScreen = ({ suggestions, onSelectSuggestion }: WelcomeScreenProps) 
       </div>
     </div>
   );
-};
+}
 
-export default WelcomeScreen;
+

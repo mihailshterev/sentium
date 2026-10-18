@@ -2,16 +2,16 @@ import { BrickWallShield, Loader, RefreshCw, ShieldCheck, Siren, Sliders, Zap } 
 import { useState } from "react";
 import { useSentinelAudit, useSentinelStats } from "@/features/sentinel/hooks/useSentinelAudit";
 import { useSentinelSettings } from "@/features/sentinel/hooks/useSentinelSettings";
-import useOllamaModels from "@/features/models/hooks/useOllamaModels";
+import { useOllamaModels } from "@/features/models/hooks/useOllamaModels";
 import styles from "../sentinel.module.scss";
-import PageHeader from "@/shared/ui/page-header";
-import LoadMore from "@/shared/ui/load-more";
-import AuditRow from "../components/audit-row";
-import AlignmentGauge from "../components/alignment-gauge";
-import SovereignControls from "../components/sovereign-controls";
-import SentinelStats from "../components/sentinel-stats";
+import { PageHeader } from "@/shared/ui/page-header";
+import { LoadMore } from "@/shared/ui/load-more";
+import { AuditRow } from "../components/audit-row";
+import { AlignmentGauge } from "../components/alignment-gauge";
+import { SovereignControls } from "../components/sovereign-controls";
+import { SentinelStats } from "../components/sentinel-stats";
 
-const Sentinel = () => {
+export function SentinelView() {
   const { records, hasMore, loadMore, isLoadingMore, isLoading: auditLoading, refetch } = useSentinelAudit(20);
   const { stats } = useSentinelStats();
   const { settings, isUpdating, updateSettings } = useSentinelSettings();
@@ -197,6 +197,6 @@ const Sentinel = () => {
       </div>
     </div>
   );
-};
+}
 
-export default Sentinel;
+

@@ -4,7 +4,7 @@ import type { HealthCheckEntry } from "@/features/watchdog/types/serviceHealth";
 const dotClass = (status: string) =>
   status === "Healthy" ? styles.subDotHealthy : status === "Degraded" ? styles.subDotDegraded : styles.subDotUnhealthy;
 
-const SubcheckList = ({ checks }: { checks: HealthCheckEntry[] }) => (
+export function SubcheckList({ checks }: { checks: HealthCheckEntry[] }) { return (
   <div className={styles.subcheckList}>
     {checks.map((c) => (
       <div key={c.name} className={styles.subcheckRow}>
@@ -16,6 +16,6 @@ const SubcheckList = ({ checks }: { checks: HealthCheckEntry[] }) => (
       </div>
     ))}
   </div>
-);
+); }
 
-export default SubcheckList;
+

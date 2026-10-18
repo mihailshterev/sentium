@@ -1,1 +1,1 @@
-export { default, default as StatusMessage } from "./status-message";
+export { StatusMessage } from "./status-message";

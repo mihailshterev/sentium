@@ -1,1 +1,1 @@
-export { default } from "./views/workspaces-view";
+export { WorkspacesView } from "./views/workspaces-view";

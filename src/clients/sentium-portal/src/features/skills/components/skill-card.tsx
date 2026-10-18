@@ -15,7 +15,7 @@ interface SkillCardProps {
   fileName?: string;
 }
 
-const SkillCard = ({
+export function SkillCard({
   skill,
   expanded,
   onToggle,
@@ -25,7 +25,7 @@ const SkillCard = ({
   pill,
   pillClass,
   fileName,
-}: SkillCardProps) => (
+}: SkillCardProps) { return (
   <div className={styles.skillRow}>
     <div className={styles.skillRowHeader}>
       <div className={styles.skillMeta}>
@@ -53,6 +53,6 @@ const SkillCard = ({
     <p className={styles.skillDesc}>{skill.description}</p>
     {expanded && <pre className={styles.instructions}>{skill.instructions}</pre>}
   </div>
-);
+); }
 
-export default SkillCard;
+

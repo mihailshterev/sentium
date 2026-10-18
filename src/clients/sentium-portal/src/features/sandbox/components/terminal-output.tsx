@@ -5,7 +5,7 @@ interface TerminalOutputProps {
   entry: SandboxExecutionLog;
 }
 
-const TerminalOutput = ({ entry }: TerminalOutputProps) => {
+export function TerminalOutput({ entry }: TerminalOutputProps) {
   const stdoutLines = entry.output ? entry.output.split("\n") : [];
   const stderrLines = entry.error ? entry.error.split("\n") : [];
   const hasStdout = stdoutLines.some((l) => l.trim());
@@ -42,6 +42,6 @@ const TerminalOutput = ({ entry }: TerminalOutputProps) => {
       </div>
     </div>
   );
-};
+}
 
-export default TerminalOutput;
+

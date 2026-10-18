@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import AgentOrchestration from "./agent-orchestration-view";
+import { AgentOrchestrationView as AgentOrchestration } from "./agent-orchestration-view";
 import * as useWorkflowsHook from "@/features/workflows/hooks/useWorkflows";
 import * as workflowsService from "@/features/workflows/api/workflows.service";
 import * as workspaceService from "@/features/workspaces/api/workspaces.service";
@@ -104,7 +104,7 @@ const renderOrchestration = (path = "/orchestration") => {
 
 beforeEach(() => {
   useOrchestrationRunStore.setState({ logs: [], phase: "IDLE", isRunning: false });
-  vi.spyOn(useWorkflowsHook, "default").mockReturnValue(defaultWorkflowsHook);
+  vi.spyOn(useWorkflowsHook, "useWorkflows").mockReturnValue(defaultWorkflowsHook);
   vi.stubGlobal("EventSource", MockEventSource);
 });
 
@@ -136,7 +136,7 @@ describe("AgentOrchestration initial render", () => {
   });
 
   it("shows 'No workflows defined' when list is empty", () => {
-    vi.spyOn(useWorkflowsHook, "default").mockReturnValue({ ...defaultWorkflowsHook, workflows: [] });
+    vi.spyOn(useWorkflowsHook, "useWorkflows").mockReturnValue({ ...defaultWorkflowsHook, workflows: [] });
     renderOrchestration();
     expect(screen.getByText(/no workflows defined/i)).toBeInTheDocument();
   });

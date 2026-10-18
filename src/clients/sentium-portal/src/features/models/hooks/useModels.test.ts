@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
-import useModels from "./useModels";
+import { useModels } from "./useModels";
 import * as agentRuntimeService from "@/features/models/api/models.service";
 
 vi.mock("@/features/models/api/models.service", () => ({

@@ -3,15 +3,15 @@ import { useNavigate } from "react-router";
 import { FolderOpen, Plus, Loader } from "lucide-react";
 import styles from "../workspaces.module.scss";
 import type { Workspace } from "@/features/workspaces/types/workspace";
-import PageHeader from "@/shared/ui/page-header";
-import EmptyState from "@/shared/ui/empty-state";
-import LoadMore from "@/shared/ui/load-more";
-import WorkspaceForm from "../components/workspace-form";
-import WorkspaceCard from "../components/workspace-card";
-import ConfirmDialog from "@/shared/ui/confirm-dialog";
-import useWorkspaces from "@/features/workspaces/hooks/useWorkspaces";
+import { PageHeader } from "@/shared/ui/page-header";
+import { EmptyState } from "@/shared/ui/empty-state";
+import { LoadMore } from "@/shared/ui/load-more";
+import { WorkspaceForm } from "../components/workspace-form";
+import { WorkspaceCard } from "../components/workspace-card";
+import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
+import { useWorkspaces } from "@/features/workspaces/hooks/useWorkspaces";
 
-const WorkspacesList = () => {
+export function WorkspacesView() {
   const navigate = useNavigate();
   const {
     workspaces,
@@ -179,6 +179,4 @@ const WorkspacesList = () => {
       />
     </div>
   );
-};
-
-export default WorkspacesList;
+}

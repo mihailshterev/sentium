@@ -2,7 +2,7 @@ import { useEffect, type ReactNode } from "react";
 import { useAuthStore } from "@/shared/auth/state/auth-store";
 import { AUTH_STATUS } from "@/shared/utils/constants";
 
-const ProtectedRoute = ({ children }: { children: ReactNode }) => {
+export function ProtectedRoute({ children }: { children: ReactNode }) {
   const { status, login } = useAuthStore();
 
   useEffect(() => {
@@ -16,6 +16,4 @@ const ProtectedRoute = ({ children }: { children: ReactNode }) => {
   }
 
   return <>{children}</>;
-};
-
-export default ProtectedRoute;
+}

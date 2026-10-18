@@ -7,7 +7,7 @@ interface FormFieldProps {
   children: React.ReactNode;
 }
 
-const FormField = ({ id, label, charCount, children }: FormFieldProps) => {
+export function FormField({ id, label, charCount, children }: FormFieldProps) {
   return (
     <div className={styles.group}>
       <div className={styles.labelRow}>
@@ -23,6 +23,4 @@ const FormField = ({ id, label, charCount, children }: FormFieldProps) => {
       {children}
     </div>
   );
-};
-
-export default FormField;
+}

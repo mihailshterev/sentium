@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
-import useServiceHealth from "./useServiceHealth";
+import { useServiceHealth } from "./useServiceHealth";
 import * as watchdogService from "@/features/watchdog/api/watchdog.service";
 import type { ServiceHealthStatus } from "@/features/watchdog/types/serviceHealth";
 

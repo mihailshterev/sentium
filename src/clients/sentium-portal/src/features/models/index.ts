@@ -1,1 +1,1 @@
-export { default } from "./views/models-view";
+export { ModelsView } from "./views/models-view";

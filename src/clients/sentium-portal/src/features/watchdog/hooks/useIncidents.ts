@@ -6,7 +6,7 @@ export const INCIDENTS_KEY = ["watchdog-incidents"] as const;
 
 const POLL_INTERVAL = 15_000;
 
-const useIncidents = () => {
+export function useIncidents() {
   const {
     data: incidents = [],
     isLoading,
@@ -20,6 +20,6 @@ const useIncidents = () => {
   });
 
   return { incidents, isLoading, error, refetch };
-};
+}
 
-export default useIncidents;
+

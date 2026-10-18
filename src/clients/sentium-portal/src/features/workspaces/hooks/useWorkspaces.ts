@@ -10,7 +10,7 @@ import type { Workspace, CreateWorkspacePayload, UpdateWorkspacePayload } from "
 
 const WORKSPACES_KEY = ["workspaces"] as const;
 
-const useWorkspaces = () => {
+export function useWorkspaces() {
   const queryClient = useQueryClient();
   const invalidate = () => queryClient.invalidateQueries({ queryKey: WORKSPACES_KEY });
 
@@ -45,6 +45,4 @@ const useWorkspaces = () => {
     isUpdatingWorkspace: updateMutation.isPending,
     deleteWorkspace: deleteMutation.mutate,
   };
-};
-
-export default useWorkspaces;
+}

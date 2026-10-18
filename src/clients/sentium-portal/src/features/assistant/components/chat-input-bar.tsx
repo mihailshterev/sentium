@@ -19,7 +19,7 @@ interface ChatInputBarProps {
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
 }
 
-const ChatInputBar = ({
+export function ChatInputBar({
   input,
   isTyping,
   contextPills,
@@ -32,7 +32,7 @@ const ChatInputBar = ({
   onRemoveContextPill,
   onSetModel,
   textareaRef,
-}: ChatInputBarProps) => {
+}: ChatInputBarProps) {
   const [modelDropdownOpen, setModelDropdownOpen] = useState(false);
   const chipRef = useRef<HTMLDivElement>(null);
 
@@ -149,6 +149,6 @@ const ChatInputBar = ({
       </div>
     </div>
   );
-};
+}
 
-export default ChatInputBar;
+

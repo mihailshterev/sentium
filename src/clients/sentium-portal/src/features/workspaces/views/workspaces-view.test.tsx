@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import Workspaces from "./workspaces-view";
-import WorkspaceDetail from "./workspace-detail-view";
+import { WorkspacesView as Workspaces } from "./workspaces-view";
+import { WorkspaceDetailView as WorkspaceDetail } from "./workspace-detail-view";
 import * as workspaceService from "@/features/workspaces/api/workspaces.service";
 import type { Workspace, WorkspaceFile } from "@/features/workspaces/types/workspace";
 

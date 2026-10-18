@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import System from "./system-view";
+import { SystemView as System } from "./system-view";
 import * as useSystemMetricsHook from "@/features/watchdog/hooks/useSystemMetrics";
 import type { SystemMetrics } from "@/features/system/types/system";
 
@@ -73,12 +73,12 @@ const renderSystem = () => {
 };
 
 beforeEach(() => {
-  vi.spyOn(useSystemMetricsHook, "default").mockReturnValue(defaultHook);
+  vi.spyOn(useSystemMetricsHook, "useSystemMetrics").mockReturnValue(defaultHook);
 });
 
 describe("System error state", () => {
   it("shows error state when error is set and metrics is undefined", () => {
-    vi.spyOn(useSystemMetricsHook, "default").mockReturnValue({
+    vi.spyOn(useSystemMetricsHook, "useSystemMetrics").mockReturnValue({
       ...defaultHook,
       metrics: undefined,
       error: new Error("Connection refused"),
@@ -89,7 +89,7 @@ describe("System error state", () => {
   });
 
   it("shows 'Unknown error' when error is not an Error instance", () => {
-    vi.spyOn(useSystemMetricsHook, "default").mockReturnValue({
+    vi.spyOn(useSystemMetricsHook, "useSystemMetrics").mockReturnValue({
       ...defaultHook,
       metrics: undefined,
       error: "string error" as unknown as Error,
@@ -100,7 +100,7 @@ describe("System error state", () => {
 
   it("retries when Retry button is clicked in error state", async () => {
     const refetch = vi.fn().mockResolvedValue(undefined);
-    vi.spyOn(useSystemMetricsHook, "default").mockReturnValue({
+    vi.spyOn(useSystemMetricsHook, "useSystemMetrics").mockReturnValue({
       ...defaultHook,
       metrics: undefined,
       error: new Error("err"),
@@ -114,7 +114,7 @@ describe("System error state", () => {
 
 describe("System loading state", () => {
   it("renders skeleton cards when isLoading", () => {
-    vi.spyOn(useSystemMetricsHook, "default").mockReturnValue({
+    vi.spyOn(useSystemMetricsHook, "useSystemMetrics").mockReturnValue({
       ...defaultHook,
       metrics: undefined,
       isLoading: true,
@@ -166,7 +166,7 @@ describe("System success state", () => {
   });
 
   it("renders formatGb as TB when >= 1024 GB", () => {
-    vi.spyOn(useSystemMetricsHook, "default").mockReturnValue({
+    vi.spyOn(useSystemMetricsHook, "useSystemMetrics").mockReturnValue({
       ...defaultHook,
       metrics: {
         ...mockMetrics,
@@ -179,7 +179,7 @@ describe("System success state", () => {
 
   it("calls refetch when Refresh button is clicked", async () => {
     const refetch = vi.fn().mockResolvedValue(undefined);
-    vi.spyOn(useSystemMetricsHook, "default").mockReturnValue({ ...defaultHook, refetch });
+    vi.spyOn(useSystemMetricsHook, "useSystemMetrics").mockReturnValue({ ...defaultHook, refetch });
     renderSystem();
     fireEvent.click(screen.getByRole("button", { name: /refresh/i }));
     await waitFor(() => expect(refetch).toHaveBeenCalled());
@@ -188,7 +188,7 @@ describe("System success state", () => {
 
 describe("System uptime formatting edge cases", () => {
   it("formats uptime without days (hours:minutes:seconds format)", () => {
-    vi.spyOn(useSystemMetricsHook, "default").mockReturnValue({
+    vi.spyOn(useSystemMetricsHook, "useSystemMetrics").mockReturnValue({
       ...defaultHook,
       metrics: {
         ...mockMetrics,
@@ -200,7 +200,7 @@ describe("System uptime formatting edge cases", () => {
   });
 
   it("formats uptime with only minutes when hours is 0", () => {
-    vi.spyOn(useSystemMetricsHook, "default").mockReturnValue({
+    vi.spyOn(useSystemMetricsHook, "useSystemMetrics").mockReturnValue({
       ...defaultHook,
       metrics: {
         ...mockMetrics,
@@ -212,7 +212,7 @@ describe("System uptime formatting edge cases", () => {
   });
 
   it("returns raw string when uptime has wrong format", () => {
-    vi.spyOn(useSystemMetricsHook, "default").mockReturnValue({
+    vi.spyOn(useSystemMetricsHook, "useSystemMetrics").mockReturnValue({
       ...defaultHook,
       metrics: {
         ...mockMetrics,
@@ -224,7 +224,7 @@ describe("System uptime formatting edge cases", () => {
   });
 
   it("renders disk usage at high percent (>= 75)", () => {
-    vi.spyOn(useSystemMetricsHook, "default").mockReturnValue({
+    vi.spyOn(useSystemMetricsHook, "useSystemMetrics").mockReturnValue({
       ...defaultHook,
       metrics: {
         ...mockMetrics,
@@ -236,7 +236,7 @@ describe("System uptime formatting edge cases", () => {
   });
 
   it("renders memory GC heap with zero totalMb", () => {
-    vi.spyOn(useSystemMetricsHook, "default").mockReturnValue({
+    vi.spyOn(useSystemMetricsHook, "useSystemMetrics").mockReturnValue({
       ...defaultHook,
       metrics: {
         ...mockMetrics,

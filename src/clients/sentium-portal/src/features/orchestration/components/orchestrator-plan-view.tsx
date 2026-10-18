@@ -16,7 +16,7 @@ interface OrchestratorPlanViewProps {
   getRoleClass: (author: string) => string;
 }
 
-const OrchestratorPlanView = ({ assignments, getRoleClass }: OrchestratorPlanViewProps) => (
+export function OrchestratorPlanView({ assignments, getRoleClass }: OrchestratorPlanViewProps) { return (
   <div className={styles.planFlow}>
     {assignments.map((a, i) => {
       const Icon = roleIcon(a.agent);
@@ -44,6 +44,6 @@ const OrchestratorPlanView = ({ assignments, getRoleClass }: OrchestratorPlanVie
       );
     })}
   </div>
-);
+); }
 
-export default OrchestratorPlanView;
+

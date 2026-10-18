@@ -6,7 +6,7 @@ interface GcBadgesProps {
   gen2: number;
 }
 
-const GcBadges = ({ gen0, gen1, gen2 }: GcBadgesProps) => (
+export function GcBadges({ gen0, gen1, gen2 }: GcBadgesProps) { return (
   <div className={styles.gcRow}>
     <div className={styles.gcBadge}>
       <span className={styles.gcBadgeValue}>{gen0}</span>
@@ -21,6 +21,6 @@ const GcBadges = ({ gen0, gen1, gen2 }: GcBadgesProps) => (
       <span className={styles.gcBadgeLabel}>Gen 2</span>
     </div>
   </div>
-);
+); }
 
-export default GcBadges;
+

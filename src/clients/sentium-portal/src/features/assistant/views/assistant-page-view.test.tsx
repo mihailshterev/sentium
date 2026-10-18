@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import Assistant from "./assistant-view";
+import { AssistantView as Assistant } from "./assistant-view";
 import type { ConversationMessage } from "@/features/assistant/types/assistant";
 
 const navigate = vi.fn();
@@ -30,7 +30,7 @@ vi.mock("@/features/workspaces/api/workspaces.service", () => ({
 const createConversation = vi.fn().mockResolvedValue({ id: "new-c" });
 const deleteConversationMutate = vi.fn();
 vi.mock("@/features/assistant/hooks/useConversations", () => ({
-  default: () => ({
+  useConversations: () => ({
     conversations: [],
     createConversation,
     deleteConversation: deleteConversationMutate,
@@ -38,8 +38,8 @@ vi.mock("@/features/assistant/hooks/useConversations", () => ({
   }),
 }));
 
-vi.mock("@/features/models/hooks/useModels", () => ({ default: () => ({ models: ["gemma"] }) }));
-vi.mock("@/features/profile/hooks/useProfile", () => ({ default: () => ({ profile: { firstName: "Alice" } }) }));
+vi.mock("@/features/models/hooks/useModels", () => ({ useModels: () => ({ models: ["gemma"] }) }));
+vi.mock("@/features/profile/hooks/useProfile", () => ({ useProfile: () => ({ profile: { firstName: "Alice" } }) }));
 
 const sendMessage = vi.fn();
 const respondToApproval = vi.fn();

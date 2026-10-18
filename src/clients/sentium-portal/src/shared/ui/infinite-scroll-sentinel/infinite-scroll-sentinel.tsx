@@ -21,12 +21,12 @@ const getScrollParent = (node: HTMLElement | null): HTMLElement | null => {
   return null;
 };
 
-const InfiniteScrollSentinel = ({
+export function InfiniteScrollSentinel({
   hasMore,
   isLoading,
   onLoadMore,
   rootMargin = "150px",
-}: InfiniteScrollSentinelProps) => {
+}: InfiniteScrollSentinelProps) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -56,6 +56,4 @@ const InfiniteScrollSentinel = ({
       {isLoading && <Loader2 size={14} className={styles.spinner} />}
     </div>
   );
-};
-
-export default InfiniteScrollSentinel;
+}

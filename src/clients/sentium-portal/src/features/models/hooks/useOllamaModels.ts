@@ -14,7 +14,7 @@ export interface PullState {
 
 const OLLAMA_MODELS_KEY = ["ollama-models"] as const;
 
-const useOllamaModels = () => {
+export function useOllamaModels() {
   const queryClient = useQueryClient();
   const {
     data: models = [],
@@ -148,6 +148,6 @@ const useOllamaModels = () => {
     deleteResult,
     clearDeleteResult: () => setDeleteResult(null),
   };
-};
+}
 
-export default useOllamaModels;
+

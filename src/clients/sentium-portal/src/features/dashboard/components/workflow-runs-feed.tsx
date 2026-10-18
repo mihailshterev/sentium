@@ -1,6 +1,6 @@
 import { Activity, ArrowRight } from "lucide-react";
 import styles from "../dashboard.module.scss";
-import EmptyState from "@/shared/ui/empty-state";
+import { EmptyState } from "@/shared/ui/empty-state";
 import type { WorkflowRun } from "@/features/workflows/types/workflows";
 
 interface WorkflowRunsFeedProps {
@@ -43,7 +43,7 @@ const SkeletonRunRow = () => (
   </div>
 );
 
-const WorkflowRunsFeed = ({ runs, loading, onNavigate }: WorkflowRunsFeedProps) => (
+export function WorkflowRunsFeed({ runs, loading, onNavigate }: WorkflowRunsFeedProps) { return (
   <section className={styles.section}>
     <div className={styles.sectionHeader}>
       <span className={styles.sectionTitle}>Recent Workflow Runs</span>
@@ -79,6 +79,6 @@ const WorkflowRunsFeed = ({ runs, loading, onNavigate }: WorkflowRunsFeedProps) 
       )}
     </div>
   </section>
-);
+); }
 
-export default WorkflowRunsFeed;
+

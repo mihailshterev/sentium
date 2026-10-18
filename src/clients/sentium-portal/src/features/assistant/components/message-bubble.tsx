@@ -18,7 +18,7 @@ interface MessageBubbleProps {
   onRetry?: () => void;
 }
 
-const MessageBubble = ({
+export function MessageBubble({
   msg,
   isTyping,
   expandedThoughts,
@@ -29,7 +29,7 @@ const MessageBubble = ({
   onCopyMessage,
   onApproval,
   onRetry,
-}: MessageBubbleProps) => {
+}: MessageBubbleProps) {
   const [enhancedOpen, setEnhancedOpen] = useState(false);
 
   const isLastMessage = msg.role === "assistant" && msg.content === "" && isTyping && !msg.error;
@@ -205,6 +205,6 @@ const MessageBubble = ({
       </div>
     </div>
   );
-};
+}
 
-export default MessageBubble;
+

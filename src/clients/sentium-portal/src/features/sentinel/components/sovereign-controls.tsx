@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import { BrainCircuit, Shield, ShieldAlert, Zap } from "lucide-react";
 import styles from "../sentinel.module.scss";
-import ModelSelector from "@/shared/ui/model-selector";
+import { ModelSelector } from "@/shared/ui/model-selector";
 import type { PdpSettings } from "@/features/sentinel/types/sentinel";
 import type { OllamaModel } from "@/features/models/types/models";
 
@@ -17,7 +17,7 @@ interface SovereignControlsProps {
   onIntentModelChange: (model: string) => void;
 }
 
-const SovereignControls = ({
+export function SovereignControls({
   settings,
   isUpdating,
   displayAutonomy,
@@ -27,7 +27,7 @@ const SovereignControls = ({
   onAutonomyChange,
   commitAutonomy,
   onIntentModelChange,
-}: SovereignControlsProps) => (
+}: SovereignControlsProps) { return (
   <div className={styles.cardBody}>
     <div className={styles.toggleRow}>
       <div className={styles.toggleInfo}>
@@ -130,6 +130,6 @@ const SovereignControls = ({
       </span>
     </div>
   </div>
-);
+); }
 
-export default SovereignControls;
+

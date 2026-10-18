@@ -12,7 +12,7 @@ interface ArtifactCardProps {
   artifact: ArtifactDto;
 }
 
-const ArtifactCard = ({ artifact }: ArtifactCardProps) => {
+export function ArtifactCard({ artifact }: ArtifactCardProps) {
   const isImage = isImageMime(artifact.mimeType);
   const shortName = artifact.fileName.split("/").pop() ?? artifact.fileName;
   const url = getArtifactUrl(artifact.downloadPath);
@@ -53,6 +53,6 @@ const ArtifactCard = ({ artifact }: ArtifactCardProps) => {
       </div>
     </div>
   );
-};
+}
 
-export default ArtifactCard;
+

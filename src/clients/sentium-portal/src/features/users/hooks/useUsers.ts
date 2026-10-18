@@ -12,7 +12,7 @@ import type { UserListItem } from "@/features/auth/api/identity.service";
 const USERS_KEY = ["users"] as const;
 const DEFAULT_PAGE_SIZE = 20;
 
-const useUsers = () => {
+export function useUsers() {
   const queryClient = useQueryClient();
   const invalidate = () => queryClient.invalidateQueries({ queryKey: USERS_KEY });
 
@@ -52,6 +52,6 @@ const useUsers = () => {
     deleteUser: deleteUserMutation.mutateAsync,
     isDeletingUser: deleteUserMutation.isPending,
   };
-};
+}
 
-export default useUsers;
+

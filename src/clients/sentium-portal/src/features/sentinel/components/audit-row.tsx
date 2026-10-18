@@ -2,9 +2,9 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import styles from "../sentinel.module.scss";
 import type { AuditRecord } from "@/features/sentinel/types/sentinel";
 import { formatTimeHms } from "../../../shared/utils/formatters";
-import RiskBadge from "./risk-badge";
-import EffectBadge from "./effect-badge";
-import AlignmentBadge from "./alignment-badge";
+import { RiskBadge } from "./risk-badge";
+import { EffectBadge } from "./effect-badge";
+import { AlignmentBadge } from "./alignment-badge";
 
 interface AuditRowProps {
   record: AuditRecord;
@@ -12,7 +12,7 @@ interface AuditRowProps {
   onToggle: () => void;
 }
 
-const AuditRow = ({ record, expanded, onToggle }: AuditRowProps) => (
+export function AuditRow({ record, expanded, onToggle }: AuditRowProps) { return (
   <>
     <div
       className={`${styles.auditRow} ${!record.allowed ? styles.auditRowDenied : ""} ${expanded ? styles.auditRowExpanded : ""}`}
@@ -65,6 +65,6 @@ const AuditRow = ({ record, expanded, onToggle }: AuditRowProps) => (
       </div>
     )}
   </>
-);
+); }
 
-export default AuditRow;
+

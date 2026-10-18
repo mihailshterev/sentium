@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import IncidentTimeline from "./incident-timeline";
-import SeverityBadge from "./severity-badge";
-import SubcheckList from "./subcheck-list";
-import StatusIcon from "./status-icon";
-import ServiceRow from "./service-row";
-import WatchdogConfigPanel from "./watchdog-config-panel";
+import { IncidentTimeline } from "./incident-timeline";
+import { SeverityBadge } from "./severity-badge";
+import { SubcheckList } from "./subcheck-list";
+import { StatusIcon } from "./status-icon";
+import { ServiceRow } from "./service-row";
+import { WatchdogConfigPanel } from "./watchdog-config-panel";
 import * as useWatchdogConfigHook from "@/features/watchdog/hooks/useWatchdogConfig";
 import type {
   Incident,
@@ -119,7 +119,7 @@ describe("WatchdogConfigPanel", () => {
   const saveConfig = vi.fn();
 
   const setHook = (overrides: Record<string, unknown> = {}) =>
-    vi.spyOn(useWatchdogConfigHook, "default").mockReturnValue({
+    vi.spyOn(useWatchdogConfigHook, "useWatchdogConfig").mockReturnValue({
       config,
       isLoading: false,
       error: null,
@@ -130,7 +130,7 @@ describe("WatchdogConfigPanel", () => {
       saveError: null,
       resetSave: vi.fn(),
       ...overrides,
-    } as unknown as ReturnType<typeof useWatchdogConfigHook.default>);
+    } as unknown as ReturnType<typeof useWatchdogConfigHook.useWatchdogConfig>);
 
   beforeEach(() => {
     saveConfig.mockReset();

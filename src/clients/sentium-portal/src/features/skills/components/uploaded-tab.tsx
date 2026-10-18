@@ -3,12 +3,12 @@ import { BookOpen, Check, Loader, Upload, X } from "lucide-react";
 import styles from "../skills.module.scss";
 import { useSkills } from "@/features/skills/hooks/useSkills";
 import type { AgentSkill } from "@/features/skills/types/skills";
-import EmptyState from "@/shared/ui/empty-state";
-import LoadMore from "@/shared/ui/load-more";
-import StatusMessage from "@/shared/ui/status-message";
-import SkillCard from "./skill-card";
+import { EmptyState } from "@/shared/ui/empty-state";
+import { LoadMore } from "@/shared/ui/load-more";
+import { StatusMessage } from "@/shared/ui/status-message";
+import { SkillCard } from "./skill-card";
 
-const UploadedTab = () => {
+export function UploadedTab() {
   const {
     skills,
     isLoading,
@@ -192,6 +192,6 @@ const UploadedTab = () => {
       </div>
     </div>
   );
-};
+}
 
-export default UploadedTab;
+

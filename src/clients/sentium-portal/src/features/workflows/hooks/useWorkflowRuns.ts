@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchWorkflowRuns, fetchWorkflowRun } from "@/features/workflows/api/workflows.service";
 import type { WorkflowRun } from "@/features/workflows/types/workflows";
 
-export default function useWorkflowRuns(count = 15) {
+export function useWorkflowRuns(count = 15) {
   const { data, isLoading } = useQuery<WorkflowRun[]>({
     queryKey: ["workflow-runs", count],
     queryFn: () => fetchWorkflowRuns(count),

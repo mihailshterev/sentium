@@ -7,7 +7,7 @@ interface EmptyStateProps {
   action?: React.ReactNode;
 }
 
-const EmptyState = ({ icon, title, hint, action }: EmptyStateProps) => {
+export function EmptyState({ icon, title, hint, action }: EmptyStateProps) {
   return (
     <div className={styles.wrap}>
       <div className={styles.icon}>{icon}</div>
@@ -16,6 +16,4 @@ const EmptyState = ({ icon, title, hint, action }: EmptyStateProps) => {
       {action && <div className={styles.action}>{action}</div>}
     </div>
   );
-};
-
-export default EmptyState;
+}

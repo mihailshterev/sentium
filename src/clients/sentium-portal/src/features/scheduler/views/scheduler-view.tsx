@@ -2,12 +2,12 @@ import { CalendarClock, RefreshCw, Trash2, Zap, Terminal, ChevronDown, ChevronUp
 import { useState } from "react";
 import { useSchedulerJobs, useDeleteJobMutation } from "@/features/scheduler/hooks/useScheduler";
 import styles from "../scheduler.module.scss";
-import PageHeader from "@/shared/ui/page-header";
-import ConfirmDialog from "@/shared/ui/confirm-dialog";
+import { PageHeader } from "@/shared/ui/page-header";
+import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
 
 type PendingDelete = { agentId: string; jobId: string } | null;
 
-const Scheduler = () => {
+export function SchedulerView() {
   const { jobs, isLoading, refetch } = useSchedulerJobs();
   const deleteMutation = useDeleteJobMutation();
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -188,6 +188,6 @@ const Scheduler = () => {
       />
     </div>
   );
-};
+}
 
-export default Scheduler;
+

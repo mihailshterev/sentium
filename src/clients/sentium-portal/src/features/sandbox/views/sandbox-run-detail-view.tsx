@@ -3,19 +3,19 @@ import { useNavigate, useParams } from "react-router";
 import { ArrowLeft, Code2, File, FileText, Loader, RefreshCw, Terminal } from "lucide-react";
 import styles from "../sandbox.module.scss";
 import { useSandboxExecution } from "@/features/sandbox/hooks/useSandboxExecution";
-import PageHeader from "@/shared/ui/page-header";
-import EmptyState from "@/shared/ui/empty-state";
-import Tabs, { type TabItem } from "@/shared/ui/tabs";
-import MetadataBadges from "../components/metadata-badges";
-import TerminalOutput from "../components/terminal-output";
-import ArtifactCard from "../components/artifact-card";
-import RunSummary from "../components/run-summary";
-import RunScript from "../components/run-script";
-import RunStatusBadge from "../components/run-status-badge";
+import { PageHeader } from "@/shared/ui/page-header";
+import { EmptyState } from "@/shared/ui/empty-state";
+import { Tabs, type TabItem } from "@/shared/ui/tabs";
+import { MetadataBadges } from "../components/metadata-badges";
+import { TerminalOutput } from "../components/terminal-output";
+import { ArtifactCard } from "../components/artifact-card";
+import { RunSummary } from "../components/run-summary";
+import { RunScript } from "../components/run-script";
+import { RunStatusBadge } from "../components/run-status-badge";
 
 type TabId = "summary" | "script" | "output" | "artifacts";
 
-const SandboxRunDetail = () => {
+export function SandboxRunDetailView() {
   const { jobId } = useParams<{ jobId: string }>();
   const navigate = useNavigate();
   const { execution, isLoading, isFetching, refetch } = useSandboxExecution(jobId);
@@ -121,6 +121,6 @@ const SandboxRunDetail = () => {
       </div>
     </div>
   );
-};
+}
 
-export default SandboxRunDetail;
+

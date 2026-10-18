@@ -1,1 +1,1 @@
-export { default } from "./views/workflows-view";
+export { WorkflowsView } from "./views/workflows-view";

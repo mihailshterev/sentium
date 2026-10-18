@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import SandboxRunDetail from "./sandbox-run-detail-view";
+import { SandboxRunDetailView as SandboxRunDetail } from "./sandbox-run-detail-view";
 import * as execHook from "@/features/sandbox/hooks/useSandboxExecution";
 import type { SandboxExecutionLog } from "@/features/sandbox/types/sandbox";
 

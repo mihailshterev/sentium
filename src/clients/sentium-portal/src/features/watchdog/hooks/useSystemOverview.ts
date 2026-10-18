@@ -6,7 +6,7 @@ export const SYSTEM_OVERVIEW_KEY = ["watchdog-overview"] as const;
 
 const POLL_INTERVAL = 15_000;
 
-const useSystemOverview = () => {
+export function useSystemOverview() {
   const {
     data: overview,
     isLoading,
@@ -20,6 +20,6 @@ const useSystemOverview = () => {
   });
 
   return { overview, isLoading, error, refetch };
-};
+}
 
-export default useSystemOverview;
+

@@ -3,9 +3,9 @@ import { Clock, ChevronRight } from "lucide-react";
 import styles from "../watchdog.module.scss";
 import type { ServiceHealthStatus, ServiceStatus } from "@/features/watchdog/types/serviceHealth";
 import { formatTimeHms } from "../../../shared/utils/formatters";
-import StatusIcon from "./status-icon";
-import LatencyBar from "./latency-bar";
-import SubcheckList from "./subcheck-list";
+import { StatusIcon } from "./status-icon";
+import { LatencyBar } from "./latency-bar";
+import { SubcheckList } from "./subcheck-list";
 
 const statusLabelClass = (status: ServiceStatus) =>
   status === "Healthy"
@@ -16,7 +16,7 @@ const statusLabelClass = (status: ServiceStatus) =>
         ? styles.statusLabelUnhealthy
         : styles.statusLabelUnknown;
 
-const ServiceRow = ({ service }: { service: ServiceHealthStatus }) => {
+export function ServiceRow({ service }: { service: ServiceHealthStatus }) {
   const [expanded, setExpanded] = useState(false);
   const hasChecks = service.checks && service.checks.length > 0;
 
@@ -62,6 +62,6 @@ const ServiceRow = ({ service }: { service: ServiceHealthStatus }) => {
       {expanded && hasChecks && <SubcheckList checks={service.checks} />}
     </div>
   );
-};
+}
 
-export default ServiceRow;
+

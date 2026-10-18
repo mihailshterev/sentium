@@ -1,9 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
 import { createRef } from "react";
 import { render, screen, fireEvent, within } from "@testing-library/react";
-import UploadPanel from "./upload-panel";
-import WorkspaceFileCard from "./workspace-file-card";
-import WorkspaceSidebar from "./workspace-sidebar";
+import { UploadPanel } from "./upload-panel";
+import { WorkspaceFileCard } from "./workspace-file-card";
+import { WorkspaceSidebar } from "./workspace-sidebar";
 import type { Workspace, WorkspaceFile } from "@/features/workspaces/types/workspace";
 
 const uploadDefaults = {

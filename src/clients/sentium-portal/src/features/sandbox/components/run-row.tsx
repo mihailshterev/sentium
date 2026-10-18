@@ -2,14 +2,14 @@ import { AlertTriangle, ChevronRight, File } from "lucide-react";
 import styles from "../sandbox.module.scss";
 import type { SandboxExecutionLog } from "@/features/sandbox/types/sandbox";
 import { formatDateTimeShort, formatRelativeTime } from "../../../shared/utils/formatters";
-import RunStatusBadge from "./run-status-badge";
+import { RunStatusBadge } from "./run-status-badge";
 
 interface RunRowProps {
   run: SandboxExecutionLog;
   onOpen: (jobId: string) => void;
 }
 
-const RunRow = ({ run, onOpen }: RunRowProps) => (
+export function RunRow({ run, onOpen }: RunRowProps) { return (
   <div
     className={styles.runRow}
     role="button"
@@ -42,6 +42,6 @@ const RunRow = ({ run, onOpen }: RunRowProps) => (
     </span>
     <ChevronRight size={15} className={styles.runChevron} />
   </div>
-);
+); }
 
-export default RunRow;
+

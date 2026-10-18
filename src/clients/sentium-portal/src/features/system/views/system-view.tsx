@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { Cpu, HardDrive, MemoryStick, Monitor, RefreshCw, Server, Activity, Clock, AlertCircle } from "lucide-react";
 import styles from "../system.module.scss";
-import useSystemMetrics from "@/features/watchdog/hooks/useSystemMetrics";
+import { useSystemMetrics } from "@/features/watchdog/hooks/useSystemMetrics";
 import { formatUptime, formatMb } from "../system-utils";
-import PageHeader from "@/shared/ui/page-header";
-import StatCard from "@/shared/ui/stat-card";
-import ProgressGroup from "../components/progress-group";
-import GcBadges from "../components/gc-badges";
-import DiskCard from "../components/disk-card";
+import { PageHeader } from "@/shared/ui/page-header";
+import { StatCard } from "@/shared/ui/stat-card";
+import { ProgressGroup } from "../components/progress-group";
+import { GcBadges } from "../components/gc-badges";
+import { DiskCard } from "../components/disk-card";
 
 function getUsageColor(percent: number): string {
   if (percent < 50) {
@@ -19,7 +19,7 @@ function getUsageColor(percent: number): string {
   return styles.fillRed;
 }
 
-const System = () => {
+export function SystemView() {
   const { metrics, isLoading, isRefetching, error, refetch } = useSystemMetrics();
   const [isManualRefetching, setIsManualRefetching] = useState(false);
 
@@ -237,6 +237,6 @@ const System = () => {
       </div>
     </div>
   );
-};
+}
 
-export default System;
+

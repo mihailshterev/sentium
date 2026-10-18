@@ -3,11 +3,11 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CheckCircle, Cpu, Loader, Shield, Sparkles, X, Zap } from "lucide-react";
 import styles from "../settings.module.scss";
-import StatusMessage from "@/shared/ui/status-message";
-import FormField from "@/shared/ui/form-field";
-import ModelSelector from "@/shared/ui/model-selector";
+import { StatusMessage } from "@/shared/ui/status-message";
+import { FormField } from "@/shared/ui/form-field";
+import { ModelSelector } from "@/shared/ui/model-selector";
 import { settingsEditorSchema, type SettingsEditorFormData } from "../schemas/settings.editor";
-import useOllamaModels from "@/features/models/hooks/useOllamaModels";
+import { useOllamaModels } from "@/features/models/hooks/useOllamaModels";
 
 interface SettingsEditorProps {
   initialValues: SettingsEditorFormData;
@@ -22,7 +22,7 @@ interface SettingsEditorProps {
   resetSaveStates: () => void;
 }
 
-const SettingsEditor = ({
+export function SettingsEditor({
   initialValues,
   isSovereign,
   updatedByHarness,
@@ -33,7 +33,7 @@ const SettingsEditor = ({
   showGlobalError,
   globalErrorMessage,
   resetSaveStates,
-}: SettingsEditorProps) => {
+}: SettingsEditorProps) {
   const { models } = useOllamaModels();
 
   const {
@@ -272,6 +272,6 @@ const SettingsEditor = ({
       </div>
     </form>
   );
-};
+}
 
-export default SettingsEditor;
+

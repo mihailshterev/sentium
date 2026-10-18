@@ -22,7 +22,7 @@ interface RunStatusBadgeProps {
   size?: number;
 }
 
-const RunStatusBadge = ({ entry, size = 11 }: RunStatusBadgeProps) => {
+export function RunStatusBadge({ entry, size = 11 }: RunStatusBadgeProps) {
   const { label, cls, Icon } = CONFIG[getRunStatus(entry)];
   return (
     <span className={`${styles.statusChip} ${cls}`}>
@@ -30,6 +30,6 @@ const RunStatusBadge = ({ entry, size = 11 }: RunStatusBadgeProps) => {
       {label}
     </span>
   );
-};
+}
 
-export default RunStatusBadge;
+

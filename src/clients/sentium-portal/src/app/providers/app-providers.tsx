@@ -11,7 +11,7 @@ const queryClient = new QueryClient({
   },
 });
 
-export default function AppProviders({ children }: PropsWithChildren) {
+export function AppProviders({ children }: PropsWithChildren) {
   return (
     <BrowserRouter>
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>

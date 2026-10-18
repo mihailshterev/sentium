@@ -4,7 +4,7 @@ import type { WatchdogConfig } from "@/features/watchdog/types/serviceHealth";
 
 const CONFIG_KEY = ["watchdog-config"] as const;
 
-const useWatchdogConfig = (enabled: boolean) => {
+export function useWatchdogConfig(enabled: boolean) {
   const queryClient = useQueryClient();
 
   const {
@@ -34,6 +34,6 @@ const useWatchdogConfig = (enabled: boolean) => {
   });
 
   return { config, isLoading, error, saveConfig, isSaving, isSaveSuccess, isSaveError, saveError, resetSave };
-};
+}
 
-export default useWatchdogConfig;
+

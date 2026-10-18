@@ -2,20 +2,20 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import Watchdog from "./watchdog-view";
+import { WatchdogView as Watchdog } from "./watchdog-view";
 import * as useServiceHealthHook from "@/features/watchdog/hooks/useServiceHealth";
 import * as useSystemMetricsHook from "@/features/watchdog/hooks/useSystemMetrics";
 import type { ServiceHealthStatus } from "@/features/watchdog/types/serviceHealth";
 import type { SystemMetrics } from "@/features/system/types/system";
 
 vi.mock("@/features/watchdog/hooks/useSystemOverview", () => ({
-  default: () => ({ overview: undefined, isLoading: false, error: null, refetch: vi.fn() }),
+  useSystemOverview: () => ({ overview: undefined, isLoading: false, error: null, refetch: vi.fn() }),
 }));
 vi.mock("@/features/watchdog/hooks/useIncidents", () => ({
-  default: () => ({ incidents: [], isLoading: false, error: null, refetch: vi.fn() }),
+  useIncidents: () => ({ incidents: [], isLoading: false, error: null, refetch: vi.fn() }),
 }));
 vi.mock("@/features/watchdog/hooks/useWatchdogStream", () => ({
-  default: () => ({ isLive: true }),
+  useWatchdogStream: () => ({ isLive: true }),
 }));
 vi.mock("@/shared/auth/hooks/useRole", () => ({
   useRole: () => ({
@@ -113,8 +113,8 @@ const renderWatchdog = () => {
 };
 
 beforeEach(() => {
-  vi.spyOn(useServiceHealthHook, "default").mockReturnValue(defaultHealthHook);
-  vi.spyOn(useSystemMetricsHook, "default").mockReturnValue(defaultMetricsHook);
+  vi.spyOn(useServiceHealthHook, "useServiceHealth").mockReturnValue(defaultHealthHook);
+  vi.spyOn(useSystemMetricsHook, "useSystemMetrics").mockReturnValue(defaultMetricsHook);
 });
 
 describe("Watchdog initial render", () => {
@@ -137,7 +137,7 @@ describe("Watchdog initial render", () => {
 
 describe("Watchdog loading state", () => {
   it("renders skeleton metric rows when metrics are loading", () => {
-    vi.spyOn(useSystemMetricsHook, "default").mockReturnValue({
+    vi.spyOn(useSystemMetricsHook, "useSystemMetrics").mockReturnValue({
       ...defaultMetricsHook,
       isLoading: true,
       metrics: undefined,
@@ -149,7 +149,7 @@ describe("Watchdog loading state", () => {
 
 describe("Watchdog empty state", () => {
   it("shows no-data message when services array is empty", () => {
-    vi.spyOn(useServiceHealthHook, "default").mockReturnValue({ ...defaultHealthHook, services: [] });
+    vi.spyOn(useServiceHealthHook, "useServiceHealth").mockReturnValue({ ...defaultHealthHook, services: [] });
     renderWatchdog();
     expect(screen.getAllByText(/no data yet/i).length).toBeGreaterThanOrEqual(1);
   });
@@ -162,7 +162,7 @@ describe("Watchdog service health statuses", () => {
   });
 
   it("renders Unhealthy status label for unhealthy service", () => {
-    vi.spyOn(useServiceHealthHook, "default").mockReturnValue({
+    vi.spyOn(useServiceHealthHook, "useServiceHealth").mockReturnValue({
       ...defaultHealthHook,
       services: [mockUnhealthy],
     });
@@ -171,7 +171,7 @@ describe("Watchdog service health statuses", () => {
   });
 
   it("shows 'Outage Detected' when any service is unhealthy", () => {
-    vi.spyOn(useServiceHealthHook, "default").mockReturnValue({
+    vi.spyOn(useServiceHealthHook, "useServiceHealth").mockReturnValue({
       ...defaultHealthHook,
       services: [mockHealthy, mockUnhealthy],
     });
@@ -180,7 +180,7 @@ describe("Watchdog service health statuses", () => {
   });
 
   it("renders correct monitored count", () => {
-    vi.spyOn(useServiceHealthHook, "default").mockReturnValue({
+    vi.spyOn(useServiceHealthHook, "useServiceHealth").mockReturnValue({
       ...defaultHealthHook,
       services: [mockHealthy, mockUnhealthy],
     });
@@ -204,7 +204,7 @@ describe("Watchdog service health statuses", () => {
   });
 
   it("renders details when available", () => {
-    vi.spyOn(useServiceHealthHook, "default").mockReturnValue({
+    vi.spyOn(useServiceHealthHook, "useServiceHealth").mockReturnValue({
       ...defaultHealthHook,
       services: [mockUnhealthy],
     });
@@ -228,14 +228,14 @@ describe("Watchdog metrics display", () => {
 describe("Watchdog refresh", () => {
   it("calls refetch when Refresh button is clicked", () => {
     const refetch = vi.fn();
-    vi.spyOn(useServiceHealthHook, "default").mockReturnValue({ ...defaultHealthHook, refetch });
+    vi.spyOn(useServiceHealthHook, "useServiceHealth").mockReturnValue({ ...defaultHealthHook, refetch });
     renderWatchdog();
     fireEvent.click(screen.getByRole("button", { name: /refresh/i }));
     expect(refetch).toHaveBeenCalled();
   });
 
   it("disables Refresh button while loading", () => {
-    vi.spyOn(useServiceHealthHook, "default").mockReturnValue({ ...defaultHealthHook, isLoading: true });
+    vi.spyOn(useServiceHealthHook, "useServiceHealth").mockReturnValue({ ...defaultHealthHook, isLoading: true });
     renderWatchdog();
     expect(screen.getByRole("button", { name: /refresh/i })).toBeDisabled();
   });

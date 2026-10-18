@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import MessageBubble from "./message-bubble";
+import { MessageBubble } from "./message-bubble";
 import type { ConversationMessage } from "@/features/assistant/types/assistant";
 
 const base = (overrides: Partial<ConversationMessage> = {}): ConversationMessage => ({

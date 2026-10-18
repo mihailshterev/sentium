@@ -1,14 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Routes, Route } from "react-router";
-import WorkflowsList from "./workflows-view";
-import WorkflowBuilder from "./workflow-builder-view";
+import { WorkflowsView as WorkflowsList } from "./workflows-view";
+import { WorkflowBuilderView as WorkflowBuilder } from "./workflow-builder-view";
 
 vi.mock("@/features/workflows/hooks/useWorkflows");
 vi.mock("@/features/agents/hooks/useAgents");
 
-import useWorkflows from "@/features/workflows/hooks/useWorkflows";
-import useAgents from "@/features/agents/hooks/useAgents";
+import { useWorkflows } from "@/features/workflows/hooks/useWorkflows";
+import { useAgents } from "@/features/agents/hooks/useAgents";
 
 const mockUseWorkflows = vi.mocked(useWorkflows);
 const mockUseAgents = vi.mocked(useAgents);

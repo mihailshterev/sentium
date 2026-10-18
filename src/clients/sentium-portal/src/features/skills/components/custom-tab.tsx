@@ -3,13 +3,13 @@ import { Bot, Check, Loader, Plus, X } from "lucide-react";
 import styles from "../skills.module.scss";
 import { useSkills } from "@/features/skills/hooks/useSkills";
 import type { AgentSkill } from "@/features/skills/types/skills";
-import EmptyState from "@/shared/ui/empty-state";
-import LoadMore from "@/shared/ui/load-more";
-import SkillCard from "./skill-card";
-import StatusMessage from "@/shared/ui/status-message";
-import ConfirmDialog from "@/shared/ui/confirm-dialog";
+import { EmptyState } from "@/shared/ui/empty-state";
+import { LoadMore } from "@/shared/ui/load-more";
+import { SkillCard } from "./skill-card";
+import { StatusMessage } from "@/shared/ui/status-message";
+import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
 
-const CustomTab = () => {
+export function CustomTab() {
   const {
     skills,
     isLoading,
@@ -216,6 +216,6 @@ const CustomTab = () => {
       />
     </div>
   );
-};
+}
 
-export default CustomTab;
+

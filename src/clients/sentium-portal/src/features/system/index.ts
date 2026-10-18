@@ -1,1 +1,1 @@
-export { default } from "./views/system-view";
+export { SystemView } from "./views/system-view";

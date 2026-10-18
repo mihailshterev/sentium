@@ -1,1 +1,1 @@
-export { default } from "./views/dashboard-view";
+export { DashboardView } from "./views/dashboard-view";

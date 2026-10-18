@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
-import useOllamaModels from "./useOllamaModels";
+import { useOllamaModels } from "./useOllamaModels";
 import * as agentRuntimeService from "@/features/models/api/models.service";
 import type { OllamaModel } from "@/features/models/types/models";
 

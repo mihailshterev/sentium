@@ -1,6 +1,6 @@
 import styles from "../sentinel.module.scss";
 
-const AlignmentGauge = ({ score }: { score: number | null }) => {
+export function AlignmentGauge({ score }: { score: number | null }) {
   const pct = score !== null ? Math.round(score * 100) : null;
   const label = pct === null ? "No Data" : pct >= 70 ? "Aligned" : pct >= 40 ? "Uncertain" : "Misaligned";
   const color =
@@ -64,6 +64,6 @@ const AlignmentGauge = ({ score }: { score: number | null }) => {
       <p className={styles.gaugeCaption}>Avg alignment of last 20 decisions with semantic check</p>
     </div>
   );
-};
+}
 
-export default AlignmentGauge;
+

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import ModelSelector from "./model-selector";
+import { ModelSelector } from "./model-selector";
 
 describe("ModelSelector - field variant (default)", () => {
   it("renders a select with alphabetically sorted options when models exist", () => {

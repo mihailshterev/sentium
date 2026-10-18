@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import Models from "./models-view";
+import { ModelsView as Models } from "./models-view";
 import * as useOllamaModelsHook from "@/features/models/hooks/useOllamaModels";
 import * as useRoleHook from "@/shared/auth/hooks/useRole";
 import type { PullState } from "@/features/models/hooks/useOllamaModels";
@@ -48,7 +48,7 @@ const renderModels = () => {
 };
 
 beforeEach(() => {
-  vi.spyOn(useOllamaModelsHook, "default").mockReturnValue(defaultHook);
+  vi.spyOn(useOllamaModelsHook, "useOllamaModels").mockReturnValue(defaultHook);
   vi.spyOn(useRoleHook, "useRole").mockReturnValue({
     isSovereign: true,
     isMemberOrAbove: true,
@@ -61,7 +61,7 @@ beforeEach(() => {
 
 describe("Models loading state", () => {
   it("shows 'Loading models…' when isLoading", () => {
-    vi.spyOn(useOllamaModelsHook, "default").mockReturnValue({ ...defaultHook, models: [], isLoading: true });
+    vi.spyOn(useOllamaModelsHook, "useOllamaModels").mockReturnValue({ ...defaultHook, models: [], isLoading: true });
     renderModels();
     expect(screen.getByText(/loading models/i)).toBeInTheDocument();
   });
@@ -69,7 +69,7 @@ describe("Models loading state", () => {
 
 describe("Models empty state", () => {
   it("shows 'No models installed' when list is empty", () => {
-    vi.spyOn(useOllamaModelsHook, "default").mockReturnValue({ ...defaultHook, models: [] });
+    vi.spyOn(useOllamaModelsHook, "useOllamaModels").mockReturnValue({ ...defaultHook, models: [] });
     renderModels();
     expect(screen.getByText(/no models installed/i)).toBeInTheDocument();
   });
@@ -115,7 +115,7 @@ describe("Models success state", () => {
 describe("Models delete flow", () => {
   it("calls deleteModel when delete button is clicked and confirmed", async () => {
     const deleteModel = vi.fn();
-    vi.spyOn(useOllamaModelsHook, "default").mockReturnValue({ ...defaultHook, deleteModel });
+    vi.spyOn(useOllamaModelsHook, "useOllamaModels").mockReturnValue({ ...defaultHook, deleteModel });
     renderModels();
     fireEvent.click(screen.getByTitle("Delete llama3.2"));
     const dialog = await screen.findByRole("dialog");
@@ -128,7 +128,7 @@ describe("Models delete flow", () => {
 
   it("does NOT call deleteModel when confirmation is cancelled", () => {
     const deleteModel = vi.fn();
-    vi.spyOn(useOllamaModelsHook, "default").mockReturnValue({ ...defaultHook, deleteModel });
+    vi.spyOn(useOllamaModelsHook, "useOllamaModels").mockReturnValue({ ...defaultHook, deleteModel });
     renderModels();
     fireEvent.click(screen.getByTitle("Delete llama3.2"));
     expect(deleteModel).not.toHaveBeenCalled();
@@ -140,7 +140,7 @@ describe("Models delete flow", () => {
       agentsReset: 2,
       defaultModel: "gemma3:1b",
     };
-    vi.spyOn(useOllamaModelsHook, "default").mockReturnValue({ ...defaultHook, deleteResult });
+    vi.spyOn(useOllamaModelsHook, "useOllamaModels").mockReturnValue({ ...defaultHook, deleteResult });
     renderModels();
     expect(screen.getByText(/2 agents reset to gemma3:1b/)).toBeInTheDocument();
   });
@@ -151,14 +151,14 @@ describe("Models delete flow", () => {
       agentsReset: 0,
       defaultModel: "gemma3:1b",
     };
-    vi.spyOn(useOllamaModelsHook, "default").mockReturnValue({ ...defaultHook, deleteResult });
+    vi.spyOn(useOllamaModelsHook, "useOllamaModels").mockReturnValue({ ...defaultHook, deleteResult });
     renderModels();
     expect(screen.getByText(/no agents were affected/i)).toBeInTheDocument();
   });
 
   it("calls clearDeleteResult when dismiss button is clicked", () => {
     const clearDeleteResult = vi.fn();
-    vi.spyOn(useOllamaModelsHook, "default").mockReturnValue({
+    vi.spyOn(useOllamaModelsHook, "useOllamaModels").mockReturnValue({
       ...defaultHook,
       deleteResult: { deletedModel: "llama3.2", agentsReset: 0, defaultModel: "" },
       clearDeleteResult,
@@ -183,7 +183,7 @@ describe("Models pull flow", () => {
 
   it("calls pull when form is submitted with a model name", async () => {
     const pull = vi.fn();
-    vi.spyOn(useOllamaModelsHook, "default").mockReturnValue({ ...defaultHook, pull });
+    vi.spyOn(useOllamaModelsHook, "useOllamaModels").mockReturnValue({ ...defaultHook, pull });
     renderModels();
     fireEvent.change(screen.getByLabelText(/model name/i), { target: { value: "mistral" } });
     fireEvent.click(screen.getByRole("button", { name: /pull model/i }));
@@ -191,7 +191,7 @@ describe("Models pull flow", () => {
   });
 
   it("shows Cancel button when pulling is in progress", () => {
-    vi.spyOn(useOllamaModelsHook, "default").mockReturnValue({
+    vi.spyOn(useOllamaModelsHook, "useOllamaModels").mockReturnValue({
       ...defaultHook,
       pullState: { status: "Pulling...", done: false },
     });
@@ -200,7 +200,7 @@ describe("Models pull flow", () => {
   });
 
   it("shows pull progress status text", () => {
-    vi.spyOn(useOllamaModelsHook, "default").mockReturnValue({
+    vi.spyOn(useOllamaModelsHook, "useOllamaModels").mockReturnValue({
       ...defaultHook,
       pullState: { status: "Downloading layer", done: false },
     });
@@ -209,7 +209,7 @@ describe("Models pull flow", () => {
   });
 
   it("shows pull progress percent when total and completed are set", () => {
-    vi.spyOn(useOllamaModelsHook, "default").mockReturnValue({
+    vi.spyOn(useOllamaModelsHook, "useOllamaModels").mockReturnValue({
       ...defaultHook,
       pullState: { status: "Downloading", total: 1000, completed: 500, done: false },
     });
@@ -218,7 +218,7 @@ describe("Models pull flow", () => {
   });
 
   it("shows success message when pull is done", () => {
-    vi.spyOn(useOllamaModelsHook, "default").mockReturnValue({
+    vi.spyOn(useOllamaModelsHook, "useOllamaModels").mockReturnValue({
       ...defaultHook,
       pullState: { status: "success", done: true },
     });
@@ -227,7 +227,7 @@ describe("Models pull flow", () => {
   });
 
   it("shows error when pull fails", () => {
-    vi.spyOn(useOllamaModelsHook, "default").mockReturnValue({
+    vi.spyOn(useOllamaModelsHook, "useOllamaModels").mockReturnValue({
       ...defaultHook,
       pullState: { status: "", error: "Model not found", done: true },
     });
@@ -237,7 +237,7 @@ describe("Models pull flow", () => {
 
   it("calls cancelPull when Cancel button is clicked", () => {
     const cancelPull = vi.fn();
-    vi.spyOn(useOllamaModelsHook, "default").mockReturnValue({
+    vi.spyOn(useOllamaModelsHook, "useOllamaModels").mockReturnValue({
       ...defaultHook,
       cancelPull,
       pullState: { status: "Pulling", done: false },
@@ -249,7 +249,7 @@ describe("Models pull flow", () => {
 
   it("calls refetch when refresh icon button is clicked", () => {
     const refetch = vi.fn();
-    vi.spyOn(useOllamaModelsHook, "default").mockReturnValue({ ...defaultHook, refetch });
+    vi.spyOn(useOllamaModelsHook, "useOllamaModels").mockReturnValue({ ...defaultHook, refetch });
     renderModels();
     fireEvent.click(screen.getByTitle("Refresh model list"));
     expect(refetch).toHaveBeenCalled();
@@ -259,14 +259,14 @@ describe("Models pull flow", () => {
 describe("Models edge cases", () => {
   it("does not pull when model name is empty", () => {
     const pull = vi.fn();
-    vi.spyOn(useOllamaModelsHook, "default").mockReturnValue({ ...defaultHook, pull });
+    vi.spyOn(useOllamaModelsHook, "useOllamaModels").mockReturnValue({ ...defaultHook, pull });
     renderModels();
     fireEvent.submit(document.querySelector("form")!);
     expect(pull).not.toHaveBeenCalled();
   });
 
   it("shows 0 B for model with 0 bytes", () => {
-    vi.spyOn(useOllamaModelsHook, "default").mockReturnValue({
+    vi.spyOn(useOllamaModelsHook, "useOllamaModels").mockReturnValue({
       ...defaultHook,
       models: [
         {

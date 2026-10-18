@@ -2,7 +2,7 @@ import { useState } from "react"; // Added useState import
 import { FolderOpen, FolderPlus, ChevronRight, Pencil, Trash2 } from "lucide-react";
 import styles from "../workspaces.module.scss";
 import type { Workspace } from "@/features/workspaces/types/workspace";
-import ConfirmDialog from "@/shared/ui/confirm-dialog"; // Added import
+import { ConfirmDialog } from "@/shared/ui/confirm-dialog"; // Added import
 
 interface WorkspaceSidebarProps {
   workspaces: Workspace[];
@@ -14,7 +14,7 @@ interface WorkspaceSidebarProps {
   onCreateNew: () => void;
 }
 
-const WorkspaceSidebar = ({
+export function WorkspaceSidebar({
   workspaces,
   selectedWorkspace,
   isWorkspacesError,
@@ -22,7 +22,7 @@ const WorkspaceSidebar = ({
   onEdit,
   onDelete,
   onCreateNew,
-}: WorkspaceSidebarProps) => {
+}: WorkspaceSidebarProps) {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [workspaceToDelete, setWorkspaceToDelete] = useState<{ id: string; name: string } | null>(null);
 
@@ -116,6 +116,4 @@ const WorkspaceSidebar = ({
       />
     </aside>
   );
-};
-
-export default WorkspaceSidebar;
+}

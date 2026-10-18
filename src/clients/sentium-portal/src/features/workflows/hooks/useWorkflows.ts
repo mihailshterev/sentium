@@ -10,7 +10,7 @@ import type { WorkflowPayload, UpdateWorkflowPayload, WorkflowRecord } from "@/f
 
 const WORKFLOWS_KEY = ["workflows"] as const;
 
-const useWorkflows = () => {
+export function useWorkflows() {
   const queryClient = useQueryClient();
   const invalidate = () => queryClient.invalidateQueries({ queryKey: WORKFLOWS_KEY });
 
@@ -53,6 +53,4 @@ const useWorkflows = () => {
     deleteWorkflow: deleteMutation.mutate,
     isDeletingWorkflow: deleteMutation.isPending,
   };
-};
-
-export default useWorkflows;
+}

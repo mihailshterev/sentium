@@ -33,7 +33,7 @@ function useResizeObserver(ref: React.RefObject<HTMLElement | null>) {
   return size;
 }
 
-const SemanticMap = () => {
+export function SemanticMapView() {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { width, height } = useResizeObserver(containerRef);
@@ -415,6 +415,6 @@ const SemanticMap = () => {
       <ErrorToast error={error} onDismiss={() => setError(null)} />
     </div>
   );
-};
+}
 
-export default SemanticMap;
+

@@ -20,7 +20,7 @@ export interface ConfirmDialogProps {
   onCancel: () => void;
 }
 
-const ConfirmDialog = ({
+export function ConfirmDialog({
   open,
   title,
   description,
@@ -30,7 +30,7 @@ const ConfirmDialog = ({
   confirmWord,
   onConfirm,
   onCancel,
-}: ConfirmDialogProps) => {
+}: ConfirmDialogProps) {
   const [typedValue, setTypedValue] = useState("");
   const overlayRef = useRef<HTMLDivElement>(null);
 
@@ -135,6 +135,4 @@ const ConfirmDialog = ({
       </div>
     </div>
   );
-};
-
-export default ConfirmDialog;
+}

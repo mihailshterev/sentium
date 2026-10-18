@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { createRef } from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
-import ChatInputBar from "./chat-input-bar";
+import { ChatInputBar } from "./chat-input-bar";
 
 const noop = () => {};
 

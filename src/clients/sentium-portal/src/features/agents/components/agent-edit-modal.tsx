@@ -2,9 +2,9 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { X, Loader, CheckCircle, Cpu } from "lucide-react";
 import styles from "../agents.module.scss";
-import ModelSelector from "@/shared/ui/model-selector";
-import FormField from "@/shared/ui/form-field";
-import StatusMessage from "@/shared/ui/status-message";
+import { ModelSelector } from "@/shared/ui/model-selector";
+import { FormField } from "@/shared/ui/form-field";
+import { StatusMessage } from "@/shared/ui/status-message";
 import type { AgentRecord } from "@/features/agents/types/agents";
 import { agentCreateSchema, type AgentCreateFormData } from "../schemas/agent.create";
 
@@ -19,7 +19,7 @@ interface AgentEditModalProps {
   onClose: () => void;
 }
 
-export default function AgentEditModal({
+export function AgentEditModal({
   agent,
   models,
   isUpdatingAgent,

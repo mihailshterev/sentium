@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
-import useWorkflowRuns from "./useWorkflowRuns";
+import { useWorkflowRuns } from "./useWorkflowRuns";
 import { useWorkflowRun } from "./useWorkflowRuns";
 import * as agentRuntimeService from "@/features/workflows/api/workflows.service";
 import type { WorkflowRun } from "@/features/workflows/types/workflows";

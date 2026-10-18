@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import Card from "./card";
+import { Card } from "./card";
 
 describe("Card", () => {
   it("renders its children", () => {

@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import EffectBadge from "./effect-badge";
-import RiskBadge from "./risk-badge";
-import AlignmentBadge from "./alignment-badge";
+import { EffectBadge } from "./effect-badge";
+import { RiskBadge } from "./risk-badge";
+import { AlignmentBadge } from "./alignment-badge";
 import type { PolicyRiskLevel } from "@/features/sentinel/types/sentinel";
 
 describe("EffectBadge", () => {

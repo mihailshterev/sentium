@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import StatusMessage from "./status-message";
+import { StatusMessage } from "./status-message";
 
 describe("StatusMessage", () => {
   it("renders the message text", () => {

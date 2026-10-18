@@ -4,17 +4,17 @@ import styles from "../users.module.scss";
 import { ROLE_HIERARCHY, type Role } from "@/shared/utils/roles";
 import { useRole } from "@/shared/auth/hooks/useRole";
 import { useAuthStore } from "@/shared/auth/state/auth-store";
-import useUsers from "@/features/users/hooks/useUsers";
-import PageHeader from "@/shared/ui/page-header";
-import EmptyState from "@/shared/ui/empty-state";
-import LoadMore from "@/shared/ui/load-more";
-import SkeletonRows from "../components/skeleton-rows";
-import UserRow from "../components/user-row";
-import ConfirmDialog from "@/shared/ui/confirm-dialog"; // Added import
+import { useUsers } from "@/features/users/hooks/useUsers";
+import { PageHeader } from "@/shared/ui/page-header";
+import { EmptyState } from "@/shared/ui/empty-state";
+import { LoadMore } from "@/shared/ui/load-more";
+import { SkeletonRows } from "../components/skeleton-rows";
+import { UserRow } from "../components/user-row";
+import { ConfirmDialog } from "@/shared/ui/confirm-dialog"; // Added import
 
 const ROLE_OPTIONS = ROLE_HIERARCHY as readonly Role[];
 
-export default function Users() {
+export function UsersView() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [pendingUserId, setPendingUserId] = useState<string | null>(null);
 

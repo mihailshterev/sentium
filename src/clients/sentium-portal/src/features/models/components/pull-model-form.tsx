@@ -24,14 +24,14 @@ interface PullModelFormProps {
   getPullPercent: () => number | null;
 }
 
-const PullModelForm = ({
+export function PullModelForm({
   pullState,
   isPulling,
   onSubmit,
   onCancelPull,
   onResetPull,
   getPullPercent,
-}: PullModelFormProps) => {
+}: PullModelFormProps) {
   const { register, handleSubmit, watch } = useForm<ModelPullFormData>({
     resolver: zodResolver(modelPullSchema),
     defaultValues: { modelName: "" },
@@ -124,6 +124,6 @@ const PullModelForm = ({
       )}
     </form>
   );
-};
+}
 
-export default PullModelForm;
+

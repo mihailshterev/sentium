@@ -3,7 +3,7 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import { assignRole, deleteUser, getUsers, removeRole, type UserListItem } from "@/features/auth/api/identity.service";
-import useUsers from "./useUsers";
+import { useUsers } from "./useUsers";
 import type { Role } from "@/shared/utils/roles";
 
 vi.mock("@/features/auth/api/identity.service", () => ({

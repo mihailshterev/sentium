@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { BrainCircuit, Database, FlaskConical } from "lucide-react";
 import styles from "../knowledge-base.module.scss";
-import PageHeader from "@/shared/ui/page-header";
+import { PageHeader } from "@/shared/ui/page-header";
 import { GlobalContextTab, AgentLearningsTab } from "../components/knowledge-base-tabs";
 
 type Tab = "context" | "learnings";
 
-const KnowledgeBase = () => {
+export function KnowledgeBaseView() {
   const [activeTab, setActiveTab] = useState<Tab>("context");
 
   return (
@@ -42,6 +42,6 @@ const KnowledgeBase = () => {
       </div>
     </div>
   );
-};
+}
 
-export default KnowledgeBase;
+

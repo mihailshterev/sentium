@@ -2,11 +2,11 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Loader, Cpu } from "lucide-react";
 import styles from "../agents.module.scss";
-import FormField from "@/shared/ui/form-field";
-import StatusMessage from "@/shared/ui/status-message";
+import { FormField } from "@/shared/ui/form-field";
+import { StatusMessage } from "@/shared/ui/status-message";
 import { agentCreateSchema, type AgentCreateFormData } from "../schemas/agent.create";
 import { useEffect } from "react";
-import ModelSelector from "@/shared/ui/model-selector";
+import { ModelSelector } from "@/shared/ui/model-selector";
 
 interface AgentCreateFormProps {
   models: string[];
@@ -17,7 +17,7 @@ interface AgentCreateFormProps {
   onSubmit: (data: { name: string; description: string; model: string }) => void;
 }
 
-export default function AgentCreateForm({
+export function AgentCreateForm({
   models,
   isCreatingAgent,
   isCreateSuccess,

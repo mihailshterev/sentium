@@ -1,1 +1,1 @@
-export { default } from "./views/users-view";
+export { UsersView } from "./views/users-view";

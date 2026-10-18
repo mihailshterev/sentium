@@ -6,7 +6,7 @@ interface RunSummaryProps {
   entry: SandboxExecutionLog;
 }
 
-const RunSummary = ({ entry }: RunSummaryProps) => (
+export function RunSummary({ entry }: RunSummaryProps) { return (
   <div className={styles.auditBody}>
     {entry.policyDenied && (
       <div className={styles.policyDeniedBanner}>
@@ -59,6 +59,6 @@ const RunSummary = ({ entry }: RunSummaryProps) => (
       )}
     </dl>
   </div>
-);
+); }
 
-export default RunSummary;
+

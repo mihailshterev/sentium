@@ -20,7 +20,7 @@ function barIconClass(pct: number): string {
   return styles.vitalsIconGreen;
 }
 
-const VitalsStrip = ({ metrics, services, loading }: VitalsStripProps) => {
+export function VitalsStrip({ metrics, services, loading }: VitalsStripProps) {
   const cpuPct = metrics?.cpu.processCpuPercent ?? 0;
   const memPct = metrics?.memory.memoryLoadPercent ?? 0;
   const uptime = metrics ? formatUptime(metrics.host.uptime) : "—";
@@ -91,6 +91,6 @@ const VitalsStrip = ({ metrics, services, loading }: VitalsStripProps) => {
       </div>
     </div>
   );
-};
+}
 
-export default VitalsStrip;
+

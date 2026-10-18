@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import UploadedTab from "./uploaded-tab";
+import { UploadedTab } from "./uploaded-tab";
 import * as useSkillsHook from "@/features/skills/hooks/useSkills";
 
 const uploaded = {

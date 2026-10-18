@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, waitFor, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
-import useAgents from "./useAgents";
+import { useAgents } from "./useAgents";
 import * as agentRuntimeService from "@/features/agents/api/agents.service";
 import type { AgentRecord } from "@/features/agents/types/agents";
 

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
-import CustomTab from "./custom-tab";
+import { CustomTab } from "./custom-tab";
 import * as useSkillsHook from "@/features/skills/hooks/useSkills";
 
 const customSkill = {

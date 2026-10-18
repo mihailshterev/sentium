@@ -1,6 +1,6 @@
 import styles from "../users.module.scss";
 
-const SkeletonRows = () => (
+export function SkeletonRows() { return (
   <>
     {Array.from({ length: 6 }).map((_, i) => (
       <div key={i} className={styles.skeletonRow}>
@@ -15,6 +15,6 @@ const SkeletonRows = () => (
       </div>
     ))}
   </>
-);
+); }
 
-export default SkeletonRows;
+

@@ -1,6 +1,6 @@
 import { AlertTriangle, Shield, ShieldCheck, ShieldOff, Siren } from "lucide-react";
 import styles from "../sentinel.module.scss";
-import StatCard from "@/shared/ui/stat-card";
+import { StatCard } from "@/shared/ui/stat-card";
 import type { AuditStats } from "@/features/sentinel/types/sentinel";
 
 interface SentinelStatsProps {
@@ -8,7 +8,7 @@ interface SentinelStatsProps {
   denialRate: number;
 }
 
-const SentinelStats = ({ stats, denialRate }: SentinelStatsProps) => (
+export function SentinelStats({ stats, denialRate }: SentinelStatsProps) { return (
   <div className={styles.statsRow}>
     <StatCard icon={<Shield size={16} />} value={stats?.total ?? "—"} label="Total Decisions" iconColor="blue" />
     <StatCard icon={<ShieldCheck size={16} />} value={stats?.allowed ?? "—"} label="Allowed" iconColor="green" />
@@ -21,6 +21,6 @@ const SentinelStats = ({ stats, denialRate }: SentinelStatsProps) => (
       iconColor="purple"
     />
   </div>
-);
+); }
 
-export default SentinelStats;
+

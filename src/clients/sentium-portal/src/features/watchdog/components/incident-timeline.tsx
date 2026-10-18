@@ -2,7 +2,7 @@ import { ShieldCheck } from "lucide-react";
 import styles from "../watchdog.module.scss";
 import type { Incident } from "@/features/watchdog/types/serviceHealth";
 import { formatRelativeTime } from "../../../shared/utils/formatters";
-import SeverityBadge from "./severity-badge";
+import { SeverityBadge } from "./severity-badge";
 
 const formatDuration = (ms?: number | null) => {
   if (ms == null) {
@@ -21,7 +21,7 @@ const formatDuration = (ms?: number | null) => {
   return `${hours}h ${minutes % 60}m`;
 };
 
-const IncidentTimeline = ({ incidents }: { incidents: Incident[] }) => {
+export function IncidentTimeline({ incidents }: { incidents: Incident[] }) {
   if (incidents.length === 0) {
     return (
       <div className={styles.incidentEmpty}>
@@ -56,6 +56,6 @@ const IncidentTimeline = ({ incidents }: { incidents: Incident[] }) => {
       ))}
     </div>
   );
-};
+}
 
-export default IncidentTimeline;
+

@@ -4,11 +4,11 @@ import styles from "../settings.module.scss";
 import { useSystemSettings } from "@/features/registry/hooks/useSystemSettings";
 import { useOllamaSettings } from "@/features/registry/hooks/useOllamaSettings";
 import { useRole } from "@/shared/auth/hooks/useRole";
-import PageHeader from "@/shared/ui/page-header";
-import SettingsEditor from "../components/settings-editor";
+import { PageHeader } from "@/shared/ui/page-header";
+import { SettingsEditor } from "../components/settings-editor";
 import type { SettingsEditorFormData } from "../schemas/settings.editor";
 
-const SettingsPage = () => {
+export function SettingsView() {
   const { isSovereign } = useRole();
 
   const {
@@ -114,6 +114,6 @@ const SettingsPage = () => {
       />
     </div>
   );
-};
+}
 
-export default SettingsPage;
+

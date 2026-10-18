@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import RunScript from "./run-script";
+import { RunScript } from "./run-script";
 import type { SandboxExecutionLog } from "@/features/sandbox/types/sandbox";
 
 const entry = (overrides: Partial<SandboxExecutionLog> = {}): SandboxExecutionLog =>

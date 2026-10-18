@@ -24,7 +24,7 @@ interface ModelCardProps {
   canDelete: boolean;
 }
 
-const ModelCard = ({ model, deletingModel, onDelete, canDelete }: ModelCardProps) => (
+export function ModelCard({ model, deletingModel, onDelete, canDelete }: ModelCardProps) { return (
   <div className={styles.modelCard}>
     <div className={styles.modelIconWrap}>
       <Cpu size={16} />
@@ -62,6 +62,6 @@ const ModelCard = ({ model, deletingModel, onDelete, canDelete }: ModelCardProps
       </button>
     )}
   </div>
-);
+); }
 
-export default ModelCard;
+

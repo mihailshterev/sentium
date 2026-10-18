@@ -1,9 +1,9 @@
 import { Outlet } from "react-router";
-import Navbar from "../components/navbar/navbar";
-import AuroraBackground from "@/shared/ui/aurora-background";
+import { Navbar } from "../components/navbar/navbar";
+import { AuroraBackground } from "@/shared/ui/aurora-background";
 import styles from "./layout.module.scss";
 
-const Layout = () => {
+export function Layout() {
   return (
     <div className={styles.layoutWrapper}>
       <AuroraBackground />
@@ -13,6 +13,4 @@ const Layout = () => {
       </main>
     </div>
   );
-};
-
-export default Layout;
+}

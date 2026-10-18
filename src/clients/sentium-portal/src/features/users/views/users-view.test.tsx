@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import Users from "./users-view";
+import { UsersView as Users } from "./users-view";
 import { useAuthStore } from "@/shared/auth/state/auth-store";
 import * as useUsersHook from "@/features/users/hooks/useUsers";
 import * as useRoleHook from "@/shared/auth/hooks/useRole";
@@ -78,13 +78,13 @@ beforeEach(() => {
     user: { sub: "current-user", email: "me@example.com", name: "Me", roles: ["Member"] },
     status: "authenticated",
   });
-  vi.spyOn(useUsersHook, "default").mockReturnValue(defaultUsersHook);
+  vi.spyOn(useUsersHook, "useUsers").mockReturnValue(defaultUsersHook);
   vi.spyOn(useRoleHook, "useRole").mockReturnValue(memberRole);
 });
 
 describe("Users loading state", () => {
   it("renders skeleton rows while loading", () => {
-    vi.spyOn(useUsersHook, "default").mockReturnValue({ ...defaultUsersHook, isLoading: true });
+    vi.spyOn(useUsersHook, "useUsers").mockReturnValue({ ...defaultUsersHook, isLoading: true });
     renderUsers();
     expect(screen.queryByText("alice@example.com")).not.toBeInTheDocument();
   });
@@ -92,7 +92,7 @@ describe("Users loading state", () => {
 
 describe("Users error state", () => {
   it("shows error message when fetch fails", () => {
-    vi.spyOn(useUsersHook, "default").mockReturnValue({
+    vi.spyOn(useUsersHook, "useUsers").mockReturnValue({
       ...defaultUsersHook,
       users: [],
       error: new Error("Failed to load"),
@@ -105,7 +105,7 @@ describe("Users error state", () => {
 
 describe("Users empty state", () => {
   it("shows 'No users found' when list is empty", () => {
-    vi.spyOn(useUsersHook, "default").mockReturnValue({ ...defaultUsersHook, users: [] });
+    vi.spyOn(useUsersHook, "useUsers").mockReturnValue({ ...defaultUsersHook, users: [] });
     renderUsers();
     expect(screen.getByText(/no users found/i)).toBeInTheDocument();
   });
@@ -118,7 +118,7 @@ describe("Users list state", () => {
   });
 
   it("renders - when user has no name", () => {
-    vi.spyOn(useUsersHook, "default").mockReturnValue({
+    vi.spyOn(useUsersHook, "useUsers").mockReturnValue({
       ...defaultUsersHook,
       users: [mockUserNoName],
     });
@@ -137,7 +137,7 @@ describe("Users list state", () => {
   });
 
   it("shows - for roles when user has no roles", () => {
-    vi.spyOn(useUsersHook, "default").mockReturnValue({
+    vi.spyOn(useUsersHook, "useUsers").mockReturnValue({
       ...defaultUsersHook,
       users: [{ ...mockUser, roles: [] }],
     });
@@ -155,7 +155,7 @@ describe("Users list state", () => {
   });
 
   it("renders 'locked' tag for locked-out users", () => {
-    vi.spyOn(useUsersHook, "default").mockReturnValue({
+    vi.spyOn(useUsersHook, "useUsers").mockReturnValue({
       ...defaultUsersHook,
       users: [{ ...mockUser, isLockedOut: true }],
     });
@@ -169,7 +169,7 @@ describe("Users list state", () => {
   });
 
   it("shows user count with plural", () => {
-    vi.spyOn(useUsersHook, "default").mockReturnValue({
+    vi.spyOn(useUsersHook, "useUsers").mockReturnValue({
       ...defaultUsersHook,
       users: [mockUser, mockUserNoName],
       totalCount: 2,
@@ -182,7 +182,7 @@ describe("Users list state", () => {
 describe("Users sovereign controls", () => {
   beforeEach(() => {
     vi.spyOn(useRoleHook, "useRole").mockReturnValue(sovereignRole);
-    vi.spyOn(useUsersHook, "default").mockReturnValue(defaultUsersHook);
+    vi.spyOn(useUsersHook, "useUsers").mockReturnValue(defaultUsersHook);
   });
 
   it("renders role assignment select for sovereign", () => {
@@ -197,7 +197,7 @@ describe("Users sovereign controls", () => {
 
   it("calls assignRole when a role is selected from the dropdown", async () => {
     const assignRole = vi.fn().mockResolvedValue(undefined);
-    vi.spyOn(useUsersHook, "default").mockReturnValue({ ...defaultUsersHook, assignRole });
+    vi.spyOn(useUsersHook, "useUsers").mockReturnValue({ ...defaultUsersHook, assignRole });
     renderUsers();
     const select = screen.getByRole("combobox");
     fireEvent.change(select, { target: { value: "Sovereign" } });
@@ -206,14 +206,14 @@ describe("Users sovereign controls", () => {
 
   it("calls removeRole when remove role button is clicked", async () => {
     const removeRole = vi.fn().mockResolvedValue(undefined);
-    vi.spyOn(useUsersHook, "default").mockReturnValue({ ...defaultUsersHook, removeRole });
+    vi.spyOn(useUsersHook, "useUsers").mockReturnValue({ ...defaultUsersHook, removeRole });
     renderUsers();
     fireEvent.click(screen.getByTitle("Remove Member"));
     await waitFor(() => expect(removeRole).toHaveBeenCalledWith({ userId: "user-1", roleName: "Member" }));
   });
 
   it("shows generic error when removeRole throws a non-Error value", async () => {
-    vi.spyOn(useUsersHook, "default").mockReturnValue({
+    vi.spyOn(useUsersHook, "useUsers").mockReturnValue({
       ...defaultUsersHook,
       removeRole: vi.fn().mockRejectedValue("string error"),
     });
@@ -223,7 +223,7 @@ describe("Users sovereign controls", () => {
   });
 
   it("shows actionError when assignRole throws", async () => {
-    vi.spyOn(useUsersHook, "default").mockReturnValue({
+    vi.spyOn(useUsersHook, "useUsers").mockReturnValue({
       ...defaultUsersHook,
       assignRole: vi.fn().mockRejectedValue(new Error("Permission denied")),
     });
@@ -233,7 +233,7 @@ describe("Users sovereign controls", () => {
   });
 
   it("shows generic error when assignRole throws a non-Error value", async () => {
-    vi.spyOn(useUsersHook, "default").mockReturnValue({
+    vi.spyOn(useUsersHook, "useUsers").mockReturnValue({
       ...defaultUsersHook,
       assignRole: vi.fn().mockRejectedValue("plain error"),
     });
@@ -243,7 +243,7 @@ describe("Users sovereign controls", () => {
   });
 
   it("dismisses actionError when × button is clicked", async () => {
-    vi.spyOn(useUsersHook, "default").mockReturnValue({
+    vi.spyOn(useUsersHook, "useUsers").mockReturnValue({
       ...defaultUsersHook,
       assignRole: vi.fn().mockRejectedValue(new Error("Permission denied")),
     });
@@ -256,7 +256,7 @@ describe("Users sovereign controls", () => {
 
   it("calls deleteUser when delete button is clicked and confirmed", async () => {
     const deleteUser = vi.fn().mockResolvedValue(undefined);
-    vi.spyOn(useUsersHook, "default").mockReturnValue({ ...defaultUsersHook, deleteUser });
+    vi.spyOn(useUsersHook, "useUsers").mockReturnValue({ ...defaultUsersHook, deleteUser });
     renderUsers();
     fireEvent.click(screen.getByTitle("Delete user"));
     fireEvent.change(screen.getByRole("textbox"), { target: { value: "Alice Smith" } });
@@ -266,7 +266,7 @@ describe("Users sovereign controls", () => {
 
   it("does NOT call deleteUser when confirmation is cancelled", async () => {
     const deleteUser = vi.fn().mockResolvedValue(undefined);
-    vi.spyOn(useUsersHook, "default").mockReturnValue({ ...defaultUsersHook, deleteUser });
+    vi.spyOn(useUsersHook, "useUsers").mockReturnValue({ ...defaultUsersHook, deleteUser });
     renderUsers();
     fireEvent.click(screen.getByTitle("Delete user"));
     fireEvent.click(screen.getByRole("button", { name: /cancel/i }));
@@ -274,7 +274,7 @@ describe("Users sovereign controls", () => {
   });
 
   it("shows actionError when deleteUser throws", async () => {
-    vi.spyOn(useUsersHook, "default").mockReturnValue({
+    vi.spyOn(useUsersHook, "useUsers").mockReturnValue({
       ...defaultUsersHook,
       deleteUser: vi.fn().mockRejectedValue(new Error("Cannot delete")),
     });
@@ -286,7 +286,7 @@ describe("Users sovereign controls", () => {
   });
 
   it("shows generic error when deleteUser throws a non-Error value", async () => {
-    vi.spyOn(useUsersHook, "default").mockReturnValue({
+    vi.spyOn(useUsersHook, "useUsers").mockReturnValue({
       ...defaultUsersHook,
       deleteUser: vi.fn().mockRejectedValue("plain error"),
     });
@@ -310,14 +310,14 @@ describe("Users sovereign controls", () => {
 describe("Users refresh", () => {
   it("calls refetch when Refresh button is clicked", () => {
     const refetch = vi.fn();
-    vi.spyOn(useUsersHook, "default").mockReturnValue({ ...defaultUsersHook, refetch });
+    vi.spyOn(useUsersHook, "useUsers").mockReturnValue({ ...defaultUsersHook, refetch });
     renderUsers();
     fireEvent.click(screen.getByRole("button", { name: /refresh/i }));
     expect(refetch).toHaveBeenCalled();
   });
 
   it("disables the refresh button when isFetching", () => {
-    vi.spyOn(useUsersHook, "default").mockReturnValue({ ...defaultUsersHook, isFetching: true });
+    vi.spyOn(useUsersHook, "useUsers").mockReturnValue({ ...defaultUsersHook, isFetching: true });
     renderUsers();
     expect(screen.getByRole("button", { name: /refresh/i })).toBeDisabled();
   });

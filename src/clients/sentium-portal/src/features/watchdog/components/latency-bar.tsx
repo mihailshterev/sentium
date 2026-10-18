@@ -1,6 +1,6 @@
 import styles from "../watchdog.module.scss";
 
-const LatencyBar = ({ latencyMs }: { latencyMs: number }) => {
+export function LatencyBar({ latencyMs }: { latencyMs: number }) {
   const pct = Math.min((latencyMs / 1000) * 100, 100);
   const color = latencyMs < 100 ? "green" : latencyMs < 400 ? "amber" : "red";
   return (
@@ -8,6 +8,6 @@ const LatencyBar = ({ latencyMs }: { latencyMs: number }) => {
       <div className={`${styles.latencyBar} ${styles[`latencyBar_${color}`]}`} style={{ width: `${pct}%` }} />
     </div>
   );
-};
+}
 
-export default LatencyBar;
+

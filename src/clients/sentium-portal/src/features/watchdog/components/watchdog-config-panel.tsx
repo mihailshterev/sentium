@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Save, SlidersHorizontal, Check, AlertCircle, Loader } from "lucide-react";
 import styles from "../watchdog.module.scss";
-import useWatchdogConfig from "@/features/watchdog/hooks/useWatchdogConfig";
+import { useWatchdogConfig } from "@/features/watchdog/hooks/useWatchdogConfig";
 import type { WatchdogConfig } from "@/features/watchdog/types/serviceHealth";
 
 const FIELDS: { key: keyof WatchdogConfig; label: string; hint: string; min: number; max: number }[] = [
@@ -24,7 +24,7 @@ const FIELDS: { key: keyof WatchdogConfig; label: string; hint: string; min: num
   { key: "sampleHistorySize", label: "Sample History", hint: "Samples retained per target", min: 10, max: 200 },
 ];
 
-const WatchdogConfigPanel = () => {
+export function WatchdogConfigPanel() {
   const { config, isLoading, saveConfig, isSaving, isSaveSuccess, isSaveError, saveError, resetSave } =
     useWatchdogConfig(true);
   const [draft, setDraft] = useState<WatchdogConfig | null>(null);
@@ -94,6 +94,6 @@ const WatchdogConfigPanel = () => {
       </div>
     </section>
   );
-};
+}
 
-export default WatchdogConfigPanel;
+

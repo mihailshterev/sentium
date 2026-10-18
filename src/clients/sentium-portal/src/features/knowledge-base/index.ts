@@ -1,1 +1,1 @@
-export { default } from "./views/knowledge-base-view";
+export { KnowledgeBaseView } from "./views/knowledge-base-view";

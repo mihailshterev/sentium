@@ -15,7 +15,7 @@ function getUsageColor(percent: number): string {
   return styles.fillRed;
 }
 
-const DiskCard = ({ disk }: { disk: DiskInfo }) => (
+export function DiskCard({ disk }: { disk: DiskInfo }) { return (
   <div className={styles.diskCard}>
     <div className={styles.diskHeader}>
       <span className={styles.diskName}>
@@ -40,6 +40,6 @@ const DiskCard = ({ disk }: { disk: DiskInfo }) => (
       {formatGb(disk.availableGb)} free of {formatGb(disk.totalGb)}
     </span>
   </div>
-);
+); }
 
-export default DiskCard;
+

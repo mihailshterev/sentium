@@ -1,1 +1,1 @@
-export { default } from "./views/sentinel-view";
+export { SentinelView } from "./views/sentinel-view";

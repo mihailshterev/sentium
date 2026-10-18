@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, cleanup, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import KnowledgeBase from "./knowledge-base-view";
+import { KnowledgeBaseView as KnowledgeBase } from "./knowledge-base-view";
 import * as useKnowledgeBaseStatsHook from "@/features/knowledge-base/hooks/useKnowledgeBaseStats";
 import * as useAgentLearningsHook from "@/features/knowledge-base/hooks/useAgentLearnings";
 import type { AgentLearning, AgentLearningStats, KnowledgeBaseCollectionStats } from "../types/agent-learning";

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import Agents from "./agents-view";
+import { AgentsView as Agents } from "./agents-view";
 import * as useAgentsHook from "@/features/agents/hooks/useAgents";
 import * as useModelsHook from "@/features/models/hooks/useModels";
 import type { AgentRecord } from "@/features/agents/types/agents";
@@ -56,13 +56,13 @@ const renderAgents = () => {
 };
 
 beforeEach(() => {
-  vi.spyOn(useAgentsHook, "default").mockReturnValue(defaultAgentsHook);
-  vi.spyOn(useModelsHook, "default").mockReturnValue(defaultModelsHook);
+  vi.spyOn(useAgentsHook, "useAgents").mockReturnValue(defaultAgentsHook);
+  vi.spyOn(useModelsHook, "useModels").mockReturnValue(defaultModelsHook);
 });
 
 describe("Agents – loading state", () => {
   it("shows loading spinner when loading", () => {
-    vi.spyOn(useAgentsHook, "default").mockReturnValue({ ...defaultAgentsHook, agents: [], isLoading: true });
+    vi.spyOn(useAgentsHook, "useAgents").mockReturnValue({ ...defaultAgentsHook, agents: [], isLoading: true });
     renderAgents();
     expect(screen.getByText(/loading registry/i)).toBeInTheDocument();
   });
@@ -70,7 +70,7 @@ describe("Agents – loading state", () => {
 
 describe("Agents empty state", () => {
   it("shows 'No agents registered yet' when list is empty", () => {
-    vi.spyOn(useAgentsHook, "default").mockReturnValue({ ...defaultAgentsHook, agents: [] });
+    vi.spyOn(useAgentsHook, "useAgents").mockReturnValue({ ...defaultAgentsHook, agents: [] });
     renderAgents();
     expect(screen.getByText(/no agents registered yet/i)).toBeInTheDocument();
   });
@@ -103,7 +103,7 @@ describe("Agents list state", () => {
   });
 
   it("renders 'No description provided.' when agent has no description", () => {
-    vi.spyOn(useAgentsHook, "default").mockReturnValue({
+    vi.spyOn(useAgentsHook, "useAgents").mockReturnValue({
       ...defaultAgentsHook,
       agents: [{ ...mockAgent, description: "" }],
     });
@@ -112,7 +112,7 @@ describe("Agents list state", () => {
   });
 
   it("renders model hidden badge when model is empty", () => {
-    vi.spyOn(useAgentsHook, "default").mockReturnValue({
+    vi.spyOn(useAgentsHook, "useAgents").mockReturnValue({
       ...defaultAgentsHook,
       agents: [{ ...mockAgent, model: "" }],
     });
@@ -131,14 +131,14 @@ describe("Agents create form", () => {
   });
 
   it("renders model text input when no models are available", () => {
-    vi.spyOn(useModelsHook, "default").mockReturnValue({ ...defaultModelsHook, models: [] });
+    vi.spyOn(useModelsHook, "useModels").mockReturnValue({ ...defaultModelsHook, models: [] });
     renderAgents();
     const modelInput = screen.getByPlaceholderText(/e\.g\. gemma3:1b/i);
     expect(modelInput).toBeInTheDocument();
   });
 
   it("can change model text input value in create form when no models", () => {
-    vi.spyOn(useModelsHook, "default").mockReturnValue({ ...defaultModelsHook, models: [] });
+    vi.spyOn(useModelsHook, "useModels").mockReturnValue({ ...defaultModelsHook, models: [] });
     renderAgents();
     const modelInput = screen.getByPlaceholderText(/e\.g\. gemma3:1b/i) as HTMLInputElement;
     fireEvent.change(modelInput, { target: { value: "my-custom-model" } });
@@ -158,7 +158,7 @@ describe("Agents create form", () => {
 
   it("calls createAgent with correct payload when form is submitted", async () => {
     const createAgent = vi.fn();
-    vi.spyOn(useAgentsHook, "default").mockReturnValue({ ...defaultAgentsHook, createAgent });
+    vi.spyOn(useAgentsHook, "useAgents").mockReturnValue({ ...defaultAgentsHook, createAgent });
     renderAgents();
     fireEvent.change(screen.getByLabelText(/agent name/i), { target: { value: "MyAgent" } });
     fireEvent.change(screen.getByLabelText(/description/i), { target: { value: "Test desc" } });
@@ -172,19 +172,19 @@ describe("Agents create form", () => {
   });
 
   it("shows 'Registering...' when isCreatingAgent", () => {
-    vi.spyOn(useAgentsHook, "default").mockReturnValue({ ...defaultAgentsHook, isCreatingAgent: true });
+    vi.spyOn(useAgentsHook, "useAgents").mockReturnValue({ ...defaultAgentsHook, isCreatingAgent: true });
     renderAgents();
     expect(screen.getByText(/registering\.\.\./i)).toBeInTheDocument();
   });
 
   it("shows success message after agent is created", () => {
-    vi.spyOn(useAgentsHook, "default").mockReturnValue({ ...defaultAgentsHook, isCreateSuccess: true });
+    vi.spyOn(useAgentsHook, "useAgents").mockReturnValue({ ...defaultAgentsHook, isCreateSuccess: true });
     renderAgents();
     expect(screen.getByText(/agent registered successfully/i)).toBeInTheDocument();
   });
 
   it("shows error message when create fails", () => {
-    vi.spyOn(useAgentsHook, "default").mockReturnValue({
+    vi.spyOn(useAgentsHook, "useAgents").mockReturnValue({
       ...defaultAgentsHook,
       isCreateError: true,
       createAgentError: new Error("Duplicate agent name"),
@@ -194,7 +194,7 @@ describe("Agents create form", () => {
   });
 
   it("shows 'Unknown error' when createAgentError has no message", () => {
-    vi.spyOn(useAgentsHook, "default").mockReturnValue({
+    vi.spyOn(useAgentsHook, "useAgents").mockReturnValue({
       ...defaultAgentsHook,
       isCreateError: true,
       createAgentError: null,
@@ -213,7 +213,7 @@ describe("Agents create form", () => {
 describe("Agents delete", () => {
   it("calls deleteAgent when confirmed", async () => {
     const deleteAgent = vi.fn();
-    vi.spyOn(useAgentsHook, "default").mockReturnValue({ ...defaultAgentsHook, deleteAgent });
+    vi.spyOn(useAgentsHook, "useAgents").mockReturnValue({ ...defaultAgentsHook, deleteAgent });
     renderAgents();
     fireEvent.click(screen.getByTitle("Delete agent"));
     const dialog = await screen.findByRole("dialog");
@@ -223,7 +223,7 @@ describe("Agents delete", () => {
 
   it("does not call deleteAgent when confirmation cancelled", async () => {
     const deleteAgent = vi.fn();
-    vi.spyOn(useAgentsHook, "default").mockReturnValue({ ...defaultAgentsHook, deleteAgent });
+    vi.spyOn(useAgentsHook, "useAgents").mockReturnValue({ ...defaultAgentsHook, deleteAgent });
     renderAgents();
     fireEvent.click(screen.getByTitle("Delete agent"));
     const dialog = await screen.findByRole("dialog");
@@ -233,7 +233,7 @@ describe("Agents delete", () => {
 
   it("shows an error message when deleteAgent fails", async () => {
     const deleteAgent = vi.fn().mockImplementation((_id, { onError } = {}) => onError?.(new Error("Delete failed")));
-    vi.spyOn(useAgentsHook, "default").mockReturnValue({ ...defaultAgentsHook, deleteAgent });
+    vi.spyOn(useAgentsHook, "useAgents").mockReturnValue({ ...defaultAgentsHook, deleteAgent });
     renderAgents();
     fireEvent.click(screen.getByTitle("Delete agent"));
     const dialog = await screen.findByRole("dialog");
@@ -282,7 +282,7 @@ describe("Agents edit modal", () => {
 
   it("calls updateAgent when edit form is submitted", async () => {
     const updateAgent = vi.fn();
-    vi.spyOn(useAgentsHook, "default").mockReturnValue({ ...defaultAgentsHook, updateAgent });
+    vi.spyOn(useAgentsHook, "useAgents").mockReturnValue({ ...defaultAgentsHook, updateAgent });
     renderAgents();
     fireEvent.click(screen.getByTitle("Edit agent"));
     fireEvent.change(screen.getByLabelText(/agent name/i, { selector: "#edit-name" }), {
@@ -299,7 +299,7 @@ describe("Agents edit modal", () => {
 
   it("closes modal after updateAgent onSuccess", async () => {
     const updateAgent = vi.fn().mockImplementation((_payload, { onSuccess } = {}) => onSuccess?.());
-    vi.spyOn(useAgentsHook, "default").mockReturnValue({ ...defaultAgentsHook, updateAgent });
+    vi.spyOn(useAgentsHook, "useAgents").mockReturnValue({ ...defaultAgentsHook, updateAgent });
     renderAgents();
     fireEvent.click(screen.getByTitle("Edit agent"));
     fireEvent.submit(document.querySelectorAll("form")[1]!);
@@ -308,21 +308,21 @@ describe("Agents edit modal", () => {
   });
 
   it("shows 'Saving...' in modal submit button when isUpdatingAgent", () => {
-    vi.spyOn(useAgentsHook, "default").mockReturnValue({ ...defaultAgentsHook, isUpdatingAgent: true });
+    vi.spyOn(useAgentsHook, "useAgents").mockReturnValue({ ...defaultAgentsHook, isUpdatingAgent: true });
     renderAgents();
     fireEvent.click(screen.getByTitle("Edit agent"));
     expect(screen.getByText(/saving\.\.\./i)).toBeInTheDocument();
   });
 
   it("shows 'Saved' in modal submit button when isUpdateSuccess", () => {
-    vi.spyOn(useAgentsHook, "default").mockReturnValue({ ...defaultAgentsHook, isUpdateSuccess: true });
+    vi.spyOn(useAgentsHook, "useAgents").mockReturnValue({ ...defaultAgentsHook, isUpdateSuccess: true });
     renderAgents();
     fireEvent.click(screen.getByTitle("Edit agent"));
     expect(screen.getByText("Saved")).toBeInTheDocument();
   });
 
   it("shows update error in modal", () => {
-    vi.spyOn(useAgentsHook, "default").mockReturnValue({
+    vi.spyOn(useAgentsHook, "useAgents").mockReturnValue({
       ...defaultAgentsHook,
       isUpdateError: true,
       updateAgentError: new Error("Update conflict"),
@@ -339,7 +339,7 @@ describe("Agents edit modal", () => {
   });
 
   it("renders model text input in edit modal when no models", () => {
-    vi.spyOn(useModelsHook, "default").mockReturnValue({ ...defaultModelsHook, models: [] });
+    vi.spyOn(useModelsHook, "useModels").mockReturnValue({ ...defaultModelsHook, models: [] });
     renderAgents();
     fireEvent.click(screen.getByTitle("Edit agent"));
     const modelInput = document.getElementById("edit-model");
@@ -363,7 +363,7 @@ describe("Agents edit modal", () => {
   });
 
   it("can change model text input in edit modal when no models", () => {
-    vi.spyOn(useModelsHook, "default").mockReturnValue({ ...defaultModelsHook, models: [] });
+    vi.spyOn(useModelsHook, "useModels").mockReturnValue({ ...defaultModelsHook, models: [] });
     renderAgents();
     fireEvent.click(screen.getByTitle("Edit agent"));
     const modelInput = document.getElementById("edit-model") as HTMLInputElement;
@@ -382,19 +382,19 @@ describe("Agents create form", () => {
   });
 
   it("shows 'Registering...' while creating", () => {
-    vi.spyOn(useAgentsHook, "default").mockReturnValue({ ...defaultAgentsHook, isCreatingAgent: true });
+    vi.spyOn(useAgentsHook, "useAgents").mockReturnValue({ ...defaultAgentsHook, isCreatingAgent: true });
     renderAgents();
     expect(screen.getByText(/registering\.\.\./i)).toBeInTheDocument();
   });
 
   it("shows success message after registration", () => {
-    vi.spyOn(useAgentsHook, "default").mockReturnValue({ ...defaultAgentsHook, isCreateSuccess: true });
+    vi.spyOn(useAgentsHook, "useAgents").mockReturnValue({ ...defaultAgentsHook, isCreateSuccess: true });
     renderAgents();
     expect(screen.getByText(/registered successfully/i)).toBeInTheDocument();
   });
 
   it("shows error message when registration fails", () => {
-    vi.spyOn(useAgentsHook, "default").mockReturnValue({
+    vi.spyOn(useAgentsHook, "useAgents").mockReturnValue({
       ...defaultAgentsHook,
       isCreateError: true,
       createAgentError: new Error("Name conflict"),
@@ -425,14 +425,14 @@ describe("Agents create form", () => {
   });
 
   it("renders model text input when no models available", () => {
-    vi.spyOn(useModelsHook, "default").mockReturnValue({ ...defaultModelsHook, models: [] });
+    vi.spyOn(useModelsHook, "useModels").mockReturnValue({ ...defaultModelsHook, models: [] });
     renderAgents();
     expect(document.getElementById("agent-model")?.tagName.toLowerCase()).toBe("input");
   });
 
   it("calls createAgent when form submitted with name", async () => {
     const createAgent = vi.fn();
-    vi.spyOn(useAgentsHook, "default").mockReturnValue({ ...defaultAgentsHook, createAgent });
+    vi.spyOn(useAgentsHook, "useAgents").mockReturnValue({ ...defaultAgentsHook, createAgent });
     renderAgents();
     fireEvent.change(screen.getByLabelText(/agent name/i, { selector: "#agent-name" }), {
       target: { value: "SentinelBot" },
@@ -445,7 +445,7 @@ describe("Agents create form", () => {
 
   it("clears form when createAgent onSuccess is called", async () => {
     const createAgent = vi.fn().mockImplementation((_payload, { onSuccess } = {}) => onSuccess?.());
-    vi.spyOn(useAgentsHook, "default").mockReturnValue({ ...defaultAgentsHook, createAgent });
+    vi.spyOn(useAgentsHook, "useAgents").mockReturnValue({ ...defaultAgentsHook, createAgent });
     renderAgents();
     const nameInput = screen.getByLabelText(/agent name/i, { selector: "#agent-name" }) as HTMLInputElement;
     fireEvent.change(nameInput, { target: { value: "SentinelBot" } });
@@ -464,7 +464,7 @@ describe("Agents create form", () => {
 describe("Agents delete confirmation", () => {
   it("does not call deleteAgent when confirmation cancelled", async () => {
     const deleteAgent = vi.fn();
-    vi.spyOn(useAgentsHook, "default").mockReturnValue({ ...defaultAgentsHook, deleteAgent });
+    vi.spyOn(useAgentsHook, "useAgents").mockReturnValue({ ...defaultAgentsHook, deleteAgent });
     renderAgents();
     fireEvent.click(screen.getByTitle("Delete agent"));
     const cancelBtn = await screen.findByRole("button", { name: /cancel/i });
@@ -474,7 +474,7 @@ describe("Agents delete confirmation", () => {
 
   it("calls deleteAgent when confirmation accepted", async () => {
     const deleteAgent = vi.fn();
-    vi.spyOn(useAgentsHook, "default").mockReturnValue({ ...defaultAgentsHook, deleteAgent });
+    vi.spyOn(useAgentsHook, "useAgents").mockReturnValue({ ...defaultAgentsHook, deleteAgent });
     renderAgents();
     fireEvent.click(screen.getByTitle("Delete agent"));
     const dialog = await screen.findByRole("dialog");

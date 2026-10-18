@@ -1,6 +1,6 @@
 import { Bot, GitBranch, BrainCircuit, ShieldCheck, Library, Clock, Loader } from "lucide-react";
 import styles from "../dashboard.module.scss";
-import StatCard from "@/shared/ui/stat-card";
+import { StatCard } from "@/shared/ui/stat-card";
 
 interface StatCardsRowProps {
   agentsCount: number;
@@ -14,7 +14,7 @@ interface StatCardsRowProps {
 
 const loadingIcon = <Loader size={18} className={styles.spinIcon} />;
 
-const StatCardsRow = ({
+export function StatCardsRow({
   agentsCount,
   workflowsCount,
   modelsCount,
@@ -22,7 +22,7 @@ const StatCardsRow = ({
   kbCollections,
   cronJobs,
   loading,
-}: StatCardsRowProps) => (
+}: StatCardsRowProps) { return (
   <div className={styles.statsRow}>
     <StatCard
       icon={loading ? loadingIcon : <Bot size={18} />}
@@ -61,6 +61,6 @@ const StatCardsRow = ({
       iconColor="red"
     />
   </div>
-);
+); }
 
-export default StatCardsRow;
+
