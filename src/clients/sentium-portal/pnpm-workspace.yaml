@@ -5,14 +5,17 @@ trustPolicy: no-downgrade
 trustPolicyIgnoreAfter: 129600
 
 catalog:
-  vite: "8.0.16"
+  vite: "8.3.2"
   "@babel/core": "7.29.7"
 
 overrides:
-  vite-plugin-sass-dts>vite: "catalog:"
-  "minimatch@>=5>brace-expansion": ">=5.0.6"
+  "minimatch@>=5>brace-expansion": ">=5.0.7"
   eslint-plugin-react-hooks>@babel/core: "catalog:"
-  "undici@>=7.0.0 <7.28.0": "7.28.0"
+  "undici@>=7.0.0 <7.29.0": "7.29.0"
+  baseline-browser-mapping@>=2.0.0 <2.11.0: 2.11.0
+  browserslist@<=4.28.6: 4.28.7
+  immutable@>=5.0.0-beta.1 <5.1.8: 5.1.8
+  source-map-js@>=1.0.0 <1.2.2: 1.2.2
 
 allowBuilds:
   "@parcel/watcher": false

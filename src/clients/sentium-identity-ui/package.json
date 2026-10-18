@@ -11,8 +11,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "react": "19.2.6",
-    "react-dom": "19.2.6"
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
   },
   "devDependencies": {
     "@babel/core": "catalog:",
@@ -26,10 +26,10 @@
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "10.3.0",
     "eslint-plugin-react-hooks": "7.1.1",
-    "eslint-plugin-react-refresh": "0.5.2",
+    "eslint-plugin-react-refresh": "0.5.7",
     "globals": "17.6.0",
     "typescript": "6.0.2",
-    "typescript-eslint": "8.59.2",
+    "typescript-eslint": "8.59.4",
     "vite": "catalog:",
     "zod": "4.4.3",
     "react-hook-form": "7.75.0",
@@ -38,11 +38,11 @@
     "vite-plugin-sass-dts": "1.3.35",
     "sass-embedded": "1.97.3"
   },
-  "packageManager": "pnpm@11.9.0",
+  "packageManager": "pnpm@12.9.1",
   "devEngines": {
     "packageManager": {
       "name": "pnpm",
-      "version": "11.9.0",
+      "version": "12.9.1",
       "onFail": "download"
     }
   }

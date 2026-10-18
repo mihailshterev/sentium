@@ -1,0 +1,134 @@
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Plus, Loader, Cpu } from "lucide-react";
+import styles from "../agents.module.scss";
+import { FormField } from "@/shared/ui/form-field";
+import { StatusMessage } from "@/shared/ui/status-message";
+import { agentCreateSchema, type AgentCreateFormData } from "../schemas/agent.create";
+import { useEffect } from "react";
+import { ModelSelector } from "@/shared/ui/model-selector";
+
+interface AgentCreateFormProps {
+  models: string[];
+  isCreatingAgent: boolean;
+  isCreateSuccess: boolean;
+  isCreateError: boolean;
+  createAgentError: Error | null | undefined;
+  onSubmit: (data: { name: string; description: string; model: string }) => void;
+}
+
+export function AgentCreateForm({
+  models,
+  isCreatingAgent,
+  isCreateSuccess,
+  isCreateError,
+  createAgentError,
+  onSubmit,
+}: AgentCreateFormProps) {
+  const defaultModel = models[0] ?? "";
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    control,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<AgentCreateFormData>({
+    resolver: zodResolver(agentCreateSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      model: "",
+    },
+  });
+
+  useEffect(() => {
+    if (models.length > 0) {
+      setValue("model", models[0]);
+    }
+  }, [models, setValue]);
+
+  // eslint-disable-next-line react-hooks/incompatible-library
+  const nameValue = watch("name") ?? "";
+  const descriptionValue = watch("description") ?? "";
+
+  const handleFormSubmit = (data: AgentCreateFormData) => {
+    onSubmit({ name: data.name, description: data.description, model: data.model });
+    reset({ name: "", description: "", model: defaultModel });
+  };
+
+  return (
+    <form className={styles.createForm} onSubmit={handleSubmit(handleFormSubmit)}>
+      <FormField id="agent-name" label="Agent Name">
+        <input
+          id="agent-name"
+          className={styles.fieldInput}
+          type="text"
+          placeholder="e.g. ForensicsAgent"
+          autoComplete="off"
+          spellCheck={false}
+          {...register("name")}
+        />
+      </FormField>
+
+      <FormField id="agent-description" label="Description" charCount={{ current: descriptionValue.length, max: 1000 }}>
+        <textarea
+          id="agent-description"
+          className={`${styles.fieldInput} ${styles.fieldTextarea}`}
+          placeholder="Describe this agent's capabilities and role in the pipeline..."
+          rows={4}
+          spellCheck={false}
+          {...register("description")}
+        />
+      </FormField>
+
+      <FormField
+        id="agent-model"
+        label={
+          <>
+            <Cpu size={12} /> Model
+          </>
+        }
+      >
+        <Controller
+          name="model"
+          control={control}
+          render={({ field }) => (
+            <ModelSelector
+              id="agent-model"
+              className={styles.fieldInput}
+              models={models}
+              value={field.value}
+              onChange={field.onChange}
+              placeholder="e.g. gemma3:1b"
+            />
+          )}
+        />
+      </FormField>
+
+      <button
+        className={`${styles.submitBtn} ${isCreatingAgent ? styles.submitting : ""}`}
+        type="submit"
+        disabled={isCreatingAgent || !nameValue.trim()}
+      >
+        {isCreatingAgent ? (
+          <>
+            <Loader size={14} className={styles.spinIcon} />
+            Registering...
+          </>
+        ) : (
+          <>
+            <Plus size={14} />
+            Register Agent
+          </>
+        )}
+      </button>
+
+      {errors.name && <StatusMessage variant="error" message={errors.name.message ?? "Invalid name"} />}
+      {isCreateSuccess && <StatusMessage variant="success" message="Agent registered successfully" />}
+      {isCreateError && <StatusMessage variant="error" message={createAgentError?.message ?? "Unknown error"} />}
+    </form>
+  );
+}

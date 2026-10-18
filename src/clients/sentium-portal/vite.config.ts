@@ -3,6 +3,7 @@ import react, { reactCompilerPreset } from "@vitejs/plugin-react";
 import sassDts from "vite-plugin-sass-dts";
 import babel from "@rolldown/plugin-babel";
 import path from "path";
+import { fileURLToPath } from "url";
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -18,4 +19,9 @@ export default defineConfig({
       sourceDir: path.resolve(__dirname, "./src"),
     }),
   ],
+  resolve: {
+    alias: {
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
+    },
+  },
 });

@@ -1,0 +1,25 @@
+import { useQuery } from "@tanstack/react-query";
+import { fetchSystemOverview } from "@/features/watchdog/api/watchdog.service";
+import type { SystemHealthOverview } from "@/features/watchdog/types/serviceHealth";
+
+export const SYSTEM_OVERVIEW_KEY = ["watchdog-overview"] as const;
+
+const POLL_INTERVAL = 15_000;
+
+export function useSystemOverview() {
+  const {
+    data: overview,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery<SystemHealthOverview>({
+    queryKey: SYSTEM_OVERVIEW_KEY,
+    queryFn: fetchSystemOverview,
+    refetchInterval: POLL_INTERVAL,
+    retry: false,
+  });
+
+  return { overview, isLoading, error, refetch };
+}
+
+
