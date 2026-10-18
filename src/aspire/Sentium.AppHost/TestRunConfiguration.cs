@@ -36,7 +36,7 @@ internal static class TestRunConfiguration
             .WithEnvironment(EnvConfig.Keys.AcceptEula, EnvConfig.Values.Yes);
 
         var ollama = builder.AddOllama(ResourceNames.Ollama)
-            .WithImage("ollama/ollama", "0.30.5")
+            .WithImage("ollama/ollama", "0.40.6")
             .WithEndpoint("http", e => e.Port = 11434);
 
         var identityApi = builder.AddProject<Projects.Sentium_Identity_Api>(ServiceNames.Identity)
@@ -127,7 +127,7 @@ internal static class TestRunConfiguration
             .WithReference(ollama).WaitFor(ollama)
             .WithEnvironment("ASPNETCORE_ENVIRONMENT", "Testing")
             .WithEnvironment(EnvConfig.Keys.AI.ModelName, AIModels.Gemma4_E4B)
-            .WithEnvironment(EnvConfig.Keys.AI.EmbeddingModelName, AIModels.NomicEmbedText)
+            .WithEnvironment(EnvConfig.Keys.AI.EmbeddingModelName, AIModels.EmbeddingGemma2_740M)
             .WithEnvironment(EnvConfig.Keys.IdentityAuthority, identityApi.GetEndpoint("http"))
             .WithEnvironment(EnvConfig.Keys.InternalApiKey, internalApiKey)
             .WithExternalHttpEndpoints()
