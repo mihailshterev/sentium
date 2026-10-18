@@ -108,7 +108,7 @@ watch every resource start, stream logs, and follow the model downloads.
 All seven services (`identity`, `registry`, `sentinel`, `sandbox`, `agent-runtime`, `watchdog`,
 `gateway`), both front-ends (`sentium-portal`, `sentium-identity-ui`), and the infrastructure (SQL
 Server with five databases, Redis, NATS JetStream, Qdrant, Ollama, Seq, Azurite). The default models
-(`gemma4:e4b` + `nomic-embed-text`) are pulled into the Ollama volume; Aspire **blocks** the
+(`gemma4:e4b` + `embeddinggemma-2:740m`) are pulled into the Ollama volume; Aspire **blocks** the
 dependent services until the pull completes.
 
 ### Endpoints
@@ -304,7 +304,7 @@ runtime.
 | `IDENTITY_HTTP_PORT`      | `8081`                    | Host HTTP port for the Identity issuer + login UI.                                      |
 | `PORTAL_PORT`             | `5173`                    | Host HTTP port for the portal SPA.                                                      |
 | `SENTIUM_MODEL`           | `gemma4:e4b`              | Chat/reasoning model (any valid Ollama tag).                                            |
-| `SENTIUM_EMBEDDING_MODEL` | `nomic-embed-text`        | Embedding model. Must be 768-dimensional to match the RAG vector size.                  |
+| `SENTIUM_EMBEDDING_MODEL` | `embeddinggemma-2:740m`   | Embedding model. Must be 768-dimensional to match the RAG vector size.                  |
 | `SANDBOX_JOBS_DIR`        | `/tmp/sentium-sandbox`    | Per-job sandbox working directory - identical on host and inside the Sandbox container. |
 | `AZURITE_CONNECTION`      | _(well-known dev key)_    | Azurite blob connection string. Safe to leave as-is.                                    |
 
@@ -487,4 +487,4 @@ Both full-stack methods are functionally equivalent. The intentional differences
 
 Everything else - the seven services, the five databases, Redis, NATS JetStream, Qdrant, Azurite,
 the `X-Internal-Token` security model, per-user data isolation, the Sentinel PDP, and the default
-`gemma4:e4b` / `nomic-embed-text` models - matches between the two setups exactly.
+`gemma4:e4b` / `embeddinggemma-2:740m` models - matches between the two setups exactly.

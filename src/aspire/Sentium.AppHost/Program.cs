@@ -47,7 +47,7 @@ var seq = builder.AddSeq(ResourceNames.Seq)
     .WithEnvironment(EnvConfig.Keys.AcceptEula, EnvConfig.Values.Yes);
 
 var ollama = builder.AddOllama(ResourceNames.Ollama)
-    .WithImage("ollama/ollama", "0.30.10")
+    .WithImage("ollama/ollama", "0.40.6")
     .WithDataVolume()
     .WithGPUSupport(OllamaGpuVendor.Nvidia)
     // .WithEnvironment(OllamaConfig.ContextSizeKey, OllamaConfig.DefaultContextSize)
@@ -59,7 +59,7 @@ var ollama = builder.AddOllama(ResourceNames.Ollama)
     .WithEndpoint("http", e => e.Port = 11434);
 
 var ollamaModel = ollama.AddModel(AIModels.Gemma4_E4B);
-var ollamaEmbeddingModel = ollama.AddModel(AIModels.NomicEmbedText);
+var ollamaEmbeddingModel = ollama.AddModel(AIModels.EmbeddingGemma2_740M);
 
 var identityApi = builder.AddProject<Projects.Sentium_Identity_Api>(ServiceNames.Identity)
     .WithReference(identityDb).WaitFor(identityDb)

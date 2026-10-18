@@ -23,10 +23,8 @@ public sealed class RagOptions
 
     /// <summary>
     /// Ollama model used for embedding generation.
-    /// Must be pulled in the Ollama container before ingestion.
-    /// Recommended: "nomic-embed-text" (768-dim) or "mxbai-embed-large" (1024-dim).
     /// </summary>
-    public string EmbeddingModelName { get; set; } = "nomic-embed-text";
+    public string EmbeddingModelName { get; set; } = "embeddinggemma-2:740m";
 
     /// <summary>
     /// Maximum character count per chunk (before overlap is applied).
@@ -50,7 +48,7 @@ public sealed class RagOptions
 
     /// <summary>
     /// Dimensionality of the embedding vectors produced by <see cref="EmbeddingModelName"/>.
-    /// Must match the model output: nomic-embed-text → 768, mxbai-embed-large → 1024.
+    /// Must match the embedding model output.
     /// </summary>
     public uint VectorSize { get; set; } = 768;
 }

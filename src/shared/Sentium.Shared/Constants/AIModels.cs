@@ -15,4 +15,5 @@ public static class AIModels
     // Embedding model for the RAG pipeline.
     // Produces 768-dimensional vectors - must match RagOptions.VectorSize.
     public const string NomicEmbedText = "nomic-embed-text";
+    public const string EmbeddingGemma2_740M = "embeddinggemma-2:740m";
 }
