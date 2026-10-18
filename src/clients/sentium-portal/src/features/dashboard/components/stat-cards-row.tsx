@@ -22,45 +22,45 @@ export function StatCardsRow({
   kbCollections,
   cronJobs,
   loading,
-}: StatCardsRowProps) { return (
-  <div className={styles.statsRow}>
-    <StatCard
-      icon={loading ? loadingIcon : <Bot size={18} />}
-      value={loading ? "—" : agentsCount}
-      label="Agents"
-      iconColor="green"
-    />
-    <StatCard
-      icon={loading ? loadingIcon : <GitBranch size={18} />}
-      value={loading ? "—" : workflowsCount}
-      label="Workflows"
-      iconColor="blue"
-    />
-    <StatCard
-      icon={loading ? loadingIcon : <BrainCircuit size={18} />}
-      value={loading ? "—" : modelsCount}
-      label="AI Models"
-      iconColor="purple"
-    />
-    <StatCard
-      icon={loading ? loadingIcon : <ShieldCheck size={18} />}
-      value={loading ? "—" : auditTotal}
-      label="Audit Events"
-      iconColor="amber"
-    />
-    <StatCard
-      icon={loading ? loadingIcon : <Library size={18} />}
-      value={loading ? "—" : kbCollections}
-      label="KB Collections"
-      iconColor="cyan"
-    />
-    <StatCard
-      icon={loading ? loadingIcon : <Clock size={18} />}
-      value={loading ? "—" : cronJobs}
-      label="Cron Jobs"
-      iconColor="red"
-    />
-  </div>
-); }
-
-
+}: StatCardsRowProps) {
+  return (
+    <div className={styles.statsRow}>
+      <StatCard
+        icon={loading ? loadingIcon : <Bot size={18} />}
+        value={loading ? "—" : agentsCount}
+        label="Agents"
+        iconColor="green"
+      />
+      <StatCard
+        icon={loading ? loadingIcon : <GitBranch size={18} />}
+        value={loading ? "—" : workflowsCount}
+        label="Workflows"
+        iconColor="blue"
+      />
+      <StatCard
+        icon={loading ? loadingIcon : <BrainCircuit size={18} />}
+        value={loading ? "—" : modelsCount}
+        label="AI Models"
+        iconColor="purple"
+      />
+      <StatCard
+        icon={loading ? loadingIcon : <ShieldCheck size={18} />}
+        value={loading ? "—" : auditTotal}
+        label="Audit Events"
+        iconColor="amber"
+      />
+      <StatCard
+        icon={loading ? loadingIcon : <Library size={18} />}
+        value={loading ? "—" : kbCollections}
+        label="KB Collections"
+        iconColor="cyan"
+      />
+      <StatCard
+        icon={loading ? loadingIcon : <Clock size={18} />}
+        value={loading ? "—" : cronJobs}
+        label="Cron Jobs"
+        iconColor="red"
+      />
+    </div>
+  );
+}
