@@ -24,7 +24,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "jsdom",
-    setupFiles: ["./src/setupTests.ts"],
+    setupFiles: ["./src/test/setup.ts"],
     clearMocks: true,
     typecheck: {
       tsconfig: "./tsconfig.test.json",
@@ -43,13 +43,11 @@ export default defineConfig({
         "src/vite-env.d.ts",
         "src/**/*.module.scss",
         "src/**/*.module.d.scss.ts",
-        "src/types/**",
-        "src/pages/login/animated-bg.tsx",
-        "src/components/ui/animated-bg.tsx",
-        "src/components/ui/aurora-background.tsx",
-        "src/pages/semantic-map/engine/renderer.ts",
-        "src/pages/semantic-map/semantic-map.tsx",
-        "src/pages/semantic-map/hud.tsx",
+        "src/shared/ui/animated-bg.tsx",
+        "src/shared/ui/aurora-background.tsx",
+        "src/features/semantic-map/engine/renderer.ts",
+        "src/features/semantic-map/semantic-map.tsx",
+        "src/features/semantic-map/hud.tsx",
       ],
       thresholds: {
         statements: 88,

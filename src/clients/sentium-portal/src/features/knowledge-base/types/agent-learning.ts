@@ -1,0 +1,24 @@
+export interface AgentLearning {
+  id: string;
+  agentName: string;
+  content: string;
+  tags: string;
+  conversationId: string | null;
+  capturedAt: string;
+  isIngested: boolean;
+  isGlobal: boolean;
+}
+
+export interface AgentLearningStats {
+  totalLearnings: number;
+  pendingIngestion: number;
+  globalLearnings: number;
+  learningsByAgent: Record<string, number>;
+}
+
+export interface KnowledgeBaseCollectionStats {
+  collectionName: string;
+  pointCount: number;
+  vectorSize: number;
+  distanceMetric: string;
+}
