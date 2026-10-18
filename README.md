@@ -150,7 +150,7 @@ Every service follows the same clean-architecture layering:
 **Models (default, all local via Ollama)**
 
 - Chat / reasoning: **Gemma** (`gemma4:e4b` by default; Qwen3 and others selectable)
-- Embeddings: **nomic-embed-text** (768-dimensional)
+- Embeddings: **embeddinggemma-2:740m** (768-dimensional)
 
 **Frontend**
 
