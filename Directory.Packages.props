@@ -68,7 +68,9 @@
     <PackageVersion Include="Qdrant.Client" Version="1.18.1" />
     <PackageVersion Include="FluentValidation" Version="12.1.1" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
-    <PackageVersion Include="MessagePack" Version="3.1.7" />
+    <PackageVersion Include="MessagePack" Version="3.1.9" />
+    <PackageVersion Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
+
     <!-- Test packages -->
     <PackageVersion Include="xunit.v3" Version="3.2.2" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
