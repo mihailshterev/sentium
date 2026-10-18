@@ -24,44 +24,44 @@ interface ModelCardProps {
   canDelete: boolean;
 }
 
-export function ModelCard({ model, deletingModel, onDelete, canDelete }: ModelCardProps) { return (
-  <div className={styles.modelCard}>
-    <div className={styles.modelIconWrap}>
-      <Cpu size={16} />
-    </div>
-
-    <div className={styles.modelInfo}>
-      <p className={styles.modelName}>{model.name}</p>
-      <div className={styles.modelMeta}>
-        <span className={styles.metaBadgeGreen}>
-          <HardDrive size={10} />
-          {formatBytes(model.size)}
-        </span>
-        {model.details?.parameter_size && (
-          <span className={styles.metaBadgeBlue}>
-            <Hash size={10} />
-            {model.details.parameter_size}
-          </span>
-        )}
-        {model.details?.quantization_level && (
-          <span className={styles.metaBadge}>{model.details.quantization_level}</span>
-        )}
-        {model.details?.family && <span className={styles.metaBadge}>{model.details.family}</span>}
+export function ModelCard({ model, deletingModel, onDelete, canDelete }: ModelCardProps) {
+  return (
+    <div className={styles.modelCard}>
+      <div className={styles.modelIconWrap}>
+        <Cpu size={16} />
       </div>
-      <p className={styles.modelDate}>Modified {formatDate(model.modified_at)}</p>
+
+      <div className={styles.modelInfo}>
+        <p className={styles.modelName}>{model.name}</p>
+        <div className={styles.modelMeta}>
+          <span className={styles.metaBadgeGreen}>
+            <HardDrive size={10} />
+            {formatBytes(model.size)}
+          </span>
+          {model.details?.parameter_size && (
+            <span className={styles.metaBadgeBlue}>
+              <Hash size={10} />
+              {model.details.parameter_size}
+            </span>
+          )}
+          {model.details?.quantization_level && (
+            <span className={styles.metaBadge}>{model.details.quantization_level}</span>
+          )}
+          {model.details?.family && <span className={styles.metaBadge}>{model.details.family}</span>}
+        </div>
+        <p className={styles.modelDate}>Modified {formatDate(model.modified_at)}</p>
+      </div>
+
+      {canDelete && (
+        <button
+          className={styles.deleteBtn}
+          onClick={() => onDelete(model.name)}
+          disabled={deletingModel === model.name}
+          title={`Delete ${model.name}`}
+        >
+          {deletingModel === model.name ? <Loader size={14} className={styles.spinIcon} /> : <Trash2 size={14} />}
+        </button>
+      )}
     </div>
-
-    {canDelete && (
-      <button
-        className={styles.deleteBtn}
-        onClick={() => onDelete(model.name)}
-        disabled={deletingModel === model.name}
-        title={`Delete ${model.name}`}
-      >
-        {deletingModel === model.name ? <Loader size={14} className={styles.spinIcon} /> : <Trash2 size={14} />}
-      </button>
-    )}
-  </div>
-); }
-
-
+  );
+}

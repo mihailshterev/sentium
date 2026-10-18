@@ -25,34 +25,34 @@ export function SkillCard({
   pill,
   pillClass,
   fileName,
-}: SkillCardProps) { return (
-  <div className={styles.skillRow}>
-    <div className={styles.skillRowHeader}>
-      <div className={styles.skillMeta}>
-        <span className={styles.skillName}>{skill.name}</span>
-        <span className={pillClass}>{pill}</span>
-        {fileName && <span className={styles.fileChip}>{fileName}</span>}
+}: SkillCardProps) {
+  return (
+    <div className={styles.skillRow}>
+      <div className={styles.skillRowHeader}>
+        <div className={styles.skillMeta}>
+          <span className={styles.skillName}>{skill.name}</span>
+          <span className={pillClass}>{pill}</span>
+          {fileName && <span className={styles.fileChip}>{fileName}</span>}
+        </div>
+        <div className={styles.rowActions}>
+          <button className={styles.btnIcon} onClick={onEdit} title="Edit">
+            <Pencil size={13} />
+          </button>
+          <button
+            className={`${styles.btnIcon} ${styles.btnDanger}`}
+            onClick={onDelete}
+            disabled={isDeleting}
+            title="Delete"
+          >
+            {isDeleting ? <Loader size={13} className={styles.spin} /> : <Trash2 size={13} />}
+          </button>
+          <button className={styles.btnIcon} onClick={onToggle} title="Toggle instructions">
+            {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+          </button>
+        </div>
       </div>
-      <div className={styles.rowActions}>
-        <button className={styles.btnIcon} onClick={onEdit} title="Edit">
-          <Pencil size={13} />
-        </button>
-        <button
-          className={`${styles.btnIcon} ${styles.btnDanger}`}
-          onClick={onDelete}
-          disabled={isDeleting}
-          title="Delete"
-        >
-          {isDeleting ? <Loader size={13} className={styles.spin} /> : <Trash2 size={13} />}
-        </button>
-        <button className={styles.btnIcon} onClick={onToggle} title="Toggle instructions">
-          {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-        </button>
-      </div>
+      <p className={styles.skillDesc}>{skill.description}</p>
+      {expanded && <pre className={styles.instructions}>{skill.instructions}</pre>}
     </div>
-    <p className={styles.skillDesc}>{skill.description}</p>
-    {expanded && <pre className={styles.instructions}>{skill.instructions}</pre>}
-  </div>
-); }
-
-
+  );
+}

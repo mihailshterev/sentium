@@ -8,19 +8,19 @@ interface SentinelStatsProps {
   denialRate: number;
 }
 
-export function SentinelStats({ stats, denialRate }: SentinelStatsProps) { return (
-  <div className={styles.statsRow}>
-    <StatCard icon={<Shield size={16} />} value={stats?.total ?? "—"} label="Total Decisions" iconColor="blue" />
-    <StatCard icon={<ShieldCheck size={16} />} value={stats?.allowed ?? "—"} label="Allowed" iconColor="green" />
-    <StatCard icon={<ShieldOff size={16} />} value={stats?.denied ?? "—"} label="Denied" iconColor="red" />
-    <StatCard icon={<Siren size={16} />} value={stats?.alerts ?? "—"} label="Alerts" iconColor="amber" />
-    <StatCard
-      icon={<AlertTriangle size={16} />}
-      value={stats ? `${denialRate}%` : "—"}
-      label="Denial Rate"
-      iconColor="purple"
-    />
-  </div>
-); }
-
-
+export function SentinelStats({ stats, denialRate }: SentinelStatsProps) {
+  return (
+    <div className={styles.statsRow}>
+      <StatCard icon={<Shield size={16} />} value={stats?.total ?? "—"} label="Total Decisions" iconColor="blue" />
+      <StatCard icon={<ShieldCheck size={16} />} value={stats?.allowed ?? "—"} label="Allowed" iconColor="green" />
+      <StatCard icon={<ShieldOff size={16} />} value={stats?.denied ?? "—"} label="Denied" iconColor="red" />
+      <StatCard icon={<Siren size={16} />} value={stats?.alerts ?? "—"} label="Alerts" iconColor="amber" />
+      <StatCard
+        icon={<AlertTriangle size={16} />}
+        value={stats ? `${denialRate}%` : "—"}
+        label="Denial Rate"
+        iconColor="purple"
+      />
+    </div>
+  );
+}

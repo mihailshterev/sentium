@@ -15,31 +15,31 @@ function getUsageColor(percent: number): string {
   return styles.fillRed;
 }
 
-export function DiskCard({ disk }: { disk: DiskInfo }) { return (
-  <div className={styles.diskCard}>
-    <div className={styles.diskHeader}>
-      <span className={styles.diskName}>
-        <Database size={13} />
-        {disk.name}
+export function DiskCard({ disk }: { disk: DiskInfo }) {
+  return (
+    <div className={styles.diskCard}>
+      <div className={styles.diskHeader}>
+        <span className={styles.diskName}>
+          <Database size={13} />
+          {disk.name}
+        </span>
+        <span className={styles.diskLabel}>{disk.label || disk.fileSystem}</span>
+      </div>
+      <div className={styles.progressGroup}>
+        <div className={styles.progressLabel}>
+          <span className={styles.progressName}>{formatGb(disk.usedGb)} used</span>
+          <span className={styles.progressValue}>{disk.usagePercent.toFixed(1)}%</span>
+        </div>
+        <div className={styles.progressTrack}>
+          <div
+            className={`${styles.progressFill} ${getUsageColor(disk.usagePercent)}`}
+            style={{ width: `${Math.min(disk.usagePercent, 100)}%` }}
+          />
+        </div>
+      </div>
+      <span className={styles.diskMeta}>
+        {formatGb(disk.availableGb)} free of {formatGb(disk.totalGb)}
       </span>
-      <span className={styles.diskLabel}>{disk.label || disk.fileSystem}</span>
     </div>
-    <div className={styles.progressGroup}>
-      <div className={styles.progressLabel}>
-        <span className={styles.progressName}>{formatGb(disk.usedGb)} used</span>
-        <span className={styles.progressValue}>{disk.usagePercent.toFixed(1)}%</span>
-      </div>
-      <div className={styles.progressTrack}>
-        <div
-          className={`${styles.progressFill} ${getUsageColor(disk.usagePercent)}`}
-          style={{ width: `${Math.min(disk.usagePercent, 100)}%` }}
-        />
-      </div>
-    </div>
-    <span className={styles.diskMeta}>
-      {formatGb(disk.availableGb)} free of {formatGb(disk.totalGb)}
-    </span>
-  </div>
-); }
-
-
+  );
+}

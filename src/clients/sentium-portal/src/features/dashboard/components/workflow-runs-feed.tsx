@@ -43,42 +43,42 @@ const SkeletonRunRow = () => (
   </div>
 );
 
-export function WorkflowRunsFeed({ runs, loading, onNavigate }: WorkflowRunsFeedProps) { return (
-  <section className={styles.section}>
-    <div className={styles.sectionHeader}>
-      <span className={styles.sectionTitle}>Recent Workflow Runs</span>
-      <span className={styles.sectionTag}>Live</span>
-    </div>
+export function WorkflowRunsFeed({ runs, loading, onNavigate }: WorkflowRunsFeedProps) {
+  return (
+    <section className={styles.section}>
+      <div className={styles.sectionHeader}>
+        <span className={styles.sectionTitle}>Recent Workflow Runs</span>
+        <span className={styles.sectionTag}>Live</span>
+      </div>
 
-    <div className={styles.runsFeed}>
-      {loading ? (
-        [0, 1, 2].map((i) => <SkeletonRunRow key={i} />)
-      ) : runs.length === 0 ? (
-        <EmptyState
-          icon={<Activity size={20} />}
-          title="No workflow runs yet"
-          hint="Run a workflow to see results here"
-        />
-      ) : (
-        runs.map((run) => (
-          <div key={run.id} className={styles.runRow}>
-            <span className={`${styles.runRiskBadge} ${RISK_CLASS[run.risk] ?? styles.runRiskLow}`}>{run.risk}</span>
-            <div className={styles.runBody}>
-              <p className={styles.runExplanation}>
-                {run.explanation || run.recommendation || "Workflow run completed"}
-              </p>
-              <div className={styles.runMeta}>
-                <span className={styles.runTime}>{relativeTime(run.startedAt)}</span>
-                <button className={styles.runViewBtn} onClick={() => onNavigate(`/orchestration/runs/${run.id}`)}>
-                  View <ArrowRight size={10} />
-                </button>
+      <div className={styles.runsFeed}>
+        {loading ? (
+          [0, 1, 2].map((i) => <SkeletonRunRow key={i} />)
+        ) : runs.length === 0 ? (
+          <EmptyState
+            icon={<Activity size={20} />}
+            title="No workflow runs yet"
+            hint="Run a workflow to see results here"
+          />
+        ) : (
+          runs.map((run) => (
+            <div key={run.id} className={styles.runRow}>
+              <span className={`${styles.runRiskBadge} ${RISK_CLASS[run.risk] ?? styles.runRiskLow}`}>{run.risk}</span>
+              <div className={styles.runBody}>
+                <p className={styles.runExplanation}>
+                  {run.explanation || run.recommendation || "Workflow run completed"}
+                </p>
+                <div className={styles.runMeta}>
+                  <span className={styles.runTime}>{relativeTime(run.startedAt)}</span>
+                  <button className={styles.runViewBtn} onClick={() => onNavigate(`/orchestration/runs/${run.id}`)}>
+                    View <ArrowRight size={10} />
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        ))
-      )}
-    </div>
-  </section>
-); }
-
-
+          ))
+        )}
+      </div>
+    </section>
+  );
+}

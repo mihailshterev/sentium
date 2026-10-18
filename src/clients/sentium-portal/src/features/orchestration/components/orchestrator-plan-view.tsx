@@ -16,34 +16,34 @@ interface OrchestratorPlanViewProps {
   getRoleClass: (author: string) => string;
 }
 
-export function OrchestratorPlanView({ assignments, getRoleClass }: OrchestratorPlanViewProps) { return (
-  <div className={styles.planFlow}>
-    {assignments.map((a, i) => {
-      const Icon = roleIcon(a.agent);
-      const roleClass = styles[getRoleClass(a.agent)];
-      return (
-        <div key={`${a.agent}-${i}`} className={styles.planStep}>
-          <div className={`${styles.planCard} ${roleClass}`}>
-            <span className={styles.planStepNum}>{i + 1}</span>
-            <div className={styles.planCardMain}>
-              <div className={styles.planCardHeader}>
-                <span className={`${styles.planCardIcon} ${roleClass}`}>
-                  <Icon size={14} />
-                </span>
-                <span className={styles.planAgentName}>{a.agent}</span>
+export function OrchestratorPlanView({ assignments, getRoleClass }: OrchestratorPlanViewProps) {
+  return (
+    <div className={styles.planFlow}>
+      {assignments.map((a, i) => {
+        const Icon = roleIcon(a.agent);
+        const roleClass = styles[getRoleClass(a.agent)];
+        return (
+          <div key={`${a.agent}-${i}`} className={styles.planStep}>
+            <div className={`${styles.planCard} ${roleClass}`}>
+              <span className={styles.planStepNum}>{i + 1}</span>
+              <div className={styles.planCardMain}>
+                <div className={styles.planCardHeader}>
+                  <span className={`${styles.planCardIcon} ${roleClass}`}>
+                    <Icon size={14} />
+                  </span>
+                  <span className={styles.planAgentName}>{a.agent}</span>
+                </div>
+                <div className={styles.planCardTask}>{a.task}</div>
               </div>
-              <div className={styles.planCardTask}>{a.task}</div>
             </div>
+            {i < assignments.length - 1 && (
+              <div className={styles.planConnector} aria-hidden="true">
+                <ChevronDown size={14} />
+              </div>
+            )}
           </div>
-          {i < assignments.length - 1 && (
-            <div className={styles.planConnector} aria-hidden="true">
-              <ChevronDown size={14} />
-            </div>
-          )}
-        </div>
-      );
-    })}
-  </div>
-); }
-
-
+        );
+      })}
+    </div>
+  );
+}
