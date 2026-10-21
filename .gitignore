@@ -11,6 +11,9 @@
 *.sln.docstates
 *.env
 
+# Ignore compiled frontend assets inside Sentium.Web's wwwroot
+src/hosts/Sentium.Web/wwwroot/
+
 # Docker Compose local artifacts
 /certs
 /.sandbox-jobs

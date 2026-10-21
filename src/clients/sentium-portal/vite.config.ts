@@ -25,6 +25,8 @@ export default defineConfig({
     },
   },
   build: {
+    outDir: path.resolve(import.meta.dirname, "../../hosts/Sentium.Web/wwwroot"),
+    emptyOutDir: true,
     chunkSizeWarningLimit: 1600,
     rollupOptions: {
       output: {

@@ -4,6 +4,7 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
+  <Folder Name="/src/" />
   <Folder Name="/src/aspire/">
     <Project Path="src/aspire/Sentium.AppHost/Sentium.AppHost.csproj" />
   </Folder>
@@ -12,6 +13,10 @@
     <Project Path="src/shared/Sentium.Infrastructure/Sentium.Infrastructure.csproj" />
     <Project Path="src/shared/Sentium.Shared/Sentium.Shared.csproj" />
   </Folder>
+  <Folder Name="/src/hosts/">
+    <Project Path="src/hosts/Sentium.Web/Sentium.Web.csproj" />
+  </Folder>
+  <Folder Name="/src/services/" />
   <Folder Name="/src/services/AgentRuntime/">
     <Project Path="src/services/AgentRuntime/Sentium.AgentRuntime.Api/Sentium.AgentRuntime.Api.csproj" />
     <Project Path="src/services/AgentRuntime/Sentium.AgentRuntime.Application/Sentium.AgentRuntime.Application.csproj" />
