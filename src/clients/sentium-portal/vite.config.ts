@@ -14,14 +14,26 @@ export default defineConfig({
       enabledMode: ["development", "production"],
       global: {
         generate: false,
-        outputFilePath: path.resolve(__dirname, "./src/style.d.ts"),
+        outputFilePath: path.resolve(import.meta.dirname, "./src/style.d.ts"),
       },
-      sourceDir: path.resolve(__dirname, "./src"),
+      sourceDir: path.resolve(import.meta.dirname, "./src"),
     }),
   ],
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),
+    },
+  },
+  build: {
+    chunkSizeWarningLimit: 1600,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes("node_modules")) {
+            return "vendor";
+          }
+        },
+      },
     },
   },
 });
