@@ -78,7 +78,7 @@ public sealed class QdrantVectorRepository(QdrantClient qdrantClient, ILogger<Qd
 
     public async Task<IReadOnlyList<VectorSearchResult>> SearchAsync(string collectionName, float[] queryEmbedding, int topK = 5, float scoreThreshold = 0.0f, KnowledgeScopeFilter? scope = null, CancellationToken ct = default)
     {
-        var hits = await qdrantClient.SearchAsync(
+        var hits = await qdrantClient.QueryAsync(
             collectionName,
             queryEmbedding,
             filter: BuildScopeFilter(scope),
