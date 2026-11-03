@@ -10,7 +10,7 @@
   <ItemGroup>
     <PackageReference Include="Aspire.Hosting.AppHost" />
     <PackageReference Include="Aspire.Hosting.JavaScript" />
-    <PackageReference Include="Aspire.Hosting.SqlServer" />
+    <PackageReference Include="Aspire.Hosting.PostgreSQL" />
     <PackageReference Include="Aspire.Hosting.Nats" />
     <PackageReference Include="Aspire.Hosting.Python" />
     <PackageReference Include="Aspire.Hosting.Redis" />
@@ -21,13 +21,8 @@
     <PackageReference Include="Aspire.Hosting.Seq" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\shared\Sentium.Shared\Sentium.Shared.csproj" IsAspireProjectResource="false" />
-    <ProjectReference Include="..\..\services\Gateway\Sentium.ApiGateway.csproj" />
-    <ProjectReference Include="..\..\services\AgentRuntime\Sentium.AgentRuntime.Api\Sentium.AgentRuntime.Api.csproj" />
-    <ProjectReference Include="..\..\services\Identity\Sentium.Identity.Api\Sentium.Identity.Api.csproj" />
-    <ProjectReference Include="..\..\services\Sentinel\Sentium.Sentinel.Api\Sentium.Sentinel.Api.csproj" />
-    <ProjectReference Include="..\..\services\Watchdog\Sentium.Watchdog.Api\Sentium.Watchdog.Api.csproj" />
-    <ProjectReference Include="..\..\services\Sandbox\Sentium.Sandbox.Api\Sentium.Sandbox.Api.csproj" />
-    <ProjectReference Include="..\..\services\Registry\Sentium.Registry.Api\Sentium.Registry.Api.csproj" />
+    <ProjectReference Include="..\..\shared\Sentium.Core\Sentium.Core.csproj" IsAspireProjectResource="false" />
+    <ProjectReference Include="..\..\hosts\Sentium.Web\Sentium.Web.csproj" />
+    <ProjectReference Include="..\..\hosts\Sentium.Sandbox\Sentium.Sandbox.csproj" />
   </ItemGroup>
 </Project>

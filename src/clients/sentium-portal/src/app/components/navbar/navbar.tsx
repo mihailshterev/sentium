@@ -17,9 +17,9 @@ import {
   UsersRound,
   VectorSquare,
   View,
-  Zap,
   type LucideIcon,
   CalendarClock,
+  BookOpen,
 } from "lucide-react";
 import styles from "./navbar.module.scss";
 import React from "react";
@@ -58,7 +58,7 @@ const NAV_GROUPS: NavGroup[] = [
       { to: "/workflows", label: "Workflows", icon: GitBranch },
       { to: "/agents", label: "Agents", icon: Bot },
       { to: "/models", label: "Models", icon: BrainCircuit },
-      { to: "/skills", label: "Skills", icon: Zap },
+      { to: "/skills", label: "Skills", icon: BookOpen },
     ],
   },
   {

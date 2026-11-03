@@ -1,11 +1,8 @@
 using Microsoft.AspNetCore.Builder;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Sentium.Infrastructure.Interceptors;
 using Sentium.Infrastructure.Middleware;
-using Sentium.Shared.Constants;
+using Sentium.Core.Constants;
 using Serilog;
 using Serilog.Sinks.OpenTelemetry;
 using Serilog.Sinks.SystemConsole.Themes;
@@ -38,23 +35,6 @@ public static class LoggingExtensions
                     };
                 });
         });
-    }
-
-    public static void AddAuditedDbContext<TContext>(this IHostApplicationBuilder builder, string connectionName) where TContext : DbContext
-    {
-        ArgumentNullException.ThrowIfNull(builder, nameof(builder));
-
-        builder.Services.AddScoped<AuditInterceptor>();
-
-        builder.Services.AddDbContext<TContext>((sp, options) =>
-        {
-            var connectionString = builder.Configuration.GetConnectionString(connectionName);
-
-            options.UseSqlServer(connectionString)
-                .AddInterceptors(sp.GetRequiredService<AuditInterceptor>());
-        });
-
-        builder.EnrichSqlServerDbContext<TContext>();
     }
 
     public static IApplicationBuilder UseSentiumTracing(this IApplicationBuilder app)

@@ -22,8 +22,10 @@ import { SandboxView as Sandbox } from "../../features/sandbox";
 import { SandboxRunDetailView as SandboxRunDetail } from "../../features/sandbox/views/sandbox-run-detail-view";
 import { SemanticMapView as SemanticMap } from "../../features/semantic-map";
 import { SchedulerView as Scheduler } from "../../features/scheduler";
+import { LoginView as Login } from "../../features/auth";
 
 export const routes: RouteObject[] = [
+  { path: "/login", element: <Login /> },
   {
     path: "/",
     element: (

@@ -27,7 +27,7 @@ describe("watchdog.service fetchSystemMetrics()", () => {
   it("calls client.get with /watchdog/system/metrics", async () => {
     vi.mocked(client.get).mockResolvedValueOnce({});
     await fetchSystemMetrics();
-    expect(client.get).toHaveBeenCalledWith("/watchdog/system/metrics");
+    expect(client.get).toHaveBeenCalledWith("/vigil/system/metrics");
   });
 
   it("returns the metrics object from the API", async () => {
@@ -78,7 +78,7 @@ describe("watchdog.service fetchServiceHealth()", () => {
   it("calls client.get with /watchdog/status", async () => {
     vi.mocked(client.get).mockResolvedValueOnce([]);
     await fetchServiceHealth();
-    expect(client.get).toHaveBeenCalledWith("/watchdog/status");
+    expect(client.get).toHaveBeenCalledWith("/vigil/status");
   });
 
   it("returns the status array from the API", async () => {
@@ -108,19 +108,19 @@ describe("watchdog.service remaining reads", () => {
   it("fetchServiceHealthDetail encodes the service name", async () => {
     vi.mocked(client.get).mockResolvedValueOnce({});
     await fetchServiceHealthDetail("agent runtime");
-    expect(client.get).toHaveBeenCalledWith("/watchdog/status/agent%20runtime");
+    expect(client.get).toHaveBeenCalledWith("/vigil/status/agent%20runtime");
   });
 
   it("fetchSystemOverview calls the overview endpoint", async () => {
     vi.mocked(client.get).mockResolvedValueOnce({});
     await fetchSystemOverview();
-    expect(client.get).toHaveBeenCalledWith("/watchdog/status/overview");
+    expect(client.get).toHaveBeenCalledWith("/vigil/status/overview");
   });
 
   it("fetchIncidents calls the incidents endpoint", async () => {
     vi.mocked(client.get).mockResolvedValueOnce([]);
     await fetchIncidents();
-    expect(client.get).toHaveBeenCalledWith("/watchdog/incidents");
+    expect(client.get).toHaveBeenCalledWith("/vigil/incidents");
   });
 });
 

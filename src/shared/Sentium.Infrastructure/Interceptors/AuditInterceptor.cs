@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Logging;
-using Sentium.Shared.Auditing;
+using Sentium.Core.Common;
 
 namespace Sentium.Infrastructure.Interceptors;
 

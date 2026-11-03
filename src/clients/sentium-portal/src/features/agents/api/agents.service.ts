@@ -2,7 +2,7 @@ import { client } from "@/shared/api/client";
 import type { AgentRecord, CreateAgentPayload, UpdateAgentPayload } from "../types/agents";
 import type { PagedResponse } from "@/shared/types/pagination";
 
-const BASE = "/agent-runtime";
+const BASE = "/praxis";
 
 export const fetchAgentsPaged = (page = 1, pageSize = 100): Promise<PagedResponse<AgentRecord>> =>
   client.get<PagedResponse<AgentRecord>>(`${BASE}/agents?page=${page}&pageSize=${pageSize}`);

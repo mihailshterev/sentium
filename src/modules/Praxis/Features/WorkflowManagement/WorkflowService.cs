@@ -1,0 +1,70 @@
+using Sentium.Praxis.Dtos;
+using Sentium.Infrastructure.Caching;
+using Sentium.Core.Results;
+
+namespace Sentium.Praxis.Features.WorkflowManagement;
+
+public sealed class WorkflowService(
+    IWorkflowRepository repository,
+    IScopedCache cache) : IWorkflowService
+{
+    public const string CacheTag = "workflows";
+
+    public async Task<IReadOnlyList<WorkflowResponse>> GetWorkflowsAsync(CancellationToken ct = default)
+        => await cache.GetOrCreateAsync(
+            $"{CacheTag}:all",
+            async token => await repository.GetWorkflowsAsync(token),
+            CacheTag,
+            ct);
+
+    public async Task<PagedResponse<WorkflowResponse>> GetWorkflowsPagedAsync(int page, int pageSize, CancellationToken ct = default)
+    {
+        (page, pageSize) = new PaginationQuery { Page = page, PageSize = pageSize }.Normalize();
+
+        return await cache.GetOrCreateAsync(
+            $"{CacheTag}:page:{page}:{pageSize}",
+            async token =>
+            {
+                var (items, total) = await repository.GetPagedAsync(page, pageSize, token);
+                return PagedResponse<WorkflowResponse>.Create(items, total, page, pageSize);
+            },
+            CacheTag,
+            ct);
+    }
+
+    public async Task<WorkflowResponse?> GetWorkflowAsync(Guid workflowId, CancellationToken ct = default)
+        => await cache.GetOrCreateAsync(
+            $"{CacheTag}:{workflowId}",
+            async token => await repository.GetWorkflowAsync(workflowId, token),
+            CacheTag,
+            ct);
+
+    public async Task<WorkflowResponse> CreateWorkflowAsync(CreateWorkflowRequest request, CancellationToken ct = default)
+    {
+        var result = await repository.CreateWorkflowAsync(request, ct);
+        await cache.InvalidateTagAsync(CacheTag, ct);
+        return result;
+    }
+
+    public async Task<bool> UpdateWorkflowAsync(Guid workflowId, UpdateWorkflowRequest request, CancellationToken ct = default)
+    {
+        var updated = await repository.UpdateWorkflowAsync(workflowId, request, ct);
+        if (updated)
+        {
+            await cache.InvalidateTagAsync(CacheTag, ct);
+        }
+
+        return updated;
+    }
+
+    public async Task<bool> DeleteWorkflowAsync(Guid workflowId, CancellationToken ct = default)
+    {
+        var deleted = await repository.DeleteWorkflowAsync(workflowId, ct);
+        if (deleted)
+        {
+            await cache.InvalidateTagAsync(CacheTag, ct);
+        }
+
+        return deleted;
+    }
+}

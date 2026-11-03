@@ -1,7 +1,7 @@
 import { client } from "@/shared/api/client";
 import type { CronJobRecord } from "@/features/scheduler/types/scheduler";
 
-const BASE = "/agent-runtime";
+const BASE = "/praxis";
 
 export const fetchActiveSchedulerJobs = async (): Promise<CronJobRecord[]> => {
   const response = await client.get<CronJobRecord[]>(`${BASE}/scheduler/jobs`);

@@ -13,7 +13,7 @@ setup("authenticate", async ({ page, context }) => {
   await expect(async () => {
     await page.goto("/", { waitUntil: "commit" });
 
-    await page.waitForURL(/\/login|\/connect\/authorize/, { timeout: 30_000 });
+    await page.waitForURL(/\/login/, { timeout: 30_000 });
 
     const loginPage = new LoginPage(page);
     await loginPage.fillEmail(process.env.E2E_USER_EMAIL || "a@test.test");

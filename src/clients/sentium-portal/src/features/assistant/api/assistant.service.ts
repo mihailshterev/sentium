@@ -8,7 +8,7 @@ import type {
 } from "../types/assistant";
 import type { PagedResponse } from "@/shared/types/pagination";
 
-const BASE = "/agent-runtime";
+const BASE = "/praxis";
 
 export const fetchConversations = (page = 1, pageSize = 20): Promise<PagedResponse<ConversationSummary>> =>
   client.get<PagedResponse<ConversationSummary>>(`${BASE}/conversations?page=${page}&pageSize=${pageSize}`);

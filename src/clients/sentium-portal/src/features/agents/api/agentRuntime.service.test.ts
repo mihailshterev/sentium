@@ -44,27 +44,27 @@ describe("agentRuntime.service agents", () => {
   it("fetchAgentsPaged calls client.get with correct path", async () => {
     vi.mocked(client.get).mockResolvedValueOnce({ items: [], totalCount: 0, page: 1, pageSize: 100, totalPages: 0 });
     await service.fetchAgentsPaged();
-    expect(client.get).toHaveBeenCalledWith("/agent-runtime/agents?page=1&pageSize=100");
+    expect(client.get).toHaveBeenCalledWith("/praxis/agents?page=1&pageSize=100");
   });
 
   it("createAgent posts payload to correct path", async () => {
     const payload = { name: "Bot", description: "AI bot", model: "llama3" };
     vi.mocked(client.post).mockResolvedValueOnce({});
     await service.createAgent(payload);
-    expect(client.post).toHaveBeenCalledWith("/agent-runtime/agents", payload);
+    expect(client.post).toHaveBeenCalledWith("/praxis/agents", payload);
   });
 
   it("updateAgent puts to /agents/:id", async () => {
     const payload = { id: "a-1", name: "Bot v2", description: "Updated", model: "llama3" };
     vi.mocked(client.put).mockResolvedValueOnce({});
     await service.updateAgent(payload);
-    expect(client.put).toHaveBeenCalledWith("/agent-runtime/agents/a-1", expect.objectContaining({ id: "a-1" }));
+    expect(client.put).toHaveBeenCalledWith("/praxis/agents/a-1", expect.objectContaining({ id: "a-1" }));
   });
 
   it("deleteAgent calls client.delete with id", async () => {
     vi.mocked(client.delete).mockResolvedValueOnce(undefined);
     await service.deleteAgent("a-1");
-    expect(client.delete).toHaveBeenCalledWith("/agent-runtime/agents/a-1");
+    expect(client.delete).toHaveBeenCalledWith("/praxis/agents/a-1");
   });
 });
 
@@ -81,13 +81,13 @@ describe("agentRuntime.service models", () => {
   it("fetchOllamaModels calls client.get with correct path", async () => {
     vi.mocked(client.get).mockResolvedValueOnce([]);
     await service.fetchOllamaModels();
-    expect(client.get).toHaveBeenCalledWith("/agent-runtime/models");
+    expect(client.get).toHaveBeenCalledWith("/praxis/models");
   });
 
   it("deleteOllamaModel encodes model name in URL", async () => {
     vi.mocked(client.delete).mockResolvedValueOnce({});
     await service.deleteOllamaModel("llama3:latest");
-    expect(client.delete).toHaveBeenCalledWith(`/agent-runtime/models?name=${encodeURIComponent("llama3:latest")}`);
+    expect(client.delete).toHaveBeenCalledWith(`/praxis/models?name=${encodeURIComponent("llama3:latest")}`);
   });
 });
 
@@ -95,10 +95,7 @@ describe("agentRuntime.service pullModel()", () => {
   it("calls fetch with POST to correct URL", async () => {
     vi.mocked(fetch).mockResolvedValueOnce({ ok: true } as unknown as Response);
     await service.pullModel("llama3:latest");
-    expect(fetch).toHaveBeenCalledWith(
-      `${BASE_URL}/agent-runtime/models/pull`,
-      expect.objectContaining({ method: "POST" }),
-    );
+    expect(fetch).toHaveBeenCalledWith(`${BASE_URL}/praxis/models/pull`, expect.objectContaining({ method: "POST" }));
   });
 
   it("serialises model name in body", async () => {
@@ -121,33 +118,33 @@ describe("agentRuntime.service workflows", () => {
   it("fetchWorkflowsPaged calls client.get with correct path", async () => {
     vi.mocked(client.get).mockResolvedValueOnce({ items: [], totalCount: 0, page: 1, pageSize: 100, totalPages: 0 });
     await service.fetchWorkflowsPaged();
-    expect(client.get).toHaveBeenCalledWith("/agent-runtime/workflows?page=1&pageSize=100");
+    expect(client.get).toHaveBeenCalledWith("/praxis/workflows?page=1&pageSize=100");
   });
 
   it("createWorkflow posts to /workflows", async () => {
     const payload = { name: "Pipeline", description: "desc", agents: [] };
     vi.mocked(client.post).mockResolvedValueOnce({});
     await service.createWorkflow(payload);
-    expect(client.post).toHaveBeenCalledWith("/agent-runtime/workflows", payload);
+    expect(client.post).toHaveBeenCalledWith("/praxis/workflows", payload);
   });
 
   it("updateWorkflow puts to /workflows/:id", async () => {
     const payload = { id: "wf-1", name: "Pipeline v2", description: "desc", agents: [] };
     vi.mocked(client.put).mockResolvedValueOnce({});
     await service.updateWorkflow(payload);
-    expect(client.put).toHaveBeenCalledWith("/agent-runtime/workflows/wf-1", expect.any(Object));
+    expect(client.put).toHaveBeenCalledWith("/praxis/workflows/wf-1", expect.any(Object));
   });
 
   it("deleteWorkflow deletes by id", async () => {
     vi.mocked(client.delete).mockResolvedValueOnce(undefined);
     await service.deleteWorkflow("wf-1");
-    expect(client.delete).toHaveBeenCalledWith("/agent-runtime/workflows/wf-1");
+    expect(client.delete).toHaveBeenCalledWith("/praxis/workflows/wf-1");
   });
 
   it("fetchWorkflowRun calls client.get with run id path", async () => {
     vi.mocked(client.get).mockResolvedValueOnce({});
     await service.fetchWorkflowRun("run-1");
-    expect(client.get).toHaveBeenCalledWith("/agent-runtime/workflows/runs/run-1");
+    expect(client.get).toHaveBeenCalledWith("/praxis/workflows/runs/run-1");
   });
 });
 
@@ -155,26 +152,26 @@ describe("agentRuntime.service conversations", () => {
   it("fetchConversations calls client.get with correct path", async () => {
     vi.mocked(client.get).mockResolvedValueOnce([]);
     await service.fetchConversations();
-    expect(client.get).toHaveBeenCalledWith("/agent-runtime/conversations?page=1&pageSize=20");
+    expect(client.get).toHaveBeenCalledWith("/praxis/conversations?page=1&pageSize=20");
   });
 
   it("fetchConversation calls client.get with id in path", async () => {
     vi.mocked(client.get).mockResolvedValueOnce({});
     await service.fetchConversation("conv-1");
-    expect(client.get).toHaveBeenCalledWith("/agent-runtime/conversations/conv-1");
+    expect(client.get).toHaveBeenCalledWith("/praxis/conversations/conv-1");
   });
 
   it("createConversation posts payload", async () => {
     const payload = { title: "New Chat", model: "llama3" };
     vi.mocked(client.post).mockResolvedValueOnce({ id: "c-1" });
     await service.createConversation(payload);
-    expect(client.post).toHaveBeenCalledWith("/agent-runtime/conversations", payload);
+    expect(client.post).toHaveBeenCalledWith("/praxis/conversations", payload);
   });
 
   it("deleteConversation deletes by id", async () => {
     vi.mocked(client.delete).mockResolvedValueOnce(undefined);
     await service.deleteConversation("conv-1");
-    expect(client.delete).toHaveBeenCalledWith("/agent-runtime/conversations/conv-1");
+    expect(client.delete).toHaveBeenCalledWith("/praxis/conversations/conv-1");
   });
 });
 
@@ -182,9 +179,7 @@ describe("agentRuntime.service agent learnings", () => {
   it("fetchAgentLearnings calls correct endpoint without agentName filter", async () => {
     vi.mocked(client.get).mockResolvedValueOnce([]);
     await service.fetchAgentLearnings();
-    expect(client.get).toHaveBeenCalledWith(
-      expect.stringContaining("/agent-runtime/agent-learnings?page=1&pageSize=20"),
-    );
+    expect(client.get).toHaveBeenCalledWith(expect.stringContaining("/praxis/agent-learnings?page=1&pageSize=20"));
   });
 
   it("fetchAgentLearnings includes agentName param when provided", async () => {
@@ -196,13 +191,13 @@ describe("agentRuntime.service agent learnings", () => {
   it("deleteAgentLearning deletes by id", async () => {
     vi.mocked(client.delete).mockResolvedValueOnce(undefined);
     await service.deleteAgentLearning("learn-1");
-    expect(client.delete).toHaveBeenCalledWith("/agent-runtime/agent-learnings/learn-1");
+    expect(client.delete).toHaveBeenCalledWith("/praxis/agent-learnings/learn-1");
   });
 
   it("fetchKnowledgeBaseStats calls correct endpoint", async () => {
     vi.mocked(client.get).mockResolvedValueOnce([]);
     await service.fetchKnowledgeBaseStats();
-    expect(client.get).toHaveBeenCalledWith("/agent-runtime/knowledge-base/stats");
+    expect(client.get).toHaveBeenCalledWith("/codex/knowledge-base/stats");
   });
 });
 
@@ -260,7 +255,7 @@ describe("agentRuntime.service sendChatMessage()", () => {
     };
     await service.sendChatMessage(payload);
     const [url, config] = vi.mocked(fetch).mock.calls[0];
-    expect(url).toContain("/agent-runtime/assistant/chat");
+    expect(url).toContain("/praxis/assistant/chat");
     expect((config as RequestInit).method).toBe("POST");
   });
 });

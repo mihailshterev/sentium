@@ -27,7 +27,7 @@ export function useWatchdogStream() {
   const sourceRef = useRef<EventSource | null>(null);
 
   useEffect(() => {
-    const source = new EventSource(`${BASE_URL}/watchdog/stream`, { withCredentials: true });
+    const source = new EventSource(`${BASE_URL}/vigil/stream`, { withCredentials: true });
     sourceRef.current = source;
 
     source.onopen = () => setIsLive(true);
@@ -80,5 +80,3 @@ export function useWatchdogStream() {
 
   return { isLive };
 }
-
-

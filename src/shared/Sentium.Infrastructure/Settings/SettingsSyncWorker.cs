@@ -1,8 +1,8 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Sentium.Infrastructure.Messaging;
-using Sentium.Shared.Constants;
-using Sentium.Shared.Events;
+using Sentium.Core.Constants;
+using Sentium.Core.Events;
 
 namespace Sentium.Infrastructure.Settings;
 

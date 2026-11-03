@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http;
@@ -112,13 +111,12 @@ public static class Extensions
 
     public static WebApplication MapDefaultEndpoints(this WebApplication app)
     {
-        // The health endpoints are exposed in all environments because the Watchdog service probes
-        // them to aggregate platform-wide health. They are only reachable on the internal service
-        // network (Aspire / reverse proxy) and are not published through the public Gateway.
-        // See https://aka.ms/dotnet/aspire/healthchecks for the security considerations.
+        // The health endpoints are exposed in all environments because Vigil probes the separate
+        // Sandbox service through them. In-process modules are probed directly via their tagged
+        // health checks. See https://aka.ms/dotnet/aspire/healthchecks for the security considerations.
 
         // All health checks must pass for the app to be considered ready to accept traffic.
-        // A JSON response writer surfaces per-dependency detail so Watchdog can derive Degraded
+        // A JSON response writer surfaces per-dependency detail so Vigil can derive Degraded
         // states and report individual checks, instead of only the overall pass/fail.
         app.MapHealthChecks(HealthEndpointPath, new HealthCheckOptions
         {
@@ -162,31 +160,6 @@ public static class Extensions
     {
         builder.AddRedisDistributedCache(connectionName);
         builder.Services.Configure<RedisCacheOptions>(options => options.InstanceName = $"{builder.Environment.ApplicationName}:");
-
-        return builder;
-    }
-
-    public static IHostApplicationBuilder AddAuthenticationDefaults(this IHostApplicationBuilder builder)
-    {
-        var identityAuthority = builder.Configuration["Identity:Authority"] ?? throw new InvalidOperationException("Identity authority is not configured.");
-
-        builder.Services.AddHttpClient("IdpClient").AddServiceDiscovery();
-
-        builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-            .AddJwtBearer(options =>
-            {
-                options.Authority = identityAuthority;
-                options.RequireHttpsMetadata = !builder.Environment.IsDevelopment() && !builder.Environment.IsEnvironment("Testing");
-                options.TokenValidationParameters.ValidateAudience = false;
-            });
-
-        builder.Services.AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
-            .Configure<IHttpClientFactory>((options, factory) =>
-            {
-                options.Backchannel = factory.CreateClient("IdpClient");
-            });
-
-        builder.Services.AddAuthorization();
 
         return builder;
     }

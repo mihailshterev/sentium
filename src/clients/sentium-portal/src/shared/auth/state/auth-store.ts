@@ -66,7 +66,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       });
 
       if (res.ok) {
-        window.location.href = res.url;
+        window.location.href = "/login";
       } else {
         set({ user: null, status: AUTH_STATUS.UNAUTHENTICATED });
       }

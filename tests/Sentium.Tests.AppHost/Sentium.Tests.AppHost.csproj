@@ -26,6 +26,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\aspire\Sentium.AppHost\Sentium.AppHost.csproj" />
+    <ProjectReference Include="..\..\src\shared\Sentium.Core\Sentium.Core.csproj" />
   </ItemGroup>
 
 </Project>

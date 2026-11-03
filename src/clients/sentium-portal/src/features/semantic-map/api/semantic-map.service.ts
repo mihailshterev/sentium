@@ -1,11 +1,15 @@
 import { client } from "@/shared/api/client";
 import type { KnowledgeMapResponse, KnowledgeMapSearchResponse } from "../types/knowledge-map";
 
-const BASE = "/agent-runtime";
+const BASE = "/codex";
 
 export const fetchKnowledgeMapNodes = (limit = 300, collection?: string): Promise<KnowledgeMapResponse> => {
   const params = new URLSearchParams({ limit: String(limit) });
-  if (collection) params.set("collection", collection);
+
+  if (collection) {
+    params.set("collection", collection);
+  }
+
   return client.get<KnowledgeMapResponse>(`${BASE}/knowledge-map/nodes?${params}`);
 };
 

@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Http;
-using Sentium.Shared.Constants;
+using Sentium.Core.Constants;
 using Serilog.Context;
 
 namespace Sentium.Infrastructure.Middleware;

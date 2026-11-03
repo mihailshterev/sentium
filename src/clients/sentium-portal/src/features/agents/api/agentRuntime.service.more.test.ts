@@ -45,13 +45,13 @@ describe("agentRuntime.service client endpoints", () => {
   it("fetchModels maps model objects to names", async () => {
     vi.mocked(client.get).mockResolvedValueOnce([{ name: "gemma" }, { name: "qwen" }]);
     expect(await svc.fetchModels()).toEqual(["gemma", "qwen"]);
-    expect(client.get).toHaveBeenCalledWith("/agent-runtime/models");
+    expect(client.get).toHaveBeenCalledWith("/praxis/models");
   });
 
   it("deleteOllamaModel encodes the model name", async () => {
     vi.mocked(client.delete).mockResolvedValueOnce({} as never);
     await svc.deleteOllamaModel("a/b");
-    expect(client.delete).toHaveBeenCalledWith("/agent-runtime/models?name=a%2Fb");
+    expect(client.delete).toHaveBeenCalledWith("/praxis/models?name=a%2Fb");
   });
 
   it("workflow CRUD hits the right endpoints", async () => {
@@ -61,17 +61,17 @@ describe("agentRuntime.service client endpoints", () => {
     await svc.createWorkflow({ name: "w" } as never);
     await svc.updateWorkflow({ id: "1", name: "w" } as never);
     await svc.deleteWorkflow("1");
-    expect(client.post).toHaveBeenCalledWith("/agent-runtime/workflows", { name: "w" });
-    expect(client.put).toHaveBeenCalledWith("/agent-runtime/workflows/1", { name: "w" });
-    expect(client.delete).toHaveBeenCalledWith("/agent-runtime/workflows/1");
+    expect(client.post).toHaveBeenCalledWith("/praxis/workflows", { name: "w" });
+    expect(client.put).toHaveBeenCalledWith("/praxis/workflows/1", { name: "w" });
+    expect(client.delete).toHaveBeenCalledWith("/praxis/workflows/1");
   });
 
   it("workflow runs use a paged query and id path", async () => {
     vi.mocked(client.get).mockResolvedValue({ items: [], totalCount: 0, page: 1, pageSize: 5, totalPages: 0 } as never);
     await svc.fetchWorkflowRuns(5);
     await svc.fetchWorkflowRun("r1");
-    expect(client.get).toHaveBeenCalledWith("/agent-runtime/workflows/runs?page=1&pageSize=5");
-    expect(client.get).toHaveBeenCalledWith("/agent-runtime/workflows/runs/r1");
+    expect(client.get).toHaveBeenCalledWith("/praxis/workflows/runs?page=1&pageSize=5");
+    expect(client.get).toHaveBeenCalledWith("/praxis/workflows/runs/r1");
   });
 
   it("conversation CRUD hits the right endpoints", async () => {
@@ -88,17 +88,17 @@ describe("agentRuntime.service client endpoints", () => {
     await svc.fetchConversation("c1");
     await svc.createConversation({ title: "t" } as never);
     await svc.deleteConversation("c1");
-    expect(client.get).toHaveBeenCalledWith("/agent-runtime/conversations?page=1&pageSize=20");
-    expect(client.get).toHaveBeenCalledWith("/agent-runtime/conversations/c1");
-    expect(client.delete).toHaveBeenCalledWith("/agent-runtime/conversations/c1");
+    expect(client.get).toHaveBeenCalledWith("/praxis/conversations?page=1&pageSize=20");
+    expect(client.get).toHaveBeenCalledWith("/praxis/conversations/c1");
+    expect(client.delete).toHaveBeenCalledWith("/praxis/conversations/c1");
   });
 
   it("orchestration triggers post to their endpoints", async () => {
     vi.mocked(client.post).mockResolvedValue({ eventId: "e" } as never);
     await svc.runDynamicWorkflow({ activity: "x" });
     await svc.runWorkflowPipeline({ workflowId: "w", scenario: "s" } as never);
-    expect(client.post).toHaveBeenCalledWith("/agent-runtime/orchestration/run-dynamic-workflow", { activity: "x" });
-    expect(client.post).toHaveBeenCalledWith("/agent-runtime/orchestration/run-workflow", {
+    expect(client.post).toHaveBeenCalledWith("/praxis/orchestration/run-dynamic-workflow", { activity: "x" });
+    expect(client.post).toHaveBeenCalledWith("/praxis/orchestration/run-workflow", {
       workflowId: "w",
       scenario: "s",
     });
@@ -111,10 +111,10 @@ describe("agentRuntime.service client endpoints", () => {
     await svc.listWorkspaceFiles("w 1");
     await svc.fetchWorkspaceFiles("w1");
     await svc.deleteWorkspaceFile("f1");
-    expect(client.get).toHaveBeenCalledWith("/agent-runtime/workspaces/files");
-    expect(client.get).toHaveBeenCalledWith("/agent-runtime/workspaces/files?workspaceId=w%201");
-    expect(client.get).toHaveBeenCalledWith("/agent-runtime/workspaces/w1/files");
-    expect(client.delete).toHaveBeenCalledWith("/agent-runtime/workspaces/files/f1");
+    expect(client.get).toHaveBeenCalledWith("/praxis/workspaces/files");
+    expect(client.get).toHaveBeenCalledWith("/praxis/workspaces/files?workspaceId=w%201");
+    expect(client.get).toHaveBeenCalledWith("/praxis/workspaces/w1/files");
+    expect(client.delete).toHaveBeenCalledWith("/praxis/workspaces/files/f1");
   });
 
   it("agent-learning endpoints build correct URLs", async () => {
@@ -126,10 +126,10 @@ describe("agentRuntime.service client endpoints", () => {
     await svc.fetchAgentLearningStats();
     await svc.updateAgentLearning("l1", { content: "c", tags: "t" });
     await svc.deleteAgentLearning("l1");
-    expect(client.get).toHaveBeenCalledWith("/agent-runtime/agent-learnings?page=1&pageSize=20");
-    expect(client.get).toHaveBeenCalledWith("/agent-runtime/agent-learnings?page=2&pageSize=10&agentName=Analyzer");
-    expect(client.get).toHaveBeenCalledWith("/agent-runtime/agent-learnings/stats");
-    expect(client.put).toHaveBeenCalledWith("/agent-runtime/agent-learnings/l1", { content: "c", tags: "t" });
+    expect(client.get).toHaveBeenCalledWith("/praxis/agent-learnings?page=1&pageSize=20");
+    expect(client.get).toHaveBeenCalledWith("/praxis/agent-learnings?page=2&pageSize=10&agentName=Analyzer");
+    expect(client.get).toHaveBeenCalledWith("/praxis/agent-learnings/stats");
+    expect(client.put).toHaveBeenCalledWith("/praxis/agent-learnings/l1", { content: "c", tags: "t" });
   });
 
   it("knowledge-base and knowledge-map endpoints build correct URLs", async () => {
@@ -140,10 +140,10 @@ describe("agentRuntime.service client endpoints", () => {
     await svc.deleteKnowledgeMapCollection("user memories");
     await svc.fetchKnowledgeMapNodes(100, "knowledge_base");
     await svc.searchKnowledgeMap("query", 5);
-    expect(client.get).toHaveBeenCalledWith("/agent-runtime/knowledge-base/stats");
-    expect(client.delete).toHaveBeenCalledWith("/agent-runtime/knowledge-base/collections/user%20memories");
-    expect(client.get).toHaveBeenCalledWith("/agent-runtime/knowledge-map/nodes?limit=100&collection=knowledge_base");
-    expect(client.post).toHaveBeenCalledWith("/agent-runtime/knowledge-map/search", { query: "query", topK: 5 });
+    expect(client.get).toHaveBeenCalledWith("/codex/knowledge-base/stats");
+    expect(client.delete).toHaveBeenCalledWith("/codex/knowledge-base/collections/user%20memories");
+    expect(client.get).toHaveBeenCalledWith("/codex/knowledge-map/nodes?limit=100&collection=knowledge_base");
+    expect(client.post).toHaveBeenCalledWith("/codex/knowledge-map/search", { query: "query", topK: 5 });
   });
 
   it("skill CRUD hits the right endpoints", async () => {
@@ -156,9 +156,9 @@ describe("agentRuntime.service client endpoints", () => {
     await svc.createSkill({ name: "s" } as never);
     await svc.updateSkill("s1", { name: "s" } as never);
     await svc.deleteSkill("s1");
-    expect(client.get).toHaveBeenCalledWith("/agent-runtime/skills/built-in");
-    expect(client.put).toHaveBeenCalledWith("/agent-runtime/skills/s1", { name: "s" });
-    expect(client.delete).toHaveBeenCalledWith("/agent-runtime/skills/s1");
+    expect(client.get).toHaveBeenCalledWith("/praxis/skills/built-in");
+    expect(client.put).toHaveBeenCalledWith("/praxis/skills/s1", { name: "s" });
+    expect(client.delete).toHaveBeenCalledWith("/praxis/skills/s1");
   });
 });
 
@@ -167,7 +167,7 @@ describe("agentRuntime.service fetch-based endpoints", () => {
     vi.mocked(fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValueOnce(okResponse({}));
     await svc.pullModel("gemma");
     expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining("/agent-runtime/models/pull"),
+      expect.stringContaining("/praxis/models/pull"),
       expect.objectContaining({ method: "POST" }),
     );
   });
