@@ -51,7 +51,7 @@ The five originally-proposed services were re-shaped into seven built services. 
   autonomy).
 - **Sentinel** - Policy Decision Point; every user-facing action is checked via
   `POST /policy/evaluate` (new governance layer, the proposal's "strict permissions" made concrete).
-- **Watchdog** - system health monitoring; the read-only successor to the _Inventory & Asset
+- **Vigil** - system health monitoring; the read-only successor to the _Inventory & Asset
   Service_, now focused on service uptime rather than household devices.
 - **Frontends** - `sentium-portal` (React) and `sentium-identity-ui` (login/consent).
 - **Infrastructure** (all local, started by Aspire): SQL Server (five isolated databases), Redis,
@@ -77,7 +77,7 @@ The five originally-proposed services were re-shaped into seven built services. 
 - Sandboxed code execution in hardened containers
 - Policy-governed actions with a full audit trail (Sentinel)
 - Scheduled, autonomous background tasks
-- Service health monitoring and incident tracking (Watchdog)
+- Service health monitoring and incident tracking (Vigil)
 - Semantic-map visualization of stored knowledge/memories
 
 ### Research Focus
@@ -100,7 +100,7 @@ The five originally-proposed services were re-shaped into seven built services. 
 
 - **Scope shifted** from _home-network data analytics_ (device presence, traffic summaries, usage
   trends) to a **general local AI agent platform**. Passive household monitoring narrowed to the
-  Watchdog service; the intelligence moved to the foreground.
+  Vigil service; the intelligence moved to the foreground.
 - **Two concerns were added that the proposal only gestured at**: explicit **governance** (Sentinel
   PDP, audit logging) and **isolated execution** (Sandbox) - the machinery that makes "AI agents
   under strict permissions" real rather than aspirational.

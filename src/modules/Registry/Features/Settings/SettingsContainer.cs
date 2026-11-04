@@ -21,9 +21,9 @@ public sealed class SettingsContainer
     public OllamaSettings Ollama { get; set; } = new();
 
     /// <summary>
-    /// Global Watchdog monitoring settings.
+    /// Global Vigil monitoring settings.
     /// </summary>
-    public WatchdogSettings Watchdog { get; set; } = new();
+    public VigilSettings Vigil { get; set; } = new();
 }
 
 /// <summary>
@@ -66,11 +66,11 @@ public sealed class PdpSettings
 }
 
 /// <summary>
-/// Runtime-configurable Watchdog monitoring settings, managed by Sovereign users and consumed by
-/// the Watchdog service. Controls poll cadence, probe timeouts, the degraded-latency threshold, and
+/// Runtime-configurable Vigil monitoring settings, managed by Sovereign users and consumed by
+/// the Vigil service. Controls poll cadence, probe timeouts, the degraded-latency threshold, and
 /// when a sustained degradation escalates into an incident.
 /// </summary>
-public sealed class WatchdogSettings
+public sealed class VigilSettings
 {
     /// <summary>
     /// How often every target is probed, in seconds.

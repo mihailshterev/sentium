@@ -6,15 +6,15 @@ namespace Sentium.Vigil.Features.Monitoring;
 
 /// <summary>
 /// Periodically probes every monitored target (services and infrastructure), records the result,
-/// evaluates incidents, and broadcasts changes through <see cref="IWatchdogFeed"/> for the live SSE stream. Cadence and
+/// evaluates incidents, and broadcasts changes through <see cref="IVigilFeed"/> for the live SSE stream. Cadence and
 /// thresholds are read from the Registry-backed settings on every cycle so changes apply live.
 /// </summary>
 public sealed class MonitoringWorker(
     IEnumerable<IHealthProbe> probes,
     IServiceHealthStateStore stateStore,
     IIncidentStore incidentStore,
-    IWatchdogSettingsProvider settingsProvider,
-    IWatchdogFeed feed,
+    IVigilSettingsProvider settingsProvider,
+    IVigilFeed feed,
     ILogger<MonitoringWorker> logger) : BackgroundService
 {
     private readonly IReadOnlyList<IHealthProbe> _probes = [.. probes];
@@ -25,7 +25,7 @@ public sealed class MonitoringWorker(
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            WatchdogRuntimeSettings settings;
+            VigilRuntimeSettings settings;
             try
             {
                 settings = await settingsProvider.GetAsync(stoppingToken);
@@ -48,10 +48,10 @@ public sealed class MonitoringWorker(
         }
     }
 
-    private Task PollAllAsync(WatchdogRuntimeSettings settings, CancellationToken stoppingToken)
+    private Task PollAllAsync(VigilRuntimeSettings settings, CancellationToken stoppingToken)
         => Task.WhenAll(_probes.Select(p => ProbeTargetAsync(p, settings, stoppingToken)));
 
-    private async Task ProbeTargetAsync(IHealthProbe probe, WatchdogRuntimeSettings settings, CancellationToken stoppingToken)
+    private async Task ProbeTargetAsync(IHealthProbe probe, VigilRuntimeSettings settings, CancellationToken stoppingToken)
     {
         var previous = stateStore.Get(probe.Target);
 
@@ -93,7 +93,7 @@ public sealed class MonitoringWorker(
         }
     }
 
-    private void EvaluateIncident(IHealthProbe probe, ServiceHealthStatus current, WatchdogRuntimeSettings settings)
+    private void EvaluateIncident(IHealthProbe probe, ServiceHealthStatus current, VigilRuntimeSettings settings)
     {
         var open = incidentStore.GetOpen(probe.Target);
 
@@ -102,17 +102,17 @@ public sealed class MonitoringWorker(
             case ServiceStatus.Unhealthy when open is null:
                 PublishIncident(
                     incidentStore.Open(probe.Target, probe.Kind, IncidentSeverity.Critical, current.Status, current.Details),
-                    WatchdogFeedEventTypes.IncidentOpened);
+                    VigilFeedEventTypes.IncidentOpened);
                 break;
 
             case ServiceStatus.Degraded when open is null && current.ConsecutiveFailures >= settings.ConsecutiveFailuresToOpenIncident:
                 PublishIncident(
                     incidentStore.Open(probe.Target, probe.Kind, IncidentSeverity.Warning, current.Status, current.Details),
-                    WatchdogFeedEventTypes.IncidentOpened);
+                    VigilFeedEventTypes.IncidentOpened);
                 break;
 
             case ServiceStatus.Healthy when open is not null:
-                PublishIncident(incidentStore.Resolve(probe.Target), WatchdogFeedEventTypes.IncidentResolved);
+                PublishIncident(incidentStore.Resolve(probe.Target), VigilFeedEventTypes.IncidentResolved);
                 break;
         }
     }
@@ -144,7 +144,7 @@ public sealed class MonitoringWorker(
             Timestamp: status.CheckedAt.ToString("O"),
             Details: status.Details);
 
-        feed.Publish(new WatchdogFeedEvent(WatchdogFeedEventTypes.Status, payload));
+        feed.Publish(new VigilFeedEvent(VigilFeedEventTypes.Status, payload));
     }
 
     private void PublishIncident(Incident? incident, string type)
@@ -155,9 +155,9 @@ public sealed class MonitoringWorker(
         }
 
         logger.LogWarning("Incident {Action} for {Target} (severity {Severity})",
-            type == WatchdogFeedEventTypes.IncidentResolved ? "RESOLVED" : "OPENED", incident.Target, incident.Severity);
+            type == VigilFeedEventTypes.IncidentResolved ? "RESOLVED" : "OPENED", incident.Target, incident.Severity);
 
-        feed.Publish(new WatchdogFeedEvent(type, incident));
+        feed.Publish(new VigilFeedEvent(type, incident));
     }
 
     private static ServiceHealthStatus ProbeFault(IHealthProbe probe, string message) => new()

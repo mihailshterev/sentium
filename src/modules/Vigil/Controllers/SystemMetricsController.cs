@@ -7,7 +7,7 @@ namespace Sentium.Vigil.Controllers;
 [ApiController]
 [Authorize]
 [Route($"{VigilRoutes.Prefix}/system")]
-public sealed class SystemMetricsController(IWatchdog watchdog) : ControllerBase
+public sealed class SystemMetricsController(IVigil vigil) : ControllerBase
 {
     /// <summary>
     /// Returns a current snapshot of host system metrics.
@@ -15,6 +15,6 @@ public sealed class SystemMetricsController(IWatchdog watchdog) : ControllerBase
     [HttpGet("metrics")]
     public IActionResult GetMetrics()
     {
-        return Ok(watchdog.GetMetrics());
+        return Ok(vigil.GetMetrics());
     }
 }

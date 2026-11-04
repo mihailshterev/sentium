@@ -14,7 +14,7 @@ export { ModelsPage } from "./ModelsPage";
 export { SandboxPage } from "./SandboxPage";
 export { SchedulerPage } from "./SchedulerPage";
 export { SentinelPage } from "./SentinelPage";
-export { WatchdogPage } from "./WatchdogPage";
+export { VigilPage } from "./VigilPage";
 export { SystemPage } from "./SystemPage";
 export { UsersPage } from "./UsersPage";
 export { SemanticMapPage } from "./SemanticMapPage";

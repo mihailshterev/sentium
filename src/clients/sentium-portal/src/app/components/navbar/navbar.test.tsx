@@ -157,10 +157,10 @@ describe("Navbar navigation links", () => {
     expect(screen.getByRole("link", { name: /settings/i })).toBeInTheDocument();
   });
 
-  it("shows Watchdog link", () => {
+  it("shows Vigil link", () => {
     setUser(["Member"]);
     renderNav();
-    expect(screen.getByRole("link", { name: /watchdog/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /vigil/i })).toBeInTheDocument();
   });
 });
 

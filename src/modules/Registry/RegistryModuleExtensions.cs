@@ -33,8 +33,8 @@ public static class RegistryModuleExtensions
             SettingsKeys.Ollama, SettingsScope.Global, c => c.Ollama, (c, v) => c.Ollama = v)
         );
 
-        services.AddSingleton<ISettingsDescriptor>(new SettingsDescriptor<WatchdogSettings>(
-            SettingsKeys.Watchdog, SettingsScope.Global, c => c.Watchdog, (c, v) => c.Watchdog = v)
+        services.AddSingleton<ISettingsDescriptor>(new SettingsDescriptor<VigilSettings>(
+            SettingsKeys.Vigil, SettingsScope.Global, c => c.Vigil, (c, v) => c.Vigil = v)
         );
 
         services.AddSingleton<ISettingsCatalog, SettingsCatalog>();

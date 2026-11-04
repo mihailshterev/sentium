@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Cpu, HardDrive, MemoryStick, Monitor, RefreshCw, Server, Activity, Clock, AlertCircle } from "lucide-react";
 import styles from "../system.module.scss";
-import { useSystemMetrics } from "@/features/watchdog/hooks/useSystemMetrics";
+import { useSystemMetrics } from "@/features/vigil/hooks/useSystemMetrics";
 import { formatUptime, formatMb } from "../system-utils";
 import { PageHeader } from "@/shared/ui/page-header";
 import { StatCard } from "@/shared/ui/stat-card";

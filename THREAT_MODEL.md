@@ -19,7 +19,7 @@ inference is local (Ollama); there is no external cloud dependency.
 This deployment model is central to the threat model:
 
 - The **only publicly reachable entry point is the Gateway (BFF)**. All other services
-  (AgentRuntime, Identity, Registry, Sandbox, Sentinel, Watchdog) and all infrastructure
+  (AgentRuntime, Identity, Registry, Sandbox, Sentinel, Vigil) and all infrastructure
   (SQL Server, Redis, NATS, Qdrant, Ollama, Azurite) live on a **trusted internal network**
   and are not exposed to untrusted clients.
 - The trust model assumes **no untrusted tenant** sharing the internal network. Multi-tenant
@@ -61,7 +61,7 @@ This deployment model is central to the threat model:
       |  (JWT Bearer, internal network)
  ===== TB2: authenticated service mesh ===========================
       v
- [ Identity ] [ AgentRuntime ] [ Registry ] [ Watchdog ]
+ [ Identity ] [ AgentRuntime ] [ Registry ] [ Vigil ]
       |
       |  (X-Internal-Token, SystemCaller policy)
  ===== TB3: privileged internal endpoints ========================
@@ -132,7 +132,7 @@ This deployment model is central to the threat model:
 | Compromised agent floods actions                 | **`RateLimitingPolicy`** (sliding window per agent) is the first Sentinel barrier - limits the "blast radius".                                                               |
 | Runaway / malicious code consumes host resources | Sandbox containers have **hard CPU & memory limits, `PidsLimit`, `nofile`/`nproc` ulimits, output size caps, and an execution timeout** (killed on overrun).                 |
 | LLM judge hangs the policy pipeline              | `SemanticIntentPolicy` timeouts/errors return **`INCONCLUSIVE`** rather than blocking - availability preserved without silently allowing misaligned actions at low autonomy. |
-| Cascading service failure                        | **Global Polly resilience** (retry + timeout + circuit breaker) on all HttpClients; Watchdog monitors service health.                                                        |
+| Cascading service failure                        | **Global Polly resilience** (retry + timeout + circuit breaker) on all HttpClients; Vigil monitors service health.                                                        |
 
 ### 3.6 Elevation of Privilege
 

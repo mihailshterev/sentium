@@ -78,7 +78,7 @@ const NAV_GROUPS: NavGroup[] = [
     links: [
       { to: "/sentinel", label: "Sentinel", icon: ShieldCog },
       { to: "/sandbox", label: "Sandbox", icon: VectorSquare },
-      { to: "/watchdog", label: "Watchdog", icon: View },
+      { to: "/vigil", label: "Vigil", icon: View },
     ],
   },
 ];

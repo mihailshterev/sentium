@@ -54,9 +54,9 @@ public sealed class PdpSettingsValidator : AbstractValidator<PdpSettings>
     }
 }
 
-public sealed class WatchdogSettingsValidator : AbstractValidator<WatchdogSettings>
+public sealed class VigilSettingsValidator : AbstractValidator<VigilSettings>
 {
-    public WatchdogSettingsValidator()
+    public VigilSettingsValidator()
     {
         RuleFor(x => x.PollIntervalSeconds)
             .InclusiveBetween(5, 3_600)

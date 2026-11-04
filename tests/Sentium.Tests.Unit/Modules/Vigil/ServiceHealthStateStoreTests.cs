@@ -49,14 +49,14 @@ public sealed class ServiceHealthStateStoreTests
         // Arrange
         var first = new ServiceHealthStatus
         {
-            ServiceName = "watchdog",
+            ServiceName = "vigil",
             Status = ServiceStatus.Healthy,
             LatencyMs = 5,
             CheckedAt = DateTimeOffset.UtcNow
         };
         var second = new ServiceHealthStatus
         {
-            ServiceName = "watchdog",
+            ServiceName = "vigil",
             Status = ServiceStatus.Unhealthy,
             LatencyMs = 999,
             CheckedAt = DateTimeOffset.UtcNow.AddSeconds(1)

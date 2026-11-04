@@ -16,9 +16,9 @@ public enum IngestionSourceType
     SentinelLogs,
 
     /// <summary>
-    /// Health and threshold alerts from the Watchdog service.
+    /// Health and threshold alerts from the Vigil service.
     /// </summary>
-    WatchdogAlerts,
+    VigilAlerts,
 
     /// <summary>
     /// Context or notes provided interactively by the user.

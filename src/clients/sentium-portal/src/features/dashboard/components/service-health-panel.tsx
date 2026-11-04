@@ -1,7 +1,7 @@
 import { Activity } from "lucide-react";
 import styles from "../dashboard.module.scss";
 import { EmptyState } from "@/shared/ui/empty-state";
-import type { ServiceHealthStatus } from "@/features/watchdog/types/serviceHealth";
+import type { ServiceHealthStatus } from "@/features/vigil/types/serviceHealth";
 
 interface ServiceHealthPanelProps {
   services: ServiceHealthStatus[];

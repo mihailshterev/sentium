@@ -260,7 +260,7 @@ docker compose logs -f ollama-init      # ends with "All models ready."
 curl -k https://localhost:8443/bff/user
 ```
 
-Then open **https://localhost:8443**, register or log in, and start a conversation. The Watchdog page
+Then open **https://localhost:8443**, register or log in, and start a conversation. The Vigil page
 inside the portal shows a live health view of every module, the sandbox and each infrastructure
 dependency.
 

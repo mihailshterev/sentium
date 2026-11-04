@@ -10,7 +10,7 @@ flowchart TB
     SEN["Sentinel<br/>(Policy Decision Point)"]
     AR["AgentRuntime<br/>(agents · RAG · orchestration)"]
     SBX["Sandbox<br/>(isolated execution)"]
-    WD["Watchdog<br/>(health monitoring)"]
+    WD["Vigil<br/>(health monitoring)"]
 
     Portal -->|"HTTPS + httpOnly cookie"| GW
     IdUI -->|"OIDC"| ID

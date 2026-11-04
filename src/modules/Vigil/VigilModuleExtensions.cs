@@ -36,13 +36,13 @@ public static class VigilModuleExtensions
 
         var services = builder.Services;
 
-        services.AddSingleton<IWatchdogSettingsProvider, RegistryWatchdogSettingsProvider>();
-        services.AddSingleton<ISettingsCacheInvalidationHandler, WatchdogSettingsCacheInvalidationHandler>();
+        services.AddSingleton<IVigilSettingsProvider, RegistryVigilSettingsProvider>();
+        services.AddSingleton<ISettingsCacheInvalidationHandler, VigilSettingsCacheInvalidationHandler>();
 
-        services.AddSingleton<IWatchdog, WatchdogService>();
+        services.AddSingleton<IVigil, VigilService>();
         services.AddSingleton<IServiceHealthStateStore, ServiceHealthStateStore>();
         services.AddSingleton<IIncidentStore, IncidentStore>();
-        services.AddSingleton<IWatchdogFeed, WatchdogFeed>();
+        services.AddSingleton<IVigilFeed, VigilFeed>();
 
         RegisterModuleProbes(services);
         RegisterServiceProbes(services);
