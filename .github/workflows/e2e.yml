@@ -19,6 +19,7 @@ jobs:
       E2E_USER_PASSWORD: ${{ secrets.E2E_USER_PASSWORD }}
       PLAYWRIGHT_BASE_URL: "http://localhost:5173"
       CI: "true"
+      SSL_CERT_DIR: "/home/runner/.aspnet/dev-certs/trust:/usr/lib/ssl/certs"
 
     steps:
       - uses: actions/checkout@v6
@@ -31,8 +32,8 @@ jobs:
       - name: Restore .NET dependencies
         run: dotnet restore
 
-      - name: Create HTTPS dev certificate
-        run: dotnet dev-certs https
+      - name: Create and trust HTTPS dev certificate
+        run: dotnet dev-certs https --trust
 
       - name: Build .NET (Release)
         run: dotnet build --no-restore --configuration ${{ env.BUILD_CONFIGURATION }}

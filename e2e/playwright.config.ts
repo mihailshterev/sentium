@@ -72,6 +72,9 @@ export default defineConfig({
       ASPNETCORE_ENVIRONMENT: "Testing",
       DOTNET_ASPIRE_SHOW_DASHBOARD: "false",
       "Parameters__internal-api-key": "testing-internal-api-key-32chars!!",
+      ...(process.env.CI
+        ? { "Logging__LogLevel__Aspire.Hosting": "Debug", "Logging__LogLevel__Aspire.Hosting.Health": "Information" }
+        : {}),
     },
     stdout: "pipe",
     stderr: "pipe",
