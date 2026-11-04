@@ -1,15 +1,12 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using NATS.Client.Serializers.Json;
-using Sentium.Infrastructure.Messaging;
-using Sentium.Core.Constants;
 using Sentium.Vigil.Features.Settings;
 
 namespace Sentium.Vigil.Features.Monitoring;
 
 /// <summary>
 /// Periodically probes every monitored target (services and infrastructure), records the result,
-/// evaluates incidents, and broadcasts changes over NATS for the live SSE stream. Cadence and
+/// evaluates incidents, and broadcasts changes through <see cref="IWatchdogFeed"/> for the live SSE stream. Cadence and
 /// thresholds are read from the Registry-backed settings on every cycle so changes apply live.
 /// </summary>
 public sealed class MonitoringWorker(
@@ -17,7 +14,7 @@ public sealed class MonitoringWorker(
     IServiceHealthStateStore stateStore,
     IIncidentStore incidentStore,
     IWatchdogSettingsProvider settingsProvider,
-    IEventBus eventBus,
+    IWatchdogFeed feed,
     ILogger<MonitoringWorker> logger) : BackgroundService
 {
     private readonly IReadOnlyList<IHealthProbe> _probes = [.. probes];
@@ -87,35 +84,35 @@ public sealed class MonitoringWorker(
 
         var current = stateStore.UpdateStatus(raw);
 
-        await EvaluateIncidentAsync(probe, current, settings, stoppingToken);
+        EvaluateIncident(probe, current, settings);
         LogTransition(previous, current);
 
         if (previous is null || previous.Status != current.Status)
         {
-            await PublishStatusAsync(current, stoppingToken);
+            PublishStatus(current);
         }
     }
 
-    private async Task EvaluateIncidentAsync(IHealthProbe probe, ServiceHealthStatus current, WatchdogRuntimeSettings settings, CancellationToken ct)
+    private void EvaluateIncident(IHealthProbe probe, ServiceHealthStatus current, WatchdogRuntimeSettings settings)
     {
         var open = incidentStore.GetOpen(probe.Target);
 
         switch (current.Status)
         {
             case ServiceStatus.Unhealthy when open is null:
-                await TryPublishIncidentAsync(
+                PublishIncident(
                     incidentStore.Open(probe.Target, probe.Kind, IncidentSeverity.Critical, current.Status, current.Details),
-                    NatsSubjects.WatchdogIncidentOpened, ct);
+                    WatchdogFeedEventTypes.IncidentOpened);
                 break;
 
             case ServiceStatus.Degraded when open is null && current.ConsecutiveFailures >= settings.ConsecutiveFailuresToOpenIncident:
-                await TryPublishIncidentAsync(
+                PublishIncident(
                     incidentStore.Open(probe.Target, probe.Kind, IncidentSeverity.Warning, current.Status, current.Details),
-                    NatsSubjects.WatchdogIncidentOpened, ct);
+                    WatchdogFeedEventTypes.IncidentOpened);
                 break;
 
             case ServiceStatus.Healthy when open is not null:
-                await TryPublishIncidentAsync(incidentStore.Resolve(probe.Target), NatsSubjects.WatchdogIncidentResolved, ct);
+                PublishIncident(incidentStore.Resolve(probe.Target), WatchdogFeedEventTypes.IncidentResolved);
                 break;
         }
     }
@@ -136,28 +133,21 @@ public sealed class MonitoringWorker(
         }
     }
 
-    private async Task PublishStatusAsync(ServiceHealthStatus status, CancellationToken ct)
+    private void PublishStatus(ServiceHealthStatus status)
     {
-        try
-        {
-            var payload = new ServiceHealthPayload(
-                ServiceName: status.ServiceName,
-                Kind: status.Kind.ToString(),
-                Status: status.Status.ToString(),
-                LatencyMs: status.LatencyMs,
-                UptimePercent: status.UptimePercent,
-                Timestamp: status.CheckedAt.ToString("O"),
-                Details: status.Details);
+        var payload = new ServiceHealthPayload(
+            ServiceName: status.ServiceName,
+            Kind: status.Kind.ToString(),
+            Status: status.Status.ToString(),
+            LatencyMs: status.LatencyMs,
+            UptimePercent: status.UptimePercent,
+            Timestamp: status.CheckedAt.ToString("O"),
+            Details: status.Details);
 
-            await eventBus.PublishAsync(NatsSubjects.WatchdogStatusUpdates, payload, serializer: NatsJsonSerializer<ServiceHealthPayload>.Default, ct: ct);
-        }
-        catch (Exception ex) when (!ct.IsCancellationRequested)
-        {
-            logger.LogError(ex, "Failed to publish status update for {Target}", status.ServiceName);
-        }
+        feed.Publish(new WatchdogFeedEvent(WatchdogFeedEventTypes.Status, payload));
     }
 
-    private async Task TryPublishIncidentAsync(Incident? incident, string subject, CancellationToken ct)
+    private void PublishIncident(Incident? incident, string type)
     {
         if (incident is null)
         {
@@ -165,16 +155,9 @@ public sealed class MonitoringWorker(
         }
 
         logger.LogWarning("Incident {Action} for {Target} (severity {Severity})",
-            subject == NatsSubjects.WatchdogIncidentResolved ? "RESOLVED" : "OPENED", incident.Target, incident.Severity);
+            type == WatchdogFeedEventTypes.IncidentResolved ? "RESOLVED" : "OPENED", incident.Target, incident.Severity);
 
-        try
-        {
-            await eventBus.PublishAsync(subject, incident, serializer: NatsJsonSerializer<Incident>.Default, ct: ct);
-        }
-        catch (Exception ex) when (!ct.IsCancellationRequested)
-        {
-            logger.LogError(ex, "Failed to publish incident event for {Target}", incident.Target);
-        }
+        feed.Publish(new WatchdogFeedEvent(type, incident));
     }
 
     private static ServiceHealthStatus ProbeFault(IHealthProbe probe, string message) => new()

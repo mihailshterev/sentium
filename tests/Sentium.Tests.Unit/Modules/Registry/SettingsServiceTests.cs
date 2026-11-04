@@ -5,6 +5,7 @@ using NSubstitute;
 using Sentium.Registry.Features.Settings;
 using Sentium.Registry.Entities;
 using Sentium.Core.Constants;
+using Sentium.Infrastructure.Settings;
 using Xunit;
 
 namespace Sentium.Tests.Unit.Modules.Registry;
@@ -14,7 +15,7 @@ public sealed class SettingsServiceTests
     private static readonly Guid UserId = Guid.NewGuid();
 
     private readonly ISettingsRepository _repository = Substitute.For<ISettingsRepository>();
-    private readonly SpyEventBus _eventBus = new();
+    private readonly ISettingsCacheInvalidator _cacheInvalidator = Substitute.For<ISettingsCacheInvalidator>();
     private readonly SettingsService _sut;
 
     public SettingsServiceTests()
@@ -29,7 +30,7 @@ public sealed class SettingsServiceTests
             _repository,
             catalog,
             new PassThroughHybridCache(),
-            _eventBus,
+            _cacheInvalidator,
             Substitute.For<IServiceProvider>(),
             NullLogger<SettingsService>.Instance);
     }
@@ -77,7 +78,7 @@ public sealed class SettingsServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_Harness_PersistsAndPublishes()
+    public async Task UpdateAsync_Harness_PersistsAndInvalidatesCaches()
     {
         var ct = TestContext.Current.CancellationToken;
         var entity = new SystemSettings { UserId = UserId };
@@ -92,7 +93,7 @@ public sealed class SettingsServiceTests
         entity.Settings.Harness.UserHarnessPrompt.Should().Be("custom");
         entity.UpdatedBy.Should().Be("admin");
         result.Value.Deserialize<HarnessSettings>(WebOptions)!.UserHarnessPrompt.Should().Be("custom");
-        _eventBus.PublishedSubjects.Should().ContainSingle(s => s == NatsSubjects.SettingsInvalidated);
+        await _cacheInvalidator.Received(1).InvalidateAsync(SettingsKeys.Harness, UserId, ct);
     }
 
     [Fact]

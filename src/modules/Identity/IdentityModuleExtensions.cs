@@ -40,15 +40,12 @@ public static class IdentityModuleExtensions
         .AddEntityFrameworkStores<IdentityDbContext>()
         .AddDefaultTokenProviders();
 
-        var isProduction = builder.Environment.IsProduction();
-
         services.ConfigureApplicationCookie(options =>
         {
             options.Cookie.Name = "Sentium.Auth";
             options.Cookie.HttpOnly = true;
             options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-            // Outside production the portal runs on its own (Vite) origin, so the cookie has to travel cross-site.
-            options.Cookie.SameSite = isProduction ? SameSiteMode.Strict : SameSiteMode.None;
+            options.Cookie.SameSite = SameSiteMode.Strict;
             options.ExpireTimeSpan = TimeSpan.FromDays(7);
             options.SlidingExpiration = true;
             options.Events.OnRedirectToLogin = context =>

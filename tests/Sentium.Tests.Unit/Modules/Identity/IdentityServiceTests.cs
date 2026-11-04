@@ -13,7 +13,6 @@ public sealed class IdentityServiceTests
 {
     private readonly UserManager<ApplicationUser> _userManager;
     private readonly SignInManager<ApplicationUser> _signInManager;
-    private readonly SpyEventBus _eventBus = new();
     private readonly IdentityService _service;
 
     public IdentityServiceTests()
@@ -29,11 +28,11 @@ public sealed class IdentityServiceTests
             null, null, null, null);
 
         var logger = Substitute.For<ILogger<IdentityService>>();
-        _service = new IdentityService(_userManager, _signInManager, _eventBus, logger);
+        _service = new IdentityService(_userManager, _signInManager, logger);
     }
 
     [Fact]
-    public async Task RegisterUserAsync_Success_ReturnsSucceededResultAndPublishesEvent()
+    public async Task RegisterUserAsync_Success_ReturnsSucceededResultAndSignsIn()
     {
         var request = new RegisterRequest { Email = "user@test.com", Password = "Test@123" };
         _userManager.CreateAsync(Arg.Any<ApplicationUser>(), Arg.Any<string>())
@@ -48,11 +47,11 @@ public sealed class IdentityServiceTests
         result.Succeeded.Should().BeTrue();
         user.Should().NotBeNull();
         user!.Email.Should().Be(request.Email);
-        _eventBus.PublishedSubjects.Should().ContainSingle(s => s == "identity.user.registered");
+        await _signInManager.Received(1).SignInAsync(user, false);
     }
 
     [Fact]
-    public async Task RegisterUserAsync_Failure_DoesNotPublishEvent()
+    public async Task RegisterUserAsync_Failure_DoesNotSignIn()
     {
         var request = new RegisterRequest { Email = "bad@test.com", Password = "weak" };
         var failure = IdentityResult.Failed(new IdentityError { Description = "Password too short." });
@@ -62,7 +61,7 @@ public sealed class IdentityServiceTests
         var (result, _) = await _service.RegisterUserAsync(request);
 
         result.Succeeded.Should().BeFalse();
-        _eventBus.PublishedSubjects.Should().BeEmpty();
+        await _signInManager.DidNotReceive().SignInAsync(Arg.Any<ApplicationUser>(), Arg.Any<bool>());
     }
 
     [Fact]

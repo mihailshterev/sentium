@@ -1,11 +1,11 @@
 namespace Sentium.Infrastructure.Settings;
 
 /// <summary>
-/// Translates a semantic settings-invalidation event (<c>SettingsInvalidatedEvent</c>) into the
-/// eviction of <i>this</i> service's own cache entries.
+/// Translates a settings change (a <c>SettingsKeys</c> identity plus scope) into the
+/// eviction of <i>this</i> module's own cache entries. Invoked by <see cref="ISettingsCacheInvalidator"/>.
 /// <para/>
-/// Each service registers one or more handlers that know how to map a <c>SettingsKeys</c> identity to
-/// the private cache key(s) the service stores under. The handler performs the eviction itself so it
+/// Each module registers one or more handlers that know how to map a <c>SettingsKeys</c> identity to
+/// the private cache key(s) the module stores under. The handler performs the eviction itself so it
 /// can pick the right strategy - a single-key <c>RemoveAsync</c>, or a tag-based <c>RemoveByTagAsync</c>
 /// when one settings change affects many cached entries (e.g. a global value embedded in per-user
 /// snapshots).

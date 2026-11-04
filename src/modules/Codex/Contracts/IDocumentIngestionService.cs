@@ -4,7 +4,7 @@ namespace Sentium.Codex.Contracts;
 
 /// <summary>
 /// Orchestrates the full ingestion pipeline: text chunking → embedding → vector storage.
-/// Consumers include the REST API, NATS event processors, and scheduled background jobs.
+/// Consumers include the REST API, background ingestion workers, and scheduled jobs.
 /// </summary>
 public interface IDocumentIngestionService
 {

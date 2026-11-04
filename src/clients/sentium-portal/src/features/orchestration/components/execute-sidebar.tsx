@@ -306,7 +306,7 @@ export function ExecuteSidebar({
         <div className={styles.connectionInfo}>
           <div className={styles.connRow}>
             <span className={styles.connKey}>Protocol</span>
-            <span className={styles.connVal}>SSE / NATS</span>
+            <span className={styles.connVal}>SSE</span>
           </div>
           <div className={styles.connRow}>
             <span className={styles.connKey}>Status</span>
@@ -317,5 +317,3 @@ export function ExecuteSidebar({
     </aside>
   );
 }
-
-

@@ -37,9 +37,9 @@ in [Aspire vs. Compose parity](#aspire-vs-compose-parity).
 | **Best for**       | Local development                          | Self-hosted deployment                                  |
 | **Host needs**     | .NET 10 SDK, pnpm, Docker                  | Docker only (+ .NET SDK once, for a dev cert)           |
 | **Apps run**       | As host processes (hot reload)             | As built container images                               |
-| **Front-end**      | Vite dev server (portal `:5173`)           | Portal via nginx (`:5173`)                              |
+| **Front-end**      | Vite dev server (`:5173`, proxies the API) | Built into and served by Sentium.Web (`:8443`)          |
 | **TLS / cookie**   | Handled by the Aspire HTTPS pipeline       | Sentium.Web terminates TLS with a dev cert you generate |
-| **Observability**  | Aspire dashboard                           | Seq (`:8090`) + `docker compose logs`                   |
+| **Observability**  | Aspire dashboard                           | `docker compose logs`                                   |
 | **Model download** | Startup **blocks** until models are pulled | Pulled in the background; first chat waits              |
 | **GPU**            | Requested by default                       | Opt-in                                                  |
 
@@ -52,7 +52,7 @@ sandbox) as containers, and Compose builds and runs everything in containers.
 
 The [.NET Aspire AppHost](../src/aspire/Sentium.AppHost/Program.cs) is the single entry point for
 local development. One command starts Sentium.Web, the Sandbox, the portal, and every backing
-dependency (PostgreSQL, Redis, NATS, Qdrant, Ollama, Seq, Azurite) as managed containers - with a
+dependency (PostgreSQL, Redis, Qdrant, Ollama, Azurite) as managed containers - with a
 live dashboard, hot reload, and automatic service discovery.
 
 ### Prerequisites
@@ -101,7 +101,7 @@ watch every resource start, stream logs, and follow the model downloads.
 ### What gets started
 
 Sentium.Web (all six modules), the Sandbox, the portal (`sentium-portal`), and the infrastructure
-(PostgreSQL with one `sentiumdb` database, Redis, NATS JetStream, Qdrant, Ollama, Seq, Azurite). The
+(PostgreSQL with one `sentiumdb` database, Redis, Qdrant, Ollama, Azurite). The
 default models (`gemma4:e4b` + `embeddinggemma-2:740m`) are pulled into the Ollama volume; Aspire
 **blocks** Sentium.Web until the pull completes.
 
@@ -155,7 +155,7 @@ dotnet dev-certs https --trust
 docker compose up --build
 ```
 
-Then open the portal at **http://localhost:5173**.
+Then open the portal at **https://localhost:8443**.
 
 > **First run takes a while.** Docker downloads base images, builds three images, and pulls the chat +
 > embedding models into Ollama. The platform UI and login come up quickly; the **first agent chat
@@ -227,28 +227,23 @@ docker compose down                # stop & remove containers, keep data volumes
 | ------------- | ----------------------------------------- | ------------ | ---------------------------------------------------------------------------------------------------------------- |
 | `postgres`    | `postgres:17-alpine`                      | 5432         | Relational data - one `sentiumdb` database, one schema per module (`identity`, `registry`, `sentinel`, `praxis`) |
 | `redis`       | `redis:7-alpine`                          | 6379         | HybridCache L2                                                                                                   |
-| `nats`        | `nats:2-alpine`                           | 4222, 8222   | JetStream messaging + cache invalidation (8222 = monitoring)                                                     |
 | `qdrant`      | `qdrant/qdrant:latest`                    | 6333, 6334   | Vector store for RAG (6333 REST/dashboard, 6334 gRPC)                                                            |
 | `azurite`     | `mcr.microsoft.com/azure-storage/azurite` | 10000        | Azure Blob Storage emulator (workspace files & sandbox artifacts)                                                |
-| `seq`         | `datalust/seq:latest`                     | 8090         | Structured log aggregation (OTLP ingest)                                                                         |
 | `ollama`      | `ollama/ollama:0.30.5`                    | 11434        | Local LLM inference                                                                                              |
 | `ollama-init` | `ollama/ollama:0.30.5`                    | -            | One-shot model puller (exits when models are ready)                                                              |
 
 #### Application services
 
-| Service       | Dockerfile                              | Exposed via      | Role                                                                                    |
-| ------------- | --------------------------------------- | ---------------- | --------------------------------------------------------------------------------------- |
-| `sentium-web` | `src/hosts/Sentium.Web/Dockerfile`      | **8443** (HTTPS) | The modular monolith: every module, the API and the login session - the only public API |
-| `sandbox`     | `src/hosts/Sentium.Sandbox/Dockerfile`  | internal         | Stateless, hardened Docker code execution; reachable only from `sentium-web`            |
-| `portal`      | `src/clients/sentium-portal/Dockerfile` | **5173**         | React SPA including the login page (served by nginx)                                    |
+| Service       | Dockerfile                             | Exposed via      | Role                                                                                |
+| ------------- | -------------------------------------- | ---------------- | ----------------------------------------------------------------------------------- |
+| `sentium-web` | `src/hosts/Sentium.Web/Dockerfile`     | **8443** (HTTPS) | The modular monolith: every module, the API, the login session and the built portal |
+| `sandbox`     | `src/hosts/Sentium.Sandbox/Dockerfile` | internal         | Stateless, hardened Docker code execution; reachable only from `sentium-web`        |
 
 #### Endpoints once healthy
 
 | What                    | URL                             |
 | ----------------------- | ------------------------------- |
-| **Portal** (start here) | http://localhost:5173           |
-| Sentium.Web (API)       | https://localhost:8443          |
-| Seq (logs)              | http://localhost:8090           |
+| **Portal** (start here) | https://localhost:8443          |
 | Qdrant dashboard        | http://localhost:6333/dashboard |
 | Ollama API              | http://localhost:11434          |
 
@@ -265,7 +260,7 @@ docker compose logs -f ollama-init      # ends with "All models ready."
 curl -k https://localhost:8443/bff/user
 ```
 
-Then open **http://localhost:5173**, register or log in, and start a conversation. The Watchdog page
+Then open **https://localhost:8443**, register or log in, and start a conversation. The Watchdog page
 inside the portal shows a live health view of every module, the sandbox and each infrastructure
 dependency.
 
@@ -281,16 +276,14 @@ runtime.
 | `INTERNAL_API_KEY`        | `change-me-…`           | Pre-shared `X-Internal-Token` between `sentium-web` and `sandbox`.                      |
 | `QDRANT_API_KEY`          | `change-me-…`           | API key the Qdrant server requires and the clients send. Any non-empty string.          |
 | `CERT_PASSWORD`           | `change-me-…`           | Password of `certs/sentium.pfx`. Must match the `dotnet dev-certs` step.                |
-| `WEB_HTTPS_PORT`          | `8443`                  | Host HTTPS port for Sentium.Web (the browser-facing API).                               |
-| `PORTAL_PORT`             | `5173`                  | Host HTTP port for the portal SPA.                                                      |
+| `WEB_HTTPS_PORT`          | `8443`                  | Host HTTPS port for Sentium.Web (the portal and the API).                               |
 | `SENTIUM_MODEL`           | `gemma4:e4b`            | Chat/reasoning model (any valid Ollama tag).                                            |
 | `SENTIUM_EMBEDDING_MODEL` | `embeddinggemma-2:740m` | Embedding model. Must be 768-dimensional to match the RAG vector size.                  |
 | `SANDBOX_JOBS_DIR`        | `/tmp/sentium-sandbox`  | Per-job sandbox working directory - identical on host and inside the Sandbox container. |
 | `AZURITE_CONNECTION`      | _(well-known dev key)_  | Azurite blob connection string. Safe to leave as-is.                                    |
 
-> **Changing ports?** If you change `WEB_HTTPS_PORT` or `PORTAL_PORT`, the CORS origin, the login
-> redirect, and the portal's baked-in API base are all derived from those variables - so a full `docker compose up --build` (to rebuild the portal with the new
-> API base) keeps everything consistent.
+> **Changing the port?** Only `WEB_HTTPS_PORT` exists now: the portal is served by Sentium.Web from the
+> same origin as the API, so there is no CORS origin or API base to keep in sync.
 
 ### Platform notes
 
@@ -324,8 +317,10 @@ pnpm install
 pnpm dev            # Vite dev server on http://localhost:5173
 ```
 
-The portal talks only to Sentium.Web; point it at a running instance with the `VITE_API_BASE`
-environment variable (for example `https://localhost:8443` under Compose). Aspire sets it for you.
+The Vite dev server proxies `/api` and `/bff` to Sentium.Web, so the browser stays on one origin. Point
+it at a running instance with the `API_PROXY_TARGET` environment variable (default
+`https://localhost:7254`, the `https` launch profile of Sentium.Web; use `https://localhost:8443`
+for a Compose stack). Aspire sets it for you.
 
 ---
 
@@ -379,8 +374,8 @@ docker compose down -v
 docker compose up -d ollama-init
 ```
 
-Persisted state lives in named volumes: `postgres-data`, `redis-data`, `nats-data`, `qdrant-data`,
-`azurite-data`, `seq-data`, `ollama-data`. They survive `docker compose down` and are only removed by
+Persisted state lives in named volumes: `postgres-data`, `redis-data`, `qdrant-data`,
+`azurite-data`, `ollama-data`. They survive `docker compose down` and are only removed by
 `down -v`.
 
 ---
@@ -440,9 +435,9 @@ Both full-stack methods are functionally equivalent. The intentional differences
 | TLS / auth cookie | Handled by the Aspire HTTPS dev pipeline             | Sentium.Web terminates TLS using `certs/sentium.pfx` (one-time `dotnet dev-certs` step)                          |
 | Model readiness   | Startup **blocks** until models download (`WaitFor`) | Services start immediately; `ollama-init` pulls models in the background and the first chat waits                |
 | GPU               | Requested by default                                 | Opt-in (uncomment the `deploy` block) so the stack starts on GPU-less hosts                                      |
-| Observability     | Aspire dashboard                                     | Seq at http://localhost:8090 (OTLP) + `docker compose logs`                                                      |
+| Observability     | Aspire dashboard                                     | `docker compose logs`                                                                                            |
 | Runtime user      | Apps run as the host developer (`dotnet run`)        | Both .NET images run as root (Sentium.Web reads the mounted TLS cert; the Sandbox drives the host Docker socket) |
 
 Everything else - Sentium.Web and its six modules, the separate Sandbox, the single PostgreSQL
-database, Redis, NATS JetStream, Qdrant, Azurite, the `X-Internal-Token` security model, per-user data isolation, the Sentinel PDP, and the default
+database, Redis, Qdrant, Azurite, the `X-Internal-Token` security model, per-user data isolation, the Sentinel PDP, and the default
 `gemma4:e4b` / `embeddinggemma-2:740m` models - matches between the two setups exactly.

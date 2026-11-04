@@ -2,7 +2,7 @@ using System.Text;
 using Sentium.Praxis.Common.Helpers;
 using Sentium.Praxis.Extensions;
 using Sentium.Praxis.Features.Agents;
-using Sentium.Infrastructure.Messaging;
+using Sentium.Praxis.Features.Orchestration;
 using Microsoft.Agents.AI;
 using Microsoft.Agents.AI.Workflows;
 using Microsoft.Extensions.AI;
@@ -30,10 +30,10 @@ internal sealed record SquadMember(string Name, string Role);
 /// A self-correcting agentic loop. It runs the sequential squad,
 /// has a Validator agent judge the output, and - if rejected - feeds the critique back and re-runs the squad,
 /// up to a small iteration budget. It aborts early on a stuck state (near-identical consecutive output), prunes
-/// context aggressively to protect small context windows, and streams every phase shift to NATS for the UI timeline.
+/// context aggressively to protect small context windows, and streams every phase shift to the run's live stream for the UI timeline.
 /// </summary>
 /// <remarks>Shared by <see cref="DynamicDiscoveryWorkflow"/> and <see cref="DynamicCustomWorkflow"/>.</remarks>
-internal sealed class AgenticRefinementLoop(IAgentFactory factory, IEventBus nats)
+internal sealed class AgenticRefinementLoop(IAgentFactory factory, IAgentStreamPublisher stream)
 {
     private const int DefaultMaxIterations = 3;
     private const int SquadTextBudget = 8000;
@@ -75,7 +75,7 @@ internal sealed class AgenticRefinementLoop(IAgentFactory factory, IEventBus nat
                 ? $"Squad execution - attempt {iteration}/{maxIterations} (re-running from {squadNames[^activeSquad.Count]} onward)"
                 : $"Squad execution - attempt {iteration}/{maxIterations}";
 
-            await EmitStatusAsync(trigger, "System", attemptStatus, streamLog, ct);
+            EmitStatus(trigger, "System", attemptStatus, streamLog);
 
             (finalHistory, squadText) = await RunSquadAsync(trigger, workflowName, activeSquad, messages, streamLog, ct);
 
@@ -85,7 +85,7 @@ internal sealed class AgenticRefinementLoop(IAgentFactory factory, IEventBus nat
 
             if (OutputSimilarity.IsStuck(previousCumulative, cumulativeText))
             {
-                await EmitStatusAsync(trigger, "System", "Stuck-state detected - squad repeated its previous output. Aborting to conserve compute.", streamLog, ct);
+                EmitStatus(trigger, "System", "Stuck-state detected - squad repeated its previous output. Aborting to conserve compute.", streamLog);
                 stopReason = RefinementStopReason.Stuck;
                 break;
             }
@@ -99,12 +99,12 @@ internal sealed class AgenticRefinementLoop(IAgentFactory factory, IEventBus nat
             var verdict = LlmParser.ParseValidationVerdict(validatorOutput);
             if (verdict.Passed)
             {
-                await EmitStatusAsync(trigger, AgentRole.Validator, "Validation passed", streamLog, ct);
+                EmitStatus(trigger, AgentRole.Validator, "Validation passed", streamLog);
                 stopReason = RefinementStopReason.Passed;
                 break;
             }
 
-            await EmitStatusAsync(trigger, AgentRole.Validator, "Validation failed - requesting revision", streamLog, ct);
+            EmitStatus(trigger, AgentRole.Validator, "Validation failed - requesting revision", streamLog);
 
             if (iteration >= maxIterations)
             {
@@ -117,10 +117,10 @@ internal sealed class AgenticRefinementLoop(IAgentFactory factory, IEventBus nat
 
             if (activeSquad.Count < squad.Count)
             {
-                await EmitStatusAsync(trigger, "System", $"Critique points to {string.Join(", ", flagged)} - re-running from {squadNames[^activeSquad.Count]} onward so downstream agents reprocess the correction.", streamLog, ct);
+                EmitStatus(trigger, "System", $"Critique points to {string.Join(", ", flagged)} - re-running from {squadNames[^activeSquad.Count]} onward so downstream agents reprocess the correction.", streamLog);
             }
 
-            await EmitStatusAsync(trigger, "System", "Rewriting response based on reviewer feedback", streamLog, ct);
+            EmitStatus(trigger, "System", "Rewriting response based on reviewer feedback", streamLog);
             messages = BuildCorrectiveContext(originalInput, cumulativeText, verdict.Critique, iteration + 1);
         }
 
@@ -129,7 +129,7 @@ internal sealed class AgenticRefinementLoop(IAgentFactory factory, IEventBus nat
     }
 
     /// <summary>
-    /// Rebuilds and runs the sequential squad for one turn, streaming every reasoning/tool/text update to NATS and
+    /// Rebuilds and runs the sequential squad for one turn, streaming every reasoning/tool/text update to the run's live stream and
     /// the log accumulator. The workflow is rebuilt each iteration because it is cheap and stateless, which avoids
     /// any cross-run state leaking between correction passes.
     /// </summary>
@@ -158,7 +158,7 @@ internal sealed class AgenticRefinementLoop(IAgentFactory factory, IEventBus nat
             {
                 var author = e.Update.AuthorName ?? "Squad";
 
-                await AgentStreamEmitter.EmitReasoningAndToolsAsync(nats, streamLog, trigger.StreamId, author, e.Update.Contents, ct);
+                AgentStreamEmitter.EmitReasoningAndTools(stream, streamLog, trigger.StreamId, author, e.Update.Contents);
 
                 if (!string.IsNullOrEmpty(e.Update.Text))
                 {
@@ -168,7 +168,7 @@ internal sealed class AgenticRefinementLoop(IAgentFactory factory, IEventBus nat
                     }
 
                     transcript[^1].Text.Append(e.Update.Text);
-                    await nats.StreamAgentUpdateAsync(trigger.StreamId, author, e.Update.Text, ct);
+                    stream.Emit(trigger.StreamId, author, e.Update.Text);
                     streamLog.Add(author, e.Update.Text, AgentUpdateTypes.Message);
                 }
             }
@@ -317,7 +317,7 @@ internal sealed class AgenticRefinementLoop(IAgentFactory factory, IEventBus nat
     {
         var validatorSession = await validator.CreateSessionAsync(ct);
 
-        return await AgentTurnStreamer.RunAsync(validator, validationInput, validatorSession, trigger, AgentRole.Validator, nats, streamLog, ct);
+        return await AgentTurnStreamer.RunAsync(validator, validationInput, validatorSession, trigger, AgentRole.Validator, stream, streamLog, ct);
     }
 
     /// <summary>
@@ -343,9 +343,9 @@ internal sealed class AgenticRefinementLoop(IAgentFactory factory, IEventBus nat
         return [new ChatMessage(ChatRole.User, corrective)];
     }
 
-    private async Task EmitStatusAsync(WorkflowTrigger trigger, string author, string text, StreamLogAccumulator streamLog, CancellationToken ct)
+    private void EmitStatus(WorkflowTrigger trigger, string author, string text, StreamLogAccumulator streamLog)
     {
-        await nats.StreamAgentUpdateAsync(trigger.StreamId, author, text, AgentUpdateTypes.Status, ct);
+        stream.Emit(trigger.StreamId, author, text, AgentUpdateTypes.Status);
         streamLog.Add(author, text, AgentUpdateTypes.Status);
     }
 

@@ -1,18 +1,15 @@
 using Sentium.Identity.Features.Abstractions;
 using Sentium.Identity.Entities;
 using Sentium.Identity.Features.Security;
-using Sentium.Infrastructure.Messaging;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.Extensions.Logging;
-using Sentium.Identity.Features.Constants;
 
 namespace Sentium.Identity.Features.Services;
 
 public sealed class IdentityService(
     UserManager<ApplicationUser> userManager,
     SignInManager<ApplicationUser> signInManager,
-    IEventBus eventBus,
     ILogger<IdentityService> logger) : IIdentityService
 {
     public async Task<(IdentityResult Result, ApplicationUser? User)> RegisterUserAsync(RegisterRequest request)
@@ -40,16 +37,9 @@ public sealed class IdentityService(
 
             await signInManager.SignInAsync(user, isPersistent: false);
 
-            await eventBus.PublishAsync(IdentityEvents.UserRegistered, new
-            {
-                UserId = user.Id,
-                user.Email,
-                CreatedAt = DateTime.UtcNow
-            });
-
             if (logger.IsEnabled(LogLevel.Information))
             {
-                logger.LogInformation("User {UserId} registered and event published.", user.Id);
+                logger.LogInformation("User {UserId} registered.", user.Id);
             }
         }
 

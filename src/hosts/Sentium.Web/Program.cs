@@ -12,7 +12,6 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 builder.AddSentiumAuditLogging();
 
-builder.AddNatsClient(ResourceNames.Nats);
 builder.AddSentiumDistributedCache(ResourceNames.Redis);
 builder.AddAzureBlobServiceClient(ResourceNames.WorkspaceBlobs);
 
@@ -37,18 +36,6 @@ builder.Services.AddOpenApi();
 builder.Services.AddControllers(options => options.Filters.Add<FluentValidationFilter>())
     .AddSentiumModuleControllers();
 builder.Services.AddValidatorsFromAssemblies(SentiumModules.Assemblies);
-
-builder.Services.AddCors(options =>
-{
-    options.AddDefaultPolicy(policy =>
-    {
-        var origins = builder.Configuration.GetSection("Cors:Origins").Get<string[]>() ?? ["http://localhost:5173", "https://localhost:5173"];
-        policy.WithOrigins(origins)
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
-    });
-});
 
 var app = builder.Build();
 
@@ -75,7 +62,6 @@ if (app.Environment.IsDevelopment())
 
 app.UseStaticFiles();
 app.UseRouting();
-app.UseCors();
 app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();

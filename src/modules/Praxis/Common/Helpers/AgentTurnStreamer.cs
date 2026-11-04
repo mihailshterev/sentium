@@ -2,7 +2,7 @@ using System.Text;
 using Sentium.Praxis.Extensions;
 using Sentium.Praxis.Features.Agents;
 using Sentium.Praxis.Features.Workflows;
-using Sentium.Infrastructure.Messaging;
+using Sentium.Praxis.Features.Orchestration;
 using Microsoft.Agents.AI;
 
 namespace Sentium.Praxis.Common.Helpers;
@@ -15,7 +15,7 @@ internal static class AgentTurnStreamer
         AgentSession session,
         WorkflowTrigger trigger,
         string author,
-        IEventBus nats,
+        IAgentStreamPublisher stream,
         StreamLogAccumulator streamLog,
         CancellationToken ct)
     {
@@ -23,12 +23,12 @@ internal static class AgentTurnStreamer
 
         await foreach (var update in agent.RunStreamingAsync(input, session, cancellationToken: ct))
         {
-            await AgentStreamEmitter.EmitReasoningAndToolsAsync(nats, streamLog, trigger.StreamId, author, update.Contents, ct);
+            AgentStreamEmitter.EmitReasoningAndTools(stream, streamLog, trigger.StreamId, author, update.Contents);
 
             if (!string.IsNullOrEmpty(update.Text))
             {
                 output.Append(update.Text);
-                await nats.StreamAgentUpdateAsync(trigger.StreamId, author, update.Text, ct);
+                stream.Emit(trigger.StreamId, author, update.Text);
                 streamLog.Add(author, update.Text, AgentUpdateTypes.Message);
             }
         }

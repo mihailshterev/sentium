@@ -4,7 +4,6 @@ using Sentium.Praxis.Features.Storage;
 using Sentium.Praxis.Features.Tools;
 using Sentium.Praxis.Features.Tools.Attributes;
 using Sentium.Praxis.Data;
-using Sentium.Infrastructure.Messaging;
 using Microsoft.EntityFrameworkCore;
 using System.Text;
 using System.Text.Json;
@@ -15,7 +14,7 @@ namespace Sentium.Praxis.Features.Tools.Workspace;
 /// An agent tool that saves a new text file to a workspace.
 /// </summary>
 [AgentToolPolicy(RiskLevel = ToolRiskLevel.Medium)]
-public sealed class WriteWorkspaceFileTool(PraxisDbContext dbContext, ILocalFileService fileService, IEventBus eventBus) : IAgentTool
+public sealed class WriteWorkspaceFileTool(PraxisDbContext dbContext, ILocalFileService fileService, IFileIngestionQueue ingestionQueue) : IAgentTool
 {
     private readonly JsonSerializerOptions options = new()
     {
@@ -88,7 +87,7 @@ public sealed class WriteWorkspaceFileTool(PraxisDbContext dbContext, ILocalFile
             dbContext.ProjectFiles.Add(projectFile);
             await dbContext.SaveChangesAsync(ct);
 
-            await eventBus.PublishAsync(FileEvents.FileIngested, new FileIngestedEvent(projectFile.Id, projectFile.WorkspaceId), ct: ct);
+            ingestionQueue.Enqueue(new FileIngestionRequest(projectFile.Id, projectFile.WorkspaceId));
 
             return $"Success: File '{request.FileName}' saved with ID {projectFile.Id}.";
         }

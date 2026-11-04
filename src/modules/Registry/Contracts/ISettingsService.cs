@@ -16,7 +16,7 @@ public interface ISettingsService
 
     /// <summary>
     /// Validates and persists the settings for <paramref name="key"/>, evicts the cache, and
-    /// publishes a NATS invalidation event. Throws <see cref="KeyNotFoundException"/> for unknown
+    /// tells every module to evict its own cached copy. Throws <see cref="KeyNotFoundException"/> for unknown
     /// keys and <see cref="FluentValidation.ValidationException"/> for invalid payloads.
     /// </summary>
     Task<SettingsEnvelope> UpdateAsync(string key, Guid? userId, JsonElement payload, string? updatedBy = null, CancellationToken ct = default);

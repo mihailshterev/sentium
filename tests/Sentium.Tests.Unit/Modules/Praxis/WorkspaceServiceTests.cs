@@ -13,12 +13,12 @@ public sealed class WorkspaceServiceTests
 {
     private readonly IWorkspaceRepository _repository = Substitute.For<IWorkspaceRepository>();
     private readonly ILocalFileService _fileService = Substitute.For<ILocalFileService>();
-    private readonly SpyEventBus _eventBus = new();
+    private readonly IFileIngestionQueue _ingestionQueue = Substitute.For<IFileIngestionQueue>();
     private readonly WorkspaceService _sut;
 
     public WorkspaceServiceTests()
     {
-        _sut = new WorkspaceService(_repository, _fileService, _eventBus, new PassThroughScopedCache());
+        _sut = new WorkspaceService(_repository, _fileService, _ingestionQueue, new PassThroughScopedCache());
     }
 
     private static WorkspaceDto MakeDto(Guid? id = null, string name = "Test Workspace") =>
@@ -244,7 +244,7 @@ public sealed class WorkspaceServiceTests
     }
 
     [Fact]
-    public async Task UploadFileAsync_PublishesEvent_WhenSuccessful()
+    public async Task UploadFileAsync_QueuesIngestion_WhenSuccessful()
     {
         // Arrange
         var ct = TestContext.Current.CancellationToken;
@@ -260,6 +260,6 @@ public sealed class WorkspaceServiceTests
 
         // Assert
         result.Should().NotBeNull();
-        _eventBus.PublishedSubjects.Should().ContainSingle(s => s == "internal.file.ingested");
+        _ingestionQueue.Received(1).Enqueue(new FileIngestionRequest(fileDto.Id, fileDto.WorkspaceId));
     }
 }

@@ -14,7 +14,6 @@ export default defineConfig({
     },
   },
   define: {
-    "import.meta.env.VITE_API_BASE": JSON.stringify("http://localhost:5000"),
     "import.meta.env.MODE": JSON.stringify("test"),
     "import.meta.env.DEV": JSON.stringify(false),
     "import.meta.env.PROD": JSON.stringify(false),

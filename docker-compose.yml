@@ -6,9 +6,6 @@ x-extra-hosts: &extra-hosts
 x-service-env: &service-env
   ASPNETCORE_ENVIRONMENT: Development
   InternalApi__ApiKey: ${INTERNAL_API_KEY}
-  OTEL_EXPORTER_OTLP_ENDPOINT: http://seq:80/ingest/otlp
-  OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
-  ConnectionStrings__seq: http://seq:80
   services__sentium-web__http__0: http://sentium-web:8080
   services__sandbox__http__0: http://sandbox:8080
 
@@ -44,16 +41,6 @@ services:
       start_period: 5s
     restart: unless-stopped
 
-  nats:
-    image: nats:2-alpine
-    command: ["-js", "-m", "8222"]
-    ports:
-      - "4222:4222"
-      - "8222:8222"
-    volumes:
-      - nats-data:/data
-    restart: unless-stopped
-
   qdrant:
     image: qdrant/qdrant:latest
     environment:
@@ -72,16 +59,6 @@ services:
       - "10000:10000"
     volumes:
       - azurite-data:/data
-    restart: unless-stopped
-
-  seq:
-    image: datalust/seq:latest
-    environment:
-      ACCEPT_EULA: "Y"
-    ports:
-      - "8090:80"
-    volumes:
-      - seq-data:/data
     restart: unless-stopped
 
   ollama:
@@ -130,7 +107,8 @@ services:
     restart: "no"
 
   # The modular monolith: every module (Identity, Registry, Sentinel, Codex, Praxis, Vigil) in one
-  # process. It serves the API and the BFF session endpoints over HTTPS (the auth cookie is Secure).
+  # process. It serves the portal, the API and the BFF session endpoints from one HTTPS origin (the auth
+  # cookie is Secure).
   sentium-web:
     build:
       context: .
@@ -141,15 +119,12 @@ services:
       ConnectionStrings__sentiumdb: Host=postgres;Port=5432;Database=sentiumdb;Username=postgres;Password=${POSTGRES_PASSWORD}
       ConnectionStrings__postgres: Host=postgres;Port=5432;Username=postgres;Password=${POSTGRES_PASSWORD}
       ConnectionStrings__redis: redis:6379
-      ConnectionStrings__nats: nats://nats:4222
       ConnectionStrings__qdrant: Endpoint=http://qdrant:6334;Key=${QDRANT_API_KEY}
       ConnectionStrings__workspace-storage: ${AZURITE_CONNECTION}
       ConnectionStrings__ollama: http://ollama:11434
       AI__OllamaBaseUrl: http://ollama:11434
       AI__ModelName: ${SENTIUM_MODEL}
       Rag__EmbeddingModelName: ${SENTIUM_EMBEDDING_MODEL}
-      Frontend__Origin: http://localhost:${PORTAL_PORT:-5173}
-      Cors__Origins__0: http://localhost:${PORTAL_PORT:-5173}
       ASPNETCORE_Kestrel__Certificates__Default__Path: /https/sentium.pfx
       ASPNETCORE_Kestrel__Certificates__Default__Password: ${CERT_PASSWORD}
     ports:
@@ -161,8 +136,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      nats:
-        condition: service_started
       qdrant:
         condition: service_started
       azurite:
@@ -194,24 +167,9 @@ services:
         condition: service_started
     restart: unless-stopped
 
-  portal:
-    build:
-      context: .
-      dockerfile: src/clients/sentium-portal/Dockerfile
-      args:
-        VITE_API_BASE: https://localhost:${WEB_HTTPS_PORT:-8443}
-    ports:
-      - "${PORTAL_PORT:-5173}:80"
-    depends_on:
-      sentium-web:
-        condition: service_started
-    restart: unless-stopped
-
 volumes:
   postgres-data:
   redis-data:
-  nats-data:
   qdrant-data:
   azurite-data:
-  seq-data:
   ollama-data:

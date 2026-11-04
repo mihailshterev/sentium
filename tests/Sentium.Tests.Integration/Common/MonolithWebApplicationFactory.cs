@@ -3,11 +3,8 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
-using NSubstitute;
 using Sentium.Core.Constants;
-using Sentium.Infrastructure.Messaging;
 using Testcontainers.PostgreSql;
 using Testcontainers.Redis;
 using Xunit;
@@ -16,7 +13,7 @@ namespace Sentium.Tests.Integration.Common;
 
 /// <summary>
 /// Boots the whole modular monolith (Sentium.Web) against a real PostgreSQL container; every module
-/// migrates its own schema on startup. Background workers and NATS are stubbed out.
+/// migrates its own schema on startup. Background workers are removed.
 /// </summary>
 public class MonolithWebApplicationFactory : WebApplicationFactory<Sentium.Web.Program>, IAsyncLifetime
 {
@@ -42,17 +39,12 @@ public class MonolithWebApplicationFactory : WebApplicationFactory<Sentium.Web.P
         builder.UseSetting($"ConnectionStrings:{ResourceNames.SentiumDb}", _dbContainer.GetConnectionString());
         builder.UseSetting($"ConnectionStrings:{ResourceNames.Redis}", _redisContainer.GetConnectionString());
 
-        builder.UseSetting($"ConnectionStrings:{ResourceNames.Nats}", "nats://localhost:4222");
         builder.UseSetting($"ConnectionStrings:{ResourceNames.Qdrant}", "Endpoint=http://localhost:6334");
         builder.UseSetting($"ConnectionStrings:{ResourceNames.WorkspaceBlobs}", "UseDevelopmentStorage=true");
-        builder.UseSetting($"ConnectionStrings:{ResourceNames.Seq}", "http://localhost:5341");
         builder.UseSetting("InternalApi:ApiKey", InternalApiKey);
 
         builder.ConfigureTestServices(services =>
         {
-            services.RemoveAll<IEventBus>();
-            services.AddSingleton(Substitute.For<IEventBus>());
-
             var workersToRemove = services
                 .Where(d => d.ServiceType == typeof(IHostedService) && d.ImplementationType?.Namespace?.StartsWith("Sentium.", StringComparison.Ordinal) == true)
                 .ToList();

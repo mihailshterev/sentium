@@ -1,8 +1,8 @@
 using Sentium.Codex.Contracts;
 using Sentium.Codex.Contracts.Models;
 using Sentium.Praxis.Data;
-using Sentium.Infrastructure.Messaging;
 using Sentium.Infrastructure.Security;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -16,7 +16,7 @@ namespace Sentium.Praxis.Features.Storage;
 /// <remarks>
 /// <para>
 /// This worker:
-/// 1. Subscribes to <see cref="FileIngestedEvent"/> events published when files are uploaded.
+/// 1. Reads <see cref="FileIngestionRequest"/>s queued when files are stored (see <see cref="IFileIngestionQueue"/>).
 /// 2. Retrieves file content from blob storage.
 /// 3. Vectorizes the content using a semantic embedding model.
 /// 4. Stores the vectors in a RAG index (e.g., Qdrant).
@@ -25,30 +25,62 @@ namespace Sentium.Praxis.Features.Storage;
 /// <para>
 /// This asynchronous processing ensures that file uploads complete quickly without waiting for
 /// expensive vectorization operations. If processing fails, the status is marked as Failed for
-/// later inspection or retry.
+/// later inspection or retry. Files still Pending or Processing when the application stopped are
+/// re-queued on startup, so a restart never strands a file.
 /// </para>
 /// </remarks>
-public sealed class FileIngestionWorker(IServiceScopeFactory scopeFactory, IEventBus eventBus, ILogger<FileIngestionWorker> logger) : BackgroundService
+public sealed class FileIngestionWorker(IServiceScopeFactory scopeFactory, FileIngestionQueue queue, ILogger<FileIngestionWorker> logger) : BackgroundService
 {
     /// <summary>
-    /// Starts the worker and subscribes to file ingestion events.
+    /// Re-queues unfinished files, then processes queued files one at a time until shutdown.
     /// </summary>
     /// <param name="stoppingToken">A cancellation token to signal shutdown.</param>
-    /// <remarks>
-    /// This method runs indefinitely, listening for <see cref="FileEvents.FileIngested"/> events
-    /// from the event bus and processing files as they arrive.
-    /// </remarks>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("File Ingestion Worker started.");
 
-        await eventBus.SubscribeAsync<FileIngestedEvent>(FileEvents.FileIngested, async msg =>
+        try
         {
-            var evt = msg.Data!;
-            await ProcessFileAsync(evt.FileId, evt.WorkspaceId, stoppingToken);
-        }, stoppingToken);
+            await RequeueUnfinishedFilesAsync(stoppingToken);
 
-        await Task.Delay(Timeout.Infinite, stoppingToken);
+            await foreach (var request in queue.Reader.ReadAllAsync(stoppingToken))
+            {
+                try
+                {
+                    await ProcessFileAsync(request.FileId, request.WorkspaceId, stoppingToken);
+                }
+                catch (Exception ex) when (!stoppingToken.IsCancellationRequested)
+                {
+                    logger.LogError(ex, "Unexpected error ingesting file {FileId}.", request.FileId);
+                }
+            }
+        }
+        catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+        {
+            logger.LogInformation("File Ingestion Worker is shutting down.");
+        }
+    }
+
+    private async Task RequeueUnfinishedFilesAsync(CancellationToken ct)
+    {
+        using var scope = scopeFactory.CreateScope();
+        scope.ServiceProvider.GetRequiredService<SystemScopeContext>().Activate();
+        var dbContext = scope.ServiceProvider.GetRequiredService<PraxisDbContext>();
+
+        var unfinished = await dbContext.ProjectFiles
+            .Where(f => f.ProcessingStatus == FileProcessingStatus.Pending || f.ProcessingStatus == FileProcessingStatus.Processing)
+            .Select(f => new FileIngestionRequest(f.Id, f.WorkspaceId))
+            .ToListAsync(ct);
+
+        foreach (var request in unfinished)
+        {
+            queue.Enqueue(request);
+        }
+
+        if (unfinished.Count > 0)
+        {
+            logger.LogInformation("Re-queued {Count} file(s) left unfinished by a previous run.", unfinished.Count);
+        }
     }
 
     /// <summary>
@@ -60,7 +92,7 @@ public sealed class FileIngestionWorker(IServiceScopeFactory scopeFactory, IEven
     /// <remarks>
     /// <para>
     /// Processing flow:
-    /// 1. Fetches the file metadata from the database.
+    /// 1. Fetches the file metadata from the database (skipping files already ingested).
     /// 2. Updates status to Processing.
     /// 3. Reads file content from blob storage.
     /// 4. Calls the ingestion service to vectorize and index the content.
@@ -82,6 +114,11 @@ public sealed class FileIngestionWorker(IServiceScopeFactory scopeFactory, IEven
         if (projectFile is null)
         {
             logger.LogWarning("Project file {FileId} not found in database.", fileId);
+            return;
+        }
+
+        if (projectFile.ProcessingStatus == FileProcessingStatus.Completed)
+        {
             return;
         }
 
@@ -119,7 +156,7 @@ public sealed class FileIngestionWorker(IServiceScopeFactory scopeFactory, IEven
             projectFile.ProcessingStatus = FileProcessingStatus.Completed;
             logger.LogInformation("Successfully ingested file {FileName} ({FileId})", projectFile.FileName, fileId);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (!ct.IsCancellationRequested)
         {
             logger.LogError(ex, "Failed to ingest file {FileName} ({FileId})", projectFile.FileName, fileId);
             projectFile.ProcessingStatus = FileProcessingStatus.Failed;

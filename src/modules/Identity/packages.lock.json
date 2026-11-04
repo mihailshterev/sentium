@@ -199,90 +199,6 @@
           "System.CodeDom": "6.0.0"
         }
       },
-      "NATS.Client.Abstractions": {
-        "type": "Transitive",
-        "resolved": "3.3.2",
-        "contentHash": "6VAmrvgN9116SAfRXK/gfR7Fxu02lOUtN2ZejwI/C2iMw9dsofLRZBSrutWH+iH+06FjAidKtpGiLt5ui6/xlQ=="
-      },
-      "NATS.Client.Core": {
-        "type": "Transitive",
-        "resolved": "3.3.2",
-        "contentHash": "qs79vr6A2Le6sQxY5FFpQayRVSLOXJZkSvSx1lb8A8FK9bmvNcJRW1FE5pdoEEW+WV92TDFoc38MRqe4w0Lnjg==",
-        "dependencies": {
-          "NATS.Client.Abstractions": "3.3.2",
-          "NATS.NKeys": "1.0.1"
-        }
-      },
-      "NATS.Client.Hosting": {
-        "type": "Transitive",
-        "resolved": "3.3.2",
-        "contentHash": "7Ksdm1Qqa9rxTS9jBhiIOFjAKeXasULAWqW+IRy6+mNaXzPlf1KI03MYBKH9cN9squbzC6KPcRv3h8AEnc1/JQ==",
-        "dependencies": {
-          "NATS.Client.Core": "3.3.2"
-        }
-      },
-      "NATS.Client.JetStream": {
-        "type": "Transitive",
-        "resolved": "3.3.2",
-        "contentHash": "JF2xH52Fjj/KTpiCqLgOvFGoJl92eKlgT62X02oEkff/TphWjoXG1s26I7ySIwiScHgToW/fAuM0HW/76k7J4Q==",
-        "dependencies": {
-          "NATS.Client.Core": "3.3.2"
-        }
-      },
-      "NATS.Client.KeyValueStore": {
-        "type": "Transitive",
-        "resolved": "3.3.2",
-        "contentHash": "qnh6AxEJmwl1GZuCMHoxnt1dwCHHSUda+kuOQrWYrP+PliZNWxcn1AIdhEXFqFfqaPgLj0S+/t5fWnRA4rjHPA==",
-        "dependencies": {
-          "NATS.Client.JetStream": "3.3.2"
-        }
-      },
-      "NATS.Client.ObjectStore": {
-        "type": "Transitive",
-        "resolved": "3.3.2",
-        "contentHash": "UMaNZipnGNjVNZpPBnYDo8PexatDLSj2gl2aF8+zL2cW57lYpqyIkf39rc5Qrpedfcc7BLQL1cQOUWKkX/Sb2w==",
-        "dependencies": {
-          "NATS.Client.JetStream": "3.3.2"
-        }
-      },
-      "NATS.Client.Serializers.Json": {
-        "type": "Transitive",
-        "resolved": "3.3.2",
-        "contentHash": "KBlvc5CgDMDOP8JkiMnEHo0nizhjVP7aLkzZ6Rwxla9MShlmETmFLfXIsOxv8oNmDiDDOu+Sr+LzK23K4nSlDw==",
-        "dependencies": {
-          "NATS.Client.Abstractions": "3.3.2"
-        }
-      },
-      "NATS.Client.Services": {
-        "type": "Transitive",
-        "resolved": "3.3.2",
-        "contentHash": "juyTC/EP8vHT2vKF2MxGKqusEC085xNCWBJoIuBqxUZl48gtbt5Bbx6cS4wIp+EmY6nZTWw1nGjHo0h4Xs4l0Q==",
-        "dependencies": {
-          "NATS.Client.Core": "3.3.2"
-        }
-      },
-      "NATS.Client.Simplified": {
-        "type": "Transitive",
-        "resolved": "3.3.2",
-        "contentHash": "OawFZin+XxiLru3IBYC66S3Oae0OrknRyBH+yRr/PP4DChu3iJiIbWk0R3sqSIp1UeKBp11DbZV/O+NkT/jkmA==",
-        "dependencies": {
-          "NATS.Client.Core": "3.3.2",
-          "NATS.Client.Serializers.Json": "3.3.2"
-        }
-      },
-      "NATS.Extensions.Microsoft.DependencyInjection": {
-        "type": "Transitive",
-        "resolved": "3.3.2",
-        "contentHash": "W3+8HiBseOOgCx9xDJ5RBF55VfxwDfEx9x50Sf1TfyABb+/No1eQowemgNFuxoQt9yaubNvAUENsJZtzL+glsg==",
-        "dependencies": {
-          "NATS.Client.Simplified": "3.3.2"
-        }
-      },
-      "NATS.NKeys": {
-        "type": "Transitive",
-        "resolved": "1.0.1",
-        "contentHash": "xtURX0fexmMd10noG3Uc8gFgwaH7QLQxxgdaVoQKFo0+8a4blwe8vPGgY2S5pzeVYcRXyjlIoA4AR4JgtThyjQ=="
-      },
       "Newtonsoft.Json": {
         "type": "Transitive",
         "resolved": "13.0.4",
@@ -462,7 +378,6 @@
         "type": "Project",
         "dependencies": {
           "Aspire.Npgsql.EntityFrameworkCore.PostgreSQL": "[13.6.4, )",
-          "Aspire.Seq": "[13.6.4, )",
           "FluentValidation": "[12.1.1, )",
           "FluentValidation.DependencyInjectionExtensions": "[12.1.1, )",
           "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "[10.0.14, )",
@@ -471,13 +386,11 @@
           "Microsoft.EntityFrameworkCore.Tools": "[10.0.14, )",
           "Microsoft.Extensions.Caching.Hybrid": "[10.4.0, )",
           "Microsoft.Extensions.Http.Resilience": "[10.11.0, )",
-          "NATS.Net": "[3.3.2, )",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.3, )",
           "Sentium.Core": "[1.0.0, )",
           "Serilog.AspNetCore": "[10.0.0, )",
           "Serilog.Sinks.Console": "[6.1.1, )",
-          "Serilog.Sinks.OpenTelemetry": "[4.2.0, )",
-          "Serilog.Sinks.Seq": "[9.0.0, )"
+          "Serilog.Sinks.OpenTelemetry": "[4.2.0, )"
         }
       },
       "Aspire.Npgsql.EntityFrameworkCore.PostgreSQL": {
@@ -491,15 +404,6 @@
           "Npgsql.EntityFrameworkCore.PostgreSQL": "10.0.3",
           "Npgsql.OpenTelemetry": "10.0.3",
           "OpenTelemetry.Extensions.Hosting": "1.17.0"
-        }
-      },
-      "Aspire.Seq": {
-        "type": "CentralTransitive",
-        "requested": "[13.6.4, )",
-        "resolved": "13.6.4",
-        "contentHash": "KUNCFjGwugvuXi/nd8J2LHFZJWocAwvD5UxOtB52yNhAesFkgJmSUkSP7oZUXGY7DnH1F9C6/39hwk52sPLw+A==",
-        "dependencies": {
-          "OpenTelemetry.Exporter.OpenTelemetryProtocol": "1.17.0"
         }
       },
       "FluentValidation": {
@@ -578,23 +482,6 @@
           "Microsoft.Extensions.Resilience": "10.11.0"
         }
       },
-      "NATS.Net": {
-        "type": "CentralTransitive",
-        "requested": "[3.3.2, )",
-        "resolved": "3.3.2",
-        "contentHash": "Jo9fnjwUE4qAbNvWd3/H3K1NcRUDTDCCYqlJevklvD8M/grAtEh/EO2NIjIacfPZTcBfjtpxskzWhy2aw4mgVQ==",
-        "dependencies": {
-          "NATS.Client.Core": "3.3.2",
-          "NATS.Client.Hosting": "3.3.2",
-          "NATS.Client.JetStream": "3.3.2",
-          "NATS.Client.KeyValueStore": "3.3.2",
-          "NATS.Client.ObjectStore": "3.3.2",
-          "NATS.Client.Serializers.Json": "3.3.2",
-          "NATS.Client.Services": "3.3.2",
-          "NATS.Client.Simplified": "3.3.2",
-          "NATS.Extensions.Microsoft.DependencyInjection": "3.3.2"
-        }
-      },
       "Npgsql.EntityFrameworkCore.PostgreSQL": {
         "type": "CentralTransitive",
         "requested": "[10.0.3, )",
@@ -611,15 +498,6 @@
         "requested": "[1.18.0, )",
         "resolved": "1.18.0",
         "contentHash": "Dhzm5oughIY9EWckt2J1yXcEbXpki5WCL2q7prJoYxzH6C7jdkfGtPMTkUVZZ4AhjJKzQnlC+kLSIlmIVwC4Vw=="
-      },
-      "OpenTelemetry.Exporter.OpenTelemetryProtocol": {
-        "type": "CentralTransitive",
-        "requested": "[1.18.0, )",
-        "resolved": "1.18.0",
-        "contentHash": "Et3WAviooKGObZjUZN8d6eTsdJs1YM3ZoN+KlWSAHksTmHG1nyGi9XGo2wb0fkFMWK0g80FOPdR1njg52Dm+aw==",
-        "dependencies": {
-          "OpenTelemetry": "1.18.0"
-        }
       },
       "OpenTelemetry.Extensions.Hosting": {
         "type": "CentralTransitive",
@@ -663,16 +541,6 @@
           "Google.Protobuf": "3.30.1",
           "Grpc.Net.Client": "2.70.0",
           "Serilog": "4.2.0"
-        }
-      },
-      "Serilog.Sinks.Seq": {
-        "type": "CentralTransitive",
-        "requested": "[9.0.0, )",
-        "resolved": "9.0.0",
-        "contentHash": "aNU8A0K322q7+voPNmp1/qNPH+9QK8xvM1p72sMmCG0wGlshFzmtDW9QnVSoSYCj0MgQKcMOlgooovtBhRlNHw==",
-        "dependencies": {
-          "Serilog": "4.2.0",
-          "Serilog.Sinks.File": "6.0.0"
         }
       }
     },

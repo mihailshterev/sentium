@@ -6,7 +6,6 @@ using Sentium.Praxis.Dtos;
 using Sentium.Praxis.Features.Registry;
 using Sentium.Praxis.Features.WorkflowManagement;
 using Sentium.Praxis.Features.Workflows;
-using Sentium.Infrastructure.Messaging;
 using Sentium.Infrastructure.Security;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -21,7 +20,8 @@ namespace Sentium.Praxis.Controllers;
 [Authorize]
 [Route($"{PraxisRoutes.Prefix}/orchestration")]
 public sealed class OrchestrationController(
-    IEventBus eventBus,
+    IWorkflowRunQueue runQueue,
+    IWorkflowExecutionRegistry executionRegistry,
     IStreamRelay streamRelay,
     IWorkflowService workflowService,
     ICurrentUser currentUser,
@@ -35,7 +35,7 @@ public sealed class OrchestrationController(
 
     /// <summary>
     /// Endpoint to trigger a dynamic workflow run with custom input. Useful for ad-hoc scenarios where the workflow definition is not known in advance.
-    /// The input is expected to be a JSON object, which will be serialized and published as an event for downstream processing.
+    /// The input is expected to be a JSON object, which will be serialized and queued for background execution.
     /// </summary>
     /// <param name="customInput">The custom input for the dynamic workflow.</param>
     /// <param name="ct">The cancellation token.</param>
@@ -64,7 +64,13 @@ public sealed class OrchestrationController(
 
         var jsonPayload = payloadNode.ToJsonString();
 
-        await eventBus.PublishPersistentAsync(WorkflowEvents.Dynamic, jsonPayload, messageId: streamId, ct: ct);
+        await runQueue.EnqueueAsync(new WorkflowTrigger
+        {
+            TriggerType = WorkflowTriggerTypes.Dynamic,
+            Payload = jsonPayload,
+            UserId = currentUser.UserId,
+            StreamId = streamId
+        }, ct);
 
         if (logger.IsEnabled(LogLevel.Information))
         {
@@ -107,28 +113,32 @@ public sealed class OrchestrationController(
             StreamId: streamId);
 
         var jsonPayload = JsonSerializer.Serialize(payload);
-        await eventBus.PublishPersistentAsync(WorkflowEvents.CustomWorkflow, jsonPayload, messageId: streamId, ct: ct);
+        await runQueue.EnqueueAsync(new WorkflowTrigger
+        {
+            TriggerType = WorkflowTriggerTypes.CustomWorkflow,
+            Payload = jsonPayload,
+            UserId = currentUser.UserId,
+            StreamId = streamId
+        }, ct);
 
         return Accepted(new WorkflowAcceptedResponse(streamId));
     }
 
     /// <summary>
-    /// Requests cancellation of an in-flight workflow run. The request is broadcast over core NATS so
-    /// whichever instance is executing the run stops it (a no-op on instances that are not). The run is
-    /// then recorded as cancelled and a terminal frame is emitted to its stream.
+    /// Requests cancellation of an in-flight workflow run (a no-op if it is not running). The run is then
+    /// recorded as cancelled and a terminal frame is emitted to its stream.
     /// </summary>
     /// <param name="streamId">The stream identifier of the run to stop.</param>
-    /// <param name="ct">The cancellation token.</param>
     /// <returns>An accepted response indicating the cancellation request was dispatched.</returns>
     [HttpPost("cancel/{streamId}")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
-    public async Task<IActionResult> CancelRun(string streamId, CancellationToken ct)
+    public IActionResult CancelRun(string streamId)
     {
-        await eventBus.PublishAsync(WorkflowEvents.CancelSignal, new WorkflowCancelRequest(streamId), ct: ct);
+        var signalled = executionRegistry.Cancel(streamId);
 
         if (logger.IsEnabled(LogLevel.Information))
         {
-            logger.LogInformation("Cancellation requested for stream {StreamId}.", streamId);
+            logger.LogInformation("Cancellation requested for stream {StreamId} (in flight: {InFlight}).", streamId, signalled);
         }
 
         return Accepted();

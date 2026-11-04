@@ -3,10 +3,8 @@ using System.Collections.Concurrent;
 namespace Sentium.Praxis.Features.Orchestration;
 
 /// <summary>
-/// Tracks the in-flight workflow executions on this instance so an out-of-band cancellation request
-/// (delivered over NATS, see <see cref="Sentium.Praxis.Features.Workflows.WorkflowEvents.CancelSignal"/>)
-/// can reach the run's <see cref="CancellationTokenSource"/>. Only the instance actually executing a given
-/// stream holds its token source; cancel requests on other instances are simply no-ops there.
+/// Tracks the in-flight workflow executions so a user's stop request (<c>POST orchestration/cancel/{streamId}</c>)
+/// can reach the run's <see cref="CancellationTokenSource"/>. Cancelling a stream that is not running is a no-op.
 /// </summary>
 public interface IWorkflowExecutionRegistry
 {
@@ -22,7 +20,7 @@ public interface IWorkflowExecutionRegistry
 
     /// <summary>
     /// Requests cancellation of the run identified by <paramref name="streamId"/>. Returns
-    /// <see langword="true"/> if the run was tracked on this instance and a cancellation was signalled.
+    /// <see langword="true"/> if the run was in flight and a cancellation was signalled.
     /// </summary>
     bool Cancel(string streamId);
 }

@@ -16,12 +16,11 @@ public static class BffEndpoints
 
         var group = app.MapGroup("/bff");
 
-        group.MapGet("/login", (string? returnUrl, IConfiguration configuration) =>
+        group.MapGet("/login", (string? returnUrl, HttpContext context) =>
         {
-            var frontendOrigin = FrontendOrigin(configuration);
-            var returnPath = ToLocalPath(returnUrl, frontendOrigin);
+            var returnPath = ToLocalPath(returnUrl, context.Request.Host);
 
-            return Results.Redirect($"{frontendOrigin}/login?returnUrl={Uri.EscapeDataString(returnPath)}");
+            return Results.Redirect($"/login?returnUrl={Uri.EscapeDataString(returnPath)}");
         }).AllowAnonymous()
           .WithSummary("Sends the browser to the portal login page, keeping a validated local return path.");
 
@@ -54,24 +53,20 @@ public static class BffEndpoints
     }
 
     /// <summary>
-    /// The portal origin, or empty when the portal is served by this host (same origin).
+    /// Accepts a local path or an absolute URL on this host's own origin (the portal is same-origin);
+    /// anything else falls back to <c>/</c> so the login redirect can never become an open redirect.
     /// </summary>
-    private static string FrontendOrigin(IConfiguration configuration) => (configuration["Frontend:Origin"] ?? string.Empty).TrimEnd('/');
-
-    /// <summary>
-    /// Accepts a local path or an absolute URL on the portal origin; anything else falls back to <c>/</c>
-    /// so the login redirect can never become an open redirect.
-    /// </summary>
-    private static string ToLocalPath(string? returnUrl, string frontendOrigin)
+    private static string ToLocalPath(string? returnUrl, HostString host)
     {
         if (string.IsNullOrWhiteSpace(returnUrl))
         {
             return "/";
         }
 
-        if (frontendOrigin.Length > 0 && returnUrl.StartsWith(frontendOrigin, StringComparison.OrdinalIgnoreCase))
+        if (Uri.TryCreate(returnUrl, UriKind.Absolute, out var absolute)
+            && absolute.Authority.Equals(host.ToUriComponent(), StringComparison.OrdinalIgnoreCase))
         {
-            returnUrl = returnUrl[frontendOrigin.Length..];
+            returnUrl = absolute.PathAndQuery;
         }
 
         var isLocalPath = returnUrl.StartsWith('/')

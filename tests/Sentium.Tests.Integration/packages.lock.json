@@ -1267,98 +1267,6 @@
           "System.CodeDom": "6.0.0"
         }
       },
-      "NATS.Client.Abstractions": {
-        "type": "Transitive",
-        "resolved": "3.3.2",
-        "contentHash": "6VAmrvgN9116SAfRXK/gfR7Fxu02lOUtN2ZejwI/C2iMw9dsofLRZBSrutWH+iH+06FjAidKtpGiLt5ui6/xlQ==",
-        "dependencies": {
-          "Microsoft.Extensions.Primitives": "6.0.0"
-        }
-      },
-      "NATS.Client.Core": {
-        "type": "Transitive",
-        "resolved": "3.3.2",
-        "contentHash": "qs79vr6A2Le6sQxY5FFpQayRVSLOXJZkSvSx1lb8A8FK9bmvNcJRW1FE5pdoEEW+WV92TDFoc38MRqe4w0Lnjg==",
-        "dependencies": {
-          "Microsoft.Extensions.Logging.Abstractions": "6.0.1",
-          "Microsoft.Extensions.Primitives": "6.0.0",
-          "NATS.Client.Abstractions": "3.3.2",
-          "NATS.NKeys": "1.0.1"
-        }
-      },
-      "NATS.Client.Hosting": {
-        "type": "Transitive",
-        "resolved": "3.3.2",
-        "contentHash": "7Ksdm1Qqa9rxTS9jBhiIOFjAKeXasULAWqW+IRy6+mNaXzPlf1KI03MYBKH9cN9squbzC6KPcRv3h8AEnc1/JQ==",
-        "dependencies": {
-          "Microsoft.Extensions.Hosting.Abstractions": "8.0.0",
-          "NATS.Client.Core": "3.3.2"
-        }
-      },
-      "NATS.Client.JetStream": {
-        "type": "Transitive",
-        "resolved": "3.3.2",
-        "contentHash": "JF2xH52Fjj/KTpiCqLgOvFGoJl92eKlgT62X02oEkff/TphWjoXG1s26I7ySIwiScHgToW/fAuM0HW/76k7J4Q==",
-        "dependencies": {
-          "NATS.Client.Core": "3.3.2"
-        }
-      },
-      "NATS.Client.KeyValueStore": {
-        "type": "Transitive",
-        "resolved": "3.3.2",
-        "contentHash": "qnh6AxEJmwl1GZuCMHoxnt1dwCHHSUda+kuOQrWYrP+PliZNWxcn1AIdhEXFqFfqaPgLj0S+/t5fWnRA4rjHPA==",
-        "dependencies": {
-          "NATS.Client.JetStream": "3.3.2"
-        }
-      },
-      "NATS.Client.ObjectStore": {
-        "type": "Transitive",
-        "resolved": "3.3.2",
-        "contentHash": "UMaNZipnGNjVNZpPBnYDo8PexatDLSj2gl2aF8+zL2cW57lYpqyIkf39rc5Qrpedfcc7BLQL1cQOUWKkX/Sb2w==",
-        "dependencies": {
-          "NATS.Client.JetStream": "3.3.2"
-        }
-      },
-      "NATS.Client.Serializers.Json": {
-        "type": "Transitive",
-        "resolved": "3.3.2",
-        "contentHash": "KBlvc5CgDMDOP8JkiMnEHo0nizhjVP7aLkzZ6Rwxla9MShlmETmFLfXIsOxv8oNmDiDDOu+Sr+LzK23K4nSlDw==",
-        "dependencies": {
-          "NATS.Client.Abstractions": "3.3.2"
-        }
-      },
-      "NATS.Client.Services": {
-        "type": "Transitive",
-        "resolved": "3.3.2",
-        "contentHash": "juyTC/EP8vHT2vKF2MxGKqusEC085xNCWBJoIuBqxUZl48gtbt5Bbx6cS4wIp+EmY6nZTWw1nGjHo0h4Xs4l0Q==",
-        "dependencies": {
-          "NATS.Client.Core": "3.3.2"
-        }
-      },
-      "NATS.Client.Simplified": {
-        "type": "Transitive",
-        "resolved": "3.3.2",
-        "contentHash": "OawFZin+XxiLru3IBYC66S3Oae0OrknRyBH+yRr/PP4DChu3iJiIbWk0R3sqSIp1UeKBp11DbZV/O+NkT/jkmA==",
-        "dependencies": {
-          "NATS.Client.Core": "3.3.2",
-          "NATS.Client.Serializers.Json": "3.3.2"
-        }
-      },
-      "NATS.Extensions.Microsoft.DependencyInjection": {
-        "type": "Transitive",
-        "resolved": "3.3.2",
-        "contentHash": "W3+8HiBseOOgCx9xDJ5RBF55VfxwDfEx9x50Sf1TfyABb+/No1eQowemgNFuxoQt9yaubNvAUENsJZtzL+glsg==",
-        "dependencies": {
-          "Microsoft.Extensions.Hosting.Abstractions": "8.0.0",
-          "Microsoft.Extensions.Options": "8.0.2",
-          "NATS.Client.Simplified": "3.3.2"
-        }
-      },
-      "NATS.NKeys": {
-        "type": "Transitive",
-        "resolved": "1.0.1",
-        "contentHash": "xtURX0fexmMd10noG3Uc8gFgwaH7QLQxxgdaVoQKFo0+8a4blwe8vPGgY2S5pzeVYcRXyjlIoA4AR4JgtThyjQ=="
-      },
       "Nerdbank.MessagePack": {
         "type": "Transitive",
         "resolved": "1.2.4",
@@ -1779,13 +1687,11 @@
           "Aspire.Hosting.Azure.Storage": "[13.6.4, )",
           "Aspire.Hosting.Docker": "[13.6.4, )",
           "Aspire.Hosting.JavaScript": "[13.6.4, )",
-          "Aspire.Hosting.Nats": "[13.6.4, )",
           "Aspire.Hosting.Orchestration.win-x64": "[13.6.4, )",
           "Aspire.Hosting.PostgreSQL": "[13.6.4, )",
           "Aspire.Hosting.Python": "[13.6.4, )",
           "Aspire.Hosting.Qdrant": "[13.6.4, )",
           "Aspire.Hosting.Redis": "[13.6.4, )",
-          "Aspire.Hosting.Seq": "[13.6.4, )",
           "CommunityToolkit.Aspire.Hosting.Ollama": "[13.1.1, )",
           "Sentium.Core": "[1.0.0, )"
         }
@@ -1814,7 +1720,6 @@
         "type": "Project",
         "dependencies": {
           "Aspire.Npgsql.EntityFrameworkCore.PostgreSQL": "[13.6.4, )",
-          "Aspire.Seq": "[13.6.4, )",
           "FluentValidation": "[12.1.1, )",
           "FluentValidation.DependencyInjectionExtensions": "[12.1.1, )",
           "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "[10.0.14, )",
@@ -1823,13 +1728,11 @@
           "Microsoft.EntityFrameworkCore.Tools": "[10.0.14, )",
           "Microsoft.Extensions.Caching.Hybrid": "[10.4.0, )",
           "Microsoft.Extensions.Http.Resilience": "[10.11.0, )",
-          "NATS.Net": "[3.3.2, )",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.3, )",
           "Sentium.Core": "[1.0.0, )",
           "Serilog.AspNetCore": "[10.0.0, )",
           "Serilog.Sinks.Console": "[6.1.1, )",
-          "Serilog.Sinks.OpenTelemetry": "[4.2.0, )",
-          "Serilog.Sinks.Seq": "[9.0.0, )"
+          "Serilog.Sinks.OpenTelemetry": "[4.2.0, )"
         }
       },
       "sentium.praxis": {
@@ -1891,7 +1794,6 @@
         "type": "Project",
         "dependencies": {
           "Aspire.Azure.Storage.Blobs": "[13.6.4, )",
-          "Aspire.NATS.Net": "[13.6.4, )",
           "Microsoft.AspNetCore.OpenApi": "[10.0.1, )",
           "Scalar.AspNetCore": "[2.14.4, )",
           "Sentium.Codex": "[1.0.0, )",
@@ -2099,46 +2001,6 @@
           "YamlDotNet": "18.1.0"
         }
       },
-      "Aspire.Hosting.Nats": {
-        "type": "CentralTransitive",
-        "requested": "[13.6.4, )",
-        "resolved": "13.6.4",
-        "contentHash": "SCKq+5ge6GFAjR1T9U1RDVciCxqbXfXJVgYjZpF+YzkIJ0AK+ACBtdpc1eAU+sJWdhI4xP4wIkyY8p1LUNholw==",
-        "dependencies": {
-          "AspNetCore.HealthChecks.Uris": "9.0.0",
-          "Aspire.Hosting": "13.6.4",
-          "Google.Protobuf": "3.36.1",
-          "Grpc.AspNetCore": "2.83.0",
-          "Grpc.Net.ClientFactory": "2.83.0",
-          "Grpc.Tools": "2.83.0",
-          "Hex1b": "0.168.0",
-          "KubernetesClient": "19.0.2",
-          "MessagePack": "2.5.307",
-          "Microsoft.Extensions.Configuration.Abstractions": "10.0.12",
-          "Microsoft.Extensions.Configuration.Binder": "10.0.12",
-          "Microsoft.Extensions.Configuration.EnvironmentVariables": "10.0.12",
-          "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.12",
-          "Microsoft.Extensions.Diagnostics.HealthChecks": "8.0.31",
-          "Microsoft.Extensions.FileSystemGlobbing": "10.0.12",
-          "Microsoft.Extensions.Hosting": "10.0.12",
-          "Microsoft.Extensions.Hosting.Abstractions": "10.0.12",
-          "Microsoft.Extensions.Http": "10.0.12",
-          "Microsoft.Extensions.Logging": "10.0.12",
-          "Microsoft.Extensions.Logging.Abstractions": "10.0.12",
-          "Microsoft.Extensions.Options": "10.0.12",
-          "Microsoft.Extensions.Primitives": "10.0.12",
-          "ModelContextProtocol": "1.4.1",
-          "NATS.Net": "2.8.2",
-          "Newtonsoft.Json": "13.0.4",
-          "OpenTelemetry.Exporter.OpenTelemetryProtocol": "1.17.0",
-          "OpenTelemetry.Extensions.Hosting": "1.17.0",
-          "Polly.Core": "8.7.0",
-          "Semver": "3.0.0",
-          "StreamJsonRpc": "2.25.29",
-          "System.IO.Hashing": "10.0.12",
-          "YamlDotNet": "18.1.0"
-        }
-      },
       "Aspire.Hosting.PostgreSQL": {
         "type": "CentralTransitive",
         "requested": "[13.6.4, )",
@@ -2299,65 +2161,6 @@
           "YamlDotNet": "18.1.0"
         }
       },
-      "Aspire.Hosting.Seq": {
-        "type": "CentralTransitive",
-        "requested": "[13.6.4, )",
-        "resolved": "13.6.4",
-        "contentHash": "dRaX1hvMCJJ2HnA0oUCfcJqxp0BXLX0WpoWED0x390S8+emueGQ9iSmYU2gON+7N/X0hA8rFPtjad+cLFYQ5BQ==",
-        "dependencies": {
-          "AspNetCore.HealthChecks.Uris": "9.0.0",
-          "Aspire.Hosting": "13.6.4",
-          "Google.Protobuf": "3.36.1",
-          "Grpc.AspNetCore": "2.83.0",
-          "Grpc.Net.ClientFactory": "2.83.0",
-          "Grpc.Tools": "2.83.0",
-          "Hex1b": "0.168.0",
-          "KubernetesClient": "19.0.2",
-          "MessagePack": "2.5.307",
-          "Microsoft.Extensions.Configuration.Abstractions": "10.0.12",
-          "Microsoft.Extensions.Configuration.Binder": "10.0.12",
-          "Microsoft.Extensions.Configuration.EnvironmentVariables": "10.0.12",
-          "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.12",
-          "Microsoft.Extensions.Diagnostics.HealthChecks": "8.0.31",
-          "Microsoft.Extensions.FileSystemGlobbing": "10.0.12",
-          "Microsoft.Extensions.Hosting": "10.0.12",
-          "Microsoft.Extensions.Hosting.Abstractions": "10.0.12",
-          "Microsoft.Extensions.Http": "10.0.12",
-          "Microsoft.Extensions.Logging": "10.0.12",
-          "Microsoft.Extensions.Logging.Abstractions": "10.0.12",
-          "Microsoft.Extensions.Options": "10.0.12",
-          "Microsoft.Extensions.Primitives": "10.0.12",
-          "ModelContextProtocol": "1.4.1",
-          "Newtonsoft.Json": "13.0.4",
-          "OpenTelemetry.Exporter.OpenTelemetryProtocol": "1.17.0",
-          "OpenTelemetry.Extensions.Hosting": "1.17.0",
-          "Polly.Core": "8.7.0",
-          "Semver": "3.0.0",
-          "StreamJsonRpc": "2.25.29",
-          "System.IO.Hashing": "10.0.12",
-          "YamlDotNet": "18.1.0"
-        }
-      },
-      "Aspire.NATS.Net": {
-        "type": "CentralTransitive",
-        "requested": "[13.6.4, )",
-        "resolved": "13.6.4",
-        "contentHash": "9bUC6XfOFusOCTwzI2jEBnqMZKNh9CmRK+LiniSQD72huLqlIkH7HFMrjspxCN7ZRecTC7paWKR+5BjI2/RKeA==",
-        "dependencies": {
-          "Microsoft.Extensions.Configuration.Abstractions": "10.0.12",
-          "Microsoft.Extensions.Configuration.Binder": "10.0.12",
-          "Microsoft.Extensions.Configuration.EnvironmentVariables": "10.0.12",
-          "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.12",
-          "Microsoft.Extensions.Diagnostics.HealthChecks": "10.0.12",
-          "Microsoft.Extensions.Hosting.Abstractions": "10.0.12",
-          "Microsoft.Extensions.Logging": "10.0.12",
-          "Microsoft.Extensions.Logging.Abstractions": "10.0.12",
-          "Microsoft.Extensions.Options": "10.0.12",
-          "Microsoft.Extensions.Primitives": "10.0.12",
-          "NATS.Net": "2.8.2",
-          "OpenTelemetry.Extensions.Hosting": "1.17.0"
-        }
-      },
       "Aspire.Npgsql.EntityFrameworkCore.PostgreSQL": {
         "type": "CentralTransitive",
         "requested": "[13.6.4, )",
@@ -2398,25 +2201,6 @@
           "Microsoft.Extensions.Options": "10.0.12",
           "Microsoft.Extensions.Primitives": "10.0.12",
           "Qdrant.Client": "1.19.0"
-        }
-      },
-      "Aspire.Seq": {
-        "type": "CentralTransitive",
-        "requested": "[13.6.4, )",
-        "resolved": "13.6.4",
-        "contentHash": "KUNCFjGwugvuXi/nd8J2LHFZJWocAwvD5UxOtB52yNhAesFkgJmSUkSP7oZUXGY7DnH1F9C6/39hwk52sPLw+A==",
-        "dependencies": {
-          "Microsoft.Extensions.Configuration.Abstractions": "10.0.12",
-          "Microsoft.Extensions.Configuration.Binder": "10.0.12",
-          "Microsoft.Extensions.Configuration.EnvironmentVariables": "10.0.12",
-          "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.12",
-          "Microsoft.Extensions.Diagnostics.HealthChecks": "10.0.12",
-          "Microsoft.Extensions.Hosting.Abstractions": "10.0.12",
-          "Microsoft.Extensions.Logging": "10.0.12",
-          "Microsoft.Extensions.Logging.Abstractions": "10.0.12",
-          "Microsoft.Extensions.Options": "10.0.12",
-          "Microsoft.Extensions.Primitives": "10.0.12",
-          "OpenTelemetry.Exporter.OpenTelemetryProtocol": "1.17.0"
         }
       },
       "Aspire.StackExchange.Redis.DistributedCaching": {
@@ -2693,23 +2477,6 @@
         "resolved": "2.7.5",
         "contentHash": "0FA67RSnRM4tcBKqiqVu/HPdZ9+QOKbmeRjxRUGTCjPU4C0bmUhd97Dso7Yild5P7nOV6GxJ2xrK0Kv/O9xp0w=="
       },
-      "NATS.Net": {
-        "type": "CentralTransitive",
-        "requested": "[3.3.2, )",
-        "resolved": "3.3.2",
-        "contentHash": "Jo9fnjwUE4qAbNvWd3/H3K1NcRUDTDCCYqlJevklvD8M/grAtEh/EO2NIjIacfPZTcBfjtpxskzWhy2aw4mgVQ==",
-        "dependencies": {
-          "NATS.Client.Core": "3.3.2",
-          "NATS.Client.Hosting": "3.3.2",
-          "NATS.Client.JetStream": "3.3.2",
-          "NATS.Client.KeyValueStore": "3.3.2",
-          "NATS.Client.ObjectStore": "3.3.2",
-          "NATS.Client.Serializers.Json": "3.3.2",
-          "NATS.Client.Services": "3.3.2",
-          "NATS.Client.Simplified": "3.3.2",
-          "NATS.Extensions.Microsoft.DependencyInjection": "3.3.2"
-        }
-      },
       "Npgsql.EntityFrameworkCore.PostgreSQL": {
         "type": "CentralTransitive",
         "requested": "[10.0.3, )",
@@ -2843,16 +2610,6 @@
           "Google.Protobuf": "3.30.1",
           "Grpc.Net.Client": "2.70.0",
           "Serilog": "4.2.0"
-        }
-      },
-      "Serilog.Sinks.Seq": {
-        "type": "CentralTransitive",
-        "requested": "[9.0.0, )",
-        "resolved": "9.0.0",
-        "contentHash": "aNU8A0K322q7+voPNmp1/qNPH+9QK8xvM1p72sMmCG0wGlshFzmtDW9QnVSoSYCj0MgQKcMOlgooovtBhRlNHw==",
-        "dependencies": {
-          "Serilog": "4.2.0",
-          "Serilog.Sinks.File": "6.0.0"
         }
       },
       "SSH.NET": {

@@ -71,15 +71,13 @@ flowchart TB
     subgraph Infrastructure
         PG[("PostgreSQL<br/>one schema per module")]
         Redis[("Redis<br/>HybridCache L2")]
-        NATS[("NATS JetStream<br/>messaging + invalidation")]
         Qdrant[("Qdrant<br/>vector store")]
         Ollama[("Ollama<br/>local LLMs")]
         Blobs[("Azurite<br/>blob storage")]
-        Seq[("Seq<br/>logs")]
     end
 
-    Web --> PG & Redis & NATS & Qdrant & Ollama & Blobs & Seq
-    Sandbox --> Blobs & Seq
+    Web --> PG & Redis & Qdrant & Ollama & Blobs
+    Sandbox --> Blobs
 ```
 
 > **Detailed diagrams.** Per-feature sequence diagrams and component and domain class diagrams live in [docs/diagrams/](docs/diagrams/). They predate the modular-monolith migration: they still show the old service names (AgentRuntime, Watchdog, Gateway) and the HTTP hops between services, which are now in-process calls.
@@ -92,7 +90,7 @@ flowchart TB
 | **Praxis**   | The core engine: agents, the streaming assistant, conversations, multi-agent orchestration, workflows, learnings, skills, tools, workspaces, the Quartz scheduler, and the sandbox execution history. |
 | **Codex**    | The knowledge base: embeddings, the Qdrant vector store, document ingestion and the knowledge map. Other modules push their content (learnings, memories, workspace files) through it.                |
 | **Sentinel** | The Policy Decision Point (PDP). Every agent tool call and sandbox execution is authorized through a defence-in-depth policy stack, with forensic auditing and a fail-closed default.                 |
-| **Registry** | Centralized, key-based runtime settings with per-user and global scopes, two-tier caching and NATS-broadcast invalidation.                                                                            |
+| **Registry** | Centralized, key-based runtime settings with per-user and global scopes, two-tier caching and in-process invalidation.                                                                                |
 | **Vigil**    | Probes every module, the sandbox and each infrastructure dependency, raises and resolves incidents, and streams live health over SSE.                                                                 |
 
 **Sentium.Sandbox** is stateless: it has no database and no user-facing API. It accepts only `POST /execute` from Sentium.Web, asks Sentinel to authorize each run, executes the code in a hardened container and uploads any output artifacts to blob storage. Praxis records every run, including denied ones, and serves the history at `/api/sandbox/*`.
@@ -118,8 +116,8 @@ Modules reference each other only through `Contracts`; a unit test (`ModuleBound
 - **Module boundaries** - modules call each other in-process through their `Contracts` interfaces. Facades over a module's database open their own DI scope per call, so concurrent callers never share a `DbContext`.
 - **Internal service calls** - only Sentium.Web ↔ Sentium.Sandbox crosses a process boundary. Both directions are authenticated with a pre-shared `X-Internal-Token` header (the `SystemCaller` policy).
 - **Per-user data isolation** - user-scoped tables carry a `UserId` and EF Core global query filters scope every query automatically; the `Sovereign` role and background tasks bypass the filter through an explicit accessor.
-- **Async messaging** over NATS JetStream - workflow execution (`workflow.*`), real-time streaming (`stream.*`), and config invalidation (`registry.settings.invalidated`).
-- **Caching** via HybridCache (L1 in-process + L2 Redis), invalidated across instances over NATS.
+- **In-process background work** - no message broker. Workflow runs and file ingestion go through in-memory queues (`Channel<T>`) drained by hosted services; agent token streams fan out through an in-memory relay with replay for SSE reconnects. Sentium.Web is designed to run as a single instance.
+- **Caching** via HybridCache (L1 in-process + L2 Redis); a settings change evicts every module's cached copy directly.
 - **Resilience** - a global Polly pipeline (retry + timeout + circuit-breaker) is applied to all HttpClients.
 
 ---
@@ -133,9 +131,9 @@ Modules reference each other only through `Contracts`; a unit test (`ModuleBound
 - `Microsoft.Extensions.AI` + `Microsoft.Agents.AI` (agent framework) over **Ollama**
 - Entity Framework Core (PostgreSQL via Npgsql)
 - ASP.NET Core Identity (cookie authentication)
-- NATS JetStream · Redis (HybridCache) · Quartz.NET (scheduling)
+- Redis (HybridCache) · Quartz.NET (scheduling)
 - Qdrant (vector store) · Docker.DotNet (sandbox)
-- FluentValidation · Polly · Serilog → Seq
+- FluentValidation · Polly · Serilog → OpenTelemetry
 
 **Models (default, all local via Ollama)**
 
@@ -171,7 +169,7 @@ Modules reference each other only through `Contracts`; a unit test (`ModuleBound
 
 ### Run the whole system
 
-The Aspire AppHost is the single entry point. It starts Sentium.Web, the Sandbox, the portal, and every infrastructure dependency (PostgreSQL, Redis, NATS, Qdrant, Ollama, Seq, Azurite), and automatically pulls the default Ollama models on first run.
+The Aspire AppHost is the single entry point. It starts Sentium.Web, the Sandbox, the portal, and every infrastructure dependency (PostgreSQL, Redis, Qdrant, Ollama, Azurite), and automatically pulls the default Ollama models on first run.
 
 ```bash
 dotnet run --project src/aspire/Sentium.AppHost/Sentium.AppHost.csproj
@@ -203,15 +201,14 @@ docker compose up --build
 
 Once the stack is healthy:
 
-- **Portal** - `http://localhost:5173`
-- **Sentium.Web (API)** - `https://localhost:8443`
-- **Seq (logs)** - `http://localhost:8090`, **Qdrant** - `http://localhost:6333/dashboard`
+- **Portal and API (Sentium.Web)** - `https://localhost:8443`
+- **Qdrant** - `http://localhost:6333/dashboard`
 
 Sentium.Web applies every module's EF Core migrations automatically on first start, and a one-shot `ollama-init` container pulls the chat + embedding models into a persistent volume.
 
 **Notes & caveats**
 
-- **HTTPS for the session cookie.** Sentium.Web terminates TLS (step 2) so the session cookie can be issued as `Secure`/`SameSite=None` to the portal's origin. This mirrors how the Aspire setup runs over HTTPS.
+- **HTTPS for the session cookie.** Sentium.Web terminates TLS (step 2) so the session cookie can be issued as `Secure`. The built portal is served from the same origin, so no CORS is involved. This mirrors how the Aspire setup runs over HTTPS.
 - **Code sandbox.** The Sandbox mounts the host Docker socket and a job directory that must share an identical path on host and container (`SANDBOX_JOBS_DIR`). This works on Linux/macOS and the WSL2 backend; Windows users should point it at a path inside WSL2.
 - **GPU.** Local inference is slow on CPU. Uncomment the NVIDIA `deploy` block on the `ollama` service (requires the NVIDIA Container Toolkit) for GPU acceleration.
 
@@ -222,7 +219,7 @@ Sentium.Web applies every module's EF Core migrations automatically on first sta
 ```bash
 cd src/clients/sentium-portal
 pnpm install
-pnpm dev          # Vite dev server on :5173
+pnpm dev          # Vite dev server on :5173 (proxies /api and /bff to Sentium.Web)
 pnpm lint
 pnpm build        # outputs into src/hosts/Sentium.Web/wwwroot
 ```

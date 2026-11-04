@@ -5,8 +5,6 @@ public static class EnvConfig
     public static class Keys
     {
         public const string DockerHost = "DOCKER_HOST";
-        public const string AcceptEula = "ACCEPT_EULA";
-        public const string FrontendOrigin = "Frontend__Origin";
 
         /// <summary>
         /// Pre-shared key between Sentium.Web and the separate Sentium.Sandbox, sent as the
@@ -22,14 +20,13 @@ public static class EnvConfig
 
         public static class Frontend
         {
-            public const string ViteApiBase = "VITE_API_BASE";
+            public const string ApiProxyTarget = "API_PROXY_TARGET";
         }
     }
 
     public static class Values
     {
         public const string True = "1";
-        public const string Yes = "Y";
 
         public static class DockerSockets
         {

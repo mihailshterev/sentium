@@ -1,6 +1,6 @@
 using Sentium.Praxis.Common.Helpers;
 using Sentium.Praxis.Features.Agents;
-using Sentium.Infrastructure.Messaging;
+using Sentium.Praxis.Features.Orchestration;
 using Microsoft.Agents.AI;
 
 namespace Sentium.Praxis.Features.Workflows;
@@ -9,7 +9,7 @@ public sealed class DynamicDiscoveryWorkflow(
     IAgentFactory factory,
     IAgentRegistry registry,
     IAgentRepository agentRepository,
-    IEventBus nats) : IAgentWorkflow
+    IAgentStreamPublisher stream) : IAgentWorkflow
 {
     public WorkflowType Type => WorkflowType.Dynamic;
 
@@ -29,7 +29,7 @@ public sealed class DynamicDiscoveryWorkflow(
         var streamLog = new StreamLogAccumulator();
         var input = WorkspaceContextPrompt.Augment(trigger.Payload, workspaceContext);
 
-        var rawPlan = await AgentTurnStreamer.RunAsync(orchestrator, input, orchestratorSession, trigger, AgentRole.Orchestrator, nats, streamLog, ct);
+        var rawPlan = await AgentTurnStreamer.RunAsync(orchestrator, input, orchestratorSession, trigger, AgentRole.Orchestrator, stream, streamLog, ct);
 
         var assignments = LlmParser.ParseAgentAssignments(rawPlan, dbAgentMap, registry);
         if (assignments.Count == 0)
@@ -57,7 +57,7 @@ public sealed class DynamicDiscoveryWorkflow(
             roster.Add(new SquadMember(role, baseInstructions));
         }
 
-        var loop = new AgenticRefinementLoop(factory, nats);
+        var loop = new AgenticRefinementLoop(factory, stream);
         var outcome = await loop.RunAsync(trigger, "dynamic-squad", squadAgents, input, streamLog, ct, roster);
 
         return LlmParser.ParseWorkflowResult(outcome.ValidatorOutput, outcome.SquadText, rosterNames, streamLog.Entries, trigger.UserId);

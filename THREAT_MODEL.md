@@ -20,7 +20,7 @@ This deployment model is central to the threat model:
 
 - The **only publicly reachable entry point is the Gateway (BFF)**. All other services
   (AgentRuntime, Identity, Registry, Sandbox, Sentinel, Watchdog) and all infrastructure
-  (SQL Server, Redis, NATS, Qdrant, Ollama, Seq, Azurite) live on a **trusted internal network**
+  (SQL Server, Redis, NATS, Qdrant, Ollama, Azurite) live on a **trusted internal network**
   and are not exposed to untrusted clients.
 - The trust model assumes **no untrusted tenant** sharing the internal network. Multi-tenant
   hostile-network deployment is explicitly out of scope (see §8 Residual Risks).
@@ -112,7 +112,7 @@ This deployment model is central to the threat model:
 | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | Agent/user denies performing an action | **Sentinel writes a forensic audit record for every `/policy/evaluate`** decision (allow/deny, risk, alignment verdict, duration, `auditId`). |
 | Sandbox execution disowned             | Every execution is logged (code, agent, prompt, exit code, artifacts, originating `auditId`) before and after running.                        |
-| No centralized visibility              | **Seq** aggregates structured logs across all services.                                                                                       |
+| No centralized visibility              | Structured logs and traces are exported over **OpenTelemetry (OTLP)** to the Aspire dashboard.                                                |
 
 ### 3.4 Information Disclosure (confidentiality)
 
@@ -193,7 +193,7 @@ The agent is treated as a **semi-trusted actor**. AI-specific risks beyond class
 | SQL Server (5 isolated DBs)         | Cross-DB data merge / over-broad access | DBs are **never shared or merged**; one owner service each.                                                                   |
 | Redis (HybridCache L2)              | Cache poisoning / stale auth data       | Internal network only; NATS-broadcast invalidation keeps tiers consistent.                                                    |
 | NATS JetStream                      | Unauthorized message publish/subscribe  | Internal network only; trusted services.                                                                                      |
-| Qdrant / Ollama / Azurite / Seq     | Direct access bypassing app controls    | Internal network only; not publicly exposed.                                                                                  |
+| Qdrant / Ollama / Azurite           | Direct access bypassing app controls    | Internal network only; not publicly exposed.                                                                                  |
 | Third-party packages (NuGet / pnpm) | Supply-chain compromise                 | Pinned lockfiles; keep dependencies patched (see §7).                                                                         |
 | Secrets in source/containers        | Leakage of keys/connection strings      | Use `.env` / Aspire secrets (`.env.example` is the template); **never commit real secrets**. `.gitignore` excludes env files. |
 

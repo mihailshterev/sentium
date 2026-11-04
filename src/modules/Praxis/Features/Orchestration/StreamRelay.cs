@@ -6,19 +6,29 @@ using Sentium.Praxis.Features.Workflows;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using NATS.Client.Core;
-using NATS.Client.Serializers.Json;
 
 namespace Sentium.Praxis.Features.Orchestration;
 
 public readonly record struct StreamFrame(long Seq, AgentStreamUpdate Update);
 
 /// <summary>
-/// In-process fan-out + replay buffer for agent stream updates. It subscribes to <c>stream.&gt;</c> once at
-/// startup - before any workflow can emit - so no update is ever lost to the classic "subscribe after the
-/// producer already published" race. SSE consumers attach via <see cref="Subscribe"/> and receive the full
-/// backlog (filtered by <c>Last-Event-ID</c>) followed by live updates, which also makes EventSource
-/// reconnects replay cleanly without duplicates.
+/// Write side of the agent stream: workflows push every update for a run here, keyed by its stream id.
+/// </summary>
+public interface IAgentStreamPublisher
+{
+    /// <summary>
+    /// Appends <paramref name="update"/> to the stream's replay buffer and fans it out to live subscribers.
+    /// Never blocks: slow subscribers drop their oldest queued frames instead of stalling the producer.
+    /// </summary>
+    void Publish(string streamId, AgentStreamUpdate update);
+}
+
+/// <summary>
+/// In-process fan-out + replay buffer for agent stream updates. Producers write through
+/// <see cref="IAgentStreamPublisher"/>; the stream's buffer exists from the first update, so nothing is lost
+/// when the SSE client connects after the run already started. SSE consumers attach via <see cref="Subscribe"/>
+/// and receive the full backlog (filtered by <c>Last-Event-ID</c>) followed by live updates, which also makes
+/// EventSource reconnects replay cleanly without duplicates.
 /// </summary>
 public interface IStreamRelay
 {
@@ -29,9 +39,8 @@ public interface IStreamRelay
     IAsyncEnumerable<StreamFrame> Subscribe(string streamId, long fromSeqExclusive, CancellationToken ct);
 }
 
-public sealed class StreamRelay(INatsConnection connection, IConfiguration configuration, ILogger<StreamRelay> logger) : BackgroundService, IStreamRelay
+public sealed class StreamRelay(IConfiguration configuration, ILogger<StreamRelay> logger) : BackgroundService, IStreamRelay, IAgentStreamPublisher
 {
-    private const string SubjectPrefix = "stream.";
     private const int MaxBufferedEntries = 5000;
     private const int MaxBufferedChars = 1_000_000;
     private const int MaxSubscriberQueue = 8192;
@@ -50,12 +59,18 @@ public sealed class StreamRelay(INatsConnection connection, IConfiguration confi
         return state.ReadAsync(fromSeqExclusive, ct);
     }
 
+    public void Publish(string streamId, AgentStreamUpdate update)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(streamId);
+        ArgumentNullException.ThrowIfNull(update);
+        _streams.GetOrAdd(streamId, _ => new StreamState()).Publish(update);
+    }
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        logger.LogInformation("Stream relay starting; subscribing to {Subject}.", SubjectPrefix + ">");
         try
         {
-            await Task.WhenAll(PumpAsync(stoppingToken), SweepAsync(stoppingToken));
+            await SweepAsync(stoppingToken);
         }
         catch (OperationCanceledException)
         {
@@ -64,36 +79,6 @@ public sealed class StreamRelay(INatsConnection connection, IConfiguration confi
         catch (Exception ex)
         {
             logger.LogCritical(ex, "Stream relay encountered a fatal error.");
-        }
-    }
-
-    private async Task PumpAsync(CancellationToken ct)
-    {
-        while (!ct.IsCancellationRequested)
-        {
-            try
-            {
-                await foreach (var msg in connection.SubscribeAsync<AgentStreamUpdate>(SubjectPrefix + ">", serializer: NatsJsonSerializer<AgentStreamUpdate>.Default, cancellationToken: ct))
-                {
-                    if (msg.Data is null)
-                    {
-                        continue;
-                    }
-
-                    var streamId = msg.Subject.Length > SubjectPrefix.Length ? msg.Subject[SubjectPrefix.Length..] : msg.Subject;
-                    var state = _streams.GetOrAdd(streamId, _ => new StreamState());
-                    state.Publish(msg.Data);
-                }
-            }
-            catch (OperationCanceledException) when (ct.IsCancellationRequested)
-            {
-                throw;
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Stream relay subscription faulted; re-subscribing shortly.");
-                await Task.Delay(TimeSpan.FromSeconds(1), ct);
-            }
         }
     }
 

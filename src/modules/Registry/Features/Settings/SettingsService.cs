@@ -2,11 +2,9 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Logging;
-using Sentium.Infrastructure.Messaging;
+using Sentium.Infrastructure.Settings;
 using Sentium.Registry.Contracts;
 using Sentium.Registry.Entities;
-using Sentium.Core.Constants;
-using Sentium.Core.Events;
 
 namespace Sentium.Registry.Features.Settings;
 
@@ -14,7 +12,7 @@ public sealed class SettingsService(
     ISettingsRepository repository,
     ISettingsCatalog catalog,
     HybridCache cache,
-    IEventBus eventBus,
+    ISettingsCacheInvalidator cacheInvalidator,
     IServiceProvider serviceProvider,
     ILogger<SettingsService> logger) : ISettingsService
 {
@@ -78,7 +76,7 @@ public sealed class SettingsService(
         }
 
         await cache.RemoveAsync(RegistrySettingsCacheKeys.Envelope(descriptor.Key, scopeUserId), ct);
-        await eventBus.PublishAsync(NatsSubjects.SettingsInvalidated, new SettingsInvalidatedEvent(descriptor.Key, scopeUserId, DateTimeOffset.UtcNow), ct: ct);
+        await cacheInvalidator.InvalidateAsync(descriptor.Key, scopeUserId, ct);
 
         logger.LogInformation("Settings '{Key}' updated for {Scope} by {By}; cache invalidated", descriptor.Key, scopeUserId?.ToString() ?? "global", updatedBy ?? "system");
 

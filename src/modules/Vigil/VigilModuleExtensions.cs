@@ -42,6 +42,7 @@ public static class VigilModuleExtensions
         services.AddSingleton<IWatchdog, WatchdogService>();
         services.AddSingleton<IServiceHealthStateStore, ServiceHealthStateStore>();
         services.AddSingleton<IIncidentStore, IncidentStore>();
+        services.AddSingleton<IWatchdogFeed, WatchdogFeed>();
 
         RegisterModuleProbes(services);
         RegisterServiceProbes(services);
@@ -80,8 +81,6 @@ public static class VigilModuleExtensions
 
     private static void RegisterInfrastructureProbes(IServiceCollection services, IConfiguration configuration)
     {
-        services.AddSingleton<IHealthProbe>(sp => new NatsHealthProbe(sp.GetRequiredService<global::NATS.Client.Core.INatsConnection>()));
-
         AddTcpProbe(services, configuration, ResourceNames.Redis, "Redis", defaultPort: 6379);
         AddTcpProbe(services, configuration, ResourceNames.Postgres, "PostgreSQL", defaultPort: 5432);
         AddTcpProbe(services, configuration, ResourceNames.Qdrant, "Qdrant", defaultPort: 6334);

@@ -56,6 +56,8 @@ public static class PraxisModuleExtensions
         services.AddSingleton<ISettingsCacheInvalidationHandler, AgentSettingsCacheInvalidationHandler>();
 
         services.AddScoped<ILocalFileService, LocalFileService>();
+        services.AddSingleton<FileIngestionQueue>();
+        services.AddSingleton<IFileIngestionQueue>(sp => sp.GetRequiredService<FileIngestionQueue>());
         services.AddHostedService<FileIngestionWorker>();
 
         services.AddScoped<IAgentLearningRepository, AgentLearningRepository>();
@@ -132,10 +134,13 @@ public static class PraxisModuleExtensions
     private static void AddOrchestration(IServiceCollection services)
     {
         services.AddSingleton<IWorkflowExecutionRegistry, WorkflowExecutionRegistry>();
-        services.AddHostedService<NatsMessageProcessor>();
+        services.AddSingleton<WorkflowRunQueue>();
+        services.AddSingleton<IWorkflowRunQueue>(sp => sp.GetRequiredService<WorkflowRunQueue>());
+        services.AddHostedService<WorkflowRunProcessor>();
 
         services.AddSingleton<StreamRelay>();
         services.AddSingleton<IStreamRelay>(sp => sp.GetRequiredService<StreamRelay>());
+        services.AddSingleton<IAgentStreamPublisher>(sp => sp.GetRequiredService<StreamRelay>());
         services.AddHostedService(sp => sp.GetRequiredService<StreamRelay>());
 
         services.AddTransient<IAgentService, AgentService>();

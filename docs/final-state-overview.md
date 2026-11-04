@@ -55,7 +55,7 @@ The five originally-proposed services were re-shaped into seven built services. 
   Service_, now focused on service uptime rather than household devices.
 - **Frontends** - `sentium-portal` (React) and `sentium-identity-ui` (login/consent).
 - **Infrastructure** (all local, started by Aspire): SQL Server (five isolated databases), Redis,
-  NATS JetStream, Qdrant, Ollama, Seq, Azurite.
+  NATS JetStream, Qdrant, Ollama, Azurite.
 
 ### AI Integration
 

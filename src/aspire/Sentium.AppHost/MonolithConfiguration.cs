@@ -13,9 +13,6 @@ internal static class MonolithConfiguration
             builder.AddDockerComposeEnvironment("env");
         }
 
-        var nats = builder.AddNats(ResourceNames.Nats)
-            .WithJetStream();
-
         var redis = builder.AddRedis(ResourceNames.Redis);
 
         var internalApiKey = builder.AddParameter("internal-api-key", secret: true);
@@ -37,20 +34,14 @@ internal static class MonolithConfiguration
 
         var blobs = storage.AddBlobs(ResourceNames.WorkspaceBlobs);
 
-        var seq = builder.AddSeq(ResourceNames.Seq)
-            .ExcludeFromManifest()
-            .WithEnvironment(EnvConfig.Keys.AcceptEula, EnvConfig.Values.Yes);
-
         var ollama = builder.AddOllama(ResourceNames.Ollama)
             .WithImage("ollama/ollama", "0.40.6")
             .WithEndpoint("http", e => e.Port = 11434);
 
         if (!testRun)
         {
-            nats.WithDataVolume();
             postgres.WithDataVolume();
             qdrant.WithDataVolume();
-            seq.WithDataVolume();
 
             ollama.WithDataVolume()
                 .WithGPUSupport(OllamaGpuVendor.Nvidia)
@@ -67,11 +58,9 @@ internal static class MonolithConfiguration
         var web = builder.AddProject<Projects.Sentium_Web>(ServiceNames.Web)
             .WithReference(sentiumDb).WaitFor(sentiumDb)
             .WithReference(postgres)
-            .WithReference(nats).WaitFor(nats)
             .WithReference(redis).WaitFor(redis)
             .WithReference(qdrant).WaitFor(qdrant)
             .WithReference(blobs).WaitFor(blobs)
-            .WithReference(seq).WaitFor(seq)
             .WithReference(ollama)
             .WithEnvironment(EnvConfig.Keys.InternalApiKey, internalApiKey)
             .WithExternalHttpEndpoints()
@@ -85,7 +74,6 @@ internal static class MonolithConfiguration
         // service discovery only - no WaitFor, so there is no startup cycle.
         var sandbox = builder.AddProject<Projects.Sentium_Sandbox>(ServiceNames.Sandbox)
             .WithReference(blobs).WaitFor(blobs)
-            .WithReference(seq).WaitFor(seq)
             .WithReference(web)
             .WithEnvironment(EnvConfig.Keys.DockerHost, dockerHost)
             .WithEnvironment(EnvConfig.Keys.InternalApiKey, internalApiKey);
@@ -114,12 +102,12 @@ internal static class MonolithConfiguration
                 .WithEnvironment(EnvConfig.Keys.AI.EmbeddingModelName, ollamaEmbeddingModel.Resource.ModelName);
         }
 
-        var frontend = builder.AddViteApp(ServiceNames.Frontend, "../../clients/sentium-portal")
+        // The Vite dev server proxies /api and /bff to Sentium.Web, so the browser only ever sees one origin
+        // (same as production, where Sentium.Web serves the built portal). No CORS, no cross-site cookies.
+        builder.AddViteApp(ServiceNames.Frontend, "../../clients/sentium-portal")
             .WithPnpm()
             .WithReference(web).WaitFor(web)
-            .WithEnvironment(EnvConfig.Keys.Frontend.ViteApiBase, web.GetEndpoint("https"))
+            .WithEnvironment(EnvConfig.Keys.Frontend.ApiProxyTarget, web.GetEndpoint("https"))
             .WithEndpoint("http", e => e.Port = 5173);
-
-        web.WithEnvironment(EnvConfig.Keys.FrontendOrigin, frontend.GetEndpoint("http"));
     }
 }

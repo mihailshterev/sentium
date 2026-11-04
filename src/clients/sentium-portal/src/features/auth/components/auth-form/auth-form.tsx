@@ -19,6 +19,7 @@ export const AuthForm = () => {
     formState: { errors },
   } = useForm<LoginFormData>({
     resolver: zodResolver(mode === "login" ? loginSchema : registerSchema),
+    defaultValues: { email: "", password: "" },
   });
 
   const switchMode = (next: "login" | "register") => {
@@ -106,7 +107,7 @@ export const AuthForm = () => {
         </button>
       </div>
 
-      <form className={styles.form} onSubmit={handleSubmit(onSubmit)}>
+      <form key={mode} className={styles.form} onSubmit={handleSubmit(onSubmit)}>
         <div className={styles.field}>
           <label className={styles.label} htmlFor="email">
             Email address

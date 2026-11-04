@@ -2,7 +2,6 @@ using Sentium.Praxis.Dtos;
 using Sentium.Praxis.Features.Storage;
 using Sentium.Praxis.Features.Workspaces;
 using Sentium.Infrastructure.Caching;
-using Sentium.Infrastructure.Messaging;
 using Sentium.Core.Results;
 
 namespace Sentium.Praxis.Features.WorkspaceManagement;
@@ -10,7 +9,7 @@ namespace Sentium.Praxis.Features.WorkspaceManagement;
 public sealed class WorkspaceService(
     IWorkspaceRepository repository,
     ILocalFileService fileService,
-    IEventBus eventBus,
+    IFileIngestionQueue ingestionQueue,
     IScopedCache cache) : IWorkspaceService
 {
     private const string CacheTag = "workspaces";
@@ -130,7 +129,7 @@ public sealed class WorkspaceService(
         var fileDto = await repository.AddFileRecordAsync(new AddFileRecord(fileName, blobName, extension, content.Length, workspaceId), ct);
 
         await cache.InvalidateTagAsync(CacheTag, ct);
-        await eventBus.PublishAsync(FileEvents.FileIngested, new FileIngestedEvent(fileDto.Id, fileDto.WorkspaceId), ct: ct);
+        ingestionQueue.Enqueue(new FileIngestionRequest(fileDto.Id, fileDto.WorkspaceId));
 
         return fileDto;
     }

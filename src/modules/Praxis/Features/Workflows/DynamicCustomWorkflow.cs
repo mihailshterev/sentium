@@ -4,7 +4,7 @@ using Sentium.Praxis.Extensions;
 using Sentium.Praxis.Features.Agents;
 using AgentResponse = Sentium.Praxis.Dtos.AgentResponse;
 using Sentium.Praxis.Features.WorkflowManagement;
-using Sentium.Infrastructure.Messaging;
+using Sentium.Praxis.Features.Orchestration;
 using Microsoft.Agents.AI;
 
 namespace Sentium.Praxis.Features.Workflows;
@@ -13,7 +13,7 @@ public sealed class DynamicCustomWorkflow(
     IAgentFactory factory,
     IAgentRepository agentRepository,
     IWorkflowService workflowService,
-    IEventBus nats) : IAgentWorkflow
+    IAgentStreamPublisher stream) : IAgentWorkflow
 {
     public WorkflowType Type => WorkflowType.Custom;
 
@@ -86,11 +86,11 @@ public sealed class DynamicCustomWorkflow(
         if (duplicateNames.Count > 0)
         {
             var warning = $"Warning: workflow '{workflowDef.Name}' has duplicate agent names ({string.Join(", ", duplicateNames)}). Targeted re-runs and per-agent attribution may be unreliable - give each agent a unique name.";
-            await nats.StreamAgentUpdateAsync(trigger.StreamId, "System", warning, AgentUpdateTypes.Status, ct);
+            stream.Emit(trigger.StreamId, "System", warning, AgentUpdateTypes.Status);
             streamLog.Add("System", warning, AgentUpdateTypes.Status);
         }
 
-        var loop = new AgenticRefinementLoop(factory, nats);
+        var loop = new AgenticRefinementLoop(factory, stream);
         var outcome = await loop.RunAsync(trigger, $"custom-{workflowDef.Name}", squadAgents, activity, streamLog, ct, roster);
 
         var explanation = string.IsNullOrWhiteSpace(outcome.SquadText) ? $"Custom workflow '{workflowDef.Name}' completed with no output." : outcome.SquadText;
