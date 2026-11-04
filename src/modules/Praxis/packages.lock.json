@@ -71,11 +71,12 @@
       },
       "OllamaSharp": {
         "type": "Direct",
-        "requested": "[5.4.25, )",
-        "resolved": "5.4.25",
-        "contentHash": "EqkPM1gbkE+RbHgKUMzp4lYjpFymWUIgJntx3u4uDXAfAIFUXJ0MGklNFCi/PdCaxNAPRpcf205yx+g6jLLhZg==",
+        "requested": "[5.5.0, )",
+        "resolved": "5.5.0",
+        "contentHash": "CpACG21U4KBZ5YcPUH/Pf8VMP0CCO7NsEkYJLLVf06YzVwcixRPy2bub71mbMlWCfzdADd8YfKx8kGWD5ai4Kg==",
         "dependencies": {
-          "Microsoft.Extensions.AI.Abstractions": "10.4.1"
+          "Microsoft.Extensions.AI": "10.8.0",
+          "Microsoft.Extensions.AI.Abstractions": "10.8.0"
         }
       },
       "Quartz.Extensions.Hosting": {
@@ -615,7 +616,7 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.AI": "[10.10.0, )",
-          "OllamaSharp": "[5.4.25, )",
+          "OllamaSharp": "[5.5.0, )",
           "Pgvector.EntityFrameworkCore": "[0.3.0, )",
           "Sentium.Core": "[1.0.0, )",
           "Sentium.Infrastructure": "[1.0.0, )"
@@ -654,7 +655,7 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.AI": "[10.10.0, )",
-          "OllamaSharp": "[5.4.25, )",
+          "OllamaSharp": "[5.5.0, )",
           "Sentium.Core": "[1.0.0, )",
           "Sentium.Infrastructure": "[1.0.0, )",
           "Sentium.Registry": "[1.0.0, )"

@@ -1699,7 +1699,7 @@
           "Aspire.Hosting.PostgreSQL": "[13.6.4, )",
           "Aspire.Hosting.Python": "[13.6.4, )",
           "Aspire.Hosting.Redis": "[13.6.4, )",
-          "CommunityToolkit.Aspire.Hosting.Ollama": "[13.1.1, )",
+          "CommunityToolkit.Aspire.Hosting.Ollama": "[13.6.1, )",
           "Sentium.Core": "[1.0.0, )"
         }
       },
@@ -1707,7 +1707,7 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.AI": "[10.10.0, )",
-          "OllamaSharp": "[5.4.25, )",
+          "OllamaSharp": "[5.5.0, )",
           "Pgvector.EntityFrameworkCore": "[0.3.0, )",
           "Sentium.Core": "[1.0.0, )",
           "Sentium.Infrastructure": "[1.0.0, )"
@@ -1750,7 +1750,7 @@
           "Microsoft.Agents.AI": "[1.27.0, )",
           "Microsoft.Agents.AI.Workflows": "[1.27.0, )",
           "Microsoft.Extensions.AI": "[10.10.0, )",
-          "OllamaSharp": "[5.4.25, )",
+          "OllamaSharp": "[5.5.0, )",
           "Quartz.Extensions.Hosting": "[3.18.0, )",
           "Sentium.Codex": "[1.0.0, )",
           "Sentium.Core": "[1.0.0, )",
@@ -1770,7 +1770,7 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.AI": "[10.10.0, )",
-          "OllamaSharp": "[5.4.25, )",
+          "OllamaSharp": "[5.5.0, )",
           "Sentium.Core": "[1.0.0, )",
           "Sentium.Infrastructure": "[1.0.0, )",
           "Sentium.Registry": "[1.0.0, )"
@@ -2190,11 +2190,11 @@
       },
       "CommunityToolkit.Aspire.Hosting.Ollama": {
         "type": "CentralTransitive",
-        "requested": "[13.1.1, )",
-        "resolved": "13.1.1",
-        "contentHash": "5jRe/YV/jeVj9SvxvG7XfouofCYjAECB04XZM+y0x1wMsk9GYNUFHt6RTAYrjP6GoqFzGgMoDP0gt3/AvWAqkA==",
+        "requested": "[13.6.1, )",
+        "resolved": "13.6.1",
+        "contentHash": "aTGCybFBr5+A3vwVgQjAi3mNoh+QxCYa9GsP9LdQTKnYTwvTJNqGim9Ak7zYDGvDek8G+zbrfK9f0wq+g39uRA==",
         "dependencies": {
-          "Aspire.Hosting": "13.1.0",
+          "Aspire.Hosting": "13.6.4",
           "OllamaSharp": "5.4.12"
         }
       },
@@ -2439,11 +2439,12 @@
       },
       "OllamaSharp": {
         "type": "CentralTransitive",
-        "requested": "[5.4.25, )",
-        "resolved": "5.4.25",
-        "contentHash": "EqkPM1gbkE+RbHgKUMzp4lYjpFymWUIgJntx3u4uDXAfAIFUXJ0MGklNFCi/PdCaxNAPRpcf205yx+g6jLLhZg==",
+        "requested": "[5.5.0, )",
+        "resolved": "5.5.0",
+        "contentHash": "CpACG21U4KBZ5YcPUH/Pf8VMP0CCO7NsEkYJLLVf06YzVwcixRPy2bub71mbMlWCfzdADd8YfKx8kGWD5ai4Kg==",
         "dependencies": {
-          "Microsoft.Extensions.AI.Abstractions": "10.4.1"
+          "Microsoft.Extensions.AI": "10.8.0",
+          "Microsoft.Extensions.AI.Abstractions": "10.8.0"
         }
       },
       "OpenTelemetry.Api": {
