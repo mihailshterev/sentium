@@ -35,6 +35,9 @@ jobs:
       - name: Create and trust HTTPS dev certificate
         run: dotnet dev-certs https --trust
 
+      - name: Install Aspire CLI
+        run: curl -sSL https://aspire.dev/install.sh | bash -s -- --version 13.6.4
+
       - name: Build .NET (Release)
         run: dotnet build --no-restore --configuration ${{ env.BUILD_CONFIGURATION }}
 
