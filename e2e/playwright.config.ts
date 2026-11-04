@@ -14,7 +14,6 @@ export default defineConfig({
   timeout: 60 * 1000,
   use: {
     baseURL: BASE_URL,
-    storageState: AUTH_FILE,
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     video: "on-first-retry",
@@ -33,7 +32,6 @@ export default defineConfig({
       testMatch: /.*auth\.setup\.ts/,
       use: {
         ...devices["Desktop Chrome"],
-        storageState: undefined,
       },
     },
     {
