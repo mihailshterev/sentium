@@ -71,8 +71,7 @@ export default defineConfig({
       DOTNET_ENVIRONMENT: "Testing",
       ASPNETCORE_ENVIRONMENT: "Testing",
       DOTNET_ASPIRE_SHOW_DASHBOARD: "false",
-      // Resource output only goes to the Aspire dashboard; on CI surface DCP's resource lifecycle in the log.
-      ...(process.env.CI ? { "Logging__LogLevel__Aspire.Hosting.Dcp": "Information" } : {}),
+      "Parameters__internal-api-key": "testing-internal-api-key-32chars!!",
     },
     stdout: "pipe",
     stderr: "pipe",
