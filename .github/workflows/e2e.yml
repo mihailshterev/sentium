@@ -74,6 +74,23 @@ jobs:
         working-directory: ./e2e
         run: pnpm test
 
+      # Resource (Postgres, web, Vite ...) output only goes to the Aspire dashboard, so when the stack fails to
+      # come up the only trace is in docker and in DCP's temp log files.
+      - name: Dump Aspire diagnostics
+        if: failure()
+        run: |
+          docker ps -a || true
+          for c in $(docker ps -aq); do
+            echo "::group::docker logs $(docker inspect -f '{{.Name}}' "$c")"
+            docker logs --tail 100 "$c" 2>&1 || true
+            echo "::endgroup::"
+          done
+          find /tmp -path '*aspire*' -type f -size +0 2>/dev/null | while read -r f; do
+            echo "::group::$f"
+            tail -n 100 "$f"
+            echo "::endgroup::"
+          done
+
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v7
