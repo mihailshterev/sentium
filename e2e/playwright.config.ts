@@ -63,18 +63,13 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: "dotnet run --project ../src/aspire/Sentium.AppHost/Sentium.AppHost.csproj -- --TestRun=true",
+    command:
+      "dotnet run --project ../src/aspire/Sentium.AppHost/Sentium.AppHost.csproj -- --TestRun=true --environment Testing",
     url: BASE_URL,
     reuseExistingServer: false,
     timeout: (process.env.CI ? 600 : 300) * 1000,
     env: {
-      DOTNET_ENVIRONMENT: "Testing",
-      ASPNETCORE_ENVIRONMENT: "Testing",
       DOTNET_ASPIRE_SHOW_DASHBOARD: "false",
-      "Parameters__internal-api-key": "testing-internal-api-key-32chars!!",
-      ...(process.env.CI
-        ? { "Logging__LogLevel__Aspire.Hosting": "Debug", "Logging__LogLevel__Aspire.Hosting.Health": "Information" }
-        : {}),
     },
     stdout: "pipe",
     stderr: "pipe",
