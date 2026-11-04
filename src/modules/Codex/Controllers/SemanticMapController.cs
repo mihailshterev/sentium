@@ -10,7 +10,7 @@ namespace Sentium.Codex.Controllers;
 
 /// <summary>
 /// Provides graph-ready data for the semantic knowledge map visualization.
-/// Returns nodes (document chunks) from one or more Qdrant collections and
+/// Returns nodes (document chunks) from one or more vector collections and
 /// supports semantic search for query-traversal animation.
 /// </summary>
 [ApiController]

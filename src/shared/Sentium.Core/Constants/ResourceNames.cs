@@ -6,7 +6,6 @@ public static class ResourceNames
     public const string Postgres = "postgres";
     public const string SentiumDb = "sentiumdb";
     public const string Redis = "redis";
-    public const string Qdrant = "qdrant";
     public const string Storage = "storage";
     public const string WorkspaceBlobs = "workspace-storage";
 }

@@ -28,7 +28,7 @@ What sets Sentium apart is that every agent action is **mediated by a security c
 | **Custom agents**                        | Define your own agents (name, persona/instructions, model) and manage them through the portal.                                                                                            |
 | **Multi-agent orchestration**            | An Orchestrator agent decomposes a goal, assembles a squad of specialist agents, runs them sequentially, then a Validator agent reviews and triggers self-correcting re-runs.             |
 | **Visual workflow builder**              | Compose reusable, ordered multi-agent workflows; run them on demand and replay every run from a persisted log.                                                                            |
-| **Retrieval-Augmented Generation (RAG)** | Document ingestion (chunk → embed → store in Qdrant) across three vector collections: knowledge base, agent learnings, and user memories (the Codex module).                              |
+| **Retrieval-Augmented Generation (RAG)** | Document ingestion (chunk → embed → store in PostgreSQL/pgvector) across three vector collections: knowledge base, agent learnings, and user memories (the Codex module).                 |
 | **Self-improvement loop**                | Agents capture reusable learnings that are automatically, semantically recalled and injected into future runs.                                                                            |
 | **Isolated code execution**              | Agents can run Python / Node.js in a heavily hardened, network-disabled Docker sandbox; output artifacts are harvested to blob storage.                                                   |
 | **Skills**                               | Built-in skills plus user-defined and uploaded-Markdown skills, unlocked on demand via a `load_skill` mechanism.                                                                          |
@@ -69,14 +69,13 @@ flowchart TB
     Sandbox -->|X-Internal-Token<br/>policy evaluation| Sentinel
 
     subgraph Infrastructure
-        PG[("PostgreSQL<br/>one schema per module")]
+        PG[("PostgreSQL + pgvector<br/>one schema per module")]
         Redis[("Redis<br/>HybridCache L2")]
-        Qdrant[("Qdrant<br/>vector store")]
         Ollama[("Ollama<br/>local LLMs")]
         Blobs[("Azurite<br/>blob storage")]
     end
 
-    Web --> PG & Redis & Qdrant & Ollama & Blobs
+    Web --> PG & Redis & Ollama & Blobs
     Sandbox --> Blobs
 ```
 
@@ -88,7 +87,7 @@ flowchart TB
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Identity** | ASP.NET Core Identity: users, roles, profile and registration, plus the cookie session endpoints the portal uses (`/api/identity/account/login`, `/session`, `/logout`). The browser only ever holds an HttpOnly cookie. |
 | **Praxis**   | The core engine: agents, the streaming assistant, conversations, multi-agent orchestration, workflows, learnings, skills, tools, workspaces, the Quartz scheduler, and the sandbox execution history.                    |
-| **Codex**    | The knowledge base: embeddings, the Qdrant vector store, document ingestion and the knowledge map. Other modules push their content (learnings, memories, workspace files) through it.                                   |
+| **Codex**    | The knowledge base: embeddings, the pgvector store (`codex` schema), document ingestion and the knowledge map. Other modules push their content (learnings, memories, workspace files) through it.                       |
 | **Sentinel** | The Policy Decision Point (PDP). Every agent tool call and sandbox execution is authorized through a defence-in-depth policy stack, with forensic auditing and a fail-closed default.                                    |
 | **Registry** | Centralized, key-based runtime settings with per-user and global scopes, two-tier caching and in-process invalidation.                                                                                                   |
 | **Vigil**    | Probes every module, the sandbox and each infrastructure dependency, raises and resolves incidents, and streams live health over SSE.                                                                                    |
@@ -129,10 +128,10 @@ Modules reference each other only through `Contracts`; a unit test (`ModuleBound
 - .NET 10 / C# · ASP.NET Core
 - .NET Aspire (orchestration & service discovery)
 - `Microsoft.Extensions.AI` + `Microsoft.Agents.AI` (agent framework) over **Ollama**
-- Entity Framework Core (PostgreSQL via Npgsql)
+- Entity Framework Core (PostgreSQL via Npgsql) · pgvector (vector store)
 - ASP.NET Core Identity (cookie authentication)
 - Redis (HybridCache) · Quartz.NET (scheduling)
-- Qdrant (vector store) · Docker.DotNet (sandbox)
+- Docker.DotNet (sandbox)
 - FluentValidation · Polly · Serilog → OpenTelemetry
 
 **Models (default, all local via Ollama)**
@@ -169,7 +168,7 @@ Modules reference each other only through `Contracts`; a unit test (`ModuleBound
 
 ### Run the whole system
 
-The Aspire AppHost is the single entry point. It starts Sentium.Web, the Sandbox, the portal, and every infrastructure dependency (PostgreSQL, Redis, Qdrant, Ollama, Azurite), and automatically pulls the default Ollama models on first run.
+The Aspire AppHost is the single entry point. It starts Sentium.Web, the Sandbox, the portal, and every infrastructure dependency (PostgreSQL with pgvector, Redis, Ollama, Azurite), and automatically pulls the default Ollama models on first run.
 
 ```bash
 dotnet run --project src/aspire/Sentium.AppHost/Sentium.AppHost.csproj
@@ -202,7 +201,6 @@ docker compose up --build
 Once the stack is healthy:
 
 - **Portal and API (Sentium.Web)** - `https://localhost:8443`
-- **Qdrant** - `http://localhost:6333/dashboard`
 
 Sentium.Web applies every module's EF Core migrations automatically on first start, and a one-shot `ollama-init` container pulls the chat + embedding models into a persistent volume.
 

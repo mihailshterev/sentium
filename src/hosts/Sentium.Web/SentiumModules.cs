@@ -70,6 +70,7 @@ internal static class SentiumModules
         await app.InitializeIdentityModuleAsync();
         await app.InitializeRegistryModuleAsync();
         await app.InitializeSentinelModuleAsync();
+        await app.InitializeCodexModuleAsync();
         await app.InitializePraxisModuleAsync();
 
         logger.LogInformation("Sentium modules initialized");

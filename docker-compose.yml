@@ -11,7 +11,7 @@ x-service-env: &service-env
 
 services:
   postgres:
-    image: postgres:17-alpine
+    image: pgvector/pgvector:pg17
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: sentiumdb
@@ -39,17 +39,6 @@ services:
       timeout: 3s
       retries: 5
       start_period: 5s
-    restart: unless-stopped
-
-  qdrant:
-    image: qdrant/qdrant:latest
-    environment:
-      QDRANT__SERVICE__API_KEY: ${QDRANT_API_KEY}
-    ports:
-      - "6333:6333"
-      - "6334:6334"
-    volumes:
-      - qdrant-data:/qdrant/storage
     restart: unless-stopped
 
   azurite:
@@ -119,7 +108,6 @@ services:
       ConnectionStrings__sentiumdb: Host=postgres;Port=5432;Database=sentiumdb;Username=postgres;Password=${POSTGRES_PASSWORD}
       ConnectionStrings__postgres: Host=postgres;Port=5432;Username=postgres;Password=${POSTGRES_PASSWORD}
       ConnectionStrings__redis: redis:6379
-      ConnectionStrings__qdrant: Endpoint=http://qdrant:6334;Key=${QDRANT_API_KEY}
       ConnectionStrings__workspace-storage: ${AZURITE_CONNECTION}
       ConnectionStrings__ollama: http://ollama:11434
       AI__OllamaBaseUrl: http://ollama:11434
@@ -136,8 +124,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      qdrant:
-        condition: service_started
       azurite:
         condition: service_started
       ollama:
@@ -170,6 +156,5 @@ services:
 volumes:
   postgres-data:
   redis-data:
-  qdrant-data:
   azurite-data:
   ollama-data:

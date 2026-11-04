@@ -17,11 +17,10 @@ internal static class MonolithConfiguration
 
         var internalApiKey = builder.AddParameter("internal-api-key", secret: true);
 
-        var postgres = builder.AddPostgres(ResourceNames.Postgres);
+        var postgres = builder.AddPostgres(ResourceNames.Postgres)
+            .WithImage("pgvector/pgvector", "pg18-trixie");
 
         var sentiumDb = postgres.AddDatabase(ResourceNames.SentiumDb, testRun ? "sentiumdb_e2e" : ResourceNames.SentiumDb);
-
-        var qdrant = builder.AddQdrant(ResourceNames.Qdrant);
 
         var storage = builder.AddAzureStorage(ResourceNames.Storage)
             .RunAsEmulator(azurite =>
@@ -40,8 +39,7 @@ internal static class MonolithConfiguration
 
         if (!testRun)
         {
-            postgres.WithDataVolume();
-            qdrant.WithDataVolume();
+            postgres.WithVolume(VolumeNameGenerator.Generate(postgres, "data"), "/var/lib/postgresql");
 
             ollama.WithDataVolume()
                 .WithGPUSupport(OllamaGpuVendor.Nvidia)
@@ -59,7 +57,6 @@ internal static class MonolithConfiguration
             .WithReference(sentiumDb).WaitFor(sentiumDb)
             .WithReference(postgres)
             .WithReference(redis).WaitFor(redis)
-            .WithReference(qdrant).WaitFor(qdrant)
             .WithReference(blobs).WaitFor(blobs)
             .WithReference(ollama)
             .WithEnvironment(EnvConfig.Keys.InternalApiKey, internalApiKey)

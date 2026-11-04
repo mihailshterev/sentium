@@ -83,7 +83,6 @@ public static class VigilModuleExtensions
     {
         AddTcpProbe(services, configuration, ResourceNames.Redis, "Redis", defaultPort: 6379);
         AddTcpProbe(services, configuration, ResourceNames.Postgres, "PostgreSQL", defaultPort: 5432);
-        AddTcpProbe(services, configuration, ResourceNames.Qdrant, "Qdrant", defaultPort: 6334);
 
         var ollamaConn = configuration.GetConnectionString(ResourceNames.Ollama);
         var ollamaUri = EndpointResolver.ResolveUri(ollamaConn);

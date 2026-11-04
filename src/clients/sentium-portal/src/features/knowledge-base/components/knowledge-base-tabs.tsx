@@ -32,7 +32,7 @@ export const GlobalContextTab = () => {
             <FlaskConical size={15} className={styles.cardIconCyan} />
             <div>
               <p className={styles.cardTitle}>Knowledge Base Overview</p>
-              <p className={styles.cardSubtitle}>Live statistics from the Qdrant vector store</p>
+              <p className={styles.cardSubtitle}>Live statistics from the vector store</p>
             </div>
           </div>
           <button className={styles.btnRefresh} onClick={() => void refetch()} disabled={isLoading}>

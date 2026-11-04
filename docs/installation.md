@@ -52,7 +52,7 @@ sandbox) as containers, and Compose builds and runs everything in containers.
 
 The [.NET Aspire AppHost](../src/aspire/Sentium.AppHost/Program.cs) is the single entry point for
 local development. One command starts Sentium.Web, the Sandbox, the portal, and every backing
-dependency (PostgreSQL, Redis, Qdrant, Ollama, Azurite) as managed containers - with a
+dependency (PostgreSQL with pgvector, Redis, Ollama, Azurite) as managed containers - with a
 live dashboard, hot reload, and automatic service discovery.
 
 ### Prerequisites
@@ -101,7 +101,7 @@ watch every resource start, stream logs, and follow the model downloads.
 ### What gets started
 
 Sentium.Web (all six modules), the Sandbox, the portal (`sentium-portal`), and the infrastructure
-(PostgreSQL with one `sentiumdb` database, Redis, Qdrant, Ollama, Azurite). The
+(PostgreSQL with one `sentiumdb` database, Redis, Ollama, Azurite). The
 default models (`gemma4:e4b` + `embeddinggemma-2:740m`) are pulled into the Ollama volume; Aspire
 **blocks** Sentium.Web until the pull completes.
 
@@ -223,14 +223,13 @@ docker compose down                # stop & remove containers, keep data volumes
 
 #### Infrastructure
 
-| Service       | Image                                     | Host port(s) | Purpose                                                                                                          |
-| ------------- | ----------------------------------------- | ------------ | ---------------------------------------------------------------------------------------------------------------- |
-| `postgres`    | `postgres:17-alpine`                      | 5432         | Relational data - one `sentiumdb` database, one schema per module (`identity`, `registry`, `sentinel`, `praxis`) |
-| `redis`       | `redis:7-alpine`                          | 6379         | HybridCache L2                                                                                                   |
-| `qdrant`      | `qdrant/qdrant:latest`                    | 6333, 6334   | Vector store for RAG (6333 REST/dashboard, 6334 gRPC)                                                            |
-| `azurite`     | `mcr.microsoft.com/azure-storage/azurite` | 10000        | Azure Blob Storage emulator (workspace files & sandbox artifacts)                                                |
-| `ollama`      | `ollama/ollama:0.30.5`                    | 11434        | Local LLM inference                                                                                              |
-| `ollama-init` | `ollama/ollama:0.30.5`                    | -            | One-shot model puller (exits when models are ready)                                                              |
+| Service       | Image                                     | Host port(s) | Purpose                                                                                                                                            |
+| ------------- | ----------------------------------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `postgres`    | `pgvector/pgvector:pg17`                  | 5432         | Relational data + RAG vectors (pgvector) - one `sentiumdb` database, one schema per module (`identity`, `registry`, `sentinel`, `codex`, `praxis`) |
+| `redis`       | `redis:7-alpine`                          | 6379         | HybridCache L2                                                                                                                                     |
+| `azurite`     | `mcr.microsoft.com/azure-storage/azurite` | 10000        | Azure Blob Storage emulator (workspace files & sandbox artifacts)                                                                                  |
+| `ollama`      | `ollama/ollama:0.30.5`                    | 11434        | Local LLM inference                                                                                                                                |
+| `ollama-init` | `ollama/ollama:0.30.5`                    | -            | One-shot model puller (exits when models are ready)                                                                                                |
 
 #### Application services
 
@@ -241,11 +240,10 @@ docker compose down                # stop & remove containers, keep data volumes
 
 #### Endpoints once healthy
 
-| What                    | URL                             |
-| ----------------------- | ------------------------------- |
-| **Portal** (start here) | https://localhost:8443          |
-| Qdrant dashboard        | http://localhost:6333/dashboard |
-| Ollama API              | http://localhost:11434          |
+| What                    | URL                    |
+| ----------------------- | ---------------------- |
+| **Portal** (start here) | https://localhost:8443 |
+| Ollama API              | http://localhost:11434 |
 
 ### Verifying the installation
 
@@ -274,7 +272,6 @@ runtime.
 | ------------------------- | ----------------------- | --------------------------------------------------------------------------------------- |
 | `POSTGRES_PASSWORD`       | `change-me-…`           | PostgreSQL `postgres` superuser password.                                               |
 | `INTERNAL_API_KEY`        | `change-me-…`           | Pre-shared `X-Internal-Token` between `sentium-web` and `sandbox`.                      |
-| `QDRANT_API_KEY`          | `change-me-…`           | API key the Qdrant server requires and the clients send. Any non-empty string.          |
 | `CERT_PASSWORD`           | `change-me-…`           | Password of `certs/sentium.pfx`. Must match the `dotnet dev-certs` step.                |
 | `WEB_HTTPS_PORT`          | `8443`                  | Host HTTPS port for Sentium.Web (the portal and the API).                               |
 | `SENTIUM_MODEL`           | `gemma4:e4b`            | Chat/reasoning model (any valid Ollama tag).                                            |
@@ -374,7 +371,7 @@ docker compose down -v
 docker compose up -d ollama-init
 ```
 
-Persisted state lives in named volumes: `postgres-data`, `redis-data`, `qdrant-data`,
+Persisted state lives in named volumes: `postgres-data`, `redis-data`,
 `azurite-data`, `ollama-data`. They survive `docker compose down` and are only removed by
 `down -v`.
 
@@ -439,5 +436,5 @@ Both full-stack methods are functionally equivalent. The intentional differences
 | Runtime user      | Apps run as the host developer (`dotnet run`)        | Both .NET images run as root (Sentium.Web reads the mounted TLS cert; the Sandbox drives the host Docker socket) |
 
 Everything else - Sentium.Web and its six modules, the separate Sandbox, the single PostgreSQL
-database, Redis, Qdrant, Azurite, the `X-Internal-Token` security model, per-user data isolation, the Sentinel PDP, and the default
+database (with pgvector), Redis, Azurite, the `X-Internal-Token` security model, per-user data isolation, the Sentinel PDP, and the default
 `gemma4:e4b` / `embeddinggemma-2:740m` models - matches between the two setups exactly.

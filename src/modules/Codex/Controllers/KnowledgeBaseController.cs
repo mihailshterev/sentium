@@ -22,13 +22,14 @@ public sealed class KnowledgeBaseController(IVectorRepository vectorRepository) 
     [ProducesResponseType(typeof(IReadOnlyList<CollectionStats>), StatusCodes.Status200OK)]
     public async Task<ActionResult<IReadOnlyList<CollectionStats>>> GetKnowledgeBaseStats(CancellationToken ct)
     {
-        var tasks = KnowledgeCollections.All.Select(c => vectorRepository.GetCollectionStatsAsync(c, ct));
-        var results = await Task.WhenAll(tasks);
-
-        var stats = results
-            .Where(r => r is not null)
-            .Select(r => r!)
-            .ToList();
+        var stats = new List<CollectionStats>();
+        foreach (var collection in KnowledgeCollections.All)
+        {
+            if (await vectorRepository.GetCollectionStatsAsync(collection, ct) is { } collectionStats)
+            {
+                stats.Add(collectionStats);
+            }
+        }
 
         return Ok(stats);
     }

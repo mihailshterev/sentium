@@ -7,7 +7,7 @@ namespace Sentium.Codex.Contracts.Models;
 public sealed class DocumentChunk
 {
     /// <summary>
-    /// Stable identifier used as the Qdrant point ID.
+    /// Stable identifier used as the vector store row ID.
     /// </summary>
     public Guid Id { get; init; } = Guid.NewGuid();
 

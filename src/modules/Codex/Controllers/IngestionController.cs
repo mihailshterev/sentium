@@ -18,7 +18,7 @@ public sealed class IngestionController(
 {
     /// <summary>
     /// Ingest a single document into the knowledge base.
-    /// The service will chunk, embed, and store it in Qdrant.
+    /// The service will chunk, embed, and store it in the vector store.
     /// </summary>
     /// <param name="request">The request containing the document to ingest.</param>
     /// <param name="ct">Cancellation token.</param>

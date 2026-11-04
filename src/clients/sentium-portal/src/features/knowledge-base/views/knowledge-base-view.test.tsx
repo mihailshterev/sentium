@@ -124,10 +124,10 @@ describe("KnowledgeBase Global Context tab", () => {
     vi.spyOn(useKnowledgeBaseStatsHook, "useKnowledgeBaseStats").mockReturnValue({
       ...defaultKbHook,
       collections: [],
-      error: new Error("Qdrant unreachable"),
+      error: new Error("Vector store unreachable"),
     });
     renderKb();
-    expect(screen.getByText(/qdrant unreachable/i)).toBeInTheDocument();
+    expect(screen.getByText(/vector store unreachable/i)).toBeInTheDocument();
   });
 
   it("renders collection stats", () => {

@@ -39,6 +39,5 @@ public sealed class AppHostTests
         resourceNames.Should().Contain(ServiceNames.Frontend);
         resourceNames.Should().Contain(ResourceNames.Postgres);
         resourceNames.Should().Contain(ResourceNames.SentiumDb);
-        resourceNames.Should().Contain(ResourceNames.Qdrant);
     }
 }

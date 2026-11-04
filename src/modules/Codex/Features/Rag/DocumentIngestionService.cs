@@ -29,7 +29,6 @@ public sealed class DocumentIngestionService(
         ArgumentNullException.ThrowIfNull(request, nameof(request));
 
         var collectionName = targetCollection ?? ragOptions.CollectionName;
-        await vectorRepository.EnsureCollectionExistsAsync(collectionName, ragOptions.VectorSize, ct);
 
         var chunks = TextChunker.Chunk(request.Content, ragOptions.ChunkSize, ragOptions.ChunkOverlap);
 

@@ -22,7 +22,7 @@ public class MonolithWebApplicationFactory : WebApplicationFactory<Sentium.Web.P
     /// </summary>
     public const string InternalApiKey = "integration-test-internal-api-key";
 
-    private readonly PostgreSqlContainer _dbContainer = new PostgreSqlBuilder("postgres:17-alpine").Build();
+    private readonly PostgreSqlContainer _dbContainer = new PostgreSqlBuilder("pgvector/pgvector:pg17").Build();
     private readonly RedisContainer _redisContainer = new RedisBuilder("redis:7.0").Build();
 
     public async ValueTask InitializeAsync()
@@ -39,7 +39,6 @@ public class MonolithWebApplicationFactory : WebApplicationFactory<Sentium.Web.P
         builder.UseSetting($"ConnectionStrings:{ResourceNames.SentiumDb}", _dbContainer.GetConnectionString());
         builder.UseSetting($"ConnectionStrings:{ResourceNames.Redis}", _redisContainer.GetConnectionString());
 
-        builder.UseSetting($"ConnectionStrings:{ResourceNames.Qdrant}", "Endpoint=http://localhost:6334");
         builder.UseSetting($"ConnectionStrings:{ResourceNames.WorkspaceBlobs}", "UseDevelopmentStorage=true");
         builder.UseSetting("InternalApi:ApiKey", InternalApiKey);
 

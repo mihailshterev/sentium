@@ -8,7 +8,7 @@ public interface IEmbeddingService
 {
     /// <summary>
     /// Produces a float vector for <paramref name="text"/>.
-    /// The vector dimensionality must match <see cref="RagOptions.VectorSize"/>.
+    /// The vector dimensionality must match the vector store column (<c>CodexDbContext.EmbeddingDimensions</c>, 768).
     /// </summary>
     Task<float[]> GenerateEmbeddingAsync(string text, CancellationToken ct = default);
 }

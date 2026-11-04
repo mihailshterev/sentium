@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Infrastructure;
 using Sentium.Core.Constants;
 using Sentium.Infrastructure.Interceptors;
 using Sentium.Infrastructure.Security;
@@ -22,7 +23,8 @@ public static class ModuleDbContextExtensions
     /// Registers a module's audited <see cref="DbContext"/> against the shared Sentium PostgreSQL database.
     /// Every module owns one schema and keeps its migrations history inside it, so modules migrate independently.
     /// </summary>
-    public static IHostApplicationBuilder AddModuleDbContext<TContext>(this IHostApplicationBuilder builder, string schema) where TContext : DbContext
+    /// <param name="configureNpgsql">Optional extra Npgsql configuration (e.g. <c>UseVector()</c> for pgvector).</param>
+    public static IHostApplicationBuilder AddModuleDbContext<TContext>(this IHostApplicationBuilder builder, string schema, Action<NpgsqlDbContextOptionsBuilder>? configureNpgsql = null) where TContext : DbContext
     {
         ArgumentNullException.ThrowIfNull(builder);
         ArgumentException.ThrowIfNullOrWhiteSpace(schema);
@@ -31,7 +33,7 @@ public static class ModuleDbContextExtensions
 
         builder.Services.AddDbContext<TContext>((sp, options) =>
         {
-            options.UseModuleNpgsql(builder.Configuration.GetConnectionString(ResourceNames.SentiumDb), schema)
+            options.UseModuleNpgsql(builder.Configuration.GetConnectionString(ResourceNames.SentiumDb), schema, configureNpgsql)
                 .AddInterceptors(sp.GetRequiredService<AuditInterceptor>());
         });
 
@@ -43,11 +45,15 @@ public static class ModuleDbContextExtensions
     /// <summary>
     /// Configures Npgsql for a module schema. Shared by the runtime registration and design-time factories.
     /// </summary>
-    public static DbContextOptionsBuilder UseModuleNpgsql(this DbContextOptionsBuilder options, string? connectionString, string schema)
+    public static DbContextOptionsBuilder UseModuleNpgsql(this DbContextOptionsBuilder options, string? connectionString, string schema, Action<NpgsqlDbContextOptionsBuilder>? configureNpgsql = null)
     {
         ArgumentNullException.ThrowIfNull(options);
 
-        return options.UseNpgsql(connectionString, npgsql => npgsql.MigrationsHistoryTable(HistoryRepository.DefaultTableName, schema));
+        return options.UseNpgsql(connectionString, npgsql =>
+        {
+            npgsql.MigrationsHistoryTable(HistoryRepository.DefaultTableName, schema);
+            configureNpgsql?.Invoke(npgsql);
+        });
     }
 
     /// <summary>

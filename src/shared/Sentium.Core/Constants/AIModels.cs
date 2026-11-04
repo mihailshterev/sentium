@@ -13,7 +13,7 @@ public static class AIModels
     public const string Qwen3_5_9B_Q4KM = "qwen3.5:9b-q4_K_M";
 
     // Embedding model for the RAG pipeline.
-    // Produces 768-dimensional vectors - must match RagOptions.VectorSize.
+    // Produces 768-dimensional vectors - must match CodexDbContext.EmbeddingDimensions (vector(768) column).
     public const string NomicEmbedText = "nomic-embed-text";
     public const string EmbeddingGemma2_740M = "embeddinggemma-2:740m";
 }

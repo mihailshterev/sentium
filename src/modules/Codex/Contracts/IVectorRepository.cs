@@ -3,21 +3,16 @@ using Sentium.Codex.Contracts.Models;
 namespace Sentium.Codex.Contracts;
 
 /// <summary>
-/// Abstracts over the Qdrant vector database.
+/// Abstracts over the vector store (PostgreSQL + pgvector, <c>codex</c> schema).
 /// All vector storage and retrieval operations go through this interface,
 /// making it straightforward to swap the backing store in tests or future migrations.
+/// A "collection" is a logical partition of the store (see <see cref="KnowledgeCollections"/>); it needs no setup.
 /// </summary>
 public interface IVectorRepository
 {
     /// <summary>
-    /// Creates the Qdrant collection if it does not already exist.
-    /// Should be called once during application startup or the first ingestion.
-    /// </summary>
-    Task EnsureCollectionExistsAsync(string collectionName, uint vectorSize, CancellationToken ct = default);
-
-    /// <summary>
     /// Inserts or replaces a single document chunk along with its pre-computed embedding.
-    /// Uses the chunk's <see cref="DocumentChunk.Id"/> as the stable Qdrant point ID.
+    /// Uses the chunk's <see cref="DocumentChunk.Id"/> as the stable row ID.
     /// </summary>
     Task UpsertAsync(string collectionName, DocumentChunk chunk, float[] embedding, CancellationToken ct = default);
 
@@ -35,19 +30,19 @@ public interface IVectorRepository
     Task<IReadOnlyList<VectorSearchResult>> SearchAsync(string collectionName, float[] queryEmbedding, int topK = 5, float scoreThreshold = 0.0f, KnowledgeScopeFilter? scope = null, CancellationToken ct = default);
 
     /// <summary>
-    /// Deletes all points whose <c>source</c> payload field exactly matches <paramref name="source"/>.
+    /// Deletes all entries whose <c>source</c> exactly matches <paramref name="source"/>.
     /// Used to remove all vectors associated with a single document or entity.
     /// </summary>
     Task DeleteBySourceAsync(string collectionName, string source, CancellationToken ct = default);
 
     /// <summary>
     /// Returns high-level statistics for the given collection (point count, vector size, etc.).
-    /// Returns <c>null</c> if the collection does not exist.
+    /// Returns <c>null</c> if the collection holds no entries.
     /// </summary>
     Task<CollectionStats?> GetCollectionStatsAsync(string collectionName, CancellationToken ct = default);
 
     /// <summary>
-    /// Deletes the entire collection and all its points. Use with caution!
+    /// Deletes every entry in the collection. Use with caution!
     /// </summary>
     /// <param name="collectionName">The name of the collection to delete.</param>
     /// <param name="ct">A cancellation token.</param>
@@ -55,8 +50,8 @@ public interface IVectorRepository
     Task DeleteCollectionAsync(string collectionName, CancellationToken ct = default);
 
     /// <summary>
-    /// Retrieves a page of document chunks from a collection using Qdrant scroll.
-    /// Returns up to <paramref name="limit"/> chunks, starting after <paramref name="offset"/>.
+    /// Retrieves a page of document chunks from a collection, oldest first.
+    /// Returns up to <paramref name="limit"/> chunks after skipping <paramref name="offset"/> chunks.
     /// </summary>
     /// <param name="scope">
     /// Optional per-user visibility filter (same semantics as <see cref="SearchAsync"/>).

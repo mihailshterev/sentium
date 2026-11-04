@@ -11,7 +11,7 @@ public sealed class RagOptions
     public const string SectionName = "Rag";
 
     /// <summary>
-    /// Qdrant collection that holds ingested knowledge-base documents (the default ingestion/search target).
+    /// Collection that holds ingested knowledge-base documents (the default ingestion/search target).
     /// </summary>
     public string CollectionName { get; set; } = KnowledgeCollections.KnowledgeBase;
 
@@ -22,7 +22,8 @@ public sealed class RagOptions
     public string[] SearchCollections { get; set; } = KnowledgeCollections.All;
 
     /// <summary>
-    /// Ollama model used for embedding generation.
+    /// Ollama model used for embedding generation. Its output size must match the vector store's
+    /// <c>vector(768)</c> column (<c>CodexDbContext.EmbeddingDimensions</c>).
     /// </summary>
     public string EmbeddingModelName { get; set; } = "embeddinggemma-2:740m";
 
@@ -45,10 +46,4 @@ public sealed class RagOptions
     /// Minimum cosine similarity score for a result to be included.
     /// </summary>
     public float ScoreThreshold { get; set; } = 0.5f;
-
-    /// <summary>
-    /// Dimensionality of the embedding vectors produced by <see cref="EmbeddingModelName"/>.
-    /// Must match the embedding model output.
-    /// </summary>
-    public uint VectorSize { get; set; } = 768;
 }

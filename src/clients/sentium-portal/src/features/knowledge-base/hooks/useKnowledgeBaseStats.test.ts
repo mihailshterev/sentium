@@ -53,7 +53,7 @@ describe("useKnowledgeBaseStats fetching", () => {
   });
 
   it("exposes error when fetch fails and falls back to empty array", async () => {
-    vi.mocked(agentRuntimeService.fetchKnowledgeBaseStats).mockRejectedValue(new Error("Qdrant unavailable"));
+    vi.mocked(agentRuntimeService.fetchKnowledgeBaseStats).mockRejectedValue(new Error("Vector store unavailable"));
     const { result } = renderHook(() => useKnowledgeBaseStats(), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.error).not.toBeNull());
     expect(result.current.collections).toEqual([]);

@@ -19,7 +19,7 @@ namespace Sentium.Praxis.Features.Storage;
 /// 1. Reads <see cref="FileIngestionRequest"/>s queued when files are stored (see <see cref="IFileIngestionQueue"/>).
 /// 2. Retrieves file content from blob storage.
 /// 3. Vectorizes the content using a semantic embedding model.
-/// 4. Stores the vectors in a RAG index (e.g., Qdrant).
+/// 4. Stores the vectors in the Codex vector store (pgvector).
 /// 5. Updates the <see cref="Core.Entities.ProjectFile.ProcessingStatus"/> to Completed or Failed.
 /// </para>
 /// <para>
