@@ -49,17 +49,17 @@ public sealed class IdentitySeeder(IServiceProvider serviceProvider, IConfigurat
             return;
         }
 
-        var testEmail = configuration["E2E:UserEmail"];
+        var testUserName = configuration["E2E:UserName"];
         var testPassword = configuration["E2E:UserPassword"];
 
-        if (string.IsNullOrWhiteSpace(testEmail) || string.IsNullOrWhiteSpace(testPassword))
+        if (string.IsNullOrWhiteSpace(testUserName) || string.IsNullOrWhiteSpace(testPassword))
         {
             throw new InvalidOperationException("E2E seeding is enabled but credentials are missing.");
         }
 
         var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
 
-        var existing = await userManager.FindByEmailAsync(testEmail);
+        var existing = await userManager.FindByNameAsync(testUserName);
         if (existing is not null)
         {
             var resetToken = await userManager.GeneratePasswordResetTokenAsync(existing);
@@ -72,9 +72,7 @@ public sealed class IdentitySeeder(IServiceProvider serviceProvider, IConfigurat
         var user = new ApplicationUser
         {
             Id = fixedId is not null ? Guid.Parse(fixedId) : Guid.CreateVersion7(),
-            UserName = testEmail,
-            Email = testEmail,
-            EmailConfirmed = true,
+            UserName = testUserName,
             FirstName = "E2E",
             LastName = "Test",
         };

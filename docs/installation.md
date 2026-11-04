@@ -257,7 +257,7 @@ docker compose ps
 docker compose logs -f ollama-init      # ends with "All models ready."
 
 # Confirm Sentium.Web is reachable (expects 401, since there is no session yet).
-curl -k https://localhost:8443/bff/user
+curl -k https://localhost:8443/api/identity/account/session
 ```
 
 Then open **https://localhost:8443**, register or log in, and start a conversation. The Vigil page
@@ -317,7 +317,7 @@ pnpm install
 pnpm dev            # Vite dev server on http://localhost:5173
 ```
 
-The Vite dev server proxies `/api` and `/bff` to Sentium.Web, so the browser stays on one origin. Point
+The Vite dev server proxies `/api` to Sentium.Web, so the browser stays on one origin. Point
 it at a running instance with the `API_PROXY_TARGET` environment variable (default
 `https://localhost:7254`, the `https` launch profile of Sentium.Web; use `https://localhost:8443`
 for a Compose stack). Aspire sets it for you.

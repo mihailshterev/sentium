@@ -20,12 +20,8 @@ public interface IUserService
     /// <summary>
     /// Updates the core profile information for a user.
     /// </summary>
-    /// <remarks>
-    /// If the email is changed, the system automatically synchronizes the UserName
-    /// to match the new email address.
-    /// </remarks>
     /// <returns>A result indicating success or a list of validation/identity errors.</returns>
-    Task<(bool Succeeded, string[] Errors)> UpdateProfileAsync(Guid userId, string firstName, string? lastName, string email, CancellationToken ct);
+    Task<(bool Succeeded, string[] Errors)> UpdateProfileAsync(Guid userId, string firstName, string? lastName, string userName, CancellationToken ct);
 
     /// <summary>
     /// Permanently deletes a user from the system.

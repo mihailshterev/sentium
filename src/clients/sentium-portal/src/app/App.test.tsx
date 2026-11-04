@@ -65,7 +65,7 @@ describe("App auth check on mount", () => {
 describe("App authenticated state", () => {
   it("does NOT show the loading spinner when authenticated", () => {
     useAuthStore.setState({
-      user: { sub: "u1", email: "alice@example.com", name: "Alice", roles: ["Member"] },
+      user: { sub: "u1", name: "Alice", roles: ["Member"] },
       status: AUTH_STATUS.AUTHENTICATED,
     });
     renderApp();

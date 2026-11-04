@@ -4,15 +4,13 @@ using Sentium.Identity.Dtos;
 using Sentium.Identity.Features.Security;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 
 namespace Sentium.Identity.Controllers;
 
 /// <summary>
-/// Provides endpoints for authentication, registration, and personal profile management.
+/// Provides endpoints for authentication, session, registration, and personal profile management.
 /// </summary>
 [ApiController]
 [Route($"{IdentityRoutes.Prefix}/account")]
@@ -23,8 +21,8 @@ public sealed class AccountController(
     /// <summary>
     /// Registers a new user in the system.
     /// </summary>
-    /// <response code="200">Returns the new user's unique identifier and email.</response>
-    /// <response code="400">If the registration data is invalid or the email is already in use.</response>
+    /// <response code="200">Returns the new user's unique identifier and username.</response>
+    /// <response code="400">If the registration data is invalid or the username is already in use.</response>
     [HttpPost("register")]
     [EnableRateLimiting("auth")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -37,7 +35,7 @@ public sealed class AccountController(
             return BadRequest(result.Errors);
         }
 
-        return Ok(new RegisterResponse(user!.Id, user.Email));
+        return Ok(new RegisterResponse(user!.Id, user.UserName));
     }
 
     /// <summary>
@@ -57,7 +55,7 @@ public sealed class AccountController(
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var result = await identityService.LoginAsync(request.Email, request.Password);
+        var result = await identityService.LoginAsync(request.UserName, request.Password);
 
         if (result.IsLockedOut)
         {
@@ -76,6 +74,41 @@ public sealed class AccountController(
 
         var redirectTo = (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl)) ? returnUrl : "/";
         return Ok(new LoginResponse(RedirectUrl: redirectTo));
+    }
+
+    /// <summary>
+    /// Ends the current session by clearing the auth cookie.
+    /// </summary>
+    /// <response code="204">Session ended.</response>
+    /// <response code="401">If the user is not authenticated.</response>
+    [HttpPost("logout")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Logout()
+    {
+        await identityService.LogoutAsync();
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Returns the identity of the current session (subject, username and roles) straight from the auth cookie.
+    /// </summary>
+    /// <remarks>Cheap by design: it never touches the database, so the portal can use it as its "am I signed in?" check.</remarks>
+    /// <response code="200">Returns the session identity.</response>
+    /// <response code="401">If there is no valid session.</response>
+    [HttpGet("session")]
+    [Authorize]
+    [ProducesResponseType(typeof(SessionResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public IActionResult GetSession()
+    {
+        var roles = User.FindAll(ClaimTypes.Role).Select(c => c.Value).Distinct().ToArray();
+
+        return Ok(new SessionResponse(
+            User.FindFirstValue(ClaimTypes.NameIdentifier),
+            User.FindFirstValue(ClaimTypes.Name),
+            roles));
     }
 
     /// <summary>
@@ -101,14 +134,14 @@ public sealed class AccountController(
             return NotFound();
         }
 
-        return Ok(new ProfileResponse(user.Id, user.Email, user.FirstName, user.LastName));
+        return Ok(new ProfileResponse(user.Id, user.UserName, user.FirstName, user.LastName));
     }
 
     /// <summary>
     /// Updates the authenticated user's own profile information.
     /// </summary>
     /// <response code="204">Profile updated successfully.</response>
-    /// <response code="400">If the update data is invalid (e.g., email conflict).</response>
+    /// <response code="400">If the update data is invalid (e.g., username conflict).</response>
     [HttpPut("me")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -123,7 +156,7 @@ public sealed class AccountController(
             return Unauthorized();
         }
 
-        var (succeeded, errors) = await userService.UpdateProfileAsync(userId.Value, request.FirstName, request.LastName, request.Email, ct);
+        var (succeeded, errors) = await userService.UpdateProfileAsync(userId.Value, request.FirstName, request.LastName, request.UserName, ct);
 
         if (!succeeded)
         {

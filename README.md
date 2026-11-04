@@ -84,14 +84,14 @@ flowchart TB
 
 ### Modules
 
-| Module       | Responsibility                                                                                                                                                                                        |
-| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Identity** | ASP.NET Core Identity: users, roles, profile and registration, plus the session endpoints the portal uses (`/bff/user`, `/bff/login`, `/bff/logout`). The browser only ever holds an HttpOnly cookie. |
-| **Praxis**   | The core engine: agents, the streaming assistant, conversations, multi-agent orchestration, workflows, learnings, skills, tools, workspaces, the Quartz scheduler, and the sandbox execution history. |
-| **Codex**    | The knowledge base: embeddings, the Qdrant vector store, document ingestion and the knowledge map. Other modules push their content (learnings, memories, workspace files) through it.                |
-| **Sentinel** | The Policy Decision Point (PDP). Every agent tool call and sandbox execution is authorized through a defence-in-depth policy stack, with forensic auditing and a fail-closed default.                 |
-| **Registry** | Centralized, key-based runtime settings with per-user and global scopes, two-tier caching and in-process invalidation.                                                                                |
-| **Vigil**    | Probes every module, the sandbox and each infrastructure dependency, raises and resolves incidents, and streams live health over SSE.                                                                 |
+| Module       | Responsibility                                                                                                                                                                                                           |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Identity** | ASP.NET Core Identity: users, roles, profile and registration, plus the cookie session endpoints the portal uses (`/api/identity/account/login`, `/session`, `/logout`). The browser only ever holds an HttpOnly cookie. |
+| **Praxis**   | The core engine: agents, the streaming assistant, conversations, multi-agent orchestration, workflows, learnings, skills, tools, workspaces, the Quartz scheduler, and the sandbox execution history.                    |
+| **Codex**    | The knowledge base: embeddings, the Qdrant vector store, document ingestion and the knowledge map. Other modules push their content (learnings, memories, workspace files) through it.                                   |
+| **Sentinel** | The Policy Decision Point (PDP). Every agent tool call and sandbox execution is authorized through a defence-in-depth policy stack, with forensic auditing and a fail-closed default.                                    |
+| **Registry** | Centralized, key-based runtime settings with per-user and global scopes, two-tier caching and in-process invalidation.                                                                                                   |
+| **Vigil**    | Probes every module, the sandbox and each infrastructure dependency, raises and resolves incidents, and streams live health over SSE.                                                                                    |
 
 **Sentium.Sandbox** is stateless: it has no database and no user-facing API. It accepts only `POST /execute` from Sentium.Web, asks Sentinel to authorize each run, executes the code in a hardened container and uploads any output artifacts to blob storage. Praxis records every run, including denied ones, and serves the history at `/api/sandbox/*`.
 
@@ -219,7 +219,7 @@ Sentium.Web applies every module's EF Core migrations automatically on first sta
 ```bash
 cd src/clients/sentium-portal
 pnpm install
-pnpm dev          # Vite dev server on :5173 (proxies /api and /bff to Sentium.Web)
+pnpm dev          # Vite dev server on :5173 (proxies /api to Sentium.Web)
 pnpm lint
 pnpm build        # outputs into src/hosts/Sentium.Web/wwwroot
 ```

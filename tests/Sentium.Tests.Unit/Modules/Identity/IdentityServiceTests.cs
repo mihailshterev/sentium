@@ -1,7 +1,7 @@
 using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.Extensions.Logging;
+using Sentium.Identity.Dtos;
 using NSubstitute;
 using Sentium.Identity.Entities;
 using Sentium.Identity.Features.Services;
@@ -34,7 +34,7 @@ public sealed class IdentityServiceTests
     [Fact]
     public async Task RegisterUserAsync_Success_ReturnsSucceededResultAndSignsIn()
     {
-        var request = new RegisterRequest { Email = "user@test.com", Password = "Test@123" };
+        var request = new RegisterRequest("user1", "Test@123");
         _userManager.CreateAsync(Arg.Any<ApplicationUser>(), Arg.Any<string>())
             .Returns(IdentityResult.Success);
         _userManager.AddToRoleAsync(Arg.Any<ApplicationUser>(), Arg.Any<string>())
@@ -46,14 +46,14 @@ public sealed class IdentityServiceTests
 
         result.Succeeded.Should().BeTrue();
         user.Should().NotBeNull();
-        user!.Email.Should().Be(request.Email);
+        user!.UserName.Should().Be(request.UserName);
         await _signInManager.Received(1).SignInAsync(user, false);
     }
 
     [Fact]
     public async Task RegisterUserAsync_Failure_DoesNotSignIn()
     {
-        var request = new RegisterRequest { Email = "bad@test.com", Password = "weak" };
+        var request = new RegisterRequest("baduser", "weak");
         var failure = IdentityResult.Failed(new IdentityError { Description = "Password too short." });
         _userManager.CreateAsync(Arg.Any<ApplicationUser>(), Arg.Any<string>())
             .Returns(failure);
@@ -75,10 +75,10 @@ public sealed class IdentityServiceTests
     [Fact]
     public async Task LoginAsync_SuccessfulLogin_ReturnsSucceededSignInResult()
     {
-        _signInManager.PasswordSignInAsync("user@test.com", "Test@123", false, true)
+        _signInManager.PasswordSignInAsync("user1", "Test@123", false, true)
             .Returns(SignInResult.Success);
 
-        var result = await _service.LoginAsync("user@test.com", "Test@123");
+        var result = await _service.LoginAsync("user1", "Test@123");
 
         result.Succeeded.Should().BeTrue();
     }
@@ -89,7 +89,7 @@ public sealed class IdentityServiceTests
         _signInManager.PasswordSignInAsync(Arg.Any<string>(), Arg.Any<string>(), false, true)
             .Returns(SignInResult.Failed);
 
-        var result = await _service.LoginAsync("user@test.com", "wrong");
+        var result = await _service.LoginAsync("user1", "wrong");
 
         result.Succeeded.Should().BeFalse();
     }
@@ -100,9 +100,19 @@ public sealed class IdentityServiceTests
         _signInManager.PasswordSignInAsync(Arg.Any<string>(), Arg.Any<string>(), false, true)
             .Returns(SignInResult.LockedOut);
 
-        var result = await _service.LoginAsync("user@test.com", "wrong");
+        var result = await _service.LoginAsync("user1", "wrong");
 
         result.IsLockedOut.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task LogoutAsync_SignsOut()
+    {
+        _signInManager.SignOutAsync().Returns(Task.CompletedTask);
+
+        await _service.LogoutAsync();
+
+        await _signInManager.Received(1).SignOutAsync();
     }
 }
 

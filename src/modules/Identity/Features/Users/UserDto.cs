@@ -2,7 +2,7 @@ namespace Sentium.Identity.Features.Users;
 
 public sealed record UserDto(
     Guid Id,
-    string? Email,
+    string? UserName,
     string FirstName,
     string? LastName,
     DateTimeOffset? LockoutEnd)

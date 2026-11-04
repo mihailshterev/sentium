@@ -51,15 +51,6 @@ internal static class SentiumModules
         return mvc;
     }
 
-    public static IEndpointRouteBuilder MapSentiumModuleEndpoints(this IEndpointRouteBuilder endpoints)
-    {
-        ArgumentNullException.ThrowIfNull(endpoints);
-
-        endpoints.MapIdentityModule();
-
-        return endpoints;
-    }
-
     /// <summary>
     /// Applies every module's migrations (and Testing seed data). The modules share one database, so in
     /// Testing it is dropped exactly once up front, never per module.

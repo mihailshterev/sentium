@@ -17,7 +17,7 @@ beforeEach(() => {
     }),
   );
   useAuthStore.setState({
-    user: { sub: "u1", email: "user@example.com", name: "User", roles: ["Member"] },
+    user: { sub: "u1", name: "User", roles: ["Member"] },
     status: AUTH_STATUS.AUTHENTICATED,
   });
 });

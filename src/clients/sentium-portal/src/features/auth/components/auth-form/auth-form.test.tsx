@@ -14,12 +14,12 @@ it("submits typed values after switching to register mode", async () => {
 
   render(<AuthForm />);
   fireEvent.click(screen.getByRole("button", { name: "Register" }));
-  fireEvent.change(document.getElementById("email")!, { target: { value: "a@t.com" } });
+  fireEvent.change(document.getElementById("userName")!, { target: { value: "alice" } });
   fireEvent.change(document.getElementById("password")!, { target: { value: "abcdefghijklmn" } });
   fireEvent.click(screen.getByRole("button", { name: /Create account/ }));
 
   await waitFor(() => expect(fetchMock).toHaveBeenCalled());
-  expect(screen.queryByText(/Invalid email/)).toBeNull();
+  expect(screen.queryByText(/Username must be/)).toBeNull();
   expect(screen.queryByText(/at least 8/)).toBeNull();
   expect(fetchMock.mock.calls[0][0]).toContain("/identity/account/register");
 });

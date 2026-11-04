@@ -1,7 +1,6 @@
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
 using Sentium.Identity.Dtos;
@@ -35,8 +34,8 @@ public sealed class AccountControllerTests
     public async Task Register_ReturnsOk_WhenRegistrationIsSuccessful()
     {
         // Arrange
-        var request = new RegisterRequest { Email = "new@test.com", Password = "Test@123" };
-        var user = new ApplicationUser { Id = Guid.NewGuid(), Email = request.Email, FirstName = "new" };
+        var request = new RegisterRequest("newuser", "Test@123");
+        var user = new ApplicationUser { Id = Guid.NewGuid(), UserName = request.UserName, FirstName = "new" };
         _identityService.RegisterUserAsync(request).Returns((IdentityResult.Success, user));
 
         // Act
@@ -51,7 +50,7 @@ public sealed class AccountControllerTests
     public async Task Register_ReturnsBadRequest_WhenRegistrationFails()
     {
         // Arrange
-        var request = new RegisterRequest { Email = "bad@test.com", Password = "weak" };
+        var request = new RegisterRequest("baduser", "weak");
         var failure = IdentityResult.Failed(new IdentityError { Description = "Password too short." });
         _identityService.RegisterUserAsync(request).Returns((failure, (ApplicationUser?)null));
 
@@ -66,8 +65,8 @@ public sealed class AccountControllerTests
     public async Task Login_ReturnsOk_WhenLoginIsSuccessful()
     {
         // Arrange
-        var request = new LoginRequest { Email = "user@test.com", Password = "Test@123" };
-        _identityService.LoginAsync(request.Email, request.Password)
+        var request = new LoginRequest("user1", "Test@123");
+        _identityService.LoginAsync(request.UserName, request.Password)
             .Returns(Microsoft.AspNetCore.Identity.SignInResult.Success);
 
         // Act
@@ -81,8 +80,8 @@ public sealed class AccountControllerTests
     public async Task Login_ReturnsLockedStatus_WhenUserIsLockedOut()
     {
         // Arrange
-        var request = new LoginRequest { Email = "locked@test.com", Password = "wrong" };
-        _identityService.LoginAsync(request.Email, request.Password)
+        var request = new LoginRequest("lockeduser", "wrong");
+        _identityService.LoginAsync(request.UserName, request.Password)
             .Returns(Microsoft.AspNetCore.Identity.SignInResult.LockedOut);
 
         // Act
@@ -97,8 +96,8 @@ public sealed class AccountControllerTests
     public async Task Login_ReturnsUnauthorized_WhenLoginFails()
     {
         // Arrange
-        var request = new LoginRequest { Email = "user@test.com", Password = "wrong" };
-        _identityService.LoginAsync(request.Email, request.Password)
+        var request = new LoginRequest("user1", "wrong");
+        _identityService.LoginAsync(request.UserName, request.Password)
             .Returns(Microsoft.AspNetCore.Identity.SignInResult.Failed);
 
         // Act
@@ -109,12 +108,53 @@ public sealed class AccountControllerTests
     }
 
     [Fact]
+    public async Task Logout_SignsOutAndReturnsNoContent()
+    {
+        // Act
+        var result = await _controller.Logout();
+
+        // Assert
+        result.Should().BeOfType<NoContentResult>();
+        await _identityService.Received(1).LogoutAsync();
+    }
+
+    [Fact]
+    public void GetSession_ReturnsSubjectNameAndRolesFromClaims()
+    {
+        // Arrange
+        var userId = Guid.NewGuid();
+        _controller.ControllerContext = new ControllerContext
+        {
+            HttpContext = new DefaultHttpContext
+            {
+                User = new ClaimsPrincipal(new ClaimsIdentity(
+                [
+                    new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
+                    new Claim(ClaimTypes.Name, "user1"),
+                    new Claim(ClaimTypes.Role, "Member"),
+                    new Claim(ClaimTypes.Role, "Member"),
+                    new Claim(ClaimTypes.Role, "Sovereign")
+                ], "Test"))
+            }
+        };
+
+        // Act
+        var result = _controller.GetSession();
+
+        // Assert
+        var session = result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeOfType<SessionResponse>().Subject;
+        session.Sub.Should().Be(userId.ToString());
+        session.Name.Should().Be("user1");
+        session.Roles.Should().BeEquivalentTo("Member", "Sovereign");
+    }
+
+    [Fact]
     public async Task GetProfile_ReturnsOk_WhenUserFound()
     {
         // Arrange
         var ct = TestContext.Current.CancellationToken;
         var userId = Guid.NewGuid();
-        var user = new UserDto(userId, "user@test.com", "Test", "User", null);
+        var user = new UserDto(userId, "user1", "Test", "User", null);
         _userManagementService.GetUserByIdAsync(userId, ct).Returns(user);
 
         _controller.ControllerContext = new ControllerContext
@@ -183,8 +223,8 @@ public sealed class AccountControllerTests
         // Arrange
         var ct = TestContext.Current.CancellationToken;
         var userId = Guid.NewGuid();
-        var request = new UpdateProfileRequest("Jane", "Doe", "jane@test.com");
-        _userManagementService.UpdateProfileAsync(userId, request.FirstName, request.LastName, request.Email, ct)
+        var request = new UpdateProfileRequest("Jane", "Doe", "jane");
+        _userManagementService.UpdateProfileAsync(userId, request.FirstName, request.LastName, request.UserName, ct)
             .Returns((true, Array.Empty<string>()));
 
         _controller.ControllerContext = new ControllerContext
@@ -209,9 +249,9 @@ public sealed class AccountControllerTests
         // Arrange
         var ct = TestContext.Current.CancellationToken;
         var userId = Guid.NewGuid();
-        var request = new UpdateProfileRequest("Jane", "Doe", "taken@test.com");
-        _userManagementService.UpdateProfileAsync(userId, request.FirstName, request.LastName, request.Email, ct)
-            .Returns((false, new[] { "Email is already in use." }));
+        var request = new UpdateProfileRequest("Jane", "Doe", "taken");
+        _userManagementService.UpdateProfileAsync(userId, request.FirstName, request.LastName, request.UserName, ct)
+            .Returns((false, new[] { "Username is already in use." }));
 
         _controller.ControllerContext = new ControllerContext
         {

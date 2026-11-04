@@ -68,7 +68,6 @@ app.UseAuthorization();
 
 app.MapDefaultEndpoints();
 app.MapControllers();
-app.MapSentiumModuleEndpoints();
 
 // Unknown API routes must 404 instead of falling through to the SPA shell.
 app.MapFallback("api/{**path}", () => Results.NotFound());

@@ -15,7 +15,7 @@ test.describe.serial("User Management", () => {
   });
 
   test("shows the test user in the list", { tag: "@smoke" }, async ({ usersPage }) => {
-    await usersPage.expectUserVisible("a@test.test");
+    await usersPage.expectUserVisible("testuser");
   });
 
   test("shows the user table headers", async ({ page }) => {

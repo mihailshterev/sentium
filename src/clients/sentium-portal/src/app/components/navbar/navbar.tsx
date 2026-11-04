@@ -104,10 +104,8 @@ export function Navbar() {
     isActive ? `${styles.navLink} ${styles.active}` : styles.navLink;
 
   const displayName = profile
-    ? [profile.firstName, profile.lastName].filter(Boolean).join(" ") || profile.email
-    : user?.name && user.name.trim() !== user.email
-      ? user.name
-      : (user?.email ?? "");
+    ? [profile.firstName, profile.lastName].filter(Boolean).join(" ") || profile.userName
+    : (user?.name ?? "");
 
   return (
     <nav className={styles.nav}>

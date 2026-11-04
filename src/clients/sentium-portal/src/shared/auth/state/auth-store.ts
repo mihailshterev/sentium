@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import type { AuthStatus, User } from "@/shared/auth/types";
-import { BFF_BASE } from "@/shared/api/config";
+import { BASE_URL } from "@/shared/api/config";
 import { AUTH_STATUS } from "@/shared/utils/constants";
 
 interface AuthState {
@@ -9,7 +9,7 @@ interface AuthState {
   checkAuth: () => Promise<void>;
   login: (returnUrl?: string) => void;
   logout: () => Promise<void>;
-  updateUser: (patch: Partial<Pick<User, "name" | "email">>) => void;
+  updateUser: (patch: Partial<Pick<User, "name">>) => void;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -22,7 +22,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     const maxAttempts = 3;
     for (let attempt = 1; attempt <= maxAttempts; attempt++) {
       try {
-        const res = await fetch(`${BFF_BASE}/user`, {
+        const res = await fetch(`${BASE_URL}/identity/account/session`, {
           credentials: "include",
         });
 
@@ -50,7 +50,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   login: (returnUrl) => {
     const target = returnUrl ?? window.location.pathname;
-    window.location.href = `${BFF_BASE}/login?returnUrl=${encodeURIComponent(window.location.origin + target)}`;
+    window.location.href = `/login?returnUrl=${encodeURIComponent(target)}`;
   },
 
   updateUser: (patch) => {
@@ -60,7 +60,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: async () => {
     set({ user: null, status: AUTH_STATUS.CHECKING });
     try {
-      const res = await fetch(`${BFF_BASE}/logout`, {
+      const res = await fetch(`${BASE_URL}/identity/account/logout`, {
         method: "POST",
         credentials: "include",
       });

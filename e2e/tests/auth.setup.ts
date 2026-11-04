@@ -16,7 +16,7 @@ setup("authenticate", async ({ page, context }) => {
     await page.waitForURL(/\/login/, { timeout: 30_000 });
 
     const loginPage = new LoginPage(page);
-    await loginPage.fillEmail(process.env.E2E_USER_EMAIL || "a@test.test");
+    await loginPage.fillUserName(process.env.E2E_USER_NAME || "testuser");
     await loginPage.fillPassword(process.env.E2E_USER_PASSWORD || "testuser1a");
     await loginPage.submitSignIn();
 

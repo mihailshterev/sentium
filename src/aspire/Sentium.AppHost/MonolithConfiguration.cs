@@ -102,7 +102,7 @@ internal static class MonolithConfiguration
                 .WithEnvironment(EnvConfig.Keys.AI.EmbeddingModelName, ollamaEmbeddingModel.Resource.ModelName);
         }
 
-        // The Vite dev server proxies /api and /bff to Sentium.Web, so the browser only ever sees one origin
+        // The Vite dev server proxies /api to Sentium.Web, so the browser only ever sees one origin
         // (same as production, where Sentium.Web serves the built portal). No CORS, no cross-site cookies.
         builder.AddViteApp(ServiceNames.Frontend, "../../clients/sentium-portal")
             .WithPnpm()

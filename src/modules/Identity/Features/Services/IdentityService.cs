@@ -1,8 +1,8 @@
+using Sentium.Identity.Dtos;
 using Sentium.Identity.Features.Abstractions;
 using Sentium.Identity.Entities;
 using Sentium.Identity.Features.Security;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.Extensions.Logging;
 
 namespace Sentium.Identity.Features.Services;
@@ -18,8 +18,7 @@ public sealed class IdentityService(
 
         var user = new ApplicationUser
         {
-            UserName = request.Email,
-            Email = request.Email,
+            UserName = request.UserName.Trim(),
             FirstName = string.Empty,
             LastName = null
         };
@@ -46,19 +45,21 @@ public sealed class IdentityService(
         return (result, user);
     }
 
-    public async Task<SignInResult> LoginAsync(string email, string password)
+    public async Task<SignInResult> LoginAsync(string userName, string password)
     {
-        var result = await signInManager.PasswordSignInAsync(email, password, false, lockoutOnFailure: true);
+        var result = await signInManager.PasswordSignInAsync(userName.Trim(), password, false, lockoutOnFailure: true);
 
         if (result.IsLockedOut)
         {
-            logger.LogWarning("Login attempt for {Email} rejected: account locked.", email);
+            logger.LogWarning("Login attempt for {UserName} rejected: account locked.", userName);
         }
         else if (!result.Succeeded)
         {
-            logger.LogInformation("Failed login attempt for {Email}.", email);
+            logger.LogInformation("Failed login attempt for {UserName}.", userName);
         }
 
         return result;
     }
+
+    public Task LogoutAsync() => signInManager.SignOutAsync();
 }

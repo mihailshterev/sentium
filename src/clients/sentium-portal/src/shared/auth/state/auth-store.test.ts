@@ -25,7 +25,7 @@ describe("useAuthStore initial state", () => {
 
 describe("checkAuth()", () => {
   it("sets status to CHECKING then AUTHENTICATED on success", async () => {
-    const mockUser = { sub: "u1", email: "alice@example.com", name: "Alice", roles: ["Member"] };
+    const mockUser = { sub: "u1", name: "Alice", roles: ["Member"] };
 
     vi.mocked(fetch).mockResolvedValueOnce({
       ok: true,
@@ -41,7 +41,7 @@ describe("checkAuth()", () => {
     expect(result.current.user).toEqual(mockUser);
   });
 
-  it("sets status to UNAUTHENTICATED when BFF returns non-ok", async () => {
+  it("sets status to UNAUTHENTICATED when the session endpoint returns non-ok", async () => {
     vi.mocked(fetch).mockResolvedValueOnce({
       ok: false,
       status: 401,
@@ -70,7 +70,7 @@ describe("checkAuth()", () => {
   });
 
   it("recovers to AUTHENTICATED when a transient network error is followed by success", async () => {
-    const mockUser = { sub: "u1", email: "alice@example.com", name: "Alice", roles: ["Member"] };
+    const mockUser = { sub: "u1", name: "Alice", roles: ["Member"] };
 
     vi.mocked(fetch)
       .mockRejectedValueOnce(new Error("Network error"))
@@ -127,12 +127,12 @@ describe("checkAuth()", () => {
 });
 
 describe("login()", () => {
-  it("redirects to BFF login with encoded returnUrl when custom url provided", () => {
+  it("redirects to the login page with encoded returnUrl when custom url provided", () => {
     const { result } = renderHook(() => useAuthStore());
     act(() => result.current.login("/dashboard"));
 
-    expect(window.location.href).toContain("/bff/login?returnUrl=");
-    expect(window.location.href).toContain(encodeURIComponent("http://localhost/dashboard"));
+    expect(window.location.href).toContain("/login?returnUrl=");
+    expect(window.location.href).toContain(encodeURIComponent("/dashboard"));
   });
 
   it("uses window.location.pathname when no returnUrl provided", () => {
@@ -140,7 +140,7 @@ describe("login()", () => {
     const { result } = renderHook(() => useAuthStore());
     act(() => result.current.login());
 
-    expect(window.location.href).toContain("/bff/login?returnUrl=");
+    expect(window.location.href).toContain("/login?returnUrl=");
   });
 });
 
@@ -148,12 +148,12 @@ describe("logout()", () => {
   it("clears user and sets status to CHECKING then redirects", async () => {
     vi.mocked(fetch).mockResolvedValueOnce({
       ok: true,
-      url: "/bff/logout",
+      url: "/api/identity/account/logout",
     } as Response);
 
     act(() => {
       useAuthStore.setState({
-        user: { sub: "u1", email: "alice@example.com", name: "Alice", roles: [] },
+        user: { sub: "u1", name: "Alice", roles: [] },
         status: AUTH_STATUS.AUTHENTICATED,
       });
     });

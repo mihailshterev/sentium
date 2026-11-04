@@ -107,7 +107,7 @@ services:
     restart: "no"
 
   # The modular monolith: every module (Identity, Registry, Sentinel, Codex, Praxis, Vigil) in one
-  # process. It serves the portal, the API and the BFF session endpoints from one HTTPS origin (the auth
+  # process. It serves the portal and the API from one HTTPS origin (the auth
   # cookie is Secure).
   sentium-web:
     build:

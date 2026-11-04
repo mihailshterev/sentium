@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 using Sentium.Core.Constants;
 using Sentium.Identity.Features.Abstractions;
-using Sentium.Identity.Features.Bff;
 using Sentium.Identity.Data;
 using Sentium.Identity.Entities;
 using Sentium.Identity.Features.Security;
@@ -87,13 +86,6 @@ public static class IdentityModuleExtensions
         services.AddHealthChecks().AddDbContextCheck<IdentityDbContext>("identity-db", tags: [ModuleName]);
 
         return builder;
-    }
-
-    public static IEndpointRouteBuilder MapIdentityModule(this IEndpointRouteBuilder endpoints)
-    {
-        ArgumentNullException.ThrowIfNull(endpoints);
-
-        return endpoints.MapBffEndpoints();
     }
 
     public static Task InitializeIdentityModuleAsync(this WebApplication app)

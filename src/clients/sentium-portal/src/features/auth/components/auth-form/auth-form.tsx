@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AlertCircle, ArrowRight, Lock, Mail, Zap } from "lucide-react";
+import { AlertCircle, ArrowRight, Lock, User, Zap } from "lucide-react";
 import styles from "./auth-form.module.scss";
 import { BASE_URL } from "@/shared/api/config";
 import { registerSchema } from "../../schemas/auth.register";
@@ -19,7 +19,7 @@ export const AuthForm = () => {
     formState: { errors },
   } = useForm<LoginFormData>({
     resolver: zodResolver(mode === "login" ? loginSchema : registerSchema),
-    defaultValues: { email: "", password: "" },
+    defaultValues: { userName: "", password: "" },
   });
 
   const switchMode = (next: "login" | "register") => {
@@ -45,11 +45,11 @@ export const AuthForm = () => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({ email: data.email, password: data.password }),
+          body: JSON.stringify({ userName: data.userName, password: data.password }),
         });
 
         if (!regRes.ok) {
-          setError("Registration failed. The email may already be in use.");
+          setError("Registration failed. The username may already be in use.");
           setSubmitting(false);
           return;
         }
@@ -59,7 +59,7 @@ export const AuthForm = () => {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ email: data.email, password: data.password }),
+        body: JSON.stringify({ userName: data.userName, password: data.password }),
       });
 
       if (!loginRes.ok) {
@@ -68,7 +68,7 @@ export const AuthForm = () => {
         } else {
           setError(
             mode === "login"
-              ? "Invalid email or password."
+              ? "Invalid username or password."
               : "Account created but sign-in failed. Please try logging in.",
           );
         }
@@ -109,26 +109,26 @@ export const AuthForm = () => {
 
       <form key={mode} className={styles.form} onSubmit={handleSubmit(onSubmit)}>
         <div className={styles.field}>
-          <label className={styles.label} htmlFor="email">
-            Email address
+          <label className={styles.label} htmlFor="userName">
+            Username
           </label>
           <div className={styles.inputWrapper}>
             <span className={styles.inputIcon}>
-              <Mail size={15} strokeWidth={1.75} />
+              <User size={15} strokeWidth={1.75} />
             </span>
             <input
-              id="email"
+              id="userName"
               className={styles.input}
-              type="email"
-              placeholder="you@example.com"
-              autoComplete="email"
-              {...register("email")}
+              type="text"
+              placeholder="Your username"
+              autoComplete="username"
+              {...register("userName")}
             />
           </div>
-          {errors.email && (
+          {errors.userName && (
             <div className={styles.error}>
               <AlertCircle size={14} strokeWidth={2} className={styles.errorIcon} />
-              {errors.email.message}
+              {errors.userName.message}
             </div>
           )}
         </div>

@@ -26,7 +26,7 @@ public sealed class UserService(
             {
                 var users = await userManager.Users.ToListAsync(token);
                 return users
-                    .Select(u => new UserDto(u.Id, u.Email, u.FirstName, u.LastName, u.LockoutEnd))
+                    .Select(u => new UserDto(u.Id, u.UserName, u.FirstName, u.LastName, u.LockoutEnd))
                     .ToList();
             },
             options: IdentityCacheKeys.EntryOptions,
@@ -43,16 +43,17 @@ public sealed class UserService(
             async token =>
             {
                 var user = await userManager.FindByIdAsync(userId.ToString());
-                return user is null ? null : new UserDto(user.Id, user.Email, user.FirstName, user.LastName, user.LockoutEnd);
+                return user is null ? null : new UserDto(user.Id, user.UserName, user.FirstName, user.LastName, user.LockoutEnd);
             },
             options: IdentityCacheKeys.EntryOptions,
             tags: [IdentityCacheKeys.UsersTag, IdentityCacheKeys.UserTag(userId)],
             cancellationToken: ct);
 
-    public async Task<(bool Succeeded, string[] Errors)> UpdateProfileAsync(Guid userId, string firstName, string? lastName, string email, CancellationToken ct)
+    public async Task<(bool Succeeded, string[] Errors)> UpdateProfileAsync(Guid userId, string firstName, string? lastName, string userName, CancellationToken ct)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(firstName);
-        ArgumentException.ThrowIfNullOrWhiteSpace(email);
+        ArgumentException.ThrowIfNullOrWhiteSpace(userName);
+        userName = userName.Trim();
 
         var user = await userManager.FindByIdAsync(userId.ToString());
         if (user is null)
@@ -60,21 +61,15 @@ public sealed class UserService(
             return (false, ["User not found."]);
         }
 
-        if (!string.Equals(user.Email, email, StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(user.UserName, userName, StringComparison.OrdinalIgnoreCase))
         {
-            var existing = await userManager.FindByEmailAsync(email);
+            var existing = await userManager.FindByNameAsync(userName);
             if (existing is not null && existing.Id != userId)
             {
-                return (false, ["Email is already in use."]);
+                return (false, ["Username is already in use."]);
             }
 
-            var emailResult = await userManager.SetEmailAsync(user, email);
-            if (!emailResult.Succeeded)
-            {
-                return (false, emailResult.Errors.Select(e => e.Description).ToArray());
-            }
-
-            var usernameResult = await userManager.SetUserNameAsync(user, email);
+            var usernameResult = await userManager.SetUserNameAsync(user, userName);
             if (!usernameResult.Succeeded)
             {
                 return (false, usernameResult.Errors.Select(e => e.Description).ToArray());

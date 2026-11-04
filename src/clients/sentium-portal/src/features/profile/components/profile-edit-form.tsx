@@ -1,13 +1,13 @@
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AlertCircle, CheckCircle2, Mail, Save, UserRound } from "lucide-react";
+import { AlertCircle, CheckCircle2, AtSign, Save, UserRound } from "lucide-react";
 import styles from "../profile.module.scss";
 import type { UserProfile } from "../../auth/api/identity.service";
 import { StatusMessage } from "@/shared/ui/status-message";
 import { userProfileSchema, type UserProfileFormData } from "../schemas/user.profile";
 
-type UpdateProfilePayload = { firstName: string; lastName?: string | null; email: string };
+type UpdateProfilePayload = { firstName: string; lastName?: string | null; userName: string };
 
 interface ProfileEditFormProps {
   profile: UserProfile;
@@ -31,7 +31,7 @@ export function ProfileEditForm({
     defaultValues: {
       firstName: profile.firstName,
       lastName: profile.lastName ?? "",
-      email: profile.email,
+      userName: profile.userName,
     },
   });
 
@@ -47,7 +47,7 @@ export function ProfileEditForm({
       await updateProfile({
         firstName: data.firstName.trim(),
         lastName: data.lastName?.trim() || null,
-        email: data.email.trim(),
+        userName: data.userName.trim(),
       });
     } catch {
       // error surfaced via saveError
@@ -86,16 +86,17 @@ export function ProfileEditForm({
       </div>
 
       <div className={styles.field}>
-        <label htmlFor="email" className={styles.label}>
-          <Mail size={12} />
-          Email Address
+        <label htmlFor="userName" className={styles.label}>
+          <AtSign size={12} />
+          Username
         </label>
         <input
-          id="email"
-          type="email"
+          id="userName"
+          type="text"
           className={styles.input}
-          placeholder="email@example.com"
-          {...register("email")}
+          placeholder="Username"
+          autoComplete="username"
+          {...register("userName")}
         />
       </div>
 
@@ -114,5 +115,3 @@ export function ProfileEditForm({
     </form>
   );
 }
-
-

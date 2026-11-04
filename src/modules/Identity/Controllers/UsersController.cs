@@ -44,7 +44,7 @@ public sealed class UsersController(IUserService userService, IUserClaimsService
 
             return new UserResponse(
                 u.Id,
-                u.Email!,
+                u.UserName!,
                 u.FirstName,
                 u.LastName,
                 roleList,
@@ -78,7 +78,7 @@ public sealed class UsersController(IUserService userService, IUserClaimsService
             .Select(c => c.Value)
             .ToList();
 
-        return Ok(new UserResponse(user.Id, user.Email!, user.FirstName, user.LastName, roleList, user.IsLockedOut));
+        return Ok(new UserResponse(user.Id, user.UserName!, user.FirstName, user.LastName, roleList, user.IsLockedOut));
     }
 
     /// <summary>

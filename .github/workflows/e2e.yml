@@ -15,7 +15,7 @@ jobs:
     timeout-minutes: 45
 
     env:
-      E2E_USER_EMAIL: ${{ secrets.E2E_USER_EMAIL }}
+      E2E_USER_NAME: ${{ secrets.E2E_USER_NAME }}
       E2E_USER_PASSWORD: ${{ secrets.E2E_USER_PASSWORD }}
       PLAYWRIGHT_BASE_URL: "http://localhost:5173"
       CI: "true"

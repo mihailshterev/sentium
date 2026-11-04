@@ -7,7 +7,7 @@ import { useRole } from "./useRole";
 const setUser = (roles: string[]) => {
   act(() => {
     useAuthStore.setState({
-      user: { sub: "u1", email: "test@example.com", name: "Tester", roles },
+      user: { sub: "u1", name: "Tester", roles },
       status: AUTH_STATUS.AUTHENTICATED,
     });
   });

@@ -30,8 +30,7 @@ public sealed class UserClaimsServiceTests
         var user = new ApplicationUser
         {
             Id = userId,
-            UserName = "user@test.com",
-            Email = "user@test.com",
+            UserName = "user1",
             FirstName = "Test",
             LastName = "User"
         };
@@ -42,14 +41,14 @@ public sealed class UserClaimsServiceTests
         var claims = await _service.GetClaimsAsync(userId, [Scopes.OpenId], TestContext.Current.CancellationToken);
 
         claims.Should().Contain(c => c.Type == ClaimTypes.NameIdentifier && c.Value == userId.ToString());
-        claims.Should().Contain(c => c.Type == ClaimTypes.Email && c.Value == user.Email);
+        claims.Should().Contain(c => c.Type == ClaimTypes.Name && c.Value == user.UserName);
     }
 
     [Fact]
     public async Task GetClaimsAsync_WithRolesScope_IncludesRoleClaims()
     {
         var userId = Guid.NewGuid();
-        var user = new ApplicationUser { Id = userId, UserName = "admin@test.com", Email = "admin@test.com", FirstName = "Admin" };
+        var user = new ApplicationUser { Id = userId, UserName = "admin1", FirstName = "Admin" };
         _userManager.FindByIdAsync(userId.ToString()).Returns(user);
         _userManager.GetClaimsAsync(user).Returns([]);
         _userManager.GetRolesAsync(user).Returns(["Admin", "User"]);
@@ -64,7 +63,7 @@ public sealed class UserClaimsServiceTests
     public async Task GetClaimsAsync_WithoutRolesScope_DoesNotIncludeRoleClaims()
     {
         var userId = Guid.NewGuid();
-        var user = new ApplicationUser { Id = userId, UserName = "user@test.com", Email = "user@test.com", FirstName = "User" };
+        var user = new ApplicationUser { Id = userId, UserName = "user1", FirstName = "User" };
         _userManager.FindByIdAsync(userId.ToString()).Returns(user);
         _userManager.GetClaimsAsync(user).Returns([]);
 

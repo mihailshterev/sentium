@@ -14,7 +14,7 @@ vi.mock("../login/animated-bg", () => ({
 
 const mockProfile: UserProfile = {
   id: "u1",
-  email: "alice@example.com",
+  userName: "alice",
   firstName: "Alice",
   lastName: "Smith",
 };
@@ -51,14 +51,14 @@ const renderProfile = () => {
 
 beforeEach(() => {
   useAuthStore.setState({
-    user: { sub: "u1", email: "alice@example.com", name: "Alice", roles: ["Member"] },
+    user: { sub: "u1", name: "Alice", roles: ["Member"] },
     status: "authenticated",
   });
   vi.spyOn(useProfileHook, "useProfile").mockReturnValue(defaultProfileHook);
   vi.spyOn(useRoleHook, "useRole").mockReturnValue(defaultRoleHook);
 });
 
-describe("Profile – loading state", () => {
+describe("Profile - loading state", () => {
   it("renders a skeleton when loading", () => {
     vi.spyOn(useProfileHook, "useProfile").mockReturnValue({ ...defaultProfileHook, isLoading: true, profile: null });
     renderProfile();
@@ -72,9 +72,9 @@ describe("Profile loaded state", () => {
     expect(screen.getByText("Alice Smith")).toBeInTheDocument();
   });
 
-  it("renders the user's email in the avatar section", () => {
+  it("renders the user's username in the avatar section", () => {
     renderProfile();
-    expect(screen.getAllByText("alice@example.com").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("alice").length).toBeGreaterThan(0);
   });
 
   it("renders the role badge", () => {
@@ -86,16 +86,16 @@ describe("Profile loaded state", () => {
     renderProfile();
     expect((screen.getByLabelText(/first name/i) as HTMLInputElement).value).toBe("Alice");
     expect((screen.getByLabelText(/last name/i) as HTMLInputElement).value).toBe("Smith");
-    expect((screen.getByLabelText(/email address/i) as HTMLInputElement).value).toBe("alice@example.com");
+    expect((screen.getByLabelText(/username/i) as HTMLInputElement).value).toBe("alice");
   });
 
-  it("handles a profile with no lastName (shows email as display name)", () => {
+  it("handles a profile with no lastName (shows username as display name)", () => {
     vi.spyOn(useProfileHook, "useProfile").mockReturnValue({
       ...defaultProfileHook,
       profile: { ...mockProfile, firstName: "", lastName: null },
     });
     renderProfile();
-    expect(screen.getAllByText("alice@example.com").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("alice").length).toBeGreaterThan(0);
   });
 
   it("renders without role badge when no roles", () => {

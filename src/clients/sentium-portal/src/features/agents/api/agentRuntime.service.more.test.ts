@@ -203,7 +203,7 @@ describe("agentRuntime.service fetch-based endpoints", () => {
       json: async () => ({}),
     } as unknown as Response);
     await expect(svc.uploadSkillFile(new File(["x"], "s.md"))).rejects.toThrow("Session expired.");
-    expect(window.location.href).toContain("/bff/login");
+    expect(window.location.href).toContain("/login?returnUrl=");
   });
 
   it("uploadSkillFile returns the created skill on success", async () => {

@@ -1,20 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { BASE_URL, BFF_BASE, client } from "./client";
+import { BASE_URL, client } from "./client";
 import { useAuthStore } from "@/shared/auth/state/auth-store";
 import { AUTH_STATUS } from "../utils/constants";
 
 describe("API client URL constants", () => {
   it("BASE_URL ends with /api", () => {
     expect(BASE_URL.endsWith("/api")).toBe(true);
-  });
-
-  it("BFF_BASE ends with /bff", () => {
-    expect(BFF_BASE.endsWith("/bff")).toBe(true);
-  });
-
-  it("BASE_URL and BFF_BASE share the same base origin", () => {
-    const baseWithoutSuffix = (url: string) => url.substring(0, url.lastIndexOf("/"));
-    expect(baseWithoutSuffix(BASE_URL)).toBe(baseWithoutSuffix(BFF_BASE));
   });
 });
 
@@ -155,7 +146,7 @@ describe("client 401 Unauthorized handling", () => {
   beforeEach(() => {
     vi.stubGlobal("fetch", vi.fn());
     useAuthStore.setState({
-      user: { sub: "u1", email: "u@example.com", name: "User", roles: [] },
+      user: { sub: "u1", name: "User", roles: [] },
       status: AUTH_STATUS.AUTHENTICATED,
     });
     (window.location as unknown as Record<string, string>).pathname = "/dashboard";
@@ -172,7 +163,7 @@ describe("client 401 Unauthorized handling", () => {
     await expect(client.get("/protected")).rejects.toThrow("Session expired");
   });
 
-  it("redirects to BFF login on 401", async () => {
+  it("redirects to the login page on 401", async () => {
     vi.mocked(fetch).mockResolvedValueOnce({
       ok: false,
       status: 401,
@@ -186,7 +177,7 @@ describe("client 401 Unauthorized handling", () => {
       /* expected */
     }
 
-    expect(window.location.href).toContain("/bff/login");
+    expect(window.location.href).toContain("/login?returnUrl=");
   });
 
   it("clears auth store user on 401", async () => {

@@ -88,12 +88,6 @@ public sealed class UserClaimsService(
             new(ClaimTypes.Name, user.UserName ?? string.Empty),
         };
 
-        if (!string.IsNullOrWhiteSpace(user.Email))
-        {
-            claims.Add(new Claim(ClaimNames.Email, user.Email));
-            claims.Add(new Claim(ClaimTypes.Email, user.Email));
-        }
-
         var userClaims = await userManager.GetClaimsAsync(user);
         claims.AddRange(userClaims);
 

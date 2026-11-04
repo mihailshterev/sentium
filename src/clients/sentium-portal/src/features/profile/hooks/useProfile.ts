@@ -4,7 +4,7 @@ import { useAuthStore } from "@/shared/auth/state/auth-store";
 
 const PROFILE_KEY = ["profile"] as const;
 
-type UpdateProfilePayload = { firstName: string; lastName?: string | null; email: string };
+type UpdateProfilePayload = { firstName: string; lastName?: string | null; userName: string };
 
 export function useProfile() {
   const queryClient = useQueryClient();
@@ -19,8 +19,7 @@ export function useProfile() {
     mutationFn: (payload: UpdateProfilePayload) => updateMe(payload),
     onSuccess: (_data, variables) => {
       queryClient.setQueryData<UserProfile>(PROFILE_KEY, (prev) => (prev ? { ...prev, ...variables } : prev));
-      const fullName = [variables.firstName, variables.lastName].filter(Boolean).join(" ");
-      updateAuthUser({ name: fullName, email: variables.email });
+      updateAuthUser({ name: variables.userName });
     },
   });
 
@@ -34,5 +33,3 @@ export function useProfile() {
     resetSave: updateMutation.reset,
   };
 }
-
-
