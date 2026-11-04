@@ -72,7 +72,7 @@ export default defineConfig({
       ASPNETCORE_ENVIRONMENT: "Testing",
       DOTNET_ASPIRE_SHOW_DASHBOARD: "false",
     },
-    stdout: !process.env.CI ? "pipe" : "ignore",
-    stderr: !process.env.CI ? "pipe" : "ignore",
+    stdout: "pipe",
+    stderr: "pipe",
   },
 });
