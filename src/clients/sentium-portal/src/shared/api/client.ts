@@ -1,6 +1,6 @@
 import { handleUnauthorized } from "@/shared/auth/unauthorized";
 import { BASE_URL } from "./config";
-export { BFF_BASE, BASE_URL } from "./config";
+export { BASE_URL } from "./config";
 export { handleUnauthorized } from "@/shared/auth/unauthorized";
 
 export class ApiError extends Error {

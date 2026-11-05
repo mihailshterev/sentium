@@ -2,14 +2,15 @@
 sequenceDiagram
     autonumber
     participant SCH as Quartz Scheduler
-    participant EJ as ExecuteJob
-    participant SB as Sandbox (/sandbox/execute)
-    participant SE as Sentinel (PDP)
+    participant EJ as Praxis · ExecuteJob
+    participant SB as Sentium.Sandbox (/execute)
+    participant SE as Sentinel (Sentium.Web)
+    participant LOG as PostgreSQL (praxis.ExecutionLogs)
 
     SCH->>EJ: Trigger fires (on schedule)
     EJ->>EJ: Read JobData (code, language, agentId)
-    EJ->>SB: POST /sandbox/execute (X-Internal-Token, correlationId)
-    SB->>SE: Authorize the execution (PDP)
+    EJ->>SB: SandboxClient - POST /execute (X-Internal-Token, correlationId)
+    SB->>SE: Authorize the execution (policy endpoint)
     alt Allowed
         SE-->>SB: Allowed
         SB->>SB: Execute in a Docker container
@@ -20,4 +21,5 @@ sequenceDiagram
         SB-->>EJ: PolicyDenied = true
         EJ->>EJ: Log policy denial
     end
+    EJ->>LOG: Execution recorded by SandboxClient
 ```

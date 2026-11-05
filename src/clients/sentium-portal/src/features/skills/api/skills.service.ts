@@ -2,7 +2,7 @@ import { BASE_URL, client, handleUnauthorized } from "@/shared/api/client";
 import type { AgentSkill, AgentSkillType, BuiltInSkill, CreateSkillPayload, UpdateSkillPayload } from "../types/skills";
 import type { PagedResponse } from "@/shared/types/pagination";
 
-const BASE = "/agent-runtime";
+const BASE = "/praxis";
 
 export const fetchBuiltInSkills = (): Promise<BuiltInSkill[]> => client.get<BuiltInSkill[]>(`${BASE}/skills/built-in`);
 

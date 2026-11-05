@@ -11,7 +11,7 @@
 
   <ItemGroup>
     <PackageReference Include="Aspire.Hosting.Testing" />
-    <PackageReference Include="Testcontainers.MsSql" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
     <PackageReference Include="Testcontainers.Redis" />
     <PackageReference Include="xunit.v3" />
     <PackageReference Include="xunit.runner.visualstudio">
@@ -30,13 +30,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\aspire\Sentium.AppHost\Sentium.AppHost.csproj" />
-    <ProjectReference Include="..\..\src\services\Sentinel\Sentium.Sentinel.Api\Sentium.Sentinel.Api.csproj" />
-    <ProjectReference Include="..\..\src\services\Sentinel\Sentium.Sentinel.Infrastructure\Sentium.Sentinel.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\src\services\Watchdog\Sentium.Watchdog.Api\Sentium.Watchdog.Api.csproj" />
-    <ProjectReference Include="..\..\src\services\AgentRuntime\Sentium.AgentRuntime.Api\Sentium.AgentRuntime.Api.csproj" />
-    <ProjectReference Include="..\..\src\services\AgentRuntime\Sentium.AgentRuntime.Infrastructure\Sentium.AgentRuntime.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\src\services\Identity\Sentium.Identity.Api\Sentium.Identity.Api.csproj" />
-    <ProjectReference Include="..\..\src\services\Registry\Sentium.Registry.Api\Sentium.Registry.Api.csproj" />
+    <ProjectReference Include="..\..\src\hosts\Sentium.Web\Sentium.Web.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,0 +1,7 @@
+namespace Sentium.Praxis.Dtos;
+
+public sealed record UpdateAgentRequest(
+    Guid Id,
+    string Name,
+    string Description,
+    string Model = "");

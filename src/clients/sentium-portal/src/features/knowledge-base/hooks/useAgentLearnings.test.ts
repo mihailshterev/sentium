@@ -3,7 +3,7 @@ import { renderHook, act, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import { useAgentLearnings } from "./useAgentLearnings";
-import * as agentRuntimeService from "@/features/knowledge-base/api/knowledge-base.service";
+import * as knowledgeBaseService from "@/features/knowledge-base/api/knowledge-base.service";
 import type { AgentLearning, AgentLearningStats } from "@/features/knowledge-base/types/agent-learning";
 
 vi.mock("@/features/knowledge-base/api/knowledge-base.service", () => ({
@@ -40,16 +40,16 @@ const mockStats: AgentLearningStats = {
 };
 
 beforeEach(() => {
-  vi.mocked(agentRuntimeService.fetchAgentLearnings).mockResolvedValue({
+  vi.mocked(knowledgeBaseService.fetchAgentLearnings).mockResolvedValue({
     items: [mockLearning],
     totalCount: 1,
     page: 1,
     pageSize: 20,
     totalPages: 1,
   });
-  vi.mocked(agentRuntimeService.fetchAgentLearningStats).mockResolvedValue(mockStats);
-  vi.mocked(agentRuntimeService.updateAgentLearning).mockResolvedValue(mockLearning);
-  vi.mocked(agentRuntimeService.deleteAgentLearning).mockResolvedValue(undefined);
+  vi.mocked(knowledgeBaseService.fetchAgentLearningStats).mockResolvedValue(mockStats);
+  vi.mocked(knowledgeBaseService.updateAgentLearning).mockResolvedValue(mockLearning);
+  vi.mocked(knowledgeBaseService.deleteAgentLearning).mockResolvedValue(undefined);
 });
 
 describe("useAgentLearnings fetching", () => {
@@ -66,7 +66,7 @@ describe("useAgentLearnings fetching", () => {
   });
 
   it("passes agentName filter to fetchAgentLearnings", async () => {
-    const spy = vi.spyOn(agentRuntimeService, "fetchAgentLearnings");
+    const spy = vi.spyOn(knowledgeBaseService, "fetchAgentLearnings");
     const { result } = renderHook(() => useAgentLearnings("SecurityAnalyst"), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(spy).toHaveBeenCalledWith("SecurityAnalyst", 1, 20);
@@ -79,7 +79,7 @@ describe("useAgentLearnings fetching", () => {
   });
 
   it("exposes error when fetchAgentLearnings rejects", async () => {
-    vi.mocked(agentRuntimeService.fetchAgentLearnings).mockRejectedValue(new Error("Service error"));
+    vi.mocked(knowledgeBaseService.fetchAgentLearnings).mockRejectedValue(new Error("Service error"));
     const { result } = renderHook(() => useAgentLearnings(), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.error).not.toBeNull());
     expect(result.current.learnings).toEqual([]);
@@ -106,7 +106,7 @@ describe("useAgentLearnings deleteLearning()", () => {
     act(() => {
       result.current.deleteLearning("learn-1");
     });
-    await waitFor(() => expect(agentRuntimeService.deleteAgentLearning).toHaveBeenCalledWith("learn-1"));
+    await waitFor(() => expect(knowledgeBaseService.deleteAgentLearning).toHaveBeenCalledWith("learn-1"));
   });
 });
 
@@ -119,7 +119,7 @@ describe("useAgentLearnings updateLearning()", () => {
       result.current.updateLearning({ id: "learn-1", content: "Updated", tags: "security" });
     });
     await waitFor(() =>
-      expect(agentRuntimeService.updateAgentLearning).toHaveBeenCalledWith("learn-1", {
+      expect(knowledgeBaseService.updateAgentLearning).toHaveBeenCalledWith("learn-1", {
         content: "Updated",
         tags: "security",
       }),
@@ -131,6 +131,6 @@ describe("useAgentLearnings with agentName filter", () => {
   it("uses agentName in query key when provided", async () => {
     const { result } = renderHook(() => useAgentLearnings("SecurityAnalyst"), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
-    expect(agentRuntimeService.fetchAgentLearnings).toHaveBeenCalledWith("SecurityAnalyst", 1, 20);
+    expect(knowledgeBaseService.fetchAgentLearnings).toHaveBeenCalledWith("SecurityAnalyst", 1, 20);
   });
 });

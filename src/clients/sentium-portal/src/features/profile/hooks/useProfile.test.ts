@@ -21,7 +21,7 @@ const createWrapper = () => {
 
 const mockProfile: UserProfile = {
   id: "u-1",
-  email: "alice@example.com",
+  userName: "alice",
   firstName: "Alice",
   lastName: "Smith",
 };
@@ -75,7 +75,7 @@ describe("useProfile save mutation state", () => {
 describe("useProfile updateProfile()", () => {
   it("calls updateMe with the payload", async () => {
     const { result } = renderHook(() => useProfile(), { wrapper: createWrapper() });
-    const payload = { firstName: "Bob", lastName: "Jones", email: "bob@example.com" };
+    const payload = { firstName: "Bob", lastName: "Jones", userName: "bob" };
     await act(async () => {
       await result.current.updateProfile(payload);
     });
@@ -86,7 +86,7 @@ describe("useProfile updateProfile()", () => {
     const { result } = renderHook(() => useProfile(), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    const payload = { firstName: "Bob", lastName: "Jones", email: "bob@example.com" };
+    const payload = { firstName: "Bob", lastName: "Jones", userName: "bob" };
     await act(async () => {
       await result.current.updateProfile(payload);
     });
@@ -99,7 +99,7 @@ describe("useProfile updateProfile()", () => {
     vi.mocked(identityService.updateMe).mockRejectedValueOnce(new Error("Conflict"));
     const { result } = renderHook(() => useProfile(), { wrapper: createWrapper() });
     await act(async () => {
-      await result.current.updateProfile({ firstName: "X", lastName: null, email: "x@example.com" }).catch(() => {});
+      await result.current.updateProfile({ firstName: "X", lastName: null, userName: "xavier" }).catch(() => {});
     });
     await waitFor(() => expect(result.current.saveError).not.toBeNull());
   });
@@ -107,7 +107,7 @@ describe("useProfile updateProfile()", () => {
   it("does not update cache when prev is undefined (empty cache)", async () => {
     vi.mocked(identityService.getMe).mockImplementation(() => new Promise(() => {}));
     const { result } = renderHook(() => useProfile(), { wrapper: createWrapper() });
-    const payload = { firstName: "Bob", lastName: null, email: "bob@example.com" };
+    const payload = { firstName: "Bob", lastName: null, userName: "bob" };
     await act(async () => {
       await result.current.updateProfile(payload);
     });

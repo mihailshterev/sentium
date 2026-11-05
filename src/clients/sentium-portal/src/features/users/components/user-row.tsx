@@ -20,7 +20,7 @@ const AVATAR_COLORS = ["avatarBlue", "avatarPurple", "avatarGreen", "avatarAmber
 function getInitials(user: UserListItem): string {
   const first = user.firstName?.[0] ?? "";
   const last = user.lastName?.[0] ?? "";
-  return (first + last).toUpperCase() || user.email[0].toUpperCase();
+  return (first + last).toUpperCase() || user.userName[0].toUpperCase();
 }
 
 function getAvatarColor(id: string): string {
@@ -49,7 +49,7 @@ export function UserRow({
           {isSelf && <span className={styles.selfTag}>you</span>}
           {user.isLockedOut && <span className={styles.lockedTag}>locked</span>}
         </div>
-        <span className={styles.emailText}>{user.email}</span>
+        <span className={styles.usernameText}>{user.userName}</span>
       </div>
 
       <span className={styles.colRoles}>

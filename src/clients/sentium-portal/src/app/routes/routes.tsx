@@ -12,7 +12,7 @@ import { WorkspacesView as Workspaces } from "../../features/workspaces";
 import { WorkspaceDetailView as WorkspaceDetail } from "../../features/workspaces/views/workspace-detail-view";
 import { UsersView as Users } from "../../features/users";
 import { ProfileView as Profile } from "../../features/profile";
-import { WatchdogView as Watchdog } from "../../features/watchdog";
+import { VigilView as Vigil } from "../../features/vigil";
 import { ModelsView as Models } from "../../features/models";
 import { SettingsView as SettingsPage } from "../../features/registry";
 import { KnowledgeBaseView as KnowledgeBase } from "../../features/knowledge-base";
@@ -22,8 +22,10 @@ import { SandboxView as Sandbox } from "../../features/sandbox";
 import { SandboxRunDetailView as SandboxRunDetail } from "../../features/sandbox/views/sandbox-run-detail-view";
 import { SemanticMapView as SemanticMap } from "../../features/semantic-map";
 import { SchedulerView as Scheduler } from "../../features/scheduler";
+import { LoginView as Login } from "../../features/auth";
 
 export const routes: RouteObject[] = [
+  { path: "/login", element: <Login /> },
   {
     path: "/",
     element: (
@@ -34,7 +36,7 @@ export const routes: RouteObject[] = [
     children: [
       { index: true, element: <Dashboard /> },
       { path: "profile", element: <Profile /> },
-      { path: "watchdog", element: <Watchdog /> },
+      { path: "vigil", element: <Vigil /> },
       { path: "workspaces", element: <Workspaces /> },
       { path: "workspaces/:workspaceId", element: <WorkspaceDetail /> },
       { path: "assistant", element: <Assistant /> },

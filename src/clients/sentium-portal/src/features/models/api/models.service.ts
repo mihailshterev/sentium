@@ -1,7 +1,7 @@
 import { BASE_URL, client } from "@/shared/api/client";
 import type { DeleteModelResult, OllamaModel } from "../types/models";
 
-const BASE = "/agent-runtime";
+const BASE = "/praxis";
 
 export const fetchModels = async (): Promise<string[]> => {
   const models = await client.get<OllamaModel[]>(`${BASE}/models`);

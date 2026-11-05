@@ -17,9 +17,9 @@ import {
   UsersRound,
   VectorSquare,
   View,
-  Zap,
   type LucideIcon,
   CalendarClock,
+  BookOpen,
 } from "lucide-react";
 import styles from "./navbar.module.scss";
 import React from "react";
@@ -58,7 +58,7 @@ const NAV_GROUPS: NavGroup[] = [
       { to: "/workflows", label: "Workflows", icon: GitBranch },
       { to: "/agents", label: "Agents", icon: Bot },
       { to: "/models", label: "Models", icon: BrainCircuit },
-      { to: "/skills", label: "Skills", icon: Zap },
+      { to: "/skills", label: "Skills", icon: BookOpen },
     ],
   },
   {
@@ -78,7 +78,7 @@ const NAV_GROUPS: NavGroup[] = [
     links: [
       { to: "/sentinel", label: "Sentinel", icon: ShieldCog },
       { to: "/sandbox", label: "Sandbox", icon: VectorSquare },
-      { to: "/watchdog", label: "Watchdog", icon: View },
+      { to: "/vigil", label: "Vigil", icon: View },
     ],
   },
 ];
@@ -104,10 +104,8 @@ export function Navbar() {
     isActive ? `${styles.navLink} ${styles.active}` : styles.navLink;
 
   const displayName = profile
-    ? [profile.firstName, profile.lastName].filter(Boolean).join(" ") || profile.email
-    : user?.name && user.name.trim() !== user.email
-      ? user.name
-      : (user?.email ?? "");
+    ? [profile.firstName, profile.lastName].filter(Boolean).join(" ") || profile.userName
+    : (user?.name ?? "");
 
   return (
     <nav className={styles.nav}>

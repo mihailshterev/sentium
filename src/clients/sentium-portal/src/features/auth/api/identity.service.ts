@@ -3,7 +3,7 @@ import type { Role } from "../../../shared/utils/roles";
 
 export interface UserProfile {
   id: string;
-  email: string;
+  userName: string;
   firstName: string;
   lastName: string | null;
 }
@@ -30,7 +30,7 @@ export function getMe() {
   return client.get<UserProfile>("/identity/account/me");
 }
 
-export function updateMe(data: { firstName: string; lastName?: string | null; email: string }) {
+export function updateMe(data: { firstName: string; lastName?: string | null; userName: string }) {
   return client.put<void>("/identity/account/me", data);
 }
 

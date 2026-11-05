@@ -3,18 +3,15 @@ sequenceDiagram
     autonumber
     actor U as Sovereign
     participant FE as sentium-portal (Sentinel)
-    participant GW as Gateway
-    participant PC as PolicyController
-    participant AU as Audit log
+    participant PC as Sentinel · PolicyController
+    participant AU as Audit log (sentinel.AuditLogs)
 
     U->>FE: Open "Sentinel"
-    FE->>GW: GET /policy/audit/stats (JWT)
-    GW->>PC: GET /policy/audit/stats
-    PC->>AU: GetRecent(500)
+    FE->>PC: GET /api/sentinel/policy/audit/stats (session cookie, Sovereign only)
+    PC->>AU: GetRecentAsync(500)
     AU-->>PC: records
     PC->>PC: Aggregate (allowed/denied, risks, alignment)
     PC-->>FE: AuditStatsDto
-    FE->>GW: GET /policy/audit
-    GW->>PC: GET /policy/audit
+    FE->>PC: GET /api/sentinel/policy/audit
     PC-->>FE: latest audit records
 ```

@@ -5,16 +5,16 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { DashboardView as Dashboard } from "./dashboard-view";
 import * as useAgentsHook from "@/features/agents/hooks/useAgents";
 import * as useWorkflowsHook from "@/features/workflows/hooks/useWorkflows";
-import * as useServiceHealthHook from "@/features/watchdog/hooks/useServiceHealth";
+import * as useServiceHealthHook from "@/features/vigil/hooks/useServiceHealth";
 import * as useWorkflowRunsHook from "@/features/workflows/hooks/useWorkflowRuns";
-import * as useSystemMetricsHook from "@/features/watchdog/hooks/useSystemMetrics";
+import * as useSystemMetricsHook from "@/features/vigil/hooks/useSystemMetrics";
 import * as useSentinelAuditHook from "@/features/sentinel/hooks/useSentinelAudit";
 import * as useOllamaModelsHook from "@/features/models/hooks/useOllamaModels";
 import * as useSchedulerHook from "@/features/scheduler/hooks/useScheduler";
 import * as useKnowledgeBaseStatsHook from "@/features/knowledge-base/hooks/useKnowledgeBaseStats";
 import type { AgentRecord } from "@/features/agents/types/agents";
 import type { WorkflowRecord, WorkflowRun } from "@/features/workflows/types/workflows";
-import type { ServiceHealthStatus } from "@/features/watchdog/types/serviceHealth";
+import type { ServiceHealthStatus } from "@/features/vigil/types/serviceHealth";
 
 const mockAgent: AgentRecord = {
   id: "a1",

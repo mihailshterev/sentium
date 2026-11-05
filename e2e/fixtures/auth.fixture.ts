@@ -16,7 +16,7 @@ import {
   SandboxPage,
   SchedulerPage,
   SentinelPage,
-  WatchdogPage,
+  VigilPage,
   SystemPage,
   UsersPage,
   SemanticMapPage,
@@ -39,7 +39,7 @@ export type AppFixtures = {
   sandboxPage: SandboxPage;
   schedulerPage: SchedulerPage;
   sentinelPage: SentinelPage;
-  watchdogPage: WatchdogPage;
+  vigilPage: VigilPage;
   systemPage: SystemPage;
   usersPage: UsersPage;
   semanticMapPage: SemanticMapPage;
@@ -110,8 +110,8 @@ export const test = base.extend<AppFixtures>({
     await use(new SentinelPage(page));
   },
 
-  watchdogPage: async ({ page }, use) => {
-    await use(new WatchdogPage(page));
+  vigilPage: async ({ page }, use) => {
+    await use(new VigilPage(page));
   },
 
   systemPage: async ({ page }, use) => {

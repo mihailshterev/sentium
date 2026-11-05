@@ -3,7 +3,7 @@ import { renderHook, waitFor, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import { useWorkspaces } from "./useWorkspaces";
-import * as agentRuntimeService from "@/features/workspaces/api/workspaces.service";
+import * as workspacesService from "@/features/workspaces/api/workspaces.service";
 
 const createWrapper = () => {
   const qc = new QueryClient({
@@ -16,16 +16,16 @@ const createWrapper = () => {
 const workspace = { id: "w1", name: "Default" } as never;
 
 beforeEach(() => {
-  vi.spyOn(agentRuntimeService, "fetchWorkspacesPaged").mockResolvedValue({
+  vi.spyOn(workspacesService, "fetchWorkspacesPaged").mockResolvedValue({
     items: [workspace],
     totalCount: 1,
     page: 1,
     pageSize: 100,
     totalPages: 1,
   });
-  vi.spyOn(agentRuntimeService, "createWorkspace").mockResolvedValue(workspace);
-  vi.spyOn(agentRuntimeService, "updateWorkspace").mockResolvedValue(workspace);
-  vi.spyOn(agentRuntimeService, "deleteWorkspace").mockResolvedValue(undefined);
+  vi.spyOn(workspacesService, "createWorkspace").mockResolvedValue(workspace);
+  vi.spyOn(workspacesService, "updateWorkspace").mockResolvedValue(workspace);
+  vi.spyOn(workspacesService, "deleteWorkspace").mockResolvedValue(undefined);
 });
 
 describe("useWorkspaces", () => {
@@ -41,7 +41,7 @@ describe("useWorkspaces", () => {
     act(() => {
       result.current.createWorkspace({ name: "New" } as never);
     });
-    await waitFor(() => expect(agentRuntimeService.createWorkspace).toHaveBeenCalled());
+    await waitFor(() => expect(workspacesService.createWorkspace).toHaveBeenCalled());
   });
 
   it("updates a workspace, splitting id from the payload", async () => {
@@ -50,7 +50,7 @@ describe("useWorkspaces", () => {
     act(() => {
       result.current.updateWorkspace({ id: "w1", name: "Renamed" } as never);
     });
-    await waitFor(() => expect(agentRuntimeService.updateWorkspace).toHaveBeenCalledWith("w1", { name: "Renamed" }));
+    await waitFor(() => expect(workspacesService.updateWorkspace).toHaveBeenCalledWith("w1", { name: "Renamed" }));
   });
 
   it("deletes a workspace", async () => {
@@ -59,6 +59,6 @@ describe("useWorkspaces", () => {
     act(() => {
       result.current.deleteWorkspace("w1");
     });
-    await waitFor(() => expect(agentRuntimeService.deleteWorkspace).toHaveBeenCalledWith("w1"));
+    await waitFor(() => expect(workspacesService.deleteWorkspace).toHaveBeenCalledWith("w1"));
   });
 });

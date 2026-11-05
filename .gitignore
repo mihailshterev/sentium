@@ -11,12 +11,14 @@
 *.sln.docstates
 *.env
 
+# Ignore compiled frontend assets inside Sentium.Web's wwwroot
+src/hosts/Sentium.Web/wwwroot/
+
 # Docker Compose local artifacts
 /certs
 /.sandbox-jobs
 
 /src/aspire/Sentium.AppHost/data
-/src/services/Identity/Sentium.Identity.Api/wwwroot
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
@@ -86,7 +88,7 @@ BenchmarkDotNet.Artifacts/
 # .NET Core
 project.lock.json
 project.fragment.lock.json
-artifacts/
+/artifacts/
 
 # ==========================================
 # Sentium Custom Overrides

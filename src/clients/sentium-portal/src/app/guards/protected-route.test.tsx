@@ -72,7 +72,7 @@ describe("ProtectedRoute UNAUTHENTICATED state", () => {
 describe("ProtectedRoute AUTHENTICATED state", () => {
   it("renders children when authenticated", () => {
     useAuthStore.setState({
-      user: { sub: "u1", email: "alice@example.com", name: "Alice", roles: ["Member"] },
+      user: { sub: "u1", name: "Alice", roles: ["Member"] },
       status: AUTH_STATUS.AUTHENTICATED,
     });
     render(
@@ -87,7 +87,7 @@ describe("ProtectedRoute AUTHENTICATED state", () => {
 
   it("renders multiple children when authenticated", () => {
     useAuthStore.setState({
-      user: { sub: "u1", email: "alice@example.com", name: "Alice", roles: [] },
+      user: { sub: "u1", name: "Alice", roles: [] },
       status: AUTH_STATUS.AUTHENTICATED,
     });
     render(

@@ -2,7 +2,7 @@ import { Cpu, MemoryStick, Clock, Server } from "lucide-react";
 import styles from "../dashboard.module.scss";
 import { formatUptime } from "../../system/system-utils";
 import type { SystemMetrics } from "@/features/system/types/system";
-import type { ServiceHealthStatus } from "@/features/watchdog/types/serviceHealth";
+import type { ServiceHealthStatus } from "@/features/vigil/types/serviceHealth";
 
 interface VitalsStripProps {
   metrics: SystemMetrics | undefined;

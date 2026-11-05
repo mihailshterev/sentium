@@ -9,6 +9,7 @@ import * as assistantService from "@/features/assistant/api/assistant.service";
 import * as workspaceService from "@/features/workspaces/api/workspaces.service";
 import { useConversationStore } from "@/features/assistant/state/assistant-conversation-store";
 import type { ConversationSummary } from "@/features/assistant/types/assistant";
+import { SUGGESTIONS_POOL } from "@/shared/utils/constants";
 
 vi.mock("@/features/assistant/api/assistant.service", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/features/assistant/api/assistant.service")>();
@@ -85,10 +86,11 @@ describe("Assistant – initial render", () => {
     expect(screen.getByText("llama3.2")).toBeInTheDocument();
   });
 
-  it("renders suggestion chips when no conversation", () => {
+  it("renders four suggestion chips from the pool when no conversation", () => {
     renderAssistant();
-    const chips = screen.getAllByRole("button", { name: /summarize|write|help|plan|brainstorm|analyze/i });
-    expect(chips.length).toBeGreaterThanOrEqual(1);
+    // The view picks a random subset, so match against the whole pool rather than specific wording.
+    const chips = SUGGESTIONS_POOL.flatMap((suggestion) => screen.queryAllByRole("button", { name: suggestion }));
+    expect(chips).toHaveLength(4);
   });
 
   it("renders conversation list in sidebar", () => {

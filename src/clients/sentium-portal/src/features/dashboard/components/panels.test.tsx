@@ -4,7 +4,7 @@ import { ServiceHealthPanel } from "./service-health-panel";
 import { VitalsStrip } from "./vitals-strip";
 import { SecurityPanel } from "./security-panel";
 import { WorkflowRunsFeed } from "./workflow-runs-feed";
-import type { ServiceHealthStatus } from "@/features/watchdog/types/serviceHealth";
+import type { ServiceHealthStatus } from "@/features/vigil/types/serviceHealth";
 import type { SystemMetrics } from "@/features/system/types/system";
 import type { AuditStats } from "@/features/sentinel/types/sentinel";
 import type { WorkflowRun } from "@/features/workflows/types/workflows";

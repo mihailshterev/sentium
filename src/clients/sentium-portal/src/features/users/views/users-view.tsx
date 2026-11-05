@@ -66,7 +66,7 @@ export function UsersView() {
     const targetUser = users.find((u) => u.id === userId);
     const fullName = targetUser ? `${targetUser.firstName} ${targetUser.lastName || ""}`.trim() : "";
 
-    const identifier = fullName || targetUser?.email || "this user";
+    const identifier = fullName || targetUser?.userName || "this user";
 
     setUserToDelete({ id: userId, identifier });
     setIsConfirmOpen(true);

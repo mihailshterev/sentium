@@ -23,7 +23,7 @@ const createWrapper = () => {
 
 const alice: UserListItem = {
   id: "u-1",
-  email: "alice@example.com",
+  userName: "alice",
   firstName: "Alice",
   lastName: "Smith",
   roles: ["Member"],
@@ -32,7 +32,7 @@ const alice: UserListItem = {
 
 const bob: UserListItem = {
   id: "u-2",
-  email: "bob@example.com",
+  userName: "bob",
   firstName: "Bob",
   lastName: null,
   roles: ["Member"],

@@ -11,11 +11,10 @@ vi.mock("./navbar.module.scss", () => ({
   default: new Proxy({} as Record<string, string>, { get: (_, key) => String(key) }),
 }));
 
-const setUser = (roles: string[], overrides: Partial<{ name: string; email: string }> = {}) => {
+const setUser = (roles: string[], overrides: Partial<{ name: string }> = {}) => {
   useAuthStore.setState({
     user: {
       sub: "u1",
-      email: overrides.email ?? "user@example.com",
       name: overrides.name ?? "Test User",
       roles,
     },
@@ -41,7 +40,7 @@ beforeEach(() => {
       ok: true,
       status: 200,
       headers: new Headers({ "Content-Type": "application/json" }),
-      json: async () => ({ id: "u1", email: "user@example.com", firstName: "Test", lastName: "User" }),
+      json: async () => ({ id: "u1", userName: "user", firstName: "Test", lastName: "User" }),
     }),
   );
   useAuthStore.setState({ user: null, status: AUTH_STATUS.UNAUTHENTICATED });
@@ -68,20 +67,20 @@ describe("Navbar brand", () => {
 });
 
 describe("Navbar user display", () => {
-  it("shows display name when name differs from email", () => {
-    setUser([], { name: "Alice Smith", email: "alice@example.com" });
+  it("shows the user name", () => {
+    setUser([], { name: "Alice Smith" });
     renderNav();
     expect(screen.getByText("Alice Smith")).toBeInTheDocument();
   });
 
-  it("falls back to email when name equals email", () => {
-    setUser([], { name: "alice@example.com", email: "alice@example.com" });
+  it("shows the username as the name", () => {
+    setUser([], { name: "alice" });
     renderNav();
-    expect(screen.getByText("alice@example.com")).toBeInTheDocument();
+    expect(screen.getByText("alice")).toBeInTheDocument();
   });
 
-  it("shows whitespace name when name is blank (not equal to email)", () => {
-    setUser([], { name: "   ", email: "alice@example.com" });
+  it("renders the display span when name is blank", () => {
+    setUser([], { name: "   " });
     renderNav();
     const displaySpan = document.querySelector(".userDisplayName");
     expect(displaySpan).toBeInTheDocument();
@@ -157,10 +156,10 @@ describe("Navbar navigation links", () => {
     expect(screen.getByRole("link", { name: /settings/i })).toBeInTheDocument();
   });
 
-  it("shows Watchdog link", () => {
+  it("shows Vigil link", () => {
     setUser(["Member"]);
     renderNav();
-    expect(screen.getByRole("link", { name: /watchdog/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /vigil/i })).toBeInTheDocument();
   });
 });
 
@@ -200,7 +199,7 @@ describe("Navbar logout", () => {
   it("calls logout from auth store when Log out is clicked", async () => {
     const logoutSpy = vi.fn();
     useAuthStore.setState({
-      user: { sub: "u1", email: "user@example.com", name: "User", roles: ["Member"] },
+      user: { sub: "u1", name: "User", roles: ["Member"] },
       status: AUTH_STATUS.AUTHENTICATED,
       logout: logoutSpy as unknown as () => Promise<void>,
     });
@@ -210,12 +209,12 @@ describe("Navbar logout", () => {
     expect(logoutSpy).toHaveBeenCalledOnce();
   });
 
-  it("shows email as displayName when user name equals email", () => {
+  it("shows the username as displayName", () => {
     useAuthStore.setState({
-      user: { sub: "u1", email: "user@example.com", name: "user@example.com", roles: ["Member"] },
+      user: { sub: "u1", name: "user", roles: ["Member"] },
       status: AUTH_STATUS.AUTHENTICATED,
     });
     renderNav();
-    expect(screen.getByText("user@example.com")).toBeInTheDocument();
+    expect(screen.getByText("user")).toBeInTheDocument();
   });
 });

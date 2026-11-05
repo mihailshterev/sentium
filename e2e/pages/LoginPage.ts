@@ -16,8 +16,8 @@ export class LoginPage {
     await this.page.getByRole("button", { name: "Sign in" }).click();
   }
 
-  async fillEmail(email: string): Promise<void> {
-    await this.page.getByLabel("Email address").fill(email);
+  async fillUserName(userName: string): Promise<void> {
+    await this.page.getByLabel("Username").fill(userName);
   }
 
   async fillPassword(password: string): Promise<void> {
@@ -32,15 +32,15 @@ export class LoginPage {
     await this.page.getByRole("button", { name: "Create account" }).click();
   }
 
-  async login(email: string, password: string): Promise<void> {
-    await this.fillEmail(email);
+  async login(userName: string, password: string): Promise<void> {
+    await this.fillUserName(userName);
     await this.fillPassword(password);
     await this.submitSignIn();
   }
 
-  async register(email: string, password: string): Promise<void> {
+  async register(userName: string, password: string): Promise<void> {
     await this.switchToRegister();
-    await this.fillEmail(email);
+    await this.fillUserName(userName);
     await this.fillPassword(password);
     await this.submitCreateAccount();
   }

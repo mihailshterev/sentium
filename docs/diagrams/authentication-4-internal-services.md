@@ -1,20 +1,26 @@
 ```mermaid
 sequenceDiagram
     autonumber
-    participant AR as AgentRuntime
+    participant PX as Praxis (SandboxClient, in Sentium.Web)
     participant H as InternalApiKeyDelegatingHandler
-    participant SE as Sentinel / Sandbox / Registry
+    participant SB as Sentium.Sandbox
     participant AH as InternalApiKeyAuthenticationHandler
+    participant SN as Sentinel (policy endpoint, in Sentium.Web)
 
-    AR->>H: Outgoing internal request
+    PX->>H: Outgoing request
     H->>H: Add header X-Internal-Token: <key>
-    H->>SE: POST /policy/evaluate (or /sandbox/execute)
-    SE->>AH: Authentication check
-    AH->>AH: Compare key, set claim caller-type=internal-system
-    alt Valid key
-        AH-->>SE: Authorized (SystemCaller policy)
-        SE-->>AR: 200 result
-    else Invalid / missing key
-        AH-->>AR: 401 Unauthorized
+    H->>SB: POST /execute
+    SB->>AH: Authenticate (SystemCaller policy)
+    AH->>AH: Constant-time compare, set claim caller-type=internal-system
+    alt Invalid / missing key
+        AH-->>PX: 401 Unauthorized
+    else Valid key
+        SB->>H: Sandbox's own client adds X-Internal-Token
+        H->>SN: POST /api/sentinel/policy/evaluate
+        SN->>AH: Authenticate (SystemCaller policy)
+        AH-->>SN: Authorized
+        SN-->>SB: PolicyDecision
+        SB-->>PX: 200 execution result
     end
+    Note over PX,SN: The only two cross-process calls. Every other module call is in-process through Contracts.
 ```

@@ -21,7 +21,7 @@ describe("fetchActiveSchedulerJobs()", () => {
 
     const result = await schedulerService.fetchActiveSchedulerJobs();
 
-    expect(client.get).toHaveBeenCalledWith("/agent-runtime/scheduler/jobs");
+    expect(client.get).toHaveBeenCalledWith("/praxis/scheduler/jobs");
     expect(result).toBe(jobs);
   });
 });
@@ -32,6 +32,6 @@ describe("deleteScheduledJob()", () => {
 
     await schedulerService.deleteScheduledJob("agent 1", "job/2");
 
-    expect(client.delete).toHaveBeenCalledWith("/agent-runtime/scheduler/agents/agent%201/jobs/job%2F2");
+    expect(client.delete).toHaveBeenCalledWith("/praxis/scheduler/agents/agent%201/jobs/job%2F2");
   });
 });

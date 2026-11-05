@@ -72,7 +72,7 @@ export const useOrchestrationRunStore = create<OrchestrationRunState>((set, get)
     let reconnectCount = 0;
     const MAX_RECONNECTS = 4;
 
-    const source = new EventSource(`${BASE_URL}/agent-runtime/orchestration/stream/${eventId}`, {
+    const source = new EventSource(`${BASE_URL}/praxis/orchestration/stream/${eventId}`, {
       withCredentials: true,
     });
     eventSource = source;

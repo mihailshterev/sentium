@@ -18,6 +18,7 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="NSubstitute" />
     <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="NetArchTest.Rules" />
     <PackageReference Include="coverlet.collector">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -25,22 +26,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\services\Sentinel\Sentium.Sentinel.Application\Sentium.Sentinel.Application.csproj" />
-    <ProjectReference Include="..\..\src\services\Sentinel\Sentium.Sentinel.Infrastructure\Sentium.Sentinel.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\src\services\Sentinel\Sentium.Sentinel.Api\Sentium.Sentinel.Api.csproj" />
-    <ProjectReference Include="..\..\src\services\Watchdog\Sentium.Watchdog.Application\Sentium.Watchdog.Application.csproj" />
-    <ProjectReference Include="..\..\src\services\Watchdog\Sentium.Watchdog.Api\Sentium.Watchdog.Api.csproj" />
-    <ProjectReference Include="..\..\src\services\Identity\Sentium.Identity.Application\Sentium.Identity.Application.csproj" />
-    <ProjectReference Include="..\..\src\services\Identity\Sentium.Identity.Infrastructure\Sentium.Identity.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\src\services\Identity\Sentium.Identity.Api\Sentium.Identity.Api.csproj" />
-    <ProjectReference Include="..\..\src\services\AgentRuntime\Sentium.AgentRuntime.Application\Sentium.AgentRuntime.Application.csproj" />
-    <ProjectReference Include="..\..\src\services\AgentRuntime\Sentium.AgentRuntime.Infrastructure\Sentium.AgentRuntime.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\src\services\AgentRuntime\Sentium.AgentRuntime.Api\Sentium.AgentRuntime.Api.csproj" />
-    <ProjectReference Include="..\..\src\services\Registry\Sentium.Registry.Application\Sentium.Registry.Application.csproj" />
-    <ProjectReference Include="..\..\src\services\Registry\Sentium.Registry.Infrastructure\Sentium.Registry.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\src\services\Registry\Sentium.Registry.Api\Sentium.Registry.Api.csproj" />
-    <ProjectReference Include="..\..\src\services\Sandbox\Sentium.Sandbox.Application\Sentium.Sandbox.Application.csproj" />
-    <ProjectReference Include="..\..\src\services\Sandbox\Sentium.Sandbox.Api\Sentium.Sandbox.Api.csproj" />
+    <ProjectReference Include="..\..\src\modules\Identity\Sentium.Identity.csproj" />
+    <ProjectReference Include="..\..\src\modules\Registry\Sentium.Registry.csproj" />
+    <ProjectReference Include="..\..\src\modules\Sentinel\Sentium.Sentinel.csproj" />
+    <ProjectReference Include="..\..\src\modules\Codex\Sentium.Codex.csproj" />
+    <ProjectReference Include="..\..\src\modules\Praxis\Sentium.Praxis.csproj" />
+    <ProjectReference Include="..\..\src\modules\Vigil\Sentium.Vigil.csproj" />
+    <ProjectReference Include="..\..\src\hosts\Sentium.Sandbox\Sentium.Sandbox.csproj" />
   </ItemGroup>
 
 </Project>

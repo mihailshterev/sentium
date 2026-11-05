@@ -10,7 +10,7 @@ import type { UserListItem } from "../../auth/api/identity.service";
 
 const mockUser: UserListItem = {
   id: "user-1",
-  email: "alice@example.com",
+  userName: "alice",
   firstName: "Alice",
   lastName: "Smith",
   roles: ["Member"],
@@ -19,7 +19,7 @@ const mockUser: UserListItem = {
 
 const mockUserNoName: UserListItem = {
   id: "user-2",
-  email: "bob@example.com",
+  userName: "bob",
   firstName: "",
   lastName: null,
   roles: [],
@@ -75,7 +75,7 @@ const renderUsers = () => {
 
 beforeEach(() => {
   useAuthStore.setState({
-    user: { sub: "current-user", email: "me@example.com", name: "Me", roles: ["Member"] },
+    user: { sub: "current-user", name: "Me", roles: ["Member"] },
     status: "authenticated",
   });
   vi.spyOn(useUsersHook, "useUsers").mockReturnValue(defaultUsersHook);
@@ -86,7 +86,7 @@ describe("Users loading state", () => {
   it("renders skeleton rows while loading", () => {
     vi.spyOn(useUsersHook, "useUsers").mockReturnValue({ ...defaultUsersHook, isLoading: true });
     renderUsers();
-    expect(screen.queryByText("alice@example.com")).not.toBeInTheDocument();
+    expect(screen.queryByText("alice")).not.toBeInTheDocument();
   });
 });
 
@@ -126,9 +126,9 @@ describe("Users list state", () => {
     expect(screen.getAllByText("—").length).toBeGreaterThanOrEqual(1);
   });
 
-  it("renders user email", () => {
+  it("renders username", () => {
     renderUsers();
-    expect(screen.getByText("alice@example.com")).toBeInTheDocument();
+    expect(screen.getByText("alice")).toBeInTheDocument();
   });
 
   it("renders role badges for each user role", () => {
@@ -147,7 +147,7 @@ describe("Users list state", () => {
 
   it("renders 'you' tag for the current logged-in user", () => {
     useAuthStore.setState({
-      user: { sub: "user-1", email: "alice@example.com", name: "Alice", roles: ["Member"] },
+      user: { sub: "user-1", name: "Alice", roles: ["Member"] },
       status: "authenticated",
     });
     renderUsers();
@@ -299,7 +299,7 @@ describe("Users sovereign controls", () => {
 
   it("delete button is disabled for the current user (self)", () => {
     useAuthStore.setState({
-      user: { sub: "user-1", email: "alice@example.com", name: "Alice", roles: ["Sovereign"] },
+      user: { sub: "user-1", name: "Alice", roles: ["Sovereign"] },
       status: "authenticated",
     });
     renderUsers();

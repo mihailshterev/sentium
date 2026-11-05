@@ -1,4 +1,7 @@
-# Agent Core & Skills Domain
+All modules share one PostgreSQL database (`sentiumdb`); each module owns one schema with its own
+migrations history. Relationships never cross a schema: modules refer to each other's rows by id only.
+
+# Agent Core & Skills Domain (`praxis` schema)
 
 ```mermaid
 erDiagram
@@ -38,7 +41,7 @@ AgentLearnings {
 }
 ```
 
-# Conversations Domain
+# Conversations Domain (`praxis` schema)
 
 ```mermaid
 erDiagram
@@ -65,7 +68,7 @@ Messages {
 Conversations ||--|{ Messages : contains
 ```
 
-# Workflow Domain
+# Workflow Domain (`praxis` schema)
 
 ```mermaid
 erDiagram
@@ -104,7 +107,7 @@ Agents ||--|{ WorkflowAgents : participates
 Workflows ||--o{ WorkflowRuns : executes
 ```
 
-# Workspace Domain
+# Workspace Domain (`praxis` schema)
 
 ```mermaid
 erDiagram
@@ -134,7 +137,7 @@ ProjectFiles {
 Workspaces ||--o{ ProjectFiles : contains
 ```
 
-## Identity Domain
+# Identity Domain (`identity` schema)
 
 ```mermaid
 erDiagram
@@ -188,55 +191,26 @@ Users ||--|{ UserClaims : defines
 Users ||--|{ UserTokens : owns
 ```
 
-## OpenIddict Domain
+# Knowledge Domain (`codex` schema)
 
 ```mermaid
 erDiagram
-direction LR
 
-OpenIddictApplications {
-    string Id PK
-    string ClientId
-    string ClientSecret
-    string Type
-    string ConsentType
-    string DisplayName
-    string Permissions
-    string RedirectUris
-    string PostLogoutRedirectUris
-    string Requirements
+knowledge_chunks {
+    guid Id PK
+    string Collection
+    string Content
+    string Source
+    string SourceType
+    string Scope
+    guid UserId
+    jsonb Metadata
+    datetimeoffset CreatedAt
+    vector Embedding "vector(768), HNSW cosine index"
 }
-
-OpenIddictAuthorizations {
-    string Id PK
-    string ApplicationId FK
-    string Subject
-    string Status
-    string Type
-    string Scopes
-    datetime CreationDate
-}
-
-OpenIddictTokens {
-    string Id PK
-    string ApplicationId FK
-    string AuthorizationId FK
-    string Subject
-    string Type
-    string Status
-    string Payload
-    datetime CreationDate
-    datetime ExpirationDate
-    datetime RedemptionDate
-}
-
-OpenIddictApplications ||--|{ OpenIddictAuthorizations : grants
-OpenIddictApplications ||--|{ OpenIddictTokens : issues
-
-OpenIddictAuthorizations ||--|{ OpenIddictTokens : backs
 ```
 
-# Audit Domain
+# Audit Domain (`sentinel` schema)
 
 ```mermaid
 erDiagram
@@ -262,7 +236,7 @@ AuditLogs {
 }
 ```
 
-# Settings Domain
+# Settings Domain (`registry` schema)
 
 ```mermaid
 erDiagram
@@ -276,13 +250,14 @@ SystemSettings {
 }
 ```
 
-# Execution Domain
+# Execution Domain (`praxis` schema)
 
 ```mermaid
 erDiagram
 
 ExecutionLogs {
     guid JobId PK
+    datetimeoffset ExecutedAt
     string AgentId
     string CorrelationId
     guid SentinelAuditId

@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SystemView as System } from "./system-view";
-import * as useSystemMetricsHook from "@/features/watchdog/hooks/useSystemMetrics";
+import * as useSystemMetricsHook from "@/features/vigil/hooks/useSystemMetrics";
 import type { SystemMetrics } from "@/features/system/types/system";
 
 const mockMetrics: SystemMetrics = {

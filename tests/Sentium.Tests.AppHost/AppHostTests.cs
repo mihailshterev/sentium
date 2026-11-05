@@ -1,5 +1,6 @@
 using Aspire.Hosting.Testing;
 using FluentAssertions;
+using Sentium.Core.Constants;
 using Xunit;
 
 namespace Sentium.Tests.AppHost;
@@ -32,10 +33,11 @@ public sealed class AppHostTests
         await using var app = await appHost.BuildAsync(ct);
         var resourceNames = appHost.Resources.Select(r => r.Name).ToList();
 
-        // Assert
-        resourceNames.Should().Contain(Shared.Constants.ServiceNames.Gateway);
-        resourceNames.Should().Contain(Shared.Constants.ServiceNames.Sentinel);
-        resourceNames.Should().Contain(Shared.Constants.ServiceNames.Watchdog);
-        resourceNames.Should().Contain(Shared.Constants.ServiceNames.AgentRuntime);
+        // Assert - the modular monolith, the isolated sandbox and the shared infrastructure.
+        resourceNames.Should().Contain(ServiceNames.Web);
+        resourceNames.Should().Contain(ServiceNames.Sandbox);
+        resourceNames.Should().Contain(ServiceNames.Frontend);
+        resourceNames.Should().Contain(ResourceNames.Postgres);
+        resourceNames.Should().Contain(ResourceNames.SentiumDb);
     }
 }

@@ -2,7 +2,7 @@
 
 > A self-hostable, security-first platform for building, orchestrating and governing autonomous AI agents - powered entirely by local LLMs.
 
-Sentium is a distributed multi-agent system built on **.NET 10 Aspire** and a **React** front-end. It lets you create AI agents, compose them into multi-agent workflows, give them tools (code execution, knowledge retrieval, scheduling, memory), and run the whole thing **on your own hardware** against **local models served by Ollama** - no data ever leaves the machine.
+Sentium is a multi-agent platform built on **.NET 10** - a modular monolith orchestrated by **Aspire** - and a **React** front-end. It lets you create AI agents, compose them into multi-agent workflows, give them tools (code execution, knowledge retrieval, scheduling, memory), and run the whole thing **on your own hardware** against **local models served by Ollama** - no data ever leaves the machine.
 
 What sets Sentium apart is that every agent action is **mediated by a security control plane**: a dedicated Policy Decision Point (Sentinel) authorizes each tool call, a hardened Docker sandbox isolates all code execution, and a continuous self-improvement loop lets agents learn from past runs.
 
@@ -28,108 +28,95 @@ What sets Sentium apart is that every agent action is **mediated by a security c
 | **Custom agents**                        | Define your own agents (name, persona/instructions, model) and manage them through the portal.                                                                                            |
 | **Multi-agent orchestration**            | An Orchestrator agent decomposes a goal, assembles a squad of specialist agents, runs them sequentially, then a Validator agent reviews and triggers self-correcting re-runs.             |
 | **Visual workflow builder**              | Compose reusable, ordered multi-agent workflows; run them on demand and replay every run from a persisted log.                                                                            |
-| **Retrieval-Augmented Generation (RAG)** | Document ingestion (chunk → embed → store in Qdrant) across three vector collections: knowledge base, agent learnings, and user memories.                                                 |
+| **Retrieval-Augmented Generation (RAG)** | Document ingestion (chunk → embed → store in PostgreSQL/pgvector) across three vector collections: knowledge base, agent learnings, and user memories (the Codex module).                 |
 | **Self-improvement loop**                | Agents capture reusable learnings that are automatically, semantically recalled and injected into future runs.                                                                            |
 | **Isolated code execution**              | Agents can run Python / Node.js in a heavily hardened, network-disabled Docker sandbox; output artifacts are harvested to blob storage.                                                   |
 | **Skills**                               | Built-in skills plus user-defined and uploaded-Markdown skills, unlocked on demand via a `load_skill` mechanism.                                                                          |
 | **Autonomous scheduling**                | Agents (or users) can schedule recurring background jobs (Quartz cron) that execute code through the sandbox.                                                                             |
 | **Workspaces & files**                   | Upload files into workspaces; they are asynchronously vectorized and made available to agents as context.                                                                                 |
 | **Security control plane (Sentinel)**    | Every tool call passes a Policy Decision Point that performs rate-limiting and an LLM-based semantic-intent / prompt-injection check, with a fail-closed posture and full forensic audit. |
-| **Health monitoring (Watchdog)**         | Continuous probing of all services and infrastructure, incident tracking, and a live status stream.                                                                                       |
+| **Health monitoring (Vigil)**            | Continuous probing of every module, the sandbox and the infrastructure, incident tracking, and a live status stream.                                                                      |
 | **Knowledge map**                        | An interactive, animated visualization of the vector store and semantic search traversal.                                                                                                 |
-| **Centralized configuration (Registry)** | Per-user and global runtime settings with a two-tier cache and cluster-wide invalidation.                                                                                                 |
-| **Identity & access**                    | Full OpenID Connect provider, cookie-based BFF authentication, a two-tier role model (Member / Sovereign), and per-user data isolation.                                                   |
+| **Centralized configuration (Registry)** | Per-user and global runtime settings with a two-tier cache and in-process invalidation.                                                                                                   |
+| **Identity & access**                    | ASP.NET Core Identity with cookie-based session authentication, a two-tier role model (Member / Sovereign), and per-user data isolation.                                                  |
 
 ---
 
 ## Architecture
 
-Sentium is composed of seven ASP.NET Core micro-services, two React front-ends, and a set of backing infrastructure components - all orchestrated for local development by .NET Aspire.
+Sentium runs as two .NET processes. **Sentium.Web** is a modular monolith: it hosts every module in one process and serves the portal's API and login session. **Sentium.Sandbox** is a small, separate service that runs agent-written code in throwaway Docker containers. It stays out of the web process on purpose, because it owns the Docker socket. For local development, .NET Aspire starts both, the React portal, and the backing infrastructure.
 
 ```mermaid
 flowchart TB
-    subgraph Clients
-        Portal["sentium-portal<br/>(React + Vite)"]
-        IdUI["sentium-identity-ui<br/>(login / consent)"]
-    end
+    Portal["sentium-portal<br/>(React + Vite)"]
 
-    Portal -->|httpOnly cookie| Gateway
-    IdUI --> Identity
+    Portal -->|HttpOnly session cookie| Web
 
-    subgraph Edge
-        Gateway["Gateway (YARP BFF)<br/>OIDC client · token refresh"]
-    end
-
-    Gateway -->|JWT bearer| AgentRuntime
-    Gateway --> Sentinel
-    Gateway --> Sandbox
-    Gateway --> Registry
-    Gateway --> Watchdog
-    Gateway --> Identity
-
-    subgraph Services
-        Identity["Identity<br/>(OpenIddict OIDC)"]
-        AgentRuntime["AgentRuntime<br/>(agents · RAG · orchestration · scheduling)"]
+    subgraph Web["Sentium.Web (modular monolith)"]
+        Identity["Identity<br/>(users · roles · session)"]
+        Praxis["Praxis<br/>(agents · orchestration · workflows · scheduling)"]
+        Codex["Codex<br/>(RAG · knowledge base)"]
         Sentinel["Sentinel<br/>(Policy Decision Point)"]
-        Sandbox["Sandbox<br/>(hardened Docker exec)"]
-        Registry["Registry<br/>(config)"]
-        Watchdog["Watchdog<br/>(health)"]
+        Registry["Registry<br/>(settings)"]
+        Vigil["Vigil<br/>(health)"]
     end
 
-    AgentRuntime -->|X-Internal-Token| Sentinel
-    AgentRuntime -->|X-Internal-Token| Sandbox
-    Sandbox -->|X-Internal-Token| Sentinel
+    Praxis -->|Contracts| Codex & Sentinel & Registry
+    Sentinel -->|Contracts| Registry
+    Vigil -->|Contracts| Registry
+
+    Praxis -->|X-Internal-Token| Sandbox["Sentium.Sandbox<br/>(hardened Docker exec)"]
+    Sandbox -->|X-Internal-Token<br/>policy evaluation| Sentinel
 
     subgraph Infrastructure
-        SQL[("SQL Server<br/>5 databases")]
+        PG[("PostgreSQL + pgvector<br/>one schema per module")]
         Redis[("Redis<br/>HybridCache L2")]
-        NATS[("NATS JetStream<br/>messaging + invalidation")]
-        Qdrant[("Qdrant<br/>vector store")]
         Ollama[("Ollama<br/>local LLMs")]
         Blobs[("Azurite<br/>blob storage")]
-        Seq[("Seq<br/>logs")]
     end
 
-    AgentRuntime --> SQL & Redis & NATS & Qdrant & Ollama & Blobs
-    Sentinel --> SQL & Ollama
-    Sandbox --> SQL & Blobs
-    Registry --> SQL & Redis & NATS
-    Watchdog --> NATS
-    Identity --> SQL
+    Web --> PG & Redis & Ollama & Blobs
+    Sandbox --> Blobs
 ```
 
-> **Detailed diagrams.** This is the high-level view. Per-feature sequence diagrams (authentication, agents, workflows, RAG, scheduling, Sentinel, Sandbox, Registry, Watchdog) plus component and domain class diagrams live in [docs/diagrams/](docs/diagrams/).
+> **Detailed diagrams.** Per-feature sequence diagrams, component diagrams of the modules and their infrastructure, and the domain class and ER diagrams live in [docs/diagrams/](docs/diagrams/). The agent-pipeline and workflow diagrams (`agents-2` to `agents-5`, `rag-3`, `workflows-3` to `workflows-5`, `structure-c`, `structure-e`, `structure-f`) have not been updated yet and still show pre-migration details (NATS, Qdrant, HTTP calls to Sentinel).
 
-### Services
+### Modules
 
-| Service          | Responsibility                                                                                                                                                                                                           |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Gateway**      | YARP-based Backend-for-Frontend. The single OIDC client; performs login/logout, transparent access-token refresh, and forwards requests to services as JWT-bearer calls. The browser only ever holds an httpOnly cookie. |
-| **Identity**     | OpenIddict OIDC/OAuth2 authorization server. Authorization-code + PKCE, refresh tokens, client credentials. Owns users, roles, profile and registration.                                                                 |
-| **AgentRuntime** | The core engine: agents, the streaming assistant, conversations, multi-agent orchestration, RAG/ingestion, learnings, skills, tools, workspaces, the knowledge map, and the Quartz scheduler.                            |
-| **Sentinel**     | The Policy Decision Point (PDP). Every agent action is authorized via `POST /policy/evaluate` through a defence-in-depth policy stack, with forensic auditing and a fail-closed default.                                 |
-| **Sandbox**      | Executes agent-submitted code in ephemeral, security-hardened Docker containers and harvests output artifacts to blob storage.                                                                                           |
-| **Registry**     | Centralized, key-based runtime configuration with per-user and global scopes, EF Core JSON columns, two-tier caching and NATS-broadcast invalidation.                                                                    |
-| **Watchdog**     | Periodically probes every service and infrastructure dependency, raises/resolves incidents, and streams live health over SSE.                                                                                            |
+| Module       | Responsibility                                                                                                                                                                                                           |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Identity** | ASP.NET Core Identity: users, roles, profile and registration, plus the cookie session endpoints the portal uses (`/api/identity/account/login`, `/session`, `/logout`). The browser only ever holds an HttpOnly cookie. |
+| **Praxis**   | The core engine: agents, the streaming assistant, conversations, multi-agent orchestration, workflows, learnings, skills, tools, workspaces, the Quartz scheduler, and the sandbox execution history.                    |
+| **Codex**    | The knowledge base: embeddings, the pgvector store (`codex` schema), document ingestion and the knowledge map. Other modules push their content (learnings, memories, workspace files) through it.                       |
+| **Sentinel** | The Policy Decision Point (PDP). Every agent tool call and sandbox execution is authorized through a defence-in-depth policy stack, with forensic auditing and a fail-closed default.                                    |
+| **Registry** | Centralized, key-based runtime settings with per-user and global scopes, two-tier caching and in-process invalidation.                                                                                                   |
+| **Vigil**    | Probes every module, the sandbox and each infrastructure dependency, raises and resolves incidents, and streams live health over SSE.                                                                                    |
 
-### Layering
+**Sentium.Sandbox** is stateless: it has no database and no user-facing API. It accepts only `POST /execute` from Sentium.Web, asks Sentinel to authorize each run, executes the code in a hardened container and uploads any output artifacts to blob storage. Praxis records every run, including denied ones, and serves the history at `/api/sandbox/*`.
 
-Every service follows the same clean-architecture layering:
+### Module layout
+
+Every module is one class library under `src/modules/<Module>`:
 
 ```
-{Service}.Api            → HTTP controllers, validation, middleware
-{Service}.Application    → use cases, orchestration, background workers
-{Service}.Core           → domain entities, interfaces, DTOs
-{Service}.Infrastructure → EF Core, external clients, persistence
+Contracts/                    → the only surface other modules may use (interfaces + DTOs)
+Features/<Feature>/           → the module's features (services, repositories, workers)
+Controllers/  Dtos/  Validation/  Entities/
+Data/                         → <Module>DbContext + migrations (the module's own schema)
+<Module>ModuleExtensions.cs   → DI registration, migrations on startup, endpoint mapping
+<Module>Routes.cs             → the module's route prefix (api/<module>)
 ```
+
+Modules reference each other only through `Contracts`; a unit test (`ModuleBoundaryTests`) fails the build if one module uses another module's internals.
 
 ### Cross-cutting patterns
 
-- **Authentication** - the Gateway BFF is the only OIDC client; the front-end is fully cookie-based and never touches tokens.
-- **Internal service-to-service** calls are authenticated with a pre-shared `X-Internal-Token` header (the `SystemCaller` policy), bypassing the user-facing PDP for trusted background work.
+- **Authentication** - ASP.NET Core Identity issues an HttpOnly session cookie. There are no tokens in the browser and no token hops between modules.
+- **Module boundaries** - modules call each other in-process through their `Contracts` interfaces. Facades over a module's database open their own DI scope per call, so concurrent callers never share a `DbContext`.
+- **Internal service calls** - only Sentium.Web ↔ Sentium.Sandbox crosses a process boundary. Both directions are authenticated with a pre-shared `X-Internal-Token` header (the `SystemCaller` policy).
 - **Per-user data isolation** - user-scoped tables carry a `UserId` and EF Core global query filters scope every query automatically; the `Sovereign` role and background tasks bypass the filter through an explicit accessor.
-- **Async messaging** over NATS JetStream - workflow execution (`workflow.*`), real-time streaming (`stream.*`), and config invalidation (`registry.settings.invalidated`).
-- **Caching** via HybridCache (L1 in-process + L2 Redis), invalidated cluster-wide over NATS.
+- **In-process background work** - no message broker. Workflow runs and file ingestion go through in-memory queues (`Channel<T>`) drained by hosted services; agent token streams fan out through an in-memory relay with replay for SSE reconnects. Sentium.Web is designed to run as a single instance.
+- **Caching** via HybridCache (L1 in-process + L2 Redis). Modules read settings through Registry's cache instead of keeping their own copies, so a settings change only has to evict that one entry.
 - **Resilience** - a global Polly pipeline (retry + timeout + circuit-breaker) is applied to all HttpClients.
 
 ---
@@ -141,11 +128,11 @@ Every service follows the same clean-architecture layering:
 - .NET 10 / C# · ASP.NET Core
 - .NET Aspire (orchestration & service discovery)
 - `Microsoft.Extensions.AI` + `Microsoft.Agents.AI` (agent framework) over **Ollama**
-- Entity Framework Core (SQL Server)
-- YARP (reverse proxy / BFF) · OpenIddict (OIDC server)
-- NATS JetStream · Redis (HybridCache) · Quartz.NET (scheduling)
-- Qdrant (vector store) · Docker.DotNet (sandbox)
-- FluentValidation · Polly · Serilog → Seq
+- Entity Framework Core (PostgreSQL via Npgsql) · pgvector (vector store)
+- ASP.NET Core Identity (cookie authentication)
+- Redis (HybridCache) · Quartz.NET (scheduling)
+- Docker.DotNet (sandbox)
+- FluentValidation · Polly · Serilog → OpenTelemetry
 
 **Models (default, all local via Ollama)**
 
@@ -154,7 +141,7 @@ Every service follows the same clean-architecture layering:
 
 **Frontend**
 
-- React 19 + TypeScript + Vite (`sentium-portal`, `sentium-identity-ui`)
+- React 19 + TypeScript + Vite (`sentium-portal`)
 - TanStack Query v5 (server state) · Zustand v5 (client/streaming state)
 - SCSS modules · pnpm
 
@@ -181,22 +168,19 @@ Every service follows the same clean-architecture layering:
 
 ### Run the whole system
 
-The Aspire AppHost is the single entry point. It starts all services, both front-ends, and every infrastructure dependency (SQL Server, Redis, NATS, Qdrant, Ollama, Seq, Azurite), and automatically pulls the default Ollama models on first run.
+The Aspire AppHost is the single entry point. It starts Sentium.Web, the Sandbox, the portal, and every infrastructure dependency (PostgreSQL with pgvector, Redis, Ollama, Azurite), and automatically pulls the default Ollama models on first run.
 
 ```bash
 dotnet run --project src/aspire/Sentium.AppHost/Sentium.AppHost.csproj
 ```
 
-Then open the **Aspire dashboard** (the URL is printed on startup) to see every resource, its logs, and its endpoints. From there:
-
-- **Portal** - `http://localhost:5173`
-- **Identity UI** - `http://localhost:5174`
+Then open the **Aspire dashboard** (the URL is printed on startup) to see every resource, its logs, and its endpoints. The **portal** is at `http://localhost:5173`; it sends you to its own `/login` page to sign in or register.
 
 > First start takes a while: Docker images and the Ollama models are downloaded. Subsequent starts reuse the persisted data volumes.
 
 ### Run with Docker Compose
 
-If you'd rather self-host the whole platform with plain Docker (no .NET SDK on the host), a complete [`docker-compose.yml`](docker-compose.yml) builds every service image and starts all infrastructure. It wires the services together with the same connection strings and service-discovery keys that Aspire injects.
+If you'd rather self-host the whole platform with plain Docker (no .NET SDK on the host), a complete [`docker-compose.yml`](docker-compose.yml) builds the Sentium.Web, Sandbox and portal images and starts all infrastructure. It wires them together with the same connection strings and service-discovery keys that Aspire injects.
 
 **Prerequisites:** Docker (with the Compose plugin) and the .NET SDK **only** for the one-time dev-certificate step below.
 
@@ -204,7 +188,7 @@ If you'd rather self-host the whole platform with plain Docker (no .NET SDK on t
 # 1. Configure secrets and ports
 cp .env.example .env            # then edit the secrets in .env
 
-# 2. Generate the Gateway's TLS dev certificate (needed for the secure BFF auth cookie),
+# 2. Generate the TLS dev certificate for Sentium.Web (the session cookie is Secure),
 #    using the same password you set for CERT_PASSWORD in .env, and trust it locally:
 mkdir certs            # dotnet dev-certs does not create the target directory
 dotnet dev-certs https -ep certs/sentium.pfx -p <CERT_PASSWORD>
@@ -216,40 +200,38 @@ docker compose up --build
 
 Once the stack is healthy:
 
-- **Portal** - `http://localhost:5173`
-- **Gateway (API/BFF)** - `https://localhost:8443`
-- **Identity (OIDC + login UI)** - `http://localhost:8081`
-- **Seq (logs)** - `http://localhost:8090`, **Qdrant** - `http://localhost:6333/dashboard`
+- **Portal and API (Sentium.Web)** - `https://localhost:8443`
 
-Services apply their EF Core migrations automatically on first start, and a one-shot `ollama-init` container pulls the chat + embedding models into a persistent volume.
+Sentium.Web applies every module's EF Core migrations automatically on first start, and a one-shot `ollama-init` container pulls the chat + embedding models into a persistent volume.
 
 **Notes & caveats**
 
-- **Trust model / OIDC.** The Identity server is the canonical OIDC issuer and must be reachable under the _same_ URL from both your browser and the back-end containers. Compose uses `host.docker.internal` for this, which works out of the box on **Docker Desktop**. On native Linux, the `host.docker.internal:host-gateway` mapping is included, but you must also let your own browser resolve it (e.g. add `127.0.0.1 host.docker.internal` to `/etc/hosts`).
-- **HTTPS for the auth cookie.** The Gateway terminates TLS (step 2) so the BFF cookie can be issued as `Secure`/`SameSite=None` across the portal origin. This mirrors how the Aspire setup runs over HTTPS.
+- **HTTPS for the session cookie.** Sentium.Web terminates TLS (step 2) so the session cookie can be issued as `Secure`. The built portal is served from the same origin, so no CORS is involved. This mirrors how the Aspire setup runs over HTTPS.
 - **Code sandbox.** The Sandbox mounts the host Docker socket and a job directory that must share an identical path on host and container (`SANDBOX_JOBS_DIR`). This works on Linux/macOS and the WSL2 backend; Windows users should point it at a path inside WSL2.
 - **GPU.** Local inference is slow on CPU. Uncomment the NVIDIA `deploy` block on the `ollama` service (requires the NVIDIA Container Toolkit) for GPU acceleration.
 
-> The Aspire AppHost remains the recommended path for day-to-day development (richer dashboard, hot reload, no cert/issuer setup). Docker Compose targets self-hosted deployment and wider adoption.
+> The Aspire AppHost remains the recommended path for day-to-day development (richer dashboard, hot reload, no cert setup). Docker Compose targets self-hosted deployment.
 
-### Front-end only (against a running gateway)
+### Front-end only (against a running Sentium.Web)
 
 ```bash
 cd src/clients/sentium-portal
 pnpm install
-pnpm dev          # Vite dev server on :5173
+pnpm dev          # Vite dev server on :5173 (proxies /api to Sentium.Web)
 pnpm lint
-pnpm build
+pnpm build        # outputs into src/hosts/Sentium.Web/wwwroot
 ```
 
 ### Database migrations
 
-EF Core migrations are per-service. To add one:
+All modules share one PostgreSQL database (`sentiumdb`); each module owns one schema with its own migrations history. To add a migration to a module:
 
 ```bash
 dotnet ef migrations add <Name> \
-  --project src/services/<Service>/<Service>.Infrastructure \
-  --startup-project src/services/<Service>/<Service>.Api
+  --project src/modules/<Module> \
+  --startup-project src/hosts/Sentium.Web \
+  --context <Module>DbContext \
+  --output-dir Data/Migrations
 ```
 
 ---
@@ -261,7 +243,7 @@ dotnet ef migrations add <Name> \
 ```bash
 dotnet test                                                            # everything
 dotnet test tests/Sentium.Tests.Unit/Sentium.Tests.Unit.csproj        # unit
-dotnet test tests/Sentium.Tests.Integration/...                       # integration (needs Docker)
+dotnet test tests/Sentium.Tests.Integration/...                       # integration (needs Docker: PostgreSQL + Redis Testcontainers)
 ```
 
 **Frontend (Vitest)**
@@ -272,7 +254,7 @@ pnpm test:run
 pnpm test:coverage
 ```
 
-**End-to-end (Playwright)** - boots the full Aspire stack in a dedicated Testing mode with isolated databases and seeded baseline data:
+**End-to-end (Playwright)** - boots the full Aspire stack (`--TestRun=true`) in a dedicated Testing mode with a throwaway database (`sentiumdb_e2e`) and seeded baseline data:
 
 ```bash
 cd e2e
@@ -286,10 +268,10 @@ pnpm test:ui       # visual mode
 
 Sentium is designed to be **self-hosted** - typically by a single operator on a single host (or a single private network), with all AI inference running locally via Ollama. This deployment model is what justifies several of the security choices below, so it is worth making the trust boundary explicit:
 
-- **The Gateway is the only public surface.** The browser talks exclusively to the Gateway BFF over an `HttpOnly` cookie. The back-end services communicate with each other on the internal/orchestrated network and are not intended to be exposed to the public internet.
-- **Inside that boundary, services authenticate to each other with a pre-shared internal token** (`X-Internal-Token`, the `SystemCaller` policy). For a single-operator, single-host deployment this is a right-sized, low-friction choice: there is no untrusted co-tenant on the internal network, and it avoids forcing operators to provision per-service certificates, a PKI, or a service mesh. The internal token acts as **defense-in-depth on top of** network isolation, not as the sole control.
+- **Sentium.Web is the only public surface.** The browser talks exclusively to it over an `HttpOnly` session cookie. The Sandbox and the infrastructure run on the internal/orchestrated network and are not intended to be exposed to the public internet.
+- **Inside that boundary, Sentium.Web and the Sandbox authenticate to each other with a pre-shared internal token** (`X-Internal-Token`, the `SystemCaller` policy). For a single-operator, single-host deployment this is a right-sized, low-friction choice: there is no untrusted co-tenant on the internal network, and it avoids forcing operators to provision certificates, a PKI, or a service mesh. The internal token acts as **defense-in-depth on top of** network isolation, not as the sole control.
 - **The internal token is generated per-installation as a secret** (managed as an Aspire secret parameter) - it is not a shipped default. Operators should treat it like any other deployment secret and rotate it if it is ever exposed.
-- **Out of scope for the default posture:** multi-tenant hosting on a shared/hostile network, where transport-level mutual identity (mTLS), per-service OAuth2 client-credential tokens, or a service mesh would be the appropriate next step. The Identity server already supports the `client_credentials` grant, so per-service token identities are a natural future upgrade path if the deployment model changes.
+- **Out of scope for the default posture:** multi-tenant hosting on a shared/hostile network, where transport-level mutual identity (mTLS) or per-service credentials between Sentium.Web and the Sandbox would be the appropriate next step.
 
 ---
 
@@ -297,13 +279,13 @@ Sentium is designed to be **self-hosted** - typically by a single operator on a 
 
 Security is a first-class concern, enforced at several layers:
 
-1. **Authentication** - OpenID Connect (authorization-code + PKCE) via the Identity server. The Gateway BFF holds tokens server-side; the browser only receives a `Secure`, `HttpOnly` cookie.
+1. **Authentication** - ASP.NET Core Identity in the Identity module. The browser only receives a `Secure`, `HttpOnly` session cookie and never holds a token.
 2. **Authorization** - a two-tier role model (`Member`, `Sovereign`). Privileged operations (user/role management, model pull/delete, global settings, audit log) require `Sovereign`.
 3. **Data isolation** - every user-scoped entity is filtered by `UserId` through EF Core global query filters; cache keys and vector searches are user-scoped.
 4. **Policy Decision Point (Sentinel)** - every agent tool call is authorized before execution. The policy stack performs sliding-window rate limiting and an **LLM-based semantic-intent check** that compares the attempted action against the user's original prompt to catch prompt injection and agent hallucination. The engine is **fail-closed**: any error denies the action, and every decision is written to a forensic audit log.
 5. **Human-in-the-loop** - high-risk tools (e.g. code execution) pause the stream and require explicit user approval before running.
 6. **Sandbox isolation** - code runs in Docker containers with networking disabled, a read-only root filesystem, all Linux capabilities dropped, `no-new-privileges`, a non-root user, a seccomp profile, `noexec` tmpfs, and hard CPU / memory / PID / file-descriptor limits, plus an execution timeout.
-7. **Internal API hardening** - service-to-service endpoints (PDP evaluation, sandbox execution) require a pre-shared internal token and are never exposed to the browser.
+7. **Internal API hardening** - the two cross-process endpoints (Sentinel's policy evaluation, called by the Sandbox, and the Sandbox's `execute`) require a pre-shared internal token and are never exposed to the browser.
 
 ---
 
@@ -312,18 +294,19 @@ Security is a first-class concern, enforced at several layers:
 ```
 src/
   aspire/Sentium.AppHost/          # Aspire orchestration - the single entry point
-  services/
-    AgentRuntime/                  # core engine (agents, RAG, orchestration, scheduling)
-    Gateway/                       # YARP BFF
-    Identity/                      # OpenIddict OIDC server
+  hosts/
+    Sentium.Web/                   # the modular monolith host (API, session, portal static files)
+    Sentium.Sandbox/               # isolated, stateless code-execution service
+  modules/
+    Codex/                         # RAG and the knowledge base
+    Identity/                      # users, roles, session cookie
+    Praxis/                        # core engine (agents, orchestration, workflows, scheduling)
     Registry/                      # centralized configuration
-    Sandbox/                       # hardened Docker code execution
     Sentinel/                      # Policy Decision Point
-    Watchdog/                      # health monitoring
+    Vigil/                         # health monitoring
   clients/
-    sentium-portal/                # main React app
-    sentium-identity-ui/           # login / consent UI
-  shared/                          # shared infrastructure, service defaults, constants
+    sentium-portal/                # React app (including the login page)
+  shared/                          # Sentium.Core (constants, results), infrastructure, service defaults
 tests/
   Sentium.Tests.Unit/
   Sentium.Tests.Integration/

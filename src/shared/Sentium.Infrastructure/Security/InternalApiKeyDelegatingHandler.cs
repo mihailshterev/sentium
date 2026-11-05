@@ -1,5 +1,5 @@
 using Microsoft.Extensions.Options;
-using Sentium.Shared.Constants;
+using Sentium.Core.Constants;
 
 namespace Sentium.Infrastructure.Security;
 

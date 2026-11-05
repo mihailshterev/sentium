@@ -14,7 +14,6 @@ export default defineConfig({
   timeout: 60 * 1000,
   use: {
     baseURL: BASE_URL,
-    storageState: AUTH_FILE,
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     video: "on-first-retry",
@@ -33,7 +32,6 @@ export default defineConfig({
       testMatch: /.*auth\.setup\.ts/,
       use: {
         ...devices["Desktop Chrome"],
-        storageState: undefined,
       },
     },
     {
@@ -63,16 +61,15 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: "dotnet run --project ../src/aspire/Sentium.AppHost/Sentium.AppHost.csproj -- --TestRun=true",
+    command:
+      "dotnet run --project ../src/aspire/Sentium.AppHost/Sentium.AppHost.csproj -- --TestRun=true --environment Testing",
     url: BASE_URL,
     reuseExistingServer: false,
     timeout: (process.env.CI ? 600 : 300) * 1000,
     env: {
-      DOTNET_ENVIRONMENT: "Testing",
-      ASPNETCORE_ENVIRONMENT: "Testing",
       DOTNET_ASPIRE_SHOW_DASHBOARD: "false",
     },
-    stdout: !process.env.CI ? "pipe" : "ignore",
-    stderr: !process.env.CI ? "pipe" : "ignore",
+    stdout: "pipe",
+    stderr: "pipe",
   },
 });

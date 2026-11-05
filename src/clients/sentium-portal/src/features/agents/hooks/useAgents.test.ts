@@ -3,7 +3,7 @@ import { renderHook, waitFor, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import { useAgents } from "./useAgents";
-import * as agentRuntimeService from "@/features/agents/api/agents.service";
+import * as agentsService from "@/features/agents/api/agents.service";
 import type { AgentRecord } from "@/features/agents/types/agents";
 
 const createWrapper = () => {
@@ -24,16 +24,16 @@ const mockAgent: AgentRecord = {
 };
 
 beforeEach(() => {
-  vi.spyOn(agentRuntimeService, "fetchAgentsPaged").mockResolvedValue({
+  vi.spyOn(agentsService, "fetchAgentsPaged").mockResolvedValue({
     items: [mockAgent],
     totalCount: 1,
     page: 1,
     pageSize: 100,
     totalPages: 1,
   });
-  vi.spyOn(agentRuntimeService, "createAgent").mockResolvedValue(mockAgent);
-  vi.spyOn(agentRuntimeService, "updateAgent").mockResolvedValue({ ...mockAgent, name: "Updated" });
-  vi.spyOn(agentRuntimeService, "deleteAgent").mockResolvedValue(undefined);
+  vi.spyOn(agentsService, "createAgent").mockResolvedValue(mockAgent);
+  vi.spyOn(agentsService, "updateAgent").mockResolvedValue({ ...mockAgent, name: "Updated" });
+  vi.spyOn(agentsService, "deleteAgent").mockResolvedValue(undefined);
 });
 
 describe("useAgents fetching", () => {
@@ -50,14 +50,14 @@ describe("useAgents fetching", () => {
   });
 
   it("calls fetchAgents exactly once", async () => {
-    const spy = vi.spyOn(agentRuntimeService, "fetchAgentsPaged");
+    const spy = vi.spyOn(agentsService, "fetchAgentsPaged");
     const { result } = renderHook(() => useAgents(), { wrapper: createWrapper() });
     await waitFor(() => !result.current.isLoading);
     expect(spy).toHaveBeenCalledTimes(1);
   });
 
   it("handles fetch errors gracefully (returns empty array)", async () => {
-    vi.spyOn(agentRuntimeService, "fetchAgentsPaged").mockRejectedValueOnce(new Error("Server error"));
+    vi.spyOn(agentsService, "fetchAgentsPaged").mockRejectedValueOnce(new Error("Server error"));
     const { result } = renderHook(() => useAgents(), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.agents).toEqual([]);
@@ -91,7 +91,7 @@ describe("useAgents mutations", () => {
       result.current.createAgent({ name: "New Agent", description: "", model: "llama3" });
     });
     await waitFor(() => expect(result.current.isCreateSuccess).toBe(true));
-    expect(agentRuntimeService.createAgent).toHaveBeenCalled();
+    expect(agentsService.createAgent).toHaveBeenCalled();
   });
 
   it("calls updateAgent and settles", async () => {
@@ -101,7 +101,7 @@ describe("useAgents mutations", () => {
       result.current.updateAgent({ id: "agent-1", name: "Updated", description: "", model: "llama3.2" });
     });
     await waitFor(() => expect(result.current.isUpdatingAgent).toBe(false));
-    expect(agentRuntimeService.updateAgent).toHaveBeenCalled();
+    expect(agentsService.updateAgent).toHaveBeenCalled();
   });
 
   it("calls deleteAgent and settles", async () => {
@@ -111,7 +111,7 @@ describe("useAgents mutations", () => {
       result.current.deleteAgent("agent-1");
     });
     await waitFor(() => expect(result.current.isDeletingAgent).toBe(false));
-    expect(agentRuntimeService.deleteAgent).toHaveBeenCalledWith("agent-1");
+    expect(agentsService.deleteAgent).toHaveBeenCalledWith("agent-1");
   });
 
   it("resetCreate resets the create mutation state", async () => {

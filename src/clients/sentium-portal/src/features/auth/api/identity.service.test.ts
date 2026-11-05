@@ -30,14 +30,14 @@ describe("getMe()", () => {
 describe("updateMe()", () => {
   it("calls client.put with profile data", async () => {
     vi.mocked(client.put).mockResolvedValueOnce(undefined);
-    const data = { firstName: "Alice", lastName: "Smith", email: "alice@example.com" };
+    const data = { firstName: "Alice", lastName: "Smith", userName: "alice" };
     await identityService.updateMe(data);
     expect(client.put).toHaveBeenCalledWith("/identity/account/me", data);
   });
 
   it("accepts null lastName", async () => {
     vi.mocked(client.put).mockResolvedValueOnce(undefined);
-    const data = { firstName: "Alice", lastName: null, email: "alice@example.com" };
+    const data = { firstName: "Alice", lastName: null, userName: "alice" };
     await identityService.updateMe(data);
     expect(client.put).toHaveBeenCalledWith("/identity/account/me", data);
   });

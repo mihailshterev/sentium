@@ -12,8 +12,8 @@ export class UsersPage {
     await expect(this.page.getByRole("heading", { name: "User Management" })).toBeVisible();
   }
 
-  async expectUserVisible(email: string): Promise<void> {
-    await expect(this.page.getByText(email)).toBeVisible();
+  async expectUserVisible(userName: string): Promise<void> {
+    await expect(this.page.getByText(userName)).toBeVisible();
   }
 
   async expectRegisteredUsersHeading(): Promise<void> {

@@ -15,10 +15,11 @@ jobs:
     timeout-minutes: 45
 
     env:
-      E2E_USER_EMAIL: ${{ secrets.E2E_USER_EMAIL }}
+      E2E_USER_NAME: ${{ secrets.E2E_USER_NAME }}
       E2E_USER_PASSWORD: ${{ secrets.E2E_USER_PASSWORD }}
       PLAYWRIGHT_BASE_URL: "http://localhost:5173"
       CI: "true"
+      SSL_CERT_DIR: "/home/runner/.aspnet/dev-certs/trust:/usr/lib/ssl/certs"
 
     steps:
       - uses: actions/checkout@v6
@@ -30,6 +31,12 @@ jobs:
 
       - name: Restore .NET dependencies
         run: dotnet restore
+
+      - name: Create and trust HTTPS dev certificate
+        run: dotnet dev-certs https --trust
+
+      - name: Install Aspire CLI
+        run: curl -sSL https://aspire.dev/install.sh | bash -s -- --version 13.6.4
 
       - name: Build .NET (Release)
         run: dotnet build --no-restore --configuration ${{ env.BUILD_CONFIGURATION }}

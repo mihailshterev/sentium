@@ -25,9 +25,9 @@ export function ProfileView() {
               </div>
               <div className={styles.avatarMeta}>
                 <p className={styles.displayName}>
-                  {profile ? `${profile.firstName || ""} ${profile.lastName || ""}`.trim() || profile.email : "—"}
+                  {profile ? `${profile.firstName || ""} ${profile.lastName || ""}`.trim() || profile.userName : "—"}
                 </p>
-                <p className={styles.displayEmail}>{profile?.email}</p>
+                <p className={styles.displayUsername}>{profile?.userName}</p>
                 {highestRole && (
                   <span className={`${styles.roleBadge} ${styles[`role_${highestRole.toLowerCase()}`]}`}>
                     {highestRole}

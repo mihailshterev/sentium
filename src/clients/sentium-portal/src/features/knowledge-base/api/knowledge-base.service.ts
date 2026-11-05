@@ -2,7 +2,8 @@ import { client } from "@/shared/api/client";
 import type { AgentLearning, AgentLearningStats, KnowledgeBaseCollectionStats } from "../types/agent-learning";
 import type { PagedResponse } from "@/shared/types/pagination";
 
-const BASE = "/agent-runtime";
+const BASE = "/praxis";
+const CODEX_BASE = "/codex";
 
 export const fetchAgentLearnings = (
   agentName?: string,
@@ -25,7 +26,7 @@ export const updateAgentLearning = (id: string, payload: { content: string; tags
 export const deleteAgentLearning = (id: string): Promise<void> => client.delete<void>(`${BASE}/agent-learnings/${id}`);
 
 export const fetchKnowledgeBaseStats = (): Promise<KnowledgeBaseCollectionStats[]> =>
-  client.get<KnowledgeBaseCollectionStats[]>(`${BASE}/knowledge-base/stats`);
+  client.get<KnowledgeBaseCollectionStats[]>(`${CODEX_BASE}/knowledge-base/stats`);
 
 export const deleteKnowledgeMapCollection = (collection: string): Promise<void> =>
-  client.delete<void>(`${BASE}/knowledge-base/collections/${encodeURIComponent(collection)}`);
+  client.delete<void>(`${CODEX_BASE}/knowledge-base/collections/${encodeURIComponent(collection)}`);

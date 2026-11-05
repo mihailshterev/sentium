@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from "vitest";
 import { act } from "@testing-library/react";
 import { useConversationStore } from "./assistant-conversation-store";
 import { DEFAULT_ASSISTANT_MODEL } from "@/shared/utils/constants";
-import * as agentRuntimeService from "@/features/assistant/api/assistant.service";
+import * as assistantService from "@/features/assistant/api/assistant.service";
 import { handleUnauthorized } from "@/shared/api/client";
 
 vi.mock("@/shared/api/client", async (orig) => {
@@ -55,7 +55,7 @@ beforeEach(() => {
 
 describe("sendMessage streaming", () => {
   it("streams thought and content into the assistant message and settles", async () => {
-    vi.spyOn(agentRuntimeService, "sendChatMessage").mockResolvedValue(
+    vi.spyOn(assistantService, "sendChatMessage").mockResolvedValue(
       sseResponse([
         JSON.stringify({ type: "thought", message: { content: "thinking" } }),
         JSON.stringify({ type: "content", message: { content: "Hello" } }),
@@ -82,7 +82,7 @@ describe("sendMessage streaming", () => {
   });
 
   it("captures an enhanced prompt for the user message", async () => {
-    vi.spyOn(agentRuntimeService, "sendChatMessage").mockResolvedValue(
+    vi.spyOn(assistantService, "sendChatMessage").mockResolvedValue(
       sseResponse([
         JSON.stringify({ type: "enhanced_prompt", message: { content: "sharper" } }),
         JSON.stringify({ type: "content", message: { content: "ok" } }),
@@ -99,7 +99,7 @@ describe("sendMessage streaming", () => {
   });
 
   it("sets a message error when the stream emits an error event", async () => {
-    vi.spyOn(agentRuntimeService, "sendChatMessage").mockResolvedValue(
+    vi.spyOn(assistantService, "sendChatMessage").mockResolvedValue(
       sseResponse([JSON.stringify({ type: "error", message: "node failed" })]),
     );
 
@@ -114,7 +114,7 @@ describe("sendMessage streaming", () => {
 
   it("records a pending approval and stops streaming", async () => {
     const approval = JSON.stringify({ toolName: "delete", requestId: "req-1", arguments: {} });
-    vi.spyOn(agentRuntimeService, "sendChatMessage").mockResolvedValue(
+    vi.spyOn(assistantService, "sendChatMessage").mockResolvedValue(
       sseResponse([JSON.stringify({ type: "approval_request", message: { content: approval } })]),
     );
 
@@ -128,7 +128,7 @@ describe("sendMessage streaming", () => {
 
   it("stamps the streaming conversation onto a pending approval", async () => {
     const approval = JSON.stringify({ toolName: "delete", requestId: "req-1", arguments: {} });
-    vi.spyOn(agentRuntimeService, "sendChatMessage").mockResolvedValue(
+    vi.spyOn(assistantService, "sendChatMessage").mockResolvedValue(
       sseResponse([JSON.stringify({ type: "approval_request", message: { content: approval } })]),
     );
 
@@ -143,7 +143,7 @@ describe("sendMessage streaming", () => {
   it("reports a timeout error when the stream stalls", async () => {
     vi.useFakeTimers();
     try {
-      vi.spyOn(agentRuntimeService, "sendChatMessage").mockImplementation(async (_payload, signal) =>
+      vi.spyOn(assistantService, "sendChatMessage").mockImplementation(async (_payload, signal) =>
         hangingResponse(signal),
       );
 
@@ -167,7 +167,7 @@ describe("sendMessage streaming", () => {
   });
 
   it("stays silent when the user stops the stream", async () => {
-    vi.spyOn(agentRuntimeService, "sendChatMessage").mockImplementation(async (_payload, signal) =>
+    vi.spyOn(assistantService, "sendChatMessage").mockImplementation(async (_payload, signal) =>
       hangingResponse(signal),
     );
 
@@ -189,7 +189,7 @@ describe("sendMessage streaming", () => {
   });
 
   it("redirects via handleUnauthorized when the stream responds 401", async () => {
-    vi.spyOn(agentRuntimeService, "sendChatMessage").mockResolvedValue({
+    vi.spyOn(assistantService, "sendChatMessage").mockResolvedValue({
       ok: false,
       status: 401,
     } as unknown as Response);
@@ -206,7 +206,7 @@ describe("sendMessage streaming", () => {
 
   it("aborts the previous stream when a new message is sent", async () => {
     const spy = vi
-      .spyOn(agentRuntimeService, "sendChatMessage")
+      .spyOn(assistantService, "sendChatMessage")
       .mockImplementationOnce(async (_payload, signal) => hangingResponse(signal))
       .mockImplementationOnce(async () =>
         sseResponse([
@@ -240,7 +240,7 @@ describe("respondToApproval", () => {
       }),
     );
 
-    vi.spyOn(agentRuntimeService, "approveToolCall").mockResolvedValue(
+    vi.spyOn(assistantService, "approveToolCall").mockResolvedValue(
       sseResponse([
         JSON.stringify({ type: "content", message: { content: "done it" } }),
         JSON.stringify({ type: "done" }),
@@ -256,7 +256,7 @@ describe("respondToApproval", () => {
       });
     });
 
-    expect(agentRuntimeService.approveToolCall).toHaveBeenCalledWith("req-1", true, expect.anything());
+    expect(assistantService.approveToolCall).toHaveBeenCalledWith("req-1", true, expect.anything());
     expect(useConversationStore.getState().messages[0].content).toBe("done it");
   });
 
@@ -269,7 +269,7 @@ describe("respondToApproval", () => {
     );
 
     let observedStreamingId: string | null = null;
-    vi.spyOn(agentRuntimeService, "approveToolCall").mockImplementation(async () => {
+    vi.spyOn(assistantService, "approveToolCall").mockImplementation(async () => {
       observedStreamingId = useConversationStore.getState().streamingConversationId;
       return sseResponse([JSON.stringify({ type: "done" })]);
     });

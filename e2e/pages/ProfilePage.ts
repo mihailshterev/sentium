@@ -22,9 +22,9 @@ export class ProfilePage {
     await this.page.locator("#lastName").fill(text);
   }
 
-  async fillEmail(text: string): Promise<void> {
-    await this.page.locator("#email").clear();
-    await this.page.locator("#email").fill(text);
+  async fillUserName(text: string): Promise<void> {
+    await this.page.locator("#userName").clear();
+    await this.page.locator("#userName").fill(text);
   }
 
   async saveProfile(): Promise<void> {
@@ -35,8 +35,8 @@ export class ProfilePage {
     await expect(this.page.getByText(/profile updated successfully/i)).toBeVisible();
   }
 
-  async expectEmailVisible(email: string): Promise<void> {
-    await expect(this.page.getByText(email)).toBeVisible();
+  async expectUserNameVisible(userName: string): Promise<void> {
+    await expect(this.page.getByText(userName)).toBeVisible();
   }
 
   async expectRoleBadge(role: string): Promise<void> {

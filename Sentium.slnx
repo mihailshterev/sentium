@@ -4,51 +4,26 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
+  <Folder Name="/src/" />
   <Folder Name="/src/aspire/">
     <Project Path="src/aspire/Sentium.AppHost/Sentium.AppHost.csproj" />
   </Folder>
   <Folder Name="/src/shared/">
     <Project Path="src/shared/Sentium.ServiceDefaults/Sentium.ServiceDefaults.csproj" />
+    <Project Path="src/shared/Sentium.Core/Sentium.Core.csproj" />
     <Project Path="src/shared/Sentium.Infrastructure/Sentium.Infrastructure.csproj" />
-    <Project Path="src/shared/Sentium.Shared/Sentium.Shared.csproj" />
   </Folder>
-  <Folder Name="/src/services/AgentRuntime/">
-    <Project Path="src/services/AgentRuntime/Sentium.AgentRuntime.Api/Sentium.AgentRuntime.Api.csproj" />
-    <Project Path="src/services/AgentRuntime/Sentium.AgentRuntime.Application/Sentium.AgentRuntime.Application.csproj" />
-    <Project Path="src/services/AgentRuntime/Sentium.AgentRuntime.Core/Sentium.AgentRuntime.Core.csproj" />
-    <Project Path="src/services/AgentRuntime/Sentium.AgentRuntime.Infrastructure/Sentium.AgentRuntime.Infrastructure.csproj" />
+  <Folder Name="/src/hosts/">
+    <Project Path="src/hosts/Sentium.Sandbox/Sentium.Sandbox.csproj" />
+    <Project Path="src/hosts/Sentium.Web/Sentium.Web.csproj" />
   </Folder>
-  <Folder Name="/src/services/Registry/">
-    <Project Path="src/services/Registry/Sentium.Registry.Api/Sentium.Registry.Api.csproj" />
-    <Project Path="src/services/Registry/Sentium.Registry.Application/Sentium.Registry.Application.csproj" />
-    <Project Path="src/services/Registry/Sentium.Registry.Core/Sentium.Registry.Core.csproj" />
-    <Project Path="src/services/Registry/Sentium.Registry.Infrastructure/Sentium.Registry.Infrastructure.csproj" />
-  </Folder>
-  <Folder Name="/src/services/Gateway/">
-    <Project Path="src/services/Gateway/Sentium.ApiGateway.csproj" />
-  </Folder>
-  <Folder Name="/src/services/Identity/">
-    <Project Path="src/services/Identity/Sentium.Identity.Api/Sentium.Identity.Api.csproj" />
-    <Project Path="src/services/Identity/Sentium.Identity.Application/Sentium.Identity.Application.csproj" />
-    <Project Path="src/services/Identity/Sentium.Identity.Core/Sentium.Identity.Core.csproj" />
-    <Project Path="src/services/Identity/Sentium.Identity.Infrastructure/Sentium.Identity.Infrastructure.csproj" />
-  </Folder>
-  <Folder Name="/src/services/Sandbox/">
-    <Project Path="src/services/Sandbox/Sentium.Sandbox.Api/Sentium.Sandbox.Api.csproj" />
-    <Project Path="src/services/Sandbox/Sentium.Sandbox.Application/Sentium.Sandbox.Application.csproj" />
-    <Project Path="src/services/Sandbox/Sentium.Sandbox.Core/Sentium.Sandbox.Core.csproj" />
-    <Project Path="src/services/Sandbox/Sentium.Sandbox.Infrastructure/Sentium.Sandbox.Infrastructure.csproj" />
-  </Folder>
-  <Folder Name="/src/services/Sentinel/">
-    <Project Path="src/services/Sentinel/Sentium.Sentinel.Api/Sentium.Sentinel.Api.csproj" />
-    <Project Path="src/services/Sentinel/Sentium.Sentinel.Application/Sentium.Sentinel.Application.csproj" />
-    <Project Path="src/services/Sentinel/Sentium.Sentinel.Core/Sentium.Sentinel.Core.csproj" />
-    <Project Path="src/services/Sentinel/Sentium.Sentinel.Infrastructure/Sentium.Sentinel.Infrastructure.csproj" />
-  </Folder>
-  <Folder Name="/src/services/Watchdog/">
-    <Project Path="src/services/Watchdog/Sentium.Watchdog.Api/Sentium.Watchdog.Api.csproj" />
-    <Project Path="src/services/Watchdog/Sentium.Watchdog.Application/Sentium.Watchdog.Application.csproj" />
-    <Project Path="src/services/Watchdog/Sentium.Watchdog.Core/Sentium.Watchdog.Core.csproj" />
+  <Folder Name="/src/modules/">
+    <Project Path="src/modules/Codex/Sentium.Codex.csproj" />
+    <Project Path="src/modules/Identity/Sentium.Identity.csproj" />
+    <Project Path="src/modules/Praxis/Sentium.Praxis.csproj" />
+    <Project Path="src/modules/Registry/Sentium.Registry.csproj" />
+    <Project Path="src/modules/Sentinel/Sentium.Sentinel.csproj" />
+    <Project Path="src/modules/Vigil/Sentium.Vigil.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Sentium.Tests.AppHost/Sentium.Tests.AppHost.csproj" />

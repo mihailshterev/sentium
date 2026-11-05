@@ -1,0 +1,68 @@
+using Sentium.Codex.Contracts;
+using Sentium.Codex.Contracts.Models;
+using Sentium.Praxis.Features.Tools.Attributes;
+using Sentium.Praxis.Features.Sentinel;
+using Microsoft.Extensions.Logging;
+
+namespace Sentium.Praxis.Features.Tools;
+
+/// <summary>
+/// Tool that allows the agent to proactively save information to its long-term vector memory.
+/// This uses the DocumentIngestionService to ensure the data is properly embedded and stored.
+/// </summary>
+[AgentToolPolicy(
+    AllowedAgents = [],
+    RiskLevel = ToolRiskLevel.Low,
+    RequiresApproval = false)]
+public sealed class StoreMemoryTool(
+    IDocumentIngestionService ingestionService,
+    IPdpContextAccessor pdpContext,
+    ILogger<StoreMemoryTool> logger) : IAgentTool
+{
+    public string Name => "store_memory";
+
+    public string Description =>
+        "Saves a PERSONAL fact or preference the USER explicitly asked you to remember (their name, a setting, a standing instruction) to long-term memory. " +
+        "Do NOT use this for things YOU figured out - patterns, conclusions, designs, fixes, or reusable approaches belong in capture_agent_learning instead.";
+
+    public IReadOnlyList<AgentToolParameter> Parameters { get; } = [new("content", "The exact fact or preference to remember, written as a self-contained sentence.")];
+
+    public async Task<string> ExecuteAsync(string input, CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            return "Error: Memory content cannot be empty.";
+        }
+
+        try
+        {
+            var userId = pdpContext.UserId;
+            var scope = userId.HasValue ? KnowledgeScope.User : KnowledgeScope.Shared;
+
+            var request = new IngestionRequest
+            {
+                Content = input,
+                Source = "Agent_Self_Memory",
+                SourceType = IngestionSourceType.Custom,
+                Scope = scope,
+                UserId = userId,
+                Metadata = new Dictionary<string, string>
+                {
+                    { "memory_type", "long_term_recall" },
+                    { "importance", "high" }
+                }
+            };
+
+            await ingestionService.IngestAsync(request, KnowledgeCollections.UserMemories, ct);
+
+            logger.LogInformation("Agent successfully stored a new semantic memory.");
+
+            return "Successfully stored that in my long-term memory. I will be able to recall this in future conversations.";
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Failed to store semantic memory.");
+            return $"Error: I encountered a problem while trying to save that memory: {ex.Message}";
+        }
+    }
+}

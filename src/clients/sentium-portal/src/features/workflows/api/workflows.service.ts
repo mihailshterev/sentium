@@ -2,7 +2,7 @@ import { client } from "@/shared/api/client";
 import type { UpdateWorkflowPayload, WorkflowPayload, WorkflowRecord, WorkflowRun } from "../types/workflows";
 import type { PagedResponse } from "@/shared/types/pagination";
 
-const BASE = "/agent-runtime";
+const BASE = "/praxis";
 
 export const fetchWorkflowsPaged = (page = 1, pageSize = 100): Promise<PagedResponse<WorkflowRecord>> =>
   client.get<PagedResponse<WorkflowRecord>>(`${BASE}/workflows?page=${page}&pageSize=${pageSize}`);

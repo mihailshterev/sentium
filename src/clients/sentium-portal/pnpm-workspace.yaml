@@ -4,13 +4,8 @@ blockExoticSubdeps: true
 trustPolicy: no-downgrade
 trustPolicyIgnoreAfter: 129600
 
-catalog:
-  vite: "8.3.2"
-  "@babel/core": "7.29.7"
-
 overrides:
   "minimatch@>=5>brace-expansion": ">=5.0.7"
-  eslint-plugin-react-hooks>@babel/core: "catalog:"
   "undici@>=7.0.0 <7.29.0": "7.29.0"
   baseline-browser-mapping@>=2.0.0 <2.11.0: 2.11.0
   browserslist@<=4.28.6: 4.28.7

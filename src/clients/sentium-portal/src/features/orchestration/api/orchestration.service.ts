@@ -1,7 +1,7 @@
 import { client } from "@/shared/api/client";
 import type { RunWorkflowPayload } from "@/features/workflows/types/workflows";
 
-const BASE = "/agent-runtime";
+const BASE = "/praxis";
 
 export const runDynamicWorkflow = (payload: Record<string, string>) =>
   client.post<{ eventId: string }>(`${BASE}/orchestration/run-dynamic-workflow`, payload);
