@@ -1,16 +1,19 @@
 using Sentium.Codex.Dtos;
 using Sentium.Codex.Contracts;
 using Sentium.Codex.Contracts.Models;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Sentium.Infrastructure.Security;
 
 namespace Sentium.Codex.Controllers;
 
 /// <summary>
-/// REST surface for pushing content into the RAG knowledge base.
-/// Downstream services call these endpoints to contribute their data without requiring direct access to the vector store.
+/// Administrative REST surface for pushing content into, and removing it from, the RAG knowledge base
+/// (manual back-fills, re-indexing a registered <see cref="IIngestionSource"/>). Other modules ingest
+/// in-process through <see cref="IDocumentIngestionService"/>, never through these endpoints.
+/// Sovereign-only: a request can target any user's scope or the shared knowledge base.
 /// </summary>
 [ApiController]
+[AuthorizeSovereign]
 [Route($"{CodexRoutes.Prefix}/ingestion")]
 public sealed class IngestionController(
     IDocumentIngestionService ingestionService,
@@ -76,7 +79,6 @@ public sealed class IngestionController(
     /// </summary>
     /// <returns>List of ingestion sources with their names and types.</returns>
     [HttpGet("sources")]
-    [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public IActionResult GetSources()
     {
@@ -87,7 +89,6 @@ public sealed class IngestionController(
 
     /// <summary>
     /// Removes all vector chunks associated with the given source identifier.
-    /// Called by source services when a document is deleted or its agent-accessibility is revoked.
     /// </summary>
     /// <param name="source">The source identifier whose vectors should be removed.</param>
     /// <param name="ct">Cancellation token.</param>

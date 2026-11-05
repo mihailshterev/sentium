@@ -1,40 +1,24 @@
-using Microsoft.Extensions.Caching.Hybrid;
 using Sentium.Core.Constants;
 using Sentium.Registry.Contracts;
 
 namespace Sentium.Sentinel.Features.Settings;
 
+/// <summary>
+/// Reads the runtime PDP settings from the Registry module in-process. Registry caches the settings
+/// envelope itself (HybridCache L1 + L2) and evicts it on change, so Sentinel keeps no copy of its own.
+/// </summary>
 public sealed class RegistryPdpSettingsProvider(
     ISettingsService settingsService,
-    HybridCache cache,
     ILogger<RegistryPdpSettingsProvider> logger) : IPdpRuntimeSettingsProvider
 {
-    private static readonly HybridCacheEntryOptions CacheOptions = new()
-    {
-        Expiration = TimeSpan.FromHours(1),
-        LocalCacheExpiration = TimeSpan.FromMinutes(5)
-    };
-
     public async ValueTask<PdpRuntimeSettings> GetAsync(CancellationToken ct = default)
     {
         try
         {
-            return await cache.GetOrCreateAsync(
-                SentinelSettingsCacheKeys.PdpRuntime(null),
-                async token =>
-                {
-                    var settings = await settingsService.GetValueAsync<PdpSettingsResponse>(SettingsKeys.Pdp, ct: token);
-                    return settings is null ? Fallback() : Map(settings);
-                },
-                CacheOptions,
-                cancellationToken: ct
-            );
+            var settings = await settingsService.GetValueAsync<PdpSettingsResponse>(SettingsKeys.Pdp, ct: ct);
+            return settings is null ? Fallback() : Map(settings);
         }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             logger.LogWarning(ex, "Failed to read PDP settings from Registry; using class defaults");
             return Fallback();

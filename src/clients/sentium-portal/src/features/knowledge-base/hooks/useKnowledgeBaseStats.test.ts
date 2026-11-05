@@ -3,7 +3,7 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import { useKnowledgeBaseStats } from "./useKnowledgeBaseStats";
-import * as agentRuntimeService from "@/features/knowledge-base/api/knowledge-base.service";
+import * as knowledgeBaseService from "@/features/knowledge-base/api/knowledge-base.service";
 import type { KnowledgeBaseCollectionStats } from "@/features/knowledge-base/types/agent-learning";
 
 vi.mock("@/features/knowledge-base/api/knowledge-base.service", async () => {
@@ -28,7 +28,7 @@ const mockStats: KnowledgeBaseCollectionStats[] = [
 ];
 
 beforeEach(() => {
-  vi.mocked(agentRuntimeService.fetchKnowledgeBaseStats).mockResolvedValue(mockStats);
+  vi.mocked(knowledgeBaseService.fetchKnowledgeBaseStats).mockResolvedValue(mockStats);
 });
 
 describe("useKnowledgeBaseStats fetching", () => {
@@ -46,14 +46,14 @@ describe("useKnowledgeBaseStats fetching", () => {
   });
 
   it("calls fetchKnowledgeBaseStats exactly once on mount", async () => {
-    const spy = vi.spyOn(agentRuntimeService, "fetchKnowledgeBaseStats");
+    const spy = vi.spyOn(knowledgeBaseService, "fetchKnowledgeBaseStats");
     const { result } = renderHook(() => useKnowledgeBaseStats(), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(spy).toHaveBeenCalledTimes(1);
   });
 
   it("exposes error when fetch fails and falls back to empty array", async () => {
-    vi.mocked(agentRuntimeService.fetchKnowledgeBaseStats).mockRejectedValue(new Error("Vector store unavailable"));
+    vi.mocked(knowledgeBaseService.fetchKnowledgeBaseStats).mockRejectedValue(new Error("Vector store unavailable"));
     const { result } = renderHook(() => useKnowledgeBaseStats(), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.error).not.toBeNull());
     expect(result.current.collections).toEqual([]);

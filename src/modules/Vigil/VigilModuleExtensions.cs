@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Http.Resilience;
 using Sentium.Core.Constants;
-using Sentium.Infrastructure.Settings;
 using Sentium.Vigil.Features.Metrics;
 using Sentium.Vigil.Features.Monitoring;
 using Sentium.Vigil.Features.Monitoring.Probes;
@@ -19,11 +18,12 @@ public static class VigilModuleExtensions
         ("Identity", "identity"),
         ("Sentinel", "sentinel"),
         ("Praxis",   "praxis"),
+        ("Codex",    "codex"),
         ("Registry", "registry")
     ];
 
     /// <summary>
-    /// Services that still run out of process, probed over HTTP on their <c>/health</c> endpoint.
+    /// Processes outside Sentium.Web, probed over HTTP on their <c>/health</c> endpoint.
     /// </summary>
     private static readonly (string Display, string ClientName)[] MonitoredServices =
     [
@@ -37,7 +37,6 @@ public static class VigilModuleExtensions
         var services = builder.Services;
 
         services.AddSingleton<IVigilSettingsProvider, RegistryVigilSettingsProvider>();
-        services.AddSingleton<ISettingsCacheInvalidationHandler, VigilSettingsCacheInvalidationHandler>();
 
         services.AddSingleton<IVigil, VigilService>();
         services.AddSingleton<IServiceHealthStateStore, ServiceHealthStateStore>();

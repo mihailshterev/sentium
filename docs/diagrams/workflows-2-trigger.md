@@ -3,15 +3,22 @@ sequenceDiagram
     autonumber
     actor U as User
     participant FE as sentium-portal
-    participant OC as OrchestrationController
-    participant NATS as NATS JetStream
+    participant OC as Praxis · OrchestrationController
+    participant Q as WorkflowRunQueue (in-memory)
+    participant SR as StreamRelay
 
     U->>FE: "Run workflow" (workflowId, scenario)
-    FE->>OC: POST /orchestration/run-workflow
-    OC->>OC: Validate workflow, enhance scenario (optional)
-    OC->>NATS: publish "workflow.custom.workflow" (payload + userId)
-    OC-->>FE: 202 Accepted (eventId)
-    FE->>OC: GET /orchestration/stream/{eventId} (SSE)
-    OC->>NATS: subscribe "stream.{eventId}"
-    Note over OC,FE: Stream stays open until the "done" signal
+    FE->>OC: POST /api/praxis/orchestration/run-workflow
+    OC->>OC: Load the workflow, enhance the scenario (optional)
+    OC->>Q: EnqueueAsync(WorkflowTrigger + streamId + userId)
+    OC-->>FE: 202 Accepted (streamId)
+    FE->>OC: GET /api/praxis/orchestration/stream/{streamId} (SSE)
+    OC->>SR: Subscribe(streamId, from Last-Event-ID)
+    SR-->>OC: buffered backlog, then live updates
+    OC-->>FE: id: seq / data: update
+    Note over OC,FE: The stream ends on the run's single terminal frame (done, error or cancelled)
+    opt User stops the run
+        FE->>OC: POST /api/praxis/orchestration/cancel/{streamId}
+        OC-->>FE: 202 Accepted
+    end
 ```

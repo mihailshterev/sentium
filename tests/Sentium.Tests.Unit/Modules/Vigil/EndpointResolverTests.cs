@@ -9,9 +9,10 @@ public sealed class EndpointResolverTests
     [Theory]
     [InlineData("localhost:6379", "localhost", 6379)]
     [InlineData("localhost:6379,password=abc", "localhost", 6379)]
-    [InlineData("nats://nats-host:4222", "nats-host", 4222)]
-    [InlineData("Server=sqlhost,1433;User ID=sa;Password=x", "sqlhost", 1433)]
-    [InlineData("Endpoint=http://qdrant:6334;Key=abc", "qdrant", 6334)]
+    [InlineData("redis://cache-host:6380", "cache-host", 6380)]
+    [InlineData("Host=postgres;Port=5433;Username=postgres;Password=x", "postgres", 5433)]
+    [InlineData("Host=pg-primary,pg-replica;Database=sentiumdb", "pg-primary", 1)]
+    [InlineData("Endpoint=http://ollama:11434", "ollama", 11434)]
     public void ResolveHostPort_ParsesVariousFormats(string conn, string host, int port)
     {
         var result = EndpointResolver.ResolveHostPort(conn, defaultPort: 1);

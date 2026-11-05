@@ -16,13 +16,6 @@ public static partial class EndpointResolver
             return (uri!.Host, uri.Port > 0 ? uri.Port : defaultPort);
         }
 
-        var server = ServerRegex().Match(connectionString);
-        if (server.Success)
-        {
-            var value = server.Groups["v"].Value.Trim().Replace(',', ':');
-            return SplitHostPort(value, defaultPort);
-        }
-
         // Npgsql style: Host=...;Port=... (Host may list several servers; probe the first).
         var host = HostRegex().Match(connectionString);
         if (host.Success)
@@ -89,9 +82,6 @@ public static partial class EndpointResolver
 
     [GeneratedRegex(@"(?:^|;)\s*Endpoint\s*=\s*(?<v>[^;]+)", RegexOptions.IgnoreCase)]
     private static partial Regex EndpointRegex();
-
-    [GeneratedRegex(@"(?:Server|Data Source)\s*=\s*(?<v>[^;]+)", RegexOptions.IgnoreCase)]
-    private static partial Regex ServerRegex();
 
     [GeneratedRegex(@"(?:^|;)\s*Host\s*=\s*(?<v>[^;]+)", RegexOptions.IgnoreCase)]
     private static partial Regex HostRegex();

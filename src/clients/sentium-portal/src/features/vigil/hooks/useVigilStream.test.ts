@@ -65,7 +65,7 @@ describe("useVigilStream", () => {
 
   it("merges a status update into the service-health cache", () => {
     qc.setQueryData(SERVICE_HEALTH_KEY, [
-      { serviceName: "Gateway", status: "Healthy", latencyMs: 1, uptimePercent: 100, checkedAt: "t0", details: null },
+      { serviceName: "Praxis", status: "Healthy", latencyMs: 1, uptimePercent: 100, checkedAt: "t0", details: null },
     ]);
 
     renderHook(() => useVigilStream(), { wrapper });
@@ -76,7 +76,7 @@ describe("useVigilStream", () => {
         data: JSON.stringify({
           type: "status",
           data: {
-            serviceName: "Gateway",
+            serviceName: "Praxis",
             kind: "Service",
             status: "Degraded",
             latencyMs: 42,

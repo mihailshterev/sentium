@@ -11,12 +11,12 @@ namespace Sentium.Codex.Contracts.Models;
 public enum IngestionSourceType
 {
     /// <summary>
-    /// Anomaly and alert logs from the Sentinel service.
+    /// Anomaly and alert logs from the Sentinel module.
     /// </summary>
     SentinelLogs,
 
     /// <summary>
-    /// Health and threshold alerts from the Vigil service.
+    /// Health and threshold alerts from the Vigil module.
     /// </summary>
     VigilAlerts,
 

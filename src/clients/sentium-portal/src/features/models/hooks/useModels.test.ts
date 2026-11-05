@@ -3,7 +3,7 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import { useModels } from "./useModels";
-import * as agentRuntimeService from "@/features/models/api/models.service";
+import * as modelsService from "@/features/models/api/models.service";
 
 vi.mock("@/features/models/api/models.service", () => ({
   fetchModels: vi.fn(),
@@ -18,7 +18,7 @@ const createWrapper = () => {
 };
 
 beforeEach(() => {
-  vi.mocked(agentRuntimeService.fetchModels).mockResolvedValue(["llama3", "mistral"]);
+  vi.mocked(modelsService.fetchModels).mockResolvedValue(["llama3", "mistral"]);
 });
 
 describe("useModels fetching", () => {
@@ -33,14 +33,14 @@ describe("useModels fetching", () => {
   });
 
   it("calls fetchModels exactly once on mount", async () => {
-    const spy = vi.spyOn(agentRuntimeService, "fetchModels");
+    const spy = vi.spyOn(modelsService, "fetchModels");
     const { result } = renderHook(() => useModels(), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.models.length).toBeGreaterThan(0));
     expect(spy).toHaveBeenCalledTimes(1);
   });
 
   it("falls back to empty array when fetch fails", async () => {
-    vi.mocked(agentRuntimeService.fetchModels).mockRejectedValueOnce(new Error("Service down"));
+    vi.mocked(modelsService.fetchModels).mockRejectedValueOnce(new Error("Service down"));
     const { result } = renderHook(() => useModels(), { wrapper: createWrapper() });
     await new Promise((r) => setTimeout(r, 50));
     expect(result.current.models).toEqual([]);

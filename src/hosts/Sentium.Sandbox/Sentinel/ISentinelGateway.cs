@@ -3,8 +3,8 @@ using Sentium.Sandbox.Models;
 namespace Sentium.Sandbox.Sentinel;
 
 /// <summary>
-/// Abstracts calls to the Sentinel Policy Decision Point so the Application layer
-/// remains independent of any specific HTTP client implementation.
+/// Abstracts calls to the Sentinel Policy Decision Point (hosted in Sentium.Web) so the execution
+/// pipeline stays independent of the HTTP transport and can be tested without it.
 /// </summary>
 public interface ISentinelGateway
 {

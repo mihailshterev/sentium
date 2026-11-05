@@ -37,7 +37,7 @@ What sets Sentium apart is that every agent action is **mediated by a security c
 | **Security control plane (Sentinel)**    | Every tool call passes a Policy Decision Point that performs rate-limiting and an LLM-based semantic-intent / prompt-injection check, with a fail-closed posture and full forensic audit. |
 | **Health monitoring (Vigil)**            | Continuous probing of every module, the sandbox and the infrastructure, incident tracking, and a live status stream.                                                                      |
 | **Knowledge map**                        | An interactive, animated visualization of the vector store and semantic search traversal.                                                                                                 |
-| **Centralized configuration (Registry)** | Per-user and global runtime settings with a two-tier cache and cluster-wide invalidation.                                                                                                 |
+| **Centralized configuration (Registry)** | Per-user and global runtime settings with a two-tier cache and in-process invalidation.                                                                                                   |
 | **Identity & access**                    | ASP.NET Core Identity with cookie-based session authentication, a two-tier role model (Member / Sovereign), and per-user data isolation.                                                  |
 
 ---
@@ -79,7 +79,7 @@ flowchart TB
     Sandbox --> Blobs
 ```
 
-> **Detailed diagrams.** Per-feature sequence diagrams and component and domain class diagrams live in [docs/diagrams/](docs/diagrams/). They predate the modular-monolith migration: they still show the old service names (AgentRuntime, Watchdog, Gateway) and the HTTP hops between services, which are now in-process calls.
+> **Detailed diagrams.** Per-feature sequence diagrams, component diagrams of the modules and their infrastructure, and the domain class and ER diagrams live in [docs/diagrams/](docs/diagrams/). The agent-pipeline and workflow diagrams (`agents-2` to `agents-5`, `rag-3`, `workflows-3` to `workflows-5`, `structure-c`, `structure-e`, `structure-f`) have not been updated yet and still show pre-migration details (NATS, Qdrant, HTTP calls to Sentinel).
 
 ### Modules
 
@@ -116,7 +116,7 @@ Modules reference each other only through `Contracts`; a unit test (`ModuleBound
 - **Internal service calls** - only Sentium.Web ↔ Sentium.Sandbox crosses a process boundary. Both directions are authenticated with a pre-shared `X-Internal-Token` header (the `SystemCaller` policy).
 - **Per-user data isolation** - user-scoped tables carry a `UserId` and EF Core global query filters scope every query automatically; the `Sovereign` role and background tasks bypass the filter through an explicit accessor.
 - **In-process background work** - no message broker. Workflow runs and file ingestion go through in-memory queues (`Channel<T>`) drained by hosted services; agent token streams fan out through an in-memory relay with replay for SSE reconnects. Sentium.Web is designed to run as a single instance.
-- **Caching** via HybridCache (L1 in-process + L2 Redis); a settings change evicts every module's cached copy directly.
+- **Caching** via HybridCache (L1 in-process + L2 Redis). Modules read settings through Registry's cache instead of keeping their own copies, so a settings change only has to evict that one entry.
 - **Resilience** - a global Polly pipeline (retry + timeout + circuit-breaker) is applied to all HttpClients.
 
 ---

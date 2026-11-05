@@ -225,11 +225,11 @@ docker compose down                # stop & remove containers, keep data volumes
 
 | Service       | Image                                     | Host port(s) | Purpose                                                                                                                                            |
 | ------------- | ----------------------------------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `postgres`    | `pgvector/pgvector:pg17`                  | 5432         | Relational data + RAG vectors (pgvector) - one `sentiumdb` database, one schema per module (`identity`, `registry`, `sentinel`, `codex`, `praxis`) |
+| `postgres`    | `pgvector/pgvector:pg18-trixie`           | 5432         | Relational data + RAG vectors (pgvector) - one `sentiumdb` database, one schema per module (`identity`, `registry`, `sentinel`, `codex`, `praxis`) |
 | `redis`       | `redis:7-alpine`                          | 6379         | HybridCache L2                                                                                                                                     |
 | `azurite`     | `mcr.microsoft.com/azure-storage/azurite` | 10000        | Azure Blob Storage emulator (workspace files & sandbox artifacts)                                                                                  |
-| `ollama`      | `ollama/ollama:0.30.5`                    | 11434        | Local LLM inference                                                                                                                                |
-| `ollama-init` | `ollama/ollama:0.30.5`                    | -            | One-shot model puller (exits when models are ready)                                                                                                |
+| `ollama`      | `ollama/ollama:0.40.6`                    | 11434        | Local LLM inference                                                                                                                                |
+| `ollama-init` | `ollama/ollama:0.40.6`                    | -            | One-shot model puller (exits when models are ready)                                                                                                |
 
 #### Application services
 

@@ -2,7 +2,6 @@ using Microsoft.Extensions.AI;
 using OllamaSharp;
 using Sentium.Core.Constants;
 using Sentium.Infrastructure.Extensions;
-using Sentium.Infrastructure.Settings;
 using Sentium.Sentinel.Features.Audit;
 using Sentium.Sentinel.Contracts;
 using Sentium.Sentinel.Data;
@@ -75,7 +74,6 @@ public static class SentinelModuleExtensions
         });
 
         services.AddSingleton<IPdpRuntimeSettingsProvider, RegistryPdpSettingsProvider>();
-        services.AddSingleton<ISettingsCacheInvalidationHandler, PdpSettingsCacheInvalidationHandler>();
 
         services.AddHealthChecks().AddDbContextCheck<SentinelDbContext>("sentinel-db", tags: [ModuleName]);
 

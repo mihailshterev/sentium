@@ -3,7 +3,7 @@ import { renderHook, act, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import { useOllamaModels } from "./useOllamaModels";
-import * as agentRuntimeService from "@/features/models/api/models.service";
+import * as modelsService from "@/features/models/api/models.service";
 import type { OllamaModel } from "@/features/models/types/models";
 
 const createWrapper = () => {
@@ -28,13 +28,13 @@ const mockModel: OllamaModel = {
 };
 
 beforeEach(() => {
-  vi.spyOn(agentRuntimeService, "fetchOllamaModels").mockResolvedValue([mockModel]);
-  vi.spyOn(agentRuntimeService, "deleteOllamaModel").mockResolvedValue({
+  vi.spyOn(modelsService, "fetchOllamaModels").mockResolvedValue([mockModel]);
+  vi.spyOn(modelsService, "deleteOllamaModel").mockResolvedValue({
     deletedModel: "llama3:latest",
     defaultModel: "gemma4:e4b",
     agentsReset: 0,
   });
-  vi.spyOn(agentRuntimeService, "pullModel").mockResolvedValue({
+  vi.spyOn(modelsService, "pullModel").mockResolvedValue({
     ok: true,
     body: null,
   } as unknown as Response);
@@ -79,7 +79,7 @@ describe("useOllamaModels fetching", () => {
   });
 
   it("exposes error when fetch fails", async () => {
-    vi.spyOn(agentRuntimeService, "fetchOllamaModels").mockRejectedValueOnce(new Error("Ollama offline"));
+    vi.spyOn(modelsService, "fetchOllamaModels").mockRejectedValueOnce(new Error("Ollama offline"));
     const { result } = renderHook(() => useOllamaModels(), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.error).toBeTruthy();
@@ -112,7 +112,7 @@ describe("useOllamaModels pull helpers", () => {
 describe("useOllamaModels pull()", () => {
   it("sets pullState to 'Connecting...' immediately on invocation", async () => {
     let resolveResponse!: (r: Response) => void;
-    vi.spyOn(agentRuntimeService, "pullModel").mockReturnValueOnce(
+    vi.spyOn(modelsService, "pullModel").mockReturnValueOnce(
       new Promise<Response>((res) => {
         resolveResponse = res;
       }),
@@ -131,7 +131,7 @@ describe("useOllamaModels pull()", () => {
   });
 
   it("sets error state when response is not ok", async () => {
-    vi.spyOn(agentRuntimeService, "pullModel").mockResolvedValueOnce({
+    vi.spyOn(modelsService, "pullModel").mockResolvedValueOnce({
       ok: false,
       status: 500,
       body: null,
@@ -161,7 +161,7 @@ describe("useOllamaModels pull()", () => {
       },
     });
 
-    vi.spyOn(agentRuntimeService, "pullModel").mockResolvedValueOnce({
+    vi.spyOn(modelsService, "pullModel").mockResolvedValueOnce({
       ok: true,
       body: stream,
     } as unknown as Response);
@@ -186,7 +186,7 @@ describe("useOllamaModels pull()", () => {
         controller.close();
       },
     });
-    vi.spyOn(agentRuntimeService, "pullModel").mockResolvedValueOnce({
+    vi.spyOn(modelsService, "pullModel").mockResolvedValueOnce({
       ok: true,
       body: stream,
     } as unknown as Response);
@@ -202,7 +202,7 @@ describe("useOllamaModels pull()", () => {
   });
 
   it("sets pullState to null when pull is aborted", async () => {
-    vi.spyOn(agentRuntimeService, "pullModel").mockRejectedValueOnce(
+    vi.spyOn(modelsService, "pullModel").mockRejectedValueOnce(
       Object.assign(new Error("AbortError"), { name: "AbortError" }),
     );
 
@@ -251,13 +251,13 @@ describe("useOllamaModels pull() edge cases", () => {
     // First call returns a response that stalls (never resolves reader)
     let firstAborted = false;
     const stall = new Promise<Response>(() => {});
-    vi.mocked(agentRuntimeService.pullModel).mockImplementationOnce((_name, signal?) => {
+    vi.mocked(modelsService.pullModel).mockImplementationOnce((_name, signal?) => {
       signal?.addEventListener("abort", () => {
         firstAborted = true;
       });
       return stall;
     });
-    vi.mocked(agentRuntimeService.pullModel).mockResolvedValueOnce(new Response(null, { status: 200 }));
+    vi.mocked(modelsService.pullModel).mockResolvedValueOnce(new Response(null, { status: 200 }));
 
     const { result } = renderHook(() => useOllamaModels(), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -274,7 +274,7 @@ describe("useOllamaModels pull() edge cases", () => {
   });
 
   it("sets error state when pull throws a non-AbortError", async () => {
-    vi.mocked(agentRuntimeService.pullModel).mockRejectedValueOnce("plain string error");
+    vi.mocked(modelsService.pullModel).mockRejectedValueOnce("plain string error");
     const { result } = renderHook(() => useOllamaModels(), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 

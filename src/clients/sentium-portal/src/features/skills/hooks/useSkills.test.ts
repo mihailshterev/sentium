@@ -3,7 +3,7 @@ import { renderHook, waitFor, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import { useSkills } from "./useSkills";
-import * as agentRuntimeService from "@/features/skills/api/skills.service";
+import * as skillsService from "@/features/skills/api/skills.service";
 
 const createWrapper = () => {
   const qc = new QueryClient({
@@ -16,18 +16,18 @@ const createWrapper = () => {
 const skill = { id: "s1", name: "summarize" } as never;
 
 beforeEach(() => {
-  vi.spyOn(agentRuntimeService, "fetchSkillsPaged").mockResolvedValue({
+  vi.spyOn(skillsService, "fetchSkillsPaged").mockResolvedValue({
     items: [skill],
     totalCount: 1,
     page: 1,
     pageSize: 20,
     totalPages: 1,
   });
-  vi.spyOn(agentRuntimeService, "fetchBuiltInSkills").mockResolvedValue([skill]);
-  vi.spyOn(agentRuntimeService, "createSkill").mockResolvedValue(skill);
-  vi.spyOn(agentRuntimeService, "updateSkill").mockResolvedValue(skill);
-  vi.spyOn(agentRuntimeService, "deleteSkill").mockResolvedValue(undefined);
-  vi.spyOn(agentRuntimeService, "uploadSkillFile").mockResolvedValue(skill);
+  vi.spyOn(skillsService, "fetchBuiltInSkills").mockResolvedValue([skill]);
+  vi.spyOn(skillsService, "createSkill").mockResolvedValue(skill);
+  vi.spyOn(skillsService, "updateSkill").mockResolvedValue(skill);
+  vi.spyOn(skillsService, "deleteSkill").mockResolvedValue(undefined);
+  vi.spyOn(skillsService, "uploadSkillFile").mockResolvedValue(skill);
 });
 
 describe("useSkills", () => {
@@ -44,7 +44,7 @@ describe("useSkills", () => {
     await act(async () => {
       await result.current.createSkill({ name: "x" } as never);
     });
-    expect(agentRuntimeService.createSkill).toHaveBeenCalled();
+    expect(skillsService.createSkill).toHaveBeenCalled();
   });
 
   it("updates a skill by id", async () => {
@@ -53,7 +53,7 @@ describe("useSkills", () => {
     await act(async () => {
       await result.current.updateSkill({ id: "s1", payload: { name: "y" } as never });
     });
-    expect(agentRuntimeService.updateSkill).toHaveBeenCalledWith("s1", { name: "y" });
+    expect(skillsService.updateSkill).toHaveBeenCalledWith("s1", { name: "y" });
   });
 
   it("deletes a skill", async () => {
@@ -62,7 +62,7 @@ describe("useSkills", () => {
     await act(async () => {
       await result.current.deleteSkill("s1");
     });
-    expect(agentRuntimeService.deleteSkill).toHaveBeenCalledWith("s1");
+    expect(skillsService.deleteSkill).toHaveBeenCalledWith("s1");
   });
 
   it("uploads a skill file", async () => {
@@ -72,6 +72,6 @@ describe("useSkills", () => {
     await act(async () => {
       await result.current.uploadSkill(file);
     });
-    expect(agentRuntimeService.uploadSkillFile).toHaveBeenCalledWith(file);
+    expect(skillsService.uploadSkillFile).toHaveBeenCalledWith(file);
   });
 });

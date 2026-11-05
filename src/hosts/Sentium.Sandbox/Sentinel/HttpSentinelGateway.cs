@@ -17,7 +17,7 @@ internal sealed class HttpSentinelGateway(
 
     /// <summary>
     /// Upper bound on the code forwarded to the PDP for content inspection. Mirrors the
-    /// AgentRuntime tool-payload window so the sensitive-data egress scan can inspect what is
+    /// Praxis tool-payload window so the sensitive-data egress scan can inspect what is
     /// actually being executed without shipping arbitrarily large source (which would also risk
     /// tripping the scan's regex timeout).
     /// </summary>

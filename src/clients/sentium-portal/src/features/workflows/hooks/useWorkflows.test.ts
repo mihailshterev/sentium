@@ -3,7 +3,7 @@ import { renderHook, waitFor, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import { useWorkflows } from "./useWorkflows";
-import * as agentRuntimeService from "@/features/workflows/api/workflows.service";
+import * as workflowsService from "@/features/workflows/api/workflows.service";
 import type { WorkflowRecord } from "@/features/workflows/types/workflows";
 
 const createWrapper = () => {
@@ -24,16 +24,16 @@ const mockWorkflow: WorkflowRecord = {
 };
 
 beforeEach(() => {
-  vi.spyOn(agentRuntimeService, "fetchWorkflowsPaged").mockResolvedValue({
+  vi.spyOn(workflowsService, "fetchWorkflowsPaged").mockResolvedValue({
     items: [mockWorkflow],
     totalCount: 1,
     page: 1,
     pageSize: 100,
     totalPages: 1,
   });
-  vi.spyOn(agentRuntimeService, "createWorkflow").mockResolvedValue(mockWorkflow);
-  vi.spyOn(agentRuntimeService, "updateWorkflow").mockResolvedValue({ ...mockWorkflow, name: "Updated" });
-  vi.spyOn(agentRuntimeService, "deleteWorkflow").mockResolvedValue(undefined);
+  vi.spyOn(workflowsService, "createWorkflow").mockResolvedValue(mockWorkflow);
+  vi.spyOn(workflowsService, "updateWorkflow").mockResolvedValue({ ...mockWorkflow, name: "Updated" });
+  vi.spyOn(workflowsService, "deleteWorkflow").mockResolvedValue(undefined);
 });
 
 describe("useWorkflows fetching", () => {
@@ -50,14 +50,14 @@ describe("useWorkflows fetching", () => {
   });
 
   it("calls fetchWorkflows exactly once on mount", async () => {
-    const spy = vi.spyOn(agentRuntimeService, "fetchWorkflowsPaged");
+    const spy = vi.spyOn(workflowsService, "fetchWorkflowsPaged");
     const { result } = renderHook(() => useWorkflows(), { wrapper: createWrapper() });
     await waitFor(() => !result.current.isLoading);
     expect(spy).toHaveBeenCalledTimes(1);
   });
 
   it("falls back to empty array on fetch error", async () => {
-    vi.spyOn(agentRuntimeService, "fetchWorkflowsPaged").mockRejectedValueOnce(new Error("Network error"));
+    vi.spyOn(workflowsService, "fetchWorkflowsPaged").mockRejectedValueOnce(new Error("Network error"));
     const { result } = renderHook(() => useWorkflows(), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
     expect(result.current.workflows).toEqual([]);
@@ -121,7 +121,7 @@ describe("useWorkflows mutation calls", () => {
       result.current.createWorkflow({ name: "New WF", description: "", agents: [] });
     });
     await waitFor(() => expect(result.current.isCreateSuccess).toBe(true));
-    expect(agentRuntimeService.createWorkflow).toHaveBeenCalled();
+    expect(workflowsService.createWorkflow).toHaveBeenCalled();
   });
 
   it("calls updateWorkflow service and settles", async () => {
@@ -131,7 +131,7 @@ describe("useWorkflows mutation calls", () => {
       result.current.updateWorkflow({ id: "wf-1", name: "Updated", description: "", agents: [] });
     });
     await waitFor(() => expect(result.current.isUpdatingWorkflow).toBe(false));
-    expect(agentRuntimeService.updateWorkflow).toHaveBeenCalled();
+    expect(workflowsService.updateWorkflow).toHaveBeenCalled();
   });
 
   it("calls deleteWorkflow service and settles", async () => {
@@ -141,7 +141,7 @@ describe("useWorkflows mutation calls", () => {
       result.current.deleteWorkflow("wf-1");
     });
     await waitFor(() => expect(result.current.isDeletingWorkflow).toBe(false));
-    expect(agentRuntimeService.deleteWorkflow).toHaveBeenCalledWith("wf-1");
+    expect(workflowsService.deleteWorkflow).toHaveBeenCalledWith("wf-1");
   });
 
   it("resetCreate resets the create state", async () => {

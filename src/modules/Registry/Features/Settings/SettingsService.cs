@@ -2,7 +2,6 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Logging;
-using Sentium.Infrastructure.Settings;
 using Sentium.Registry.Contracts;
 using Sentium.Registry.Entities;
 
@@ -12,7 +11,6 @@ public sealed class SettingsService(
     ISettingsRepository repository,
     ISettingsCatalog catalog,
     HybridCache cache,
-    ISettingsCacheInvalidator cacheInvalidator,
     IServiceProvider serviceProvider,
     ILogger<SettingsService> logger) : ISettingsService
 {
@@ -75,8 +73,8 @@ public sealed class SettingsService(
             await repository.UpdateAsync(entity, ct);
         }
 
+        // Consumers read through this cache entry and keep no copies, so evicting it is the whole invalidation.
         await cache.RemoveAsync(RegistrySettingsCacheKeys.Envelope(descriptor.Key, scopeUserId), ct);
-        await cacheInvalidator.InvalidateAsync(descriptor.Key, scopeUserId, ct);
 
         logger.LogInformation("Settings '{Key}' updated for {Scope} by {By}; cache invalidated", descriptor.Key, scopeUserId?.ToString() ?? "global", updatedBy ?? "system");
 

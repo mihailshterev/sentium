@@ -1,6 +1,8 @@
 ```mermaid
 flowchart TD
-    REQ([POST /policy/evaluate]) --> LD[LockdownPolicy]
+    IN1([Praxis tool call<br/>Sentinel tool guard → IPolicyDecisionPoint, in-process]) --> LD
+    IN2([Sandbox execution<br/>POST /api/sentinel/policy/evaluate, X-Internal-Token]) --> LD
+    LD[LockdownPolicy]
     LD -->|Lockdown active| D1[Deny — critical, alert]
     LD -->|Pass| PR[ProtectedResourcePolicy]
     PR -->|Protected path / forbidden action| D2[Deny — high]

@@ -3,7 +3,7 @@ import { renderHook, waitFor, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import { useConversations } from "./useConversations";
-import * as agentRuntimeService from "@/features/assistant/api/assistant.service";
+import * as assistantService from "@/features/assistant/api/assistant.service";
 import type { ConversationSummary } from "@/features/assistant/types/assistant";
 
 const createWrapper = () => {
@@ -22,15 +22,15 @@ const mockConversation: ConversationSummary = {
 };
 
 beforeEach(() => {
-  vi.spyOn(agentRuntimeService, "fetchConversations").mockResolvedValue({
+  vi.spyOn(assistantService, "fetchConversations").mockResolvedValue({
     items: [mockConversation],
     totalCount: 1,
     page: 1,
     pageSize: 20,
     totalPages: 1,
   });
-  vi.spyOn(agentRuntimeService, "createConversation").mockResolvedValue({ id: "conv-2" });
-  vi.spyOn(agentRuntimeService, "deleteConversation").mockResolvedValue(undefined);
+  vi.spyOn(assistantService, "createConversation").mockResolvedValue({ id: "conv-2" });
+  vi.spyOn(assistantService, "deleteConversation").mockResolvedValue(undefined);
 });
 
 describe("useConversations fetching", () => {
@@ -46,7 +46,7 @@ describe("useConversations fetching", () => {
   });
 
   it("returns empty list on fetch failure", async () => {
-    vi.spyOn(agentRuntimeService, "fetchConversations").mockRejectedValueOnce(new Error("fail"));
+    vi.spyOn(assistantService, "fetchConversations").mockRejectedValueOnce(new Error("fail"));
     const { result } = renderHook(() => useConversations(), { wrapper: createWrapper() });
     // Wait a tick for the query to settle
     await new Promise((r) => setTimeout(r, 50));
@@ -81,7 +81,7 @@ describe("useConversations mutation calls", () => {
     await act(async () => {
       created = await result.current.createConversation({ title: "New Chat", model: "llama3" });
     });
-    expect(agentRuntimeService.createConversation).toHaveBeenCalled();
+    expect(assistantService.createConversation).toHaveBeenCalled();
     expect(created).toEqual({ id: "conv-2" });
   });
 
@@ -92,6 +92,6 @@ describe("useConversations mutation calls", () => {
       result.current.deleteConversation("conv-1");
     });
     await waitFor(() => expect(result.current.isDeleting).toBe(false));
-    expect(agentRuntimeService.deleteConversation).toHaveBeenCalledWith("conv-1");
+    expect(assistantService.deleteConversation).toHaveBeenCalledWith("conv-1");
   });
 });

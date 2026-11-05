@@ -5,7 +5,6 @@ using Quartz;
 using Sentium.Core.Constants;
 using Sentium.Infrastructure.Extensions;
 using Sentium.Infrastructure.Security;
-using Sentium.Infrastructure.Settings;
 using Sentium.Praxis.Features.Agents;
 using Sentium.Praxis.Features.Agents.Native;
 using Sentium.Praxis.Features.CodeExecution;
@@ -51,9 +50,7 @@ public static class PraxisModuleExtensions
         AddOrchestration(services);
         AddInference(services, configuration);
 
-        services.AddScoped<IRegistryClient, RegistryClient>();
-        services.AddScoped<IRegistrySettingsService, RegistrySettingsService>();
-        services.AddSingleton<ISettingsCacheInvalidationHandler, AgentSettingsCacheInvalidationHandler>();
+        services.AddSingleton<IRegistrySettingsService, RegistrySettingsService>();
 
         services.AddScoped<ILocalFileService, LocalFileService>();
         services.AddSingleton<FileIngestionQueue>();

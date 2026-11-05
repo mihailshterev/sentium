@@ -52,8 +52,8 @@ public sealed class HarnessSettings
 
 /// <summary>
 /// Runtime-configurable Policy Decision Point settings, managed by Sovereign users and consumed
-/// by the Sentinel service. Static policy lists (forbidden actions, protected prefixes) remain in
-/// Sentinel's appsettings.
+/// by the Sentinel module. Static policy lists (forbidden actions, protected prefixes) remain in
+/// the <c>Pdp</c> configuration section (Sentinel's <c>PdpOptions</c>).
 /// </summary>
 public sealed class PdpSettings
 {
@@ -67,7 +67,7 @@ public sealed class PdpSettings
 
 /// <summary>
 /// Runtime-configurable Vigil monitoring settings, managed by Sovereign users and consumed by
-/// the Vigil service. Controls poll cadence, probe timeouts, the degraded-latency threshold, and
+/// the Vigil module. Controls poll cadence, probe timeouts, the degraded-latency threshold, and
 /// when a sustained degradation escalates into an incident.
 /// </summary>
 public sealed class VigilSettings

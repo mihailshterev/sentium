@@ -1,8 +1,8 @@
 namespace Sentium.Praxis.Features.Registry;
 
 /// <summary>
-/// Provides cached access to Registry global settings.
-/// Reads from L1 (in-memory) on the hot path; falls back to Registry HTTP if the cache is empty.
+/// Resolves the Registry settings Praxis needs as one <see cref="SettingsSnapshot"/>, falling back to
+/// <see cref="SettingsSnapshot.Default"/> when they cannot be read. Reads are served from Registry's cache.
 /// </summary>
 public interface IRegistrySettingsService
 {

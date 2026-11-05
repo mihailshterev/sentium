@@ -8,7 +8,7 @@ using Xunit;
 
 namespace Sentium.Tests.Integration.Modules.Praxis;
 
-public class AgentRuntimeApiTests(MonolithWebApplicationFactory factory)
+public class PraxisApiTests(MonolithWebApplicationFactory factory)
     : IClassFixture<MonolithWebApplicationFactory>
 {
     private readonly HttpClient _client = factory.CreateClient();

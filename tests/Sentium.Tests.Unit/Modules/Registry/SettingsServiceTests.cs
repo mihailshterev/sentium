@@ -1,11 +1,11 @@
 using System.Text.Json;
 using FluentAssertions;
+using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Sentium.Registry.Features.Settings;
 using Sentium.Registry.Entities;
 using Sentium.Core.Constants;
-using Sentium.Infrastructure.Settings;
 using Xunit;
 
 namespace Sentium.Tests.Unit.Modules.Registry;
@@ -15,25 +15,26 @@ public sealed class SettingsServiceTests
     private static readonly Guid UserId = Guid.NewGuid();
 
     private readonly ISettingsRepository _repository = Substitute.For<ISettingsRepository>();
-    private readonly ISettingsCacheInvalidator _cacheInvalidator = Substitute.For<ISettingsCacheInvalidator>();
+
+    private readonly SettingsCatalog _catalog = new(new ISettingsDescriptor[]
+    {
+        new SettingsDescriptor<HarnessSettings>(SettingsKeys.Harness, SettingsScope.PerUser, c => c.Harness, (c, v) => c.Harness = v),
+        new SettingsDescriptor<PdpSettings>(SettingsKeys.Pdp, SettingsScope.Global, c => c.Pdp, (c, v) => c.Pdp = v),
+    });
+
     private readonly SettingsService _sut;
 
     public SettingsServiceTests()
     {
-        var catalog = new SettingsCatalog(new ISettingsDescriptor[]
-        {
-            new SettingsDescriptor<HarnessSettings>(SettingsKeys.Harness, SettingsScope.PerUser, c => c.Harness, (c, v) => c.Harness = v),
-            new SettingsDescriptor<PdpSettings>(SettingsKeys.Pdp, SettingsScope.Global, c => c.Pdp, (c, v) => c.Pdp = v),
-        });
-
-        _sut = new SettingsService(
-            _repository,
-            catalog,
-            new PassThroughHybridCache(),
-            _cacheInvalidator,
-            Substitute.For<IServiceProvider>(),
-            NullLogger<SettingsService>.Instance);
+        _sut = CreateSut(new PassThroughHybridCache());
     }
+
+    private SettingsService CreateSut(HybridCache cache) => new(
+        _repository,
+        _catalog,
+        cache,
+        Substitute.For<IServiceProvider>(),
+        NullLogger<SettingsService>.Instance);
 
     private static readonly JsonSerializerOptions WebOptions = new(JsonSerializerDefaults.Web);
 
@@ -78,13 +79,15 @@ public sealed class SettingsServiceTests
     }
 
     [Fact]
-    public async Task UpdateAsync_Harness_PersistsAndInvalidatesCaches()
+    public async Task UpdateAsync_Harness_PersistsAndEvictsCachedEnvelope()
     {
         var ct = TestContext.Current.CancellationToken;
         var entity = new SystemSettings { UserId = UserId };
         _repository.FindAsync(UserId, ct).Returns(entity);
+        var cache = Substitute.For<HybridCache>();
+        var sut = CreateSut(cache);
 
-        var result = await _sut.UpdateAsync(
+        var result = await sut.UpdateAsync(
             SettingsKeys.Harness, UserId,
             Payload(new { userHarnessPrompt = "custom", isBuiltInHarnessEnabled = true, isPromptEnhancementEnabled = true }),
             "admin", ct);
@@ -93,7 +96,7 @@ public sealed class SettingsServiceTests
         entity.Settings.Harness.UserHarnessPrompt.Should().Be("custom");
         entity.UpdatedBy.Should().Be("admin");
         result.Value.Deserialize<HarnessSettings>(WebOptions)!.UserHarnessPrompt.Should().Be("custom");
-        await _cacheInvalidator.Received(1).InvalidateAsync(SettingsKeys.Harness, UserId, ct);
+        await cache.Received(1).RemoveAsync(RegistrySettingsCacheKeys.Envelope(SettingsKeys.Harness, UserId), ct);
     }
 
     [Fact]

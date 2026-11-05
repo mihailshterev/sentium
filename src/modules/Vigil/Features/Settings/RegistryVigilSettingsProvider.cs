@@ -1,41 +1,24 @@
-using Microsoft.Extensions.Caching.Hybrid;
-using Microsoft.Extensions.Logging;
 using Sentium.Core.Constants;
 using Sentium.Registry.Contracts;
 
 namespace Sentium.Vigil.Features.Settings;
 
+/// <summary>
+/// Reads the Vigil monitoring settings from the Registry module in-process. Registry caches the settings
+/// envelope itself (HybridCache L1 + L2) and evicts it on change, so Vigil keeps no copy of its own.
+/// </summary>
 public sealed class RegistryVigilSettingsProvider(
     ISettingsService settingsService,
-    HybridCache cache,
     ILogger<RegistryVigilSettingsProvider> logger) : IVigilSettingsProvider
 {
-    private static readonly HybridCacheEntryOptions CacheOptions = new()
-    {
-        Expiration = TimeSpan.FromHours(1),
-        LocalCacheExpiration = TimeSpan.FromMinutes(5)
-    };
-
     public async ValueTask<VigilRuntimeSettings> GetAsync(CancellationToken ct = default)
     {
         try
         {
-            return await cache.GetOrCreateAsync(
-                VigilSettingsCacheKeys.Runtime(null),
-                async token =>
-                {
-                    var settings = await settingsService.GetValueAsync<VigilSettingsResponse>(SettingsKeys.Vigil, ct: token);
-                    return settings is null ? Fallback() : Map(settings);
-                },
-                CacheOptions,
-                cancellationToken: ct
-            );
+            var settings = await settingsService.GetValueAsync<VigilSettingsResponse>(SettingsKeys.Vigil, ct: ct);
+            return settings is null ? Fallback() : Map(settings);
         }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             logger.LogWarning(ex, "Failed to read Vigil settings from Registry; using class defaults");
             return Fallback();

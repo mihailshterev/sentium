@@ -24,6 +24,7 @@ public sealed class AccountController(
     /// <response code="200">Returns the new user's unique identifier and username.</response>
     /// <response code="400">If the registration data is invalid or the username is already in use.</response>
     [HttpPost("register")]
+    [AllowAnonymous]
     [EnableRateLimiting("auth")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -47,6 +48,7 @@ public sealed class AccountController(
     /// <response code="401">Invalid credentials provided.</response>
     /// <response code="423">Account is locked due to repeated failed attempts.</response>
     [HttpPost("login")]
+    [AllowAnonymous]
     [EnableRateLimiting("auth")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]

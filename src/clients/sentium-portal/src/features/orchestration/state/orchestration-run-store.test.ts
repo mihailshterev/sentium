@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { useOrchestrationRunStore } from "./orchestration-run-store";
-import * as agentRuntimeService from "@/features/orchestration/api/orchestration.service";
+import * as orchestrationService from "@/features/orchestration/api/orchestration.service";
 
 class FakeEventSource {
   static instances: FakeEventSource[] = [];
@@ -38,9 +38,9 @@ const resetStore = () =>
 beforeEach(() => {
   FakeEventSource.instances = [];
   vi.stubGlobal("EventSource", FakeEventSource as unknown as typeof EventSource);
-  vi.spyOn(agentRuntimeService, "runWorkflowPipeline").mockResolvedValue({ eventId: "e1" });
-  vi.spyOn(agentRuntimeService, "runDynamicWorkflow").mockResolvedValue({ eventId: "e2" });
-  vi.spyOn(agentRuntimeService, "cancelOrchestrationRun").mockResolvedValue(undefined);
+  vi.spyOn(orchestrationService, "runWorkflowPipeline").mockResolvedValue({ eventId: "e1" });
+  vi.spyOn(orchestrationService, "runDynamicWorkflow").mockResolvedValue({ eventId: "e2" });
+  vi.spyOn(orchestrationService, "cancelOrchestrationRun").mockResolvedValue(undefined);
   resetStore();
 });
 
@@ -61,7 +61,7 @@ describe("startPredefined", () => {
   });
 
   it("settles to COMPLETE when the pipeline call throws", async () => {
-    vi.spyOn(agentRuntimeService, "runWorkflowPipeline").mockRejectedValueOnce(new Error("boom"));
+    vi.spyOn(orchestrationService, "runWorkflowPipeline").mockRejectedValueOnce(new Error("boom"));
     await useOrchestrationRunStore.getState().startPredefined({ workflowId: "w1", scenario: "s" });
 
     const state = useOrchestrationRunStore.getState();
@@ -160,7 +160,7 @@ describe("stopRun / resetRun", () => {
     const state = useOrchestrationRunStore.getState();
     expect(state.connection).toBe("stopping");
     expect(state.isRunning).toBe(true);
-    expect(agentRuntimeService.cancelOrchestrationRun).toHaveBeenCalledWith("e1");
+    expect(orchestrationService.cancelOrchestrationRun).toHaveBeenCalledWith("e1");
   });
 
   it("stopRun finalizes as stopped when the backend confirms cancellation", async () => {

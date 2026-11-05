@@ -1,23 +1,22 @@
 ```mermaid
 sequenceDiagram
     autonumber
-    participant SVC as Service (e.g. AgentRuntime)
-    participant RS as RegistrySettingsService
-    participant HC as HybridCache (L1 + L2)
-    participant RC as RegistryClient
-    participant RG as Registry (/settings)
+    participant M as Consuming module (Praxis / Sentinel / Vigil)
+    participant SS as Registry · ISettingsService (ScopedSettingsService)
+    participant SV as SettingsService
+    participant HC as HybridCache (L1 + Redis L2)
+    participant DB as PostgreSQL (registry schema)
 
-    SVC->>RS: GetAsync(userId)
-    RS->>HC: GetOrCreate(key)
+    M->>SS: GetValueAsync(key, userId) via Registry Contracts
+    SS->>SV: GetAsync(key, scope) in its own DI scope
+    SV->>HC: GetOrCreate(settings:envelope:{key}:{scope})
     alt Cache hit
-        HC-->>RS: settings
+        HC-->>SV: SettingsEnvelope
     else Cache miss
-        HC->>RC: factory -> GetSettings(userId)
-        RC->>RG: GET /settings/{key} (X-Internal-Token)
-        RG-->>RC: SettingsEnvelope
-        RC-->>HC: settings (stored in L1 + L2)
-        HC-->>RS: settings
+        HC->>DB: Load the settings row (JSON column)
+        DB-->>HC: row, or defaults when none exists
+        HC-->>SV: SettingsEnvelope (stored in L1 + L2)
     end
-    RS-->>SVC: SettingsSnapshot
-    Note over RS,SVC: If Registry is unreachable, defaults are returned
+    SV-->>M: envelope.Value deserialized into the module's own record
+    Note over M,SS: Modules keep no copy. If Registry cannot be read they fall back to built-in defaults.
 ```

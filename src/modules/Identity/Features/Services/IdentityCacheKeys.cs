@@ -5,8 +5,8 @@ namespace Sentium.Identity.Features.Services;
 internal static class IdentityCacheKeys
 {
     /// <summary>
-    /// Entry options the standalone Identity service used as its HybridCache defaults; the shared
-    /// Sentium.Web defaults are longer, so Identity passes these explicitly.
+    /// Identity's HybridCache entry lifetimes. User, role and claim data must go stale sooner than the
+    /// Sentium.Web host defaults allow, so Identity passes these explicitly.
     /// </summary>
     internal static readonly HybridCacheEntryOptions EntryOptions = new()
     {

@@ -3,11 +3,12 @@ sequenceDiagram
     autonumber
     participant MW as MonitoringWorker (background)
     participant RS as Registry settings
-    participant PR as Health probes (HTTP/TCP/NATS)
+    participant PR as Health probes
     participant ST as State store
     participant IN as Incident store
-    participant NATS as NATS
+    participant FD as VigilFeed (in-process)
 
+    Note over PR: Modules - in-process health checks by tag (Identity, Sentinel, Praxis, Codex, Registry)<br/>Sandbox - HTTP /health · Ollama - HTTP /api/version · PostgreSQL, Redis - TCP
     loop Every PollInterval
         MW->>RS: GetAsync() - cadence and thresholds
         par For each target
@@ -17,10 +18,10 @@ sequenceDiagram
             MW->>ST: UpdateStatus(result)
             MW->>IN: Evaluate incident (open/resolve)
             opt Status changed
-                MW->>NATS: publish status update
+                MW->>FD: Publish("status")
             end
             opt Incident opened/resolved
-                MW->>NATS: publish incident opened/resolved
+                MW->>FD: Publish("incident.opened" / "incident.resolved")
             end
         end
     end

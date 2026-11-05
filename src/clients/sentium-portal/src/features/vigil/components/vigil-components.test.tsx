@@ -24,7 +24,7 @@ describe("IncidentTimeline", () => {
     const incidents = [
       {
         id: "1",
-        target: "Gateway",
+        target: "Praxis",
         severity: "Critical",
         status: "Open",
         openedAt: "2025-01-01T00:00:00Z",
@@ -42,7 +42,7 @@ describe("IncidentTimeline", () => {
       },
     ] as unknown as Incident[];
     render(<IncidentTimeline incidents={incidents} />);
-    expect(screen.getByText("Gateway")).toBeInTheDocument();
+    expect(screen.getByText("Praxis")).toBeInTheDocument();
     expect(screen.getByText("Redis")).toBeInTheDocument();
     expect(screen.getByText("down")).toBeInTheDocument();
   });
@@ -82,7 +82,7 @@ describe("StatusIcon", () => {
 describe("ServiceRow", () => {
   const service = (overrides: Partial<ServiceHealthStatus> = {}): ServiceHealthStatus =>
     ({
-      serviceName: "Gateway",
+      serviceName: "Praxis",
       status: "Healthy",
       latencyMs: 12,
       uptimePercent: 99.9,
@@ -94,7 +94,7 @@ describe("ServiceRow", () => {
 
   it("renders service name, uptime and latency", () => {
     render(<ServiceRow service={service()} />);
-    expect(screen.getByText("Gateway")).toBeInTheDocument();
+    expect(screen.getByText("Praxis")).toBeInTheDocument();
     expect(screen.getByText("99.9% uptime")).toBeInTheDocument();
     expect(screen.getByText("12ms")).toBeInTheDocument();
   });
@@ -103,7 +103,7 @@ describe("ServiceRow", () => {
     const checks = [{ name: "ping", status: "Healthy", durationMs: 1 }] as unknown as HealthCheckEntry[];
     render(<ServiceRow service={service({ status: "Degraded", checks })} />);
     expect(screen.queryByText("ping")).not.toBeInTheDocument();
-    fireEvent.click(screen.getByText("Gateway"));
+    fireEvent.click(screen.getByText("Praxis"));
     expect(screen.getByText("ping")).toBeInTheDocument();
   });
 });
