@@ -3,27 +3,30 @@ sequenceDiagram
     autonumber
     actor U as User
     participant FE as sentium-portal
-    participant AR as AssistantController
+    participant AR as Praxis · AssistantController
     participant F as AgentFactory
     participant AG as AIAgent (GeneralAssistant)
-    participant CS as ConversationService
+    participant CH as ConversationChatHistoryProvider
 
     U->>FE: Send a message
-    FE->>AR: POST /assistant/chat (SSE)
-    AR-->>FE: open stream (keep-alive + heartbeat)
-    opt Prompt enhancement
+    FE->>AR: POST /api/praxis/assistant/chat (SSE)
+    AR->>AR: Set the run context (user, original prompt, correlation id)
+    AR-->>FE: open stream (keep-alive)
+    opt Prompt enhancement enabled
         AR->>AR: TryEnhancePromptAsync()
-        AR-->>FE: event "enhancedPrompt"
+        AR-->>FE: event "enhanced_prompt"
     end
-    AR->>CS: Persist the user message
-    AR->>F: CreateAsync(GeneralAssistant, model)
+    AR->>F: CreateAsync(GeneralAssistant, model, chat history)
     F-->>AR: AIAgent
-    AR->>AG: RunStreamingAsync(history)
+    AR->>CH: Attach the session to the conversation
+    AR->>AG: RunStreamingAsync(new user turn, session)
+    AG->>CH: Load the persisted transcript
     loop Stream the response
         AG-->>AR: reasoning -> event "thought"
         AG-->>AR: tool call -> event "tool"
         AG-->>AR: text -> event "message"
     end
-    AR->>CS: Persist the assistant reply
+    AG->>CH: Store the user turn and one merged assistant message
     AR-->>FE: event "done"
+    Note over AR,CH: Ephemeral chats (no conversation id) use the client-held history instead
 ```

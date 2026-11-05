@@ -22,8 +22,8 @@ using Sentium.Praxis.Testing;
 using Sentium.Praxis.Features.Tools;
 using Sentium.Praxis.Features.Tools.Workspace;
 using Sentium.Praxis.Features.WorkflowManagement;
-using Sentium.Praxis.Features.WorkspaceManagement;
 using Sentium.Praxis.Features.Workflows;
+using Sentium.Praxis.Features.Workflows.Squad;
 using Sentium.Praxis.Features.Workspaces;
 
 namespace Sentium.Praxis;
@@ -37,6 +37,13 @@ public static class PraxisModuleExtensions
     /// with the Ollama clients other modules register.
     /// </summary>
     internal const string OllamaHttpClientName = "praxis-ollama";
+
+    /// <summary>
+    /// Key of the shared base client agents run on (OpenTelemetry → Ollama). Each agent adds its own function-invocation
+    /// and compaction layers on top (see <see cref="AgentChatPipeline"/>). The unkeyed <see cref="IChatClient"/> is the
+    /// plain pipeline for direct, non-agent calls.
+    /// </summary>
+    public const string AgentChatClientKey = "praxis-agents";
 
     public static IHostApplicationBuilder AddPraxisModule(this IHostApplicationBuilder builder)
     {
@@ -64,7 +71,8 @@ public static class PraxisModuleExtensions
         services.AddSingleton<IBuiltInSkillCatalog, BuiltInSkillCatalog>();
         services.AddScoped<IAgentSkillRepository, AgentSkillRepository>();
         services.AddScoped<IAgentSkillService, AgentSkillService>();
-        services.AddScoped<DynamicSkillsProvider>();
+        services.AddScoped<AgentSkillsProviderFactory>();
+        services.AddScoped<LearningsContextProvider>();
 
         services.AddSingleton<IPendingApprovalStore, PendingApprovalStore>();
 
@@ -89,6 +97,7 @@ public static class PraxisModuleExtensions
         services.AddTransient<IAgentTool, ScheduleTaskTool>();
 
         services.AddScoped<IConversationRepository, ConversationRepository>();
+        services.AddScoped<ConversationChatHistoryProvider>();
         services.AddScoped<IWorkflowRepository, WorkflowRepository>();
         services.AddScoped<IWorkflowRunRepository, WorkflowRunRepository>();
 
@@ -101,6 +110,7 @@ public static class PraxisModuleExtensions
         services.AddQuartzHostedService(options => options.WaitForJobsToComplete = true);
 
         services.AddSingleton<SentinelClient>();
+        services.AddSingleton<SentinelFunctionMiddleware>();
         services.AddSingleton<IPdpContextAccessor, PdpContextAccessor>();
 
         AddCodeExecution(services, configuration);
@@ -145,6 +155,9 @@ public static class PraxisModuleExtensions
         services.AddTransient<IWorkflowService, WorkflowService>();
         services.AddTransient<IWorkspaceService, WorkspaceService>();
         services.AddTransient<IOrchestrator, WorkflowOrchestrator>();
+        services.AddTransient<SquadWorkflowRunner>();
+        services.AddTransient<IAgentWorkflow, DynamicDiscoveryWorkflow>();
+        services.AddTransient<IAgentWorkflow, DynamicCustomWorkflow>();
 
         RegisterAgent<GeneralAssistant>(services, AgentRole.GeneralAssistant);
         RegisterAgent<OrchestratorAgent>(services, AgentRole.Orchestrator);
@@ -162,35 +175,25 @@ public static class PraxisModuleExtensions
 
     private static void AddInference(IServiceCollection services, IConfiguration configuration)
     {
-        var ollamaUri = new Uri(configuration["AI:OllamaBaseUrl"] ?? "http://localhost:11434");
         var modelName = configuration["AI:ModelName"] ?? AIModels.Gemma4_E4B;
 
-        services.AddSingleton(new OllamaOptions { BaseUrl = ollamaUri, DefaultModel = modelName });
+        services.AddSingleton(new OllamaOptions { BaseUrl = configuration.GetOllamaBaseUrl(), DefaultModel = modelName });
+        services.AddOllamaHttpClient(configuration, OllamaHttpClientName);
 
-        var ollamaTotalTimeout = ResolveTimeout(configuration, "AI:OllamaTimeout", TimeSpan.FromMinutes(30));
-        var ollamaAttemptTimeout = ResolveTimeout(configuration, "AI:OllamaAttemptTimeout", TimeSpan.FromMinutes(10));
+        // Direct (non-agent) calls: prompt enhancement, learning sanitization.
+        services.AddChatClient(sp => CreateOllamaClient(sp, modelName))
+            .UseFunctionInvocation()
+            .UseOpenTelemetry();
 
-        services.AddHttpClient(OllamaHttpClientName, client =>
-        {
-            client.BaseAddress = ollamaUri;
-            client.Timeout = ollamaTotalTimeout;
-        })
-        .AddLongRunningResilienceHandler(
-            totalTimeout: ollamaTotalTimeout,
-            attemptTimeout: ollamaAttemptTimeout,
-            retries: 0
-        );
+        // Shared agent base: telemetry records each request exactly as sent. Agents pick their model via ChatOptions.ModelId.
+        services.AddKeyedChatClient(AgentChatClientKey, sp => CreateOllamaClient(sp, modelName))
+            .UseOpenTelemetry();
+    }
 
-        services.AddChatClient(sp =>
-        {
-            var httpClient = sp.GetRequiredService<IHttpClientFactory>().CreateClient(OllamaHttpClientName);
-            var client = new OllamaApiClient(httpClient)
-            {
-                SelectedModel = modelName
-            };
-
-            return client.AddSentiumPipeline();
-        });
+    private static OllamaApiClient CreateOllamaClient(IServiceProvider sp, string defaultModel)
+    {
+        var httpClient = sp.GetRequiredService<IHttpClientFactory>().CreateClient(OllamaHttpClientName);
+        return new OllamaApiClient(httpClient) { SelectedModel = defaultModel };
     }
 
     /// <summary>
@@ -215,24 +218,5 @@ public static class PraxisModuleExtensions
             attemptTimeout: TimeSpan.FromSeconds(120),
             retries: 0
         );
-    }
-
-    private static TimeSpan ResolveTimeout(IConfiguration configuration, string key, TimeSpan fallback)
-    {
-        var raw = configuration[key];
-        if (!string.IsNullOrWhiteSpace(raw))
-        {
-            if (TimeSpan.TryParse(raw, out var asTimeSpan) && asTimeSpan > TimeSpan.Zero)
-            {
-                return asTimeSpan;
-            }
-
-            if (double.TryParse(raw, out var asMinutes) && asMinutes > 0)
-            {
-                return TimeSpan.FromMinutes(asMinutes);
-            }
-        }
-
-        return fallback;
     }
 }

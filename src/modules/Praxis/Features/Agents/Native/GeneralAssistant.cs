@@ -20,4 +20,6 @@ public sealed class GeneralAssistant : IAgent
     /// implementations when domain-specific data is required.
     /// </remarks>
     public string Instructions => "You are a helpful assistant. Use tools when necessary to answer user queries.";
+
+    public string Description => "Answers general questions and handles tasks that need no specialist.";
 }

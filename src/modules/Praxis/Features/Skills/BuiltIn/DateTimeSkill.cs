@@ -8,36 +8,20 @@ namespace Sentium.Praxis.Features.Skills.BuiltIn;
 /// <summary>
 /// Built-in skill that provides date and time utilities.
 /// </summary>
-internal sealed class DateTimeSkill : AgentClassSkill<DateTimeSkill>
+internal sealed class DateTimeSkill() : BuiltInSkill<DateTimeSkill>(
+    "datetime-utils",
+    "Date and time utilities: current date/time in any timezone, date arithmetic, duration formatting, and ISO 8601 parsing. Use for questions involving dates, times, countdowns, or scheduling.",
+    """
+    Use this skill when the user asks about dates, times, time zones, or durations.
+
+    1. For the current date/time use the current-datetime script, optionally passing a timezone offset.
+    2. For date arithmetic (add/subtract days, weeks, months) use the date-add script.
+    3. For computing the difference between two dates use the date-diff script.
+    4. Always present dates in a human-friendly format alongside the ISO 8601 form.
+    5. When the user mentions "now" or "today", call current-datetime first.
+    """)
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
-
-    internal static BuiltInSkillInfo Descriptor { get; } = new(
-        "datetime-utils",
-        "Date and time utilities: current date/time in any timezone, date arithmetic, duration formatting, and ISO 8601 parsing. Use for questions involving dates, times, countdowns, or scheduling.",
-        """
-        Use this skill when the user asks about dates, times, time zones, or durations.
-
-        1. For the current date/time use the current-datetime script, optionally passing a timezone offset.
-        2. For date arithmetic (add/subtract days, weeks, months) use the date-add script.
-        3. For computing the difference between two dates use the date-diff script.
-        4. Always present dates in a human-friendly format alongside the ISO 8601 form.
-        5. When the user mentions "now" or "today", call current-datetime first.
-        """);
-
-    public override AgentSkillFrontmatter Frontmatter { get; } = new(
-        "datetime-utils",
-        "Date and time utilities: current date/time in any timezone, date arithmetic, duration formatting, and ISO 8601 parsing. Use for questions involving dates, times, countdowns, or scheduling.");
-
-    protected override string Instructions => """
-        Use this skill when the user asks about dates, times, time zones, or durations.
-
-        1. For the current date/time use the current-datetime script, optionally passing a timezone offset.
-        2. For date arithmetic (add/subtract days, weeks, months) use the date-add script.
-        3. For computing the difference between two dates use the date-diff script.
-        4. Always present dates in a human-friendly format alongside the ISO 8601 form.
-        5. When the user mentions "now" or "today", call current-datetime first.
-        """;
 
     [AgentSkillResource("timezone-reference")]
     [Description("Common timezone UTC offsets for reference.")]

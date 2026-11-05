@@ -1,6 +1,6 @@
+using Sentium.Praxis.Features.Workflows.Squad;
 using System.Linq;
 using FluentAssertions;
-using Sentium.Praxis.Common.Helpers;
 using Xunit;
 
 namespace Sentium.Tests.Unit.Modules.Praxis;

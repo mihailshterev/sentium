@@ -47,7 +47,7 @@ public sealed class KnowledgeBaseSearchToolTests
         MockStore(KnowledgeCollections.AgentLearnings, "learning snippet", 0.95f);
         MockStore(KnowledgeCollections.UserMemories, "memory snippet", 0.80f);
 
-        var result = await CreateTool().ExecuteAsync("clean architecture", ct);
+        var result = await CreateTool().SearchAsync("clean architecture", ct: ct);
 
         result.Should().Contain("kb snippet").And.Contain("learning snippet").And.Contain("memory snippet");
         result.Should().Contain("Knowledge Base").And.Contain("Captured Learning").And.Contain("Saved Memory");
@@ -72,7 +72,7 @@ public sealed class KnowledgeBaseSearchToolTests
         _repo.SearchAsync(KnowledgeCollections.UserMemories, Arg.Any<float[]>(), Arg.Any<int>(), Arg.Any<float>(), Arg.Any<KnowledgeScopeFilter?>(), Arg.Any<CancellationToken>())
             .Returns<IReadOnlyList<VectorSearchResult>>(_ => throw new InvalidOperationException("collection missing"));
 
-        var result = await CreateTool().ExecuteAsync("query", ct);
+        var result = await CreateTool().SearchAsync("query", ct: ct);
 
         result.Should().Contain("kb snippet");
     }
@@ -82,7 +82,7 @@ public sealed class KnowledgeBaseSearchToolTests
     {
         var ct = TestContext.Current.CancellationToken;
 
-        var result = await CreateTool().ExecuteAsync("query", ct);
+        var result = await CreateTool().SearchAsync("query", ct: ct);
 
         result.Should().Contain("No relevant information");
     }
@@ -95,7 +95,7 @@ public sealed class KnowledgeBaseSearchToolTests
         MockStore(KnowledgeCollections.AgentLearnings, "learning snippet", 0.95f);
         MockStore(KnowledgeCollections.UserMemories, "memory snippet", 0.80f);
 
-        var result = await CreateTool().ExecuteAsync("""{"query":"x","topK":1}""", ct);
+        var result = await CreateTool().SearchAsync("x", 1, ct);
 
         result.Should().Contain("Snippet 1").And.NotContain("Snippet 2");
         result.Should().Contain("learning snippet");

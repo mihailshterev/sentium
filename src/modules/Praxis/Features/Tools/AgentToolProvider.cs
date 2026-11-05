@@ -3,67 +3,55 @@ using Microsoft.Extensions.AI;
 
 namespace Sentium.Praxis.Features.Tools;
 
+/// <summary>
+/// Groups the registered tools by the agents allowed to use them (<see cref="Attributes.AgentToolPolicyAttribute.AllowedAgents"/>).
+/// </summary>
 public sealed class AgentToolProvider : IAgentToolProvider
 {
+    private const string AllAgents = "*";
+
     private readonly FrozenDictionary<string, List<AITool>> toolCache;
 
     public AgentToolProvider(IEnumerable<IAgentTool> tools)
     {
         ArgumentNullException.ThrowIfNull(tools);
 
-        var tempMap = new Dictionary<string, List<AITool>>(StringComparer.OrdinalIgnoreCase);
+        var map = new Dictionary<string, List<AITool>>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var tool in tools)
         {
-            var aiTool = AIFunctionAdapter.ToAIFunction(tool);
+            var function = tool.CreateFunction();
             var policy = ToolPolicyReader.GetPolicy(tool);
 
-            if (policy.AllowedAgents.Length == 0)
+            string[] keys = policy.AllowedAgents.Length == 0 ? [AllAgents] : policy.AllowedAgents;
+            foreach (var key in keys)
             {
-                AddToolToMap(tempMap, "*", aiTool);
-            }
-            else
-            {
-                foreach (var agent in policy.AllowedAgents)
+                if (!map.TryGetValue(key, out var list))
                 {
-                    AddToolToMap(tempMap, agent, aiTool);
+                    map[key] = list = [];
                 }
+
+                list.Add(function);
             }
         }
 
-        toolCache = tempMap.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
+        toolCache = map.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
     }
 
     public List<AITool> GetToolsForAgent(string agentName, CancellationToken ct)
     {
-        var hasGlobal = toolCache.TryGetValue("*", out var globalTools);
-        var hasSpecific = toolCache.TryGetValue(agentName, out var specificTools);
+        var result = new List<AITool>();
 
-        var capacity = (hasGlobal ? globalTools!.Count : 0) + (hasSpecific ? specificTools!.Count : 0);
-
-        var result = new List<AITool>(capacity);
-
-        if (hasGlobal)
+        if (toolCache.TryGetValue(AllAgents, out var globalTools))
         {
-            result.AddRange(globalTools!);
+            result.AddRange(globalTools);
         }
 
-        if (hasSpecific)
+        if (toolCache.TryGetValue(agentName, out var specificTools))
         {
-            result.AddRange(specificTools!);
+            result.AddRange(specificTools);
         }
 
         return result;
-    }
-
-    private static void AddToolToMap(Dictionary<string, List<AITool>> map, string key, AITool tool)
-    {
-        if (!map.TryGetValue(key, out var list))
-        {
-            list = [];
-            map[key] = list;
-        }
-
-        list.Add(tool);
     }
 }

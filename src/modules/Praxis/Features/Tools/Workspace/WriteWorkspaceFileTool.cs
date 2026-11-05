@@ -1,81 +1,70 @@
+using System.ComponentModel;
+using System.Text;
+using Microsoft.Extensions.AI;
+using Sentium.Praxis.Data;
 using Sentium.Praxis.Entities;
 using Sentium.Praxis.Features.Files;
+using Sentium.Praxis.Features.Sentinel;
 using Sentium.Praxis.Features.Storage;
-using Sentium.Praxis.Features.Tools;
 using Sentium.Praxis.Features.Tools.Attributes;
-using Sentium.Praxis.Data;
-using Microsoft.EntityFrameworkCore;
-using System.Text;
-using System.Text.Json;
 
 namespace Sentium.Praxis.Features.Tools.Workspace;
 
 /// <summary>
-/// An agent tool that saves a new text file to a workspace.
+/// An agent tool that saves a new text file to one of the acting user's workspaces.
 /// </summary>
-[AgentToolPolicy(RiskLevel = ToolRiskLevel.Medium)]
-public sealed class WriteWorkspaceFileTool(PraxisDbContext dbContext, ILocalFileService fileService, IFileIngestionQueue ingestionQueue) : IAgentTool
+[AgentToolPolicy(RiskLevel = ToolRiskLevel.Medium, Resource = ToolResource.File, Action = ToolAction.Write)]
+public sealed class WriteWorkspaceFileTool(
+    PraxisDbContext dbContext,
+    ILocalFileService fileService,
+    IFileIngestionQueue ingestionQueue,
+    IPdpContextAccessor runContext) : IAgentTool
 {
-    private readonly JsonSerializerOptions options = new()
+    public AIFunction CreateFunction() => AgentToolFunction.Create(
+        this,
+        WriteAsync,
+        ToolNames.WriteWorkspaceFile,
+        "Saves a new text file to a workspace. Accepts a workspace ID (GUID) or workspace name.");
+
+    public async Task<string> WriteAsync(
+        [Description("The target workspace ID (GUID) or workspace name.")] string workspace,
+        [Description("The file name to create, e.g. 'analysis.md'. The extension must be an allowed type.")] string fileName,
+        [Description("The plain-text content to save in the file.")] string content,
+        CancellationToken ct = default)
     {
-        PropertyNameCaseInsensitive = true
-    };
+        if (runContext.UserId is not { } userId)
+        {
+            return WorkspaceToolScope.NoUserError;
+        }
 
-    public string Name => "write_workspace_file";
+        if (string.IsNullOrWhiteSpace(workspace) || string.IsNullOrWhiteSpace(fileName) || string.IsNullOrWhiteSpace(content))
+        {
+            return "Error: workspace (name or id), fileName, and content are required.";
+        }
 
-    public string Description => "Saves a new text file to a workspace. Accepts a workspace ID (GUID) or workspace name.";
+        var extension = Path.GetExtension(fileName);
+        if (!AllowedFileTypes.IsAllowed(extension))
+        {
+            return $"Error: File type '{extension}' is not allowed. Allowed types: {AllowedFileTypes.AllowedList}.";
+        }
 
-    public IReadOnlyList<AgentToolParameter> Parameters { get; } =
-    [
-        new("workspace", "The target workspace ID (GUID) or workspace name."),
-        new("fileName", "The file name to create, e.g. 'analysis.md'. The extension must be an allowed type."),
-        new("content", "The plain-text content to save in the file."),
-    ];
-
-    public async Task<string> ExecuteAsync(string input, CancellationToken ct)
-    {
         try
         {
-            var request = JsonSerializer.Deserialize<WriteRequest>(input, options);
-            if (request is null || string.IsNullOrWhiteSpace(request.FileName) || string.IsNullOrWhiteSpace(request.Content) || string.IsNullOrWhiteSpace(request.Workspace))
-            {
-                return "Error: workspace (name or id), fileName, and content are required.";
-            }
-
-            var extension = Path.GetExtension(request.FileName);
-            if (!AllowedFileTypes.IsAllowed(extension))
-            {
-                return $"Error: File type '{extension}' is not allowed. Allowed types: {AllowedFileTypes.AllowedList}.";
-            }
-
-            // Resolve workspace by GUID or name
-            Guid? workspaceId = null;
-            if (Guid.TryParse(request.Workspace, out var wsGuid))
-            {
-                var exists = await dbContext.Workspaces.AnyAsync(w => w.Id == wsGuid, ct);
-                workspaceId = exists ? wsGuid : null;
-            }
-            else
-            {
-                var workspace = await dbContext.Workspaces
-                    .Where(w => w.Name.ToLower() == request.Workspace.ToLower())
-                    .Select(w => new { w.Id })
-                    .FirstOrDefaultAsync(ct);
-                workspaceId = workspace?.Id;
-            }
-
+            var workspaceId = await WorkspaceToolScope.ResolveWorkspaceIdAsync(dbContext, userId, workspace, ct);
             if (workspaceId is null)
             {
-                return $"Error: No workspace found with name or ID '{request.Workspace}'.";
+                return $"Error: No workspace found with name or ID '{workspace.Trim()}'.";
             }
 
-            using var stream = new MemoryStream(Encoding.UTF8.GetBytes(request.Content));
-            var blobName = await fileService.UploadToWorkspaceAsync(stream, request.FileName, workspaceId, ct);
+            using var stream = new MemoryStream(Encoding.UTF8.GetBytes(content));
+            var blobName = await fileService.UploadToWorkspaceAsync(stream, fileName, workspaceId, ct);
 
+            // Owner is set explicitly: the DbContext only stamps ownership for HTTP users, not for system-scoped workflow runs.
             var projectFile = new ProjectFile
             {
                 Id = Guid.NewGuid(),
-                FileName = request.FileName,
+                UserId = userId,
+                FileName = fileName,
                 BlobName = blobName,
                 Extension = extension,
                 SizeBytes = stream.Length,
@@ -89,19 +78,11 @@ public sealed class WriteWorkspaceFileTool(PraxisDbContext dbContext, ILocalFile
 
             ingestionQueue.Enqueue(new FileIngestionRequest(projectFile.Id, projectFile.WorkspaceId));
 
-            return $"Success: File '{request.FileName}' saved with ID {projectFile.Id}.";
+            return $"Success: File '{fileName}' saved with ID {projectFile.Id}.";
         }
         catch (Exception ex)
         {
             return $"Error: Failed to write file: {ex.Message}";
         }
     }
-
-    /// <summary>
-    /// Represents a request to write a file to a workspace.
-    /// </summary>
-    /// <param name="Workspace">The workspace ID (GUID) or name where the file will be saved.</param>
-    /// <param name="FileName">The name of the file to create (extension determines file type).</param>
-    /// <param name="Content">The plain-text content to save in the file.</param>
-    private record WriteRequest(string Workspace, string FileName, string Content);
 }

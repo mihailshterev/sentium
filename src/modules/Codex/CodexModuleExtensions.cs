@@ -28,20 +28,7 @@ public static class CodexModuleExtensions
 
         services.Configure<RagOptions>(configuration.GetSection(RagOptions.SectionName));
 
-        var ollamaUri = new Uri(configuration["AI:OllamaBaseUrl"] ?? "http://localhost:11434");
-        var ollamaTotalTimeout = ResolveTimeout(configuration, "AI:OllamaTimeout", TimeSpan.FromMinutes(30));
-        var ollamaAttemptTimeout = ResolveTimeout(configuration, "AI:OllamaAttemptTimeout", TimeSpan.FromMinutes(10));
-
-        services.AddHttpClient(OllamaHttpClientName, client =>
-        {
-            client.BaseAddress = ollamaUri;
-            client.Timeout = ollamaTotalTimeout;
-        })
-        .AddLongRunningResilienceHandler(
-            totalTimeout: ollamaTotalTimeout,
-            attemptTimeout: ollamaAttemptTimeout,
-            retries: 0
-        );
+        services.AddOllamaHttpClient(configuration, OllamaHttpClientName);
 
         services.AddEmbeddingGenerator(sp =>
         {
@@ -75,23 +62,4 @@ public static class CodexModuleExtensions
     }
 
     internal const string ModuleName = "codex";
-
-    private static TimeSpan ResolveTimeout(IConfiguration configuration, string key, TimeSpan fallback)
-    {
-        var raw = configuration[key];
-        if (!string.IsNullOrWhiteSpace(raw))
-        {
-            if (TimeSpan.TryParse(raw, out var asTimeSpan) && asTimeSpan > TimeSpan.Zero)
-            {
-                return asTimeSpan;
-            }
-
-            if (double.TryParse(raw, out var asMinutes) && asMinutes > 0)
-            {
-                return TimeSpan.FromMinutes(asMinutes);
-            }
-        }
-
-        return fallback;
-    }
 }

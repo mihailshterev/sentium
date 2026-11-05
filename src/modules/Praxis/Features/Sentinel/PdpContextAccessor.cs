@@ -1,9 +1,13 @@
 namespace Sentium.Praxis.Features.Sentinel;
 
 /// <summary>
-/// Carries the original user prompt and correlation ID through the async execution context
-/// so that the Sentinel PDP tool guard can include them in every policy evaluation.
-/// Set this at the HTTP request entry-point before creating an agent.
+/// Ambient context of the current agent run - acting user, correlation id, and original prompt - carried through the
+/// async execution context so tools and the Sentinel guard can scope data and policy decisions to the run.
+/// <para>
+/// AsyncLocal semantics: values must be set by the run's entry point, in the method that awaits the run (the
+/// assistant controller, the workflow processor). A value assigned inside a callee's <c>async</c> method never flows
+/// back to its caller. The executing agent's name comes from Agent Framework's own <c>AIAgent.CurrentRunContext</c>.
+/// </para>
 /// </summary>
 public interface IPdpContextAccessor
 {
@@ -16,13 +20,6 @@ public interface IPdpContextAccessor
     /// even across DI scopes / approval continuations where the HTTP context is no longer available.
     /// </summary>
     Guid? UserId { get; set; }
-
-    /// <summary>
-    /// Name of the agent currently executing. Set when the agent is built so that shared tools
-    /// (e.g. capture_agent_learning) can attribute their output to the real agent rather than a
-    /// generic placeholder. Empty when no agent is active.
-    /// </summary>
-    string AgentName { get; set; }
 }
 
 /// <summary>
@@ -33,18 +30,11 @@ public sealed class PdpContextAccessor : IPdpContextAccessor
     private static readonly AsyncLocal<string> _prompt = new();
     private static readonly AsyncLocal<string> _correlationId = new();
     private static readonly AsyncLocal<Guid?> _userId = new();
-    private static readonly AsyncLocal<string> _agentName = new();
 
     public string OriginalUserPrompt
     {
         get => _prompt.Value ?? string.Empty;
         set => _prompt.Value = value ?? string.Empty;
-    }
-
-    public string AgentName
-    {
-        get => _agentName.Value ?? string.Empty;
-        set => _agentName.Value = value ?? string.Empty;
     }
 
     public string CorrelationId

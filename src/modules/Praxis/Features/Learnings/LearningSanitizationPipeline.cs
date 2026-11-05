@@ -1,7 +1,7 @@
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
-using Sentium.Praxis.Common.Helpers;
+using System.ComponentModel;
 using Sentium.Codex.Contracts;
 using Sentium.Codex.Contracts.Models;
 
@@ -51,9 +51,21 @@ public sealed partial class LearningSanitizationPipeline(
                 new(ChatRole.User, LearningSanitizationPrompt.BuildCandidate(agentName, tags, content))
             };
 
-            var response = await chatClient.GetResponseAsync(messages, new ChatOptions { Temperature = 0f }, ct);
+            // Structured output: the curator answers in a JSON schema the model is constrained to.
+            var response = await chatClient.GetResponseAsync<CuratorVerdict>(messages, new ChatOptions { Temperature = 0f }, cancellationToken: ct);
 
-            var verdict = LlmParser.ParseSanitizationVerdict(response.Text ?? string.Empty, content);
+            if (!response.TryGetResult(out var curated) || curated is null)
+            {
+                return new LearningPromotionVerdict(false, "The curator's verdict could not be read; kept private.", content);
+            }
+
+            var verdict = new LearningPromotionVerdict(
+                curated.Approve,
+                string.IsNullOrWhiteSpace(curated.Reason)
+                    ? (curated.Approve ? "Approved as a generalizable, abstracted pattern." : "Did not meet the abstraction and generalizability criteria.")
+                    : curated.Reason.Trim(),
+                string.IsNullOrWhiteSpace(curated.Sanitized) ? content : curated.Sanitized.Trim());
+
             if (!verdict.Approved)
             {
                 return verdict;
@@ -145,4 +157,9 @@ public sealed partial class LearningSanitizationPipeline(
     // IPv4 (a deliberately simple form; IPv6 covered by the colon-hextet pattern)
     [GeneratedRegex(@"\b\d{1,3}(?:\.\d{1,3}){3}\b|\b(?:[A-Fa-f0-9]{1,4}:){2,}[A-Fa-f0-9]{1,4}\b", RegexOptions.None)]
     private static partial Regex IpAddressRegex();
+
+    private sealed record CuratorVerdict(
+        [property: Description("True only when the learning is abstracted AND generalizable.")] bool Approve,
+        [property: Description("One concise sentence explaining the verdict.")] string Reason,
+        [property: Description("The learning text, lightly abstracted if needed; empty when rejecting.")] string? Sanitized);
 }

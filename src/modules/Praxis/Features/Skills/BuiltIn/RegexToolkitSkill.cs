@@ -9,37 +9,21 @@ namespace Sentium.Praxis.Features.Skills.BuiltIn;
 /// <summary>
 /// Built-in skill for building, testing, and explaining regular expressions.
 /// </summary>
-internal sealed class RegexToolkitSkill : AgentClassSkill<RegexToolkitSkill>
+internal sealed class RegexToolkitSkill() : BuiltInSkill<RegexToolkitSkill>(
+    "regex-toolkit",
+    "Build, test, and explain regular expressions. Use when the user needs to match, validate, or extract text with a regex, or asks for a pattern for emails, URLs, IPs, dates, and similar.",
+    """
+    Use this skill for anything involving regular expressions.
+
+    1. Reach for the common-patterns resource first - it has vetted patterns for email, URL, IPv4, UUID, ISO date, phone, and slug.
+    2. Use the test-pattern script to check whether a pattern matches an input and to see the matched value.
+    3. Use the extract-matches script to pull every occurrence out of a larger body of text.
+    4. When a pattern is invalid, report the error message verbatim and propose a corrected version.
+    5. Prefer the simplest pattern that satisfies the requirement; explain what each part does.
+    """)
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
     private static readonly TimeSpan MatchTimeout = TimeSpan.FromMilliseconds(250);
-
-    internal static BuiltInSkillInfo Descriptor { get; } = new(
-        "regex-toolkit",
-        "Build, test, and explain regular expressions. Use when the user needs to match, validate, or extract text with a regex, or asks for a pattern for emails, URLs, IPs, dates, and similar.",
-        """
-        Use this skill for anything involving regular expressions.
-
-        1. Reach for the common-patterns resource first - it has vetted patterns for email, URL, IPv4, UUID, ISO date, phone, and slug.
-        2. Use the test-pattern script to check whether a pattern matches an input and to see the matched value.
-        3. Use the extract-matches script to pull every occurrence out of a larger body of text.
-        4. When a pattern is invalid, report the error message verbatim and propose a corrected version.
-        5. Prefer the simplest pattern that satisfies the requirement; explain what each part does.
-        """);
-
-    public override AgentSkillFrontmatter Frontmatter { get; } = new(
-        "regex-toolkit",
-        "Build, test, and explain regular expressions. Use when the user needs to match, validate, or extract text with a regex, or asks for a pattern for emails, URLs, IPs, dates, and similar.");
-
-    protected override string Instructions => """
-        Use this skill for anything involving regular expressions.
-
-        1. Reach for the common-patterns resource first - it has vetted patterns for email, URL, IPv4, UUID, ISO date, phone, and slug.
-        2. Use the test-pattern script to check whether a pattern matches an input and to see the matched value.
-        3. Use the extract-matches script to pull every occurrence out of a larger body of text.
-        4. When a pattern is invalid, report the error message verbatim and propose a corrected version.
-        5. Prefer the simplest pattern that satisfies the requirement; explain what each part does.
-        """;
 
     [AgentSkillResource("common-patterns")]
     [Description("Ready-to-use, vetted regular expressions for common formats.")]

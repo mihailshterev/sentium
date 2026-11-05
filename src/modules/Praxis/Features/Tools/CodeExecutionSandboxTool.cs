@@ -1,6 +1,6 @@
+using System.ComponentModel;
 using System.Text;
-using System.Text.Json;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.AI;
 using Sentium.Praxis.Features.CodeExecution;
 using Sentium.Praxis.Features.Tools.Attributes;
 using Sentium.Praxis.Features.Sentinel;
@@ -12,10 +12,7 @@ namespace Sentium.Praxis.Features.Tools;
 /// This tool forces code execution requests to clear the Sentinel PDP guard rails and user approvals
 /// before hitting the backend endpoint.
 /// </summary>
-[AgentToolPolicy(
-    AllowedAgents = [],
-    RiskLevel = ToolRiskLevel.High,
-    RequiresApproval = true)]
+[AgentToolPolicy(RiskLevel = ToolRiskLevel.High, RequiresApproval = true, Resource = ToolResource.Code, Action = ToolAction.Execute)]
 public sealed class CodeExecutionSandboxTool(
     ISandboxClient sandboxClient,
     IPdpContextAccessor pdpContext,
@@ -25,25 +22,19 @@ public sealed class CodeExecutionSandboxTool(
     private readonly IPdpContextAccessor _pdpContext = pdpContext ?? throw new ArgumentNullException(nameof(pdpContext));
     private readonly ILogger<CodeExecutionSandboxTool> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-    public string Name => "execute_code_sandbox";
+    private const string NoExternalLibraries = "USE NO EXTERNAL LIBRARIES. ONLY NATIVE LANGUAGE ONES.";
 
-    public string Description => "Executes code (Python or Node.js) safely within an isolated, ephemeral sandbox environment. USE NO EXTERNAL LIBRARIES. ONLY NATIVE LANGUAGE ONES.";
+    public AIFunction CreateFunction() => AgentToolFunction.Create(
+        this,
+        ExecuteAsync,
+        ToolNames.ExecuteCode,
+        $"Executes code (Python or Node.js) safely within an isolated, ephemeral sandbox environment. {NoExternalLibraries}");
 
-    public IReadOnlyList<AgentToolParameter> Parameters { get; } =
-    [
-        new("language", "The script language.", EnumValues: ["Python", "Node"]),
-        new("code", "The source code to execute. USE NO EXTERNAL LIBRARIES. ONLY NATIVE LANGUAGE ONES."),
-    ];
-
-    public async Task<string> ExecuteAsync(string input, CancellationToken ct)
+    public async Task<string> ExecuteAsync(
+        [Description($"The source code to execute. {NoExternalLibraries}")] string code,
+        [Description("The script language.")] ExecutionLanguage language = ExecutionLanguage.Python,
+        CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(input))
-        {
-            return "Execution failed: No configuration payload provided.";
-        }
-
-        var (language, code) = ParseInput(input);
-
         if (string.IsNullOrWhiteSpace(code))
         {
             return "Execution failed: Source code script cannot be null or empty.";
@@ -59,9 +50,9 @@ public sealed class CodeExecutionSandboxTool(
 
             var result = await _sandboxClient.ExecuteAsync(new SandboxExecutionRequest
             {
-                Language = language,
+                Language = language.ToString(),
                 Code = code,
-                AgentId = _pdpContext.AgentName,
+                AgentId = AgentToolFunction.CurrentAgentName,
                 OriginalUserPrompt = _pdpContext.OriginalUserPrompt
             }, correlationId, ct);
 
@@ -86,38 +77,6 @@ public sealed class CodeExecutionSandboxTool(
         {
             _logger.LogError(ex, "Fatal failure routing script execution payload to the sandbox cluster.");
             return $"Critical structural error executing code: {ex.Message}";
-        }
-    }
-
-    private static (string language, string code) ParseInput(string input)
-    {
-        var trimmed = input.Trim();
-        try
-        {
-            using var doc = JsonDocument.Parse(trimmed);
-            var root = doc.RootElement;
-
-            var language = "Python";
-            if (root.TryGetProperty("language", out var lang))
-            {
-                language = lang.GetString() ?? "Python";
-            }
-
-            var code = string.Empty;
-            if (root.TryGetProperty("code", out var c))
-            {
-                code = c.GetString() ?? string.Empty;
-            }
-            else if (root.TryGetProperty("script", out var s))
-            {
-                code = s.GetString() ?? string.Empty;
-            }
-
-            return (language, code);
-        }
-        catch (JsonException)
-        {
-            return ("Python", trimmed);
         }
     }
 

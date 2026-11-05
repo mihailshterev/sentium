@@ -1,24 +1,19 @@
 using Sentium.Praxis.Features.Workflows;
-using Sentium.Praxis.Features.Agents;
-using Sentium.Praxis.Features.WorkflowManagement;
 
 namespace Sentium.Praxis.Features.Orchestration;
 
-public sealed class WorkflowOrchestrator(
-    IAgentFactory factory,
-    IAgentRegistry registry,
-    IAgentRepository agentRepository,
-    IWorkflowService workflowService,
-    IAgentStreamPublisher stream) : IOrchestrator
+/// <summary>
+/// Dispatches a trigger to the registered <see cref="IAgentWorkflow"/> for its workflow type.
+/// </summary>
+public sealed class WorkflowOrchestrator(IEnumerable<IAgentWorkflow> workflows) : IOrchestrator
 {
     public async Task<WorkflowResult> RunAsync(WorkflowTrigger trigger, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(trigger);
-        IAgentWorkflow workflow = trigger.TriggerType switch
-        {
-            WorkflowTriggerTypes.CustomWorkflow => new DynamicCustomWorkflow(factory, agentRepository, workflowService, stream),
-            _ => new DynamicDiscoveryWorkflow(factory, registry, agentRepository, stream)
-        };
+
+        var type = trigger.TriggerType == WorkflowTriggerTypes.CustomWorkflow ? WorkflowType.Custom : WorkflowType.Dynamic;
+        var workflow = workflows.FirstOrDefault(w => w.Type == type)
+            ?? throw new InvalidOperationException($"No workflow is registered for type '{type}'.");
 
         return await workflow.ExecuteAsync(trigger, ct);
     }

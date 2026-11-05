@@ -7,6 +7,7 @@ using Sentium.Infrastructure.Security;
 using Sentium.Praxis.Entities;
 using Sentium.Praxis.Features.Agents;
 using Sentium.Praxis.Features.Orchestration;
+using Sentium.Praxis.Features.Sentinel;
 using Sentium.Praxis.Features.WorkflowManagement;
 using Sentium.Praxis.Features.Workflows;
 using Xunit;
@@ -20,6 +21,7 @@ public sealed class WorkflowRunProcessorTests : IAsyncDisposable
     private readonly WorkflowRunQueue _queue = new();
     private readonly StreamRelay _relay = new(new ConfigurationBuilder().Build(), NullLogger<StreamRelay>.Instance);
     private readonly WorkflowExecutionRegistry _registry = new();
+    private readonly PdpContextAccessor _runContext = new();
     private readonly IOrchestrator _orchestrator = Substitute.For<IOrchestrator>();
     private readonly IWorkflowRunRepository _runs = Substitute.For<IWorkflowRunRepository>();
     private ServiceProvider? _services;
@@ -37,6 +39,33 @@ public sealed class WorkflowRunProcessorTests : IAsyncDisposable
 
         frames[^1].Type.Should().Be(AgentUpdateTypes.Done);
         await _runs.Received(1).AddAsync(Arg.Is<WorkflowRun>(r => r.Explanation == "ok" && r.TriggerPayload == trigger.Payload), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Run_ExposesActingUserAndCorrelation_ToTheWorkflow()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var userId = Guid.NewGuid();
+        Guid? seenUser = null;
+        string? seenCorrelation = null;
+        string? seenPrompt = null;
+
+        _orchestrator.RunAsync(Arg.Any<WorkflowTrigger>(), Arg.Any<CancellationToken>())
+            .Returns(_ =>
+            {
+                seenUser = _runContext.UserId;
+                seenCorrelation = _runContext.CorrelationId;
+                seenPrompt = _runContext.OriginalUserPrompt;
+                return Task.FromResult(new WorkflowResult { Explanation = "ok" });
+            });
+        await StartAsync(ct);
+
+        var trigger = await EnqueueAsync(ct, userId);
+        await ReadUntilTerminalAsync(trigger.StreamId, ct);
+
+        seenUser.Should().Be(userId);
+        seenCorrelation.Should().Be(trigger.StreamId);
+        seenPrompt.Should().Be("test");
     }
 
     [Fact]
@@ -145,18 +174,20 @@ public sealed class WorkflowRunProcessorTests : IAsyncDisposable
             _relay,
             _services.GetRequiredService<IServiceScopeFactory>(),
             _registry,
+            _runContext,
             configuration,
             NullLogger<WorkflowRunProcessor>.Instance);
 
         await _processor.StartAsync(ct);
     }
 
-    private async Task<WorkflowTrigger> EnqueueAsync(CancellationToken ct)
+    private async Task<WorkflowTrigger> EnqueueAsync(CancellationToken ct, Guid? userId = null)
     {
         var trigger = new WorkflowTrigger
         {
             TriggerType = WorkflowTriggerTypes.Dynamic,
             Payload = "{\"activity\":\"test\"}",
+            UserId = userId,
             StreamId = Guid.NewGuid().ToString("N")
         };
 

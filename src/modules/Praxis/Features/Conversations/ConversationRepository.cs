@@ -92,4 +92,21 @@ public sealed class ConversationRepository(PraxisDbContext context) : IConversat
         context.Messages.Add(message);
         await context.SaveChangesAsync(ct);
     }
+
+    public async Task<bool> IsOwnedByAsync(Guid conversationId, Guid userId, CancellationToken ct = default)
+        => await context.Conversations.AnyAsync(c => c.Id == conversationId && c.UserId == userId, ct);
+
+    public async Task<IReadOnlyList<MessageResponse>> GetRecentMessagesAsync(Guid conversationId, Guid userId, int limit, CancellationToken ct = default)
+    {
+        var recent = await context.Messages
+            .AsNoTracking()
+            .Where(m => m.ConversationId == conversationId && m.Conversation.UserId == userId)
+            .OrderByDescending(m => m.Timestamp)
+            .Take(limit)
+            .Select(m => new MessageResponse(m.Id, m.Role, m.Content, m.Timestamp, m.EnhancedPrompt, null, null))
+            .ToListAsync(ct);
+
+        recent.Reverse();
+        return recent;
+    }
 }

@@ -1,39 +1,39 @@
+using System.ComponentModel;
 using System.Text;
+using Microsoft.Extensions.AI;
 using Sentium.Praxis.Features.Learnings;
-using Sentium.Praxis.Features.Tools.Attributes;
 using Sentium.Praxis.Features.Sentinel;
+using Sentium.Praxis.Features.Tools.Attributes;
 
 namespace Sentium.Praxis.Features.Tools;
 
 /// <summary>
-/// Lets an agent explicitly search the shared library of agent learnings - reusable insights,
-/// optimizations, and fixes captured from past runs via <c>capture_agent_learning</c>. Relevant
-/// learnings are also injected automatically, but this tool allows on-demand, deeper lookups.
+/// Lets an agent explicitly search the shared library of agent learnings - reusable insights, optimizations, and fixes
+/// captured from past runs via <c>capture_agent_learning</c>. Relevant learnings are also injected automatically (see
+/// <see cref="LearningsContextProvider"/>), but this tool allows on-demand, deeper lookups.
 /// </summary>
-[AgentToolPolicy(
-    AllowedAgents = [],
-    RiskLevel = ToolRiskLevel.Low,
-    RequiresApproval = false)]
+[AgentToolPolicy(RiskLevel = ToolRiskLevel.Low, Resource = ToolResource.VectorDb, Action = ToolAction.Search)]
 public sealed class RecallLearningsTool(
     IAgentLearningService learningService,
     IPdpContextAccessor pdpContext) : IAgentTool
 {
-    public string Name => "recall_learnings";
-
-    public string Description =>
+    public AIFunction CreateFunction() => AgentToolFunction.Create(
+        this,
+        RecallAsync,
+        ToolNames.RecallLearnings,
         "Search the shared library of agent learnings - reusable patterns, optimizations, and fixes captured from past runs. " +
-        "Use this before tackling a non-trivial task to reuse a proven approach instead of starting from scratch.";
+        "Use this before tackling a non-trivial task to reuse a proven approach instead of starting from scratch.");
 
-    public IReadOnlyList<AgentToolParameter> Parameters { get; } = [new("query", "A plain-text description of the problem or topic to find prior learnings about.")];
-
-    public async Task<string> ExecuteAsync(string input, CancellationToken ct)
+    public async Task<string> RecallAsync(
+        [Description("A plain-text description of the problem or topic to find prior learnings about.")] string query,
+        CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(input))
+        if (string.IsNullOrWhiteSpace(query))
         {
             return "What topic should I recall learnings about?";
         }
 
-        var results = await learningService.RecallRelevantAsync(input, pdpContext.UserId, limit: 5, ct: ct);
+        var results = await learningService.RecallRelevantAsync(query, pdpContext.UserId, limit: 5, ct: ct);
 
         if (results.Count == 0)
         {

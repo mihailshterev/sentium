@@ -1,12 +1,19 @@
+using Microsoft.Agents.AI;
+
 namespace Sentium.Praxis.Features.Skills;
 
 /// <summary>
-/// Provides metadata for all class-based (built-in) skills registered in the system.
+/// Provides the class-based (built-in) skills registered in the system.
 /// </summary>
 public interface IBuiltInSkillCatalog
 {
     /// <summary>
-    /// Returns the full list of built-in skill descriptors.
+    /// Returns the full list of built-in skill descriptors (REST API view).
     /// </summary>
     IReadOnlyList<BuiltInSkillInfo> GetAll();
+
+    /// <summary>
+    /// The shared, stateless skill instances handed to the agent's <see cref="AgentSkillsProvider"/>.
+    /// </summary>
+    IReadOnlyList<AgentSkill> Skills { get; }
 }

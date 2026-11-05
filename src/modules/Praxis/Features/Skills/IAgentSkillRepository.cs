@@ -14,6 +14,12 @@ public interface IAgentSkillRepository
     Task<IReadOnlyList<AgentSkill>> GetAllAsync(CancellationToken ct = default);
 
     /// <summary>
+    /// Returns the skills owned by <paramref name="userId"/>, filtered explicitly rather than through the DbContext
+    /// query filter so that system/background scopes (which bypass that filter) still only see the acting user's skills.
+    /// </summary>
+    Task<IReadOnlyList<AgentSkill>> GetForUserAsync(Guid userId, CancellationToken ct = default);
+
+    /// <summary>
     /// Returns a page of stored skills (newest first) plus the total count, optionally filtered
     /// to a single <paramref name="skillType"/>.
     /// </summary>

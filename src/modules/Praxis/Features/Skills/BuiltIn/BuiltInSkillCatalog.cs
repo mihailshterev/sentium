@@ -1,41 +1,28 @@
-using Sentium.Praxis.Features.Skills;
 using Microsoft.Agents.AI;
 
 namespace Sentium.Praxis.Features.Skills.BuiltIn;
 
 /// <summary>
-/// Central registry for all class-based (built-in) <see cref="AgentClassSkill{T}"/> skills.
-/// Exposes metadata for the REST API and provides a registration hook for
-/// <see cref="AgentSkillsProviderBuilder"/>.
+/// Central registry for all class-based (built-in) skills. Holds one shared, stateless instance of each skill for the
+/// <see cref="AgentSkillsProvider"/> and derives the REST API descriptors from those same instances.
 /// </summary>
 public sealed class BuiltInSkillCatalog : IBuiltInSkillCatalog
 {
-    private static readonly IReadOnlyList<BuiltInSkillInfo> Descriptors =
+    private static readonly IReadOnlyList<AgentSkill> SkillInstances =
     [
-        UnitConverterSkill.Descriptor,
-        DateTimeSkill.Descriptor,
-        SecurityBestPracticesSkill.Descriptor,
-        JsonAnalyzerSkill.Descriptor,
-        WritingStyleSkill.Descriptor,
-        RegexToolkitSkill.Descriptor,
-        CsvAnalyzerSkill.Descriptor,
+        new UnitConverterSkill(),
+        new DateTimeSkill(),
+        new SecurityBestPracticesSkill(),
+        new JsonAnalyzerSkill(),
+        new WritingStyleSkill(),
+        new RegexToolkitSkill(),
+        new CsvAnalyzerSkill(),
     ];
+
+    private static readonly IReadOnlyList<BuiltInSkillInfo> Descriptors =
+        [.. SkillInstances.OfType<IBuiltInSkill>().Select(s => s.Describe())];
 
     public IReadOnlyList<BuiltInSkillInfo> GetAll() => Descriptors;
 
-    /// <summary>
-    /// Registers all built-in skills into the provided <see cref="AgentSkillsProviderBuilder"/>.
-    /// </summary>
-    public static AgentSkillsProviderBuilder RegisterAll(AgentSkillsProviderBuilder builder)
-    {
-        ArgumentNullException.ThrowIfNull(builder);
-        return builder
-            .UseSkill(new UnitConverterSkill())
-            .UseSkill(new DateTimeSkill())
-            .UseSkill(new SecurityBestPracticesSkill())
-            .UseSkill(new JsonAnalyzerSkill())
-            .UseSkill(new WritingStyleSkill())
-            .UseSkill(new RegexToolkitSkill())
-            .UseSkill(new CsvAnalyzerSkill());
-    }
+    public IReadOnlyList<AgentSkill> Skills => SkillInstances;
 }

@@ -1,5 +1,16 @@
 ```mermaid
 classDiagram
+    class IWorkflowRunQueue {
+        <<interface>>
+        +EnqueueAsync(WorkflowTrigger)
+    }
+    class WorkflowRunQueue {
+        -Channel~WorkflowTrigger~
+    }
+    class WorkflowRunProcessor {
+        <<BackgroundService>>
+        +retries, per-attempt timeout, bounded concurrency
+    }
     class IOrchestrator {
         <<interface>>
         +RunAsync(WorkflowTrigger) WorkflowResult
@@ -18,17 +29,26 @@ classDiagram
         +Type = Dynamic
     }
 
-    class AgenticRefinementLoop {
-        -int MaxIterations = 3
-        +RunAsync(squad, input) RefinementOutcome
+    class SquadWorkflowRunner {
+        +MaxAttemptsPerStep = 2
+        +RunAsync(trigger, request, roster, fixedPlan, log) SquadResult
     }
-    class NatsMessageProcessor {
-        +consume workflow.*
+    class PlannerExecutor
+    class StepExecutor
+    class StepCheckExecutor
+    class SynthesisExecutor
+
+    class IAgentStreamPublisher {
+        <<interface>>
+    }
+    class StreamRelay {
+        +Subscribe(streamId, fromSeq)
     }
 
     class WorkflowTrigger {
         +string TriggerType
         +string Payload
+        +string StreamId
         +Guid? UserId
         +DateTime Timestamp
     }
@@ -40,31 +60,33 @@ classDiagram
         +Guid? WorkflowId
         +Guid? UserId
     }
-    class ValidationVerdict {
-        <<record struct>>
-        +bool Passed
-        +string Critique
-    }
-    class WorkflowType {
-        <<enumeration>>
-        Predefined
-        Dynamic
-        Custom
+    class SquadResult {
+        <<record>>
+        +string Answer
+        +RiskLevel Risk
+        +string Recommendation
+        +IReadOnlyList~StepResult~ Steps
     }
 
+    IWorkflowRunQueue <|.. WorkflowRunQueue
     IOrchestrator <|.. WorkflowOrchestrator
     IAgentWorkflow <|.. DynamicCustomWorkflow
     IAgentWorkflow <|.. DynamicDiscoveryWorkflow
+    IAgentStreamPublisher <|.. StreamRelay
 
-    NatsMessageProcessor ..> IOrchestrator : RunAsync(trigger)
-    WorkflowOrchestrator ..> DynamicCustomWorkflow : creates
-    WorkflowOrchestrator ..> DynamicDiscoveryWorkflow : creates
-    DynamicCustomWorkflow ..> AgenticRefinementLoop
-    DynamicDiscoveryWorkflow ..> AgenticRefinementLoop
-    AgenticRefinementLoop ..> IAgentFactory : builds squad
-    DynamicDiscoveryWorkflow ..> IAgentFactory : Orchestrator agent
-    AgenticRefinementLoop ..> ValidationVerdict : Validator
+    WorkflowRunProcessor ..> WorkflowRunQueue : drains
+    WorkflowRunProcessor ..> IOrchestrator : RunAsync(trigger)
+    WorkflowRunProcessor ..> IAgentStreamPublisher : terminal frame
+    WorkflowOrchestrator ..> IAgentWorkflow : dispatch by type
+    DynamicCustomWorkflow ..> SquadWorkflowRunner : fixed plan
+    DynamicDiscoveryWorkflow ..> SquadWorkflowRunner : planner decides
+    SquadWorkflowRunner *-- PlannerExecutor
+    SquadWorkflowRunner *-- StepExecutor
+    SquadWorkflowRunner *-- StepCheckExecutor
+    SquadWorkflowRunner *-- SynthesisExecutor
+    SquadWorkflowRunner ..> IAgentFactory : specialists + control agents
+    SquadWorkflowRunner ..> IAgentStreamPublisher : step updates
+    SquadWorkflowRunner ..> SquadResult
     IAgentWorkflow ..> WorkflowTrigger
     IAgentWorkflow ..> WorkflowResult
-    IAgentWorkflow ..> WorkflowType
 ```

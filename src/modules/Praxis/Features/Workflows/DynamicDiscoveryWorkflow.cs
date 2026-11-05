@@ -1,65 +1,40 @@
-using Sentium.Praxis.Common.Helpers;
-using Sentium.Praxis.Features.Agents;
 using Sentium.Praxis.Features.Orchestration;
-using Microsoft.Agents.AI;
+using Sentium.Praxis.Features.Agents;
+using Sentium.Praxis.Features.Workflows.Squad;
 
 namespace Sentium.Praxis.Features.Workflows;
 
+/// <summary>
+/// Dynamic squad: the planner picks the specialists (native ones plus the user's own agents) and their tasks.
+/// </summary>
 public sealed class DynamicDiscoveryWorkflow(
-    IAgentFactory factory,
-    IAgentRegistry registry,
-    IAgentRepository agentRepository,
-    IAgentStreamPublisher stream) : IAgentWorkflow
+    SquadWorkflowRunner squad,
+    IEnumerable<IAgent> nativeAgents,
+    IAgentRepository agentRepository) : IAgentWorkflow
 {
+    /// <summary>Native roles that steer the squad rather than doing specialist work, so they are never planned as steps.</summary>
+    private static readonly HashSet<string> ControlRoles = new([AgentRole.Orchestrator, AgentRole.Validator, AgentRole.Summarizer], StringComparer.OrdinalIgnoreCase);
+
     public WorkflowType Type => WorkflowType.Dynamic;
 
     public async Task<WorkflowResult> ExecuteAsync(WorkflowTrigger trigger, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(trigger);
 
-        var workspaceContext = WorkspaceContextPrompt.TryExtract(trigger.Payload);
+        var request = WorkspaceContextPrompt.Augment(trigger.ResolveActivity(), WorkspaceContextPrompt.TryExtract(trigger.Payload));
 
-        var dbAgents = await agentRepository.GetAgentsForUserAsync(trigger.UserId, ct);
-        var dbAgentMap = dbAgents.ToDictionary(a => a.Name, a => a.Description, StringComparer.OrdinalIgnoreCase);
-        var dbAgentModelMap = dbAgents.ToDictionary(a => a.Name, a => a.Model, StringComparer.OrdinalIgnoreCase);
-
-        var orchestrator = await factory.CreateAsync(AgentRole.Orchestrator, actingUserId: trigger.UserId, ct: ct);
-        var orchestratorSession = await orchestrator.CreateSessionAsync(ct);
-
-        var streamLog = new StreamLogAccumulator();
-        var input = WorkspaceContextPrompt.Augment(trigger.Payload, workspaceContext);
-
-        var rawPlan = await AgentTurnStreamer.RunAsync(orchestrator, input, orchestratorSession, trigger, AgentRole.Orchestrator, stream, streamLog, ct);
-
-        var assignments = LlmParser.ParseAgentAssignments(rawPlan, dbAgentMap, registry);
-        if (assignments.Count == 0)
-        {
-            return new WorkflowResult { Explanation = "Orchestrator failed to identify required agents.", StreamLog = streamLog.Entries, UserId = trigger.UserId };
-        }
-
-        var rosterNames = assignments.Select(a => a.Agent).ToList();
-
-        var squadAgents = new List<AIAgent>();
         var roster = new List<SquadMember>();
+        roster.AddRange(nativeAgents
+            .Where(a => !ControlRoles.Contains(a.Name))
+            .DistinctBy(a => a.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(a => new SquadMember(a.Name, a.Description, a.Instructions)));
 
-        for (var i = 0; i < assignments.Count; i++)
-        {
-            var (role, task) = assignments[i];
-            var baseInstructions = dbAgentMap.TryGetValue(role, out var desc) ? desc : registry.GetInstructions(role);
-            var overrideModel = dbAgentModelMap.TryGetValue(role, out var mdl) && !string.IsNullOrWhiteSpace(mdl) ? mdl : null;
+        var userAgents = await agentRepository.GetAgentsForUserAsync(trigger.UserId, ct);
+        roster.AddRange(userAgents.Select(a => new SquadMember(a.Name, a.Description, a.Description, string.IsNullOrWhiteSpace(a.Model) ? null : a.Model)));
 
-            var directive = SquadCollaborationPrompt.Build(role, task, i + 1, assignments.Count, rosterNames);
-            var instructions = $"{baseInstructions}\n\n{directive}";
+        var log = new StreamLogAccumulator();
+        var result = await squad.RunAsync(trigger, request, roster, fixedPlan: null, log, ct);
 
-            var agent = await factory.CreateAsync(role, overrideInstructions: instructions, overrideModel: overrideModel, actingUserId: trigger.UserId, ct: ct);
-            squadAgents.Add(agent);
-
-            roster.Add(new SquadMember(role, baseInstructions));
-        }
-
-        var loop = new AgenticRefinementLoop(factory, stream);
-        var outcome = await loop.RunAsync(trigger, "dynamic-squad", squadAgents, input, streamLog, ct, roster);
-
-        return LlmParser.ParseWorkflowResult(outcome.ValidatorOutput, outcome.SquadText, rosterNames, streamLog.Entries, trigger.UserId);
+        return SquadResultMapper.ToWorkflowResult(result, log, "No specialist agents were needed for this request.", workflowId: null, trigger.UserId);
     }
 }

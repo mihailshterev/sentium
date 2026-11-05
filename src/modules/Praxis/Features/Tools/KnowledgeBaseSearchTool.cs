@@ -1,5 +1,6 @@
+using System.ComponentModel;
 using System.Text;
-using System.Text.Json;
+using Microsoft.Extensions.AI;
 using Sentium.Codex.Contracts;
 using Sentium.Codex.Contracts.Models;
 using Sentium.Praxis.Features.Tools.Attributes;
@@ -13,10 +14,7 @@ namespace Sentium.Praxis.Features.Tools;
 /// Agent tool that performs a semantic similarity search against the RAG knowledge base
 /// and returns formatted snippets with source citations.
 /// </summary>
-[AgentToolPolicy(
-    AllowedAgents = [],
-    RiskLevel = ToolRiskLevel.Low,
-    RequiresApproval = false)]
+[AgentToolPolicy(RiskLevel = ToolRiskLevel.Low, Resource = ToolResource.VectorDb, Action = ToolAction.Search)]
 public sealed class KnowledgeBaseSearchTool(
     IEmbeddingService embeddingService,
     IVectorRepository vectorRepository,
@@ -26,33 +24,30 @@ public sealed class KnowledgeBaseSearchTool(
 {
     private readonly RagOptions ragOptions = options.Value;
 
-    public string Name => "knowledge_base_search";
+    private const int MaxTopK = 20;
 
-    public string Description => "Search ALL of your knowledge - the shared knowledge base, your captured learnings, and your saved memories - for relevant context.";
+    public AIFunction CreateFunction() => AgentToolFunction.Create(
+        this,
+        SearchAsync,
+        ToolNames.KnowledgeBaseSearch,
+        "Search ALL of your knowledge - the shared knowledge base, your captured learnings, and your saved memories - for relevant context.");
 
-    public IReadOnlyList<AgentToolParameter> Parameters { get; } =
-    [
-        new("query", "The search string describing what you are looking for."),
-        new("topK", "Maximum number of results to return (1-20).", AgentToolParameterType.Integer, Required: false),
-    ];
-
-    public async Task<string> ExecuteAsync(string input, CancellationToken ct)
+    public async Task<string> SearchAsync(
+        [Description("The search string describing what you are looking for.")] string query,
+        [Description("Maximum number of results to return (1-20).")] int? topK = null,
+        CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(input))
+        if (string.IsNullOrWhiteSpace(query))
         {
             return "No search query provided.";
         }
 
-        var (query, topK) = ParseInput(input);
-
-        if (string.IsNullOrWhiteSpace(query))
-        {
-            return "Could not extract a search query from the input.";
-        }
+        query = query.Trim();
+        var limit = topK is { } requested ? Math.Clamp(requested, 1, MaxTopK) : ragOptions.DefaultTopK;
 
         if (logger.IsEnabled(LogLevel.Information))
         {
-            logger.LogInformation("Knowledge search - query: '{Query}', topK: {TopK}", query, topK);
+            logger.LogInformation("Knowledge search - query: '{Query}', topK: {TopK}", query, limit);
         }
 
         var queryEmbedding = await embeddingService.GenerateEmbeddingAsync(query, ct);
@@ -65,7 +60,7 @@ public sealed class KnowledgeBaseSearchTool(
         {
             try
             {
-                var hits = await vectorRepository.SearchAsync(collection, queryEmbedding, topK, ragOptions.ScoreThreshold, scope, ct);
+                var hits = await vectorRepository.SearchAsync(collection, queryEmbedding, limit, ragOptions.ScoreThreshold, scope, ct);
                 foreach (var hit in hits)
                 {
                     merged.Add((collection, hit));
@@ -84,52 +79,10 @@ public sealed class KnowledgeBaseSearchTool(
 
         var ranked = merged
             .OrderByDescending(m => m.Result.Score)
-            .Take(topK)
+            .Take(limit)
             .ToList();
 
         return FormatResults(ranked);
-    }
-
-    private (string query, int topK) ParseInput(string input)
-    {
-        var trimmed = input.Trim();
-        if (!trimmed.StartsWith('{'))
-        {
-            return (trimmed, ragOptions.DefaultTopK);
-        }
-
-        try
-        {
-            using var doc = JsonDocument.Parse(trimmed);
-            var root = doc.RootElement;
-
-            var query = string.Empty;
-            if (root.TryGetProperty("query", out var q)) query = q.GetString() ?? string.Empty;
-            else if (root.TryGetProperty("input", out var i)) query = i.GetString() ?? string.Empty;
-            else if (root.TryGetProperty("text", out var t)) query = t.GetString() ?? string.Empty;
-
-            var topK = root.TryGetProperty("topK", out var k) && TryReadInt(k, out var n) ? Math.Clamp(n, 1, 20) : ragOptions.DefaultTopK;
-
-            return (query, topK);
-        }
-        catch (JsonException)
-        {
-            return (trimmed, ragOptions.DefaultTopK);
-        }
-    }
-
-    private static bool TryReadInt(JsonElement element, out int value)
-    {
-        switch (element.ValueKind)
-        {
-            case JsonValueKind.Number:
-                return element.TryGetInt32(out value);
-            case JsonValueKind.String:
-                return int.TryParse(element.GetString(), out value);
-            default:
-                value = 0;
-                return false;
-        }
     }
 
     private static string FormatResults(IReadOnlyList<(string Collection, VectorSearchResult Result)> results)

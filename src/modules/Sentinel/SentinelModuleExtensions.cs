@@ -52,18 +52,7 @@ public static class SentinelModuleExtensions
         builder.AddModuleDbContext<SentinelDbContext>(SentinelDbContext.Schema);
         services.AddScoped<IAuditLog, EfCoreAuditLog>();
 
-        var ollamaUri = new Uri(configuration["AI:OllamaBaseUrl"] ?? "http://localhost:11434");
-
-        services.AddHttpClient(OllamaHttpClientName, client =>
-        {
-            client.BaseAddress = ollamaUri;
-            client.Timeout = Timeout.InfiniteTimeSpan;
-        })
-        .AddLongRunningResilienceHandler(
-            totalTimeout: TimeSpan.FromMinutes(5),
-            attemptTimeout: TimeSpan.FromMinutes(2),
-            retries: 0
-        );
+        services.AddOllamaHttpClient(configuration, OllamaHttpClientName, totalTimeout: TimeSpan.FromMinutes(5), attemptTimeout: TimeSpan.FromMinutes(2));
 
         var intentCheckModel = configuration["AI:ModelName"] ?? string.Empty;
 
@@ -71,7 +60,8 @@ public static class SentinelModuleExtensions
         {
             var httpClient = sp.GetRequiredService<IHttpClientFactory>().CreateClient(OllamaHttpClientName);
             return new OllamaApiClient(httpClient) { SelectedModel = intentCheckModel };
-        });
+        })
+        .UseOpenTelemetry();
 
         services.AddSingleton<IPdpRuntimeSettingsProvider, RegistryPdpSettingsProvider>();
 

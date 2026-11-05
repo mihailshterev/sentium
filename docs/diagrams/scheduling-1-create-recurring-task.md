@@ -1,13 +1,16 @@
 ```mermaid
 sequenceDiagram
     autonumber
+    actor U as User
     participant AG as AIAgent
     participant ST as schedule_recurring_task
     participant SF as ISchedulerFactory (Quartz)
     participant SCH as Quartz Scheduler
 
-    AG->>ST: ExecuteAsync({ JobName, CronExpression, Language, Code })
-    ST->>ST: Validate the cron expression
+    AG-->>U: Approval request (high-risk tool)
+    U->>AG: Approve
+    AG->>ST: Invoke({ jobName, cronExpression, code, language }) - after the Sentinel check
+    ST->>ST: Validate the 6-field Quartz cron expression
     alt Invalid cron
         ST-->>AG: Error (syntactically invalid expression)
     else Valid cron

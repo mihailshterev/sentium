@@ -1,20 +1,28 @@
 namespace Sentium.Praxis.Features.Agents;
 
 /// <summary>
-/// Defines the core contract for an autonomous agent within the runtime.
-/// Represents a specialized persona with a specific identity and behavioral guidelines.
+/// Definition of an agent persona: identity, behaviour, and the tools it may use.
 /// </summary>
 public interface IAgent
 {
     /// <summary>
-    /// Gets the unique identifier or display name of the agent.
-    /// This is often used for keyed service resolution and logging.
+    /// Unique name; also the key the agent is registered and resolved under.
     /// </summary>
     string Name { get; }
 
     /// <summary>
-    /// Gets the system instructions or "persona prompt" that defines how the agent
-    /// should behave, its constraints, and its specific domain expertise.
+    /// The system instructions (persona prompt) that define the agent's role and constraints.
     /// </summary>
     string Instructions { get; }
+
+    /// <summary>
+    /// One-line summary of what the agent is good at - shown to the squad planner when choosing agents.
+    /// </summary>
+    string Description => Instructions;
+
+    /// <summary>
+    /// Names of the tools this agent may use (see <c>ToolNames</c>), or <see langword="null"/> for every tool. Small
+    /// models choose tools far more reliably from a short, role-relevant list.
+    /// </summary>
+    IReadOnlyList<string>? Tools => null;
 }

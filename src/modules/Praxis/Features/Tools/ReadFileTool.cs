@@ -1,15 +1,14 @@
-using Sentium.Praxis.Features.Tools.Attributes;
+using System.ComponentModel;
 using System.Security;
+using Microsoft.Extensions.AI;
+using Sentium.Praxis.Features.Tools.Attributes;
 
 namespace Sentium.Praxis.Features.Tools;
 
 /// <summary>
 /// An agent tool that reads and returns the full text content of files from a local workspace directory.
 /// </summary>
-[AgentToolPolicy(
-    AllowedAgents = [],
-    RiskLevel = ToolRiskLevel.Medium,
-    RequiresApproval = false)]
+[AgentToolPolicy(RiskLevel = ToolRiskLevel.Medium, Resource = ToolResource.File, Action = ToolAction.Read)]
 public sealed class ReadFileTool : IAgentTool
 {
     private readonly long maxFileSizeBytes = 1024 * 1024 * 2;
@@ -31,22 +30,24 @@ public sealed class ReadFileTool : IAgentTool
         }
     }
 
-    public string Name => "read_file";
+    public AIFunction CreateFunction() => AgentToolFunction.Create(
+        this,
+        ReadAsync,
+        ToolNames.ReadFile,
+        "Reads and returns the full text content of a file within the allowed workspace.");
 
-    public string Description => "Reads and returns the full text content of a file within the allowed workspace.";
-
-    public IReadOnlyList<AgentToolParameter> Parameters { get; } = [new("path", "Relative path to the file within the workspace, e.g. 'logs/error.log'.")];
-
-    public async Task<string> ExecuteAsync(string input, CancellationToken ct)
+    public async Task<string> ReadAsync(
+        [Description("Relative path to the file within the workspace, e.g. 'logs/error.log'.")] string path,
+        CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(input))
+        if (string.IsNullOrWhiteSpace(path))
         {
             return "Error: File path cannot be empty.";
         }
 
         try
         {
-            var absolutePath = Path.GetFullPath(Path.Combine(workspaceRoot, input));
+            var absolutePath = Path.GetFullPath(Path.Combine(workspaceRoot, path));
 
             if (!absolutePath.StartsWith(workspaceRoot, StringComparison.OrdinalIgnoreCase))
             {
@@ -57,7 +58,7 @@ public sealed class ReadFileTool : IAgentTool
 
             if (!fileInfo.Exists)
             {
-                return $"Error: File '{input}' not found.";
+                return $"Error: File '{path}' not found.";
             }
 
             var extension = fileInfo.Extension;
