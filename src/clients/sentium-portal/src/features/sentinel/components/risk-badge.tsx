@@ -1,14 +1,13 @@
-import styles from "../sentinel.module.scss";
+import { Badge, type BadgeTone } from "@/shared/ui/badge";
 import type { PolicyRiskLevel } from "@/features/sentinel/types/sentinel";
 
+const TONE: Record<PolicyRiskLevel, BadgeTone> = {
+  Low: "success",
+  Medium: "accent",
+  High: "warning",
+  Critical: "danger",
+};
+
 export function RiskBadge({ risk }: { risk: PolicyRiskLevel }) {
-  const cls = {
-    Low: styles.riskLow,
-    Medium: styles.riskMedium,
-    High: styles.riskHigh,
-    Critical: styles.riskCritical,
-  }[risk];
-  return <span className={`${styles.riskBadge} ${cls}`}>{risk}</span>;
+  return <Badge tone={TONE[risk] ?? "neutral"}>{risk}</Badge>;
 }
-
-

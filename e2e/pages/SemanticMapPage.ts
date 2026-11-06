@@ -11,11 +11,11 @@ export class SemanticMapPage {
   }
 
   async expectLoaded(): Promise<void> {
-    await expect(this.page.locator("canvas")).toBeVisible({ timeout: SLOW });
+    await expect(this.page.getByRole("main").locator("canvas")).toBeVisible({ timeout: SLOW });
   }
 
   async expectCanvasVisible(): Promise<void> {
-    await expect(this.page.locator("canvas")).toBeVisible({ timeout: SLOW });
+    await expect(this.page.getByRole("main").locator("canvas")).toBeVisible({ timeout: SLOW });
   }
 
   async searchMap(query: string): Promise<void> {

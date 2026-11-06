@@ -118,7 +118,7 @@ describe("Assistant sidebar toggle", () => {
 describe("Assistant model selection", () => {
   it("renders all available models in the selector", () => {
     renderAssistant();
-    const chip = screen.getByText("llama3.2").closest("[class*='inputModelChip']") as HTMLElement;
+    const chip = screen.getByRole("button", { name: /llama3\.2/ });
     fireEvent.click(chip!);
     expect(screen.getAllByText("llama3.2").length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("gemma3:1b")).toBeInTheDocument();
@@ -138,7 +138,7 @@ describe("Assistant model selection", () => {
 
   it("updates model when model selector is changed", () => {
     renderAssistant();
-    const chip = screen.getByText("llama3.2").closest("[class*='inputModelChip']") as HTMLElement;
+    const chip = screen.getByRole("button", { name: /llama3\.2/ });
     fireEvent.click(chip!);
     fireEvent.click(screen.getByText("gemma3:1b"));
     expect(screen.getByText("gemma3:1b")).toBeInTheDocument();
@@ -379,7 +379,7 @@ describe("Assistant conversation display", () => {
       model: "llama3.2",
     });
     renderAssistant();
-    expect(screen.getByText("SENTIUM")).toBeInTheDocument();
+    expect(screen.getByText("Sentium")).toBeInTheDocument();
   });
 });
 

@@ -5,9 +5,10 @@ import { MemoryRouter } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Navbar } from "./navbar";
 import { useAuthStore } from "@/shared/auth/state/auth-store";
+import { useUiStore } from "@/shared/ui/state/ui-store";
 import { AUTH_STATUS } from "@/shared/utils/constants";
 
-vi.mock("./navbar.module.scss", () => ({
+vi.mock("./navbar.module.css", () => ({
   default: new Proxy({} as Record<string, string>, { get: (_, key) => String(key) }),
 }));
 
@@ -44,19 +45,20 @@ beforeEach(() => {
     }),
   );
   useAuthStore.setState({ user: null, status: AUTH_STATUS.UNAUTHENTICATED });
+  useUiStore.setState({ sidebarCollapsed: false });
 });
 
 describe("Navbar brand", () => {
-  it("renders the SENTIUM brand name", () => {
+  it("renders the Sentium wordmark", () => {
     setUser([]);
     renderNav();
-    expect(screen.getByText("SENTIUM")).toBeInTheDocument();
+    expect(screen.getByText("Sentium")).toBeInTheDocument();
   });
 
-  it("renders the ONLINE status badge", () => {
+  it("labels the navigation landmark", () => {
     setUser([]);
     renderNav();
-    expect(screen.getByText("ONLINE")).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "Main navigation" })).toBeInTheDocument();
   });
 
   it("renders the version footer", () => {
@@ -216,5 +218,30 @@ describe("Navbar logout", () => {
     });
     renderNav();
     expect(screen.getByText("user")).toBeInTheDocument();
+  });
+});
+
+describe("Navbar collapse", () => {
+  it("collapses to the icon rail from the toggle button", async () => {
+    setUser([]);
+    renderNav();
+    await userEvent.click(screen.getByRole("button", { name: "Collapse sidebar" }));
+    expect(useUiStore.getState().sidebarCollapsed).toBe(true);
+    expect(screen.getByRole("navigation")).toHaveAttribute("data-collapsed");
+    expect(screen.getByRole("button", { name: "Expand sidebar" })).toBeInTheDocument();
+  });
+
+  it("toggles with Ctrl+B", async () => {
+    setUser([]);
+    renderNav();
+    await userEvent.keyboard("{Control>}b{/Control}");
+    expect(useUiStore.getState().sidebarCollapsed).toBe(true);
+  });
+
+  it("keeps link names accessible while collapsed", () => {
+    useUiStore.setState({ sidebarCollapsed: true });
+    setUser([]);
+    renderNav();
+    expect(screen.getByRole("link", { name: /dashboard/i })).toBeInTheDocument();
   });
 });

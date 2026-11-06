@@ -1,9 +1,12 @@
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AlertCircle, CheckCircle2, AtSign, Save, UserRound } from "lucide-react";
-import styles from "../profile.module.scss";
+import { AlertCircle, CheckCircle2, Save } from "lucide-react";
+import styles from "../profile.module.css";
 import type { UserProfile } from "../../auth/api/identity.service";
+import { Button } from "@/shared/ui/button";
+import { Input } from "@/shared/ui/form-controls";
+import { FormField } from "@/shared/ui/form-field";
 import { StatusMessage } from "@/shared/ui/status-message";
 import { userProfileSchema, type UserProfileFormData } from "../schemas/user.profile";
 
@@ -26,7 +29,11 @@ export function ProfileEditForm({
   isSaveSuccess,
   resetSave,
 }: ProfileEditFormProps) {
-  const { register, handleSubmit } = useForm<UserProfileFormData>({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<UserProfileFormData>({
     resolver: zodResolver(userProfileSchema),
     defaultValues: {
       firstName: profile.firstName,
@@ -56,61 +63,41 @@ export function ProfileEditForm({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className={styles.form}>
-      <div className={styles.formRow}>
-        <div className={styles.field}>
-          <label htmlFor="firstName" className={styles.label}>
-            <UserRound size={12} />
-            First Name
-          </label>
-          <input
+      <div className={styles.row}>
+        <FormField id="firstName" label="First Name" error={errors.firstName?.message}>
+          <Input
             id="firstName"
             type="text"
-            className={styles.input}
             placeholder="First name"
+            invalid={!!errors.firstName}
             {...register("firstName")}
           />
-        </div>
-        <div className={styles.field}>
-          <label htmlFor="lastName" className={styles.label}>
-            <UserRound size={12} />
-            Last Name
-          </label>
-          <input
-            id="lastName"
-            type="text"
-            className={styles.input}
-            placeholder="Last name (optional)"
-            {...register("lastName")}
-          />
-        </div>
+        </FormField>
+        <FormField id="lastName" label="Last Name">
+          <Input id="lastName" type="text" placeholder="Last name (optional)" {...register("lastName")} />
+        </FormField>
       </div>
 
-      <div className={styles.field}>
-        <label htmlFor="userName" className={styles.label}>
-          <AtSign size={12} />
-          Username
-        </label>
-        <input
+      <FormField id="userName" label="Username" error={errors.userName?.message}>
+        <Input
           id="userName"
           type="text"
-          className={styles.input}
           placeholder="Username"
           autoComplete="username"
+          invalid={!!errors.userName}
           {...register("userName")}
         />
-      </div>
+      </FormField>
 
-      {saveError && <StatusMessage variant="error" icon={<AlertCircle size={13} />} message={saveError.message} />}
-
+      {saveError && <StatusMessage variant="error" icon={<AlertCircle />} message={saveError.message} />}
       {isSaveSuccess && (
-        <StatusMessage variant="success" icon={<CheckCircle2 size={13} />} message="Profile updated successfully." />
+        <StatusMessage variant="success" icon={<CheckCircle2 />} message="Profile updated successfully." />
       )}
 
-      <div className={styles.formActions}>
-        <button type="submit" className={styles.saveBtn} disabled={isSaving}>
-          <Save size={13} />
+      <div className={styles.actions}>
+        <Button type="submit" variant="primary" icon={<Save size={15} />} loading={isSaving}>
           {isSaving ? "Saving…" : "Save Changes"}
-        </button>
+        </Button>
       </div>
     </form>
   );

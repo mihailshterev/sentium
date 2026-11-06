@@ -1,31 +1,27 @@
 import { Moon, Sun } from "lucide-react";
 import { resolveTheme, useThemeStore } from "@/shared/ui/state/theme-store";
-import styles from "./theme-toggle.module.scss";
+import { buttonClass } from "@/shared/ui/button";
 
 interface ThemeToggleProps {
   className?: string;
 }
 
+/** Icon button switching between dark and light; shows the theme it will switch to. */
 export function ThemeToggle({ className }: ThemeToggleProps) {
   const preference = useThemeStore((s) => s.preference);
   const toggle = useThemeStore((s) => s.toggle);
 
-  const resolved = resolveTheme(preference);
-  const isDark = resolved === "dark";
+  const isDark = resolveTheme(preference) === "dark";
+  const label = isDark ? "Switch to light theme" : "Switch to dark theme";
 
   return (
     <button
       type="button"
-      className={`${styles.toggle} ${className ?? ""}`}
+      className={buttonClass({ variant: "ghost", size: "sm", iconOnly: true, className })}
       onClick={toggle}
-      title={isDark ? "Switch to light theme" : "Switch to dark theme"}
-      aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
+      aria-label={label}
     >
-      <span className={styles.track}>
-        <span className={styles.thumb} data-theme={resolved}>
-          {isDark ? <Moon size={12} /> : <Sun size={12} />}
-        </span>
-      </span>
+      {isDark ? <Sun size={16} /> : <Moon size={16} />}
     </button>
   );
 }

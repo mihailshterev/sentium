@@ -1,12 +1,14 @@
 import { useMemo } from "react";
 import { useNavigate, useParams } from "react-router";
-import { ArrowLeft, GitBranch, Loader } from "lucide-react";
-import styles from "../workflows.module.scss";
+import { ArrowLeft, GitBranch } from "lucide-react";
 import { useWorkflows } from "@/features/workflows/hooks/useWorkflows";
 import { useAgents } from "@/features/agents/hooks/useAgents";
 import type { SortableAgentItem } from "@/features/workflows/types/workflows";
-import { PageHeader } from "@/shared/ui/page-header";
+import { Button } from "@/shared/ui/button";
+import { Card } from "@/shared/ui/card";
 import { EmptyState } from "@/shared/ui/empty-state";
+import { Page } from "@/shared/ui/page";
+import { SkeletonText } from "@/shared/ui/skeleton";
 import { WorkflowEditor } from "../components/workflow-editor";
 
 export function WorkflowBuilderView() {
@@ -60,72 +62,70 @@ export function WorkflowBuilderView() {
 
   const getAgentName = (agentId: string) => agents.find((a) => a.id === agentId)?.name ?? agentId.slice(0, 8);
 
-  const header = (
-    <PageHeader
-      icon={
-        <button className={styles.backBtn} onClick={goBack} title="Back to workflows">
-          <ArrowLeft size={16} />
-        </button>
-      }
-      title={isCreate ? "New Workflow" : "Edit Workflow"}
-      subtitle={isCreate ? "Chain agents into an execution pipeline" : selectedWorkflow?.name}
+  const backButton = (
+    <Button
+      variant="secondary"
+      size="sm"
+      iconOnly
+      icon={<ArrowLeft size={16} />}
+      onClick={goBack}
+      title="Back to workflows"
     />
   );
 
+  const pageProps = {
+    title: isCreate ? "New Workflow" : "Edit Workflow",
+    subtitle: isCreate ? "Chain agents into an execution pipeline" : selectedWorkflow?.name,
+    leading: backButton,
+    width: "wide" as const,
+  };
+
   if (!isCreate && (isLoadingAgents || !selectedWorkflow)) {
     return (
-      <div className={styles.container}>
-        {header}
-        <div className={styles.builderBody}>
+      <Page {...pageProps}>
+        <Card padding="lg">
           {isLoading || isLoadingAgents ? (
-            <EmptyState icon={<Loader size={20} className={styles.spinIcon} />} title="Loading workflow..." />
+            <div aria-busy="true">
+              <span className="visually-hidden">Loading workflow...</span>
+              <SkeletonText lines={4} />
+            </div>
           ) : (
             <EmptyState
-              icon={<GitBranch size={32} />}
+              icon={<GitBranch />}
               title="Workflow not found"
               hint="It may have been deleted."
               action={
-                <button className={styles.createBtn} onClick={goBack}>
-                  <ArrowLeft size={14} />
+                <Button variant="secondary" icon={<ArrowLeft size={15} />} onClick={goBack}>
                   Back to workflows
-                </button>
+                </Button>
               }
             />
           )}
-        </div>
-      </div>
+        </Card>
+      </Page>
     );
   }
 
   return (
-    <div className={styles.container}>
-      {header}
-      <div className={styles.builderBody}>
-        <div className={styles.pipelineBg} aria-hidden="true">
-          <div className={styles.bgGrid} />
-          <div className={styles.bgOrb1} />
-          <div className={styles.bgOrb2} />
-          <div className={styles.bgOrb3} />
-        </div>
-        <WorkflowEditor
-          key={workflowId ?? "new"}
-          selectedWorkflow={selectedWorkflow}
-          agents={agents}
-          isCreatingWorkflow={isCreatingWorkflow}
-          isUpdatingWorkflow={isUpdatingWorkflow}
-          isCreateSuccess={isCreateSuccess}
-          isUpdateSuccess={isUpdateSuccess}
-          isCreateError={isCreateError}
-          isUpdateError={isUpdateError}
-          createWorkflowError={createWorkflowError}
-          updateWorkflowError={updateWorkflowError}
-          onSubmit={handleSubmit}
-          getAgentName={getAgentName}
-          initialFormAgents={initialFormAgents}
-          initialName={selectedWorkflow?.name ?? ""}
-          initialDescription={selectedWorkflow?.description ?? ""}
-        />
-      </div>
-    </div>
+    <Page {...pageProps}>
+      <WorkflowEditor
+        key={workflowId ?? "new"}
+        selectedWorkflow={selectedWorkflow}
+        agents={agents}
+        isCreatingWorkflow={isCreatingWorkflow}
+        isUpdatingWorkflow={isUpdatingWorkflow}
+        isCreateSuccess={isCreateSuccess}
+        isUpdateSuccess={isUpdateSuccess}
+        isCreateError={isCreateError}
+        isUpdateError={isUpdateError}
+        createWorkflowError={createWorkflowError}
+        updateWorkflowError={updateWorkflowError}
+        onSubmit={handleSubmit}
+        getAgentName={getAgentName}
+        initialFormAgents={initialFormAgents}
+        initialName={selectedWorkflow?.name ?? ""}
+        initialDescription={selectedWorkflow?.description ?? ""}
+      />
+    </Page>
   );
 }

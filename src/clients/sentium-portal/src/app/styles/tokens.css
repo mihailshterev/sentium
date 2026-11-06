@@ -1,0 +1,295 @@
+/*
+ * Design tokens - "deep space / geometric data-viz".
+ * Dark is the primary theme: near-black field, hairline wireframe panels, teal-green for action and focus,
+ * cyan / purple / gold reserved for data. Light is a "blueprint" variant of the same system.
+ * Derived tints use color-mix() against the base color, so they follow the active theme automatically.
+ */
+:root {
+  /* Typography */
+  --font-display: "Space Grotesk", "Inter", system-ui, sans-serif;
+  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", monospace;
+
+  --text-2xs: 0.6875rem; /* 11px - mono labels, counters */
+  --text-xs: 0.75rem; /* 12px */
+  --text-sm: 0.8125rem; /* 13px */
+  --text-base: 0.875rem; /* 14px - body */
+  --text-md: 0.9375rem; /* 15px */
+  --text-lg: 1.0625rem; /* 17px */
+  --text-xl: 1.25rem; /* 20px */
+  --text-2xl: 1.625rem; /* 26px */
+  --text-3xl: 2.25rem; /* 36px - page titles */
+  --text-display: 3.25rem; /* 52px - hero numbers */
+
+  --fw-regular: 400;
+  --fw-medium: 500;
+  --fw-semibold: 600;
+  --fw-bold: 700;
+
+  --leading-tight: 1.15;
+  --leading-normal: 1.5;
+  --tracking-tight: -0.02em;
+  --tracking-label: 0.06em;
+
+  /* Spacing (4px grid) */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-7: 2rem;
+  --space-8: 2.5rem;
+  --space-9: 3rem;
+
+  /* Radii - small and precise */
+  --radius-xs: 2px;
+  --radius-sm: 3px;
+  --radius-md: 5px;
+  --radius-lg: 6px;
+  --radius-xl: 8px;
+  --radius-full: 9999px;
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 320ms;
+  --transition-fast: var(--dur-fast) var(--ease-out);
+  --transition-base: var(--dur-base) var(--ease-out);
+  --transition-slow: var(--dur-slow) var(--ease-out);
+
+  --blur-sm: 4px;
+  --blur-md: 8px;
+  --blur-lg: 14px;
+
+  /* Layering */
+  --z-background: 0;
+  --z-aurora: 0;
+  --z-base: 1;
+  --z-header: 20;
+  --z-nav: 30;
+  --z-dropdown: 60;
+  --z-overlay: 200;
+  --z-toast: 300;
+
+  /* Layout */
+  --shell-gap: 12px;
+  --sidebar-w: 248px;
+  --sidebar-w-collapsed: 68px;
+  --page-pad-x: 28px;
+  --page-max: 1320px;
+  --page-max-wide: 1640px;
+  --header-h: 124px;
+  --tick: 10px; /* corner registration marks on framed panels */
+
+  /* ---------- Color: dark (default) ---------- */
+
+  /* Action / focus: soft teal-green. --accent for text & icons, --accent-fill for solid fills. */
+  --accent: #7fd8b4;
+  --accent-rgb: 127, 216, 180;
+  --accent-fill: #7fd8b4;
+  --accent-fill-hover: #9be4c6;
+  --on-accent: #04110c;
+
+  /* Brand gold (logo) and data hues */
+  --gold: #d9ad5f;
+  --accent-green: #62cf96;
+  --accent-green-rgb: 98, 207, 150;
+  --accent-blue: #78a6f5;
+  --accent-blue-rgb: 120, 166, 245;
+  --accent-purple: #a58af5;
+  --accent-purple-rgb: 165, 138, 245;
+  --accent-amber: #ec9a52;
+  --accent-amber-rgb: 236, 154, 82;
+  --accent-red: #f07070;
+  --accent-red-rgb: 240, 112, 112;
+  --accent-cyan: #45c6da;
+  --accent-cyan-rgb: 69, 198, 218;
+
+  /* Surfaces (legacy opaque fills - prefer materials) */
+  --bg-base: #05070c;
+  --bg-surface: #0a0e17;
+  --bg-elevated: #0f141f;
+  --bg-hover: rgba(200, 212, 235, 0.05);
+  --bg-dark: #03050a;
+  --terminal-bg: #070a12;
+  --card-bg: var(--bg-surface);
+  --bg-panel: var(--bg-surface);
+
+  /* Hairlines (wireframe) */
+  --border-subtle: rgba(200, 212, 235, 0.07);
+  --border-color: rgba(200, 212, 235, 0.12);
+  --border-strong: rgba(200, 212, 235, 0.22);
+  --tick-color: rgba(200, 212, 235, 0.42);
+
+  /* Text */
+  --text-primary: #e9ecf2;
+  --text-secondary: #a4abbb;
+  --text-muted: #7f889b;
+  --text-dim: #4e5567;
+
+  /* Materials (see materials.css) - flat, near-opaque panels with hairline frames */
+  --mat-thin-bg: rgba(200, 212, 235, 0.035);
+  --mat-thin-bg-hover: rgba(200, 212, 235, 0.07);
+  --mat-thin-border: rgba(200, 212, 235, 0.1);
+
+  --mat-regular-bg: rgba(8, 11, 19, 0.82);
+  --mat-regular-border: rgba(200, 212, 235, 0.12);
+  --mat-regular-filter: blur(6px);
+  --mat-regular-shadow: 0 1px 0 rgba(255, 255, 255, 0.02) inset, 0 18px 40px -24px rgba(0, 0, 0, 0.8);
+  --mat-regular-opaque: #090c15;
+
+  --mat-thick-bg: rgba(6, 8, 14, 0.9);
+  --mat-thick-border: rgba(200, 212, 235, 0.14);
+  --mat-thick-filter: blur(12px);
+  --mat-thick-shadow: 0 24px 60px -30px rgba(0, 0, 0, 0.9);
+  --mat-thick-opaque: #070a11;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 10px 30px -12px rgba(0, 0, 0, 0.8);
+  --shadow-lg: 0 30px 70px -24px rgba(0, 0, 0, 0.9);
+
+  /* Background field (cosmos-background) */
+  --field-base: #04060b;
+  --field-1: #0b2a3a; /* teal haze */
+  --field-2: #1e1640; /* violet haze */
+  --field-3: #2b2010; /* gold dust */
+  --field-glint: #d9ad5f;
+  --field-glint-strength: 0.5;
+  --field-line: rgba(200, 212, 235, 0.07);
+  --field-dot: rgba(200, 212, 235, 0.15);
+  --field-star: #dfe7ff;
+  --field-stars: 1;
+  --grain-opacity: 0.06;
+
+  /* Nebula orb: a window into space, identical in both themes */
+  --orb-teal: #45c6da;
+  --orb-violet: #8c6cf2;
+  --orb-gold: #d9ad5f;
+
+  /* Legacy one-offs, removed as pages migrate */
+  --texture-dot: rgba(200, 212, 235, 0.05);
+}
+
+/* ---------- Color: light ("blueprint") ---------- */
+:root[data-theme="light"] {
+  --accent: #157a59;
+  --accent-rgb: 21, 122, 89;
+  --accent-fill: #7fd8b4;
+  --accent-fill-hover: #6acda5;
+  --on-accent: #04110c;
+
+  --gold: #8a6410;
+  --accent-green: #17784a;
+  --accent-green-rgb: 23, 120, 74;
+  --accent-blue: #2860ba;
+  --accent-blue-rgb: 40, 96, 186;
+  --accent-purple: #6f4fd0;
+  --accent-purple-rgb: 111, 79, 208;
+  --accent-amber: #9a4d0b;
+  --accent-amber-rgb: 154, 77, 11;
+  --accent-red: #b52f2f;
+  --accent-red-rgb: 181, 47, 47;
+  --accent-cyan: #0f7389;
+  --accent-cyan-rgb: 15, 115, 137;
+
+  --bg-base: #eef1f5;
+  --bg-surface: #f9fafc;
+  --bg-elevated: #f1f3f7;
+  --bg-hover: rgba(16, 24, 40, 0.045);
+  --bg-dark: #e6e9ef;
+  --terminal-bg: #f3f5f8;
+
+  --border-subtle: rgba(16, 24, 40, 0.07);
+  --border-color: rgba(16, 24, 40, 0.12);
+  --border-strong: rgba(16, 24, 40, 0.2);
+  --tick-color: rgba(16, 24, 40, 0.45);
+
+  --text-primary: #10141f;
+  --text-secondary: #454c5c;
+  --text-muted: #5d6577;
+  --text-dim: #959cab;
+
+  --mat-thin-bg: rgba(16, 24, 40, 0.025);
+  --mat-thin-bg-hover: rgba(16, 24, 40, 0.05);
+  --mat-thin-border: rgba(16, 24, 40, 0.09);
+
+  --mat-regular-bg: rgba(250, 251, 253, 0.86);
+  --mat-regular-border: rgba(16, 24, 40, 0.12);
+  --mat-regular-shadow: 0 18px 40px -28px rgba(16, 24, 40, 0.25);
+  --mat-regular-opaque: #f9fafc;
+
+  --mat-thick-bg: rgba(252, 253, 254, 0.92);
+  --mat-thick-border: rgba(16, 24, 40, 0.14);
+  --mat-thick-shadow: 0 24px 60px -32px rgba(16, 24, 40, 0.3);
+  --mat-thick-opaque: #fcfdfe;
+
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
+  --shadow-md: 0 10px 30px -14px rgba(16, 24, 40, 0.2);
+  --shadow-lg: 0 30px 70px -28px rgba(16, 24, 40, 0.3);
+
+  --field-base: #eef1f5;
+  --field-1: #d3e6ec;
+  --field-2: #dfdaf1;
+  --field-3: #efe4cc;
+  --field-glint: #b98824;
+  --field-glint-strength: 0.35;
+  --field-line: rgba(16, 24, 40, 0.06);
+  --field-dot: rgba(16, 24, 40, 0.13);
+  --field-star: #10141f;
+  --field-stars: 0;
+  --grain-opacity: 0.05;
+
+  --texture-dot: rgba(16, 24, 40, 0.05);
+}
+
+/* ---------- Derived tokens (theme-independent formulas) ---------- */
+:root {
+  --accent-soft: color-mix(in srgb, var(--accent) 12%, transparent);
+  --accent-line: color-mix(in srgb, var(--accent) 40%, transparent);
+  --accent-glow: color-mix(in srgb, var(--accent-fill) 45%, transparent);
+  --focus-ring: 0 0 0 3px color-mix(in srgb, var(--accent) 32%, transparent);
+
+  --success: var(--accent-green);
+  --warning: var(--accent-amber);
+  --danger: var(--accent-red);
+  --info: var(--accent-cyan);
+
+  --accent-green-subtle: color-mix(in srgb, var(--accent-green) 12%, transparent);
+  --accent-green-border: color-mix(in srgb, var(--accent-green) 32%, transparent);
+  --accent-green-glow: color-mix(in srgb, var(--accent-green) 30%, transparent);
+  --accent-blue-subtle: color-mix(in srgb, var(--accent-blue) 12%, transparent);
+  --accent-blue-border: color-mix(in srgb, var(--accent-blue) 32%, transparent);
+  --accent-blue-glow: color-mix(in srgb, var(--accent-blue) 30%, transparent);
+  --accent-purple-subtle: color-mix(in srgb, var(--accent-purple) 12%, transparent);
+  --accent-purple-border: color-mix(in srgb, var(--accent-purple) 32%, transparent);
+  --accent-purple-glow: color-mix(in srgb, var(--accent-purple) 30%, transparent);
+  --accent-amber-subtle: color-mix(in srgb, var(--accent-amber) 12%, transparent);
+  --accent-amber-border: color-mix(in srgb, var(--accent-amber) 32%, transparent);
+  --accent-amber-glow: color-mix(in srgb, var(--accent-amber) 30%, transparent);
+  --accent-red-subtle: color-mix(in srgb, var(--accent-red) 12%, transparent);
+  --accent-red-border: color-mix(in srgb, var(--accent-red) 32%, transparent);
+  --accent-red-glow: color-mix(in srgb, var(--accent-red) 30%, transparent);
+  --accent-cyan-subtle: color-mix(in srgb, var(--accent-cyan) 12%, transparent);
+  --accent-cyan-border: color-mix(in srgb, var(--accent-cyan) 32%, transparent);
+  --accent-cyan-glow: color-mix(in srgb, var(--accent-cyan) 30%, transparent);
+
+  --success-soft: var(--accent-green-subtle);
+  --success-line: var(--accent-green-border);
+  --warning-soft: var(--accent-amber-subtle);
+  --warning-line: var(--accent-amber-border);
+  --danger-soft: var(--accent-red-subtle);
+  --danger-line: var(--accent-red-border);
+  --info-soft: var(--accent-cyan-subtle);
+  --info-line: var(--accent-cyan-border);
+
+  /* Legacy glass names, mapped onto the materials */
+  --glass-bg: var(--mat-regular-bg);
+  --glass-bg-strong: var(--mat-thick-bg);
+  --glass-border: var(--mat-regular-border);
+  --glass-highlight: var(--mat-thin-bg-hover);
+
+  --text-main: var(--text-primary);
+}

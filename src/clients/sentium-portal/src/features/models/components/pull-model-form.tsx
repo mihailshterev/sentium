@@ -1,7 +1,11 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Download, X, Loader, CheckCircle, AlertCircle } from "lucide-react";
-import styles from "../models.module.scss";
+import { Download, X } from "lucide-react";
+import styles from "../models.module.css";
+import { Button } from "@/shared/ui/button";
+import { Input } from "@/shared/ui/form-controls";
+import { FormField } from "@/shared/ui/form-field";
+import { StatusMessage } from "@/shared/ui/status-message";
 import type { PullState } from "@/features/models/hooks/useOllamaModels";
 import { modelPullSchema, type ModelPullFormData } from "@/features/models/schemas/model.pull";
 
@@ -39,91 +43,64 @@ export function PullModelForm({
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const modelName = watch("modelName") ?? "";
-
-  const handleFormSubmit = (data: ModelPullFormData) => {
-    onSubmit(data.modelName.trim());
-  };
+  const percent = getPullPercent();
 
   return (
-    <form className={styles.pullForm} onSubmit={handleSubmit(handleFormSubmit)}>
-      <div className={styles.fieldGroup}>
-        <label className={styles.fieldLabel} htmlFor="model-name-input">
-          Model name
-        </label>
-        <input
+    <form className={styles.pullForm} onSubmit={handleSubmit((data) => onSubmit(data.modelName.trim()))}>
+      <FormField id="model-name-input" label="Model name" hint="Any model name available on the Ollama library">
+        <Input
           id="model-name-input"
-          className={styles.fieldInput}
           placeholder="e.g. llama3.2, gemma3:12b"
           disabled={isPulling}
           autoComplete="off"
           spellCheck={false}
           {...register("modelName")}
         />
-        <span className={styles.fieldHint}>Enter any model name available on Ollama Hub</span>
-      </div>
+      </FormField>
 
-      {!isPulling && (
-        <button type="submit" className={styles.pullBtn} disabled={isPulling || !modelName.trim()}>
-          <Download size={14} />
-          Pull Model
-        </button>
-      )}
-
-      {isPulling && (
-        <button type="button" className={styles.cancelBtn} onClick={onCancelPull}>
-          <X size={14} />
+      {isPulling ? (
+        <Button variant="secondary" fullWidth icon={<X size={15} />} onClick={onCancelPull}>
           Cancel
-        </button>
+        </Button>
+      ) : (
+        <Button type="submit" variant="primary" fullWidth icon={<Download size={16} />} disabled={!modelName.trim()}>
+          Pull Model
+        </Button>
       )}
 
-      {pullState && (
-        <div className={styles.progressBlock}>
-          {pullState.error ? (
-            <div className={styles.progressError}>
-              <AlertCircle size={14} />
-              {pullState.error}
+      {pullState &&
+        (pullState.error ? (
+          <StatusMessage variant="error" message={pullState.error} />
+        ) : pullState.done ? (
+          <StatusMessage variant="success" message="Model pulled successfully" />
+        ) : (
+          <div className={styles.progress} aria-live="polite">
+            <div className={styles.progressStatus}>
+              <span className={styles.progressText} title={pullState.status}>
+                {pullState.status || "Connecting…"}
+              </span>
+              {percent !== null && <span className={styles.progressPercent}>{percent}%</span>}
             </div>
-          ) : pullState.done ? (
-            <div className={styles.progressSuccess}>
-              <CheckCircle size={14} />
-              Model pulled successfully
-            </div>
-          ) : (
-            <>
-              <div className={styles.progressStatus}>
-                <Loader size={12} className={styles.spinIcon} />
-                <span className={styles.progressStatusText} title={pullState.status}>
-                  {pullState.status || "Connecting…"}
-                </span>
-              </div>
-
-              <div className={styles.progressBarOuter}>
-                {getPullPercent() !== null ? (
-                  <div className={styles.progressBarInner} style={{ width: `${getPullPercent()}%` }} />
-                ) : (
-                  <div className={styles.progressBarIndeterminate} />
-                )}
-              </div>
-
-              {getPullPercent() !== null && (
-                <div className={styles.progressNums}>
-                  {formatBytes(pullState.completed ?? 0)} / {formatBytes(pullState.total ?? 0)}&nbsp; (
-                  {getPullPercent()}%)
-                </div>
+            <div className={styles.progressTrack}>
+              {percent !== null ? (
+                <div className={styles.progressFill} style={{ width: `${percent}%` }} />
+              ) : (
+                <div className={styles.progressIndeterminate} />
               )}
-            </>
-          )}
-        </div>
-      )}
+            </div>
+            {percent !== null && (
+              <span className={styles.progressBytes}>
+                {formatBytes(pullState.completed ?? 0)} / {formatBytes(pullState.total ?? 0)}
+              </span>
+            )}
+          </div>
+        ))}
 
       {pullState?.done && (
-        <button type="button" className={styles.cancelBtn} onClick={onResetPull}>
-          <X size={12} />
+        <Button variant="ghost" size="sm" icon={<X size={14} />} onClick={onResetPull} className={styles.dismiss}>
           Dismiss
-        </button>
+        </Button>
       )}
     </form>
   );
 }
-
-

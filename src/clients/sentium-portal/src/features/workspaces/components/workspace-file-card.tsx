@@ -1,22 +1,11 @@
 import { useState } from "react";
 import { FileText, Trash2 } from "lucide-react";
-import styles from "../workspaces.module.scss";
+import styles from "../workspaces.module.css";
 import type { WorkspaceFile } from "@/features/workspaces/types/workspace";
-import { formatBytesToMb, formatDateTimeShort } from "../../../shared/utils/formatters";
+import { Button } from "@/shared/ui/button";
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
-
-const statusClass = (status: WorkspaceFile["processingStatus"]) => {
-  switch (status) {
-    case "Pending":
-      return styles.pending;
-    case "Processing":
-      return styles.processing;
-    case "Completed":
-      return styles.completed;
-    case "Failed":
-      return styles.failed;
-  }
-};
+import { formatBytesToMb, formatDateTimeShort } from "../../../shared/utils/formatters";
+import { FileStatusBadge } from "./file-status-badge";
 
 interface WorkspaceFileCardProps {
   file: WorkspaceFile;
@@ -26,28 +15,25 @@ interface WorkspaceFileCardProps {
 export function WorkspaceFileCard({ file, onDelete }: WorkspaceFileCardProps) {
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
-  const handleConfirmDelete = () => {
-    setIsConfirmOpen(false);
-    onDelete(file.id);
-  };
-
   return (
-    <div className={styles.fileCard}>
-      <FileText size={14} className={styles.fileIcon} />
+    <div className={styles.fileRow}>
+      <FileText size={16} className={styles.fileIcon} aria-hidden="true" />
       <div className={styles.fileInfo}>
         <span className={styles.fileName}>{file.fileName}</span>
-        <p className={styles.fileMeta}>
+        <span className={styles.fileMeta}>
           {formatBytesToMb(file.sizeBytes)} · {formatDateTimeShort(file.createdAt)}
-        </p>
+        </span>
       </div>
-      <span className={`${styles.statusBadge} ${statusClass(file.processingStatus)}`}>{file.processingStatus}</span>
-      <button
-        className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
+      <FileStatusBadge status={file.processingStatus} />
+      <Button
+        variant="ghost"
+        size="sm"
+        iconOnly
+        icon={<Trash2 size={15} />}
         title="Delete file"
         onClick={() => setIsConfirmOpen(true)}
-      >
-        <Trash2 size={12} />
-      </button>
+        className={styles.deleteButton}
+      />
 
       <ConfirmDialog
         open={isConfirmOpen}
@@ -56,7 +42,10 @@ export function WorkspaceFileCard({ file, onDelete }: WorkspaceFileCardProps) {
         description={`Are you sure you want to permanently remove "${file.fileName}"? This will delete the raw document and remove its contents from the indexed search vector store.`}
         confirmLabel="Remove File"
         cancelLabel="Cancel"
-        onConfirm={handleConfirmDelete}
+        onConfirm={() => {
+          setIsConfirmOpen(false);
+          onDelete(file.id);
+        }}
         onCancel={() => setIsConfirmOpen(false)}
       />
     </div>

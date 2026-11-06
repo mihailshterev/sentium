@@ -1,5 +1,7 @@
-import { ArrowRight, BrickWallShield } from "lucide-react";
-import styles from "../dashboard.module.scss";
+import { ArrowRight } from "lucide-react";
+import styles from "../dashboard.module.css";
+import { Button } from "@/shared/ui/button";
+import { Card, CardHeader } from "@/shared/ui/card";
 import type { AuditStats } from "@/features/sentinel/types/sentinel";
 
 interface SecurityPanelProps {
@@ -8,72 +10,82 @@ interface SecurityPanelProps {
   onNavigate: (to: string) => void;
 }
 
-function scoreColor(score: number): string {
+function scoreTone(score: number): "ok" | "warn" | "critical" {
   if (score >= 0.7) {
-    return "var(--accent-green)";
+    return "ok";
   }
-  if (score >= 0.4) {
-    return "var(--accent-amber)";
-  }
-  return "var(--accent-red)";
+  return score >= 0.4 ? "warn" : "critical";
 }
 
 export function SecurityPanel({ stats, loading, onNavigate }: SecurityPanelProps) {
+  const counts = [
+    { label: "Total", value: stats?.total ?? 0, tone: "neutral" },
+    { label: "Allowed", value: stats?.allowed ?? 0, tone: "ok" },
+    { label: "Denied", value: stats?.denied ?? 0, tone: "critical" },
+    { label: "Alerts", value: stats?.alerts ?? 0, tone: "warn" },
+  ];
+
+  const risks = [
+    { label: "Low", value: stats?.lowRisk ?? 0, tone: "low" },
+    { label: "Medium", value: stats?.mediumRisk ?? 0, tone: "medium" },
+    { label: "High", value: stats?.highRisk ?? 0, tone: "high" },
+    { label: "Critical", value: stats?.criticalRisk ?? 0, tone: "critical" },
+  ];
+  const riskTotal = risks.reduce((sum, r) => sum + r.value, 0);
+
   return (
-    <section className={styles.section}>
-      <div className={styles.sectionHeader}>
-        <div className={styles.sectionTitleRow}>
-          <BrickWallShield size={14} style={{ color: "var(--accent-amber)", flexShrink: 0 }} />
-          <span className={styles.sectionTitle}>Security Overview</span>
-        </div>
-      </div>
+    <Card padding="md" as="section">
+      <CardHeader title="Security Overview" description="Sentinel policy decisions" />
 
-      <div className={styles.auditCounts}>
-        <div className={styles.auditCount}>
-          <span className={styles.auditCountValue}>{loading ? "—" : (stats?.total ?? 0)}</span>
-          <span className={styles.auditCountLabel}>Total</span>
-        </div>
-        <div className={styles.auditCount}>
-          <span className={styles.auditCountValue} style={{ color: "var(--accent-green)" }}>
-            {loading ? "—" : (stats?.allowed ?? 0)}
-          </span>
-          <span className={styles.auditCountLabel}>Allowed</span>
-        </div>
-        <div className={styles.auditCount}>
-          <span className={styles.auditCountValue} style={{ color: "var(--accent-red)" }}>
-            {loading ? "—" : (stats?.denied ?? 0)}
-          </span>
-          <span className={styles.auditCountLabel}>Denied</span>
-        </div>
-        <div className={styles.auditCount}>
-          <span className={styles.auditCountValue} style={{ color: "var(--accent-amber)" }}>
-            {loading ? "—" : (stats?.alerts ?? 0)}
-          </span>
-          <span className={styles.auditCountLabel}>Alerts</span>
-        </div>
-      </div>
+      <dl className={styles.auditCounts}>
+        {counts.map((c) => (
+          <div key={c.label} className={styles.auditCount}>
+            <dt className={styles.auditLabel}>{c.label}</dt>
+            <dd className={styles.auditValue} data-tone={c.tone}>
+              {loading ? "—" : c.value.toLocaleString()}
+            </dd>
+          </div>
+        ))}
+      </dl>
 
-      <div className={styles.riskPillsRow}>
-        <span className={`${styles.riskPill} ${styles.riskPillLow}`}>Low {stats?.lowRisk ?? 0}</span>
-        <span className={`${styles.riskPill} ${styles.riskPillMedium}`}>Med {stats?.mediumRisk ?? 0}</span>
-        <span className={`${styles.riskPill} ${styles.riskPillHigh}`}>High {stats?.highRisk ?? 0}</span>
-        <span className={`${styles.riskPill} ${styles.riskPillCritical}`}>Crit {stats?.criticalRisk ?? 0}</span>
+      <div className={styles.riskBlock}>
+        <div className={styles.riskBar} aria-hidden="true">
+          {riskTotal > 0 &&
+            risks.map((r) =>
+              r.value > 0 ? (
+                <span key={r.label} className={styles.riskSegment} data-tone={r.tone} style={{ flexGrow: r.value }} />
+              ) : null,
+            )}
+        </div>
+        <ul className={styles.riskLegend}>
+          {risks.map((r) => (
+            <li key={r.label} className={styles.riskLegendItem}>
+              <span className={styles.riskSwatch} data-tone={r.tone} aria-hidden="true" />
+              <span>{r.label}</span>
+              <span className={styles.riskLegendValue}>{r.value.toLocaleString()}</span>
+            </li>
+          ))}
+        </ul>
       </div>
 
       {stats?.latestAlignmentScore != null && (
         <div className={styles.alignmentRow}>
-          <span className={styles.alignmentLabel}>Alignment Score</span>
-          <span className={styles.alignmentScore} style={{ color: scoreColor(stats.latestAlignmentScore) }}>
+          <span className={styles.alignmentLabel}>Alignment score</span>
+          <span className={styles.alignmentScore} data-tone={scoreTone(stats.latestAlignmentScore)}>
             {(stats.latestAlignmentScore * 100).toFixed(0)}%
           </span>
         </div>
       )}
 
-      <div className={styles.securityFooter}>
-        <button className={styles.viewAuditBtn} onClick={() => onNavigate("/sentinel")}>
-          View Audit Log <ArrowRight size={12} />
-        </button>
-      </div>
-    </section>
+      <Button
+        variant="secondary"
+        fullWidth
+        iconRight={<ArrowRight size={14} />}
+        onClick={() => onNavigate("/sentinel")}
+        className={styles.auditButton}
+      >
+        View Audit Log
+      </Button>
+    </Card>
   );
 }

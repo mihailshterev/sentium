@@ -1,0 +1,147 @@
+/* Standalone cell = its own framed panel; inside .grid the grid draws the frame and the dividers. */
+.cell {
+  --tone: var(--text-muted);
+
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-4) var(--space-5) var(--space-5);
+  border: 1px solid var(--mat-regular-border);
+  border-radius: var(--radius-lg);
+  background: var(--mat-regular-bg);
+  backdrop-filter: var(--mat-regular-filter);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: var(--cols, repeat(auto-fit, minmax(var(--min-cell, 170px), 1fr)));
+  border: 1px solid var(--mat-regular-border);
+  border-radius: var(--radius-lg);
+  background: var(--mat-regular-bg);
+  box-shadow: var(--mat-regular-shadow);
+  backdrop-filter: var(--mat-regular-filter);
+
+  & > .cell {
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    backdrop-filter: none;
+    /* Hairline dividers that survive any wrap; on the outer edges they coincide with the grid border. */
+    box-shadow:
+      1px 0 0 var(--border-color),
+      0 1px 0 var(--border-color);
+  }
+
+  /* Only the grid itself carries corner ticks. */
+  & > .cell::before {
+    display: none;
+  }
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.label {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-label);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.icon {
+  display: inline-flex;
+  flex-shrink: 0;
+  color: var(--tone);
+  opacity: 0.9;
+
+  & svg {
+    width: 14px;
+    height: 14px;
+  }
+}
+
+.accent {
+  --tone: var(--accent);
+}
+
+.green {
+  --tone: var(--accent-green);
+}
+
+.blue {
+  --tone: var(--accent-blue);
+}
+
+.amber {
+  --tone: var(--accent-amber);
+}
+
+.purple {
+  --tone: var(--accent-purple);
+}
+
+.red {
+  --tone: var(--accent-red);
+}
+
+.cyan {
+  --tone: var(--accent-cyan);
+}
+
+.neutral {
+  --tone: var(--text-muted);
+}
+
+.bottom {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+
+.value {
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: var(--fw-regular);
+  letter-spacing: var(--tracking-tight);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.chip {
+  --chip: var(--text-secondary);
+
+  padding: 1px 6px;
+  border: 1px solid color-mix(in srgb, var(--chip) 35%, transparent);
+  border-radius: var(--radius-sm);
+  color: var(--chip);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+}
+
+.chip_green {
+  --chip: var(--success);
+}
+
+.chip_red {
+  --chip: var(--danger);
+}
+
+.chip_amber {
+  --chip: var(--warning);
+}
+
+.hint {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+}

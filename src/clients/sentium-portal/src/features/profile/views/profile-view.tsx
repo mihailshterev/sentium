@@ -1,57 +1,64 @@
-import { ShieldUser } from "lucide-react";
-import styles from "../profile.module.scss";
+import styles from "../profile.module.css";
 import { useRole } from "@/shared/auth/hooks/useRole";
-import { AnimatedBg } from "@/shared/ui/animated-bg";
 import { useProfile } from "@/features/profile/hooks/useProfile";
+import { Badge } from "@/shared/ui/badge";
+import { Card } from "@/shared/ui/card";
+import { Page } from "@/shared/ui/page";
+import { Skeleton, SkeletonText } from "@/shared/ui/skeleton";
 import { ProfileEditForm } from "../components/profile-edit-form";
+
+function initialsOf(first?: string | null, last?: string | null, userName?: string): string {
+  const initials = `${first?.[0] ?? ""}${last?.[0] ?? ""}`.toUpperCase();
+  return initials || (userName?.slice(0, 2).toUpperCase() ?? "?");
+}
 
 export function ProfileView() {
   const { highestRole } = useRole();
   const { profile, isLoading, updateProfile, isSaving, saveError, isSaveSuccess, resetSave } = useProfile();
 
-  return (
-    <div className={styles.root}>
-      <AnimatedBg className={styles.bgCanvas} />
-      <div className={styles.scanLine} />
+  const displayName = profile ? `${profile.firstName || ""} ${profile.lastName || ""}`.trim() || profile.userName : "—";
 
-      <div className={styles.centreWrap}>
+  return (
+    <Page title="Profile" subtitle="Your account details">
+      <Card padding="none" className={styles.card}>
         {isLoading ? (
-          <div className={styles.skeleton} />
+          <div className={styles.loading} aria-busy="true">
+            <Skeleton width={72} height={72} radius="full" />
+            <SkeletonText lines={3} />
+          </div>
         ) : (
-          <div className={styles.card}>
-            <div className={styles.avatarSection}>
-              <div className={styles.avatarCircle}>
-                <ShieldUser size={54} strokeWidth={1.5} />
+          <>
+            <div className={styles.identity}>
+              <span className={styles.avatar} aria-hidden="true">
+                {initialsOf(profile?.firstName, profile?.lastName, profile?.userName)}
+              </span>
+              <div className={styles.identityText}>
+                <p className={styles.displayName}>{displayName}</p>
+                <p className={styles.username}>{profile?.userName}</p>
               </div>
-              <div className={styles.avatarMeta}>
-                <p className={styles.displayName}>
-                  {profile ? `${profile.firstName || ""} ${profile.lastName || ""}`.trim() || profile.userName : "—"}
-                </p>
-                <p className={styles.displayUsername}>{profile?.userName}</p>
-                {highestRole && (
-                  <span className={`${styles.roleBadge} ${styles[`role_${highestRole.toLowerCase()}`]}`}>
-                    {highestRole}
-                  </span>
-                )}
-              </div>
+              {highestRole && (
+                <Badge tone={highestRole === "Sovereign" ? "accent" : "info"} className={styles.role}>
+                  {highestRole}
+                </Badge>
+              )}
             </div>
 
-            <div className={styles.divider} />
-
             {profile && (
-              <ProfileEditForm
-                key={profile.id}
-                profile={profile}
-                updateProfile={updateProfile}
-                isSaving={isSaving}
-                saveError={saveError}
-                isSaveSuccess={isSaveSuccess}
-                resetSave={resetSave}
-              />
+              <div className={styles.formWrap}>
+                <ProfileEditForm
+                  key={profile.id}
+                  profile={profile}
+                  updateProfile={updateProfile}
+                  isSaving={isSaving}
+                  saveError={saveError}
+                  isSaveSuccess={isSaveSuccess}
+                  resetSave={resetSave}
+                />
+              </div>
             )}
-          </div>
+          </>
         )}
-      </div>
-    </div>
+      </Card>
+    </Page>
   );
 }

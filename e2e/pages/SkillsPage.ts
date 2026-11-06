@@ -29,7 +29,7 @@ export class SkillsPage {
   }
 
   async expectBuiltInTabActive(): Promise<void> {
-    await expect(this.page.getByTestId("tab-builtin")).toHaveAttribute("class", /activeTab/);
+    await expect(this.page.getByTestId("tab-builtin")).toHaveAttribute("aria-selected", "true");
   }
 
   async expectUploadedTabVisible(): Promise<void> {

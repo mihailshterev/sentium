@@ -1,5 +1,6 @@
-import { Plus, MessageSquare, Trash2, FolderOpen, FileText, ChevronDown, ChevronRight, Loader2 } from "lucide-react";
-import styles from "../assistant.module.scss";
+import { ChevronDown, ChevronRight, FileText, FolderOpen, MessageSquare, Plus, Trash2 } from "lucide-react";
+import styles from "../assistant.module.css";
+import { Button } from "@/shared/ui/button";
 import { InfiniteScrollSentinel } from "@/shared/ui/infinite-scroll-sentinel";
 import type { ConversationSummary } from "@/features/assistant/types/assistant";
 import type { Workspace, WorkspaceFile } from "@/features/workspaces/types/workspace";
@@ -53,48 +54,56 @@ export function ConversationSidebar({
   onInjectFileContext,
 }: ConversationSidebarProps) {
   return (
-    <aside className={`${styles.sidebar} ${isOpen ? styles.sidebarOpen : ""}`}>
+    <aside className={styles.sidebar} data-open={isOpen || undefined} aria-label="Conversations">
       <div className={styles.sidebarHeader}>
         <span className={styles.sidebarTitle}>Conversations</span>
-        <button
-          className={styles.newChatBtn}
+        <Button
+          variant="secondary"
+          size="sm"
+          icon={<Plus size={15} />}
           onClick={onNewConversation}
+          loading={isCreating}
           title="New conversation"
-          disabled={isCreating}
         >
-          {isCreating ? <Loader2 size={13} /> : <Plus size={13} />}
-        </button>
+          New
+        </Button>
       </div>
 
       <div className={styles.convList}>
         {conversations.length === 0 && (
           <div className={styles.convEmpty}>
-            <MessageSquare size={22} className={styles.convEmptyIcon} />
+            <MessageSquare size={20} aria-hidden="true" />
             <span>No conversations yet</span>
           </div>
         )}
         {conversationGroups.map((group) => (
-          <div key={group.label}>
+          <div key={group.label} className={styles.convGroup}>
             <div className={styles.convGroupLabel}>{group.label}</div>
-            {group.items.map((conv) => (
-              <div
-                key={conv.id}
-                className={`${styles.convItem} ${activeConversationId === conv.id ? styles.convItemActive : ""}`}
-                onClick={() => onLoadConversation(conv)}
-              >
-                <MessageSquare size={12} className={styles.convIcon} />
-                <div className={styles.convInfo}>
-                  <span className={styles.convTitle}>{conv.title}</span>
-                </div>
-                <button
-                  className={styles.convDelete}
-                  onClick={(e) => onDeleteConversation(conv.id, e)}
-                  title="Delete conversation"
+            <ul className={styles.convItems}>
+              {group.items.map((conv) => (
+                <li
+                  key={conv.id}
+                  className={`${styles.convItem} ${activeConversationId === conv.id ? styles.convItemActive : ""}`}
                 >
-                  <Trash2 size={11} />
-                </button>
-              </div>
-            ))}
+                  <button
+                    type="button"
+                    className={styles.convSelect}
+                    onClick={() => onLoadConversation(conv)}
+                    aria-current={activeConversationId === conv.id || undefined}
+                  >
+                    <span className={styles.convTitle}>{conv.title}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.convDelete}
+                    onClick={(e) => onDeleteConversation(conv.id, e)}
+                    title="Delete conversation"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </li>
+              ))}
+            </ul>
           </div>
         ))}
 
@@ -105,48 +114,53 @@ export function ConversationSidebar({
         />
       </div>
 
-      <div className={styles.wsContextSection}>
-        <button className={styles.wsContextToggle} onClick={onToggleWsContext}>
-          <FolderOpen size={11} />
+      <div className={styles.wsSection}>
+        <button type="button" className={styles.wsToggle} onClick={onToggleWsContext} aria-expanded={wsContextOpen}>
+          <FolderOpen size={14} aria-hidden="true" />
           <span>Workspace Context</span>
-          <ChevronDown size={11} className={`${styles.wsChevron} ${wsContextOpen ? styles.wsChevronOpen : ""}`} />
+          <ChevronDown size={14} className={wsContextOpen ? styles.chevronOpen : styles.chevron} />
         </button>
         {wsContextOpen && (
-          <div className={styles.wsContextList}>
-            {workspaces.length === 0 && <p className={styles.wsContextEmpty}>No workspaces found.</p>}
+          <div className={styles.wsList}>
+            {workspaces.length === 0 && <p className={styles.wsEmpty}>No workspaces found.</p>}
             {workspaces.map((ws) => (
-              <div key={ws.id} className={styles.wsContextItem}>
-                <button
-                  className={styles.wsContextName}
-                  onClick={() => onToggleExpandWorkspace(ws.id)}
-                  title="Expand workspace files"
-                >
-                  <FolderOpen size={11} className={styles.wsContextIcon} />
-                  <span>{ws.name}</span>
-                  <ChevronRight
-                    size={10}
-                    className={`${styles.wsExpandChevron} ${expandedWorkspace === ws.id ? styles.wsExpandChevronOpen : ""}`}
-                  />
-                </button>
-                <button
-                  className={styles.wsInjectBtn}
-                  onClick={() => onInjectWorkspaceContext(ws)}
-                  title="Insert workspace reference into message"
-                >
-                  +
-                </button>
+              <div key={ws.id} className={styles.wsItem}>
+                <div className={styles.wsRow}>
+                  <button
+                    type="button"
+                    className={styles.wsName}
+                    onClick={() => onToggleExpandWorkspace(ws.id)}
+                    title="Expand workspace files"
+                    aria-expanded={expandedWorkspace === ws.id}
+                  >
+                    <ChevronRight
+                      size={13}
+                      className={expandedWorkspace === ws.id ? styles.chevronRight90 : styles.chevronRight}
+                    />
+                    <span>{ws.name}</span>
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.wsInject}
+                    onClick={() => onInjectWorkspaceContext(ws)}
+                    title="Insert workspace reference into message"
+                  >
+                    <Plus size={14} />
+                  </button>
+                </div>
                 {expandedWorkspace === ws.id && (
-                  <div className={styles.wsFileList}>
-                    {expandedWorkspaceFiles.length === 0 && <p className={styles.wsContextEmpty}>No files.</p>}
+                  <div className={styles.wsFiles}>
+                    {expandedWorkspaceFiles.length === 0 && <p className={styles.wsEmpty}>No files.</p>}
                     {expandedWorkspaceFiles.map((f) => (
                       <button
                         key={f.id}
-                        className={styles.wsFileItem}
+                        type="button"
+                        className={styles.wsFile}
                         onClick={() => onInjectFileContext(f.fileName, f.id)}
                         title={`Insert file reference: ${f.fileName}`}
                         disabled={f.processingStatus !== "Completed"}
                       >
-                        <FileText size={10} />
+                        <FileText size={13} aria-hidden="true" />
                         <span>{f.fileName}</span>
                         {f.processingStatus !== "Completed" && (
                           <span className={styles.wsFileStatus}>{f.processingStatus}</span>
@@ -163,5 +177,3 @@ export function ConversationSidebar({
     </aside>
   );
 }
-
-

@@ -1,21 +1,18 @@
-import styles from "../vigil.module.scss";
+import styles from "../vigil.module.css";
 import type { HealthCheckEntry } from "@/features/vigil/types/serviceHealth";
-
-const dotClass = (status: string) =>
-  status === "Healthy" ? styles.subDotHealthy : status === "Degraded" ? styles.subDotDegraded : styles.subDotUnhealthy;
 
 export function SubcheckList({ checks }: { checks: HealthCheckEntry[] }) {
   return (
-    <div className={styles.subcheckList}>
+    <ul className={styles.subchecks}>
       {checks.map((c) => (
-        <div key={c.name} className={styles.subcheckRow}>
-          <span className={`${styles.subDot} ${dotClass(c.status)}`} />
-          <span className={styles.subcheckName}>{c.name}</span>
-          <span className={styles.subcheckStatus}>{c.status}</span>
-          {c.description && <span className={styles.subcheckDesc}>{c.description}</span>}
-          <span className={styles.subcheckDuration}>{c.durationMs.toFixed(0)}ms</span>
-        </div>
+        <li key={c.name} className={styles.subcheck} data-status={c.status}>
+          <span className={styles.subDot} aria-hidden="true" />
+          <span className={styles.subName}>{c.name}</span>
+          <span className={styles.subStatus}>{c.status}</span>
+          {c.description && <span className={styles.subDesc}>{c.description}</span>}
+          <span className={styles.subDuration}>{c.durationMs.toFixed(0)}ms</span>
+        </li>
       ))}
-    </div>
+    </ul>
   );
 }

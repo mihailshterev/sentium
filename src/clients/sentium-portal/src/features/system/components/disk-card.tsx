@@ -1,42 +1,25 @@
 import { Database } from "lucide-react";
-import styles from "../system.module.scss";
+import styles from "../system.module.css";
 import type { DiskInfo } from "@/features/system/types/system";
-import { formatGb } from "../system-utils";
-
-function getUsageColor(percent: number): string {
-  if (percent < 50) {
-    return styles.fillGreen;
-  }
-
-  if (percent < 75) {
-    return styles.fillAmber;
-  }
-
-  return styles.fillRed;
-}
+import { formatGb, usageTone } from "../system-utils";
+import { ProgressGroup } from "./progress-group";
 
 export function DiskCard({ disk }: { disk: DiskInfo }) {
   return (
-    <div className={styles.diskCard}>
+    <div className={styles.disk}>
       <div className={styles.diskHeader}>
         <span className={styles.diskName}>
-          <Database size={13} />
+          <Database size={14} aria-hidden="true" />
           {disk.name}
         </span>
         <span className={styles.diskLabel}>{disk.label || disk.fileSystem}</span>
       </div>
-      <div className={styles.progressGroup}>
-        <div className={styles.progressLabel}>
-          <span className={styles.progressName}>{formatGb(disk.usedGb)} used</span>
-          <span className={styles.progressValue}>{disk.usagePercent.toFixed(1)}%</span>
-        </div>
-        <div className={styles.progressTrack}>
-          <div
-            className={`${styles.progressFill} ${getUsageColor(disk.usagePercent)}`}
-            style={{ width: `${Math.min(disk.usagePercent, 100)}%` }}
-          />
-        </div>
-      </div>
+      <ProgressGroup
+        name={`${formatGb(disk.usedGb)} used`}
+        value={`${disk.usagePercent.toFixed(1)}%`}
+        percent={disk.usagePercent}
+        tone={usageTone(disk.usagePercent)}
+      />
       <span className={styles.diskMeta}>
         {formatGb(disk.availableGb)} free of {formatGb(disk.totalGb)}
       </span>

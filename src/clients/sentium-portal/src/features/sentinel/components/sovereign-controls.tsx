@@ -1,6 +1,5 @@
-import type { CSSProperties } from "react";
-import { BrainCircuit, Shield, ShieldAlert, Zap } from "lucide-react";
-import styles from "../sentinel.module.scss";
+import styles from "../sentinel.module.css";
+import { Range } from "@/shared/ui/form-controls";
 import { ModelSelector } from "@/shared/ui/model-selector";
 import type { PdpSettings } from "@/features/sentinel/types/sentinel";
 import type { OllamaModel } from "@/features/models/types/models";
@@ -17,6 +16,40 @@ interface SovereignControlsProps {
   onIntentModelChange: (model: string) => void;
 }
 
+interface ToggleProps {
+  label: string;
+  description: string;
+  pressed: boolean | undefined;
+  disabled: boolean;
+  onToggle: () => void;
+  testId: string;
+  tone?: "danger";
+}
+
+/** Toggle button (aria-pressed) drawn as a switch. */
+function ToggleRow({ label, description, pressed, disabled, onToggle, testId, tone }: ToggleProps) {
+  return (
+    <div className={styles.controlRow}>
+      <div className={styles.controlInfo}>
+        <span className={styles.controlLabel}>{label}</span>
+        <span className={styles.controlDesc}>{description}</span>
+      </div>
+      <button
+        type="button"
+        className={styles.switch}
+        data-tone={tone}
+        onClick={onToggle}
+        disabled={disabled}
+        aria-pressed={pressed}
+        aria-label={label}
+        data-testid={testId}
+      >
+        <span className={styles.switchThumb} />
+      </button>
+    </div>
+  );
+}
+
 export function SovereignControls({
   settings,
   isUpdating,
@@ -28,80 +61,54 @@ export function SovereignControls({
   commitAutonomy,
   onIntentModelChange,
 }: SovereignControlsProps) {
+  const disabled = isUpdating || !settings;
+  const autonomyLabel =
+    displayAutonomy <= 2 ? "Max Security" : displayAutonomy >= 9 ? "Max Autonomy" : `Level ${displayAutonomy}`;
+
   return (
-    <div className={styles.cardBody}>
-      <div className={styles.toggleRow}>
-        <div className={styles.toggleInfo}>
-          <span className={styles.toggleLabel}>
-            <ShieldAlert size={13} />
-            Lockdown Mode
-          </span>
-          <p className={styles.toggleDesc}>Deny all non-Read agent actions immediately.</p>
-        </div>
-        <button
-          className={`${styles.toggle} ${settings?.lockdownMode ? styles.toggleOn : ""}`}
-          onClick={onLockdown}
-          disabled={isUpdating || !settings}
-          aria-pressed={settings?.lockdownMode}
-          data-testid="lockdown-toggle"
-        >
-          <span className={styles.toggleThumb} />
-        </button>
-      </div>
+    <div className={styles.controls}>
+      <ToggleRow
+        label="Lockdown Mode"
+        description="Deny all non-Read agent actions immediately."
+        pressed={settings?.lockdownMode}
+        disabled={disabled}
+        onToggle={onLockdown}
+        testId="lockdown-toggle"
+        tone="danger"
+      />
 
-      <div className={styles.toggleRow}>
-        <div className={styles.toggleInfo}>
-          <span className={styles.toggleLabel}>
-            <Shield size={13} />
-            Semantic Intent Check
-          </span>
-          <p className={styles.toggleDesc}>LLM verification of agent intent alignment.</p>
-        </div>
-        <button
-          className={`${styles.toggle} ${settings?.semanticIntentCheckEnabled ? styles.toggleOn : ""}`}
-          onClick={onSemanticToggle}
-          disabled={isUpdating || !settings}
-          aria-pressed={settings?.semanticIntentCheckEnabled}
-          data-testid="semantic-intent-toggle"
-        >
-          <span className={styles.toggleThumb} />
-        </button>
-      </div>
+      <ToggleRow
+        label="Semantic Intent Check"
+        description="LLM verification of agent intent alignment."
+        pressed={settings?.semanticIntentCheckEnabled}
+        disabled={disabled}
+        onToggle={onSemanticToggle}
+        testId="semantic-intent-toggle"
+      />
 
-      <div className={styles.modelSelectRow}>
-        <div className={styles.toggleInfo}>
-          <span className={styles.toggleLabel}>
-            <BrainCircuit size={13} />
-            Intent Check Model
-          </span>
-          <p className={styles.toggleDesc}>Model used for semantic intent verification.</p>
+      <div className={styles.controlRow}>
+        <div className={styles.controlInfo}>
+          <span className={styles.controlLabel}>Intent Check Model</span>
+          <span className={styles.controlDesc}>Model used for semantic intent verification.</span>
         </div>
         <ModelSelector
           models={models.map((m) => m.name)}
           value={settings?.intentCheckModel ?? ""}
           onChange={onIntentModelChange}
-          disabled={isUpdating || !settings}
-          className={styles.modelSelectorField}
+          disabled={disabled}
           variant="chip"
         />
       </div>
 
-      <div className={styles.sliderSection}>
+      <div className={styles.slider}>
         <div className={styles.sliderHeader}>
-          <span className={styles.toggleLabel}>
-            <Zap size={13} />
+          <label className={styles.controlLabel} htmlFor="autonomy-slider">
             AI Autonomy
-          </span>
-          <span className={styles.sliderValue}>
-            {displayAutonomy <= 2 ? "Max Security" : displayAutonomy >= 9 ? "Max Autonomy" : `Level ${displayAutonomy}`}
-          </span>
+          </label>
+          <span className={styles.sliderValue}>{autonomyLabel}</span>
         </div>
-        <div className={styles.sliderLabels}>
-          <span>High Security</span>
-          <span>High Autonomy</span>
-        </div>
-        <input
-          type="range"
+        <Range
+          id="autonomy-slider"
           min={1}
           max={10}
           step={1}
@@ -110,12 +117,14 @@ export function SovereignControls({
           onMouseUp={commitAutonomy}
           onTouchEnd={commitAutonomy}
           onKeyUp={commitAutonomy}
-          disabled={isUpdating || !settings}
-          className={styles.slider}
-          style={{ "--slider-fill": `${((displayAutonomy - 1) / 9) * 100}%` } as CSSProperties}
+          disabled={disabled}
           data-testid="autonomy-slider"
         />
-        <p className={styles.toggleDesc}>
+        <div className={styles.sliderScale}>
+          <span>High Security</span>
+          <span>High Autonomy</span>
+        </div>
+        <p className={styles.controlDesc}>
           {displayAutonomy <= 2
             ? "Inconclusive intent checks treated as denials."
             : displayAutonomy >= 9
@@ -124,8 +133,8 @@ export function SovereignControls({
         </p>
       </div>
 
-      <div className={styles.rateLimitRow}>
-        <span className={styles.toggleLabel}>Rate Limit</span>
+      <div className={styles.rateLimit}>
+        <span className={styles.controlLabel}>Rate Limit</span>
         <span className={styles.rateLimitValue}>
           {settings ? `${settings.rateLimitMaxRequests} req / ${settings.rateLimitWindowSeconds}s` : "—"}
         </span>

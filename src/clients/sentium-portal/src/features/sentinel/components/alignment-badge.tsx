@@ -1,14 +1,9 @@
-import styles from "../sentinel.module.scss";
+import { Badge } from "@/shared/ui/badge";
 
 export function AlignmentBadge({ verdict }: { verdict: string | null }) {
   if (!verdict) {
-    return <span className={styles.alignNone}>—</span>;
+    return <span aria-label="No alignment check">—</span>;
   }
-
-  const cls =
-    verdict === "Aligned" ? styles.alignGood : verdict === "Misaligned" ? styles.alignBad : styles.alignNeutral;
-
-  return <span className={`${styles.alignBadge} ${cls}`}>{verdict}</span>;
+  const tone = verdict === "Aligned" ? "success" : verdict === "Misaligned" ? "danger" : "neutral";
+  return <Badge tone={tone}>{verdict}</Badge>;
 }
-
-

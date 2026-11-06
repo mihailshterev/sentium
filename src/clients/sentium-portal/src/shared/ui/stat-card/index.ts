@@ -1,1 +1,1 @@
-export { StatCard } from "./stat-card";
+export { StatCard, StatGrid } from "./stat-card";

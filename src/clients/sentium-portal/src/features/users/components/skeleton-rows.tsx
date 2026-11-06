@@ -1,20 +1,20 @@
-import styles from "../users.module.scss";
+import styles from "../users.module.css";
+import { Skeleton } from "@/shared/ui/skeleton";
 
 export function SkeletonRows() {
   return (
-    <>
+    <div className={styles.skeleton} aria-busy="true">
       {Array.from({ length: 6 }).map((_, i) => (
         <div key={i} className={styles.skeletonRow}>
-          <div className={styles.skeletonAvatar} />
-          <div className={styles.colUser}>
-            <div className={styles.skeletonCell} style={{ width: "8rem" }} />
-            <div className={styles.skeletonCell} style={{ width: "12rem", marginTop: 4 }} />
-          </div>
-          <div className={styles.skeletonCell} style={{ width: "6rem" }} />
-          <div className={styles.skeletonCell} style={{ width: "10rem" }} />
-          <div className={styles.skeletonCell} style={{ width: "2rem" }} />
+          <Skeleton width={32} height={32} radius="full" />
+          <span className={styles.skeletonText}>
+            <Skeleton width="8rem" />
+            <Skeleton width="12rem" />
+          </span>
+          <Skeleton width="6rem" />
+          <Skeleton width="10rem" />
         </div>
       ))}
-    </>
+    </div>
   );
 }

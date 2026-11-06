@@ -1,17 +1,34 @@
 import { useState } from "react";
-import { Bot, Plus, Loader } from "lucide-react";
-import styles from "../agents.module.scss";
+import { Bot, Plus } from "lucide-react";
+import styles from "../agents.module.css";
 import { useAgents } from "@/features/agents/hooks/useAgents";
 import { useModels } from "@/features/models/hooks/useModels";
 import type { AgentRecord } from "@/features/agents/types/agents";
-import { PageHeader } from "@/shared/ui/page-header";
+import { Badge } from "@/shared/ui/badge";
+import { Card, CardHeader } from "@/shared/ui/card";
+import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
 import { EmptyState } from "@/shared/ui/empty-state";
 import { LoadMore } from "@/shared/ui/load-more";
+import { Page } from "@/shared/ui/page";
+import { Skeleton } from "@/shared/ui/skeleton";
+import { StatusMessage } from "@/shared/ui/status-message";
 import { AgentCard } from "../components/agent-card";
 import { AgentCreateForm } from "../components/agent-create-form";
 import { AgentEditModal } from "../components/agent-edit-modal";
-import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
-import { StatusMessage } from "@/shared/ui/status-message";
+
+const LoadingRows = () => (
+  <ul className={styles.agentList} aria-busy="true">
+    {[0, 1, 2].map((i) => (
+      <li key={i} className={styles.skeletonRow}>
+        <Skeleton width={36} height={36} radius="md" />
+        <span className={styles.skeletonText}>
+          <Skeleton width="30%" />
+          <Skeleton width="70%" />
+        </span>
+      </li>
+    ))}
+  </ul>
+);
 
 export function AgentsView() {
   const {
@@ -64,55 +81,50 @@ export function AgentsView() {
     });
   };
 
-  const handleDelete = (agentId: string) => setConfirmState({ agentId });
-
   return (
-    <div className={styles.agentsContainer}>
-      <PageHeader
-        icon={<Bot size={20} className={styles.headerIcon} />}
-        title="Agent Registry"
-        subtitle="Register and manage autonomous agents"
-        right={
-          <div className={styles.headerBadge}>
-            <Bot size={14} />
-            <span>{totalCount} registered</span>
-          </div>
-        }
-      />
+    <Page
+      title="Agent Registry"
+      subtitle="Register and manage autonomous agents"
+      actions={<Badge tone="neutral">{totalCount} registered</Badge>}
+    >
+      <div className={styles.layout}>
+        <Card padding="none" as="section" className={styles.listCard}>
+          <CardHeader title="Registered agents" description="Agents available to workflows and the assistant" />
 
-      <div className={styles.agentsBody}>
-        <div className={styles.listPanel}>
-          <div className={styles.panelHeader}>
-            <span className={styles.activeDot}></span>
-            <span>Registered Agents</span>
-            <span className={styles.agentCountBadge}>{totalCount}</span>
-          </div>
+          {deleteError && (
+            <div className={styles.inlineMessage}>
+              <StatusMessage variant="error" message={deleteError} />
+            </div>
+          )}
 
-          {deleteError && <StatusMessage variant="error" message={deleteError} />}
+          {isLoading ? (
+            <>
+              <span className="visually-hidden">Loading registry...</span>
+              <LoadingRows />
+            </>
+          ) : agents.length === 0 ? (
+            <EmptyState
+              icon={<Bot />}
+              title="No agents registered yet"
+              hint="Register your first agent using the form."
+            />
+          ) : (
+            <ul className={styles.agentList}>
+              {agents.map((agent) => (
+                <AgentCard
+                  key={agent.id}
+                  agent={agent}
+                  onEdit={openEdit}
+                  onDelete={(agentId) => setConfirmState({ agentId })}
+                />
+              ))}
+            </ul>
+          )}
+          <LoadMore hasMore={hasMore} isLoading={isLoadingMore} onLoadMore={loadMore} />
+        </Card>
 
-          <div className={styles.agentList}>
-            {isLoading && (
-              <EmptyState icon={<Loader size={20} className={styles.spinIcon} />} title="Loading registry..." />
-            )}
-            {!isLoading && agents.length === 0 && (
-              <EmptyState
-                icon={<Bot size={32} />}
-                title="No agents registered yet"
-                hint="Register your first agent using the form."
-              />
-            )}
-            {agents.map((agent, i) => (
-              <AgentCard key={agent.id} agent={agent} index={i} onEdit={openEdit} onDelete={handleDelete} />
-            ))}
-            <LoadMore hasMore={hasMore} isLoading={isLoadingMore} onLoadMore={loadMore} />
-          </div>
-        </div>
-
-        <div className={styles.panel}>
-          <div className={styles.panelHeader}>
-            <Plus size={14} />
-            <span>Register Agent</span>
-          </div>
+        <Card padding="md" as="section" className={styles.formCard}>
+          <CardHeader icon={<Plus />} title="Register agent" description="Name it, describe its role, pick a model" />
           <AgentCreateForm
             models={models}
             isCreatingAgent={isCreatingAgent}
@@ -121,7 +133,7 @@ export function AgentsView() {
             createAgentError={createAgentError}
             onSubmit={handleCreateSubmit}
           />
-        </div>
+        </Card>
       </div>
 
       {editAgent && (
@@ -154,6 +166,6 @@ export function AgentsView() {
           onCancel={() => setConfirmState(null)}
         />
       )}
-    </div>
+    </Page>
   );
 }

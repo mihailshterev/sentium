@@ -1,6 +1,10 @@
 import { Activity, ArrowRight } from "lucide-react";
-import styles from "../dashboard.module.scss";
+import styles from "../dashboard.module.css";
+import { Badge, type BadgeTone } from "@/shared/ui/badge";
+import { Button } from "@/shared/ui/button";
+import { Card, CardHeader } from "@/shared/ui/card";
 import { EmptyState } from "@/shared/ui/empty-state";
+import { Skeleton } from "@/shared/ui/skeleton";
 import type { WorkflowRun } from "@/features/workflows/types/workflows";
 
 interface WorkflowRunsFeedProps {
@@ -9,16 +13,15 @@ interface WorkflowRunsFeedProps {
   onNavigate: (to: string) => void;
 }
 
-const RISK_CLASS: Record<string, string> = {
-  Low: styles.runRiskLow,
-  Medium: styles.runRiskMedium,
-  High: styles.runRiskHigh,
-  Critical: styles.runRiskCritical,
+const RISK_TONE: Record<string, BadgeTone> = {
+  Low: "success",
+  Medium: "warning",
+  High: "danger",
+  Critical: "danger",
 };
 
 function relativeTime(iso: string): string {
-  const elapsed = Date.now() - new Date(iso).getTime();
-  const seconds = Math.floor(elapsed / 1000);
+  const seconds = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
   if (seconds < 60) {
     return "just now";
   }
@@ -34,51 +37,57 @@ function relativeTime(iso: string): string {
 }
 
 const SkeletonRunRow = () => (
-  <div className={styles.runRow}>
-    <span className={`${styles.skeletonLine} ${styles.skeletonLineShort}`} style={{ marginTop: 2, flexShrink: 0 }} />
-    <div className={styles.runBody}>
-      <span className={`${styles.skeletonLine} ${styles.skeletonLineLong}`} />
-      <span className={`${styles.skeletonLine} ${styles.skeletonLineShort}`} style={{ marginTop: 4 }} />
-    </div>
-  </div>
+  <li className={styles.runRow}>
+    <Skeleton width={56} height={20} radius="full" />
+    <Skeleton width="55%" />
+    <Skeleton width={48} className={styles.runSkeletonTime} />
+  </li>
 );
 
 export function WorkflowRunsFeed({ runs, loading, onNavigate }: WorkflowRunsFeedProps) {
   return (
-    <section className={styles.section}>
-      <div className={styles.sectionHeader}>
-        <span className={styles.sectionTitle}>Recent Workflow Runs</span>
-        <span className={styles.sectionTag}>Live</span>
-      </div>
+    <Card padding="none" as="section" className={styles.runsCard}>
+      <CardHeader
+        title="Recent Workflow Runs"
+        description="Latest orchestration results"
+        actions={
+          <Badge tone="success" dot>
+            Live
+          </Badge>
+        }
+      />
 
-      <div className={styles.runsFeed}>
-        {loading ? (
-          [0, 1, 2].map((i) => <SkeletonRunRow key={i} />)
-        ) : runs.length === 0 ? (
-          <EmptyState
-            icon={<Activity size={20} />}
-            title="No workflow runs yet"
-            hint="Run a workflow to see results here"
-          />
-        ) : (
-          runs.map((run) => (
-            <div key={run.id} className={styles.runRow}>
-              <span className={`${styles.runRiskBadge} ${RISK_CLASS[run.risk] ?? styles.runRiskLow}`}>{run.risk}</span>
-              <div className={styles.runBody}>
-                <p className={styles.runExplanation}>
-                  {run.explanation || run.recommendation || "Workflow run completed"}
-                </p>
-                <div className={styles.runMeta}>
-                  <span className={styles.runTime}>{relativeTime(run.startedAt)}</span>
-                  <button className={styles.runViewBtn} onClick={() => onNavigate(`/orchestration/runs/${run.id}`)}>
-                    View <ArrowRight size={10} />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))
-        )}
-      </div>
-    </section>
+      {loading ? (
+        <ul className={styles.runList} aria-busy="true">
+          {[0, 1, 2, 3].map((i) => (
+            <SkeletonRunRow key={i} />
+          ))}
+        </ul>
+      ) : runs.length === 0 ? (
+        <EmptyState icon={<Activity />} title="No workflow runs yet" hint="Run a workflow to see results here" />
+      ) : (
+        <ul className={styles.runList}>
+          {runs.map((run) => (
+            <li key={run.id} className={styles.runRow}>
+              <Badge tone={RISK_TONE[run.risk] ?? "neutral"} className={styles.runRisk}>
+                {run.risk}
+              </Badge>
+              <p className={styles.runText}>{run.explanation || run.recommendation || "Workflow run completed"}</p>
+              <time className={styles.runTime} dateTime={run.startedAt}>
+                {relativeTime(run.startedAt)}
+              </time>
+              <Button
+                variant="ghost"
+                size="sm"
+                iconRight={<ArrowRight size={14} />}
+                onClick={() => onNavigate(`/orchestration/runs/${run.id}`)}
+              >
+                View
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
   );
 }

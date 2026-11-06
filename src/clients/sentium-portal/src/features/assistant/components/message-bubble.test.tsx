@@ -38,7 +38,7 @@ describe("MessageBubble", () => {
   it("renders assistant content with the SENTIUM header and copy button", () => {
     const onCopyMessage = vi.fn();
     renderBubble(base({ content: "an answer" }), { onCopyMessage });
-    expect(screen.getByText("SENTIUM")).toBeInTheDocument();
+    expect(screen.getByText("Sentium")).toBeInTheDocument();
     expect(screen.getByText("an answer")).toBeInTheDocument();
     fireEvent.click(screen.getByTitle("Copy to clipboard"));
     expect(onCopyMessage).toHaveBeenCalledWith("an answer", "m1");

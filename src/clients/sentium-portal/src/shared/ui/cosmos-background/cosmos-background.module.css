@@ -1,0 +1,124 @@
+.root {
+  /* Celestial centre of the chart, in viewport units. */
+  --cx: 76vw;
+  --cy: 34vh;
+
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-background);
+  overflow: hidden;
+  pointer-events: none;
+  background: var(--field-base);
+}
+
+/* Static composition from the same tokens: shown before the first frame and whenever WebGL is missing. */
+.fallback {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(45% 40% at 80% 30%, color-mix(in srgb, var(--field-1) 70%, transparent), transparent 75%),
+    radial-gradient(40% 40% at 15% 80%, color-mix(in srgb, var(--field-2) 70%, transparent), transparent 75%),
+    var(--field-base);
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  opacity: 0;
+  transition: opacity 1.2s var(--ease-out);
+
+  &[data-ready="true"] {
+    opacity: 1;
+  }
+}
+
+/* Isometric (triangular) point lattice, strongest around the chart centre. */
+.grid {
+  --s: 28px;
+  --h: calc(var(--s) * 1.7320508);
+
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle, var(--field-dot) 0.9px, transparent 1.3px),
+    radial-gradient(circle, var(--field-dot) 0.9px, transparent 1.3px);
+  background-size: var(--s) var(--h);
+  background-position:
+    0 0,
+    calc(var(--s) / 2) calc(var(--h) / 2);
+  mask-image: radial-gradient(
+    ellipse 75% 85% at var(--cx) var(--cy),
+    #000 25%,
+    rgba(0, 0, 0, 0.35) 70%,
+    transparent 100%
+  );
+}
+
+/* 4000px square layers centred on the chart centre. */
+.center {
+  position: absolute;
+  left: calc(var(--cx) - 2000px);
+  top: calc(var(--cy) - 2000px);
+  width: 4000px;
+  height: 4000px;
+}
+
+.chart,
+.orrery,
+.orrery svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.orrery {
+  animation: orbit 900s linear infinite;
+  will-change: transform;
+}
+
+.root[data-paused] .orrery {
+  animation-play-state: paused;
+}
+
+.lines {
+  fill: none;
+  stroke: var(--field-line);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.dashed {
+  stroke-dasharray: 3 7;
+}
+
+.tickMajor {
+  stroke: var(--border-color);
+}
+
+.labels {
+  fill: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  opacity: 0.7;
+}
+
+/* Settle the edges so chrome sits on calm ground. */
+.vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 120% 100% at 60% 40%,
+    transparent 55%,
+    color-mix(in srgb, var(--field-base) 80%, transparent) 100%
+  );
+}
+
+@keyframes orbit {
+  to {
+    transform: rotate(360deg);
+  }
+}

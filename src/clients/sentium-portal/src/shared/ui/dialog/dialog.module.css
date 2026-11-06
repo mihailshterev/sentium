@@ -1,0 +1,139 @@
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-overlay);
+  display: grid;
+  place-items: center;
+  padding: var(--space-6);
+  overflow-y: auto;
+  background: color-mix(in srgb, var(--bg-base) 55%, transparent);
+  backdrop-filter: blur(6px);
+  animation: overlayIn var(--dur-base) var(--ease-out);
+}
+
+.modal {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-height: calc(100dvh - 2 * var(--space-6));
+  border: 1px solid var(--mat-thick-border);
+  border-radius: var(--radius-xl);
+  background: var(--mat-thick-bg);
+  box-shadow: var(--mat-thick-shadow), var(--shadow-lg);
+  backdrop-filter: var(--mat-thick-filter);
+  animation: dialogIn var(--dur-slow) var(--ease-out);
+
+  &:focus-visible {
+    outline: none;
+  }
+}
+
+.sm {
+  max-width: 420px;
+}
+
+.md {
+  max-width: 560px;
+}
+
+.lg {
+  max-width: 760px;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-5) var(--space-5) var(--space-3);
+}
+
+.icon {
+  --tone: var(--accent);
+
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--tone) 14%, transparent);
+  color: var(--tone);
+
+  & svg {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+.accent {
+  --tone: var(--accent);
+}
+
+.danger {
+  --tone: var(--danger);
+}
+
+.success {
+  --tone: var(--success);
+}
+
+.info {
+  --tone: var(--info);
+}
+
+.titles {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding-top: 2px;
+}
+
+.title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: var(--text-lg);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--leading-tight);
+}
+
+.description {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+.close {
+  margin: -4px -6px 0 0;
+}
+
+.body {
+  min-height: 0;
+  padding: var(--space-2) var(--space-5) var(--space-5);
+  overflow-y: auto;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--border-subtle);
+}
+
+@keyframes overlayIn {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes dialogIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+}

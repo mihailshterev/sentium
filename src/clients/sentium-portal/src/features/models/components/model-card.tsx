@@ -1,5 +1,6 @@
-import { Cpu, HardDrive, Hash, Trash2, Loader } from "lucide-react";
-import styles from "../models.module.scss";
+import { BrainCircuit, Trash2 } from "lucide-react";
+import styles from "../models.module.css";
+import { Button } from "@/shared/ui/button";
 import type { OllamaModel } from "@/features/models/types/models";
 
 function formatBytes(bytes: number): string {
@@ -13,8 +14,7 @@ function formatBytes(bytes: number): string {
 }
 
 function formatDate(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+  return new Date(iso).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 }
 
 interface ModelCardProps {
@@ -25,43 +25,37 @@ interface ModelCardProps {
 }
 
 export function ModelCard({ model, deletingModel, onDelete, canDelete }: ModelCardProps) {
+  const details = model.details;
   return (
-    <div className={styles.modelCard}>
-      <div className={styles.modelIconWrap}>
-        <Cpu size={16} />
+    <li className={styles.modelRow}>
+      <span className={styles.modelIcon} aria-hidden="true">
+        <BrainCircuit size={18} />
+      </span>
+
+      <div className={styles.modelMain}>
+        <p className={styles.modelName}>{model.name}</p>
+        <div className={styles.specs}>
+          <span className={styles.spec}>{formatBytes(model.size)}</span>
+          {details?.parameter_size && <span className={styles.spec}>{details.parameter_size}</span>}
+          {details?.quantization_level && <span className={styles.spec}>{details.quantization_level}</span>}
+          {details?.family && <span className={styles.spec}>{details.family}</span>}
+        </div>
       </div>
 
-      <div className={styles.modelInfo}>
-        <p className={styles.modelName}>{model.name}</p>
-        <div className={styles.modelMeta}>
-          <span className={styles.metaBadgeGreen}>
-            <HardDrive size={10} />
-            {formatBytes(model.size)}
-          </span>
-          {model.details?.parameter_size && (
-            <span className={styles.metaBadgeBlue}>
-              <Hash size={10} />
-              {model.details.parameter_size}
-            </span>
-          )}
-          {model.details?.quantization_level && (
-            <span className={styles.metaBadge}>{model.details.quantization_level}</span>
-          )}
-          {model.details?.family && <span className={styles.metaBadge}>{model.details.family}</span>}
-        </div>
-        <p className={styles.modelDate}>Modified {formatDate(model.modified_at)}</p>
-      </div>
+      <span className={styles.modelDate}>Modified {formatDate(model.modified_at)}</span>
 
       {canDelete && (
-        <button
-          className={styles.deleteBtn}
+        <Button
+          variant="ghost"
+          size="sm"
+          iconOnly
+          icon={<Trash2 size={15} />}
+          loading={deletingModel === model.name}
           onClick={() => onDelete(model.name)}
-          disabled={deletingModel === model.name}
           title={`Delete ${model.name}`}
-        >
-          {deletingModel === model.name ? <Loader size={14} className={styles.spinIcon} /> : <Trash2 size={14} />}
-        </button>
+          className={styles.deleteButton}
+        />
       )}
-    </div>
+    </li>
   );
 }

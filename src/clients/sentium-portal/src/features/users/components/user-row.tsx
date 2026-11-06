@@ -1,7 +1,10 @@
-import { Trash2, ShieldMinus } from "lucide-react";
-import styles from "../users.module.scss";
+import { ShieldMinus, Trash2 } from "lucide-react";
+import styles from "../users.module.css";
 import type { UserListItem } from "../../auth/api/identity.service";
 import type { Role } from "../../../shared/utils/roles";
+import { Badge } from "@/shared/ui/badge";
+import { Button } from "@/shared/ui/button";
+import { Select } from "@/shared/ui/form-controls";
 import { RoleBadge } from "./role-badge";
 
 interface UserRowProps {
@@ -15,16 +18,10 @@ interface UserRowProps {
   onDeleteUser: (userId: string) => void;
 }
 
-const AVATAR_COLORS = ["avatarBlue", "avatarPurple", "avatarGreen", "avatarAmber", "avatarCyan"] as const;
-
 function getInitials(user: UserListItem): string {
   const first = user.firstName?.[0] ?? "";
   const last = user.lastName?.[0] ?? "";
   return (first + last).toUpperCase() || user.userName[0].toUpperCase();
-}
-
-function getAvatarColor(id: string): string {
-  return styles[AVATAR_COLORS[id.charCodeAt(0) % AVATAR_COLORS.length]];
 }
 
 export function UserRow({
@@ -37,78 +34,95 @@ export function UserRow({
   onRemoveRole,
   onDeleteUser,
 }: UserRowProps) {
+  const fullName = user.firstName || user.lastName ? `${user.firstName} ${user.lastName ?? ""}`.trim() : "—";
+
   return (
-    <div className={`${styles.userRow} ${isPending ? styles.pending : ""}`}>
-      <div className={`${styles.userAvatar} ${getAvatarColor(user.id)}`}>{getInitials(user)}</div>
-
-      <div className={styles.colUser}>
-        <div className={styles.nameRow}>
-          <span className={styles.nameText}>
-            {user.firstName || user.lastName ? `${user.firstName} ${user.lastName ?? ""}`.trim() : "—"}
+    <tr className={styles.row} data-pending={isPending || undefined}>
+      <td>
+        <div className={styles.userCell}>
+          <span className={styles.avatar} aria-hidden="true">
+            {getInitials(user)}
           </span>
-          {isSelf && <span className={styles.selfTag}>you</span>}
-          {user.isLockedOut && <span className={styles.lockedTag}>locked</span>}
+          <div className={styles.userText}>
+            <div className={styles.nameRow}>
+              <span className={styles.name}>{fullName}</span>
+              {isSelf && <Badge tone="accent">you</Badge>}
+              {user.isLockedOut && <Badge tone="danger">locked</Badge>}
+            </div>
+            <span className={styles.username}>{user.userName}</span>
+          </div>
         </div>
-        <span className={styles.usernameText}>{user.userName}</span>
-      </div>
+      </td>
 
-      <span className={styles.colRoles}>
-        {user.roles.length > 0 ? (
-          user.roles.map((r) => <RoleBadge key={r} role={r} />)
-        ) : (
-          <span className={styles.noRole}>—</span>
-        )}
-      </span>
+      <td>
+        <div className={styles.roles}>
+          {user.roles.length > 0 ? (
+            user.roles.map((r) => <RoleBadge key={r} role={r} />)
+          ) : (
+            <span className={styles.noRole}>—</span>
+          )}
+        </div>
+      </td>
 
       {isSovereign && (
-        <span className={styles.colAssign}>
-          <select
-            className={styles.roleSelect}
-            defaultValue=""
-            disabled={isPending}
-            onChange={(e) => {
-              if (e.target.value) onAssignRole(user.id, e.target.value as Role);
-              e.target.value = "";
-            }}
-          >
-            <option value="" disabled>
-              Add role…
-            </option>
-            {roleOptions
-              .filter((r) => !user.roles.includes(r))
-              .map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
-              ))}
-          </select>
-          {user.roles.map((r) => (
-            <button
-              key={r}
-              className={styles.removeRoleBtn}
-              title={`Remove ${r}`}
+        <td>
+          <div className={styles.assign}>
+            <Select
+              controlSize="sm"
+              defaultValue=""
               disabled={isPending}
-              onClick={() => onRemoveRole(user.id, r)}
+              aria-label={`Add role to ${user.userName}`}
+              wrapperClassName={styles.roleSelect}
+              onChange={(e) => {
+                if (e.target.value) {
+                  onAssignRole(user.id, e.target.value as Role);
+                }
+                e.target.value = "";
+              }}
             >
-              <ShieldMinus size={11} />
-              {r}
-            </button>
-          ))}
-        </span>
+              <option value="" disabled>
+                Add role…
+              </option>
+              {roleOptions
+                .filter((r) => !user.roles.includes(r))
+                .map((r) => (
+                  <option key={r} value={r}>
+                    {r}
+                  </option>
+                ))}
+            </Select>
+            {user.roles.map((r) => (
+              <Button
+                key={r}
+                variant="ghost"
+                size="sm"
+                icon={<ShieldMinus size={13} />}
+                title={`Remove ${r}`}
+                disabled={isPending}
+                onClick={() => onRemoveRole(user.id, r)}
+                className={styles.removeRole}
+              >
+                {r}
+              </Button>
+            ))}
+          </div>
+        </td>
       )}
 
       {isSovereign && (
-        <span className={styles.colActions}>
-          <button
-            className={styles.deleteBtn}
+        <td className={styles.actions}>
+          <Button
+            variant="ghost"
+            size="sm"
+            iconOnly
+            icon={<Trash2 size={15} />}
             title="Delete user"
             disabled={isSelf || isPending}
             onClick={() => onDeleteUser(user.id)}
-          >
-            <Trash2 size={13} />
-          </button>
-        </span>
+            className={styles.deleteButton}
+          />
+        </td>
       )}
-    </div>
+    </tr>
   );
 }

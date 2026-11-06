@@ -1,8 +1,14 @@
 import { useState } from "react";
-import { Save, SlidersHorizontal, Check, AlertCircle, Loader } from "lucide-react";
-import styles from "../vigil.module.scss";
+import { Save, SlidersHorizontal } from "lucide-react";
+import styles from "../vigil.module.css";
 import { useVigilConfig } from "@/features/vigil/hooks/useVigilConfig";
 import type { VigilConfig } from "@/features/vigil/types/serviceHealth";
+import { Badge } from "@/shared/ui/badge";
+import { Button } from "@/shared/ui/button";
+import { Card, CardHeader } from "@/shared/ui/card";
+import { Input } from "@/shared/ui/form-controls";
+import { SkeletonText } from "@/shared/ui/skeleton";
+import { StatusMessage } from "@/shared/ui/status-message";
 
 const FIELDS: { key: keyof VigilConfig; label: string; hint: string; min: number; max: number }[] = [
   { key: "pollIntervalSeconds", label: "Poll Interval (s)", hint: "How often targets are probed", min: 5, max: 3600 },
@@ -30,18 +36,23 @@ export function VigilConfigPanel() {
   const [draft, setDraft] = useState<VigilConfig | null>(null);
   const form = draft ?? config ?? null;
 
+  const header = (
+    <CardHeader
+      icon={<SlidersHorizontal />}
+      title="Monitoring Configuration"
+      actions={<Badge tone="accent">Sovereign</Badge>}
+    />
+  );
+
   if (isLoading || !form) {
     return (
-      <section className={styles.card}>
-        <div className={styles.cardHeader}>
-          <span className={styles.cardTitle}>
-            <SlidersHorizontal size={13} /> Monitoring Configuration
-          </span>
+      <Card padding="md" as="section">
+        {header}
+        <div aria-busy="true">
+          <span className="visually-hidden">Loading…</span>
+          <SkeletonText lines={4} />
         </div>
-        <div className={styles.configLoading}>
-          <Loader size={14} className={styles.spinning} /> Loading…
-        </div>
-      </section>
+      </Card>
     );
   }
 
@@ -51,21 +62,15 @@ export function VigilConfigPanel() {
   };
 
   return (
-    <section className={styles.card}>
-      <div className={styles.cardHeader}>
-        <span className={styles.cardTitle}>
-          <SlidersHorizontal size={13} /> Monitoring Configuration
-        </span>
-        <span className={styles.sovereignTag}>Sovereign</span>
-      </div>
-
+    <Card padding="md" as="section">
+      {header}
       <div className={styles.configGrid}>
         {FIELDS.map((field) => (
           <label key={field.key} className={styles.configField}>
             <span className={styles.configLabel}>{field.label}</span>
-            <input
+            <Input
               type="number"
-              className={styles.configInput}
+              controlSize="sm"
               value={form[field.key]}
               min={field.min}
               max={field.max}
@@ -76,24 +81,20 @@ export function VigilConfigPanel() {
         ))}
       </div>
 
+      {isSaveError && <StatusMessage variant="error" message={(saveError as Error)?.message ?? "Failed to save"} />}
+
       <div className={styles.configFooter}>
-        {isSaveSuccess && (
-          <span className={styles.configSuccess}>
-            <Check size={13} /> Saved
-          </span>
-        )}
-        {isSaveError && (
-          <span className={styles.configError}>
-            <AlertCircle size={13} /> {(saveError as Error)?.message ?? "Failed to save"}
-          </span>
-        )}
-        <button className={styles.saveBtn} onClick={() => saveConfig(form)} disabled={isSaving}>
-          {isSaving ? <Loader size={13} className={styles.spinning} /> : <Save size={13} />}
+        {isSaveSuccess && <span className={styles.saved}>Saved</span>}
+        <Button
+          variant="primary"
+          size="sm"
+          icon={<Save size={14} />}
+          loading={isSaving}
+          onClick={() => saveConfig(form)}
+        >
           Save
-        </button>
+        </Button>
       </div>
-    </section>
+    </Card>
   );
 }
-
-

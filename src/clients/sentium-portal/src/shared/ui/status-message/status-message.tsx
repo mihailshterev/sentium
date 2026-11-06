@@ -1,24 +1,27 @@
-import styles from "./status-message.module.scss";
+import styles from "./status-message.module.css";
 
-type StatusMessageVariant = "success" | "error" | "loading";
+type StatusMessageVariant = "success" | "error" | "loading" | "info" | "warning";
 
 interface StatusMessageProps {
   variant: StatusMessageVariant;
   icon?: React.ReactNode;
-  message: string;
+  message: React.ReactNode;
+  className?: string;
 }
 
-const VARIANT_CLASS: Record<StatusMessageVariant, string> = {
-  success: styles.success,
-  error: styles.error,
-  loading: styles.loading,
-};
-
-export function StatusMessage({ variant, icon, message }: StatusMessageProps) {
+/** Inline feedback banner. Errors are announced assertively, everything else politely. */
+export function StatusMessage({ variant, icon, message, className }: StatusMessageProps) {
   return (
-    <div className={`${styles.msg} ${VARIANT_CLASS[variant]}`}>
-      {icon}
-      <span>{message}</span>
+    <div
+      className={[styles.msg, styles[variant], className ?? ""].filter(Boolean).join(" ")}
+      role={variant === "error" ? "alert" : "status"}
+    >
+      {icon && (
+        <span className={styles.icon} aria-hidden="true">
+          {icon}
+        </span>
+      )}
+      <span className={styles.text}>{message}</span>
     </div>
   );
 }

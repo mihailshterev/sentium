@@ -84,8 +84,8 @@ describe("KnowledgeBase initial render", () => {
 
   it("renders Global Context and Agent Learnings tabs", () => {
     renderKb();
-    expect(screen.getByRole("button", { name: /global context/i })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /agent learnings/i })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /global context/i })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /agent learnings/i })).toBeInTheDocument();
   });
 
   it("shows Global Context tab by default", () => {
@@ -97,14 +97,14 @@ describe("KnowledgeBase initial render", () => {
 describe("KnowledgeBase tab switching", () => {
   it("switches to Agent Learnings tab when clicked", () => {
     renderKb();
-    fireEvent.click(screen.getByRole("button", { name: /agent learnings/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /agent learnings/i }));
     expect(screen.getByText("Captured Learnings")).toBeInTheDocument();
   });
 
   it("switches back to Global Context tab", () => {
     renderKb();
-    fireEvent.click(screen.getByRole("button", { name: /agent learnings/i }));
-    fireEvent.click(screen.getByRole("button", { name: /global context/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /agent learnings/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /global context/i }));
     expect(screen.getByText("Knowledge Base Overview")).toBeInTheDocument();
   });
 });
@@ -201,7 +201,7 @@ describe("KnowledgeBase Global Context tab", () => {
 describe("KnowledgeBase Agent Learnings tab", () => {
   beforeEach(() => {
     renderKb();
-    fireEvent.click(screen.getByRole("button", { name: /agent learnings/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /agent learnings/i }));
   });
 
   it("renders learning content", () => {
@@ -235,7 +235,7 @@ describe("KnowledgeBase Agent Learnings tab", () => {
       isLoading: true,
     });
     renderKb();
-    fireEvent.click(screen.getByRole("button", { name: /agent learnings/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /agent learnings/i }));
     expect(screen.getByText(/loading learnings/i)).toBeInTheDocument();
   });
 
@@ -247,7 +247,7 @@ describe("KnowledgeBase Agent Learnings tab", () => {
       stats: { ...mockStats, learningsByAgent: {} },
     });
     renderKb();
-    fireEvent.click(screen.getByRole("button", { name: /agent learnings/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /agent learnings/i }));
     expect(screen.getByText(/no learnings captured yet/i)).toBeInTheDocument();
   });
 });
@@ -255,7 +255,7 @@ describe("KnowledgeBase Agent Learnings tab", () => {
 describe("KnowledgeBase Learning card edit", () => {
   beforeEach(() => {
     renderKb();
-    fireEvent.click(screen.getByRole("button", { name: /agent learnings/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /agent learnings/i }));
   });
 
   it("opens edit mode when Edit learning button is clicked", () => {
@@ -303,7 +303,7 @@ describe("KnowledgeBase Learning card edit", () => {
       updateLearning,
     });
     renderKb();
-    fireEvent.click(screen.getByRole("button", { name: /agent learnings/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /agent learnings/i }));
     fireEvent.click(screen.getByTitle("Edit learning"));
     const textarea = document.querySelector("textarea") as HTMLTextAreaElement;
     fireEvent.change(textarea, { target: { value: "Updated content" } });
@@ -319,7 +319,7 @@ describe("KnowledgeBase Learning card edit", () => {
       deleteLearning,
     });
     renderKb();
-    fireEvent.click(screen.getByRole("button", { name: /agent learnings/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /agent learnings/i }));
     fireEvent.click(screen.getByTitle("Delete learning"));
     const confirmBtn = await screen.findByRole("button", { name: /delete item/i });
     fireEvent.click(confirmBtn);
@@ -333,7 +333,7 @@ describe("KnowledgeBase Learning card edit", () => {
       learnings: [{ ...mockLearning, isIngested: false }],
     });
     renderKb();
-    fireEvent.click(screen.getByRole("button", { name: /agent learnings/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /agent learnings/i }));
     expect(screen.getByText("Pending")).toBeInTheDocument();
   });
 
@@ -345,7 +345,7 @@ describe("KnowledgeBase Learning card edit", () => {
       updatingId: "learn-1",
     });
     renderKb();
-    fireEvent.click(screen.getByRole("button", { name: /agent learnings/i }));
+    fireEvent.click(screen.getByRole("tab", { name: /agent learnings/i }));
     fireEvent.click(screen.getByTitle("Edit learning"));
     expect(screen.getByText(/saving/i)).toBeInTheDocument();
   });

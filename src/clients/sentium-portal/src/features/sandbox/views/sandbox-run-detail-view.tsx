@@ -1,17 +1,20 @@
 import { useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import { ArrowLeft, Code2, File, FileText, Loader, RefreshCw, Terminal } from "lucide-react";
-import styles from "../sandbox.module.scss";
+import { ArrowLeft, Code2, File, FileText, RefreshCw, Terminal } from "lucide-react";
+import styles from "../sandbox.module.css";
 import { useSandboxExecution } from "@/features/sandbox/hooks/useSandboxExecution";
-import { PageHeader } from "@/shared/ui/page-header";
+import { Button } from "@/shared/ui/button";
+import { Card } from "@/shared/ui/card";
 import { EmptyState } from "@/shared/ui/empty-state";
+import { Page } from "@/shared/ui/page";
+import { SkeletonText } from "@/shared/ui/skeleton";
 import { Tabs, type TabItem } from "@/shared/ui/tabs";
-import { MetadataBadges } from "../components/metadata-badges";
-import { TerminalOutput } from "../components/terminal-output";
 import { ArtifactCard } from "../components/artifact-card";
-import { RunSummary } from "../components/run-summary";
+import { MetadataBadges } from "../components/metadata-badges";
 import { RunScript } from "../components/run-script";
 import { RunStatusBadge } from "../components/run-status-badge";
+import { RunSummary } from "../components/run-summary";
+import { TerminalOutput } from "../components/terminal-output";
 
 type TabId = "summary" | "script" | "output" | "artifacts";
 
@@ -22,105 +25,89 @@ export function SandboxRunDetailView() {
   const [activeTab, setActiveTab] = useState<TabId>("summary");
 
   const backButton = (
-    <button className={styles.backBtn} onClick={() => navigate("/sandbox")} title="Back to runs">
-      <ArrowLeft size={15} />
-    </button>
+    <Button
+      variant="secondary"
+      size="sm"
+      iconOnly
+      icon={<ArrowLeft size={16} />}
+      onClick={() => navigate("/sandbox")}
+      title="Back to runs"
+    />
   );
 
   if (isLoading) {
     return (
-      <div className={styles.root}>
-        <PageHeader icon={backButton} title="Sandbox Run" subtitle="Loading…" />
-        <div className={styles.body}>
-          <div className={styles.runsEmpty}>
-            <Loader size={20} className={styles.spinning} />
-          </div>
-        </div>
-      </div>
+      <Page title="Sandbox Run" subtitle="Loading…" leading={backButton}>
+        <Card padding="lg" aria-busy="true">
+          <SkeletonText lines={5} />
+        </Card>
+      </Page>
     );
   }
 
   if (!execution) {
     return (
-      <div className={styles.root}>
-        <PageHeader icon={backButton} title="Sandbox Run" subtitle="Not found" />
-        <div className={styles.body}>
+      <Page title="Sandbox Run" subtitle="Not found" leading={backButton}>
+        <Card>
           <EmptyState
-            icon={<Terminal size={32} />}
+            icon={<Terminal />}
             title="Run not found"
             hint="This execution may have been evicted, or the link is invalid."
             action={
-              <button className={styles.refreshBtn} onClick={() => navigate("/sandbox")}>
-                <ArrowLeft size={13} /> Back to runs
-              </button>
+              <Button variant="secondary" icon={<ArrowLeft size={15} />} onClick={() => navigate("/sandbox")}>
+                Back to runs
+              </Button>
             }
           />
-        </div>
-      </div>
+        </Card>
+      </Page>
     );
   }
 
   const tabs: TabItem[] = [
-    { id: "summary", label: "Summary", icon: <Code2 size={13} /> },
-    { id: "script", label: "Script", icon: <FileText size={13} /> },
-    { id: "output", label: "Output", icon: <Terminal size={13} /> },
-    { id: "artifacts", label: "Artifacts", icon: <File size={13} />, count: execution.artifacts.length },
+    { id: "summary", label: "Summary", icon: <Code2 /> },
+    { id: "script", label: "Script", icon: <FileText /> },
+    { id: "output", label: "Output", icon: <Terminal /> },
+    { id: "artifacts", label: "Artifacts", icon: <File />, count: execution.artifacts.length },
   ];
 
   return (
-    <div className={styles.root}>
-      <PageHeader
-        icon={backButton}
-        title={execution.agentId}
-        subtitle={`Run ${execution.jobId.slice(0, 8)}…`}
-        right={
-          <div className={styles.headerActions}>
-            <RunStatusBadge entry={execution} size={12} />
-            <button className={styles.refreshBtn} onClick={() => refetch()} disabled={isFetching}>
-              <RefreshCw size={13} className={isFetching ? styles.spinning : undefined} />
-              Refresh
-            </button>
-          </div>
-        }
-      />
+    <Page
+      title={execution.agentId}
+      subtitle={`Run ${execution.jobId.slice(0, 8)}…`}
+      leading={backButton}
+      actions={
+        <>
+          <RunStatusBadge entry={execution} />
+          <Button
+            variant="secondary"
+            icon={<RefreshCw size={15} className={isFetching ? "animate-spin" : undefined} />}
+            onClick={() => refetch()}
+            disabled={isFetching}
+          >
+            Refresh
+          </Button>
+        </>
+      }
+    >
+      <MetadataBadges entry={execution} />
+      <Tabs tabs={tabs} active={activeTab} onChange={(id) => setActiveTab(id as TabId)} label="Run details" />
 
-      <div className={styles.body}>
-        <div className={styles.card}>
-          <MetadataBadges entry={execution} />
-          <Tabs
-            tabs={tabs}
-            active={activeTab}
-            onChange={(id) => setActiveTab(id as TabId)}
-            className={styles.detailTabs}
-          />
-
-          <div className={styles.tabPanel}>
-            {activeTab === "summary" && <RunSummary entry={execution} />}
-            {activeTab === "script" && <RunScript entry={execution} />}
-            {activeTab === "output" && (
-              <div className={styles.tabPanelPadded}>
-                <TerminalOutput entry={execution} />
-              </div>
-            )}
-            {activeTab === "artifacts" &&
-              (execution.artifacts.length === 0 ? (
-                <div className={styles.tabPanelPadded}>
-                  <EmptyState icon={<File size={28} />} title="No artifacts produced by this run" />
-                </div>
-              ) : (
-                <div className={styles.artifactsBody}>
-                  <div className={styles.artifactsGrid}>
-                    {execution.artifacts.map((a) => (
-                      <ArtifactCard key={a.blobUri} artifact={a} />
-                    ))}
-                  </div>
-                </div>
+      <Card padding="md" as="section">
+        {activeTab === "summary" && <RunSummary entry={execution} />}
+        {activeTab === "script" && <RunScript entry={execution} />}
+        {activeTab === "output" && <TerminalOutput entry={execution} />}
+        {activeTab === "artifacts" &&
+          (execution.artifacts.length === 0 ? (
+            <EmptyState compact icon={<File />} title="No artifacts produced by this run" />
+          ) : (
+            <div className={styles.artifactsGrid}>
+              {execution.artifacts.map((a) => (
+                <ArtifactCard key={a.blobUri} artifact={a} />
               ))}
-          </div>
-        </div>
-      </div>
-    </div>
+            </div>
+          ))}
+      </Card>
+    </Page>
   );
 }
-
-

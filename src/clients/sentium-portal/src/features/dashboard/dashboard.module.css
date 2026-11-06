@@ -1,0 +1,414 @@
+/* Shared tone colors for dots, meters and values (data-tone="ok|warn|critical|neutral|unknown"). */
+.root [data-tone="ok"] {
+  --tone: var(--success);
+}
+
+.root [data-tone="warn"] {
+  --tone: var(--warning);
+}
+
+.root [data-tone="critical"] {
+  --tone: var(--danger);
+}
+
+.root [data-tone="neutral"],
+.root [data-tone="unknown"] {
+  --tone: var(--text-muted);
+}
+
+/* ---------- Hero: copy, actions and stats on the left; the system map on the right ---------- */
+
+.hero {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  gap: var(--space-7);
+  align-items: center;
+}
+
+.heroText {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-5);
+  min-width: 0;
+
+  & > :last-child {
+    align-self: stretch;
+    margin-top: var(--space-3);
+  }
+}
+
+.lead {
+  max-width: 22ch;
+  margin: 0;
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: var(--text-3xl);
+  font-weight: var(--fw-regular);
+  letter-spacing: var(--tracking-tight);
+  line-height: 1.12;
+  text-wrap: balance;
+}
+
+.leadMuted {
+  color: var(--text-muted);
+}
+
+.heroBody {
+  max-width: 52ch;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-md);
+  line-height: 1.6;
+}
+
+.heroActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.heroMap {
+  min-width: 0;
+}
+
+@media (max-width: 1180px) {
+  .hero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .heroMap {
+    max-width: 760px;
+  }
+}
+
+/* ---------- Vitals ---------- */
+
+.vitals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.vital {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  padding: var(--space-4) var(--space-5);
+
+  & + & {
+    border-left: 1px solid var(--border-subtle);
+  }
+}
+
+.vitalIcon {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  background: var(--mat-thin-bg);
+  color: var(--text-secondary);
+
+  & svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.vitalText {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.vitalValue {
+  color: var(--text-primary);
+  font-size: var(--text-md);
+  font-weight: var(--fw-semibold);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.vitalLabel {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  white-space: nowrap;
+}
+
+.meter {
+  flex: 1;
+  min-width: 48px;
+  max-width: 120px;
+  height: 4px;
+  margin-left: auto;
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--mat-thin-bg-hover);
+}
+
+.meterFill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transition: width var(--dur-slow) var(--ease-out);
+
+  &[data-tone="warn"],
+  &[data-tone="critical"] {
+    background: var(--tone);
+  }
+}
+
+/* ---------- Main grid ---------- */
+
+.mainGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+.sideColumn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+@media (max-width: 1180px) {
+  .mainGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .vital + .vital {
+    border-left: none;
+  }
+}
+
+/* ---------- Runs feed ---------- */
+
+.runList {
+  margin: 0;
+  padding: 0 0 var(--space-2);
+  list-style: none;
+}
+
+.runRow {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 52px;
+  padding: 0 var(--space-3) 0 var(--space-5);
+  border-top: 1px solid var(--border-subtle);
+  transition: background-color var(--transition-fast);
+
+  &:hover {
+    background: var(--bg-hover);
+  }
+}
+
+.runRisk {
+  justify-self: start;
+}
+
+.runText {
+  margin: 0;
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.runTime {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.runSkeletonTime {
+  justify-self: end;
+}
+
+/* ---------- Service health ---------- */
+
+.healthList {
+  margin: 0;
+  padding: 0 0 var(--space-2);
+  list-style: none;
+}
+
+.healthRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  height: 40px;
+  padding: 0 var(--space-5);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.healthDot {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--tone);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tone) 18%, transparent);
+}
+
+.healthName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.healthStatus {
+  color: var(--tone);
+  font-size: var(--text-xs);
+  font-weight: var(--fw-medium);
+}
+
+.latency {
+  min-width: 52px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  text-align: right;
+}
+
+.healthSkeletonEnd {
+  margin-left: auto;
+}
+
+/* ---------- Security ---------- */
+
+.auditCounts {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-2);
+  margin: 0 0 var(--space-5);
+}
+
+.auditCount {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 2px;
+}
+
+.auditValue {
+  margin: 0;
+  color: var(--tone);
+  font-size: var(--text-xl);
+  font-weight: var(--fw-semibold);
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+
+  &[data-tone="neutral"] {
+    color: var(--text-primary);
+  }
+}
+
+.auditLabel {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.riskBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.riskBar {
+  display: flex;
+  gap: 2px;
+  height: 8px;
+  overflow: hidden;
+  border-radius: var(--radius-full);
+  background: var(--mat-thin-bg-hover);
+}
+
+.root [data-tone="low"] {
+  --tone: var(--success);
+}
+
+.root [data-tone="medium"] {
+  --tone: var(--accent);
+}
+
+.root [data-tone="high"] {
+  --tone: var(--warning);
+}
+
+.riskSegment {
+  min-width: 4px;
+  background: var(--tone);
+
+  &[data-tone="critical"] {
+    background: var(--danger);
+  }
+}
+
+.riskLegend {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.riskLegendItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+}
+
+.riskSwatch {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 2px;
+  background: var(--tone);
+}
+
+.riskLegendValue {
+  margin-left: auto;
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.alignmentRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: var(--space-5);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.alignmentLabel {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+
+.alignmentScore {
+  color: var(--tone);
+  font-size: var(--text-md);
+  font-weight: var(--fw-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.auditButton {
+  margin-top: var(--space-5);
+}

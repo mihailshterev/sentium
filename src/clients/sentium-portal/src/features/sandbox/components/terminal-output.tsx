@@ -1,4 +1,4 @@
-import styles from "../sandbox.module.scss";
+import styles from "../sandbox.module.css";
 import type { SandboxExecutionLog } from "@/features/sandbox/types/sandbox";
 
 interface TerminalOutputProps {
@@ -12,29 +12,29 @@ export function TerminalOutput({ entry }: TerminalOutputProps) {
   const hasStderr = stderrLines.some((l) => l.trim());
 
   return (
-    <div className={styles.terminalWrap}>
-      <div className={styles.terminalHeader}>
-        <div className={styles.termDots}>
-          <span className={styles.termDot} />
-          <span className={styles.termDot} />
-          <span className={styles.termDot} />
-        </div>
+    <div className={styles.terminal}>
+      <div className={styles.terminalBar}>
+        <span className={styles.terminalDots} aria-hidden="true">
+          <span />
+          <span />
+          <span />
+        </span>
         stdout / stderr
       </div>
-      <div className={styles.terminal}>
-        {!hasStdout && !hasStderr && <span className={styles.termEmpty}>(no output)</span>}
+      <div className={styles.terminalBody}>
+        {!hasStdout && !hasStderr && <span className={styles.terminalEmpty}>(no output)</span>}
         {hasStdout &&
           stdoutLines.map((line, i) => (
-            <span key={`out-${i}`} className={styles.termLineStdout}>
-              {line || "\u00A0"}
+            <span key={`out-${i}`} className={styles.stdout}>
+              {line || " "}
             </span>
           ))}
         {hasStderr && (
           <>
-            {hasStdout && <span className={styles.termSectionLabel}>── stderr ──</span>}
+            {hasStdout && <span className={styles.streamLabel}>stderr</span>}
             {stderrLines.map((line, i) => (
-              <span key={`err-${i}`} className={styles.termLineStderr}>
-                {line || "\u00A0"}
+              <span key={`err-${i}`} className={styles.stderr}>
+                {line || " "}
               </span>
             ))}
           </>
@@ -43,5 +43,3 @@ export function TerminalOutput({ entry }: TerminalOutputProps) {
     </div>
   );
 }
-
-

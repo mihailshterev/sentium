@@ -1,0 +1,117 @@
+.notice {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.emptyCell {
+  height: 120px;
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.row {
+  cursor: pointer;
+
+  &[data-expanded] {
+    background: var(--bg-hover);
+  }
+}
+
+.jobName {
+  color: var(--text-primary);
+  font-weight: var(--fw-medium);
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.cron {
+  padding: 2px 7px;
+  border-radius: var(--radius-xs);
+  background: var(--mat-thin-bg-hover);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+}
+
+.actions {
+  width: 1%;
+  white-space: nowrap;
+
+  & > * {
+    vertical-align: middle;
+  }
+}
+
+.deleteButton:hover:not(:disabled) {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.chevron,
+.chevronOpen {
+  margin-left: 6px;
+  color: var(--text-muted);
+  transition: transform var(--transition-base);
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.detailRow,
+.detailRow:hover {
+  background: var(--mat-thin-bg);
+}
+
+.detailRow td {
+  height: auto;
+  padding-top: var(--space-4);
+  padding-bottom: var(--space-4);
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-4);
+  margin: 0;
+
+  & dt {
+    margin-bottom: 4px;
+    color: var(--text-muted);
+    font-size: var(--text-xs);
+  }
+
+  & dd {
+    margin: 0;
+    color: var(--text-primary);
+  }
+}
+
+.codeWrap {
+  margin-top: var(--space-4);
+}
+
+.codeLabel {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.code {
+  max-height: 260px;
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  overflow: auto;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--terminal-bg);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: 1.6;
+}
