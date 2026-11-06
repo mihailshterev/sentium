@@ -1,9 +1,22 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { DndContext, closestCenter, type DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
-import { Bot, CheckCircle, ListOrdered, Plus, SlidersHorizontal } from "lucide-react";
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  type DragEndEvent,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CheckCircle, Flag, Play, Plus, SlidersHorizontal, Workflow } from "lucide-react";
 import styles from "../workflows.module.css";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
@@ -12,6 +25,7 @@ import { Input, SearchInput, Textarea } from "@/shared/ui/form-controls";
 import { FormField } from "@/shared/ui/form-field";
 import { StatusMessage } from "@/shared/ui/status-message";
 import { SortableAgent } from "./sortable-agent";
+import { GraphEdge, GraphRow, GraphTerminal } from "./graph-parts";
 import type { AgentRecord } from "@/features/agents/types/agents";
 import type { WorkflowRecord, SortableAgentItem } from "@/features/workflows/types/workflows";
 import { workflowEditorSchema, type WorkflowEditorFormData } from "../schemas/workflow.editor";
@@ -68,7 +82,11 @@ export function WorkflowEditor({
   const formDescription = watch("description") ?? "";
   const formName = watch("name") ?? "";
 
-  const sensors = useSensors(useSensor(PointerSensor));
+  const sensors = useSensors(
+    // A small distance keeps a plain click on a node from starting a drag.
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   const isPending = selectedWorkflow ? isUpdatingWorkflow : isCreatingWorkflow;
   const isSuccess = selectedWorkflow ? isUpdateSuccess : isCreateSuccess;
@@ -124,44 +142,69 @@ export function WorkflowEditor({
     <form onSubmit={handleSubmit(handleFormSubmit)} className={styles.editor}>
       <Card padding="none" as="section" className={styles.pipelineCard}>
         <CardHeader
-          icon={<ListOrdered />}
-          title="Execution order"
-          description="Agents run top to bottom; drag to reorder"
+          icon={<Workflow />}
+          title="Execution graph"
+          description="Agents run top to bottom; drag a node to reorder"
           actions={<Badge tone="neutral">{formAgents.length} agents</Badge>}
         />
 
-        <div className={styles.pipelineBody}>
-          {formAgents.length === 0 ? (
-            <div className={styles.pipelineEmpty}>
-              <span className={styles.pipelineEmptyIcon} aria-hidden="true">
-                <Bot size={20} />
-              </span>
-              <span className={styles.pipelineEmptyTitle}>Add agents from the list</span>
-              <span className={styles.pipelineEmptyHint}>Drag to reorder execution sequence</span>
-              {selectedWorkflow && selectedWorkflow.agents.length > 0 && (
-                <ol className={styles.previewList}>
-                  {[...selectedWorkflow.agents]
-                    .sort((a, b) => a.order - b.order)
-                    .map((a) => (
-                      <li key={a.agentId}>{getAgentName(a.agentId)}</li>
+        <div className={styles.canvas}>
+          <div className={styles.graph}>
+            <GraphTerminal
+              tone="trigger"
+              icon={<Play size={16} />}
+              tag="in"
+              label="Trigger"
+              hint="Manual run or schedule"
+            />
+
+            {formAgents.length === 0 ? (
+              <>
+                <GraphEdge index={0} />
+                <GraphRow
+                  node={
+                    <span className={`${styles.graphNode} ${styles.graphNode_empty}`} aria-hidden="true">
+                      <Plus size={18} />
+                    </span>
+                  }
+                  label="Add agents from the list"
+                  right={
+                    <>
+                      <span className={styles.graphDesc}>Each agent receives the previous one&rsquo;s output.</span>
+                      {selectedWorkflow && selectedWorkflow.agents.length > 0 && (
+                        <ol className={styles.previewList}>
+                          {[...selectedWorkflow.agents]
+                            .sort((a, b) => a.order - b.order)
+                            .map((a) => (
+                              <li key={a.agentId}>{getAgentName(a.agentId)}</li>
+                            ))}
+                        </ol>
+                      )}
+                    </>
+                  }
+                />
+              </>
+            ) : (
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <SortableContext items={formAgents.map((a) => a.sortId)} strategy={verticalListSortingStrategy}>
+                  <ol className={styles.graphList} aria-label="Execution order">
+                    {formAgents.map((item, idx) => (
+                      <SortableAgent key={item.sortId} item={item} index={idx} onRemove={removeAgentFromForm} />
                     ))}
-                </ol>
-              )}
-            </div>
-          ) : (
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              <SortableContext items={formAgents.map((a) => a.sortId)} strategy={verticalListSortingStrategy}>
-                <ol className={styles.pipeline}>
-                  {formAgents.map((item, idx) => (
-                    <li key={item.sortId} className={styles.step}>
-                      <span className={styles.stepIndex}>{idx + 1}</span>
-                      <SortableAgent item={item} onRemove={removeAgentFromForm} />
-                    </li>
-                  ))}
-                </ol>
-              </SortableContext>
-            </DndContext>
-          )}
+                  </ol>
+                </SortableContext>
+              </DndContext>
+            )}
+
+            <GraphEdge index={Math.max(formAgents.length, 1)} />
+            <GraphTerminal
+              tone="output"
+              icon={<Flag size={16} />}
+              tag="out"
+              label="Output"
+              hint="Result, run log and audit trail"
+            />
+          </div>
         </div>
       </Card>
 

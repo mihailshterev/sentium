@@ -84,6 +84,23 @@ describe("WorkflowBuilder", () => {
     );
   });
 
+  it("draws the pipeline as a graph from trigger to output and removes nodes", async () => {
+    render(<WorkflowBuilder />);
+    expect(screen.getByText("Trigger")).toBeInTheDocument();
+    expect(screen.getByText("Output")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Add Analyzer" }));
+    fireEvent.click(screen.getByRole("button", { name: "Add Analyzer" }));
+    const graph = screen.getByRole("list", { name: "Execution order" });
+    expect(graph.querySelectorAll("li")).toHaveLength(2);
+    expect(screen.getByText("step 02")).toBeInTheDocument();
+    expect(screen.getByText("2 agents")).toBeInTheDocument();
+
+    fireEvent.click(screen.getAllByRole("button", { name: "Remove Analyzer" })[0]);
+    await waitFor(() => expect(graph.querySelectorAll("li")).toHaveLength(1));
+    expect(screen.queryByText("step 02")).toBeNull();
+  });
+
   it("renders the edit view for an existing workflow", () => {
     routeParams = { workflowId: "wf1" };
     render(<WorkflowBuilder />);

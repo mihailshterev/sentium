@@ -12,11 +12,13 @@ const item: SortableAgentItem = {
   description: "analyzes things",
 } as SortableAgentItem;
 
-const renderSortable = (onRemove = vi.fn()) =>
+const renderSortable = (onRemove = vi.fn(), index?: number) =>
   render(
     <DndContext>
       <SortableContext items={[item.sortId]}>
-        <SortableAgent item={item} onRemove={onRemove} />
+        <ol>
+          <SortableAgent item={item} index={index} onRemove={onRemove} />
+        </ol>
       </SortableContext>
     </DndContext>,
   );
@@ -35,5 +37,14 @@ describe("SortableAgent", () => {
     const buttons = screen.getAllByRole("button");
     fireEvent.click(buttons[buttons.length - 1]);
     expect(onRemove).toHaveBeenCalledWith("s1");
+  });
+
+  it("labels the step from its position and exposes the node as a reorder handle", () => {
+    renderSortable(vi.fn(), 2);
+    expect(screen.getByText("step 03")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reorder Analyzer" })).toHaveAttribute(
+      "aria-roledescription",
+      "sortable",
+    );
   });
 });
