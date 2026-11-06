@@ -659,10 +659,19 @@
   text-align: center;
 }
 
-.welcomeMark {
-  width: 44px;
-  height: 44px;
+.welcomeIcon {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
   margin-bottom: var(--space-5);
+  border: 1px solid var(--accent-line);
+  border-radius: 50%;
+  background: var(--bg-base);
+  color: var(--accent);
+  box-shadow:
+    0 0 0 6px color-mix(in srgb, var(--bg-base) 65%, transparent),
+    0 0 40px -12px var(--accent-glow);
 }
 
 .welcomeTitle {
