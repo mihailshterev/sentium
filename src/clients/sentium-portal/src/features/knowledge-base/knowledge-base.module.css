@@ -1,0 +1,216 @@
+.cardBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: 0 var(--space-5) var(--space-5);
+}
+
+.deleteButton:hover:not(:disabled) {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+/* ---------- Metrics ---------- */
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--space-3);
+}
+
+.metric {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 2px;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--mat-thin-bg);
+}
+
+.metricValue {
+  color: var(--text-primary);
+  font-size: var(--text-xl);
+  font-weight: var(--fw-semibold);
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+}
+
+.metricAccent {
+  color: var(--accent);
+}
+
+.metricLabel {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- Collections ---------- */
+
+.collectionList {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  list-style: none;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.collectionRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 52px;
+  padding: 0 var(--space-2) 0 var(--space-4);
+
+  & + & {
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  &:hover {
+    background: var(--bg-hover);
+  }
+}
+
+.collectionIcon {
+  display: grid;
+  place-items: center;
+  color: var(--text-muted);
+}
+
+.collectionName {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.collectionMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.metaChip {
+  padding: 2px 7px;
+  border-radius: var(--radius-xs);
+  background: var(--mat-thin-bg-hover);
+  color: var(--text-secondary);
+  font-size: var(--text-2xs);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Learnings ---------- */
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: 0 var(--space-5) var(--space-4);
+}
+
+.filter {
+  width: auto;
+  min-width: 170px;
+}
+
+.learningList {
+  margin: 0;
+  padding: 0 0 var(--space-2);
+  list-style: none;
+}
+
+.learning {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-4) var(--space-4) var(--space-5);
+  border-top: 1px solid var(--border-subtle);
+  transition: background-color var(--transition-fast);
+
+  &:hover {
+    background: var(--bg-hover);
+  }
+}
+
+.learningEditing,
+.learningEditing:hover {
+  background: var(--mat-thin-bg);
+}
+
+.learningHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.learningMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.agentName {
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-semibold);
+}
+
+.learningDate {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.learningActions {
+  display: flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.learningContent {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.editBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.editLabel {
+  margin-top: var(--space-2);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-medium);
+}
+
+.editActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}

@@ -1,6 +1,7 @@
 import { ShieldCheck } from "lucide-react";
-import styles from "../vigil.module.scss";
+import styles from "../vigil.module.css";
 import type { Incident } from "@/features/vigil/types/serviceHealth";
+import { EmptyState } from "@/shared/ui/empty-state";
 import { formatRelativeTime } from "../../../shared/utils/formatters";
 import { SeverityBadge } from "./severity-badge";
 
@@ -23,39 +24,33 @@ const formatDuration = (ms?: number | null) => {
 
 export function IncidentTimeline({ incidents }: { incidents: Incident[] }) {
   if (incidents.length === 0) {
-    return (
-      <div className={styles.incidentEmpty}>
-        <ShieldCheck size={20} />
-        <span>No incidents - all targets stable</span>
-      </div>
-    );
+    return <EmptyState compact icon={<ShieldCheck />} title="No incidents - all targets stable" />;
   }
 
   return (
-    <div className={styles.incidentList}>
-      {incidents.map((incident) => (
-        <div key={incident.id} className={styles.incidentRow}>
-          <span
-            className={`${styles.incidentMarker} ${incident.status === "Resolved" ? styles.incidentMarkerResolved : styles.incidentMarkerOpen}`}
-          />
-          <div className={styles.incidentBody}>
-            <div className={styles.incidentTop}>
-              <span className={styles.incidentTarget}>{incident.target}</span>
-              <SeverityBadge severity={incident.severity} status={incident.status} />
+    <ol className={styles.incidents}>
+      {incidents.map((incident) => {
+        const duration = formatDuration(incident.durationMs);
+        return (
+          <li key={incident.id} className={styles.incident} data-state={incident.status}>
+            <span className={styles.incidentMarker} aria-hidden="true" />
+            <div className={styles.incidentBody}>
+              <div className={styles.incidentTop}>
+                <span className={styles.incidentTarget}>{incident.target}</span>
+                <SeverityBadge severity={incident.severity} status={incident.status} />
+              </div>
+              <div className={styles.incidentMeta}>
+                <span>Opened {formatRelativeTime(incident.openedAt)}</span>
+                {incident.status === "Resolved" && incident.resolvedAt && (
+                  <span>· Resolved {formatRelativeTime(incident.resolvedAt)}</span>
+                )}
+                {duration && <span>· {duration}</span>}
+              </div>
+              {incident.description && <p className={styles.incidentDesc}>{incident.description}</p>}
             </div>
-            <div className={styles.incidentMeta}>
-              <span>Opened {formatRelativeTime(incident.openedAt)}</span>
-              {incident.status === "Resolved" && incident.resolvedAt && (
-                <span>· Resolved {formatRelativeTime(incident.resolvedAt)}</span>
-              )}
-              {formatDuration(incident.durationMs) && <span>· {formatDuration(incident.durationMs)}</span>}
-            </div>
-            {incident.description && <div className={styles.incidentDesc}>{incident.description}</div>}
-          </div>
-        </div>
-      ))}
-    </div>
+          </li>
+        );
+      })}
+    </ol>
   );
 }
-
-

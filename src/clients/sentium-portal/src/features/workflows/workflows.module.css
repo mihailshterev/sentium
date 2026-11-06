@@ -1,0 +1,442 @@
+/* ---------- List ---------- */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-4);
+}
+
+.skeletonCard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 168px;
+}
+
+.workflowCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-height: 168px;
+}
+
+.workflowCardActive {
+  border-color: var(--accent-line);
+}
+
+.cardTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: var(--space-2);
+}
+
+.cardIcon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--accent-line);
+  border-radius: var(--radius-md);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.cardActions {
+  display: flex;
+  gap: 2px;
+  margin: -4px -6px 0 0;
+  opacity: 0.6;
+  transition: opacity var(--transition-fast);
+}
+
+.workflowCard:hover .cardActions,
+.cardActions:focus-within {
+  opacity: 1;
+}
+
+.deleteButton:hover:not(:disabled) {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.cardName {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: var(--text-md);
+  font-weight: var(--fw-semibold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cardDescription {
+  display: -webkit-box;
+  flex: 1;
+  margin: 0;
+  overflow: hidden;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.cardFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-top: var(--space-2);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-subtle);
+}
+
+/* A tiny pipeline: one node per agent, joined by a line. */
+.pipelinePreview {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 8px;
+}
+
+.previewNode {
+  position: relative;
+  width: 8px;
+  height: 8px;
+  border: 1.5px solid var(--accent);
+  border-radius: 50%;
+
+  & + &::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: calc(100% + 1px);
+    width: 10px;
+    height: 1px;
+    background: var(--accent-line);
+  }
+}
+
+.previewMore {
+  color: var(--text-muted);
+  font-size: var(--text-2xs);
+}
+
+.agentCount {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+/* ---------- Builder ---------- */
+
+.editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 400px);
+  gap: var(--space-4);
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .editor {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.sideColumn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.pipelineCard {
+  min-height: 420px;
+}
+
+.pipelineBody {
+  padding: var(--space-2) var(--space-5) var(--space-5);
+}
+
+.pipelineEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: var(--space-9) var(--space-4);
+  border: 1px dashed var(--border-color);
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+
+.pipelineEmptyIcon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin-bottom: var(--space-2);
+  border-radius: var(--radius-md);
+  background: var(--mat-thin-bg);
+  color: var(--text-muted);
+}
+
+.pipelineEmptyTitle {
+  color: var(--text-primary);
+  font-size: var(--text-base);
+  font-weight: var(--fw-medium);
+}
+
+.pipelineEmptyHint {
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+}
+
+.previewList {
+  margin: var(--space-3) 0 0;
+  padding-left: var(--space-5);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  text-align: left;
+}
+
+.pipeline {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+
+  /* Connector from this step's index to the next one. */
+  &:not(:last-child)::before {
+    content: "";
+    position: absolute;
+    top: calc(50% + 14px);
+    bottom: calc(-50% - var(--space-3) + 14px);
+    left: 13px;
+    width: 1px;
+    background: linear-gradient(var(--accent-line), var(--border-color));
+  }
+}
+
+.stepIndex {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border: 1px solid var(--accent-line);
+  border-radius: 50%;
+  background: var(--mat-thick-opaque);
+  color: var(--accent);
+  font-size: var(--text-xs);
+  font-weight: var(--fw-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+.node {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  padding: var(--space-3) var(--space-2) var(--space-3) var(--space-1);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--mat-thin-bg);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+
+  &:hover {
+    border-color: var(--border-strong);
+  }
+}
+
+.nodeDragging {
+  position: relative;
+  z-index: 2;
+  border-color: var(--accent-line);
+  background: var(--mat-thick-opaque);
+  box-shadow: var(--shadow-lg);
+}
+
+.dragHandle,
+.nodeRemove {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+}
+
+.dragHandle {
+  cursor: grab;
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+.nodeRemove:hover {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.nodeInfo {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.nodeTitleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.nodeName {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-semibold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nodeModel,
+.pickerModel {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: var(--radius-xs);
+  background: var(--mat-thin-bg-hover);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+}
+
+.nodeDesc,
+.pickerDesc {
+  overflow: hidden;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------- Agent picker ---------- */
+
+.availableCount {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.pickerSearch {
+  padding: 0 var(--space-5) var(--space-3);
+}
+
+.picker {
+  display: flex;
+  flex-direction: column;
+  max-height: 360px;
+  padding: 0 var(--space-2) var(--space-2);
+  overflow-y: auto;
+}
+
+.pickerItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+
+  &:hover {
+    background: var(--bg-hover);
+  }
+
+  &:hover .pickerAdd {
+    color: var(--accent);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+}
+
+.pickerInfo {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.pickerTop {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.pickerName {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-medium);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pickerAdd {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: color var(--transition-fast);
+}
+
+.pickerEmpty {
+  padding: var(--space-4) var(--space-3);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  text-align: center;
+}

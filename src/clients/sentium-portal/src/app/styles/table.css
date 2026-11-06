@@ -1,0 +1,68 @@
+/*
+ * Shared data table. Put it inside an unpadded Card (or any surface); wrap in .data-table-scroll for
+ * horizontal overflow on narrow screens.
+ */
+.data-table-scroll {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--text-sm);
+
+  & th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    height: 38px;
+    padding: 0 var(--space-4);
+    border-bottom: 1px solid var(--border-subtle);
+    background: var(--mat-thick-bg);
+    backdrop-filter: var(--mat-thick-filter);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    font-weight: var(--fw-regular);
+    letter-spacing: var(--tracking-label);
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  & td {
+    height: 46px;
+    padding: 0 var(--space-4);
+    border-bottom: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+    vertical-align: middle;
+  }
+
+  & tbody tr {
+    transition: background-color var(--transition-fast);
+  }
+
+  & tbody tr:hover {
+    background: var(--bg-hover);
+  }
+
+  & tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  & th:first-child,
+  & td:first-child {
+    padding-left: var(--space-5);
+  }
+
+  & th:last-child,
+  & td:last-child {
+    padding-right: var(--space-5);
+  }
+
+  & .num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+}

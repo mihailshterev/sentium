@@ -1,0 +1,155 @@
+.btn {
+  --btn-h: 36px;
+  --btn-px: 14px;
+
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: var(--btn-h);
+  padding: 0 var(--btn-px);
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--fw-medium);
+  line-height: 1;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background-color var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    transform var(--transition-fast);
+
+  &:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  & svg {
+    flex-shrink: 0;
+  }
+}
+
+.sm {
+  --btn-h: 30px;
+  --btn-px: 10px;
+  gap: 6px;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-xs);
+}
+
+.md {
+  --btn-h: 36px;
+  --btn-px: 14px;
+}
+
+.lg {
+  --btn-h: 42px;
+  --btn-px: 18px;
+  font-size: var(--text-base);
+}
+
+.iconOnly {
+  width: var(--btn-h);
+  padding: 0;
+}
+
+.fullWidth {
+  width: 100%;
+}
+
+.primary {
+  border-color: color-mix(in srgb, var(--accent-fill) 60%, white 40%);
+  background: var(--accent-fill);
+  color: var(--on-accent);
+  font-weight: var(--fw-semibold);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--accent-fill) 35%, transparent),
+    0 0 22px -4px var(--accent-glow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+
+  &:hover:not(:disabled) {
+    background: var(--accent-fill-hover);
+    box-shadow:
+      0 0 0 1px color-mix(in srgb, var(--accent-fill) 50%, transparent),
+      0 0 30px -2px var(--accent-glow),
+      inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  }
+
+  &:focus-visible {
+    box-shadow:
+      0 0 22px -4px var(--accent-glow),
+      var(--focus-ring);
+  }
+
+  /* Faded fill reads muddy; disabled primaries go neutral instead. */
+  &:disabled:not([aria-busy]) {
+    opacity: 1;
+    border-color: var(--border-color);
+    background: var(--mat-thin-bg-hover);
+    box-shadow: none;
+    color: var(--text-dim);
+  }
+}
+
+/* Wireframe button: hairline border, transparent fill. */
+.secondary {
+  border-color: var(--border-strong);
+  background: transparent;
+  color: var(--text-primary);
+
+  &:hover:not(:disabled) {
+    border-color: color-mix(in srgb, var(--text-primary) 45%, transparent);
+    background: var(--mat-thin-bg);
+  }
+}
+
+.ghost {
+  background: transparent;
+  color: var(--text-secondary);
+
+  &:hover:not(:disabled) {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+}
+
+.danger {
+  background: var(--danger-soft);
+  border-color: var(--danger-line);
+  color: var(--danger);
+
+  &:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--danger) 20%, transparent);
+    border-color: var(--danger);
+  }
+}
+
+.label {
+  line-height: 1.2;
+}
+
+.spinner {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

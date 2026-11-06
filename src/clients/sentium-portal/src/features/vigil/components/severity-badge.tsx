@@ -1,4 +1,4 @@
-import styles from "../vigil.module.scss";
+import { Badge } from "@/shared/ui/badge";
 import type { IncidentSeverity, IncidentStatus } from "@/features/vigil/types/serviceHealth";
 
 interface Props {
@@ -8,11 +8,7 @@ interface Props {
 
 export function SeverityBadge({ severity, status }: Props) {
   if (status === "Resolved") {
-    return <span className={`${styles.sevBadge} ${styles.sevResolved}`}>Resolved</span>;
+    return <Badge tone="neutral">Resolved</Badge>;
   }
-
-  const cls = severity === "Critical" ? styles.sevCritical : styles.sevWarning;
-  return <span className={`${styles.sevBadge} ${cls}`}>{severity}</span>;
+  return <Badge tone={severity === "Critical" ? "danger" : "warning"}>{severity}</Badge>;
 }
-
-

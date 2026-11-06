@@ -1,13 +1,17 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { Plus, GitBranch, Loader } from "lucide-react";
-import styles from "../workflows.module.scss";
+import { GitBranch, Plus } from "lucide-react";
+import styles from "../workflows.module.css";
 import { useWorkflows } from "@/features/workflows/hooks/useWorkflows";
-import { PageHeader } from "@/shared/ui/page-header";
+import { Badge } from "@/shared/ui/badge";
+import { Button } from "@/shared/ui/button";
+import { Card } from "@/shared/ui/card";
+import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
 import { EmptyState } from "@/shared/ui/empty-state";
 import { LoadMore } from "@/shared/ui/load-more";
+import { Page } from "@/shared/ui/page";
+import { Skeleton } from "@/shared/ui/skeleton";
 import { WorkflowCard } from "../components/workflow-card";
-import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
 
 export function WorkflowsView() {
   const { workflows, totalCount, isLoading, hasMore, loadMore, isLoadingMore, deleteWorkflow } = useWorkflows();
@@ -22,66 +26,60 @@ export function WorkflowsView() {
     setPendingDeleteId(null);
   };
 
+  const newWorkflowButton = (
+    <Button variant="primary" icon={<Plus size={16} />} onClick={() => navigate("/workflows/new")}>
+      New Workflow
+    </Button>
+  );
+
   return (
-    <div className={styles.container}>
-      <PageHeader
-        icon={<GitBranch size={20} className={styles.headerIcon} />}
-        title="Workflows"
-        subtitle="Compose agents into ordered execution pipelines"
-        right={
-          <div className={styles.headerRight}>
-            <div className={styles.headerBadge}>
-              <GitBranch size={13} />
-              <span>{totalCount} workflows</span>
-            </div>
-            <button className={styles.createBtn} onClick={() => navigate("/workflows/new")}>
-              <Plus size={14} />
-              New Workflow
-            </button>
-          </div>
-        }
-      />
-
-      <div className={styles.listBody}>
-        <div className={styles.pipelineBg} aria-hidden="true">
-          <div className={styles.bgGrid} />
-          <div className={styles.bgOrb1} />
-          <div className={styles.bgOrb2} />
-          <div className={styles.bgOrb3} />
+    <Page
+      title="Workflows"
+      subtitle="Compose agents into ordered execution pipelines"
+      actions={
+        <>
+          <Badge tone="neutral">{totalCount} workflows</Badge>
+          {newWorkflowButton}
+        </>
+      }
+    >
+      {isLoading ? (
+        <div className={styles.grid} aria-busy="true">
+          <span className="visually-hidden">Loading workflows...</span>
+          {[0, 1, 2].map((i) => (
+            <Card key={i} padding="md" className={styles.skeletonCard}>
+              <Skeleton width="45%" height={14} />
+              <Skeleton width="85%" />
+              <Skeleton width="30%" />
+            </Card>
+          ))}
         </div>
-
-        {isLoading ? (
-          <EmptyState icon={<Loader size={20} className={styles.spinIcon} />} title="Loading workflows..." />
-        ) : workflows.length === 0 ? (
+      ) : workflows.length === 0 ? (
+        <Card>
           <EmptyState
-            icon={<GitBranch size={32} />}
+            icon={<GitBranch />}
             title="No workflows yet"
             hint="Create your first workflow to chain agents into a pipeline"
-            action={
-              <button className={styles.createBtn} onClick={() => navigate("/workflows/new")}>
-                <Plus size={14} />
-                New Workflow
-              </button>
-            }
+            action={newWorkflowButton}
           />
-        ) : (
-          <div className={styles.gridScroll}>
-            <div className={styles.workflowGrid}>
-              {workflows.map((wf) => (
-                <WorkflowCard
-                  key={wf.id}
-                  workflow={wf}
-                  isActive={false}
-                  onSelect={(w) => navigate(`/workflows/${w.id}`)}
-                  onEdit={(w) => navigate(`/workflows/${w.id}`)}
-                  onDelete={setPendingDeleteId}
-                />
-              ))}
-            </div>
-            <LoadMore hasMore={hasMore} isLoading={isLoadingMore} onLoadMore={loadMore} />
+        </Card>
+      ) : (
+        <>
+          <div className={styles.grid}>
+            {workflows.map((wf) => (
+              <WorkflowCard
+                key={wf.id}
+                workflow={wf}
+                isActive={false}
+                onSelect={(w) => navigate(`/workflows/${w.id}`)}
+                onEdit={(w) => navigate(`/workflows/${w.id}`)}
+                onDelete={setPendingDeleteId}
+              />
+            ))}
           </div>
-        )}
-      </div>
+          <LoadMore hasMore={hasMore} isLoading={isLoadingMore} onLoadMore={loadMore} />
+        </>
+      )}
 
       <ConfirmDialog
         open={pendingDeleteId !== null}
@@ -92,6 +90,6 @@ export function WorkflowsView() {
         onConfirm={confirmDelete}
         onCancel={() => setPendingDeleteId(null)}
       />
-    </div>
+    </Page>
   );
 }

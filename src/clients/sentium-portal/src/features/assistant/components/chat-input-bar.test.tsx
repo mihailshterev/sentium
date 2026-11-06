@@ -34,12 +34,12 @@ describe("ChatInputBar", () => {
 
   it("disables send when input is empty and there are no pills", () => {
     renderBar({ input: "" });
-    expect(screen.getByRole("button")).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Send message" })).toBeDisabled();
   });
 
   it("enables send when there is input", () => {
     renderBar({ input: "hello" });
-    expect(screen.getByRole("button")).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Send message" })).toBeEnabled();
   });
 
   it("shows a stop button while typing and calls onStop", () => {

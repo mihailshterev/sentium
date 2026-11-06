@@ -1,8 +1,10 @@
-import { useState } from "react"; // Added useState import
-import { FolderOpen, FolderPlus, ChevronRight, Pencil, Trash2 } from "lucide-react";
-import styles from "../workspaces.module.scss";
+import { useState } from "react";
+import { ChevronRight, FolderOpen, FolderPlus, Pencil, Trash2 } from "lucide-react";
+import styles from "../workspaces.module.css";
 import type { Workspace } from "@/features/workspaces/types/workspace";
-import { ConfirmDialog } from "@/shared/ui/confirm-dialog"; // Added import
+import { Button } from "@/shared/ui/button";
+import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
+import { EmptyState } from "@/shared/ui/empty-state";
 
 interface WorkspaceSidebarProps {
   workspaces: Workspace[];
@@ -23,95 +25,82 @@ export function WorkspaceSidebar({
   onDelete,
   onCreateNew,
 }: WorkspaceSidebarProps) {
-  const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [workspaceToDelete, setWorkspaceToDelete] = useState<{ id: string; name: string } | null>(null);
 
-  const handleOpenDeleteConfirm = (e: React.MouseEvent, ws: Workspace) => {
-    e.stopPropagation();
-    setWorkspaceToDelete({ id: ws.id, name: ws.name });
-    setIsConfirmOpen(true);
-  };
-
-  const handleConfirmDelete = () => {
-    if (!workspaceToDelete) {
-      return;
-    }
-
-    onDelete(workspaceToDelete.id);
-    setIsConfirmOpen(false);
-    setWorkspaceToDelete(null);
-  };
-
-  const handleCancelDelete = () => {
-    setIsConfirmOpen(false);
-    setWorkspaceToDelete(null);
-  };
-
   return (
-    <aside className={styles.sidebar}>
+    <aside className={styles.sidebar} aria-label="Workspaces">
       <p className={styles.sidebarTitle}>Workspaces {workspaces.length > 0 && `· ${workspaces.length}`}</p>
       {isWorkspacesError && <p className={styles.errorText}>Failed to load workspaces.</p>}
       {!isWorkspacesError && workspaces.length === 0 && (
-        <div className={styles.emptyState}>
-          <FolderPlus size={28} className={styles.emptyIcon} />
-          <p>No workspaces yet.</p>
-          <button className={styles.emptyAction} onClick={onCreateNew}>
-            Create one
-          </button>
-        </div>
+        <EmptyState
+          compact
+          icon={<FolderPlus />}
+          title="No workspaces yet."
+          action={
+            <Button variant="secondary" size="sm" onClick={onCreateNew}>
+              Create one
+            </Button>
+          }
+        />
       )}
-      <div className={styles.workspaceList}>
+      <div className={styles.sidebarList}>
         {workspaces.map((ws) => (
           <div
             key={ws.id}
-            className={`${styles.workspaceCard} ${selectedWorkspace?.id === ws.id ? styles.workspaceCardActive : ""}`}
+            className={styles.sidebarItem}
+            data-active={selectedWorkspace?.id === ws.id || undefined}
             onClick={() => onSelect(ws)}
           >
-            <div className={styles.wsCardMain}>
-              <FolderOpen size={13} className={styles.wsIcon} />
-              <div className={styles.wsInfo}>
-                <span className={styles.wsName}>{ws.name}</span>
-                {ws.description && <span className={styles.wsDesc}>{ws.description}</span>}
-              </div>
-              <ChevronRight size={12} className={styles.wsChevron} />
-            </div>
-            <div className={styles.wsCardMeta}>
-              <span className={styles.wsFileCount}>
+            <FolderOpen size={15} className={styles.fileIcon} aria-hidden="true" />
+            <div className={styles.fileInfo}>
+              <span className={styles.fileName}>{ws.name}</span>
+              <span className={styles.fileMeta}>
                 {ws.fileCount} file{ws.fileCount !== 1 ? "s" : ""}
+                {ws.description ? ` · ${ws.description}` : ""}
               </span>
-              <div className={styles.wsActions}>
-                <button
-                  className={styles.iconBtn}
-                  title="Edit workspace"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onEdit(ws);
-                  }}
-                >
-                  <Pencil size={12} />
-                </button>
-                <button
-                  className={`${styles.iconBtn} ${styles.iconBtnDanger}`}
-                  title="Delete workspace"
-                  onClick={(e) => handleOpenDeleteConfirm(e, ws)}
-                >
-                  <Trash2 size={12} />
-                </button>
-              </div>
             </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              iconOnly
+              icon={<Pencil size={14} />}
+              title="Edit workspace"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(ws);
+              }}
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              iconOnly
+              icon={<Trash2 size={14} />}
+              title="Delete workspace"
+              className={styles.deleteButton}
+              onClick={(e) => {
+                e.stopPropagation();
+                setWorkspaceToDelete({ id: ws.id, name: ws.name });
+              }}
+            />
+            <ChevronRight size={14} className={styles.fileIcon} aria-hidden="true" />
           </div>
         ))}
       </div>
 
       <ConfirmDialog
-        open={isConfirmOpen}
+        open={workspaceToDelete !== null}
         variant="danger"
         title="Delete Workspace"
         description={`Are you sure you want to delete the workspace "${workspaceToDelete?.name || ""}"? All data files connected inside this environment cluster will be disassociated immediately.`}
         confirmLabel="Delete Workspace"
         cancelLabel="Cancel"
-        onConfirm={handleConfirmDelete}
-        onCancel={handleCancelDelete}
+        onConfirm={() => {
+          if (workspaceToDelete) {
+            onDelete(workspaceToDelete.id);
+          }
+          setWorkspaceToDelete(null);
+        }}
+        onCancel={() => setWorkspaceToDelete(null)}
         confirmWord={workspaceToDelete?.name}
       />
     </aside>

@@ -1,17 +1,25 @@
-import { ChevronDown, ChevronUp, Loader, Pencil, Trash2 } from "lucide-react";
-import styles from "../skills.module.scss";
-import type { AgentSkill } from "@/features/skills/types/skills";
+import { ChevronDown, FileText, Pencil, Trash2 } from "lucide-react";
+import styles from "../skills.module.css";
+import { Badge, type BadgeTone } from "@/shared/ui/badge";
+import { Button } from "@/shared/ui/button";
+
+interface SkillLike {
+  name: string;
+  description: string;
+  instructions: string;
+}
 
 interface SkillCardProps {
-  skill: AgentSkill;
+  skill: SkillLike;
   expanded: boolean;
   onToggle: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
-  isDeleting: boolean;
-  isUpdating: boolean;
+  /** Omit for read-only skills. */
+  onEdit?: () => void;
+  onDelete?: () => void;
+  isDeleting?: boolean;
+  isUpdating?: boolean;
   pill: string;
-  pillClass: string;
+  pillTone?: BadgeTone;
   fileName?: string;
 }
 
@@ -21,38 +29,56 @@ export function SkillCard({
   onToggle,
   onEdit,
   onDelete,
-  isDeleting,
+  isDeleting = false,
   pill,
-  pillClass,
+  pillTone = "neutral",
   fileName,
 }: SkillCardProps) {
   return (
-    <div className={styles.skillRow}>
-      <div className={styles.skillRowHeader}>
-        <div className={styles.skillMeta}>
-          <span className={styles.skillName}>{skill.name}</span>
-          <span className={pillClass}>{pill}</span>
-          {fileName && <span className={styles.fileChip}>{fileName}</span>}
+    <li className={styles.skillRow}>
+      <div className={styles.skillHead}>
+        <div className={styles.skillMain}>
+          <div className={styles.skillTitleRow}>
+            <span className={styles.skillName}>{skill.name}</span>
+            <Badge tone={pillTone}>{pill}</Badge>
+            {fileName && (
+              <span className={styles.fileChip}>
+                <FileText size={12} aria-hidden="true" />
+                {fileName}
+              </span>
+            )}
+          </div>
+          <p className={styles.skillDesc}>{skill.description}</p>
         </div>
+
         <div className={styles.rowActions}>
-          <button className={styles.btnIcon} onClick={onEdit} title="Edit">
-            <Pencil size={13} />
-          </button>
-          <button
-            className={`${styles.btnIcon} ${styles.btnDanger}`}
-            onClick={onDelete}
-            disabled={isDeleting}
-            title="Delete"
-          >
-            {isDeleting ? <Loader size={13} className={styles.spin} /> : <Trash2 size={13} />}
-          </button>
-          <button className={styles.btnIcon} onClick={onToggle} title="Toggle instructions">
-            {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-          </button>
+          {onEdit && (
+            <Button variant="ghost" size="sm" iconOnly icon={<Pencil size={15} />} onClick={onEdit} title="Edit" />
+          )}
+          {onDelete && (
+            <Button
+              variant="ghost"
+              size="sm"
+              iconOnly
+              icon={<Trash2 size={15} />}
+              onClick={onDelete}
+              loading={isDeleting}
+              title="Delete"
+              className={styles.deleteButton}
+            />
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            iconOnly
+            icon={<ChevronDown size={16} className={expanded ? styles.chevronOpen : styles.chevron} />}
+            onClick={onToggle}
+            title="Toggle instructions"
+            aria-expanded={expanded}
+          />
         </div>
       </div>
-      <p className={styles.skillDesc}>{skill.description}</p>
       {expanded && <pre className={styles.instructions}>{skill.instructions}</pre>}
-    </div>
+    </li>
   );
 }

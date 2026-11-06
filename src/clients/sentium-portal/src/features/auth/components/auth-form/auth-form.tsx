@@ -1,14 +1,32 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AlertCircle, ArrowRight, Lock, User, Zap } from "lucide-react";
-import styles from "./auth-form.module.scss";
+import { AlertCircle, ArrowRight, Lock, User } from "lucide-react";
+import styles from "./auth-form.module.css";
 import { BASE_URL } from "@/shared/api/config";
+import { Button } from "@/shared/ui/button";
+import { Input } from "@/shared/ui/form-controls";
 import { registerSchema } from "../../schemas/auth.register";
 import { loginSchema, type LoginFormData } from "../../schemas/auth.login";
 
+type Mode = "login" | "register";
+
+const MODES: { id: Mode; label: string }[] = [
+  { id: "login", label: "Sign in" },
+  { id: "register", label: "Register" },
+];
+
+function FieldError({ children }: { children: React.ReactNode }) {
+  return (
+    <p className={styles.error} role="alert">
+      <AlertCircle size={14} aria-hidden="true" />
+      {children}
+    </p>
+  );
+}
+
 export const AuthForm = () => {
-  const [mode, setMode] = useState<"login" | "register">("login");
+  const [mode, setMode] = useState<Mode>("login");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -22,7 +40,7 @@ export const AuthForm = () => {
     defaultValues: { userName: "", password: "" },
   });
 
-  const switchMode = (next: "login" | "register") => {
+  const switchMode = (next: Mode) => {
     setMode(next);
     setError(null);
     reset();
@@ -84,126 +102,85 @@ export const AuthForm = () => {
     }
   };
 
-  return (
-    <div className={styles.card}>
-      <p className={styles.cardSubtitle}>
-        {mode === "login" ? "Sign in to your account to continue" : "Create an account to get started"}
-      </p>
+  const submitLabel =
+    mode === "login"
+      ? submitting
+        ? "Signing in..."
+        : "Sign in"
+      : submitting
+        ? "Creating account..."
+        : "Create account";
 
-      <div className={styles.tabs}>
-        <button
-          type="button"
-          className={`${styles.tab} ${mode === "login" ? styles.tabActive : ""}`}
-          onClick={() => switchMode("login")}
-        >
-          Sign in
-        </button>
-        <button
-          type="button"
-          className={`${styles.tab} ${mode === "register" ? styles.tabActive : ""}`}
-          onClick={() => switchMode("register")}
-        >
-          Register
-        </button>
+  return (
+    <div className={styles.root}>
+      {/* Plain buttons (not tabs): e2e page objects switch modes by button name. */}
+      <div className={styles.segment} role="group" aria-label="Account">
+        {MODES.map((m) => (
+          <button
+            key={m.id}
+            type="button"
+            className={styles.segmentButton}
+            aria-pressed={mode === m.id}
+            onClick={() => switchMode(m.id)}
+          >
+            {m.label}
+          </button>
+        ))}
       </div>
 
-      <form key={mode} className={styles.form} onSubmit={handleSubmit(onSubmit)}>
+      <form key={mode} className={styles.form} onSubmit={handleSubmit(onSubmit)} noValidate>
         <div className={styles.field}>
           <label className={styles.label} htmlFor="userName">
             Username
           </label>
-          <div className={styles.inputWrapper}>
-            <span className={styles.inputIcon}>
-              <User size={15} strokeWidth={1.75} />
-            </span>
-            <input
+          <span className={styles.inputWrap}>
+            <User size={15} className={styles.inputIcon} aria-hidden="true" />
+            <Input
               id="userName"
               className={styles.input}
               type="text"
               placeholder="Your username"
               autoComplete="username"
+              invalid={!!errors.userName}
               {...register("userName")}
             />
-          </div>
-          {errors.userName && (
-            <div className={styles.error}>
-              <AlertCircle size={14} strokeWidth={2} className={styles.errorIcon} />
-              {errors.userName.message}
-            </div>
-          )}
+          </span>
+          {errors.userName && <FieldError>{errors.userName.message}</FieldError>}
         </div>
 
         <div className={styles.field}>
           <label className={styles.label} htmlFor="password">
             Password
           </label>
-          <div className={styles.inputWrapper}>
-            <span className={styles.inputIcon}>
-              <Lock size={15} strokeWidth={1.75} />
-            </span>
-            <input
+          <span className={styles.inputWrap}>
+            <Lock size={15} className={styles.inputIcon} aria-hidden="true" />
+            <Input
               id="password"
               className={styles.input}
               type="password"
               placeholder={mode === "login" ? "Your password" : "Create a password"}
               autoComplete={mode === "login" ? "current-password" : "new-password"}
+              invalid={!!errors.password}
               {...register("password")}
             />
-          </div>
-          {errors.password && (
-            <div className={styles.error}>
-              <AlertCircle size={14} strokeWidth={2} className={styles.errorIcon} />
-              {errors.password.message}
-            </div>
-          )}
+          </span>
+          {errors.password && <FieldError>{errors.password.message}</FieldError>}
         </div>
 
-        {error && (
-          <div className={styles.error}>
-            <AlertCircle size={14} strokeWidth={2} className={styles.errorIcon} />
-            {error}
-          </div>
-        )}
+        {error && <FieldError>{error}</FieldError>}
 
-        <button type="submit" className={styles.submitButton} disabled={submitting}>
-          {submitting ? (
-            <>
-              <span className={styles.spinner} />
-              {mode === "login" ? "Signing in..." : "Creating account..."}
-            </>
-          ) : (
-            <>
-              {mode === "login" ? "Sign in" : "Create account"}
-              <ArrowRight size={15} strokeWidth={2} />
-            </>
-          )}
-        </button>
+        <Button
+          type="submit"
+          variant="primary"
+          size="lg"
+          fullWidth
+          loading={submitting}
+          iconRight={<ArrowRight size={16} aria-hidden="true" />}
+          className={styles.submit}
+        >
+          {submitLabel}
+        </Button>
       </form>
-
-      <div className={styles.divider} />
-
-      <p className={styles.footerNote}>
-        {mode === "login" ? (
-          <>
-            Don't have an account?{" "}
-            <a href="#" onClick={() => switchMode("register")}>
-              Create one
-            </a>
-          </>
-        ) : (
-          <>
-            Already have an account?{" "}
-            <a href="#" onClick={() => switchMode("login")}>
-              Sign in
-            </a>
-          </>
-        )}
-      </p>
-
-      <p className={styles.footerNote}>
-        <Zap size={11} style={{ display: "inline", verticalAlign: "middle", marginRight: 4 }} />
-        Powered by Sentium local AI runtime &amp; policy sandboxing
-      </p>
     </div>
   );
 };

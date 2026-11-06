@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
-import { Zap, CheckCircle, Circle, Loader, Terminal, History, Orbit, Square } from "lucide-react";
+import { CheckCircle, Circle, History, Loader2, Square, Terminal, Zap } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import styles from "../agent-orchestration.module.scss";
+import styles from "../agent-orchestration.module.css";
 import { fetchWorkflowRunsPaged } from "@/features/workflows/api/workflows.service";
 import { fetchWorkspaces } from "@/features/workspaces/api/workspaces.service";
 import { useWorkflows } from "@/features/workflows/hooks/useWorkflows";
@@ -12,7 +12,10 @@ import type { Phase, LogEntry } from "@/features/orchestration/types/orchestrati
 import type { WorkflowRecord } from "@/features/workflows/types/workflows";
 import type { WorkflowRun } from "@/features/workflows/types/workflows";
 import { useOrchestrationRunStore } from "@/features/orchestration/state/orchestration-run-store";
-import { PageHeader } from "@/shared/ui/page-header";
+import { Badge } from "@/shared/ui/badge";
+import { Button } from "@/shared/ui/button";
+import { EmptyState } from "@/shared/ui/empty-state";
+import { Page } from "@/shared/ui/page";
 import { LogEntryView } from "../components/log-entry-view";
 import { ExecuteSidebar, type ExecuteMode } from "../components/execute-sidebar";
 
@@ -192,161 +195,150 @@ export function AgentOrchestrationView() {
   };
 
   const renderRunIndicator = () => {
-    if (connection === "streaming") {
-      return (
-        <div className={styles.streamingIndicator}>
-          <span className={styles.cursor} />
-          <span className={styles.streamingLabel}>Streaming…</span>
-        </div>
-      );
-    }
-
-    if (connection === "stopping") {
-      return (
-        <div className={styles.streamingIndicator}>
-          <Loader size={13} className={styles.spinIcon} />
-          <span className={styles.streamingLabel}>Stopping…</span>
-        </div>
-      );
-    }
-
     const label =
-      connection === "starting" ? "Queued…" : connection === "connecting" ? "Connecting…" : "Warming up agents";
+      connection === "streaming"
+        ? "Streaming…"
+        : connection === "stopping"
+          ? "Stopping…"
+          : connection === "starting"
+            ? "Queued…"
+            : connection === "connecting"
+              ? "Connecting…"
+              : "Warming up agents";
 
     return (
-      <div className={styles.streamingIndicator}>
-        <span className={styles.thinkingDots}>
-          <span className={styles.thinkingDot} />
-          <span className={styles.thinkingDot} />
-          <span className={styles.thinkingDot} />
-        </span>
-        <span className={styles.streamingLabel}>{label}</span>
+      <div className={styles.runIndicator} role="status">
+        {connection === "stopping" ? (
+          <Loader2 size={14} className="animate-spin" aria-hidden="true" />
+        ) : (
+          <span className={styles.dots} aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </span>
+        )}
+        <span className={styles.runIndicatorLabel}>{label}</span>
         {connection === "waiting" && (
           <>
-            <span className={styles.streamingHint}>local models may take a moment</span>
-            <span className={styles.streamingElapsed}>{formatElapsed(elapsedMs)}</span>
+            <span className={styles.runIndicatorHint}>local models may take a moment</span>
+            <span className={styles.runIndicatorElapsed}>{formatElapsed(elapsedMs)}</span>
           </>
         )}
       </div>
     );
   };
 
-  return (
-    <div className={styles.container}>
-      <PageHeader
-        icon={<Orbit size={20} className={styles.headerIcon} />}
-        title="Orchestration"
-        subtitle="Real-time multi-agent pipeline"
-        right={
-          <div className={styles.phaseBar}>
-            {phaseSteps.map((step, i) => {
-              const stepIndex = PHASE_ORDER.indexOf(step.key);
-              const isDone = displayPhaseIndex > stepIndex;
-              const isActive = displayPhase === step.key;
-              const Icon = isDone ? CheckCircle : isActive ? Loader : step.icon;
-              return (
-                <div key={step.key} className={styles.phaseStep}>
-                  <div
-                    className={`${styles.phaseNode} ${isActive ? styles.phaseNodeActive : ""} ${isDone ? styles.phaseNodeDone : ""}`}
-                  >
-                    <Icon size={13} className={isActive ? styles.spinIcon : undefined} />
-                  </div>
-                  <span
-                    className={`${styles.phaseLabel} ${isActive ? styles.phaseLabelActive : ""} ${isDone ? styles.phaseLabelDone : ""}`}
-                  >
-                    {step.label}
-                  </span>
-                  {i < phaseSteps.length - 1 && (
-                    <div className={`${styles.phaseConnector} ${isDone ? styles.phaseConnectorDone : ""}`} />
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        }
-      />
+  const phaseStepper = (
+    <ol className={styles.phaseBar} aria-label="Pipeline phase">
+      {phaseSteps.map((step) => {
+        const stepIndex = PHASE_ORDER.indexOf(step.key);
+        const isDone = displayPhaseIndex > stepIndex;
+        const isActive = displayPhase === step.key;
+        const Icon = isDone ? CheckCircle : isActive ? Loader2 : step.icon;
+        return (
+          <li
+            key={step.key}
+            className={styles.phaseStep}
+            data-state={isDone ? "done" : isActive ? "active" : "pending"}
+            aria-current={isActive ? "step" : undefined}
+          >
+            <span className={styles.phaseNode}>
+              <Icon size={13} className={isActive ? "animate-spin" : undefined} aria-hidden="true" />
+            </span>
+            <span className={styles.phaseLabel}>{step.label}</span>
+          </li>
+        );
+      })}
+    </ol>
+  );
 
-      <div className={styles.body}>
-        <main className={styles.logPanel}>
-          <div className={styles.logPanelHeader}>
-            <span className={`${styles.logDot} ${isRunning ? styles.logDotActive : ""}`} />
-            <span className={styles.logPanelTitle}>
+  return (
+    <Page
+      title="Orchestration"
+      subtitle="Real-time multi-agent pipeline"
+      scroll={false}
+      width="full"
+      actions={phaseStepper}
+    >
+      <div className={styles.layout}>
+        <section className={styles.logPanel} aria-label="Run output">
+          <div className={styles.logHeader}>
+            <span className={styles.logDot} data-active={isRunning || undefined} aria-hidden="true" />
+            <span className={styles.logTitle}>
               {selectedRun ? `Replay - ${formatRunTrigger(selectedRun.triggerType)}` : "Output"}
             </span>
             {displayPhase === "COMPLETE" && !isRunning && !viewingRun && lastOutcome === "completed" && (
-              <span className={styles.completeBadge}>
-                <CheckCircle size={11} /> Complete
-              </span>
+              <Badge tone="success">
+                <CheckCircle size={12} aria-hidden="true" /> Complete
+              </Badge>
             )}
             {displayPhase === "COMPLETE" && !isRunning && !viewingRun && lastOutcome === "stopped" && (
-              <span className={styles.stoppedBadge}>
-                <Square size={10} fill="currentColor" /> Stopped
-              </span>
+              <Badge tone="warning">
+                <Square size={10} fill="currentColor" aria-hidden="true" /> Stopped
+              </Badge>
             )}
             {selectedRun && (
-              <span className={styles.historyBadge}>
-                <History size={10} /> {formatRunLabel(selectedRun)}
-              </span>
+              <Badge tone="neutral">
+                <History size={12} aria-hidden="true" /> {formatRunLabel(selectedRun)}
+              </Badge>
             )}
             {isRunning && (
-              <button
-                type="button"
-                className={styles.stopBtn}
+              <Button
+                variant="danger"
+                size="sm"
+                icon={<Square size={11} fill="currentColor" />}
                 onClick={stopRun}
                 disabled={connection === "stopping"}
                 title="Stop run"
+                className={styles.logStop}
               >
-                <Square size={12} fill="currentColor" />
                 {connection === "stopping" ? "Stopping…" : "Stop"}
-              </button>
+              </Button>
             )}
           </div>
 
           <div className={styles.logWindow} ref={scrollRef}>
             {displayLogs.length === 0 && !isRunning && !viewingRun && (
-              <div className={styles.logIdle}>
-                <Terminal size={32} className={styles.logIdleIcon} />
-                <p>Select a workflow and execute to start the pipeline</p>
-                <span>Output streams here in real time &bull; History tab shows past runs</span>
-              </div>
+              <EmptyState
+                icon={<Terminal />}
+                title="Select a workflow and execute to start the pipeline"
+                hint="Output streams here in real time • History shows past runs"
+              />
             )}
             {viewingRun && runLoading && (
-              <div className={styles.logIdle}>
-                <Loader size={28} className={`${styles.logIdleIcon} ${styles.spinIcon}`} />
-                <p>Loading run…</p>
+              <div className={styles.logLoading} role="status">
+                <Loader2 size={18} className="animate-spin" aria-hidden="true" />
+                <span>Loading run…</span>
               </div>
             )}
             {viewingRun && !runLoading && (runError || !selectedRun) && (
-              <div className={styles.logIdle}>
-                <History size={28} className={styles.logIdleIcon} />
-                <p>Run not found</p>
-                <span>It may have been removed or never existed</span>
-              </div>
+              <EmptyState icon={<History />} title="Run not found" hint="It may have been removed or never existed" />
             )}
             {displayLogs.length === 0 && viewingRun && !runLoading && selectedRun && (
-              <div className={styles.logIdle}>
-                <History size={28} className={styles.logIdleIcon} />
-                <p>No log entries recorded for this run</p>
-              </div>
+              <EmptyState icon={<History />} title="No log entries recorded for this run" />
             )}
-            {displayLogs.map((log, i) => {
-              const entryId = `${runId ?? "live"}-${i}`;
-              const isActiveThought = isRunning && log.type === "thought" && i === displayLogs.length - 1;
-              return (
-                <LogEntryView
-                  key={entryId}
-                  log={log}
-                  entryId={entryId}
-                  expanded={expandedThoughts.has(entryId)}
-                  onToggle={toggleThought}
-                  getRoleClass={getRoleClass}
-                  isActiveThought={isActiveThought}
-                />
-              );
-            })}
+            {displayLogs.length > 0 && (
+              <ol className={styles.timeline}>
+                {displayLogs.map((log, i) => {
+                  const entryId = `${runId ?? "live"}-${i}`;
+                  const isActiveThought = isRunning && log.type === "thought" && i === displayLogs.length - 1;
+                  return (
+                    <LogEntryView
+                      key={entryId}
+                      log={log}
+                      entryId={entryId}
+                      expanded={expandedThoughts.has(entryId)}
+                      onToggle={toggleThought}
+                      getRoleClass={getRoleClass}
+                      isActiveThought={isActiveThought}
+                    />
+                  );
+                })}
+              </ol>
+            )}
             {isRunning && renderRunIndicator()}
           </div>
-        </main>
+        </section>
 
         <ExecuteSidebar
           sidebarView={sidebarView}
@@ -377,8 +369,6 @@ export function AgentOrchestrationView() {
           formatRunTrigger={formatRunTrigger}
         />
       </div>
-    </div>
+    </Page>
   );
 }
-
-

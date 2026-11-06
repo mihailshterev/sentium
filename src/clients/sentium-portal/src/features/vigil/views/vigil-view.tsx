@@ -1,12 +1,16 @@
-import { RefreshCw, Activity, Zap, Server, Database, ShieldAlert } from "lucide-react";
-import styles from "../vigil.module.scss";
+import { Activity, Database, RefreshCw, Server, ShieldAlert } from "lucide-react";
+import styles from "../vigil.module.css";
 import { useServiceHealth } from "@/features/vigil/hooks/useServiceHealth";
 import { useSystemMetrics } from "@/features/vigil/hooks/useSystemMetrics";
 import { useSystemOverview } from "@/features/vigil/hooks/useSystemOverview";
 import { useIncidents } from "@/features/vigil/hooks/useIncidents";
 import { useVigilStream } from "@/features/vigil/hooks/useVigilStream";
 import { useRole } from "@/shared/auth/hooks/useRole";
-import { PageHeader } from "@/shared/ui/page-header";
+import { Badge } from "@/shared/ui/badge";
+import { Button } from "@/shared/ui/button";
+import { Card, CardHeader } from "@/shared/ui/card";
+import { Page } from "@/shared/ui/page";
+import { Skeleton } from "@/shared/ui/skeleton";
 import { ServiceRow } from "../components/service-row";
 import { SummaryStats } from "../components/summary-stats";
 import { IncidentTimeline } from "../components/incident-timeline";
@@ -29,41 +33,48 @@ const HealthTable = ({
   loading: boolean;
   isLive: boolean;
 }) => (
-  <section className={styles.card}>
-    <div className={styles.cardHeader}>
-      <span className={styles.cardTitle}>
-        {icon} {title}
-      </span>
-      {isLive ? <span className={styles.liveTag}>Live</span> : <span className={styles.offlineTag}>Polling</span>}
-    </div>
+  <Card padding="none" as="section">
+    <CardHeader
+      icon={icon}
+      title={title}
+      actions={
+        isLive ? (
+          <Badge tone="success" dot>
+            Live
+          </Badge>
+        ) : (
+          <Badge tone="neutral">Polling</Badge>
+        )
+      }
+    />
 
-    <div className={styles.tableHead}>
+    <div className={styles.tableHead} aria-hidden="true">
       <span>Status</span>
       <span>Target</span>
       <span>Latency</span>
-      <span>Last Checked</span>
+      <span>Last checked</span>
     </div>
 
     <div className={styles.tableBody}>
       {loading ? (
         [0, 1, 2].map((i) => (
           <div key={i} className={styles.skeletonRow}>
-            <span className={styles.skeletonBlock} style={{ width: 60 }} />
-            <span className={styles.skeletonBlock} style={{ width: 100 }} />
-            <span className={styles.skeletonBlock} style={{ width: 80 }} />
-            <span className={styles.skeletonBlock} style={{ width: 70 }} />
+            <Skeleton width={70} />
+            <Skeleton width={120} />
+            <Skeleton width={80} />
+            <Skeleton width={60} />
           </div>
         ))
       ) : services.length === 0 ? (
-        <div className={styles.emptyState}>
-          <Activity size={20} />
+        <div className={styles.emptyRow}>
+          <Activity size={18} aria-hidden="true" />
           <span>No data yet - monitoring will begin shortly</span>
         </div>
       ) : (
         services.map((s) => <ServiceRow key={s.serviceName} service={s} />)
       )}
     </div>
-  </section>
+  </Card>
 );
 
 export function VigilView() {
@@ -94,115 +105,94 @@ export function VigilView() {
     generatedAt: new Date().toISOString(),
   };
 
+  const hostMetrics = metrics
+    ? [
+        { label: "Hostname", value: metrics.host.machineName },
+        { label: "CPU Cores", value: metrics.host.processorCount },
+        { label: "CPU Usage", value: `${metrics.cpu.processCpuPercent.toFixed(1)}%` },
+        { label: "Memory Load", value: `${metrics.memory.memoryLoadPercent.toFixed(1)}%` },
+        { label: "Uptime", value: metrics.host.uptime.split(".")[0] },
+        { label: "Runtime", value: metrics.host.runtimeVersion },
+      ]
+    : [];
+
   return (
-    <div className={styles.root}>
-      <PageHeader
-        title="Vigil"
-        subtitle="Service & infrastructure health, incidents, and diagnostics"
-        right={
-          <button className={styles.refreshBtn} onClick={() => refetch()} disabled={healthLoading}>
-            <RefreshCw size={14} className={healthLoading ? styles.spinning : undefined} />
-            Refresh
-          </button>
-        }
+    <Page
+      title="Vigil"
+      subtitle="Service & infrastructure health, incidents, and diagnostics"
+      width="wide"
+      actions={
+        <Button
+          variant="secondary"
+          icon={<RefreshCw size={15} className={healthLoading ? "animate-spin" : undefined} />}
+          onClick={() => refetch()}
+          disabled={healthLoading}
+        >
+          Refresh
+        </Button>
+      }
+    >
+      <SummaryStats
+        total={summary.total}
+        healthy={summary.healthy}
+        degraded={summary.degraded}
+        unhealthy={summary.unhealthy}
+        openIncidents={summary.openIncidents}
+        overallStatus={summary.overallStatus}
       />
 
-      <div className={styles.content}>
-        <SummaryStats
-          total={summary.total}
-          healthy={summary.healthy}
-          degraded={summary.degraded}
-          unhealthy={summary.unhealthy}
-          openIncidents={summary.openIncidents}
-          overallStatus={summary.overallStatus}
-        />
+      <div className={styles.mainGrid}>
+        <div className={styles.column}>
+          <HealthTable
+            title="Services"
+            icon={<Server />}
+            services={serviceTargets}
+            loading={healthLoading}
+            isLive={isLive}
+          />
+          <HealthTable
+            title="Infrastructure"
+            icon={<Database />}
+            services={infraTargets}
+            loading={healthLoading}
+            isLive={isLive}
+          />
+          <Card padding="none" as="section">
+            <CardHeader icon={<ShieldAlert />} title="Incidents" />
+            <IncidentTimeline incidents={incidents} />
+          </Card>
+        </div>
 
-        <div className={styles.mainGrid}>
-          <div className={styles.leftColumn}>
-            <HealthTable
-              title="Services"
-              icon={<Server size={13} className={styles.headerIcon} />}
-              services={serviceTargets}
-              loading={healthLoading}
-              isLive={isLive}
+        <div className={styles.column}>
+          <Card padding="md" as="section">
+            <CardHeader
+              title="Host Metrics"
+              actions={isRefetching && <RefreshCw size={14} className="animate-spin" aria-label="Refreshing" />}
             />
-
-            <HealthTable
-              title="Infrastructure"
-              icon={<Database size={13} className={styles.headerIcon} />}
-              services={infraTargets}
-              loading={healthLoading}
-              isLive={isLive}
-            />
-
-            <section className={styles.card}>
-              <div className={styles.cardHeader}>
-                <span className={styles.cardTitle}>
-                  <ShieldAlert size={13} className={styles.headerIcon} /> Incidents
-                </span>
+            {metricsLoading || !metrics ? (
+              <div className={styles.metricsLoading} aria-busy="true">
+                {[0, 1, 2, 3].map((i) => (
+                  <div key={i} className={styles.metricRow}>
+                    <Skeleton width={90} />
+                    <Skeleton width={60} />
+                  </div>
+                ))}
               </div>
-              <IncidentTimeline incidents={incidents} />
-            </section>
-          </div>
+            ) : (
+              <dl className={styles.metrics}>
+                {hostMetrics.map((m) => (
+                  <div key={m.label} className={styles.metricRow}>
+                    <dt>{m.label}</dt>
+                    <dd>{m.value}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+          </Card>
 
-          <div className={styles.rightColumn}>
-            <section className={styles.card}>
-              <div className={styles.cardHeader}>
-                <span className={styles.cardTitle}>Host Metrics</span>
-                {isRefetching && <RefreshCw size={12} className={styles.spinning} />}
-              </div>
-
-              {metricsLoading || !metrics ? (
-                <div className={styles.metricsLoading}>
-                  {[0, 1, 2, 3].map((i) => (
-                    <div key={i} className={styles.metricSkeletonRow}>
-                      <span className={styles.skeletonBlock} style={{ width: 90 }} />
-                      <span className={styles.skeletonBlock} style={{ width: 60 }} />
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className={styles.metricsList}>
-                  <div className={styles.metricRow}>
-                    <Server size={13} className={styles.metricIcon} />
-                    <span className={styles.metricLabel}>Hostname</span>
-                    <span className={styles.metricValue}>{metrics.host.machineName}</span>
-                  </div>
-                  <div className={styles.metricRow}>
-                    <Zap size={13} className={styles.metricIcon} />
-                    <span className={styles.metricLabel}>CPU Cores</span>
-                    <span className={styles.metricValue}>{metrics.host.processorCount}</span>
-                  </div>
-                  <div className={styles.metricRow}>
-                    <Activity size={13} className={styles.metricIcon} />
-                    <span className={styles.metricLabel}>CPU Usage</span>
-                    <span className={styles.metricValue}>{metrics.cpu.processCpuPercent.toFixed(1)}%</span>
-                  </div>
-                  <div className={styles.metricRow}>
-                    <span className={styles.metricLabelIndent}>Memory Load</span>
-                    <span className={styles.metricValue}>{metrics.memory.memoryLoadPercent.toFixed(1)}%</span>
-                  </div>
-                  <div className={styles.metricRow}>
-                    <Activity size={13} className={styles.metricIcon} />
-                    <span className={styles.metricLabel}>Uptime</span>
-                    <span className={styles.metricValue}>{metrics.host.uptime.split(".")[0]}</span>
-                  </div>
-                  <div className={styles.metricRow}>
-                    <span className={styles.metricLabel}>Runtime</span>
-                    <span className={styles.metricValue} style={{ fontSize: "0.68rem" }}>
-                      {metrics.host.runtimeVersion}
-                    </span>
-                  </div>
-                </div>
-              )}
-            </section>
-
-            {isSovereign && <VigilConfigPanel />}
-          </div>
+          {isSovereign && <VigilConfigPanel />}
         </div>
       </div>
-    </div>
+    </Page>
   );
 }
-
-

@@ -1,0 +1,5 @@
+.wrap {
+  display: flex;
+  justify-content: center;
+  padding: var(--space-3) var(--space-2) var(--space-1);
+}

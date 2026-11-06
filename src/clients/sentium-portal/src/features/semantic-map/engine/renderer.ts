@@ -98,6 +98,7 @@ export class UniverseRenderer {
   private _selectedId: string | null = null;
   private _hasSearchResults = false;
   private _initialized = false;
+  private _destroyed = false;
   private _width = 0;
   private _height = 0;
 
@@ -129,11 +130,17 @@ export class UniverseRenderer {
       width,
       height,
       antialias: true,
-      backgroundColor: isLight ? 0xf4f5fa : 0x03050f,
+      backgroundColor: isLight ? 0xedf1f8 : 0x060a14,
       resolution: Math.min(window.devicePixelRatio, 2),
       autoDensity: true,
       powerPreference: "high-performance",
     });
+
+    // Destroyed while init was pending (e.g. React StrictMode's mount/unmount/mount): tear down now.
+    if (this._destroyed) {
+      this.app.destroy(false, { children: true });
+      return;
+    }
 
     this.app.stage.addChild(this.bgLayer);
     this.world.addChild(this.gridLayer);
@@ -176,6 +183,9 @@ export class UniverseRenderer {
     this.app.ticker.add(this.update);
 
     this._initialized = true;
+    if (this._nodes.length > 0) {
+      this.rebuildSprites();
+    }
   }
 
   private createStarfield(width: number, height: number) {
@@ -280,7 +290,7 @@ export class UniverseRenderer {
       return;
     }
 
-    this.app.renderer.background.color = isLight ? 0xf4f5fa : 0x03050f;
+    this.app.renderer.background.color = isLight ? 0xedf1f8 : 0x060a14;
 
     for (const star of this.starSprites) {
       star.visible = !isLight;
@@ -302,7 +312,8 @@ export class UniverseRenderer {
     const isNewGraph = nodes !== this._nodes;
     this._nodes = nodes;
     this._links = links;
-    if (isNewGraph) {
+    // Before init resolves there is no renderer to build textures with; init() builds them instead.
+    if (isNewGraph && this._initialized) {
       this.rebuildSprites();
     }
   }
@@ -339,6 +350,11 @@ export class UniverseRenderer {
   }
 
   destroy() {
+    this._destroyed = true;
+    if (!this._initialized) {
+      // init() finishes the teardown once the async setup resolves.
+      return;
+    }
     this.app.ticker.remove(this.update);
     this.app.stage.off("pointermove", this.onPointerMove);
     this.app.stage.off("pointerdown", this.onPointerDown);

@@ -1,0 +1,46 @@
+.msg {
+  --tone: var(--info);
+
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--tone) 30%, transparent);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--tone) 10%, transparent);
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  line-height: 1.45;
+}
+
+.icon {
+  display: inline-flex;
+  margin-top: 1px;
+  color: var(--tone);
+
+  & svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.text {
+  min-width: 0;
+}
+
+.success {
+  --tone: var(--success);
+}
+
+.error {
+  --tone: var(--danger);
+}
+
+.loading,
+.info {
+  --tone: var(--info);
+}
+
+.warning {
+  --tone: var(--warning);
+}

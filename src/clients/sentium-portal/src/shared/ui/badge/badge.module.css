@@ -1,0 +1,72 @@
+.badge {
+  --tone: var(--text-secondary);
+
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 20px;
+  padding: 0 7px;
+  border: 1px solid color-mix(in srgb, var(--tone) 34%, transparent);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--tone) 9%, transparent);
+  color: var(--tone);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.02em;
+  line-height: 1;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+
+  & svg {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+.dot {
+  width: 5px;
+  height: 5px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+}
+
+.neutral {
+  --tone: var(--text-secondary);
+  border-color: var(--border-color);
+  background: transparent;
+}
+
+.accent {
+  --tone: var(--accent);
+}
+
+.success,
+.green {
+  --tone: var(--success);
+}
+
+.warning,
+.amber {
+  --tone: var(--warning);
+}
+
+.danger,
+.red {
+  --tone: var(--danger);
+}
+
+.info,
+.blue {
+  --tone: var(--info);
+}
+
+.purple {
+  --tone: var(--accent-purple);
+}
+
+.cyan {
+  --tone: var(--accent-cyan);
+}

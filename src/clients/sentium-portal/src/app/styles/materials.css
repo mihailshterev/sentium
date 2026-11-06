@@ -1,0 +1,89 @@
+/*
+ * Panel materials. Values live in tokens.css (--mat-*); these classes apply them.
+ *   thin    - fills inside other panels (inputs, chips, rows).
+ *   regular - framed panels / cards over the field.
+ *   thick   - chrome: sidebar, dialogs, popovers, sticky headers.
+ * `.frame` adds corner registration ticks on top of a panel's hairline border.
+ */
+.mat-thin {
+  background: var(--mat-thin-bg);
+  border: 1px solid var(--mat-thin-border);
+}
+
+.mat-regular {
+  background: var(--mat-regular-bg);
+  border: 1px solid var(--mat-regular-border);
+  box-shadow: var(--mat-regular-shadow);
+  backdrop-filter: var(--mat-regular-filter);
+}
+
+.mat-thick {
+  background: var(--mat-thick-bg);
+  border: 1px solid var(--mat-thick-border);
+  box-shadow: var(--mat-thick-shadow);
+  backdrop-filter: var(--mat-thick-filter);
+}
+
+/* Corner registration ticks: four small L-marks sitting on the frame's border. */
+.frame {
+  position: relative;
+}
+
+.frame::before {
+  --c: var(--tick-color);
+  --t: var(--tick);
+
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: 1;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--c) 0 0) left top / var(--t) 1px no-repeat,
+    linear-gradient(var(--c) 0 0) left top / 1px var(--t) no-repeat,
+    linear-gradient(var(--c) 0 0) right top / var(--t) 1px no-repeat,
+    linear-gradient(var(--c) 0 0) right top / 1px var(--t) no-repeat,
+    linear-gradient(var(--c) 0 0) left bottom / var(--t) 1px no-repeat,
+    linear-gradient(var(--c) 0 0) left bottom / 1px var(--t) no-repeat,
+    linear-gradient(var(--c) 0 0) right bottom / var(--t) 1px no-repeat,
+    linear-gradient(var(--c) 0 0) right bottom / 1px var(--t) no-repeat;
+}
+
+/* Small technical label: mono, muted, spaced. */
+.mono-label {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  font-weight: var(--fw-regular);
+  letter-spacing: var(--tracking-label);
+}
+
+/* Legacy alias, removed once pages migrate. */
+.glass {
+  background: var(--mat-regular-bg);
+  border: 1px solid var(--mat-regular-border);
+  backdrop-filter: var(--mat-regular-filter);
+}
+
+/*
+ * No backdrop-filter support, or the user asked for less transparency: swap the translucent fills for
+ * opaque ones. Every material-backed surface reads these tokens, so this single override covers them all.
+ */
+@supports not (backdrop-filter: blur(1px)) {
+  :root,
+  :root[data-theme="light"] {
+    --mat-regular-bg: var(--mat-regular-opaque);
+    --mat-thick-bg: var(--mat-thick-opaque);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :root,
+  :root[data-theme="light"] {
+    --mat-regular-bg: var(--mat-regular-opaque);
+    --mat-thick-bg: var(--mat-thick-opaque);
+    --mat-regular-filter: none;
+    --mat-thick-filter: none;
+  }
+}

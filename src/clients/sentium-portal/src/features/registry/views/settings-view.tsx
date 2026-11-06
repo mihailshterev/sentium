@@ -1,10 +1,11 @@
 import { useMemo } from "react";
-import { Loader, Settings } from "lucide-react";
-import styles from "../settings.module.scss";
+import styles from "../settings.module.css";
 import { useSystemSettings } from "@/features/registry/hooks/useSystemSettings";
 import { useOllamaSettings } from "@/features/registry/hooks/useOllamaSettings";
 import { useRole } from "@/shared/auth/hooks/useRole";
-import { PageHeader } from "@/shared/ui/page-header";
+import { Card } from "@/shared/ui/card";
+import { Page } from "@/shared/ui/page";
+import { SkeletonText } from "@/shared/ui/skeleton";
 import { SettingsEditor } from "../components/settings-editor";
 import type { SettingsEditorFormData } from "../schemas/settings.editor";
 
@@ -49,19 +50,12 @@ export function SettingsView() {
 
   if (isGlobalLoading || !harnessSettings) {
     return (
-      <div className={styles.root}>
-        <PageHeader
-          icon={<Settings size={18} className={styles.titleIcon} />}
-          title="Settings"
-          subtitle="System configuration and global agent behavior"
-        />
-        <div className={styles.body}>
-          <p className={styles.loadingText}>
-            <Loader size={15} className="animate-spin" />
-            Loading settings system variables…
-          </p>
-        </div>
-      </div>
+      <Page title="Settings" subtitle="System configuration and global agent behavior">
+        <Card padding="lg" aria-busy="true">
+          <p className={styles.loadingText}>Loading settings…</p>
+          <SkeletonText lines={4} />
+        </Card>
+      </Page>
     );
   }
 
@@ -94,12 +88,7 @@ export function SettingsView() {
   const activeErrorMessage = harnessError?.message || (ollamaError as Error)?.message || null;
 
   return (
-    <div className={styles.root}>
-      <PageHeader
-        icon={<Settings size={18} className={styles.titleIcon} />}
-        title="Settings"
-        subtitle="System configuration and global agent behavior"
-      />
+    <Page title="Settings" subtitle="System configuration and global agent behavior">
       <SettingsEditor
         initialValues={initialUnifiedValues}
         isSovereign={isSovereign}
@@ -112,8 +101,6 @@ export function SettingsView() {
         globalErrorMessage={activeErrorMessage}
         resetSaveStates={handleGlobalReset}
       />
-    </div>
+    </Page>
   );
 }
-
-

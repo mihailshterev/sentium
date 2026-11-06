@@ -8,10 +8,6 @@ import * as useProfileHook from "@/features/profile/hooks/useProfile";
 import * as useRoleHook from "@/shared/auth/hooks/useRole";
 import type { UserProfile } from "../../auth/api/identity.service";
 
-vi.mock("../login/animated-bg", () => ({
-  AnimatedBg: () => <canvas data-testid="animated-bg" />,
-}));
-
 const mockProfile: UserProfile = {
   id: "u1",
   userName: "alice",

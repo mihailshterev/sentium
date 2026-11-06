@@ -1,7 +1,8 @@
 import { useState } from "react";
 import Markdown from "react-markdown";
-import { ChevronDown, Wrench, Check, Copy, BotMessageSquare, Brain, Sparkles } from "lucide-react";
-import styles from "../assistant.module.scss";
+import { Brain, Check, ChevronDown, Copy, ShieldAlert, Sparkles, Wrench } from "lucide-react";
+import styles from "../assistant.module.css";
+import { Button } from "@/shared/ui/button";
 import type { ConversationMessage } from "@/features/assistant/types/assistant";
 import { STATUS_MESSAGES } from "../status-messages";
 
@@ -32,125 +33,136 @@ export function MessageBubble({
 }: MessageBubbleProps) {
   const [enhancedOpen, setEnhancedOpen] = useState(false);
 
-  const isLastMessage = msg.role === "assistant" && msg.content === "" && isTyping && !msg.error;
-
+  const isAssistant = msg.role === "assistant";
+  const isLastMessage = isAssistant && msg.content === "" && isTyping && !msg.error;
   const showStatusCycler = isLastMessage && !msg.thought && (!msg.toolCalls || msg.toolCalls.length === 0);
+  const isActiveThought = isTyping && msg.content === "";
+  const thoughtOpen = expandedThoughts.has(msg.id);
+  const hasActivity = isAssistant && (msg.thought !== undefined || (msg.toolCalls && msg.toolCalls.length > 0));
+
+  if (!isAssistant) {
+    return (
+      <div className={`${styles.message} ${styles.messageUser}`}>
+        <div className={styles.userBubble}>
+          <div className={styles.content}>
+            <Markdown>{msg.content}</Markdown>
+          </div>
+          {msg.enhancedPrompt && (
+            <div className={styles.enhanced}>
+              <button
+                type="button"
+                className={styles.disclosure}
+                onClick={() => setEnhancedOpen((v) => !v)}
+                aria-expanded={enhancedOpen}
+              >
+                <Sparkles size={13} aria-hidden="true" />
+                <span>Enhanced prompt</span>
+                <ChevronDown size={13} className={enhancedOpen ? styles.chevronOpen : styles.chevron} />
+              </button>
+              {enhancedOpen && (
+                <div className={`${styles.content} ${styles.enhancedContent}`}>
+                  <Markdown>{msg.enhancedPrompt}</Markdown>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className={`${styles.messageWrapper} ${msg.role === "user" ? styles.wrapperUser : styles.wrapperAi}`}>
-      {msg.role === "assistant" && (
-        <div className={`${styles.avatar} ${styles.avatarAi}`}>
-          <BotMessageSquare size={13} />
-        </div>
-      )}
-      <div className={`${styles.message} ${msg.role === "user" ? styles.messageUser : styles.messageAi}`}>
-        {msg.role === "assistant" && (
-          <div className={styles.messageHeader}>
-            <span className={styles.sender}>SENTIUM</span>
-          </div>
-        )}
+    <div className={`${styles.message} ${styles.messageAi}`}>
+      <img src="/sentium-mark.png" alt="" className={styles.avatar} width={26} height={26} />
 
-        {msg.role === "assistant" && (msg.thought !== undefined || (msg.toolCalls && msg.toolCalls.length > 0)) && (
-          <div className={styles.activityTimeline}>
+      <div className={styles.aiBody}>
+        <span className={styles.sender}>Sentium</span>
+
+        {hasActivity && (
+          <div className={styles.activity}>
             {msg.thought !== undefined && (
-              <div className={styles.timelineRow}>
-                <span className={`${styles.timelineDot} ${styles.timelineDotThought}`} />
-                <div className={styles.timelineRowBody}>
-                  <div className={styles.thoughtBlock}>
-                    {(() => {
-                      const isActiveThought = isTyping && msg.content === "";
-                      return (
-                        <button
-                          className={`${styles.thoughtHeader} ${isActiveThought ? styles.thoughtHeaderActive : ""}`}
-                          onClick={() => onToggleThought(msg.id)}
-                        >
-                          <Brain size={11} className={isActiveThought ? styles.brainPulse : undefined} />
-                          <span>Thinking</span>
-                          {isActiveThought && (
-                            <span className={styles.thinkingDots}>
-                              <span className={styles.thinkingDot} />
-                              <span className={styles.thinkingDot} />
-                              <span className={styles.thinkingDot} />
-                            </span>
-                          )}
-                          <ChevronDown
-                            size={11}
-                            className={`${styles.thoughtChevron} ${expandedThoughts.has(msg.id) ? styles.thoughtChevronOpen : ""}`}
-                          />
-                        </button>
-                      );
-                    })()}
-                    {expandedThoughts.has(msg.id) && (
-                      <div className={styles.thoughtContent}>
-                        <Markdown>{msg.thought}</Markdown>
-                      </div>
-                    )}
+              <div className={styles.thought}>
+                <button
+                  type="button"
+                  className={`${styles.disclosure} ${isActiveThought ? styles.disclosureActive : ""}`}
+                  onClick={() => onToggleThought(msg.id)}
+                  aria-expanded={thoughtOpen}
+                >
+                  <Brain size={13} aria-hidden="true" />
+                  <span>Thinking</span>
+                  {isActiveThought && (
+                    <span className={styles.dots} aria-hidden="true">
+                      <span />
+                      <span />
+                      <span />
+                    </span>
+                  )}
+                  <ChevronDown size={13} className={thoughtOpen ? styles.chevronOpen : styles.chevron} />
+                </button>
+                {thoughtOpen && (
+                  <div className={`${styles.content} ${styles.thoughtContent}`}>
+                    <Markdown>{msg.thought}</Markdown>
                   </div>
-                </div>
+                )}
               </div>
             )}
 
-            {msg.toolCalls?.map((call, i) => (
-              <div key={`tool-${i}`} className={styles.timelineRow}>
-                <span className={`${styles.timelineDot} ${styles.timelineDotTool}`} />
-                <div className={styles.timelineRowBody}>
-                  <div className={styles.toolCallRow}>
-                    <Wrench size={10} />
+            {msg.toolCalls && msg.toolCalls.length > 0 && (
+              <ul className={styles.toolCalls}>
+                {msg.toolCalls.map((call, i) => (
+                  <li key={`tool-${i}`} className={styles.toolCall}>
+                    <Wrench size={12} aria-hidden="true" />
                     <span>{call}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         )}
 
-        {msg.pendingApproval && msg.role === "assistant" && (
-          <div className={styles.approvalBlock}>
+        {msg.pendingApproval && (
+          <div className={styles.approval} role="group" aria-label="Tool approval">
             <div className={styles.approvalHeader}>
-              <Wrench size={11} />
+              <ShieldAlert size={15} aria-hidden="true" />
               <span>Tool Approval Required</span>
             </div>
-            <div className={styles.approvalBody}>
-              <div className={styles.approvalToolName}>{msg.pendingApproval.toolName}</div>
-              {Object.keys(msg.pendingApproval.arguments).length > 0 && (
-                <pre className={styles.approvalArgs}>{JSON.stringify(msg.pendingApproval.arguments, null, 2)}</pre>
-              )}
-            </div>
+            <div className={styles.approvalTool}>{msg.pendingApproval.toolName}</div>
+            {Object.keys(msg.pendingApproval.arguments).length > 0 && (
+              <pre className={styles.approvalArgs}>{JSON.stringify(msg.pendingApproval.arguments, null, 2)}</pre>
+            )}
             <div className={styles.approvalActions}>
-              <button
-                className={styles.approvalDeny}
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={() =>
                   onApproval(msg.id, msg.pendingApproval!.requestId, false, msg.pendingApproval!.conversationId)
                 }
                 disabled={isTyping}
               >
                 Deny
-              </button>
-              <button
-                className={styles.approvalApprove}
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
                 onClick={() =>
                   onApproval(msg.id, msg.pendingApproval!.requestId, true, msg.pendingApproval!.conversationId)
                 }
                 disabled={isTyping}
               >
                 Approve
-              </button>
+              </Button>
             </div>
           </div>
         )}
 
         {showStatusCycler ? (
-          <div className={styles.typingStatusRow}>
-            <div className={styles.neuronLoader}>
-              <div className={styles.neuronNode} />
-              <div className={styles.neuronLine} />
-              <div className={styles.neuronNode} />
-              <div className={styles.neuronLine} />
-              <div className={styles.neuronNode} />
-            </div>
-            <span
-              className={`${styles.typingStatusText} ${statusVisible ? styles.statusVisible : styles.statusHidden}`}
-            >
+          <div className={styles.typing} role="status" aria-label="Assistant is thinking">
+            <span className={styles.dots} aria-hidden="true">
+              <span />
+              <span />
+              <span />
+            </span>
+            <span className={`${styles.typingText} ${statusVisible ? styles.statusVisible : styles.statusHidden}`}>
               {STATUS_MESSAGES[statusIndex]}
             </span>
           </div>
@@ -162,49 +174,30 @@ export function MessageBubble({
           )
         )}
 
-        {msg.enhancedPrompt && msg.role === "user" && (
-          <div className={styles.enhancedBlock}>
-            <button className={styles.enhancedHeader} onClick={() => setEnhancedOpen((v) => !v)}>
-              <Sparkles size={11} />
-              <span>Enhanced prompt</span>
-              <ChevronDown
-                size={11}
-                className={`${styles.thoughtChevron} ${enhancedOpen ? styles.thoughtChevronOpen : ""}`}
-              />
-            </button>
-            {enhancedOpen && (
-              <div className={styles.enhancedContent}>
-                <Markdown>{msg.enhancedPrompt}</Markdown>
-              </div>
-            )}
-          </div>
-        )}
-
-        {msg.error && msg.role === "assistant" && (
-          <div className={styles.errorBanner}>
-            <span className={styles.errorBannerText}>{msg.error}</span>
+        {msg.error && (
+          <div className={styles.errorBanner} role="alert">
+            <span>{msg.error}</span>
             {onRetry && (
-              <button className={styles.retryBtn} onClick={onRetry} disabled={isTyping}>
+              <Button variant="secondary" size="sm" onClick={onRetry} disabled={isTyping}>
                 Retry
-              </button>
+              </Button>
             )}
           </div>
         )}
 
-        {msg.role === "assistant" && !isLastMessage && msg.content && (
-          <div className={styles.messageFooter}>
-            <button
-              className={styles.copyBtn}
+        {!isLastMessage && msg.content && (
+          <div className={styles.messageActions}>
+            <Button
+              variant="ghost"
+              size="sm"
+              iconOnly
+              icon={copiedMessageId === msg.id ? <Check size={14} /> : <Copy size={14} />}
               onClick={() => onCopyMessage(msg.content, msg.id)}
               title="Copy to clipboard"
-            >
-              {copiedMessageId === msg.id ? <Check size={12} /> : <Copy size={12} />}
-            </button>
+            />
           </div>
         )}
       </div>
     </div>
   );
 }
-
-

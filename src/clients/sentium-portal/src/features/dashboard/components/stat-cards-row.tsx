@@ -1,6 +1,5 @@
-import { Bot, GitBranch, BrainCircuit, ShieldCheck, Library, Clock, Loader } from "lucide-react";
-import styles from "../dashboard.module.scss";
-import { StatCard } from "@/shared/ui/stat-card";
+import { Bot, BrainCircuit, Clock, GitBranch, Library, ShieldCheck } from "lucide-react";
+import { StatCard, StatGrid } from "@/shared/ui/stat-card";
 
 interface StatCardsRowProps {
   agentsCount: number;
@@ -12,8 +11,6 @@ interface StatCardsRowProps {
   loading: boolean;
 }
 
-const loadingIcon = <Loader size={18} className={styles.spinIcon} />;
-
 export function StatCardsRow({
   agentsCount,
   workflowsCount,
@@ -23,44 +20,16 @@ export function StatCardsRow({
   cronJobs,
   loading,
 }: StatCardsRowProps) {
+  const value = (n: number) => (loading ? "—" : n.toLocaleString());
+
   return (
-    <div className={styles.statsRow}>
-      <StatCard
-        icon={loading ? loadingIcon : <Bot size={18} />}
-        value={loading ? "—" : agentsCount}
-        label="Agents"
-        iconColor="green"
-      />
-      <StatCard
-        icon={loading ? loadingIcon : <GitBranch size={18} />}
-        value={loading ? "—" : workflowsCount}
-        label="Workflows"
-        iconColor="blue"
-      />
-      <StatCard
-        icon={loading ? loadingIcon : <BrainCircuit size={18} />}
-        value={loading ? "—" : modelsCount}
-        label="AI Models"
-        iconColor="purple"
-      />
-      <StatCard
-        icon={loading ? loadingIcon : <ShieldCheck size={18} />}
-        value={loading ? "—" : auditTotal}
-        label="Audit Events"
-        iconColor="amber"
-      />
-      <StatCard
-        icon={loading ? loadingIcon : <Library size={18} />}
-        value={loading ? "—" : kbCollections}
-        label="KB Collections"
-        iconColor="cyan"
-      />
-      <StatCard
-        icon={loading ? loadingIcon : <Clock size={18} />}
-        value={loading ? "—" : cronJobs}
-        label="Cron Jobs"
-        iconColor="red"
-      />
-    </div>
+    <StatGrid columns={3} aria-busy={loading || undefined}>
+      <StatCard icon={<Bot />} value={value(agentsCount)} label="Agents" />
+      <StatCard icon={<GitBranch />} value={value(workflowsCount)} label="Workflows" />
+      <StatCard icon={<BrainCircuit />} value={value(modelsCount)} label="AI Models" />
+      <StatCard icon={<ShieldCheck />} value={value(auditTotal)} label="Audit Events" />
+      <StatCard icon={<Library />} value={value(kbCollections)} label="KB Collections" />
+      <StatCard icon={<Clock />} value={value(cronJobs)} label="Cron Jobs" />
+    </StatGrid>
   );
 }

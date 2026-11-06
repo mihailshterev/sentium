@@ -1,0 +1,60 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+/*
+ * The header floats over the scroll area (negative margin) so content slides under the glass bar
+ * instead of being cut off at a hard edge.
+ */
+.scroll {
+  flex: 1;
+  min-height: 0;
+  margin-top: calc(-1 * var(--header-h));
+  padding-top: var(--header-h);
+  overflow-y: auto;
+  overflow-x: hidden;
+  scroll-padding-top: calc(var(--header-h) + 12px);
+}
+
+.body,
+.fixedBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  margin: 0 auto;
+  padding: var(--space-2) var(--page-pad-x) var(--space-8);
+  animation: pageIn var(--dur-slow) var(--ease-out);
+
+  &[data-width="default"] {
+    max-width: calc(var(--page-max) + 2 * var(--page-pad-x));
+  }
+
+  &[data-width="wide"] {
+    max-width: calc(var(--page-max-wide) + 2 * var(--page-pad-x));
+  }
+
+  &[data-width="full"] {
+    max-width: none;
+  }
+}
+
+.body {
+  width: 100%;
+}
+
+.fixedBody {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  padding-bottom: 0;
+}
+
+@keyframes pageIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}

@@ -38,3 +38,13 @@ export function formatGb(gb: number): string {
   }
   return `${gb.toFixed(1)} GB`;
 }
+
+export type UsageTone = "ok" | "warn" | "critical" | "neutral";
+
+/** Green below 50%, amber below 75%, red above. */
+export function usageTone(percent: number): UsageTone {
+  if (percent < 50) {
+    return "ok";
+  }
+  return percent < 75 ? "warn" : "critical";
+}

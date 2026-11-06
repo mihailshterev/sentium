@@ -1,5 +1,5 @@
 import { FileCode } from "lucide-react";
-import styles from "../sandbox.module.scss";
+import styles from "../sandbox.module.css";
 import type { SandboxExecutionLog } from "@/features/sandbox/types/sandbox";
 
 interface RunScriptProps {
@@ -8,36 +8,29 @@ interface RunScriptProps {
 
 export function RunScript({ entry }: RunScriptProps) {
   return (
-    <div className={styles.auditBody}>
+    <div className={styles.section}>
       <div>
-        <p className={styles.codeLabel}>Source Code</p>
-        <div className={styles.codeViewer}>
-          <pre>
-            <code>{entry.code}</code>
-          </pre>
-        </div>
+        <p className={styles.sectionLabel}>Source code</p>
+        <pre className={styles.code}>
+          <code>{entry.code}</code>
+        </pre>
       </div>
 
       {entry.fileContext.length > 0 && (
-        <>
-          <hr className={styles.divider} />
-          <div className={styles.fileContextSection}>
-            <p className={styles.codeLabel}>File Context ({entry.fileContext.length})</p>
-            {entry.fileContext.map((f) => (
-              <div key={f.fileName} className={styles.fileContextItem}>
-                <div className={styles.fileContextName}>
-                  <FileCode size={11} />
-                  {f.fileName}
-                </div>
-                <div className={styles.fileContextCode}>
-                  <pre>
-                    <code>{f.content}</code>
-                  </pre>
-                </div>
+        <div className={styles.section}>
+          <p className={styles.sectionLabel}>File Context ({entry.fileContext.length})</p>
+          {entry.fileContext.map((f) => (
+            <div key={f.fileName} className={styles.fileContext}>
+              <div className={styles.fileContextName}>
+                <FileCode size={13} aria-hidden="true" />
+                {f.fileName}
               </div>
-            ))}
-          </div>
-        </>
+              <pre className={styles.code}>
+                <code>{f.content}</code>
+              </pre>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );

@@ -1,12 +1,14 @@
-import { useForm, Controller } from "react-hook-form";
+import { useEffect } from "react";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Loader, Cpu } from "lucide-react";
-import styles from "../agents.module.scss";
+import { Plus } from "lucide-react";
+import styles from "../agents.module.css";
+import { Button } from "@/shared/ui/button";
+import { Input, Textarea } from "@/shared/ui/form-controls";
 import { FormField } from "@/shared/ui/form-field";
+import { ModelSelector } from "@/shared/ui/model-selector";
 import { StatusMessage } from "@/shared/ui/status-message";
 import { agentCreateSchema, type AgentCreateFormData } from "../schemas/agent.create";
-import { useEffect } from "react";
-import { ModelSelector } from "@/shared/ui/model-selector";
 
 interface AgentCreateFormProps {
   models: string[];
@@ -60,23 +62,22 @@ export function AgentCreateForm({
   };
 
   return (
-    <form className={styles.createForm} onSubmit={handleSubmit(handleFormSubmit)}>
+    <form className={styles.form} onSubmit={handleSubmit(handleFormSubmit)}>
       <FormField id="agent-name" label="Agent Name">
-        <input
+        <Input
           id="agent-name"
-          className={styles.fieldInput}
           type="text"
           placeholder="e.g. ForensicsAgent"
           autoComplete="off"
           spellCheck={false}
+          invalid={!!errors.name}
           {...register("name")}
         />
       </FormField>
 
       <FormField id="agent-description" label="Description" charCount={{ current: descriptionValue.length, max: 1000 }}>
-        <textarea
+        <Textarea
           id="agent-description"
-          className={`${styles.fieldInput} ${styles.fieldTextarea}`}
           placeholder="Describe this agent's capabilities and role in the pipeline..."
           rows={4}
           spellCheck={false}
@@ -84,21 +85,13 @@ export function AgentCreateForm({
         />
       </FormField>
 
-      <FormField
-        id="agent-model"
-        label={
-          <>
-            <Cpu size={12} /> Model
-          </>
-        }
-      >
+      <FormField id="agent-model" label="Model">
         <Controller
           name="model"
           control={control}
           render={({ field }) => (
             <ModelSelector
               id="agent-model"
-              className={styles.fieldInput}
               models={models}
               value={field.value}
               onChange={field.onChange}
@@ -108,23 +101,16 @@ export function AgentCreateForm({
         />
       </FormField>
 
-      <button
-        className={`${styles.submitBtn} ${isCreatingAgent ? styles.submitting : ""}`}
+      <Button
         type="submit"
-        disabled={isCreatingAgent || !nameValue.trim()}
+        variant="primary"
+        fullWidth
+        loading={isCreatingAgent}
+        disabled={!nameValue.trim()}
+        icon={<Plus size={16} />}
       >
-        {isCreatingAgent ? (
-          <>
-            <Loader size={14} className={styles.spinIcon} />
-            Registering...
-          </>
-        ) : (
-          <>
-            <Plus size={14} />
-            Register Agent
-          </>
-        )}
-      </button>
+        {isCreatingAgent ? "Registering..." : "Register Agent"}
+      </Button>
 
       {errors.name && <StatusMessage variant="error" message={errors.name.message ?? "Invalid name"} />}
       {isCreateSuccess && <StatusMessage variant="success" message="Agent registered successfully" />}

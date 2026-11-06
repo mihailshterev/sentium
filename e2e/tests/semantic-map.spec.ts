@@ -32,6 +32,6 @@ test.describe.skip("Semantic Map", () => {
   });
 
   test("canvas remains visible after load", async ({ page }) => {
-    await expect(page.locator("canvas")).toBeVisible();
+    await expect(page.getByRole("main").locator("canvas")).toBeVisible();
   });
 });

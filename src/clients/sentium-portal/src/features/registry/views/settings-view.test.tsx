@@ -93,7 +93,7 @@ describe("Settings loaded state", () => {
 
   it("renders the built-in harness toggle as checked by default", () => {
     renderSettings();
-    const toggle = screen.getAllByRole("checkbox")[0];
+    const toggle = screen.getAllByRole("switch")[0];
     expect((toggle as HTMLInputElement).checked).toBe(true);
   });
 
@@ -112,7 +112,7 @@ describe("Settings editing interactions", () => {
 
   it("enables save button when toggle is changed", () => {
     renderSettings();
-    fireEvent.click(screen.getAllByRole("checkbox")[0]);
+    fireEvent.click(screen.getAllByRole("switch")[0]);
     expect(screen.getByRole("button", { name: /save changes/i })).not.toBeDisabled();
   });
 

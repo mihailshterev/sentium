@@ -1,0 +1,23 @@
+/*
+ * Floating shell: the sidebar and page content sit on the live background with a small gutter around
+ * everything, so the background reads as the "desk" the glass panels rest on.
+ */
+.layoutWrapper {
+  position: relative;
+  display: flex;
+  gap: var(--shell-gap);
+  height: 100%;
+  padding: var(--shell-gap);
+  overflow: hidden;
+}
+
+.contentArea {
+  position: relative;
+  z-index: var(--z-base);
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}

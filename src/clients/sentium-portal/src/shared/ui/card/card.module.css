@@ -1,0 +1,113 @@
+.card {
+  position: relative;
+  min-width: 0;
+  border: 1px solid var(--mat-regular-border);
+  border-radius: var(--radius-lg);
+  background: var(--mat-regular-bg);
+  box-shadow: var(--mat-regular-shadow);
+  backdrop-filter: var(--mat-regular-filter);
+  transition:
+    border-color var(--transition-base),
+    transform var(--transition-base),
+    box-shadow var(--transition-base);
+}
+
+.padSm {
+  padding: var(--space-3) var(--space-4);
+}
+
+.padded {
+  padding: var(--space-5);
+}
+
+.padLg {
+  padding: var(--space-6) var(--space-7);
+}
+
+.interactive {
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--border-strong);
+    background: color-mix(in srgb, var(--mat-regular-bg) 100%, var(--text-primary) 2%);
+  }
+
+  &:hover::before {
+    --c: var(--accent);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+}
+
+/* ---------- Header ---------- */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+/* Unpadded cards (edge-to-edge lists) give the header its own inset. */
+.card[data-padding="none"] > .header {
+  margin: 0;
+  padding: var(--space-4) var(--space-5) var(--space-3);
+}
+
+.headerMain {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.headerIcon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+
+  & svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.headerText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  font-weight: var(--fw-medium);
+  letter-spacing: -0.01em;
+  line-height: var(--leading-tight);
+}
+
+.description {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  line-height: 1.4;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}

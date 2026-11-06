@@ -14,7 +14,7 @@ import {
   ChevronRight,
   Info,
 } from "lucide-react";
-import styles from "../semantic-map.module.scss";
+import styles from "../semantic-map.module.css";
 import type { GraphNode, VisualizationMode } from "../engine";
 import { COLLECTION_COLORS } from "../engine";
 import type { KnowledgeMapSearchResult } from "@/features/semantic-map/types/knowledge-map";
@@ -113,7 +113,7 @@ export function Toolbar({
       <div className={styles.toolbarLeft}>
         <div className={styles.brandBadge}>
           <Waypoints size={15} />
-          <span>Semantic Map</span>
+          <span>sentium / semantic-map</span>
         </div>
 
         <AnimatePresence>

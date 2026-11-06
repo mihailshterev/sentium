@@ -1,7 +1,7 @@
 import Markdown from "react-markdown";
-import { Brain, ChevronDown, Wrench, CheckCircle2, XCircle, RefreshCw, AlertTriangle } from "lucide-react";
+import { AlertTriangle, Brain, CheckCircle2, ChevronDown, RefreshCw, Wrench, XCircle } from "lucide-react";
 import type { ElementType } from "react";
-import styles from "../agent-orchestration.module.scss";
+import styles from "../agent-orchestration.module.css";
 import type { LogEntry } from "@/features/orchestration/types/orchestration";
 import { OrchestratorPlanView } from "./orchestrator-plan-view";
 import { parseAssignments } from "../../../shared/utils/agent-helpers";
@@ -23,32 +23,34 @@ const LogTypes = {
   ERROR: "error",
 };
 
-const statusMeta = (text: string): { dot: string; Icon: ElementType } => {
+type Tone = "pass" | "fail" | "stuck" | "loop" | "thought" | "tool" | "message";
+
+const statusMeta = (text: string): { tone: Tone; Icon: ElementType } => {
   const t = text.toLowerCase();
   if (t.includes("passed") || t.includes("validated")) {
-    return { dot: styles.timelineDotPass, Icon: CheckCircle2 };
+    return { tone: "pass", Icon: CheckCircle2 };
   }
   if (t.includes("failed")) {
-    return { dot: styles.timelineDotFail, Icon: XCircle };
+    return { tone: "fail", Icon: XCircle };
   }
   if (t.includes("stuck")) {
-    return { dot: styles.timelineDotStuck, Icon: AlertTriangle };
+    return { tone: "stuck", Icon: AlertTriangle };
   }
-  return { dot: styles.timelineDotLoop, Icon: RefreshCw };
+  return { tone: "loop", Icon: RefreshCw };
 };
 
-const dotClassFor = (log: LogEntry): string => {
+const toneFor = (log: LogEntry): Tone => {
   switch (log.type) {
     case LogTypes.THOUGHT:
-      return styles.timelineDotThought;
+      return "thought";
     case LogTypes.TOOL:
-      return styles.timelineDotTool;
+      return "tool";
     case LogTypes.STATUS:
-      return statusMeta(log.text).dot;
+      return statusMeta(log.text).tone;
     case LogTypes.ERROR:
-      return styles.timelineDotFail;
+      return "fail";
     default:
-      return styles.timelineDotMessage;
+      return "message";
   }
 };
 
@@ -60,21 +62,14 @@ export function LogEntryView({
   getRoleClass,
   isActiveThought = false,
 }: LogEntryViewProps) {
-  const renderBody = () => {
-    if (log.type === LogTypes.ERROR) {
-      return (
-        <div className={styles.statusRow}>
-          <XCircle size={12} />
-          <span>{log.text}</span>
-        </div>
-      );
-    }
+  const author = <span className={`${styles.roleBadge} ${styles[getRoleClass(log.author)]}`}>{log.author}</span>;
 
-    if (log.type === LogTypes.STATUS) {
-      const { Icon } = statusMeta(log.text);
+  const renderBody = () => {
+    if (log.type === LogTypes.ERROR || log.type === LogTypes.STATUS) {
+      const Icon = log.type === LogTypes.ERROR ? XCircle : statusMeta(log.text).Icon;
       return (
         <div className={styles.statusRow}>
-          <Icon size={12} />
+          <Icon size={14} aria-hidden="true" />
           <span>{log.text}</span>
         </div>
       );
@@ -83,35 +78,29 @@ export function LogEntryView({
     if (log.type === LogTypes.THOUGHT) {
       return (
         <>
-          <div className={styles.authorRow}>
-            <span className={`${styles.roleBadge} ${styles[getRoleClass(log.author)]}`}>{log.author}</span>
-            <div className={styles.authorLine} />
-          </div>
-          <div className={styles.thoughtBlock}>
-            <button
-              className={`${styles.thoughtHeader} ${isActiveThought ? styles.thoughtHeaderActive : ""}`}
-              onClick={() => onToggle(entryId)}
-            >
-              <Brain size={11} className={isActiveThought ? styles.brainPulse : undefined} />
-              <span>Thinking</span>
-              {isActiveThought && (
-                <span className={styles.thinkingDots}>
-                  <span className={styles.thinkingDot} />
-                  <span className={styles.thinkingDot} />
-                  <span className={styles.thinkingDot} />
-                </span>
-              )}
-              <ChevronDown
-                size={11}
-                className={`${styles.thoughtChevron} ${expanded ? styles.thoughtChevronOpen : ""}`}
-              />
-            </button>
-            {expanded && (
-              <div className={styles.thoughtContent}>
-                <Markdown>{log.text}</Markdown>
-              </div>
+          {author}
+          <button
+            type="button"
+            className={`${styles.disclosure} ${isActiveThought ? styles.disclosureActive : ""}`}
+            onClick={() => onToggle(entryId)}
+            aria-expanded={expanded}
+          >
+            <Brain size={13} aria-hidden="true" />
+            <span>Thinking</span>
+            {isActiveThought && (
+              <span className={styles.dots} aria-hidden="true">
+                <span />
+                <span />
+                <span />
+              </span>
             )}
-          </div>
+            <ChevronDown size={13} className={expanded ? styles.chevronOpen : styles.chevron} />
+          </button>
+          {expanded && (
+            <div className={`${styles.markdown} ${styles.thoughtContent}`}>
+              <Markdown>{log.text}</Markdown>
+            </div>
+          )}
         </>
       );
     }
@@ -119,12 +108,9 @@ export function LogEntryView({
     if (log.type === LogTypes.TOOL) {
       return (
         <>
-          <div className={styles.authorRow}>
-            <span className={`${styles.roleBadge} ${styles[getRoleClass(log.author)]}`}>{log.author}</span>
-            <div className={styles.authorLine} />
-          </div>
-          <div className={styles.toolCallRow}>
-            <Wrench size={10} />
+          {author}
+          <div className={styles.toolCall}>
+            <Wrench size={12} aria-hidden="true" />
             <span>{log.text}</span>
           </div>
         </>
@@ -135,14 +121,11 @@ export function LogEntryView({
 
     return (
       <>
-        <div className={styles.authorRow}>
-          <span className={`${styles.roleBadge} ${styles[getRoleClass(log.author)]}`}>{log.author}</span>
-          <div className={styles.authorLine} />
-        </div>
+        {author}
         {planAssignments ? (
           <OrchestratorPlanView assignments={planAssignments} getRoleClass={getRoleClass} />
         ) : (
-          <div className={styles.textContent}>
+          <div className={styles.markdown}>
             <Markdown>{log.text}</Markdown>
           </div>
         )}
@@ -151,14 +134,9 @@ export function LogEntryView({
   };
 
   return (
-    <div className={`${styles.timelineItem} ${log.type === LogTypes.STATUS ? styles.timelineItemStatus : ""}`}>
-      <div className={styles.timelineRail}>
-        <span className={`${styles.timelineDot} ${dotClassFor(log)}`} />
-        <span className={styles.timelineConnector} />
-      </div>
+    <li className={styles.timelineItem} data-tone={toneFor(log)} data-kind={log.type}>
+      <span className={styles.timelineDot} aria-hidden="true" />
       <div className={styles.timelineContent}>{renderBody()}</div>
-    </div>
+    </li>
   );
 }
-
-

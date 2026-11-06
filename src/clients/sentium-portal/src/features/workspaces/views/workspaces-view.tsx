@@ -1,15 +1,19 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { FolderOpen, Plus, Loader } from "lucide-react";
-import styles from "../workspaces.module.scss";
+import { FolderOpen, Plus } from "lucide-react";
+import styles from "../workspaces.module.css";
 import type { Workspace } from "@/features/workspaces/types/workspace";
-import { PageHeader } from "@/shared/ui/page-header";
+import { useWorkspaces } from "@/features/workspaces/hooks/useWorkspaces";
+import { Badge } from "@/shared/ui/badge";
+import { Button } from "@/shared/ui/button";
+import { Card } from "@/shared/ui/card";
+import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
 import { EmptyState } from "@/shared/ui/empty-state";
 import { LoadMore } from "@/shared/ui/load-more";
-import { WorkspaceForm } from "../components/workspace-form";
+import { Page } from "@/shared/ui/page";
+import { Skeleton } from "@/shared/ui/skeleton";
 import { WorkspaceCard } from "../components/workspace-card";
-import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
-import { useWorkspaces } from "@/features/workspaces/hooks/useWorkspaces";
+import { WorkspaceForm } from "../components/workspace-form";
 
 export function WorkspacesView() {
   const navigate = useNavigate();
@@ -34,79 +38,71 @@ export function WorkspacesView() {
   const [createError, setCreateError] = useState<string | null>(null);
   const [updateError, setUpdateError] = useState<string | null>(null);
 
+  const newWorkspaceButton = (
+    <Button variant="primary" icon={<Plus size={16} />} onClick={() => setShowCreateForm(true)}>
+      New Workspace
+    </Button>
+  );
+
   return (
-    <div className={styles.root}>
-      <PageHeader
-        icon={<FolderOpen size={20} className={styles.headerIcon} />}
-        title="Workspaces"
-        subtitle="Organize files for agent access, RAG indexing, and analysis"
-        right={
-          <div className={styles.headerRight}>
-            <div className={styles.headerBadge}>
-              <FolderOpen size={13} />
-              <span>
-                {totalCount} workspace{totalCount !== 1 ? "s" : ""}
-              </span>
-            </div>
-            <button className={styles.createBtn} onClick={() => setShowCreateForm(true)}>
-              <Plus size={14} />
-              New Workspace
-            </button>
-          </div>
-        }
-      />
-
-      <div className={styles.listBody}>
-        <div className={styles.pipelineBg} aria-hidden="true">
-          <div className={styles.bgGrid} />
-          <div className={styles.bgOrb1} />
-          <div className={styles.bgOrb2} />
-          <div className={styles.bgOrb3} />
+    <Page
+      title="Workspaces"
+      subtitle="Organize files for agent access, RAG indexing, and analysis"
+      actions={
+        <>
+          <Badge tone="neutral">
+            {totalCount} workspace{totalCount !== 1 ? "s" : ""}
+          </Badge>
+          {newWorkspaceButton}
+        </>
+      }
+    >
+      {isLoading ? (
+        <div className={styles.grid} aria-busy="true">
+          <span className="visually-hidden">Loading workspaces...</span>
+          {[0, 1, 2].map((i) => (
+            <Card key={i} padding="md" className={styles.skeletonCard}>
+              <Skeleton width={36} height={36} radius="md" />
+              <Skeleton width="50%" height={14} />
+              <Skeleton width="80%" />
+            </Card>
+          ))}
         </div>
-
-        {isLoading ? (
-          <EmptyState icon={<Loader size={20} className={styles.spinIcon} />} title="Loading workspaces..." />
-        ) : isError ? (
+      ) : isError ? (
+        <Card>
+          <EmptyState icon={<FolderOpen />} title="Failed to load workspaces" hint="Please try refreshing the page" />
+        </Card>
+      ) : workspaces.length === 0 ? (
+        <Card>
           <EmptyState
-            icon={<FolderOpen size={32} />}
-            title="Failed to load workspaces"
-            hint="Please try refreshing the page"
-          />
-        ) : workspaces.length === 0 ? (
-          <EmptyState
-            icon={<FolderOpen size={36} />}
+            icon={<FolderOpen />}
             title="No workspaces yet"
             hint="Create your first workspace to organize files for agent access and RAG indexing"
-            action={
-              <button className={styles.createBtn} onClick={() => setShowCreateForm(true)}>
-                <Plus size={14} />
-                New Workspace
-              </button>
-            }
+            action={newWorkspaceButton}
           />
-        ) : (
-          <div className={styles.gridScroll}>
-            <div className={styles.workspaceGrid}>
-              {workspaces.map((ws) => (
-                <WorkspaceCard
-                  key={ws.id}
-                  workspace={ws}
-                  onOpen={() => navigate(`/workspaces/${ws.id}`)}
-                  onEdit={(e) => {
-                    e.stopPropagation();
-                    setEditingWorkspace(ws);
-                  }}
-                  onDelete={(e) => {
-                    e.stopPropagation();
-                    setPendingDelete({ id: ws.id, name: ws.name });
-                  }}
-                />
-              ))}
-            </div>
-            <LoadMore hasMore={hasMore} isLoading={isLoadingMore} onLoadMore={loadMore} />
+        </Card>
+      ) : (
+        <>
+          <div className={styles.grid}>
+            {workspaces.map((ws) => (
+              <WorkspaceCard
+                key={ws.id}
+                workspace={ws}
+                onOpen={() => navigate(`/workspaces/${ws.id}`)}
+                onEdit={(e) => {
+                  e.stopPropagation();
+                  setEditingWorkspace(ws);
+                }}
+                onDelete={(e) => {
+                  e.stopPropagation();
+                  setPendingDelete({ id: ws.id, name: ws.name });
+                }}
+              />
+            ))}
           </div>
-        )}
-      </div>
+          <LoadMore hasMore={hasMore} isLoading={isLoadingMore} onLoadMore={loadMore} />
+        </>
+      )}
 
       {showCreateForm && (
         <WorkspaceForm
@@ -177,6 +173,6 @@ export function WorkspacesView() {
         }
         onCancel={() => setPendingDelete(null)}
       />
-    </div>
+    </Page>
   );
 }

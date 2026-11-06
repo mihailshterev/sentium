@@ -1,5 +1,6 @@
 import { Download, ExternalLink, File } from "lucide-react";
-import styles from "../sandbox.module.scss";
+import styles from "../sandbox.module.css";
+import { buttonClass } from "@/shared/ui/button";
 import { getArtifactUrl } from "../api/sandbox.service";
 import { formatBytesToMb } from "../../../shared/utils/formatters";
 import type { ArtifactDto } from "@/features/sandbox/types/sandbox";
@@ -18,9 +19,9 @@ export function ArtifactCard({ artifact }: ArtifactCardProps) {
   const url = getArtifactUrl(artifact.downloadPath);
 
   return (
-    <div className={styles.artifactCard}>
+    <div className={styles.artifact}>
       {isImage ? (
-        <a href={url} target="_blank" rel="noopener noreferrer">
+        <a href={url} target="_blank" rel="noopener noreferrer" className={styles.artifactPreview}>
           <img
             src={url}
             alt={shortName}
@@ -29,8 +30,8 @@ export function ArtifactCard({ artifact }: ArtifactCardProps) {
           />
         </a>
       ) : (
-        <div className={styles.artifactIconWrap}>
-          <File size={26} />
+        <div className={styles.artifactPreview} aria-hidden="true">
+          <File size={24} />
         </div>
       )}
       <div className={styles.artifactBody}>
@@ -42,17 +43,26 @@ export function ArtifactCard({ artifact }: ArtifactCardProps) {
         </span>
       </div>
       <div className={styles.artifactActions}>
-        <a href={url} download={shortName} className={styles.artifactDownloadBtn} rel="noopener noreferrer">
-          <Download size={11} /> Download
+        <a
+          href={url}
+          download={shortName}
+          rel="noopener noreferrer"
+          className={buttonClass({ variant: "secondary", size: "sm", fullWidth: true })}
+        >
+          <Download size={14} aria-hidden="true" /> Download
         </a>
         {isImage && (
-          <a href={url} target="_blank" rel="noopener noreferrer" className={styles.artifactViewBtn}>
-            <ExternalLink size={11} />
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={buttonClass({ variant: "ghost", size: "sm", iconOnly: true })}
+            aria-label={`Open ${shortName}`}
+          >
+            <ExternalLink size={14} />
           </a>
         )}
       </div>
     </div>
   );
 }
-
-

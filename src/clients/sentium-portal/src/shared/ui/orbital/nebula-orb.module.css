@@ -1,0 +1,47 @@
+.orb {
+  position: relative;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 50%;
+  background: #03040a;
+  /* Light the surrounding glass faintly, the way a bright source would. */
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 0 80px -24px color-mix(in srgb, var(--orb-teal) 55%, transparent);
+}
+
+/* Static stand-in: violet halo, tilted teal band, gold core. */
+.fallback {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      circle at 50% 50%,
+      #fff3d6 0,
+      color-mix(in srgb, var(--orb-gold) 80%, transparent) 5%,
+      transparent 18%
+    ),
+    linear-gradient(
+      -32deg,
+      transparent 32%,
+      color-mix(in srgb, var(--orb-teal) 55%, transparent) 46%,
+      color-mix(in srgb, var(--orb-gold) 40%, transparent) 50%,
+      color-mix(in srgb, var(--orb-teal) 55%, transparent) 54%,
+      transparent 68%
+    ),
+    radial-gradient(circle at 30% 70%, color-mix(in srgb, var(--orb-violet) 45%, transparent), transparent 60%), #03040a;
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 1s var(--ease-out);
+
+  &[data-ready="true"] {
+    opacity: 1;
+  }
+}

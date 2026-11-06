@@ -1,41 +1,71 @@
-import styles from "./stat-card.module.scss";
+import styles from "./stat-card.module.css";
 
-type StatCardColor = "green" | "blue" | "amber" | "purple" | "red" | "cyan";
-type StatCardChipVariant = "green" | "red" | "amber";
+type StatCardColor = "green" | "blue" | "amber" | "purple" | "red" | "cyan" | "accent" | "neutral";
+type StatCardChipVariant = "green" | "red" | "amber" | "neutral";
 
 interface StatCardProps {
   icon: React.ReactNode;
   value: React.ReactNode;
   label: string;
+  /** Tints the icon and the value's leading marker. */
   iconColor?: StatCardColor;
   chip?: string;
   chipVariant?: StatCardChipVariant;
+  /** Small text under the value, e.g. "+12 this week". */
+  hint?: React.ReactNode;
 }
 
-const COLOR_MAP: Record<StatCardColor, string> = {
-  green: styles.iconGreen,
-  blue: styles.iconBlue,
-  amber: styles.iconAmber,
-  purple: styles.iconPurple,
-  red: styles.iconRed,
-  cyan: styles.iconCyan,
-};
-
-const CHIP_MAP: Record<StatCardChipVariant, string> = {
-  green: styles.chipGreen,
-  red: styles.chipRed,
-  amber: styles.chipAmber,
-};
-
-export function StatCard({ icon, value, label, iconColor = "green", chip, chipVariant = "green" }: StatCardProps) {
+/** A single data cell: mono label, large value. Group cells with `StatGrid` for a spec-sheet table. */
+export function StatCard({
+  icon,
+  value,
+  label,
+  iconColor = "neutral",
+  chip,
+  chipVariant = "neutral",
+  hint,
+}: StatCardProps) {
   return (
-    <div className={styles.card}>
-      <div className={`${styles.icon} ${COLOR_MAP[iconColor]}`}>{icon}</div>
-      <div className={styles.content}>
-        <span className={styles.value}>{value}</span>
+    <div className={`frame ${styles.cell} ${styles[iconColor]}`}>
+      <div className={styles.top}>
         <span className={styles.label}>{label}</span>
+        <span className={styles.icon} aria-hidden="true">
+          {icon}
+        </span>
       </div>
-      {chip && <span className={`${styles.chip} ${CHIP_MAP[chipVariant]}`}>{chip}</span>}
+      <div className={styles.bottom}>
+        <span className={styles.value}>{value}</span>
+        {chip && <span className={`${styles.chip} ${styles[`chip_${chipVariant}`]}`}>{chip}</span>}
+      </div>
+      {hint && <span className={styles.hint}>{hint}</span>}
+    </div>
+  );
+}
+
+interface StatGridProps {
+  /** Minimum cell width before wrapping. */
+  minCellWidth?: number;
+  /** Fixed column count instead of auto-fit wrapping (avoids orphan cells, e.g. 3 × 2). */
+  columns?: number;
+  className?: string;
+  children: React.ReactNode;
+  "aria-busy"?: boolean;
+}
+
+/** Framed panel that joins StatCards into one hairline-divided grid. */
+export function StatGrid({ minCellWidth = 170, columns, className, children, ...rest }: StatGridProps) {
+  return (
+    <div
+      className={["frame", styles.grid, className ?? ""].filter(Boolean).join(" ")}
+      style={
+        {
+          "--min-cell": `${minCellWidth}px`,
+          ...(columns ? { "--cols": `repeat(${columns}, minmax(0, 1fr))` } : {}),
+        } as React.CSSProperties
+      }
+      {...rest}
+    >
+      {children}
     </div>
   );
 }
