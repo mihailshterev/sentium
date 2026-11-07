@@ -5,6 +5,7 @@ export { AgentsPage } from "./AgentsPage";
 export { WorkflowsPage } from "./WorkflowsPage";
 export { AssistantPage } from "./AssistantPage";
 export { WorkspacesPage } from "./WorkspacesPage";
+export { InventoryPage } from "./InventoryPage";
 export { SettingsPage } from "./SettingsPage";
 export { ProfilePage } from "./ProfilePage";
 export { OrchestrationPage } from "./OrchestrationPage";

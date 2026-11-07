@@ -31,18 +31,21 @@ interface RequestOptions extends Omit<RequestInit, "body"> {
 
 async function request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
   const { body, ...restOptions } = options;
+  const isForm = typeof FormData !== "undefined" && body instanceof FormData;
 
   const config: RequestInit = {
     ...restOptions,
     credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
+    headers: isForm
+      ? { ...options.headers }
+      : {
+          "Content-Type": "application/json",
+          ...options.headers,
+        },
   };
 
   if (body) {
-    config.body = JSON.stringify(body);
+    config.body = isForm ? (body as FormData) : JSON.stringify(body);
   }
 
   const response = await fetch(`${BASE_URL}${endpoint}`, config);
@@ -74,4 +77,7 @@ export const client = {
     request<T>(url, { ...options, method: "PUT", body }),
 
   delete: <T>(url: string, options?: RequestOptions) => request<T>(url, { ...options, method: "DELETE" }),
+
+  postForm: <T>(url: string, form: FormData, options?: RequestOptions) =>
+    request<T>(url, { ...options, method: "POST", body: form }),
 };

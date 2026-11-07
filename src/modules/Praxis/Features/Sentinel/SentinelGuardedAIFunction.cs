@@ -67,6 +67,9 @@ public sealed class SentinelGuardedAIFunction(
             ["read_workspace_file"] = "File",
             ["read_workspace_file_content"] = "File",
             ["write_workspace_file"] = "File",
+            ["find_assets"] = "Inventory",
+            ["get_asset"] = "Inventory",
+            ["list_location_contents"] = "Inventory",
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     private static readonly FrozenDictionary<string, string> ActionMap =
@@ -82,6 +85,9 @@ public sealed class SentinelGuardedAIFunction(
             ["read_workspace_file"] = "Read",
             ["read_workspace_file_content"] = "Read",
             ["write_workspace_file"] = "Write",
+            ["find_assets"] = "Search",
+            ["get_asset"] = "Read",
+            ["list_location_contents"] = "Read",
         }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     private static string ResolveResourceType(string toolName) => ResourceTypeMap.TryGetValue(toolName, out var t) ? t : "Any";
@@ -122,7 +128,7 @@ public sealed class SentinelGuardedAIFunction(
 
     private static readonly IReadOnlyDictionary<string, string> EmptyMetadata = new Dictionary<string, string>();
 
-    private static readonly string[] ResourceIdKeys = ["input", "path", "query", "workspaceId", "fileName"];
+    private static readonly string[] ResourceIdKeys = ["input", "path", "query", "workspaceId", "fileName", "asset", "location"];
 
     private static string ExtractResourceId(AIFunctionArguments arguments)
     {

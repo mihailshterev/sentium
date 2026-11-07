@@ -158,6 +158,12 @@ describe("Navbar navigation links", () => {
     expect(screen.getByRole("link", { name: /settings/i })).toBeInTheDocument();
   });
 
+  it("shows Inventory link", () => {
+    setUser(["Member"]);
+    renderNav();
+    expect(screen.getByRole("link", { name: /inventory/i })).toHaveAttribute("href", "/inventory");
+  });
+
   it("shows Vigil link", () => {
     setUser(["Member"]);
     renderNav();

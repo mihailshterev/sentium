@@ -14,6 +14,7 @@ import {
   LayoutDashboard,
   LogOut,
   Orbit,
+  Package,
   PanelLeftClose,
   PanelLeftOpen,
   Settings,
@@ -73,6 +74,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: "Management",
     links: [
       { to: "/workspaces", label: "Workspaces", icon: FolderOpen },
+      { to: "/inventory", label: "Inventory", icon: Package },
       { to: "/knowledge-base", label: "Knowledge Base", icon: Database },
       { to: "/semantic-map", label: "Semantic Map", icon: Waypoints },
       { to: "/scheduler", label: "Scheduled Jobs", icon: CalendarClock },

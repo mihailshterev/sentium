@@ -41,4 +41,8 @@ public sealed class CurrentUser(IHttpContextAccessor httpContextAccessor, System
     }
 
     public bool IsSovereign => RoleClaims.IsInRole(Principal, SecurityRoles.Sovereign);
+
+    public string? UserName => IsAuthenticated
+        ? Principal?.Identity?.Name ?? Principal?.FindFirstValue(ClaimTypes.Name) ?? Principal?.FindFirstValue("name")
+        : null;
 }
