@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import styles from "../settings.module.css";
 import { useSystemSettings } from "@/features/registry/hooks/useSystemSettings";
-import { useOllamaSettings } from "@/features/registry/hooks/useOllamaSettings";
+import { useInferenceSettings } from "@/features/registry/hooks/useInferenceSettings";
 import { useRole } from "@/shared/auth/hooks/useRole";
 import { Card } from "@/shared/ui/card";
 import { Page } from "@/shared/ui/page";
@@ -24,28 +24,27 @@ export function SettingsView() {
   } = useSystemSettings();
 
   const {
-    settings: ollamaEnvelope,
-    isLoading: isOllamaLoading,
-    save: saveOllama,
-    isSaving: isOllamaSaving,
-    isSaveSuccess: isOllamaSuccess,
-    isSaveError: isOllamaError,
-    saveError: ollamaError,
-    resetSave: resetOllamaSave,
-  } = useOllamaSettings(isSovereign);
+    settings: inferenceEnvelope,
+    isLoading: isInferenceLoading,
+    save: saveInference,
+    isSaving: isInferenceSaving,
+    isSaveSuccess: isInferenceSuccess,
+    isSaveError: isInferenceError,
+    saveError: inferenceError,
+    resetSave: resetInferenceSave,
+  } = useInferenceSettings(isSovereign);
 
-  const isGlobalLoading = isHarnessLoading || (isSovereign && isOllamaLoading);
+  const isGlobalLoading = isHarnessLoading || (isSovereign && isInferenceLoading);
 
   const initialUnifiedValues: SettingsEditorFormData = useMemo(
     () => ({
       userHarnessPrompt: harnessSettings?.harness.userHarnessPrompt ?? "",
       isBuiltInHarnessEnabled: harnessSettings?.harness.isBuiltInHarnessEnabled ?? true,
       isPromptEnhancementEnabled: harnessSettings?.harness.isPromptEnhancementEnabled ?? false,
-      defaultModel: ollamaEnvelope?.value?.defaultModel ?? "",
-      agentTemperature: ollamaEnvelope?.value?.agentTemperature ?? 0.3,
-      agentContextWindow: ollamaEnvelope?.value?.agentContextWindow ?? 16384,
+      defaultModel: inferenceEnvelope?.value?.defaultModel ?? "",
+      agentTemperature: inferenceEnvelope?.value?.agentTemperature ?? 0.3,
     }),
-    [harnessSettings, ollamaEnvelope],
+    [harnessSettings, inferenceEnvelope],
   );
 
   if (isGlobalLoading || !harnessSettings) {
@@ -69,23 +68,22 @@ export function SettingsView() {
     });
 
     if (isSovereign) {
-      saveOllama({
+      saveInference({
         defaultModel: data.defaultModel,
         agentTemperature: data.agentTemperature,
-        agentContextWindow: data.agentContextWindow,
       });
     }
   };
 
   const handleGlobalReset = () => {
     resetHarnessSave();
-    resetOllamaSave();
+    resetInferenceSave();
   };
 
-  const combinedSaving = isHarnessSaving || isOllamaSaving;
-  const combinedSuccess = isHarnessSuccess || isOllamaSuccess;
-  const combinedError = isHarnessError || isOllamaError;
-  const activeErrorMessage = harnessError?.message || (ollamaError as Error)?.message || null;
+  const combinedSaving = isHarnessSaving || isInferenceSaving;
+  const combinedSuccess = isHarnessSuccess || isInferenceSuccess;
+  const combinedError = isHarnessError || isInferenceError;
+  const activeErrorMessage = harnessError?.message || (inferenceError as Error)?.message || null;
 
   return (
     <Page title="Settings" subtitle="System configuration and global agent behavior">
@@ -93,7 +91,7 @@ export function SettingsView() {
         initialValues={initialUnifiedValues}
         isSovereign={isSovereign}
         updatedByHarness={harnessSettings.updatedBy ?? null}
-        updatedByOllama={ollamaEnvelope?.updatedBy ?? null}
+        updatedByInference={inferenceEnvelope?.updatedBy ?? null}
         onSubmitForm={handleGlobalSubmit}
         isSaving={combinedSaving}
         showGlobalSuccess={combinedSuccess}

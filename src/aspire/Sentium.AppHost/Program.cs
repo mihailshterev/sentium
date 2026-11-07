@@ -30,6 +30,7 @@ var ollama = builder.AddOllama(ResourceNames.Ollama)
     .WithEnvironment(OllamaConfig.FlashAttentionKey, "1")
     .WithEnvironment(OllamaConfig.ParallelRequestsKey, "2")
     .WithEnvironment(OllamaConfig.KeepAliveKey, "-1")
+    .WithEnvironment(OllamaConfig.ContextSizeKey, OllamaConfig.DefaultContextSize)
     .WithEnvironment(OllamaConfig.DebugKey, "1");
 
 var ollamaModel = ollama.AddModel(AIModels.Gemma4_E4B);
@@ -47,8 +48,10 @@ var web = builder.AddProject<Projects.Sentium_Web>(ServiceNames.Web)
     .WithReference(ollama)
     .WithReference(ollamaModel).WaitFor(ollamaModel)
     .WithReference(ollamaEmbeddingModel).WaitFor(ollamaEmbeddingModel)
-    .WithEnvironment(EnvConfig.Keys.AI.ModelName, ollamaModel.Resource.ModelName)
-    .WithEnvironment(EnvConfig.Keys.AI.EmbeddingModelName, ollamaEmbeddingModel.Resource.ModelName)
+    .WithEnvironment(EnvConfig.Keys.Inference.ChatEndpoint, ollama.Resource.PrimaryEndpoint)
+    .WithEnvironment(EnvConfig.Keys.Inference.EmbeddingEndpoint, ollama.Resource.PrimaryEndpoint)
+    .WithEnvironment(EnvConfig.Keys.Inference.DefaultModel, ollamaModel.Resource.ModelName)
+    .WithEnvironment(EnvConfig.Keys.Inference.EmbeddingModelName, ollamaEmbeddingModel.Resource.ModelName)
     .WithEnvironment(EnvConfig.Keys.InternalApiKey, internalApiKey)
     .WithExternalHttpEndpoints()
     .WithUrlForEndpoint("https", url =>

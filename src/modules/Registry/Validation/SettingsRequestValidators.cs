@@ -13,9 +13,9 @@ public sealed class HarnessSettingsValidator : AbstractValidator<HarnessSettings
     }
 }
 
-public sealed class OllamaSettingsValidator : AbstractValidator<OllamaSettings>
+public sealed class InferenceSettingsValidator : AbstractValidator<InferenceSettings>
 {
-    public OllamaSettingsValidator()
+    public InferenceSettingsValidator()
     {
         RuleFor(x => x.DefaultModel)
             .NotEmpty()
@@ -25,10 +25,6 @@ public sealed class OllamaSettingsValidator : AbstractValidator<OllamaSettings>
         RuleFor(x => x.AgentTemperature)
             .InclusiveBetween(0.0f, 1.0f)
             .WithMessage("AgentTemperature must be between 0.0 and 1.0.");
-
-        RuleFor(x => x.AgentContextWindow)
-            .InclusiveBetween(512, 131_072)
-            .WithMessage("AgentContextWindow must be between 512 and 131072.");
     }
 }
 

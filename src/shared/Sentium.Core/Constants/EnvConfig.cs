@@ -12,9 +12,15 @@ public static class EnvConfig
         /// </summary>
         public const string InternalApiKey = "InternalApi__ApiKey";
 
-        public static class AI
+        /// <summary>
+        /// The <c>Inference</c> configuration section (Sentium.Infrastructure's <c>InferenceOptions</c>)
+        /// plus the RAG embedding model name.
+        /// </summary>
+        public static class Inference
         {
-            public const string ModelName = "AI__ModelName";
+            public const string ChatEndpoint = "Inference__ChatEndpoint";
+            public const string EmbeddingEndpoint = "Inference__EmbeddingEndpoint";
+            public const string DefaultModel = "Inference__DefaultModel";
             public const string EmbeddingModelName = "Rag__EmbeddingModelName";
         }
 

@@ -1,5 +1,8 @@
+using Aspire.Hosting;
+using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.Testing;
 using FluentAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
 using Sentium.Core.Constants;
 using Xunit;
 
@@ -39,5 +42,28 @@ public sealed class AppHostTests
         resourceNames.Should().Contain(ServiceNames.Frontend);
         resourceNames.Should().Contain(ResourceNames.Postgres);
         resourceNames.Should().Contain(ResourceNames.SentiumDb);
+    }
+
+    [Fact]
+    public async Task Web_ShouldReceiveTheInferenceEndpointsAndModels()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.Sentium_AppHost>(ct);
+        var web = appHost.Resources.OfType<IResourceWithEnvironment>().Single(r => r.Name == ServiceNames.Web);
+
+        // Act - publish mode renders endpoint references as expressions, so no containers are started.
+        var configuration = await ExecutionConfigurationBuilder.Create(web)
+            .WithEnvironmentVariablesConfig()
+            .BuildAsync(new DistributedApplicationExecutionContext(DistributedApplicationOperation.Publish), NullLogger.Instance, ct);
+        var env = configuration.EnvironmentVariables;
+
+        // Assert - both inference endpoints point at the inference resource; models come from the AppHost.
+        env.Should().ContainKey(EnvConfig.Keys.Inference.ChatEndpoint)
+            .WhoseValue.Should().Contain(ResourceNames.Ollama);
+        env.Should().ContainKey(EnvConfig.Keys.Inference.EmbeddingEndpoint)
+            .WhoseValue.Should().Contain(ResourceNames.Ollama);
+        env.Should().Contain(EnvConfig.Keys.Inference.DefaultModel, AIModels.Gemma4_E4B);
+        env.Should().Contain(EnvConfig.Keys.Inference.EmbeddingModelName, AIModels.EmbeddingGemma2_740M);
     }
 }

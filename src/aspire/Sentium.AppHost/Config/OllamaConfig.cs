@@ -9,5 +9,5 @@ public static class OllamaConfig
     public const string ParallelRequestsKey = "OLLAMA_NUM_PARALLEL";
     public const string KeepAliveKey = "OLLAMA_KEEP_ALIVE";
 
-    public const string DefaultContextSize = "4096";
+    public const string DefaultContextSize = "16384";
 }

@@ -8,24 +8,24 @@ using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using OllamaSharp;
-using OllamaSharp.Models;
+using Microsoft.Extensions.Options;
 using System.Collections.Concurrent;
 using System.Text;
 using Sentium.Praxis.Extensions;
 using Sentium.Core.Constants;
+using Sentium.Infrastructure.Inference;
 
 namespace Sentium.Praxis.Features.Agents;
 
 public sealed class CompositeAgentFactory(
-    OllamaOptions ollamaOptions,
+    IOptions<InferenceOptions> inferenceOptions,
+    IInferenceClientFactory inferenceClientFactory,
     IAgentToolProvider agentToolProvider,
     IAgentRepository agentRepository,
     IAgentRegistry agentRegistry,
     IRegistrySettingsService registrySettingsService,
     IAgentLearningService learningService,
     IServiceProvider serviceProvider,
-    IHttpClientFactory httpClientFactory,
     DynamicSkillsProvider dynamicSkillsProvider,
     SentinelClient sentinelClient,
     IPdpContextAccessor pdpContext,
@@ -51,7 +51,7 @@ public sealed class CompositeAgentFactory(
         var isOrchestrator = string.Equals(definition.Name, AgentRole.Orchestrator, StringComparison.OrdinalIgnoreCase);
 
         var settings = await registrySettingsService.GetAsync(actingUserId, ct);
-        var ollamaSettings = settings.Ollama;
+        var inferenceSettings = settings.Inference;
 
         var tools = isOrchestrator ? [] : agentToolProvider.GetToolsForAgent(definition.Name, ct);
 
@@ -79,7 +79,7 @@ public sealed class CompositeAgentFactory(
             contextProviders.Add(await dynamicSkillsProvider.BuildAsync(ct));
         }
 
-        var effectiveModel = !string.IsNullOrWhiteSpace(overrideModel) ? overrideModel : ollamaSettings?.DefaultModel ?? ollamaOptions.DefaultModel;
+        var effectiveModel = !string.IsNullOrWhiteSpace(overrideModel) ? overrideModel : inferenceSettings?.DefaultModel ?? inferenceOptions.Value.DefaultModel;
 
         var harnessedClient = GetHarnessedClient(effectiveModel);
 
@@ -102,14 +102,13 @@ public sealed class CompositeAgentFactory(
 
         var instructions = string.IsNullOrEmpty(capabilityBlock) ? baseInstructions : $"{baseInstructions}\n\n{capabilityBlock}";
 
+        // No per-request context size: it is fixed per model by the inference server's configuration.
         var chatOptions = new ChatOptions
         {
             Instructions = instructions,
             Tools = instrumentedTools,
-            Temperature = ollamaSettings?.AgentTemperature ?? ollamaOptions.AgentTemperature
+            Temperature = inferenceSettings?.AgentTemperature ?? InferenceSettingsSnapshot.Default.AgentTemperature
         };
-
-        chatOptions.AddOllamaOption(OllamaOption.NumCtx, ollamaSettings?.AgentContextWindow ?? ollamaOptions.AgentContextWindow);
 
         var options = new ChatClientAgentOptions
         {
@@ -141,7 +140,7 @@ public sealed class CompositeAgentFactory(
 
     private IChatClient GetHarnessedClient(string? model)
     {
-        var targetModel = !string.IsNullOrWhiteSpace(model) ? model : ollamaOptions.DefaultModel;
+        var targetModel = !string.IsNullOrWhiteSpace(model) ? model : inferenceOptions.Value.DefaultModel;
 
         return clientCache.GetOrAdd(targetModel, m =>
         {
@@ -150,13 +149,8 @@ public sealed class CompositeAgentFactory(
                 logger.LogDebug("Building harnessed client for model: {Model}", m);
             }
 
-            var httpClient = httpClientFactory.CreateClient(PraxisModuleExtensions.OllamaHttpClientName);
-            var ollamaClient = new OllamaApiClient(httpClient)
-            {
-                SelectedModel = m
-            };
-
-            return ollamaClient
+            return inferenceClientFactory
+                .CreateChatClient(PraxisModuleExtensions.LlmHttpClientName, m)
                 .AddSentiumPipeline()
                 .AsHarnessed(registrySettingsService, pdpContext)
                 .WithLearnings(learningService, pdpContext);

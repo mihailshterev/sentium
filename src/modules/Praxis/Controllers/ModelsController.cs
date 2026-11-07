@@ -5,6 +5,7 @@ using Sentium.Praxis.Features.Agents;
 using Sentium.Praxis.Dtos;
 using Sentium.Codex.Contracts;
 using Sentium.Praxis;
+using Sentium.Infrastructure.Inference;
 using Sentium.Infrastructure.Security;
 using Sentium.Core.Constants;
 using System.Text;
@@ -14,6 +15,8 @@ namespace Sentium.Praxis.Controllers;
 
 /// <summary>
 /// Provides endpoints for managing local Ollama models, including listing, pulling, and deleting.
+/// These use Ollama's native model-management API (relative to <c>Inference:ChatEndpoint</c>);
+/// inference itself goes through the OpenAI-compatible API.
 /// </summary>
 [ApiController]
 [Authorize]
@@ -21,10 +24,10 @@ namespace Sentium.Praxis.Controllers;
 public sealed class ModelsController(
     IHttpClientFactory httpClientFactory,
     IAgentRepository agentRepository,
-    OllamaOptions ollamaOptions,
+    IOptions<InferenceOptions> inferenceOptions,
     IOptions<RagOptions> ragOptions) : ControllerBase
 {
-    private Uri OllamaBase => ollamaOptions.BaseUrl;
+    private string DefaultModel => inferenceOptions.Value.DefaultModel;
     private string EmbeddingModel => ragOptions.Value.EmbeddingModelName;
     private bool IsSovereign => RoleClaims.IsInRole(User, SecurityRoles.Sovereign);
 
@@ -40,8 +43,8 @@ public sealed class ModelsController(
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetModels(CancellationToken ct)
     {
-        var client = httpClientFactory.CreateClient(PraxisModuleExtensions.OllamaHttpClientName);
-        using var response = await client.GetAsync(new Uri(OllamaBase, "/api/tags"), ct);
+        var client = httpClientFactory.CreateClient(PraxisModuleExtensions.LlmHttpClientName);
+        using var response = await client.GetAsync(new Uri("api/tags", UriKind.Relative), ct);
 
         if (!response.IsSuccessStatusCode)
         {
@@ -86,7 +89,7 @@ public sealed class ModelsController(
             return;
         }
 
-        var ollamaClient = httpClientFactory.CreateClient(PraxisModuleExtensions.OllamaHttpClientName);
+        var ollamaClient = httpClientFactory.CreateClient(PraxisModuleExtensions.LlmHttpClientName);
 
         Response.ContentType = "application/x-ndjson";
         Response.Headers.CacheControl = "no-cache";
@@ -95,7 +98,7 @@ public sealed class ModelsController(
 
         using var pullContent = new StringContent(payload, Encoding.UTF8, "application/json");
 
-        using var pullRequest = new HttpRequestMessage(HttpMethod.Post, new Uri(OllamaBase, "/api/pull"))
+        using var pullRequest = new HttpRequestMessage(HttpMethod.Post, new Uri("api/pull", UriKind.Relative))
         {
             Content = pullContent
         };
@@ -153,10 +156,10 @@ public sealed class ModelsController(
             return BadRequest("Model name is required.");
         }
 
-        var ollamaClient = httpClientFactory.CreateClient(PraxisModuleExtensions.OllamaHttpClientName);
+        var ollamaClient = httpClientFactory.CreateClient(PraxisModuleExtensions.LlmHttpClientName);
 
         var payload = JsonSerializer.Serialize(new OllamaDeleteRequest(name));
-        using var request = new HttpRequestMessage(HttpMethod.Delete, new Uri(OllamaBase, "/api/delete"))
+        using var request = new HttpRequestMessage(HttpMethod.Delete, new Uri("api/delete", UriKind.Relative))
         {
             Content = new StringContent(payload, Encoding.UTF8, "application/json")
         };
@@ -168,8 +171,8 @@ public sealed class ModelsController(
             return StatusCode((int)response.StatusCode);
         }
 
-        var resetCount = await agentRepository.ResetAgentsModelAsync(name, ollamaOptions.DefaultModel, ct);
+        var resetCount = await agentRepository.ResetAgentsModelAsync(name, DefaultModel, ct);
 
-        return Ok(new DeleteModelResult(name, ollamaOptions.DefaultModel, resetCount));
+        return Ok(new DeleteModelResult(name, DefaultModel, resetCount));
     }
 }

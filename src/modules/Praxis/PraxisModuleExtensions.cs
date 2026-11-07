@@ -1,9 +1,10 @@
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using OllamaSharp;
+using Microsoft.Extensions.Options;
 using Quartz;
 using Sentium.Core.Constants;
 using Sentium.Infrastructure.Extensions;
+using Sentium.Infrastructure.Inference;
 using Sentium.Infrastructure.Security;
 using Sentium.Praxis.Features.Agents;
 using Sentium.Praxis.Features.Agents.Native;
@@ -36,9 +37,9 @@ public static class PraxisModuleExtensions
 
     /// <summary>
     /// Named HttpClient for the agent chat models. Module-specific so it never merges configuration
-    /// with the Ollama clients other modules register.
+    /// with the inference clients other modules register.
     /// </summary>
-    internal const string OllamaHttpClientName = "praxis-ollama";
+    internal const string LlmHttpClientName = "praxis-llm";
 
     public static IHostApplicationBuilder AddPraxisModule(this IHostApplicationBuilder builder)
     {
@@ -161,34 +162,16 @@ public static class PraxisModuleExtensions
 
     private static void AddInference(IServiceCollection services, IConfiguration configuration)
     {
-        var ollamaUri = new Uri(configuration["AI:OllamaBaseUrl"] ?? "http://localhost:11434");
-        var modelName = configuration["AI:ModelName"] ?? AIModels.Gemma4_E4B;
+        services.AddInferenceHttpClient(configuration, LlmHttpClientName, InferenceEndpoint.Chat);
 
-        services.AddSingleton(new OllamaOptions { BaseUrl = ollamaUri, DefaultModel = modelName });
-
-        var ollamaTotalTimeout = ResolveTimeout(configuration, "AI:OllamaTimeout", TimeSpan.FromMinutes(30));
-        var ollamaAttemptTimeout = ResolveTimeout(configuration, "AI:OllamaAttemptTimeout", TimeSpan.FromMinutes(10));
-
-        services.AddHttpClient(OllamaHttpClientName, client =>
-        {
-            client.BaseAddress = ollamaUri;
-            client.Timeout = ollamaTotalTimeout;
-        })
-        .AddLongRunningResilienceHandler(
-            totalTimeout: ollamaTotalTimeout,
-            attemptTimeout: ollamaAttemptTimeout,
-            retries: 0
-        );
-
+        // Default-model client for the non-agent passes (prompt enhancement, learning sanitization).
         services.AddChatClient(sp =>
         {
-            var httpClient = sp.GetRequiredService<IHttpClientFactory>().CreateClient(OllamaHttpClientName);
-            var client = new OllamaApiClient(httpClient)
-            {
-                SelectedModel = modelName
-            };
+            var defaultModel = sp.GetRequiredService<IOptions<InferenceOptions>>().Value.DefaultModel;
 
-            return client.AddSentiumPipeline();
+            return sp.GetRequiredService<IInferenceClientFactory>()
+                .CreateChatClient(LlmHttpClientName, defaultModel)
+                .AddSentiumPipeline();
         });
     }
 
@@ -246,24 +229,5 @@ public static class PraxisModuleExtensions
             attemptTimeout: TimeSpan.FromSeconds(120),
             retries: 0
         );
-    }
-
-    private static TimeSpan ResolveTimeout(IConfiguration configuration, string key, TimeSpan fallback)
-    {
-        var raw = configuration[key];
-        if (!string.IsNullOrWhiteSpace(raw))
-        {
-            if (TimeSpan.TryParse(raw, out var asTimeSpan) && asTimeSpan > TimeSpan.Zero)
-            {
-                return asTimeSpan;
-            }
-
-            if (double.TryParse(raw, out var asMinutes) && asMinutes > 0)
-            {
-                return TimeSpan.FromMinutes(asMinutes);
-            }
-        }
-
-        return fallback;
     }
 }

@@ -14,7 +14,6 @@
     <PackageReference Include="Microsoft.Agents.AI" />
     <PackageReference Include="Microsoft.Agents.AI.Workflows" />
     <PackageReference Include="Microsoft.Extensions.AI" />
-    <PackageReference Include="OllamaSharp" />
     <PackageReference Include="Aspire.Azure.Storage.Blobs" />
     <PackageReference Include="Azure.Storage.Blobs" />
     <PackageReference Include="Quartz.Extensions.Hosting" />

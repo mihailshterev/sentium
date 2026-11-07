@@ -1,18 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  fetchOllamaSettings,
-  updateOllamaSettings,
-  type OllamaSettings,
+  fetchInferenceSettings,
+  updateInferenceSettings,
+  type InferenceSettings,
 } from "@/features/registry/api/registry.service";
 
-const SETTINGS_KEY = ["settings-ollama"] as const;
+const SETTINGS_KEY = ["settings-inference"] as const;
 
-export const useOllamaSettings = (enabled = true) => {
+export const useInferenceSettings = (enabled = true) => {
   const qc = useQueryClient();
 
   const { data, isLoading, error } = useQuery({
     queryKey: SETTINGS_KEY,
-    queryFn: fetchOllamaSettings,
+    queryFn: fetchInferenceSettings,
     enabled,
     retry: false,
   });
@@ -25,7 +25,7 @@ export const useOllamaSettings = (enabled = true) => {
     error: saveError,
     reset: resetSave,
   } = useMutation({
-    mutationFn: (payload: OllamaSettings) => updateOllamaSettings(payload),
+    mutationFn: (payload: InferenceSettings) => updateInferenceSettings(payload),
     onSuccess: (updated) => qc.setQueryData(SETTINGS_KEY, updated),
   });
 

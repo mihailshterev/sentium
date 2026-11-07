@@ -45,24 +45,24 @@ describe("updateSettings()", () => {
   });
 });
 
-describe("ollama settings", () => {
-  const ollamaEnvelope = {
-    key: "ollama",
-    value: { defaultModel: "gemma", agentTemperature: 0.7, agentContextWindow: 4096 },
+describe("inference settings", () => {
+  const inferenceEnvelope = {
+    key: "inference",
+    value: { defaultModel: "gemma", agentTemperature: 0.7 },
     updatedAt: "2025-01-01T00:00:00Z",
     updatedBy: null,
   };
 
-  it("fetchOllamaSettings reads the ollama key", async () => {
-    vi.mocked(client.get).mockResolvedValueOnce(ollamaEnvelope);
-    const result = await registryService.fetchOllamaSettings();
-    expect(client.get).toHaveBeenCalledWith("/registry/settings/ollama");
+  it("fetchInferenceSettings reads the inference key", async () => {
+    vi.mocked(client.get).mockResolvedValueOnce(inferenceEnvelope);
+    const result = await registryService.fetchInferenceSettings();
+    expect(client.get).toHaveBeenCalledWith("/registry/settings/inference");
     expect(result.value.defaultModel).toBe("gemma");
   });
 
-  it("updateOllamaSettings writes the ollama key", async () => {
-    vi.mocked(client.put).mockResolvedValueOnce(ollamaEnvelope);
-    await registryService.updateOllamaSettings(ollamaEnvelope.value);
-    expect(client.put).toHaveBeenCalledWith("/registry/settings/ollama", ollamaEnvelope.value);
+  it("updateInferenceSettings writes the inference key", async () => {
+    vi.mocked(client.put).mockResolvedValueOnce(inferenceEnvelope);
+    await registryService.updateInferenceSettings(inferenceEnvelope.value);
+    expect(client.put).toHaveBeenCalledWith("/registry/settings/inference", inferenceEnvelope.value);
   });
 });

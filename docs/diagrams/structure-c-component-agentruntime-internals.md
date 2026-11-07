@@ -30,7 +30,7 @@ flowchart TB
         DEC["HarnessedChatClient ·<br/>LearningAugmentedChatClient"]
         SG["SentinelGuardedAIFunction"]
         TP["AgentToolProvider ·<br/>DynamicSkillsProvider"]
-        RAG["DocumentIngestionService ·<br/>OllamaEmbeddingService ·<br/>QdrantVectorRepository"]
+        RAG["DocumentIngestionService ·<br/>EmbeddingService ·<br/>QdrantVectorRepository"]
         LRN["AgentLearningService ·<br/>LearningSanitizationPipeline"]
         DB["AgentRuntimeDbContext<br/>+ Repositories"]
         EXT["OllamaClient · QdrantClient ·<br/>NatsEventBus · BlobStorage ·<br/>SentinelClient"]

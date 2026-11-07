@@ -1317,6 +1317,22 @@
           "OpenTelemetry.API": "1.15.3"
         }
       },
+      "OllamaSharp": {
+        "type": "Transitive",
+        "resolved": "5.4.12",
+        "contentHash": "uUKOgoTV9Fxo9J5syrY4OMZ/2/xlPO83tGG+FjGmY8HqJVJ1iUT5f8EsC9yNEqBBIoth9D8zzN4I5p1oQEMBhQ==",
+        "dependencies": {
+          "Microsoft.Extensions.AI.Abstractions": "10.0.0"
+        }
+      },
+      "OpenAI": {
+        "type": "Transitive",
+        "resolved": "2.13.0",
+        "contentHash": "fKgWod3UNE+wPkJuLCiWC7FKh3YSEIHa6QK9gKxCVZ4UYsV9+Gwzg4cEDnvVaIiwc00RTwEuhiOn1Rbk4nLjtw==",
+        "dependencies": {
+          "System.ClientModel": "1.14.0"
+        }
+      },
       "OpenTelemetry": {
         "type": "Transitive",
         "resolved": "1.18.0",
@@ -1706,7 +1722,6 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.AI": "[10.10.0, )",
-          "OllamaSharp": "[5.5.0, )",
           "Pgvector.EntityFrameworkCore": "[0.3.0, )",
           "Sentium.Core": "[1.0.0, )",
           "Sentium.Infrastructure": "[1.0.0, )"
@@ -1732,6 +1747,7 @@
           "Microsoft.EntityFrameworkCore": "[10.0.14, )",
           "Microsoft.EntityFrameworkCore.Design": "[10.0.14, )",
           "Microsoft.EntityFrameworkCore.Tools": "[10.0.14, )",
+          "Microsoft.Extensions.AI.OpenAI": "[10.10.0, )",
           "Microsoft.Extensions.Caching.Hybrid": "[10.4.0, )",
           "Microsoft.Extensions.Http.Resilience": "[10.11.0, )",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.3, )",
@@ -1758,7 +1774,6 @@
           "Microsoft.Agents.AI": "[1.27.0, )",
           "Microsoft.Agents.AI.Workflows": "[1.27.0, )",
           "Microsoft.Extensions.AI": "[10.10.0, )",
-          "OllamaSharp": "[5.5.0, )",
           "Quartz.Extensions.Hosting": "[3.18.0, )",
           "Quartz.Serialization.SystemTextJson": "[3.18.0, )",
           "Sentium.Codex": "[1.0.0, )",
@@ -1780,7 +1795,6 @@
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.AI": "[10.10.0, )",
-          "OllamaSharp": "[5.5.0, )",
           "Sentium.Core": "[1.0.0, )",
           "Sentium.Infrastructure": "[1.0.0, )",
           "Sentium.Registry": "[1.0.0, )"
@@ -2308,6 +2322,16 @@
           "System.Numerics.Tensors": "10.0.12"
         }
       },
+      "Microsoft.Extensions.AI.OpenAI": {
+        "type": "CentralTransitive",
+        "requested": "[10.10.0, )",
+        "resolved": "10.10.0",
+        "contentHash": "Z5uwqIJ0tGp50P+ark1/qb7wFa6inIRKvaR3L9Frtf7M9uGIil/cz4k9S7va8HMrXzE/xjIJqd6A9cJ7WlMpgg==",
+        "dependencies": {
+          "Microsoft.Extensions.AI.Abstractions": "10.10.0",
+          "OpenAI": "2.13.0"
+        }
+      },
       "Microsoft.Extensions.Caching.Hybrid": {
         "type": "CentralTransitive",
         "requested": "[10.4.0, )",
@@ -2407,16 +2431,6 @@
           "Microsoft.EntityFrameworkCore": "[10.0.4, 11.0.0)",
           "Microsoft.EntityFrameworkCore.Relational": "[10.0.4, 11.0.0)",
           "Npgsql": "10.0.3"
-        }
-      },
-      "OllamaSharp": {
-        "type": "CentralTransitive",
-        "requested": "[5.5.0, )",
-        "resolved": "5.5.0",
-        "contentHash": "CpACG21U4KBZ5YcPUH/Pf8VMP0CCO7NsEkYJLLVf06YzVwcixRPy2bub71mbMlWCfzdADd8YfKx8kGWD5ai4Kg==",
-        "dependencies": {
-          "Microsoft.Extensions.AI": "10.8.0",
-          "Microsoft.Extensions.AI.Abstractions": "10.8.0"
         }
       },
       "OpenTelemetry.Api": {

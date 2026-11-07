@@ -16,9 +16,9 @@ public sealed class SettingsContainer
     public PdpSettings Pdp { get; set; } = new();
 
     /// <summary>
-    /// Global Ollama inference settings.
+    /// Global agent inference settings (default model, temperature).
     /// </summary>
-    public OllamaSettings Ollama { get; set; } = new();
+    public InferenceSettings Inference { get; set; } = new();
 
     /// <summary>
     /// Global Vigil monitoring settings.

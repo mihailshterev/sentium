@@ -22,7 +22,7 @@ public sealed class RagOptions
     public string[] SearchCollections { get; set; } = KnowledgeCollections.All;
 
     /// <summary>
-    /// Ollama model used for embedding generation. Its output size must match the vector store's
+    /// Embedding model requested from the embedding server. Its output size must match the vector store's
     /// <c>vector(768)</c> column (<c>CodexDbContext.EmbeddingDimensions</c>).
     /// </summary>
     public string EmbeddingModelName { get; set; } = "embeddinggemma-2:740m";

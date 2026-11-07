@@ -56,6 +56,7 @@ services:
       OLLAMA_FLASH_ATTENTION: "1"
       OLLAMA_NUM_PARALLEL: "2"
       OLLAMA_KEEP_ALIVE: "-1"
+      OLLAMA_CONTEXT_LENGTH: "16384"
     ports:
       - "11434:11434"
     volumes:
@@ -110,8 +111,9 @@ services:
       ConnectionStrings__redis: redis:6379
       ConnectionStrings__workspace-storage: ${AZURITE_CONNECTION}
       ConnectionStrings__ollama: http://ollama:11434
-      AI__OllamaBaseUrl: http://ollama:11434
-      AI__ModelName: ${SENTIUM_MODEL}
+      Inference__ChatEndpoint: http://ollama:11434
+      Inference__EmbeddingEndpoint: http://ollama:11434
+      Inference__DefaultModel: ${SENTIUM_MODEL}
       Rag__EmbeddingModelName: ${SENTIUM_EMBEDDING_MODEL}
       ASPNETCORE_Kestrel__Certificates__Default__Path: /https/sentium.pfx
       ASPNETCORE_Kestrel__Certificates__Default__Password: ${CERT_PASSWORD}
