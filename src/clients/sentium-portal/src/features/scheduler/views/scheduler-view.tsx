@@ -64,7 +64,7 @@ export function SchedulerView() {
           description={
             <span className={styles.notice}>
               <Info size={13} aria-hidden="true" />
-              Deleting a job stops its cron loop on every application pod immediately.
+              Deleting a job removes it permanently. It will not run again.
             </span>
           }
         />

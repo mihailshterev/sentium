@@ -26,7 +26,7 @@ test.describe("Automated Scheduler", () => {
     await expect(page.getByRole("button", { name: /refresh engine/i })).toBeVisible();
   });
 
-  test("warns that deleting a job stops it everywhere", async ({ page }) => {
-    await expect(page.getByText(/stops its cron loop on every application pod/i)).toBeVisible();
+  test("warns that deleting a job is permanent", async ({ page }) => {
+    await expect(page.getByText(/deleting a job removes it permanently/i)).toBeVisible();
   });
 });
