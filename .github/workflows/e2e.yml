@@ -21,7 +21,6 @@ concurrency:
 env:
   DOTNET_VERSION: "10.0.x"
   NODE_VERSION: "24"
-  PNPM_VERSION: "11.0.6"
 
 jobs:
   e2e:
@@ -45,7 +44,7 @@ jobs:
       - name: Install pnpm
         uses: pnpm/action-setup@v6
         with:
-          version: ${{ env.PNPM_VERSION }}
+          package_json_file: src/clients/sentium-portal/package.json
 
       - name: Setup Node
         uses: actions/setup-node@v6
