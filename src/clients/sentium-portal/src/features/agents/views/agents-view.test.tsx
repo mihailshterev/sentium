@@ -40,8 +40,8 @@ const defaultAgentsHook = {
 };
 
 const defaultModelsHook = {
-  models: ["llama3.2", "gemma3:1b"],
-  isLoading: false,
+  models: ["llama3.2", "gemma-4-e2b"],
+  defaultModel: null as string | null,
 };
 
 const renderAgents = () => {
@@ -133,14 +133,14 @@ describe("Agents create form", () => {
   it("renders model text input when no models are available", () => {
     vi.spyOn(useModelsHook, "useModels").mockReturnValue({ ...defaultModelsHook, models: [] });
     renderAgents();
-    const modelInput = screen.getByPlaceholderText(/e\.g\. gemma3:1b/i);
+    const modelInput = screen.getByPlaceholderText(/e\.g\. gemma-4-e4b/i);
     expect(modelInput).toBeInTheDocument();
   });
 
   it("can change model text input value in create form when no models", () => {
     vi.spyOn(useModelsHook, "useModels").mockReturnValue({ ...defaultModelsHook, models: [] });
     renderAgents();
-    const modelInput = screen.getByPlaceholderText(/e\.g\. gemma3:1b/i) as HTMLInputElement;
+    const modelInput = screen.getByPlaceholderText(/e\.g\. gemma-4-e4b/i) as HTMLInputElement;
     fireEvent.change(modelInput, { target: { value: "my-custom-model" } });
     expect(modelInput.value).toBe("my-custom-model");
   });
@@ -358,8 +358,8 @@ describe("Agents edit modal", () => {
     renderAgents();
     fireEvent.click(screen.getByTitle("Edit agent"));
     const modelSelect = document.getElementById("edit-model") as HTMLSelectElement;
-    fireEvent.change(modelSelect, { target: { value: "gemma3:1b" } });
-    expect(modelSelect.value).toBe("gemma3:1b");
+    fireEvent.change(modelSelect, { target: { value: "gemma-4-e2b" } });
+    expect(modelSelect.value).toBe("gemma-4-e2b");
   });
 
   it("can change model text input in edit modal when no models", () => {
@@ -456,8 +456,8 @@ describe("Agents create form", () => {
   it("can change model selection in create form", () => {
     renderAgents();
     const modelSelect = document.getElementById("agent-model") as HTMLSelectElement;
-    fireEvent.change(modelSelect, { target: { value: "gemma3:1b" } });
-    expect(modelSelect.value).toBe("gemma3:1b");
+    fireEvent.change(modelSelect, { target: { value: "gemma-4-e2b" } });
+    expect(modelSelect.value).toBe("gemma-4-e2b");
   });
 });
 

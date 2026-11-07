@@ -17,4 +17,7 @@ public static class ToolNames
     public const string ListWorkspaceFiles = "list_workspace_files";
     public const string ReadWorkspaceFileContent = "read_file_content";
     public const string WriteWorkspaceFile = "write_workspace_file";
+    public const string FindAssets = "find_assets";
+    public const string GetAsset = "get_asset";
+    public const string ListLocationContents = "list_location_contents";
 }

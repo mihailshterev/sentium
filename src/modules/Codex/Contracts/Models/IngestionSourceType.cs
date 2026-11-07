@@ -38,5 +38,10 @@ public enum IngestionSourceType
     /// <summary>
     /// Knowledge captured by an agent during interactions for self-improvement.
     /// </summary>
-    AgentLearning
+    AgentLearning,
+
+    /// <summary>
+    /// Household assets the Locus module shares with assistants (one source per asset).
+    /// </summary>
+    Inventory
 }

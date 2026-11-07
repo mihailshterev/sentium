@@ -1,12 +1,31 @@
-import { Fragment, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { DndContext, closestCenter, type DragEndEvent, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
-import { Plus, Bot, Loader, CheckCircle, AlertCircle, Search } from "lucide-react";
-import styles from "../workflows.module.scss";
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  closestCenter,
+  type DragEndEvent,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CheckCircle, Flag, Play, Plus, SlidersHorizontal, Workflow } from "lucide-react";
+import styles from "../workflows.module.css";
+import { Badge } from "@/shared/ui/badge";
+import { Button } from "@/shared/ui/button";
+import { Card, CardHeader } from "@/shared/ui/card";
+import { Input, SearchInput, Textarea } from "@/shared/ui/form-controls";
+import { FormField } from "@/shared/ui/form-field";
 import { StatusMessage } from "@/shared/ui/status-message";
 import { SortableAgent } from "./sortable-agent";
+import { GraphEdge, GraphRow, GraphTerminal } from "./graph-parts";
 import type { AgentRecord } from "@/features/agents/types/agents";
 import type { WorkflowRecord, SortableAgentItem } from "@/features/workflows/types/workflows";
 import { workflowEditorSchema, type WorkflowEditorFormData } from "../schemas/workflow.editor";
@@ -63,22 +82,25 @@ export function WorkflowEditor({
   const formDescription = watch("description") ?? "";
   const formName = watch("name") ?? "";
 
-  const sensors = useSensors(useSensor(PointerSensor));
+  const sensors = useSensors(
+    // A small distance keeps a plain click on a node from starting a drag.
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   const isPending = selectedWorkflow ? isUpdatingWorkflow : isCreatingWorkflow;
   const isSuccess = selectedWorkflow ? isUpdateSuccess : isCreateSuccess;
   const isError = selectedWorkflow ? isUpdateError : isCreateError;
   const mutationError = selectedWorkflow ? updateWorkflowError : createWorkflowError;
 
-  const filteredAgents = agents.filter((a) => {
-    const q = agentSearch.trim().toLowerCase();
-    if (!q) {
-      return true;
-    }
-    return (
-      a.name.toLowerCase().includes(q) || a.model.toLowerCase().includes(q) || a.description.toLowerCase().includes(q)
-    );
-  });
+  const query = agentSearch.trim().toLowerCase();
+  const filteredAgents = agents.filter(
+    (a) =>
+      !query ||
+      a.name.toLowerCase().includes(query) ||
+      a.model.toLowerCase().includes(query) ||
+      a.description.toLowerCase().includes(query),
+  );
 
   const addAgentToForm = (agent: AgentRecord) => {
     setFormAgents((prev) => [
@@ -117,170 +139,158 @@ export function WorkflowEditor({
   };
 
   return (
-    <div className={styles.editorContent}>
-      <form onSubmit={handleSubmit(handleFormSubmit)} className={styles.editorForm}>
-        <div className={styles.editorColumns}>
-          <div className={styles.pipelineColumn}>
-            <div className={styles.pipelineHeader}>
-              <span>Execution Order</span>
-              <span className={styles.pipelineCount}>{formAgents.length} agents</span>
-            </div>
+    <form onSubmit={handleSubmit(handleFormSubmit)} className={styles.editor}>
+      <Card padding="none" as="section" className={styles.pipelineCard}>
+        <CardHeader
+          icon={<Workflow />}
+          title="Execution graph"
+          description="Agents run top to bottom; drag a node to reorder"
+          actions={<Badge tone="neutral">{formAgents.length} agents</Badge>}
+        />
+
+        <div className={styles.canvas}>
+          <div className={styles.graph}>
+            <GraphTerminal
+              tone="trigger"
+              icon={<Play size={16} />}
+              tag="in"
+              label="Trigger"
+              hint="Manual run or schedule"
+            />
 
             {formAgents.length === 0 ? (
-              <div className={styles.pipelineEmpty}>
-                <Bot size={24} className={styles.pipelineEmptyIcon} />
-                <span>Add agents from the list</span>
-                <span className={styles.pipelineEmptyHint}>Drag to reorder execution sequence</span>
-              </div>
+              <>
+                <GraphEdge index={0} />
+                <GraphRow
+                  node={
+                    <span className={`${styles.graphNode} ${styles.graphNode_empty}`} aria-hidden="true">
+                      <Plus size={18} />
+                    </span>
+                  }
+                  label="Add agents from the list"
+                  right={
+                    <>
+                      <span className={styles.graphDesc}>Each agent receives the previous one&rsquo;s output.</span>
+                      {selectedWorkflow && selectedWorkflow.agents.length > 0 && (
+                        <ol className={styles.previewList}>
+                          {[...selectedWorkflow.agents]
+                            .sort((a, b) => a.order - b.order)
+                            .map((a) => (
+                              <li key={a.agentId}>{getAgentName(a.agentId)}</li>
+                            ))}
+                        </ol>
+                      )}
+                    </>
+                  }
+                />
+              </>
             ) : (
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                 <SortableContext items={formAgents.map((a) => a.sortId)} strategy={verticalListSortingStrategy}>
-                  <div className={styles.sortableList}>
+                  <ol className={styles.graphList} aria-label="Execution order">
                     {formAgents.map((item, idx) => (
-                      <Fragment key={item.sortId}>
-                        {idx > 0 && (
-                          <div className={styles.nodeConnector}>
-                            <div className={styles.connectorLine}>
-                              <div className={styles.connectorFlow} style={{ animationDelay: `${idx * 0.35}s` }} />
-                            </div>
-                            <div className={styles.connectorArrow} />
-                          </div>
-                        )}
-                        <div className={styles.sortableRow}>
-                          <span className={styles.sortableIndex}>{String(idx + 1).padStart(2, "0")}</span>
-                          <SortableAgent item={item} onRemove={removeAgentFromForm} />
-                        </div>
-                      </Fragment>
+                      <SortableAgent key={item.sortId} item={item} index={idx} onRemove={removeAgentFromForm} />
                     ))}
-                  </div>
+                  </ol>
                 </SortableContext>
               </DndContext>
             )}
 
-            {selectedWorkflow && formAgents.length === 0 && (
-              <div className={styles.wfAgentPreview}>
-                {selectedWorkflow.agents
-                  .sort((a, b) => a.order - b.order)
-                  .map((a, idx) => (
-                    <div key={a.agentId} className={styles.previewAgent}>
-                      <span className={styles.previewIndex}>{idx + 1}</span>
-                      <Bot size={12} />
-                      <span>{getAgentName(a.agentId)}</span>
-                    </div>
-                  ))}
-              </div>
-            )}
+            <GraphEdge index={Math.max(formAgents.length, 1)} />
+            <GraphTerminal
+              tone="output"
+              icon={<Flag size={16} />}
+              tag="out"
+              label="Output"
+              hint="Result, run log and audit trail"
+            />
           </div>
+        </div>
+      </Card>
 
-          <div className={styles.formColumn}>
-            <div className={styles.fieldGroup}>
-              <label className={styles.fieldLabel} htmlFor="wf-name">
-                Name
-              </label>
-              <input
+      <div className={styles.sideColumn}>
+        <Card padding="md" as="section">
+          <CardHeader icon={<SlidersHorizontal />} title="Details" />
+          <div className={styles.fields}>
+            <FormField id="wf-name" label="Name" error={errors.name?.message}>
+              <Input
                 id="wf-name"
-                className={styles.fieldInput}
                 type="text"
                 placeholder="Workflow name..."
                 autoComplete="off"
+                invalid={!!errors.name}
                 {...register("name")}
               />
-              {errors.name && <StatusMessage variant="error" message={errors.name.message ?? "Invalid name"} />}
-            </div>
+            </FormField>
 
-            <div className={styles.fieldGroup}>
-              <label className={styles.fieldLabel} htmlFor="wf-desc">
-                Description
-                <span className={styles.charCount}>{formDescription.length}/4000</span>
-              </label>
-              <textarea
+            <FormField id="wf-desc" label="Description" charCount={{ current: formDescription.length, max: 4000 }}>
+              <Textarea
                 id="wf-desc"
-                className={`${styles.fieldInput} ${styles.fieldTextarea}`}
                 placeholder="Describe what this workflow does..."
                 rows={3}
                 {...register("description")}
               />
-            </div>
+            </FormField>
 
-            <div className={styles.fieldGroup}>
-              <div className={styles.agentPickerHeader}>
-                <label className={styles.fieldLabel} style={{ margin: 0 }}>
-                  Add Agents
-                </label>
-                <span className={styles.agentPickerCount}>{agents.length} available</span>
-              </div>
+            {isError && <StatusMessage variant="error" message={mutationError?.message ?? "Unknown error"} />}
 
-              {agents.length > 0 && (
-                <div className={styles.agentSearch}>
-                  <Search size={13} className={styles.agentSearchIcon} />
-                  <input
-                    className={styles.agentSearchInput}
-                    placeholder="Search agents..."
-                    value={agentSearch}
-                    onChange={(e) => setAgentSearch(e.target.value)}
-                  />
-                </div>
-              )}
-
-              <div className={styles.agentPicker}>
-                {agents.length === 0 ? (
-                  <span className={styles.agentPickerEmpty}>No agents registered yet</span>
-                ) : filteredAgents.length === 0 ? (
-                  <span className={styles.agentPickerEmpty}>No agents match &ldquo;{agentSearch}&rdquo;</span>
-                ) : (
-                  filteredAgents.map((agent) => (
-                    <button
-                      key={agent.id}
-                      type="button"
-                      className={styles.agentPickerItem}
-                      onClick={() => addAgentToForm(agent)}
-                    >
-                      <div className={styles.agentPickerIconBox}>
-                        <Bot size={14} />
-                      </div>
-                      <div className={styles.agentPickerInfo}>
-                        <div className={styles.agentPickerTopRow}>
-                          <span className={styles.agentPickerName}>{agent.name}</span>
-                          {agent.model && <span className={styles.agentPickerModelBadge}>{agent.model}</span>}
-                        </div>
-                        {agent.description && <span className={styles.agentPickerDesc}>{agent.description}</span>}
-                      </div>
-                      <Plus size={13} className={styles.addIcon} />
-                    </button>
-                  ))
-                )}
-              </div>
-            </div>
-
-            <button
+            <Button
               type="submit"
-              className={`${styles.submitBtn} ${isPending ? styles.submitting : ""}`}
-              disabled={isPending || !formName.trim()}
+              variant="primary"
+              fullWidth
+              loading={isPending}
+              disabled={!formName.trim()}
+              icon={isSuccess && !isPending ? <CheckCircle size={16} /> : undefined}
             >
-              {isPending ? (
-                <>
-                  <Loader size={14} className={styles.spinIcon} /> Saving...
-                </>
-              ) : isSuccess ? (
-                <>
-                  <CheckCircle size={14} /> Saved
-                </>
-              ) : selectedWorkflow ? (
-                "Save Changes"
-              ) : (
-                "Create Workflow"
-              )}
-            </button>
+              {isPending ? "Saving..." : isSuccess ? "Saved" : selectedWorkflow ? "Save Changes" : "Create Workflow"}
+            </Button>
+          </div>
+        </Card>
 
-            {isError && (
-              <div className={styles.errorMsg}>
-                <AlertCircle size={13} />
-                {mutationError?.message ?? "Unknown error"}
-              </div>
+        <Card padding="none" as="section">
+          <CardHeader
+            icon={<Plus />}
+            title="Add agents"
+            actions={<span className={styles.availableCount}>{agents.length} available</span>}
+          />
+          {agents.length > 0 && (
+            <div className={styles.pickerSearch}>
+              <SearchInput
+                placeholder="Search agents..."
+                aria-label="Search agents"
+                value={agentSearch}
+                onChange={(e) => setAgentSearch(e.target.value)}
+              />
+            </div>
+          )}
+          <div className={styles.picker}>
+            {agents.length === 0 ? (
+              <span className={styles.pickerEmpty}>No agents registered yet</span>
+            ) : filteredAgents.length === 0 ? (
+              <span className={styles.pickerEmpty}>No agents match &ldquo;{agentSearch}&rdquo;</span>
+            ) : (
+              filteredAgents.map((agent) => (
+                <button
+                  key={agent.id}
+                  type="button"
+                  className={styles.pickerItem}
+                  onClick={() => addAgentToForm(agent)}
+                  aria-label={`Add ${agent.name}`}
+                >
+                  <span className={styles.pickerInfo}>
+                    <span className={styles.pickerTop}>
+                      <span className={styles.pickerName}>{agent.name}</span>
+                      {agent.model && <span className={styles.pickerModel}>{agent.model}</span>}
+                    </span>
+                    {agent.description && <span className={styles.pickerDesc}>{agent.description}</span>}
+                  </span>
+                  <Plus size={16} className={styles.pickerAdd} aria-hidden="true" />
+                </button>
+              ))
             )}
           </div>
-        </div>
-      </form>
-    </div>
+        </Card>
+      </div>
+    </form>
   );
 }

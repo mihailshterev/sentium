@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router";
-import styles from "../assistant.module.scss";
-import { ChevronRight, ChevronDown, BotMessageSquare, Loader } from "lucide-react";
+import styles from "../assistant.module.css";
+import { ArrowDown, Loader2, PanelRightClose, PanelRightOpen } from "lucide-react";
 import { fetchConversation } from "@/features/assistant/api/assistant.service";
 import { fetchWorkspaces, fetchWorkspaceFiles } from "@/features/workspaces/api/workspaces.service";
 import { useConversations } from "@/features/assistant/hooks/useConversations";
@@ -15,7 +15,8 @@ import type { Workspace } from "@/features/workspaces/types/workspace";
 import { useConversationStore } from "@/features/assistant/state/assistant-conversation-store";
 import { SUGGESTIONS_POOL } from "@/shared/utils/constants";
 import { useQuery } from "@tanstack/react-query";
-import { PageHeader } from "@/shared/ui/page-header";
+import { Button } from "@/shared/ui/button";
+import { Page } from "@/shared/ui/page";
 import { MessageBubble } from "../components/message-bubble";
 import { STATUS_MESSAGES } from "../status-messages";
 import { WelcomeScreen } from "../components/welcome-screen";
@@ -81,7 +82,7 @@ export function AssistantView() {
     isLoadingMore: isLoadingMoreConversations,
   } = useConversations();
 
-  const { models } = useModels();
+  const { models, defaultModel } = useModels();
 
   const { conversationId: routeConversationId } = useParams<{ conversationId?: string }>();
   const navigate = useNavigate();
@@ -148,10 +149,11 @@ export function AssistantView() {
   }, [messages, isTyping, isAtBottom, scrollToBottom]);
 
   useEffect(() => {
-    if (models.length > 0 && !model) {
-      setModel(models[0]);
+    const preferred = defaultModel ?? models[0];
+    if (!model && preferred) {
+      setModel(preferred);
     }
-  }, [models, model, setModel]);
+  }, [models, defaultModel, model, setModel]);
 
   useEffect(() => {
     let cancelled = false;
@@ -399,106 +401,109 @@ export function AssistantView() {
   };
 
   return (
-    <div className={styles.container}>
-      <div className={styles.chatWrapper}>
-        <PageHeader
-          icon={<BotMessageSquare size={20} className={styles.headerIcon} />}
-          title="Assistant"
-          subtitle="Chat with the Sentium assistant"
-          right={
-            <div className={styles.headerRight}>
-              <button
-                className={styles.sidebarToggle}
-                onClick={() => setSidebarOpen((v) => !v)}
-                title="Toggle conversations"
-              >
-                <ChevronRight
-                  size={14}
-                  style={{
-                    transform: sidebarOpen ? "none" : "rotate(180deg)",
-                    transition: "transform 0.2s",
-                  }}
-                />
-              </button>
-            </div>
-          }
+    <Page
+      title="Assistant"
+      subtitle="Chat with the Sentium assistant"
+      scroll={false}
+      width="full"
+      actions={
+        <Button
+          variant="secondary"
+          size="sm"
+          iconOnly
+          icon={sidebarOpen ? <PanelRightClose size={16} /> : <PanelRightOpen size={16} />}
+          onClick={() => setSidebarOpen((v) => !v)}
+          title="Toggle conversations"
+          aria-pressed={sidebarOpen}
         />
+      }
+    >
+      <div className={styles.layout} data-sidebar-open={sidebarOpen || undefined}>
+        <section className={styles.chatPanel} aria-label="Conversation">
+          <div className={styles.chatArea} ref={chatAreaRef}>
+            {isLoadingConversation ? (
+              <div className={styles.loadingConversation} role="status">
+                <Loader2 size={20} className="animate-spin" aria-hidden="true" />
+                <span>Loading conversation…</span>
+              </div>
+            ) : isEmpty ? (
+              <WelcomeScreen suggestions={randomizedSuggestions} onSelectSuggestion={(s) => setInput(s)} />
+            ) : (
+              <div className={styles.messagesArea}>
+                {messages.map((msg) => (
+                  <MessageBubble
+                    key={msg.id}
+                    msg={msg}
+                    isTyping={isTyping}
+                    expandedThoughts={expandedThoughts}
+                    statusIndex={statusIndex}
+                    statusVisible={statusVisible}
+                    copiedMessageId={copiedMessageId}
+                    onToggleThought={toggleThought}
+                    onCopyMessage={copyMessage}
+                    onApproval={handleApproval}
+                    onRetry={msg.error ? retryLastMessage : undefined}
+                  />
+                ))}
+                <div ref={messagesEndRef} />
+              </div>
+            )}
+          </div>
 
-        <div className={styles.chatArea} ref={chatAreaRef}>
-          {isLoadingConversation ? (
-            <div className={styles.loadingConversation}>
-              <Loader size={22} className={styles.statusSpinner} />
-              <span>Loading conversation…</span>
-            </div>
-          ) : isEmpty ? (
-            <WelcomeScreen suggestions={randomizedSuggestions} onSelectSuggestion={(s) => setInput(s)} />
-          ) : (
-            <div className={styles.messagesArea}>
-              {messages.map((msg) => (
-                <MessageBubble
-                  key={msg.id}
-                  msg={msg}
-                  isTyping={isTyping}
-                  expandedThoughts={expandedThoughts}
-                  statusIndex={statusIndex}
-                  statusVisible={statusVisible}
-                  copiedMessageId={copiedMessageId}
-                  onToggleThought={toggleThought}
-                  onCopyMessage={copyMessage}
-                  onApproval={handleApproval}
-                  onRetry={msg.error ? retryLastMessage : undefined}
-                />
-              ))}
-              <div ref={messagesEndRef} />
-            </div>
-          )}
-        </div>
+          <div className={styles.composerArea}>
+            {!isAtBottom && (
+              <Button
+                variant="secondary"
+                size="sm"
+                iconOnly
+                icon={<ArrowDown size={16} />}
+                onClick={scrollToBottom}
+                title="Scroll to bottom"
+                className={styles.scrollToBottom}
+              />
+            )}
 
-        {!isAtBottom && (
-          <button className={styles.scrollToBottomBtn} onClick={scrollToBottom} title="Scroll to bottom">
-            <ChevronDown size={14} />
-          </button>
-        )}
+            {sendError && <StatusMessage variant="error" message={sendError} className={styles.sendError} />}
 
-        {sendError && <StatusMessage variant="error" message={sendError} />}
+            <ChatInputBar
+              input={input}
+              isTyping={isTyping}
+              contextPills={contextPills}
+              model={model}
+              models={models}
+              onInputChange={resizeTextareaOnInput}
+              onKeyDown={handleKeyDown}
+              onSubmit={handleSubmit}
+              onStop={handleStop}
+              onRemoveContextPill={removeContextPill}
+              onSetModel={setModel}
+              textareaRef={textareaRef}
+            />
+          </div>
+        </section>
 
-        <ChatInputBar
-          input={input}
-          isTyping={isTyping}
-          contextPills={contextPills}
-          model={model}
-          models={models}
-          onInputChange={resizeTextareaOnInput}
-          onKeyDown={handleKeyDown}
-          onSubmit={handleSubmit}
-          onStop={handleStop}
-          onRemoveContextPill={removeContextPill}
-          onSetModel={setModel}
-          textareaRef={textareaRef}
+        <ConversationSidebar
+          isOpen={sidebarOpen}
+          conversations={conversations}
+          conversationGroups={conversationGroups}
+          activeConversationId={routeConversationId ?? activeConversationId}
+          isCreating={isCreating}
+          hasMoreConversations={hasMoreConversations}
+          isLoadingMoreConversations={isLoadingMoreConversations}
+          onLoadMoreConversations={loadMoreConversations}
+          wsContextOpen={wsContextOpen}
+          workspaces={workspaces}
+          expandedWorkspace={expandedWorkspace}
+          expandedWorkspaceFiles={expandedWorkspaceFiles}
+          onNewConversation={createNewConversation}
+          onLoadConversation={loadConversation}
+          onDeleteConversation={deleteConversation}
+          onToggleWsContext={() => setWsContextOpen((v) => !v)}
+          onToggleExpandWorkspace={(wsId) => setExpandedWorkspace((v) => (v === wsId ? null : wsId))}
+          onInjectWorkspaceContext={injectWorkspaceContext}
+          onInjectFileContext={injectFileContext}
         />
       </div>
-
-      <ConversationSidebar
-        isOpen={sidebarOpen}
-        conversations={conversations}
-        conversationGroups={conversationGroups}
-        activeConversationId={routeConversationId ?? activeConversationId}
-        isCreating={isCreating}
-        hasMoreConversations={hasMoreConversations}
-        isLoadingMoreConversations={isLoadingMoreConversations}
-        onLoadMoreConversations={loadMoreConversations}
-        wsContextOpen={wsContextOpen}
-        workspaces={workspaces}
-        expandedWorkspace={expandedWorkspace}
-        expandedWorkspaceFiles={expandedWorkspaceFiles}
-        onNewConversation={createNewConversation}
-        onLoadConversation={loadConversation}
-        onDeleteConversation={deleteConversation}
-        onToggleWsContext={() => setWsContextOpen((v) => !v)}
-        onToggleExpandWorkspace={(wsId) => setExpandedWorkspace((v) => (v === wsId ? null : wsId))}
-        onInjectWorkspaceContext={injectWorkspaceContext}
-        onInjectFileContext={injectFileContext}
-      />
 
       <ConfirmDialog
         open={isConfirmOpen}
@@ -510,8 +515,6 @@ export function AssistantView() {
         onConfirm={handleConfirmDelete}
         onCancel={handleCancelDelete}
       />
-    </div>
+    </Page>
   );
 }
-
-

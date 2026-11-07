@@ -18,7 +18,7 @@ public sealed class SentinelFunctionMiddleware(SentinelClient sentinel, IPdpCont
     private const int MaxPayloadChars = 8 * 1024;
     private const int MaxResourceIdChars = 200;
 
-    private static readonly string[] ResourceIdKeys = ["input", "path", "query", "workspace", "workspaceId", "fileId", "fileName"];
+    private static readonly string[] ResourceIdKeys = ["input", "path", "query", "workspace", "workspaceId", "fileId", "fileName", "asset", "location"];
     private static readonly IReadOnlyDictionary<string, string> EmptyMetadata = new Dictionary<string, string>();
 
     public async ValueTask<object?> InvokeAsync(

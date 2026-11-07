@@ -29,8 +29,8 @@ public static class RegistryModuleExtensions
             SettingsKeys.Pdp, SettingsScope.Global, c => c.Pdp, (c, v) => c.Pdp = v)
         );
 
-        services.AddSingleton<ISettingsDescriptor>(new SettingsDescriptor<OllamaSettings>(
-            SettingsKeys.Ollama, SettingsScope.Global, c => c.Ollama, (c, v) => c.Ollama = v)
+        services.AddSingleton<ISettingsDescriptor>(new SettingsDescriptor<InferenceSettings>(
+            SettingsKeys.Inference, SettingsScope.Global, c => c.Inference, (c, v) => c.Inference = v)
         );
 
         services.AddSingleton<ISettingsDescriptor>(new SettingsDescriptor<VigilSettings>(

@@ -1,6 +1,9 @@
-import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, Check, Trash2, X } from "lucide-react";
-import styles from "./confirm-dialog.module.scss";
+import { useEffect, useEffectEvent, useId, useRef, useState } from "react";
+import { AlertTriangle, Check, Trash2 } from "lucide-react";
+import { Button } from "@/shared/ui/button";
+import { Dialog } from "@/shared/ui/dialog";
+import { Input } from "@/shared/ui/form-controls";
+import styles from "./confirm-dialog.module.css";
 
 export type ConfirmDialogVariant = "danger" | "safe";
 
@@ -32,12 +35,11 @@ export function ConfirmDialog({
   onCancel,
 }: ConfirmDialogProps) {
   const [typedValue, setTypedValue] = useState("");
-  const overlayRef = useRef<HTMLDivElement>(null);
+  const cancelRef = useRef<HTMLButtonElement>(null);
+  const inputId = useId();
 
   const isSafe = variant === "safe";
-  const needsTyped = Boolean(confirmWord);
-  const isConfirmEnabled = needsTyped ? typedValue === confirmWord : true;
-  const defaultConfirmLabel = isSafe ? "Confirm" : "Delete";
+  const isConfirmEnabled = confirmWord ? typedValue === confirmWord : true;
 
   const handleConfirm = () => {
     setTypedValue("");
@@ -49,90 +51,68 @@ export function ConfirmDialog({
     onCancel();
   };
 
+  // Enter confirms from anywhere in the dialog (Escape is handled by Dialog).
+  const onEnter = useEffectEvent((e: KeyboardEvent) => {
+    if (e.key === "Enter" && isConfirmEnabled) {
+      e.preventDefault();
+      e.stopPropagation();
+      handleConfirm();
+    }
+  });
+
   useEffect(() => {
     if (!open) {
       return;
     }
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        handleCancel();
-      }
-      if (e.key === "Enter" && isConfirmEnabled) {
-        e.preventDefault();
-        e.stopPropagation();
-        handleConfirm();
-      }
-    };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [open, isConfirmEnabled]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  if (!open) {
-    return null;
-  }
+    const listener = (e: KeyboardEvent) => onEnter(e);
+    document.addEventListener("keydown", listener);
+    return () => document.removeEventListener("keydown", listener);
+  }, [open]);
 
   return (
-    <div
-      ref={overlayRef}
-      className={styles.overlay}
-      onClick={(e) => e.target === overlayRef.current && handleCancel()}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="confirm-dialog-title"
-    >
-      <div className={`${styles.dialog} ${isSafe ? styles.dialogSafe : styles.dialogDanger}`}>
-        <div className={styles.body}>
-          <div className={styles.iconRow}>
-            <div className={`${styles.iconWrap} ${isSafe ? styles.iconSafe : styles.iconDanger}`}>
-              {isSafe ? <Check size={18} /> : <AlertTriangle size={18} />}
-            </div>
-            <div className={styles.titles}>
-              <p id="confirm-dialog-title" className={styles.title}>
-                {title}
-              </p>
-              <p className={styles.desc}>{description}</p>
-            </div>
-          </div>
-
-          {needsTyped && (
-            <div className={styles.inputRow}>
-              <label className={styles.inputLabel}>
-                Type{" "}
-                <span className={`${styles.confirmWord} ${isSafe ? styles.confirmWordSafe : styles.confirmWordDanger}`}>
-                  {confirmWord}
-                </span>{" "}
-                to confirm
-              </label>
-              <input
-                autoFocus
-                className={`${styles.input} ${isSafe ? styles.inputSafe : styles.inputDanger}`}
-                type="text"
-                autoComplete="off"
-                spellCheck={false}
-                value={typedValue}
-                onChange={(e) => setTypedValue(e.target.value)}
-              />
-            </div>
-          )}
-        </div>
-
-        <div className={styles.footer}>
-          <button className={styles.btnCancel} onClick={handleCancel} data-testid="confirm-dialog-cancel">
-            <X size={14} />
+    <Dialog
+      open={open}
+      onClose={handleCancel}
+      size="sm"
+      title={title}
+      description={description}
+      icon={isSafe ? <Check /> : <AlertTriangle />}
+      iconTone={isSafe ? "success" : "danger"}
+      hideCloseButton
+      initialFocus={confirmWord ? undefined : cancelRef}
+      footer={
+        <>
+          <Button ref={cancelRef} variant="secondary" onClick={handleCancel} data-testid="confirm-dialog-cancel">
             {cancelLabel}
-          </button>
-          <button
-            className={`${styles.btnConfirm} ${isSafe ? styles.btnConfirmSafe : styles.btnConfirmDanger}`}
+          </Button>
+          <Button
+            variant={isSafe ? "primary" : "danger"}
             disabled={!isConfirmEnabled}
             onClick={handleConfirm}
+            icon={isSafe ? <Check size={15} /> : <Trash2 size={15} />}
             data-testid="confirm-dialog-confirm"
           >
-            {isSafe ? <Check size={14} /> : <Trash2 size={14} />}
-            {confirmLabel ?? defaultConfirmLabel}
-          </button>
+            {confirmLabel ?? (isSafe ? "Confirm" : "Delete")}
+          </Button>
+        </>
+      }
+    >
+      {confirmWord && (
+        <div className={styles.typed}>
+          <label htmlFor={inputId} className={styles.typedLabel}>
+            Type <code className={isSafe ? styles.wordSafe : styles.wordDanger}>{confirmWord}</code> to confirm
+          </label>
+          <Input
+            id={inputId}
+            autoFocus
+            type="text"
+            autoComplete="off"
+            spellCheck={false}
+            value={typedValue}
+            onChange={(e) => setTypedValue(e.target.value)}
+          />
         </div>
-      </div>
-    </div>
+      )}
+    </Dialog>
   );
 }

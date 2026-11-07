@@ -48,8 +48,8 @@ const defaultConversationsHook = {
 };
 
 const defaultModelsHook = {
-  models: ["llama3.2", "gemma3:1b"],
-  isLoading: false,
+  models: ["llama3.2", "gemma-4-e2b"],
+  defaultModel: null as string | null,
 };
 
 const renderAssistant = (initialPath = "/assistant") => {
@@ -118,10 +118,10 @@ describe("Assistant sidebar toggle", () => {
 describe("Assistant model selection", () => {
   it("renders all available models in the selector", () => {
     renderAssistant();
-    const chip = screen.getByText("llama3.2").closest("[class*='inputModelChip']") as HTMLElement;
+    const chip = screen.getByRole("button", { name: /llama3\.2/ });
     fireEvent.click(chip!);
     expect(screen.getAllByText("llama3.2").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText("gemma3:1b")).toBeInTheDocument();
+    expect(screen.getByText("gemma-4-e2b")).toBeInTheDocument();
   });
 
   it("sets model from available models on initial render", () => {
@@ -138,10 +138,10 @@ describe("Assistant model selection", () => {
 
   it("updates model when model selector is changed", () => {
     renderAssistant();
-    const chip = screen.getByText("llama3.2").closest("[class*='inputModelChip']") as HTMLElement;
+    const chip = screen.getByRole("button", { name: /llama3\.2/ });
     fireEvent.click(chip!);
-    fireEvent.click(screen.getByText("gemma3:1b"));
-    expect(screen.getByText("gemma3:1b")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("gemma-4-e2b"));
+    expect(screen.getByText("gemma-4-e2b")).toBeInTheDocument();
   });
 
   it("updates model in text input when no models and user types", () => {
@@ -379,7 +379,7 @@ describe("Assistant conversation display", () => {
       model: "llama3.2",
     });
     renderAssistant();
-    expect(screen.getByText("SENTIUM")).toBeInTheDocument();
+    expect(screen.getByText("Sentium")).toBeInTheDocument();
   });
 });
 

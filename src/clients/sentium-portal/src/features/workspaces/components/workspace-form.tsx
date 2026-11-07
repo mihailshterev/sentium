@@ -1,7 +1,11 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { X, Loader2 } from "lucide-react";
-import styles from "../workspaces.module.scss";
+import { FolderOpen } from "lucide-react";
+import styles from "../workspaces.module.css";
+import { Button } from "@/shared/ui/button";
+import { Dialog } from "@/shared/ui/dialog";
+import { Input, Textarea } from "@/shared/ui/form-controls";
+import { FormField } from "@/shared/ui/form-field";
 import { StatusMessage } from "@/shared/ui/status-message";
 import { workspaceFormSchema, type WorkspaceFormData } from "../schemas/workspace.form";
 
@@ -15,61 +19,34 @@ interface WorkspaceFormProps {
 }
 
 export function WorkspaceForm({ initial, onSubmit, onCancel, isPending, title, error }: WorkspaceFormProps) {
-  const { register, handleSubmit } = useForm<WorkspaceFormData>({
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<WorkspaceFormData>({
     resolver: zodResolver(workspaceFormSchema),
     defaultValues: { name: initial?.name ?? "", description: initial?.description ?? "" },
   });
 
-  const handleFormSubmit = (data: WorkspaceFormData) => {
-    onSubmit(data.name, data.description);
-  };
-
   return (
-    <div className={styles.modalOverlay} onClick={onCancel}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.modalHeader}>
-          <span className={styles.modalTitle}>{title}</span>
-          <button className={styles.modalClose} onClick={onCancel}>
-            <X size={14} />
-          </button>
+    <Dialog open onClose={onCancel} title={title} icon={<FolderOpen />} size="sm">
+      <form onSubmit={handleSubmit((data) => onSubmit(data.name, data.description))} className={styles.form}>
+        <FormField id="ws-name" label="Name" error={errors.name?.message}>
+          <Input id="ws-name" placeholder="e.g. incident-2026" invalid={!!errors.name} {...register("name")} />
+        </FormField>
+        <FormField id="ws-desc" label="Description">
+          <Textarea id="ws-desc" placeholder="Optional description…" rows={3} {...register("description")} />
+        </FormField>
+        {error && <StatusMessage variant="error" message={error} />}
+        <div className={styles.formActions}>
+          <Button variant="ghost" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button type="submit" variant="primary" loading={isPending}>
+            {title}
+          </Button>
         </div>
-        <form onSubmit={handleSubmit(handleFormSubmit)} className={styles.modalForm}>
-          <div className={styles.formGroup}>
-            <label className={styles.label} htmlFor="ws-name">
-              Name
-            </label>
-            <input
-              id="ws-name"
-              className={styles.input}
-              placeholder="e.g. incident-2026"
-              autoFocus
-              {...register("name")}
-            />
-          </div>
-          <div className={styles.formGroup}>
-            <label className={styles.label} htmlFor="ws-desc">
-              Description
-            </label>
-            <textarea
-              id="ws-desc"
-              className={`${styles.input} ${styles.textarea}`}
-              placeholder="Optional description…"
-              rows={3}
-              {...register("description")}
-            />
-          </div>
-          <div className={styles.modalActions}>
-            <button type="button" className={styles.cancelButton} onClick={onCancel}>
-              Cancel
-            </button>
-            <button type="submit" className={styles.submitButton} disabled={isPending}>
-              {isPending ? <Loader2 size={14} className={styles.spin} /> : null}
-              {title}
-            </button>
-          </div>
-          {error && <StatusMessage variant="error" message={error} />}
-        </form>
-      </div>
-    </div>
+      </form>
+    </Dialog>
   );
 }

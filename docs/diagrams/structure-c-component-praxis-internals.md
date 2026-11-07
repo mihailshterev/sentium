@@ -7,6 +7,7 @@ flowchart TB
         WC["WorkflowsController"]
         OC["OrchestrationController"]
         WSC["WorkspacesController · SandboxController · SchedulerController"]
+        MOC["ModelsController"]
     end
 
     subgraph AGENTS["Features/Agents · Tools · Skills · Learnings"]
@@ -17,6 +18,7 @@ flowchart TB
         CTX["AgentSkillsProvider ·<br/>LearningsContextProvider"]
         SFM["SentinelFunctionMiddleware"]
         CHP["ConversationChatHistoryProvider ·<br/>PendingApprovalStore"]
+        MOD["IModelCatalog ·<br/>ModelContextWindowProvider"]
     end
 
     subgraph ORCH["Features/Orchestration · Workflows"]
@@ -29,7 +31,7 @@ flowchart TB
 
     subgraph BG["Background work"]
         FIW["FileIngestionQueue ·<br/>FileIngestionWorker"]
-        QZ["Quartz · ExecuteJob"]
+        QZ["Quartz (persistent, praxis.qrtz_*) ·<br/>ExecuteJob"]
         SBC["SandboxClient<br/>(+ execution history)"]
     end
 
@@ -41,6 +43,11 @@ flowchart TB
         RC["Registry · ISettingsService"]
         PDP["Sentinel · IPolicyDecisionPoint"]
         CX["Codex · ingestion / embeddings / vectors"]
+        LOC["Locus · IInventoryLookup"]
+    end
+
+    subgraph INF["Inference (OpenAI-compatible API)"]
+        LLM["llama-server router<br/>(chat models)"]
     end
 
     AC --> CAF
@@ -51,6 +58,10 @@ flowchart TB
     SQ --> CAF
     SQ --> SR
     CAF --> PIPE
+    CAF --> MOD
+    PIPE --> LLM
+    MOC --> MOD
+    MOD --> LLM
     CAF --> NAT
     CAF --> TP
     CAF --> CTX
@@ -60,6 +71,7 @@ flowchart TB
     CTX --> CX
     FIW --> CX
     TP --> SBC
+    TP --> LOC
     QZ --> SBC
     API --> DB
     BG --> DB

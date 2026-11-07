@@ -1,5 +1,7 @@
-import { FolderOpen, File as FileIcon, Pencil, Trash2 } from "lucide-react";
-import styles from "../workspaces.module.scss";
+import { File as FileIcon, FolderOpen, Pencil, Trash2 } from "lucide-react";
+import styles from "../workspaces.module.css";
+import { Button } from "@/shared/ui/button";
+import { Card } from "@/shared/ui/card";
 import type { Workspace } from "@/features/workspaces/types/workspace";
 import { formatDateTimeShort } from "../../../shared/utils/formatters";
 
@@ -12,45 +14,44 @@ interface WorkspaceCardProps {
 
 export function WorkspaceCard({ workspace: ws, onOpen, onEdit, onDelete }: WorkspaceCardProps) {
   return (
-    <div className={styles.wsCard} onClick={onOpen}>
-      <div className={styles.wsCardTop}>
-        <div className={styles.wsCardIconBox}>
-          <FolderOpen size={22} />
-        </div>
-        <div className={styles.wsCardActions}>
-          <button
-            className={styles.wsCardActionBtn}
+    <Card interactive padding="md" className={styles.wsCard} onClick={onOpen}>
+      <div className={styles.cardTop}>
+        <span className={styles.cardIcon} aria-hidden="true">
+          <FolderOpen size={17} />
+        </span>
+        <div className={styles.cardActions}>
+          <Button
+            variant="ghost"
+            size="sm"
+            iconOnly
+            icon={<Pencil size={15} />}
             title="Edit workspace"
             onClick={onEdit}
             data-testid={`workspace-edit-${ws.name}`}
-          >
-            <Pencil size={12} />
-          </button>
-          <button
-            className={`${styles.wsCardActionBtn} ${styles.wsCardActionBtnDanger}`}
+          />
+          <Button
+            variant="ghost"
+            size="sm"
+            iconOnly
+            icon={<Trash2 size={15} />}
             title="Delete workspace"
             onClick={onDelete}
+            className={styles.deleteButton}
             data-testid={`workspace-delete-${ws.name}`}
-          >
-            <Trash2 size={12} />
-          </button>
+          />
         </div>
       </div>
 
-      <div className={styles.wsCardBody}>
-        <h3 className={styles.wsCardName}>{ws.name}</h3>
-        <p className={styles.wsCardDesc}>
-          {ws.description || <span style={{ fontStyle: "italic", opacity: 0.6 }}>No description</span>}
-        </p>
-      </div>
+      <h2 className={styles.cardName}>{ws.name}</h2>
+      <p className={styles.cardDesc}>{ws.description || <span className={styles.muted}>No description</span>}</p>
 
-      <div className={styles.wsCardFooter}>
-        <span className={styles.wsFileBadge}>
-          <FileIcon size={11} />
+      <div className={styles.cardFooter}>
+        <span className={styles.fileCount}>
+          <FileIcon size={13} aria-hidden="true" />
           {ws.fileCount} file{ws.fileCount !== 1 ? "s" : ""}
         </span>
-        <span className={styles.wsCardDate}>{formatDateTimeShort(ws.updatedAt)}</span>
+        <span className={styles.cardDate}>{formatDateTimeShort(ws.updatedAt)}</span>
       </div>
-    </div>
+    </Card>
   );
 }

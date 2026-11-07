@@ -14,19 +14,19 @@
 
 Sentium is a **self-hosted, privacy-first AI agent platform** intended to run **entirely within a
 single trusted host or private network**, operated by one administrator (`Sovereign`). All AI
-inference is local (Ollama); there is no external cloud dependency.
+inference is local (llama.cpp's `llama-server`); there is no external cloud dependency.
 
 Sentium runs as two .NET processes:
 
 - **Sentium.Web** - a modular monolith hosting every module (Identity, Registry, Sentinel, Codex,
-  Praxis, Vigil) in one process. It is the **only publicly reachable entry point**: it serves the
+  Locus, Praxis, Vigil) in one process. It is the **only publicly reachable entry point**: it serves the
   built portal, the `/api/{module}` API and the session endpoints from one HTTPS origin. During
   development the Vite dev server proxies `/api` to it, so the browser still sees a single origin.
 - **Sentium.Sandbox** - a small, stateless process that runs agent-written code in throwaway
   Docker containers. It is kept out of Sentium.Web on purpose because it owns the Docker socket.
   It is reachable only on the internal network.
 
-The infrastructure (PostgreSQL with pgvector, Redis, Ollama, Azurite) lives on the same
+The infrastructure (PostgreSQL with pgvector, Redis, the llama-server inference servers, Azurite) lives on the same
 **trusted internal network** and is not meant to be exposed to untrusted clients.
 
 This deployment model is central to the threat model:
@@ -74,7 +74,7 @@ This deployment model is central to the threat model:
  ===== TB1: public edge ==============================================================
       v
  [ Sentium.Web ]  portal · /api/{module} · session endpoints
-    Identity · Registry · Sentinel · Codex · Praxis · Vigil   (one process, in-process calls)
+    Identity · Registry · Sentinel · Codex · Locus · Praxis · Vigil   (one process, in-process calls)
       |                                              ^
       |  POST /execute                               |  POST /api/sentinel/policy/evaluate
       |  (X-Internal-Token)                          |  (X-Internal-Token)
@@ -86,7 +86,7 @@ This deployment model is central to the threat model:
       v
  [ Ephemeral hardened Docker container ]
 
- Internal network: PostgreSQL (pgvector) · Redis · Ollama · Azurite
+ Internal network: PostgreSQL (pgvector) · Redis · llama-server (llm, embeddings) · Azurite
 ```
 
 - **TB1 - Public edge.** The only boundary exposed to untrusted input. Sentium.Web authenticates
@@ -127,7 +127,7 @@ This deployment model is central to the threat model:
 | Tampering with the session cookie                  | The cookie is **encrypted + signed** by ASP.NET Core Data Protection in Sentium.Web; it cannot be modified without the key ring.                                                                         |
 | Modifying another user's data                      | **EF Core global query filters** scope every user-owned entity by `UserId`; cache keys and vector searches are user-scoped.                                                                              |
 | Writing into another user's knowledge base         | Modules ingest in-process through `IDocumentIngestionService`. The Codex ingestion REST endpoints, whose request body names the target scope, are `Sovereign`-only.                                      |
-| Tampering with runtime config to weaken governance | Global settings (`pdp`, `ollama`, `vigil`) can be read and changed only by a `Sovereign`; per-user settings (`harness`) are self-scoped. Config is the Sovereign's responsibility (trusted actor).       |
+| Tampering with runtime config to weaken governance | Global settings (`pdp`, `inference`, `vigil`) can be read and changed only by a `Sovereign`; per-user settings (`harness`) are self-scoped. Config is the Sovereign's responsibility (trusted actor).    |
 | Tampering with the audit log                       | Audit records are **append-only, written by the policy engine**; read access is `Sovereign`-only. The table shares a database login with every other module, so this is not tamper-proof (see §7).       |
 | Man-in-the-middle on Web ↔ Sandbox calls           | Mitigated by **network isolation**, with the internal token as an additional layer. Under Compose the two talk plain HTTP on the internal network (`http://sentium-web:8080`). mTLS is the upgrade path. |
 
@@ -141,15 +141,17 @@ This deployment model is central to the threat model:
 
 ### 3.4 Information Disclosure (confidentiality)
 
-| Threat                             | Mitigation                                                                                                                                                                                               |
-| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Cross-user data leakage            | Per-user isolation via query filters; the **`Sovereign` and background bypass is explicit** (the Sovereign role, or `SystemScopeContext` activated by a background worker's DI scope), never accidental. |
-| Credentials leaked to the frontend | The browser only ever holds the HttpOnly session cookie; there is no token for JavaScript to read.                                                                                                       |
-| Direct blob-storage access         | Artifacts are **proxied through the backend** (`/api/sandbox/artifacts/*`); the browser never gets direct blob-store URIs.                                                                               |
-| Data exfiltration by executed code | Sandbox containers run with **`NetworkDisabled`** - no outbound network at all.                                                                                                                          |
-| RAG/memory leakage across scopes   | Knowledge chunks carry a **private (user) or shared scope**; retrieval is filtered by the acting user.                                                                                                   |
-| Sensitive data sent to a cloud LLM | **Local inference only** (Ollama); no provider calls leave the host.                                                                                                                                     |
-| Operational detail exposed         | `/health` on Sentium.Web is anonymous and returns each check's name and exception message. OpenAPI and Scalar are mapped only in Development, which is also the environment Compose runs (see §7).       |
+| Threat                                 | Mitigation                                                                                                                                                                                                                                                                                                                                                                                                           |
+| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Cross-user data leakage                | Per-user isolation via query filters; the **`Sovereign` and background bypass is explicit** (the Sovereign role, or `SystemScopeContext` activated by a background worker's DI scope), never accidental.                                                                                                                                                                                                             |
+| Credentials leaked to the frontend     | The browser only ever holds the HttpOnly session cookie; there is no token for JavaScript to read.                                                                                                                                                                                                                                                                                                                   |
+| Direct blob-storage access             | Artifacts are **proxied through the backend** (`/api/sandbox/artifacts/*`); the browser never gets direct blob-store URIs.                                                                                                                                                                                                                                                                                           |
+| Data exfiltration by executed code     | Sandbox containers run with **`NetworkDisabled`** - no outbound network at all.                                                                                                                                                                                                                                                                                                                                      |
+| RAG/memory leakage across scopes       | Knowledge chunks carry a **private (user) or shared scope**; retrieval is filtered by the acting user.                                                                                                                                                                                                                                                                                                               |
+| Sensitive data sent to a cloud LLM     | **Local inference only** (llama-server); no provider calls leave the host.                                                                                                                                                                                                                                                                                                                                           |
+| Household inventory exposure           | Locus is **shared by design**: every signed-in household member sees and edits all locations, assets and attachments (receipts may hold personal data). Assistants only see assets marked as shared (`IInventoryLookup` filters every query); location access notes and descriptions, and all attachments, never reach agents or the knowledge base. Shared assets are ingested with the **shared** knowledge scope. |
+| Attachments served from the app origin | Uploads are typed from their **magic bytes** (images, PDF, plain text only; SVG/HTML rejected) and served with `X-Content-Type-Options: nosniff` and `Content-Security-Policy: default-src 'none'; img-src 'self'; sandbox`; only images render inline, everything else is forced to download. File names never reach blob names or metadata.                                                                        |
+| Operational detail exposed             | `/health` on Sentium.Web is anonymous and returns each check's name and exception message. OpenAPI and Scalar are mapped only in Development, which is also the environment Compose runs (see §7).                                                                                                                                                                                                                   |
 
 ### 3.5 Denial of Service (availability)
 
@@ -165,7 +167,7 @@ This deployment model is central to the threat model:
 
 | Threat                                                | Mitigation                                                                                                                                                                                                                         |
 | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Member` performs `Sovereign`-only actions            | Two-tier role model enforced at the API; user/role management, model pull/delete, global settings, audit and Codex ingestion are `Sovereign`-gated. Only a Sovereign can grant the role, and the last Sovereign cannot be removed. |
+| `Member` performs `Sovereign`-only actions            | Two-tier role model enforced at the API; user/role management, model load/unload, global settings, audit and Codex ingestion are `Sovereign`-gated. Only a Sovereign can grant the role, and the last Sovereign cannot be removed. |
 | A new endpoint ships without authorization            | No gateway enforces "authenticated by default" any more; `ControllerAuthorizationTests` requires every controller action to declare an access rule.                                                                                |
 | Browser reaches privileged internal endpoints         | The Sandbox's `/execute` is not routable from the browser. Sentinel's `/api/sentinel/policy/evaluate` is, but it requires `X-Internal-Token` (see §7 for the Development fail-open).                                               |
 | Agent escalates beyond user intent (prompt injection) | **`SemanticIntentPolicy`** compares the declared action against the original user prompt via a local LLM (temp 0). `MISALIGNED` → deny-with-alert. Behavior tightens at low `AutonomyLevel`.                                       |
@@ -213,27 +215,28 @@ is the stronger upgrade path.
 
 The agent is treated as a **semi-trusted actor**. AI-specific risks beyond classic STRIDE:
 
-| Threat                                                                                                              | Mitigation / status                                                                                                                                                                                               |
-| ------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Prompt injection** (via documents, RAG content, tool output, user input) steering the agent to unintended actions | `SemanticIntentPolicy` alignment check; Sentinel gates every tool call & code execution; high-risk tools also require explicit user approval, and only the user who owns a paused run can approve it.             |
-| **Excessive autonomy**                                                                                              | Configurable `AutonomyLevel`; at very high autonomy the alignment check is skipped (an accepted, operator-chosen trade-off), at low autonomy uncertain actions are denied.                                        |
-| **Hallucinated / unsafe actions**                                                                                   | Same PDP gating; network-isolated, reversible sandboxed execution.                                                                                                                                                |
-| **Data poisoning of the self-improvement loop**                                                                     | Auto-injected learnings (`LearningsContextProvider`) are user-scoped; a learning only becomes global after `LearningSanitizationPipeline` approves it. _Note: poisoned learnings could degrade future responses._ |
-| **Model/prompt extraction**                                                                                         | Limited exposure - local models, no external API; system prompts are server-side.                                                                                                                                 |
-| **Resource exhaustion via inference**                                                                               | Rate limiting + per-action governance; a cap on tool-calling iterations per turn; local resource limits.                                                                                                          |
+| Threat                                                                                                              | Mitigation / status                                                                                                                                                                                                                                                                |
+| ------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Prompt injection** (via documents, RAG content, tool output, user input) steering the agent to unintended actions | `SemanticIntentPolicy` alignment check; Sentinel gates every tool call & code execution; high-risk tools also require explicit user approval, and only the user who owns a paused run can approve it.                                                                              |
+| **Prompt injection via household data**                                                                             | Asset notes for assistants are written by any household member and reach every user's agents. Tool output and knowledge-base text label them as household data, not instructions, and fence them; the inventory tools are read-only, so injected text cannot change the inventory. |
+| **Excessive autonomy**                                                                                              | Configurable `AutonomyLevel`; at very high autonomy the alignment check is skipped (an accepted, operator-chosen trade-off), at low autonomy uncertain actions are denied.                                                                                                         |
+| **Hallucinated / unsafe actions**                                                                                   | Same PDP gating; network-isolated, reversible sandboxed execution.                                                                                                                                                                                                                 |
+| **Data poisoning of the self-improvement loop**                                                                     | Auto-injected learnings (`LearningsContextProvider`) are user-scoped; a learning only becomes global after `LearningSanitizationPipeline` approves it. _Note: poisoned learnings could degrade future responses._                                                                  |
+| **Model/prompt extraction**                                                                                         | Limited exposure - local models, no external API; system prompts are server-side.                                                                                                                                                                                                  |
+| **Resource exhaustion via inference**                                                                               | Rate limiting + per-action governance; a cap on tool-calling iterations per turn; local resource limits.                                                                                                                                                                           |
 
 ---
 
 ## 6. Infrastructure & Dependencies
 
-| Component                           | Threat                               | Note                                                                                                                                                                        |
-| ----------------------------------- | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| PostgreSQL (`sentiumdb`, pgvector)  | Over-broad access across modules     | One database, one schema per module. Every module connects with the same login (the `postgres` superuser under Compose), so schema separation is not a permission boundary. |
-| Redis (HybridCache L2)              | Cache poisoning / stale data         | Internal network only. A settings change evicts Registry's cache entry directly; this assumes one Sentium.Web instance.                                                     |
-| Ollama / Azurite                    | Direct access bypassing app controls | Internal network only. The Compose file publishes PostgreSQL, Redis, Azurite and Ollama ports on the host for convenience (see §7).                                         |
-| Docker daemon (via the Sandbox)     | Root-equivalent control of the host  | See §4. Only the Sandbox mounts the socket.                                                                                                                                 |
-| Third-party packages (NuGet / pnpm) | Supply-chain compromise              | Pinned lockfiles; keep dependencies patched (see §7).                                                                                                                       |
-| Secrets in source/containers        | Leakage of keys/connection strings   | Use `.env` / Aspire secrets (`.env.example` is the template); **never commit real secrets**. `.gitignore` excludes env files.                                               |
+| Component                           | Threat                               | Note                                                                                                                                                                                                                                                                                                                               |
+| ----------------------------------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PostgreSQL (`sentiumdb`, pgvector)  | Over-broad access across modules     | One database, one schema per module. Every module connects with the same login (the `postgres` superuser under Compose), so schema separation is not a permission boundary.                                                                                                                                                        |
+| Redis (HybridCache L2)              | Cache poisoning / stale data         | Internal network only. A settings change evicts Registry's cache entry directly; this assumes one Sentium.Web instance.                                                                                                                                                                                                            |
+| llama-server / Azurite              | Direct access bypassing app controls | Internal network only. The inference servers require a bearer API key (`LLM_API_KEY`, generated by Aspire) on every request except `/health`, have their web UI disabled, and Compose binds their ports to `127.0.0.1`. The Compose file still publishes PostgreSQL, Redis and Azurite on all interfaces for convenience (see §7). |
+| Docker daemon (via the Sandbox)     | Root-equivalent control of the host  | See §4. Only the Sandbox mounts the socket.                                                                                                                                                                                                                                                                                        |
+| Third-party packages (NuGet / pnpm) | Supply-chain compromise              | Pinned lockfiles; keep dependencies patched (see §7).                                                                                                                                                                                                                                                                              |
+| Secrets in source/containers        | Leakage of keys/connection strings   | Use `.env` / Aspire secrets (`.env.example` is the template); **never commit real secrets**. `.gitignore` excludes env files.                                                                                                                                                                                                      |
 
 ---
 
@@ -250,7 +253,7 @@ These are not yet fully addressed and are worth tracking:
 3. **Run Compose outside Development.** Today Compose needs Development for startup migrations;
    it also exposes OpenAPI and Scalar.
 4. **Partition the login rate limiter** per client instead of one window shared by everyone.
-5. **Bind or drop the Compose infrastructure ports** (PostgreSQL, Redis, Azurite, Ollama) so they
+5. **Bind or drop the Compose infrastructure ports** (PostgreSQL, Redis, Azurite; the inference ports are already bound to `127.0.0.1`) so they
    are not reachable from other machines.
 6. **Per-module database roles** with grants on their own schema, and a non-superuser login.
 7. **Persist and protect the Data Protection key ring** (today framework defaults: recreating the

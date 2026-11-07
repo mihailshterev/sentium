@@ -1,19 +1,15 @@
 namespace Sentium.Core.Constants;
 
+/// <summary>
+/// Model ids served by the inference servers. Chat model ids are the section names of the router presets
+/// in <c>infra/llm/models.ini</c>; the files behind them are pinned in <c>infra/llm/models.lock</c>.
+/// </summary>
 public static class AIModels
 {
-    public const string Gemma3_1B = "gemma3:1b";
-    public const string Gemma4_E2B = "gemma4:e2b";
-    public const string Gemma4_E4B = "gemma4:e4b";
-    public const string Gemma4_12B = "gemma4:12b";
+    public const string Gemma4_E4B = "gemma-4-e4b";
 
-    public const string Qwen3_4B = "qwen3:4b";
-    public const string Qwen3_8B = "qwen3:8b";
-    public const string Qwen3_8B_Q4KM = "qwen3:8b-q4_K_M";
-    public const string Qwen3_5_9B_Q4KM = "qwen3.5:9b-q4_K_M";
-
-    // Embedding model for the RAG pipeline.
+    // Embedding model for the RAG pipeline, served by its own llama-server instance.
     // Produces 768-dimensional vectors - must match CodexDbContext.EmbeddingDimensions (vector(768) column).
-    public const string NomicEmbedText = "nomic-embed-text";
-    public const string EmbeddingGemma2_740M = "embeddinggemma-2:740m";
+    // Codex re-embeds stored chunks automatically when this id changes.
+    public const string EmbeddingGemma2 = "embeddinggemma-2";
 }

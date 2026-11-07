@@ -1,18 +1,24 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, ChevronDown } from "lucide-react";
-import styles from "./model-selector.module.scss";
+import { Input, Select } from "@/shared/ui/form-controls";
+import styles from "./model-selector.module.css";
 
 interface ModelSelectorProps {
   id?: string;
-  className: string;
+  className?: string;
   models: string[];
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
   disabled?: boolean;
+  /** `field`: a form control. `chip`: a compact pill with a dropdown, for toolbars. */
   variant?: "field" | "chip";
 }
 
+/**
+ * Model picker. Falls back to free text when no models are known (e.g. the inference server is unreachable),
+ * so a model name can always be entered.
+ */
 export function ModelSelector({
   id,
   className,
@@ -25,78 +31,70 @@ export function ModelSelector({
 }: ModelSelectorProps) {
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const sorted = [...models].sort((a, b) => a.localeCompare(b));
 
   useEffect(() => {
     if (!open) {
       return;
     }
-    const handler = (e: MouseEvent) => {
+    const onPointer = (e: MouseEvent) => {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
         setOpen(false);
       }
     };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("mousedown", onPointer);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onPointer);
+      document.removeEventListener("keydown", onKey);
+    };
   }, [open]);
 
-  if (variant === "field") {
-    if (models.length > 0) {
-      return (
-        <select
-          id={id}
-          className={className}
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          disabled={disabled}
-        >
-          {[...models]
-            .sort((a, b) => a.localeCompare(b))
-            .map((m) => (
-              <option key={m} value={m}>
-                {m}
-              </option>
-            ))}
-        </select>
-      );
-    }
+  const freeText = (inputClassName?: string) => (
+    <Input
+      id={id}
+      className={inputClassName}
+      controlSize={variant === "chip" ? "sm" : "md"}
+      type="text"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder ?? "e.g. gemma-4-e4b"}
+      autoComplete="off"
+      spellCheck={false}
+      disabled={disabled}
+    />
+  );
 
+  if (variant === "field") {
+    if (models.length === 0) {
+      return freeText(className);
+    }
     return (
-      <input
+      <Select
         id={id}
         className={className}
-        type="text"
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder ?? "e.g. gemma3:1b"}
-        autoComplete="off"
-        spellCheck={false}
         disabled={disabled}
-      />
+      >
+        {sorted.map((m) => (
+          <option key={m} value={m}>
+            {m}
+          </option>
+        ))}
+      </Select>
     );
   }
 
-  const sorted = [...models].sort((a, b) => a.localeCompare(b));
-
   if (models.length === 0) {
     return (
-      <div className={`${styles.wrapper} ${className}`}>
-        <input
-          id={id}
-          className={styles.textInput}
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={placeholder ?? "e.g. gemma3:1b"}
-          autoComplete="off"
-          spellCheck={false}
-          disabled={disabled}
-        />
-      </div>
+      <div className={[styles.wrapper, className ?? ""].filter(Boolean).join(" ")}>{freeText(styles.chipInput)}</div>
     );
   }
 
   return (
-    <div ref={wrapperRef} className={`${styles.wrapper} ${className}`}>
+    <div ref={wrapperRef} className={[styles.wrapper, className ?? ""].filter(Boolean).join(" ")}>
       <button
         id={id}
         type="button"
@@ -104,15 +102,16 @@ export function ModelSelector({
         onClick={() => setOpen((v) => !v)}
         onMouseDown={(e) => e.preventDefault()}
         disabled={disabled}
+        aria-haspopup="listbox"
+        aria-expanded={open}
       >
         {value ? (
           <span className={styles.triggerLabel}>{value}</span>
         ) : (
           <span className={styles.triggerPlaceholder}>{placeholder ?? "Select model"}</span>
         )}
-        <ChevronDown size={10} className={`${styles.chevron} ${open ? styles.chevronOpen : ""}`} />
+        <ChevronDown size={13} className={`${styles.chevron} ${open ? styles.chevronOpen : ""}`} aria-hidden="true" />
       </button>
-
       {open && (
         <div className={styles.menu}>
           {sorted.map((m) => (
@@ -126,9 +125,7 @@ export function ModelSelector({
                 setOpen(false);
               }}
             >
-              <span className={m === value ? styles.checkVisible : styles.checkHidden}>
-                <Check size={10} />
-              </span>
+              <Check size={13} className={m === value ? styles.check : styles.checkHidden} aria-hidden="true" />
               <span>{m}</span>
             </button>
           ))}

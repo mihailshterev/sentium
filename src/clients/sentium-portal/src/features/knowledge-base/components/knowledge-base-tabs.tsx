@@ -1,11 +1,17 @@
 import { useState } from "react";
-import { Bot, BrainCircuit, Database, FlaskConical, Loader, RefreshCw, Trash2, X } from "lucide-react";
-import styles from "../knowledge-base.module.scss";
+import { Bot, BrainCircuit, Database, FlaskConical, RefreshCw, Trash2 } from "lucide-react";
+import styles from "../knowledge-base.module.css";
 import { useAgentLearnings } from "@/features/knowledge-base/hooks/useAgentLearnings";
 import { useKnowledgeBaseStats } from "@/features/knowledge-base/hooks/useKnowledgeBaseStats";
+import { Badge } from "@/shared/ui/badge";
+import { Button } from "@/shared/ui/button";
+import { Card, CardHeader } from "@/shared/ui/card";
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
 import { EmptyState } from "@/shared/ui/empty-state";
+import { Select } from "@/shared/ui/form-controls";
 import { LoadMore } from "@/shared/ui/load-more";
+import { SkeletonText } from "@/shared/ui/skeleton";
+import { StatusMessage } from "@/shared/ui/status-message";
 import { LearningCard } from "./learning-card";
 
 const formatDate = (iso: string) => {
@@ -17,6 +23,15 @@ const formatDate = (iso: string) => {
   );
 };
 
+function Metric({ value, label, accent = false }: { value: React.ReactNode; label: string; accent?: boolean }) {
+  return (
+    <div className={styles.metric}>
+      <span className={`${styles.metricValue} ${accent ? styles.metricAccent : ""}`}>{value}</span>
+      <span className={styles.metricLabel}>{label}</span>
+    </div>
+  );
+}
+
 export const GlobalContextTab = () => {
   const { collections, isLoading, error, refetch, deleteCollection, isDeleting } = useKnowledgeBaseStats();
   const { stats, isStatsLoading } = useAgentLearnings();
@@ -26,92 +41,81 @@ export const GlobalContextTab = () => {
 
   return (
     <>
-      <div className={styles.card}>
-        <div className={styles.cardHeader}>
-          <div className={styles.cardHeaderLeft}>
-            <FlaskConical size={15} className={styles.cardIconCyan} />
-            <div>
-              <p className={styles.cardTitle}>Knowledge Base Overview</p>
-              <p className={styles.cardSubtitle}>Live statistics from the vector store</p>
-            </div>
-          </div>
-          <button className={styles.btnRefresh} onClick={() => void refetch()} disabled={isLoading}>
-            <RefreshCw size={13} />
-            Refresh
-          </button>
-        </div>
+      <Card padding="none" as="section">
+        <CardHeader
+          icon={<FlaskConical />}
+          title="Knowledge Base Overview"
+          description="Live statistics from the vector store"
+          actions={
+            <Button
+              variant="secondary"
+              size="sm"
+              icon={<RefreshCw size={14} className={isLoading ? "animate-spin" : undefined} />}
+              onClick={() => void refetch()}
+              disabled={isLoading}
+            >
+              Refresh
+            </Button>
+          }
+        />
 
         <div className={styles.cardBody}>
           {isLoading && (
-            <p className={styles.loadingText}>
-              <Loader size={14} className="animate-spin" />
-              Querying vector store…
-            </p>
-          )}
-
-          {error && (
-            <div className={styles.alertError}>
-              <X size={14} />
-              {error.message}
+            <div aria-busy="true">
+              <span className="visually-hidden">Querying vector store…</span>
+              <SkeletonText lines={3} />
             </div>
           )}
 
+          {error && <StatusMessage variant="error" message={error.message} />}
+
           {!isLoading && !error && (
             <>
-              <div className={styles.statsGrid}>
-                <div className={styles.statCard}>
-                  <span className={styles.statValue}>{collections.length}</span>
-                  <span className={styles.statLabel}>Collections</span>
-                </div>
-                <div className={styles.statCard}>
-                  <span className={styles.statValue}>{totalVectors.toLocaleString()}</span>
-                  <span className={styles.statLabel}>Total Vectors</span>
-                </div>
+              <div className={styles.metrics}>
+                <Metric value={collections.length} label="Collections" />
+                <Metric value={totalVectors.toLocaleString()} label="Total Vectors" />
                 {!isStatsLoading && stats && (
                   <>
-                    <div className={styles.statCard}>
-                      <span className={styles.statValue}>{stats.totalLearnings}</span>
-                      <span className={styles.statLabel}>Agent Learnings</span>
-                    </div>
-                    <div className={styles.statCard}>
-                      <span className={`${styles.statValue} ${styles.statValueCyan}`}>{stats.globalLearnings}</span>
-                      <span className={styles.statLabel}>Global (Shared)</span>
-                    </div>
-                    <div className={styles.statCard}>
-                      <span className={styles.statValue}>{stats.pendingIngestion}</span>
-                      <span className={styles.statLabel}>Pending Ingestion</span>
-                    </div>
+                    <Metric value={stats.totalLearnings} label="Agent Learnings" />
+                    <Metric value={stats.globalLearnings} label="Global (Shared)" accent />
+                    <Metric value={stats.pendingIngestion} label="Pending Ingestion" />
                   </>
                 )}
               </div>
 
               {collections.length > 0 ? (
-                <div className={styles.collectionList}>
+                <ul className={styles.collectionList}>
                   {collections.map((c) => (
-                    <div key={c.collectionName} className={styles.collectionRow}>
+                    <li key={c.collectionName} className={styles.collectionRow}>
+                      <span className={styles.collectionIcon} aria-hidden="true">
+                        <Database size={15} />
+                      </span>
                       <span className={styles.collectionName}>{c.collectionName}</span>
-                      <div className={styles.collectionMeta}>
+                      <span className={styles.collectionMeta}>
                         <span className={styles.metaChip}>{c.pointCount.toLocaleString()} vectors</span>
                         <span className={styles.metaChip}>{c.vectorSize}‑dim</span>
                         <span className={styles.metaChip}>{c.distanceMetric}</span>
-                        <span className={c.pointCount > 0 ? styles.pillGreen : styles.pillAmber}>
-                          {c.pointCount > 0 ? "Active" : "Empty"}
-                        </span>
-                        <button
-                          className={styles.deleteBtn}
-                          onClick={() => setPendingDelete(c.collectionName)}
-                          disabled={isDeleting}
-                          title="Delete Collection"
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    </div>
+                      </span>
+                      <Badge tone={c.pointCount > 0 ? "success" : "warning"}>
+                        {c.pointCount > 0 ? "Active" : "Empty"}
+                      </Badge>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        iconOnly
+                        icon={<Trash2 size={15} />}
+                        onClick={() => setPendingDelete(c.collectionName)}
+                        disabled={isDeleting}
+                        title="Delete Collection"
+                        className={styles.deleteButton}
+                      />
+                    </li>
                   ))}
-                </div>
+                </ul>
               ) : (
                 <EmptyState
-                  icon={<Database size={32} />}
+                  compact
+                  icon={<Database />}
                   title="No collections found"
                   hint="Collections are created automatically when documents are first ingested."
                 />
@@ -119,7 +123,7 @@ export const GlobalContextTab = () => {
             </>
           )}
         </div>
-      </div>
+      </Card>
 
       {pendingDelete && (
         <ConfirmDialog
@@ -137,27 +141,16 @@ export const GlobalContextTab = () => {
       )}
 
       {!isStatsLoading && stats && Object.keys(stats.learningsByAgent).length > 0 && (
-        <div className={styles.card}>
-          <div className={styles.cardHeader}>
-            <div className={styles.cardHeaderLeft}>
-              <Bot size={15} className={styles.cardIconGreen} />
-              <div>
-                <p className={styles.cardTitle}>Learnings by Agent</p>
-                <p className={styles.cardSubtitle}>Insights captured per agent role</p>
-              </div>
-            </div>
-          </div>
+        <Card padding="none" as="section">
+          <CardHeader icon={<Bot />} title="Learnings by Agent" description="Insights captured per agent role" />
           <div className={styles.cardBody}>
-            <div className={styles.statsGrid}>
+            <div className={styles.metrics}>
               {Object.entries(stats.learningsByAgent).map(([agent, count]) => (
-                <div key={agent} className={styles.statCard}>
-                  <span className={styles.statValue}>{count}</span>
-                  <span className={styles.statLabel}>{agent}</span>
-                </div>
+                <Metric key={agent} value={count} label={agent} />
               ))}
             </div>
           </div>
-        </div>
+        </Card>
       )}
     </>
   );
@@ -186,78 +179,80 @@ export const AgentLearningsTab = () => {
     scopeFilter === "all" ? learnings : learnings.filter((l) => (scopeFilter === "global" ? l.isGlobal : !l.isGlobal));
 
   return (
-    <div className={styles.card}>
-      <div className={styles.cardHeader}>
-        <div className={styles.cardHeaderLeft}>
-          <BrainCircuit size={15} className={styles.cardIconPurple} />
-          <div>
-            <p className={styles.cardTitle}>Captured Learnings</p>
-            <p className={styles.cardSubtitle}>Knowledge captured by agents during interactions</p>
-          </div>
-        </div>
-        {stats && <span className={styles.pillPurple}>{stats.totalLearnings} total</span>}
+    <Card padding="none" as="section">
+      <CardHeader
+        icon={<BrainCircuit />}
+        title="Captured Learnings"
+        description="Knowledge captured by agents during interactions"
+        actions={stats && <Badge tone="neutral">{stats.totalLearnings} total</Badge>}
+      />
+
+      <div className={styles.filters}>
+        <Select
+          aria-label="Filter by agent"
+          controlSize="sm"
+          value={agentFilter}
+          onChange={(e) => setAgentFilter(e.target.value)}
+          wrapperClassName={styles.filter}
+        >
+          <option value="">All agents</option>
+          {agentNames.map((name) => (
+            <option key={name} value={name}>
+              {name} ({stats?.learningsByAgent[name] ?? 0})
+            </option>
+          ))}
+        </Select>
+        <Select
+          aria-label="Filter by scope"
+          controlSize="sm"
+          value={scopeFilter}
+          onChange={(e) => setScopeFilter(e.target.value as "all" | "global" | "private")}
+          wrapperClassName={styles.filter}
+        >
+          <option value="all">All scopes</option>
+          <option value="global">Global only</option>
+          <option value="private">Private only</option>
+        </Select>
       </div>
 
-      <div className={styles.cardBody}>
-        <div className={styles.filterRow}>
-          <select className={styles.filterSelect} value={agentFilter} onChange={(e) => setAgentFilter(e.target.value)}>
-            <option value="">All agents</option>
-            {agentNames.map((name) => (
-              <option key={name} value={name}>
-                {name} ({stats?.learningsByAgent[name] ?? 0})
-              </option>
-            ))}
-          </select>
-          <select
-            className={styles.filterSelect}
-            value={scopeFilter}
-            onChange={(e) => setScopeFilter(e.target.value as "all" | "global" | "private")}
-          >
-            <option value="all">All scopes</option>
-            <option value="global">Global only</option>
-            <option value="private">Private only</option>
-          </select>
+      {isLoading && (
+        <div className={styles.cardBody} aria-busy="true">
+          <span className="visually-hidden">Loading learnings…</span>
+          <SkeletonText lines={4} />
         </div>
+      )}
 
-        {isLoading && (
-          <p className={styles.loadingText}>
-            <Loader size={14} className="animate-spin" />
-            Loading learnings…
-          </p>
-        )}
+      {!isLoading && filteredLearnings.length === 0 && (
+        <EmptyState
+          icon={<BrainCircuit />}
+          title={scopeFilter !== "all" ? `No ${scopeFilter} learnings` : "No learnings captured yet"}
+          hint={
+            scopeFilter === "global"
+              ? "Agents promote learnings to global only after validation. Captured patterns will appear here once approved."
+              : scopeFilter === "private"
+                ? "No private learnings for this filter. Private learnings are scoped to your agents only."
+                : "Agents automatically capture learnings during analyses and store them in the vector knowledge base."
+          }
+        />
+      )}
 
-        {!isLoading && filteredLearnings.length === 0 && (
-          <EmptyState
-            icon={<BrainCircuit size={32} />}
-            title={scopeFilter !== "all" ? `No ${scopeFilter} learnings` : "No learnings captured yet"}
-            hint={
-              scopeFilter === "global"
-                ? "Agents promote learnings to global only after validation. Captured patterns will appear here once approved."
-                : scopeFilter === "private"
-                  ? "No private learnings for this filter. Private learnings are scoped to your agents only."
-                  : "Agents automatically capture learnings during analyses and store them in the vector knowledge base."
-            }
-          />
-        )}
+      {!isLoading && filteredLearnings.length > 0 && (
+        <ul className={styles.learningList}>
+          {filteredLearnings.map((l) => (
+            <LearningCard
+              key={l.id}
+              learning={l}
+              isSaving={isUpdating && updatingId === l.id}
+              isDeleting={isDeleting}
+              onSave={(content, tags) => updateLearning({ id: l.id, content, tags })}
+              onDelete={() => deleteLearning(l.id)}
+              formatDate={formatDate}
+            />
+          ))}
+        </ul>
+      )}
 
-        {!isLoading && filteredLearnings.length > 0 && (
-          <div className={styles.learningList}>
-            {filteredLearnings.map((l) => (
-              <LearningCard
-                key={l.id}
-                learning={l}
-                isSaving={isUpdating && updatingId === l.id}
-                isDeleting={isDeleting}
-                onSave={(content, tags) => updateLearning({ id: l.id, content, tags })}
-                onDelete={() => deleteLearning(l.id)}
-                formatDate={formatDate}
-              />
-            ))}
-          </div>
-        )}
-
-        <LoadMore hasMore={hasMore} isLoading={isLoadingMore} onLoadMore={loadMore} />
-      </div>
-    </div>
+      <LoadMore hasMore={hasMore} isLoading={isLoadingMore} onLoadMore={loadMore} />
+    </Card>
   );
 };

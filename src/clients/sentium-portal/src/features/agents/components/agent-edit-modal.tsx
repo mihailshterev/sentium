@@ -1,9 +1,12 @@
-import { useForm, Controller } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { X, Loader, CheckCircle, Cpu } from "lucide-react";
-import styles from "../agents.module.scss";
-import { ModelSelector } from "@/shared/ui/model-selector";
+import { CheckCircle, Pencil } from "lucide-react";
+import styles from "../agents.module.css";
+import { Button } from "@/shared/ui/button";
+import { Dialog } from "@/shared/ui/dialog";
+import { Input, Textarea } from "@/shared/ui/form-controls";
 import { FormField } from "@/shared/ui/form-field";
+import { ModelSelector } from "@/shared/ui/model-selector";
 import { StatusMessage } from "@/shared/ui/status-message";
 import type { AgentRecord } from "@/features/agents/types/agents";
 import { agentCreateSchema, type AgentCreateFormData } from "../schemas/agent.create";
@@ -52,86 +55,66 @@ export function AgentEditModal({
   };
 
   return (
-    <div className={styles.modalOverlay} onClick={onClose}>
-      <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-        <div className={styles.modalHeader}>
-          <span>Edit Agent</span>
-          <button className={styles.modalClose} onClick={onClose}>
-            <X size={14} />
-          </button>
-        </div>
-        <form onSubmit={handleSubmit(handleFormSubmit)} className={styles.createForm}>
-          <FormField id="edit-name" label="Agent Name">
-            <input
-              id="edit-name"
-              className={styles.fieldInput}
-              type="text"
-              autoComplete="off"
-              spellCheck={false}
-              {...register("name")}
-            />
-          </FormField>
+    <Dialog
+      open
+      onClose={onClose}
+      title="Edit Agent"
+      description="Update the name, role description or model."
+      icon={<Pencil />}
+    >
+      <form onSubmit={handleSubmit(handleFormSubmit)} className={styles.form}>
+        <FormField id="edit-name" label="Agent Name">
+          <Input
+            id="edit-name"
+            type="text"
+            autoComplete="off"
+            spellCheck={false}
+            invalid={!!errors.name}
+            {...register("name")}
+          />
+        </FormField>
 
-          <FormField
-            id="edit-description"
-            label="Description"
-            charCount={{ current: descriptionValue.length, max: 1000 }}
-          >
-            <textarea
-              id="edit-description"
-              className={`${styles.fieldInput} ${styles.fieldTextarea}`}
-              rows={4}
-              spellCheck={false}
-              {...register("description")}
-            />
-          </FormField>
+        <FormField
+          id="edit-description"
+          label="Description"
+          charCount={{ current: descriptionValue.length, max: 1000 }}
+        >
+          <Textarea id="edit-description" rows={4} spellCheck={false} {...register("description")} />
+        </FormField>
 
-          <FormField
-            id="edit-model"
-            label={
-              <>
-                <Cpu size={12} /> Model
-              </>
-            }
-          >
-            <Controller
-              name="model"
-              control={control}
-              render={({ field }) => (
-                <ModelSelector
-                  id="edit-model"
-                  className={styles.fieldInput}
-                  models={models}
-                  value={field.value}
-                  onChange={field.onChange}
-                  placeholder="e.g. gemma3:1b"
-                />
-              )}
-            />
-          </FormField>
-
-          <button
-            className={`${styles.submitBtn} ${isUpdatingAgent ? styles.submitting : ""}`}
-            type="submit"
-            disabled={isUpdatingAgent}
-          >
-            {isUpdatingAgent ? (
-              <>
-                <Loader size={14} className={styles.spinIcon} /> Saving...
-              </>
-            ) : isUpdateSuccess ? (
-              <>
-                <CheckCircle size={14} /> Saved
-              </>
-            ) : (
-              "Save Changes"
+        <FormField id="edit-model" label="Model">
+          <Controller
+            name="model"
+            control={control}
+            render={({ field }) => (
+              <ModelSelector
+                id="edit-model"
+                models={models}
+                value={field.value}
+                onChange={field.onChange}
+                placeholder="e.g. gemma-4-e4b"
+              />
             )}
-          </button>
+          />
+        </FormField>
 
-          {errors.name && <StatusMessage variant="error" message={errors.name.message ?? "Invalid name"} />}
-          {isUpdateError && <StatusMessage variant="error" message={updateAgentError?.message ?? "Unknown error"} />}
-        </form>
-      </div>
-    </div>
+        {errors.name && <StatusMessage variant="error" message={errors.name.message ?? "Invalid name"} />}
+        {isUpdateError && <StatusMessage variant="error" message={updateAgentError?.message ?? "Unknown error"} />}
+
+        <div className={styles.dialogActions}>
+          <Button variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            variant="primary"
+            loading={isUpdatingAgent}
+            icon={isUpdateSuccess ? <CheckCircle size={16} /> : undefined}
+          >
+            {isUpdatingAgent ? "Saving..." : isUpdateSuccess ? "Saved" : "Save Changes"}
+          </Button>
+        </div>
+      </form>
+    </Dialog>
   );
 }

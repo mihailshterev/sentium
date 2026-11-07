@@ -2,6 +2,7 @@ using System.Reflection;
 using Sentium.Codex;
 using Sentium.Identity;
 using Sentium.Infrastructure.Extensions;
+using Sentium.Locus;
 using Sentium.Praxis;
 using Sentium.Registry;
 using Sentium.Sentinel;
@@ -21,6 +22,7 @@ internal static class SentiumModules
         typeof(RegistryModuleExtensions).Assembly,
         typeof(SentinelModuleExtensions).Assembly,
         typeof(CodexModuleExtensions).Assembly,
+        typeof(LocusModuleExtensions).Assembly,
         typeof(PraxisModuleExtensions).Assembly,
         typeof(VigilModuleExtensions).Assembly,
     ];
@@ -33,6 +35,7 @@ internal static class SentiumModules
         builder.AddRegistryModule();
         builder.AddSentinelModule();
         builder.AddCodexModule();
+        builder.AddLocusModule();
         builder.AddPraxisModule();
         builder.AddVigilModule();
 
@@ -71,6 +74,7 @@ internal static class SentiumModules
         await app.InitializeRegistryModuleAsync();
         await app.InitializeSentinelModuleAsync();
         await app.InitializeCodexModuleAsync();
+        await app.InitializeLocusModuleAsync();
         await app.InitializePraxisModuleAsync();
 
         logger.LogInformation("Sentium modules initialized");

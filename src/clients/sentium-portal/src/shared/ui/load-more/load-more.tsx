@@ -1,5 +1,5 @@
-import { Loader2 } from "lucide-react";
-import styles from "./load-more.module.scss";
+import { Button } from "@/shared/ui/button";
+import styles from "./load-more.module.css";
 
 interface LoadMoreProps {
   hasMore: boolean;
@@ -14,16 +14,9 @@ export function LoadMore({ hasMore, isLoading, onLoadMore }: LoadMoreProps) {
 
   return (
     <div className={styles.wrap}>
-      <button className={styles.btn} onClick={onLoadMore} disabled={isLoading}>
-        {isLoading ? (
-          <>
-            <Loader2 size={13} className={styles.spinner} />
-            Loading…
-          </>
-        ) : (
-          "Load more"
-        )}
-      </button>
+      <Button variant="secondary" size="sm" onClick={onLoadMore} loading={isLoading}>
+        {isLoading ? "Loading…" : "Load more"}
+      </Button>
     </div>
   );
 }

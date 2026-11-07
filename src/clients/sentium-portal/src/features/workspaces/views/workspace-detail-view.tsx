@@ -1,24 +1,22 @@
-import { useRef, useState, useCallback } from "react";
+import { useCallback, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router";
-import {
-  ArrowLeft,
-  FolderOpen,
-  FileText,
-  Trash2,
-  Pencil,
-  Loader2,
-  UploadCloud,
-  CheckCircle,
-  AlertCircle,
-} from "lucide-react";
-import styles from "../workspaces.module.scss";
+import { ArrowLeft, FileText, FolderOpen, Pencil, Trash2 } from "lucide-react";
+import styles from "../workspaces.module.css";
 import { useWorkspaces } from "@/features/workspaces/hooks/useWorkspaces";
 import { useWorkspaceFiles } from "@/features/workspaces/hooks/useWorkspaceFiles";
 import type { WorkspaceFile } from "@/features/workspaces/types/workspace";
-import { PageHeader } from "@/shared/ui/page-header";
-import { WorkspaceForm } from "../components/workspace-form";
+import { Badge } from "@/shared/ui/badge";
+import { Button } from "@/shared/ui/button";
+import { Card, CardHeader } from "@/shared/ui/card";
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
+import { EmptyState } from "@/shared/ui/empty-state";
+import { Page } from "@/shared/ui/page";
+import { SkeletonText } from "@/shared/ui/skeleton";
+import { StatusMessage } from "@/shared/ui/status-message";
 import { formatBytesToMb, formatDateTimeShort } from "@/shared/utils/formatters";
+import { FileStatusBadge } from "../components/file-status-badge";
+import { UploadPanel } from "../components/upload-panel";
+import { WorkspaceForm } from "../components/workspace-form";
 
 const ALLOWED_EXTENSIONS = [
   ".txt",
@@ -49,19 +47,6 @@ const ALLOWED_EXTENSIONS = [
   ".cfg",
 ];
 
-const statusBadgeClass = (status: WorkspaceFile["processingStatus"]) => {
-  switch (status) {
-    case "Pending":
-      return styles.pending;
-    case "Processing":
-      return styles.processing;
-    case "Completed":
-      return styles.completed;
-    case "Failed":
-      return styles.failed;
-  }
-};
-
 export function WorkspaceDetailView() {
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const navigate = useNavigate();
@@ -71,8 +56,7 @@ export function WorkspaceDetailView() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [fileTypeError, setFileTypeError] = useState<string | null>(null);
   const [showEditForm, setShowEditForm] = useState(false);
-  const [pendingDeleteFileId, setPendingDeleteFileId] = useState<string | null>(null);
-  const [pendingDeleteFileName, setPendingDeleteFileName] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
 
   const { workspaces, updateWorkspace, isUpdatingWorkspace } = useWorkspaces();
   const workspace = workspaces.find((w) => w.id === workspaceId) ?? null;
@@ -106,31 +90,22 @@ export function WorkspaceDetailView() {
     e.preventDefault();
     setDragActive(false);
     const file = e.dataTransfer.files[0];
-    if (file) validateAndSelect(file);
+    if (file) {
+      validateAndSelect(file);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragActive(true);
-  };
-  const handleDragLeave = () => setDragActive(false);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) validateAndSelect(file);
-    e.target.value = "";
-  };
-
   const handleUploadSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedFile && workspaceId)
+    if (selectedFile && workspaceId) {
       uploadFile(selectedFile, {
         onSuccess: () => {
           setSelectedFile(null);
           setTimeout(() => resetUpload(), 4000);
         },
       });
+    }
   };
 
   if (!workspaceId) {
@@ -139,157 +114,97 @@ export function WorkspaceDetailView() {
   }
 
   return (
-    <div className={styles.detailRoot}>
-      <div className={styles.pipelineBg} aria-hidden="true">
-        <div className={styles.bgGrid} />
-        <div className={styles.bgOrb1} />
-        <div className={styles.bgOrb2} />
-        <div className={styles.bgOrb3} />
-      </div>
-
-      <PageHeader
-        icon={
-          <button className={styles.backBtn} onClick={() => navigate("/workspaces")} title="Back to workspaces">
-            <ArrowLeft size={15} />
-          </button>
-        }
-        title={workspace?.name ?? "Workspace"}
-        subtitle={workspace?.description ?? "Loading workspace…"}
-        right={
-          workspace ? (
-            <div className={styles.headerRight}>
-              <span className={styles.wsIdBadge} title={workspace.id}>
-                ID: {workspace.id.slice(0, 8)}…
-              </span>
-              <button className={styles.detailEditBtn} onClick={() => setShowEditForm(true)}>
-                <Pencil size={13} />
-                Edit
-              </button>
-            </div>
-          ) : undefined
-        }
-      />
-
-      <div className={styles.detailBody}>
-        <div className={styles.fileTreePanel}>
-          <div className={styles.fileTreeHeader}>
-            <div className={styles.fileTreeHeaderLeft}>
-              <div className={styles.fileTreeRoot}>
-                <FolderOpen size={16} className={styles.fileTreeRootIcon} />
-                <span>{workspace?.name ?? "…"}/</span>
-              </div>
-              {files.length > 0 && (
-                <span className={styles.fileCountPill}>
+    <Page
+      title={workspace?.name ?? "Workspace"}
+      subtitle={workspace?.description ?? "Loading workspace…"}
+      width="wide"
+      leading={
+        <Button
+          variant="secondary"
+          size="sm"
+          iconOnly
+          icon={<ArrowLeft size={16} />}
+          onClick={() => navigate("/workspaces")}
+          title="Back to workspaces"
+        />
+      }
+      actions={
+        workspace ? (
+          <>
+            <Badge tone="neutral" title={workspace.id} className={styles.idBadge}>
+              ID: {workspace.id.slice(0, 8)}…
+            </Badge>
+            <Button variant="secondary" icon={<Pencil size={15} />} onClick={() => setShowEditForm(true)}>
+              Edit
+            </Button>
+          </>
+        ) : undefined
+      }
+    >
+      <div className={styles.detailLayout}>
+        <Card padding="none" as="section">
+          <CardHeader
+            icon={<FolderOpen />}
+            title={`${workspace?.name ?? "…"}/`}
+            actions={
+              files.length > 0 && (
+                <Badge tone="neutral">
                   {files.length} file{files.length !== 1 ? "s" : ""}
-                </span>
-              )}
-            </div>
-          </div>
-
-          <div className={styles.fileTreeScroll}>
-            {isFilesLoading && (
-              <div className={styles.fileTreeEmpty}>
-                <Loader2 size={22} className={styles.spin} />
-              </div>
-            )}
-            {isFilesError && <p className={styles.fileTreeError}>Failed to load files.</p>}
-
-            {!isFilesLoading && !isFilesError && files.length === 0 && (
-              <div className={styles.fileTreeEmpty}>
-                <FileText size={32} className={styles.fileTreeEmptyIcon} />
-                <p>No files yet</p>
-                <span style={{ fontSize: "0.72rem", color: "var(--text-dim)" }}>
-                  Upload a file using the panel on the right
-                </span>
-              </div>
-            )}
-
-            {files.length > 0 && (
-              <div className={styles.fileTreeBranch}>
-                {files.map((f) => (
-                  <FileTreeItem
-                    key={f.id}
-                    file={f}
-                    onDelete={(id, name) => {
-                      setPendingDeleteFileId(id);
-                      setPendingDeleteFileName(name);
-                    }}
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        <form className={styles.uploadPanel} onSubmit={handleUploadSubmit}>
-          <p className={styles.panelTitle}>Upload File</p>
-          <div
-            className={`${styles.uploadArea} ${dragActive ? styles.uploadAreaActive : ""}`}
-            onClick={() => fileInputRef.current?.click()}
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => e.key === "Enter" && fileInputRef.current?.click()}
-          >
-            <UploadCloud size={28} className={styles.uploadIcon} />
-            {selectedFile ? (
-              <>
-                <span className={styles.uploadText}>{selectedFile.name}</span>
-                <span className={styles.uploadHint}>{formatBytesToMb(selectedFile.size)}</span>
-              </>
-            ) : (
-              <>
-                <span className={styles.uploadText}>Drop a file or click to browse</span>
-                <span className={styles.uploadHint}>Text files up to 100 MB · .txt .md .json .csv .yaml .py .ts …</span>
-              </>
-            )}
-          </div>
-
-          <input
-            ref={fileInputRef}
-            type="file"
-            className={styles.fileInput}
-            onChange={handleInputChange}
-            accept={ALLOWED_EXTENSIONS.join(",")}
+                </Badge>
+              )
+            }
           />
 
-          {fileTypeError && (
-            <div className={`${styles.statusBox} ${styles["status-error"]}`}>
-              <AlertCircle size={14} className={styles.statusIcon} />
-              <span className={styles.statusMessage}>{fileTypeError}</span>
+          {isFilesLoading && (
+            <div className={styles.filesPadding} aria-busy="true">
+              <SkeletonText lines={3} />
+            </div>
+          )}
+          {isFilesError && (
+            <div className={styles.filesPadding}>
+              <StatusMessage variant="error" message="Failed to load files." />
             </div>
           )}
 
-          {isUploading && (
-            <div className={`${styles.statusBox} ${styles["status-loading"]}`}>
-              <Loader2 size={14} className={`${styles.statusIcon} ${styles.spin}`} />
-              <span className={styles.statusMessage}>Uploading…</span>
-            </div>
+          {!isFilesLoading && !isFilesError && files.length === 0 && (
+            <EmptyState icon={<FileText />} title="No files yet" hint="Upload a file using the panel on the right" />
           )}
 
-          {isUploadSuccess && (
-            <div className={`${styles.statusBox} ${styles["status-success"]}`}>
-              <CheckCircle size={14} className={styles.statusIcon} />
-              <span className={styles.statusMessage}>File uploaded — indexing in background.</span>
-            </div>
+          {files.length > 0 && (
+            <ul className={styles.fileList}>
+              {files.map((f) => (
+                <FileRow key={f.id} file={f} onDelete={(id, name) => setPendingDelete({ id, name })} />
+              ))}
+            </ul>
           )}
+        </Card>
 
-          {isUploadError && (
-            <div className={`${styles.statusBox} ${styles["status-error"]}`}>
-              <AlertCircle size={14} className={styles.statusIcon} />
-              <span className={styles.statusMessage}>
-                {uploadError instanceof Error ? uploadError.message : "Upload failed."}
-              </span>
-            </div>
-          )}
-
-          <button type="submit" className={styles.submitButton} disabled={!selectedFile || isUploading}>
-            {isUploading ? <Loader2 size={14} className={styles.spin} /> : <UploadCloud size={14} />}
-            Upload to {workspace?.name ?? "workspace"}
-          </button>
-        </form>
+        <UploadPanel
+          workspaceName={workspace?.name ?? "workspace"}
+          selectedFile={selectedFile}
+          dragActive={dragActive}
+          fileTypeError={fileTypeError}
+          isUploading={isUploading}
+          isUploadSuccess={isUploadSuccess}
+          isUploadError={isUploadError}
+          uploadError={uploadError}
+          acceptedExtensions={ALLOWED_EXTENSIONS.join(",")}
+          onDrop={handleDrop}
+          onDragOver={(e) => {
+            e.preventDefault();
+            setDragActive(true);
+          }}
+          onDragLeave={() => setDragActive(false)}
+          onInputChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+              validateAndSelect(file);
+            }
+            e.target.value = "";
+          }}
+          onSubmit={handleUploadSubmit}
+          fileInputRef={fileInputRef}
+        />
       </div>
 
       {showEditForm && workspace && (
@@ -299,7 +214,7 @@ export function WorkspaceDetailView() {
           isPending={isUpdatingWorkspace}
           onSubmit={(name, description) =>
             updateWorkspace(
-              { id: workspaceId!, name, description: description || undefined },
+              { id: workspaceId, name, description: description || undefined },
               { onSuccess: () => setShowEditForm(false) },
             )
           }
@@ -308,48 +223,41 @@ export function WorkspaceDetailView() {
       )}
 
       <ConfirmDialog
-        open={pendingDeleteFileId !== null}
+        open={pendingDelete !== null}
         variant="danger"
         title="Remove File"
-        description={`Permanently remove "${pendingDeleteFileName}"? Its contents will be removed from the indexed vector store.`}
+        description={`Permanently remove "${pendingDelete?.name}"? Its contents will be removed from the indexed vector store.`}
         confirmLabel="Remove file"
-        onConfirm={() =>
-          pendingDeleteFileId &&
-          deleteFile(pendingDeleteFileId, {
-            onSuccess: () => {
-              setPendingDeleteFileId(null);
-              setPendingDeleteFileName(null);
-            },
-          })
-        }
-        onCancel={() => {
-          setPendingDeleteFileId(null);
-          setPendingDeleteFileName(null);
-        }}
+        onConfirm={() => pendingDelete && deleteFile(pendingDelete.id, { onSuccess: () => setPendingDelete(null) })}
+        onCancel={() => setPendingDelete(null)}
       />
-    </div>
+    </Page>
   );
 }
 
-interface FileTreeItemProps {
+interface FileRowProps {
   file: WorkspaceFile;
   onDelete: (id: string, name: string) => void;
 }
 
-const FileTreeItem = ({ file, onDelete }: FileTreeItemProps) => (
-  <div className={styles.fileItem}>
-    <FileText size={13} className={styles.fileItemIcon} />
-    <div className={styles.fileItemInfo}>
-      <span className={styles.fileItemName}>{file.fileName}</span>
-      <span className={styles.fileItemMeta}>
+const FileRow = ({ file, onDelete }: FileRowProps) => (
+  <li className={styles.fileRow}>
+    <FileText size={16} className={styles.fileIcon} aria-hidden="true" />
+    <div className={styles.fileInfo}>
+      <span className={styles.fileName}>{file.fileName}</span>
+      <span className={styles.fileMeta}>
         {formatBytesToMb(file.sizeBytes)} · {formatDateTimeShort(file.createdAt)}
       </span>
     </div>
-    <span className={`${styles.fileItemBadge} ${statusBadgeClass(file.processingStatus)}`}>
-      {file.processingStatus}
-    </span>
-    <button className={styles.fileItemDeleteBtn} title="Remove file" onClick={() => onDelete(file.id, file.fileName)}>
-      <Trash2 size={12} />
-    </button>
-  </div>
+    <FileStatusBadge status={file.processingStatus} />
+    <Button
+      variant="ghost"
+      size="sm"
+      iconOnly
+      icon={<Trash2 size={15} />}
+      title="Remove file"
+      onClick={() => onDelete(file.id, file.fileName)}
+      className={styles.deleteButton}
+    />
+  </li>
 );

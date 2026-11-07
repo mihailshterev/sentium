@@ -9,10 +9,14 @@ namespace Sentium.Codex.Contracts;
 /// and register it with the DI container. The <see cref="IDocumentIngestionService"/> can then
 /// drive all registered sources via <c>IngestFromSourceAsync</c>.
 /// </para>
+/// <para>
+/// Modules that own their data and know when it changes (e.g. Locus) push content directly through
+/// <see cref="IDocumentIngestionService.IngestAsync"/> instead of implementing a pull source.
+/// </para>
 /// <example>
 /// <code>
-/// // In ServiceCollectionExtensions or a module registration:
-/// services.AddTransient&lt;IIngestionSource, InventoryIngestionSource&gt;();
+/// // In a module registration:
+/// services.AddTransient&lt;IIngestionSource, MyFeedIngestionSource&gt;();
 /// </code>
 /// </example>
 /// </summary>

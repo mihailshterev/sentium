@@ -1,11 +1,17 @@
-import { CalendarClock, RefreshCw, Trash2, Zap, Terminal, ChevronDown, ChevronUp, AlertTriangle } from "lucide-react";
-import { useState } from "react";
-import { useSchedulerJobs, useDeleteJobMutation } from "@/features/scheduler/hooks/useScheduler";
-import styles from "../scheduler.module.scss";
-import { PageHeader } from "@/shared/ui/page-header";
+import { Fragment, useState } from "react";
+import { CalendarClock, ChevronDown, Info, RefreshCw, Trash2, Zap } from "lucide-react";
+import { useDeleteJobMutation, useSchedulerJobs } from "@/features/scheduler/hooks/useScheduler";
+import styles from "../scheduler.module.css";
+import { Badge } from "@/shared/ui/badge";
+import { Button } from "@/shared/ui/button";
+import { Card, CardHeader } from "@/shared/ui/card";
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
+import { Page } from "@/shared/ui/page";
+import { StatCard, StatGrid } from "@/shared/ui/stat-card";
 
 type PendingDelete = { agentId: string; jobId: string } | null;
+
+const COLUMNS = 7;
 
 export function SchedulerView() {
   const { jobs, isLoading, refetch } = useSchedulerJobs();
@@ -15,13 +21,10 @@ export function SchedulerView() {
 
   const toggleRow = (id: string) => setExpandedId((prev) => (prev === id ? null : id));
 
-  const handleDeleteJob = (e: React.MouseEvent, agentId: string, jobId: string) => {
-    e.stopPropagation();
-    setPendingDelete({ agentId, jobId });
-  };
-
   const confirmDelete = async () => {
-    if (!pendingDelete) return;
+    if (!pendingDelete) {
+      return;
+    }
     setPendingDelete(null);
     try {
       await deleteMutation.mutateAsync(pendingDelete);
@@ -31,151 +34,144 @@ export function SchedulerView() {
   };
 
   return (
-    <div className={styles.root}>
-      <PageHeader
-        icon={<CalendarClock size={18} className={styles.titleIcon} />}
-        title="Automated Scheduler"
-        subtitle="Quartz Cluster Core Orchestration — background crons running in sandbox environments"
-        right={
-          <div className={styles.headerActions}>
-            <button className={styles.refreshBtn} onClick={() => refetch()} disabled={isLoading}>
-              <RefreshCw size={13} className={isLoading ? styles.spinning : undefined} />
-              Refresh Engine
-            </button>
-          </div>
-        }
-      />
+    <Page
+      title="Automated Scheduler"
+      subtitle="Recurring jobs that agents run in the sandbox"
+      actions={
+        <Button
+          variant="secondary"
+          icon={<RefreshCw size={15} className={isLoading ? "animate-spin" : undefined} />}
+          onClick={() => refetch()}
+          disabled={isLoading}
+        >
+          Refresh engine
+        </Button>
+      }
+    >
+      <StatGrid minCellWidth={220}>
+        <StatCard icon={<CalendarClock />} value={jobs.length} label="Active core loops" />
+        <StatCard
+          icon={<Zap />}
+          value={deleteMutation.isPending ? "Syncing..." : "Connected"}
+          label="Engine pipeline status"
+          iconColor="green"
+        />
+      </StatGrid>
 
-      <div className={styles.body}>
-        <div className={styles.statsRow}>
-          <div className={styles.statCard}>
-            <div className={`${styles.statIcon} ${styles.iconBlue}`}>
-              <CalendarClock size={16} />
-            </div>
-            <div>
-              <span className={styles.statValue}>{jobs.length}</span>
-              <span className={styles.statLabel}>Active Core Loops</span>
-            </div>
-          </div>
-          <div className={styles.statCard}>
-            <div className={`${styles.statIcon} ${styles.iconGreen}`}>
-              <Zap size={16} />
-            </div>
-            <div>
-              <span className={styles.statValue}>{deleteMutation.isPending ? "Syncing..." : "Connected"}</span>
-              <span className={styles.statLabel}>Engine Pipeline Status</span>
-            </div>
-          </div>
-        </div>
+      <Card padding="none" as="section">
+        <CardHeader
+          title="Scheduled jobs"
+          description={
+            <span className={styles.notice}>
+              <Info size={13} aria-hidden="true" />
+              Deleting a job removes it permanently. It will not run again.
+            </span>
+          }
+        />
 
-        <div className={styles.mainGrid}>
-          <div className={styles.schedulerPanel}>
-            <div className={styles.panelHeader}>
-              <div className={styles.panelTitle}>
-                <Terminal size={14} />
-                Active Core Threads
-              </div>
-              <span className={styles.liveTag}>POLLING NATIVE</span>
-            </div>
-
-            <div className={styles.tableHead}>
-              <span>Job Name</span>
-              <span>Agent ID</span>
-              <span>Language</span>
-              <span>CRON Expression</span>
-              <span>Next Execution</span>
-              <span>Status</span>
-              <span />
-            </div>
-
-            <div className={styles.tableBody}>
+        <div className="data-table-scroll">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Job name</th>
+                <th>Agent ID</th>
+                <th>Language</th>
+                <th>Schedule</th>
+                <th>Next run</th>
+                <th>Status</th>
+                <th aria-label="Actions" />
+              </tr>
+            </thead>
+            <tbody>
               {isLoading && jobs.length === 0 && (
-                <div className={styles.emptyState}>Reading task signatures out of live cluster memory...</div>
+                <tr>
+                  <td colSpan={COLUMNS} className={styles.emptyCell}>
+                    Reading task signatures…
+                  </td>
+                </tr>
               )}
 
               {!isLoading && jobs.length === 0 && (
-                <div className={styles.emptyState}>No automated cron jobs detected inside the engine runtime.</div>
+                <tr>
+                  <td colSpan={COLUMNS} className={styles.emptyCell}>
+                    No automated cron jobs detected.
+                  </td>
+                </tr>
               )}
 
               {jobs.map((job) => {
                 const isExpanded = expandedId === job.jobId;
                 return (
-                  <div key={job.jobId} className={styles.rowWrapper}>
-                    <div
-                      className={`${styles.tableRow} ${isExpanded ? styles.rowExpanded : ""}`}
+                  <Fragment key={job.jobId}>
+                    <tr
+                      className={styles.row}
+                      data-expanded={isExpanded || undefined}
                       onClick={() => toggleRow(job.jobId)}
+                      aria-expanded={isExpanded}
                     >
-                      <span className={styles.jobName}>{job.jobName}</span>
-                      <span className={styles.agentId}>{job.agentId}</span>
-                      <span className={styles.languageBadge}>{job.language}</span>
-                      <span className={styles.cronText}>
-                        <code>{job.cronExpression}</code>
-                      </span>
-                      <span className={styles.timeText}>{job.nextRun ?? "Never / Paused"}</span>
-                      <span>
-                        <span className={`${styles.statusBadge} ${styles.statusNormal}`}>{job.status}</span>
-                      </span>
-                      <div className={styles.actionsCell}>
-                        <button
-                          className={styles.deleteBtn}
+                      <td className={styles.jobName}>{job.jobName}</td>
+                      <td className={styles.mono}>{job.agentId}</td>
+                      <td>
+                        <Badge tone="neutral">{job.language}</Badge>
+                      </td>
+                      <td>
+                        <code className={styles.cron}>{job.cronExpression}</code>
+                      </td>
+                      <td>{job.nextRun ?? "Never / Paused"}</td>
+                      <td>
+                        <Badge tone="success" dot>
+                          {job.status}
+                        </Badge>
+                      </td>
+                      <td className={styles.actions}>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          iconOnly
+                          icon={<Trash2 size={15} />}
                           disabled={deleteMutation.isPending}
-                          onClick={(e) => handleDeleteJob(e, job.agentId, job.jobId)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPendingDelete({ agentId: job.agentId, jobId: job.jobId });
+                          }}
                           title="Terminate Scheduled Task"
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                        {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                      </div>
-                    </div>
+                          className={styles.deleteButton}
+                        />
+                        <ChevronDown size={15} className={isExpanded ? styles.chevronOpen : styles.chevron} />
+                      </td>
+                    </tr>
 
                     {isExpanded && (
-                      <div className={styles.jobDetail}>
-                        <div className={styles.detailGrid}>
-                          <div>
-                            <span className={styles.detailLabel}>Composite Job Key</span>
-                            <span className={`${styles.detailValue} ${styles.mono}`}>{job.jobId}</span>
-                          </div>
-                          <div>
-                            <span className={styles.detailLabel}>Last Checked Fire Time</span>
-                            <span className={styles.detailValue}>
-                              {job.previousRun ?? "No execution records logs saved yet."}
-                            </span>
-                          </div>
-                        </div>
-                        {job.codeSnippet && (
-                          <div>
-                            <span className={styles.detailLabel}>Target Isolated Executable Shell Payload</span>
-                            <pre className={styles.codeBlock}>
-                              <code>{job.codeSnippet}</code>
-                            </pre>
-                          </div>
-                        )}
-                      </div>
+                      <tr className={styles.detailRow}>
+                        <td colSpan={COLUMNS}>
+                          <dl className={styles.detailGrid}>
+                            <div>
+                              <dt>Composite job key</dt>
+                              <dd className={styles.mono}>{job.jobId}</dd>
+                            </div>
+                            <div>
+                              <dt>Last run</dt>
+                              <dd>{job.previousRun ?? "Not run yet"}</dd>
+                            </div>
+                          </dl>
+                          {job.codeSnippet && (
+                            <div className={styles.codeWrap}>
+                              <span className={styles.codeLabel}>Code</span>
+                              <pre className={styles.code}>
+                                <code>{job.codeSnippet}</code>
+                              </pre>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
                     )}
-                  </div>
+                  </Fragment>
                 );
               })}
-            </div>
-          </div>
-
-          <div className={styles.rightCol}>
-            <div className={styles.card}>
-              <div className={styles.cardHeader}>
-                <div className={styles.panelTitle}>
-                  <AlertTriangle size={14} />
-                  Engine Notice
-                </div>
-              </div>
-              <div className={styles.cardBody}>
-                <p className={styles.guideText}>
-                  These values are bound to your active cluster context. Purging a job index here explicitly halts
-                  operational cron loops across all application pods immediately.
-                </p>
-              </div>
-            </div>
-          </div>
+            </tbody>
+          </table>
         </div>
-      </div>
+      </Card>
 
       <ConfirmDialog
         open={pendingDelete !== null}
@@ -186,8 +182,6 @@ export function SchedulerView() {
         onConfirm={confirmDelete}
         onCancel={() => setPendingDelete(null)}
       />
-    </div>
+    </Page>
   );
 }
-
-

@@ -4,7 +4,7 @@ using Sentium.Registry.Contracts;
 namespace Sentium.Praxis.Features.Registry;
 
 /// <summary>
-/// Reads the harness (per-user) and Ollama (global) settings from the Registry module in-process.
+/// Reads the harness (per-user) and inference (global) settings from the Registry module in-process.
 /// Registry caches every settings envelope itself (HybridCache L1 + L2) and evicts it on change,
 /// so Praxis keeps no copy of its own.
 /// </summary>
@@ -15,17 +15,17 @@ public sealed class RegistrySettingsService(
     public async ValueTask<SettingsSnapshot> GetAsync(Guid? userId, CancellationToken ct = default)
     {
         HarnessSettingsSnapshot? harness;
-        OllamaSettingsSnapshot? ollama;
+        InferenceSettingsSnapshot? inference;
 
         try
         {
             var harnessTask = settingsService.GetValueAsync<HarnessSettingsSnapshot>(SettingsKeys.Harness, userId, ct);
-            var ollamaTask = GetOllamaSettingsSafeAsync(ct);
+            var inferenceTask = GetInferenceSettingsSafeAsync(ct);
 
-            await Task.WhenAll(harnessTask, ollamaTask);
+            await Task.WhenAll(harnessTask, inferenceTask);
 
             harness = await harnessTask;
-            ollama = await ollamaTask;
+            inference = await inferenceTask;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
@@ -39,18 +39,18 @@ public sealed class RegistrySettingsService(
             return SettingsSnapshot.Default;
         }
 
-        return new SettingsSnapshot(harness, ollama);
+        return new SettingsSnapshot(harness, inference);
     }
 
-    private async Task<OllamaSettingsSnapshot?> GetOllamaSettingsSafeAsync(CancellationToken ct)
+    private async Task<InferenceSettingsSnapshot?> GetInferenceSettingsSafeAsync(CancellationToken ct)
     {
         try
         {
-            return await settingsService.GetValueAsync<OllamaSettingsSnapshot>(SettingsKeys.Ollama, ct: ct);
+            return await settingsService.GetValueAsync<InferenceSettingsSnapshot>(SettingsKeys.Inference, ct: ct);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            logger.LogDebug(ex, "Ollama settings not available from Registry; using defaults");
+            logger.LogDebug(ex, "Inference settings not available from Registry; using defaults");
             return null;
         }
     }

@@ -1,19 +1,23 @@
-import { useEffect, useRef, type CSSProperties } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useEffect, useRef } from "react";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CheckCircle, Cpu, Loader, Shield, Sparkles, X, Zap } from "lucide-react";
-import styles from "../settings.module.scss";
-import { StatusMessage } from "@/shared/ui/status-message";
+import { CheckCircle, Cpu, Shield, Sparkles, X, Zap } from "lucide-react";
+import styles from "../settings.module.css";
+import { useModels } from "@/features/models/hooks/useModels";
+import { Badge } from "@/shared/ui/badge";
+import { Button } from "@/shared/ui/button";
+import { Card, CardHeader } from "@/shared/ui/card";
+import { Range, SwitchRow, Textarea } from "@/shared/ui/form-controls";
 import { FormField } from "@/shared/ui/form-field";
 import { ModelSelector } from "@/shared/ui/model-selector";
+import { StatusMessage } from "@/shared/ui/status-message";
 import { settingsEditorSchema, type SettingsEditorFormData } from "../schemas/settings.editor";
-import { useOllamaModels } from "@/features/models/hooks/useOllamaModels";
 
 interface SettingsEditorProps {
   initialValues: SettingsEditorFormData;
   isSovereign: boolean;
   updatedByHarness: string | null;
-  updatedByOllama: string | null;
+  updatedByInference: string | null;
   onSubmitForm: (data: SettingsEditorFormData) => void;
   isSaving: boolean;
   showGlobalSuccess: boolean;
@@ -22,11 +26,13 @@ interface SettingsEditorProps {
   resetSaveStates: () => void;
 }
 
+const PROMPT_LIMIT = 16000;
+
 export function SettingsEditor({
   initialValues,
   isSovereign,
   updatedByHarness,
-  updatedByOllama,
+  updatedByInference,
   onSubmitForm,
   isSaving,
   showGlobalSuccess,
@@ -34,7 +40,7 @@ export function SettingsEditor({
   globalErrorMessage,
   resetSaveStates,
 }: SettingsEditorProps) {
-  const { models } = useOllamaModels();
+  const { models } = useModels();
 
   const {
     register,
@@ -62,167 +68,121 @@ export function SettingsEditor({
       successTimeout.current = setTimeout(() => resetSaveStates(), 4000);
     }
     return () => {
-      if (successTimeout.current) clearTimeout(successTimeout.current);
+      if (successTimeout.current) {
+        clearTimeout(successTimeout.current);
+      }
     };
   }, [showGlobalSuccess, resetSaveStates]);
 
-  const charsRemaining = 16000 - prompt.length;
+  const charsRemaining = PROMPT_LIMIT - prompt.length;
   const isOverLimit = charsRemaining < 0;
   const isNearLimit = charsRemaining < 500 && !isOverLimit;
 
   return (
-    <form onSubmit={handleSubmit(onSubmitForm)} className={styles.body}>
-      <div className={styles.sectionDivider}>
-        <span>Agent Harness</span>
-      </div>
+    <form onSubmit={handleSubmit(onSubmitForm)} className={styles.form}>
+      <h2 className={styles.group}>Agent Harness</h2>
 
-      <div className={styles.card}>
-        <div className={styles.cardHeader}>
-          <div className={styles.cardHeaderLeft}>
-            <Shield size={15} className={styles.cardIconPurple} />
-            <div>
-              <p className={styles.cardTitle}>Built-in Governance Harness</p>
-              <p className={styles.cardSubtitle}>
-                Universal agent policy — chain-of-thought, retrieval-first, anti-hallucination
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className={styles.toggleRow}>
-          <div className={styles.toggleInfo}>
-            <span className={styles.toggleLabel}>Enable built-in harness</span>
-            <span className={styles.toggleDesc}>
-              Prepends the Universal Agent Governance policy to every agent interaction. Recommended to keep enabled.
-            </span>
-          </div>
-          <label className={styles.toggleSwitch}>
-            <Controller
-              name="isBuiltInHarnessEnabled"
-              control={control}
-              render={({ field }) => (
-                <input type="checkbox" checked={field.value} onChange={(e) => field.onChange(e.target.checked)} />
-              )}
+      <Card padding="md" as="section">
+        <CardHeader
+          icon={<Shield />}
+          title="Built-in Governance Harness"
+          description="Universal agent policy — chain-of-thought, retrieval-first, anti-hallucination"
+        />
+        <Controller
+          name="isBuiltInHarnessEnabled"
+          control={control}
+          render={({ field }) => (
+            <SwitchRow
+              label="Enable built-in harness"
+              description="Prepends the Universal Agent Governance policy to every agent interaction. Recommended to keep enabled."
+              checked={field.value}
+              onChange={(e) => field.onChange(e.target.checked)}
             />
-            <span className={styles.slider} />
-          </label>
-        </div>
-      </div>
+          )}
+        />
+      </Card>
 
-      <div className={styles.card}>
-        <div className={styles.cardHeader}>
-          <div className={styles.cardHeaderLeft}>
-            <Sparkles size={15} className={styles.cardIconCyan} />
-            <div>
-              <p className={styles.cardTitle}>Prompt Enhancement</p>
-              <p className={styles.cardSubtitle}>
-                Optimizes each prompt with a pre-pass before execution — sharper results from smaller local models
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className={styles.toggleRow}>
-          <div className={styles.toggleInfo}>
-            <span className={styles.toggleLabel}>Enable prompt enhancement</span>
-            <span className={styles.toggleDesc}>
-              Rewrites assistant and workflow prompts for clarity and specificity before the agent runs. The original is
-              preserved and the enhanced version is shown inline.
-            </span>
-          </div>
-          <label className={styles.toggleSwitch}>
-            <Controller
-              name="isPromptEnhancementEnabled"
-              control={control}
-              render={({ field }) => (
-                <input type="checkbox" checked={field.value} onChange={(e) => field.onChange(e.target.checked)} />
-              )}
+      <Card padding="md" as="section">
+        <CardHeader
+          icon={<Sparkles />}
+          title="Prompt Enhancement"
+          description="Optimizes each prompt with a pre-pass before execution — sharper results from smaller local models"
+        />
+        <Controller
+          name="isPromptEnhancementEnabled"
+          control={control}
+          render={({ field }) => (
+            <SwitchRow
+              label="Enable prompt enhancement"
+              description="Rewrites assistant and workflow prompts for clarity and specificity before the agent runs. The original is preserved and the enhanced version is shown inline."
+              checked={field.value}
+              onChange={(e) => field.onChange(e.target.checked)}
             />
-            <span className={styles.slider} />
-          </label>
-        </div>
-      </div>
+          )}
+        />
+      </Card>
 
-      <div className={styles.card}>
-        <div className={styles.cardHeader}>
-          <div className={styles.cardHeaderLeft}>
-            <Zap size={15} className={styles.cardIconAmber} />
-            <div>
-              <p className={styles.cardTitle}>User-Defined Global Behavior</p>
-              <p className={styles.cardSubtitle}>
-                Injected into every agent alongside the built-in harness. Define personas, tone, domain focus, or
-                operational constraints.
-              </p>
-            </div>
-          </div>
-          {updatedByHarness && <span className={styles.pillPurple}>Last saved by {updatedByHarness}</span>}
-        </div>
-
-        <div className={styles.cardBody}>
-          <FormField label="Global Prompt" charCount={{ current: prompt.length, max: 16000 }}>
-            {isOverLimit && <span>{Math.abs(charsRemaining)} characters over limit</span>}
-            {isNearLimit && <span>{charsRemaining} characters remaining</span>}
-            <textarea
-              className={`${styles.promptTextarea} ${isOverLimit || isNearLimit ? styles.promptTextareaWarn : ""}`}
-              placeholder={`Define global agent behavior in plain text or markdown.\n\nExamples:\n- "Always respond in a professional, concise tone."\n- "You are a local AI orchestrator. Prioritize efficient workflow execution."`}
-              spellCheck={false}
-              {...register("userHarnessPrompt")}
-            />
-          </FormField>
-        </div>
-      </div>
+      <Card padding="md" as="section">
+        <CardHeader
+          icon={<Zap />}
+          title="User-Defined Global Behavior"
+          description="Injected into every agent alongside the built-in harness. Define personas, tone, domain focus, or operational constraints."
+          actions={updatedByHarness && <Badge tone="neutral">Last saved by {updatedByHarness}</Badge>}
+        />
+        <FormField
+          id="global-prompt"
+          label="Global Prompt"
+          charCount={{ current: prompt.length, max: PROMPT_LIMIT }}
+          error={isOverLimit ? `${Math.abs(charsRemaining)} characters over limit` : undefined}
+          hint={isNearLimit ? `${charsRemaining} characters remaining` : undefined}
+        >
+          <Textarea
+            id="global-prompt"
+            mono
+            rows={10}
+            invalid={isOverLimit}
+            placeholder={`Define global agent behavior in plain text or markdown.\n\nExamples:\n- "Always respond in a professional, concise tone."\n- "You are a local AI orchestrator. Prioritize efficient workflow execution."`}
+            spellCheck={false}
+            {...register("userHarnessPrompt")}
+          />
+        </FormField>
+      </Card>
 
       {isSovereign && (
         <>
-          <div className={styles.sectionDivider}>
-            <span>Ollama</span>
-          </div>
+          <h2 className={styles.group}>Inference</h2>
 
-          <div className={styles.card}>
-            <div className={styles.cardHeader}>
-              <div className={styles.cardHeaderLeft}>
-                <Cpu size={15} className={styles.cardIconCyan} />
-                <div>
-                  <p className={styles.cardTitle}>Ollama Inference Settings</p>
-                  <p className={styles.cardSubtitle}>
-                    Model and inference parameters applied to every agent. Changes take effect on the next agent call.
-                    BaseUrl is configured via environment variables.
-                  </p>
-                </div>
-              </div>
-              {updatedByOllama && <span className={styles.pillPurple}>Last saved by {updatedByOllama}</span>}
-            </div>
+          <Card padding="md" as="section">
+            <CardHeader
+              icon={<Cpu />}
+              title="Inference Settings"
+              description="Model and sampling parameters applied to every agent. Changes take effect on the next agent call. Server endpoints and per-model context size are deployment configuration."
+              actions={updatedByInference && <Badge tone="neutral">Last saved by {updatedByInference}</Badge>}
+            />
 
-            <div className={styles.cardBody}>
+            <div className={styles.fields}>
               <div className={styles.fieldRow}>
-                <label className={styles.fieldLabel}>Default Model</label>
+                <span className={styles.fieldLabel}>Default Model</span>
                 <Controller
                   name="defaultModel"
                   control={control}
                   render={({ field }) => (
-                    <ModelSelector
-                      models={models.map((m) => m.name)}
-                      value={field.value}
-                      onChange={field.onChange}
-                      className={styles.modelSelectorField}
-                      variant="chip"
-                    />
+                    <ModelSelector models={models} value={field.value} onChange={field.onChange} variant="chip" />
                   )}
                 />
               </div>
 
-              <div className={styles.fieldRow}>
-                <label className={styles.fieldLabel}>
+              <div className={styles.field}>
+                <label className={styles.fieldLabel} htmlFor="agent-temperature">
                   Agent Temperature
                   <span className={styles.fieldValue}>{currentTemperature.toFixed(2)}</span>
                 </label>
-                <input
-                  type="range"
+                <Range
+                  id="agent-temperature"
                   min={0}
                   max={1}
                   step={0.05}
-                  className={styles.rangeField}
-                  style={{ "--slider-fill": `${currentTemperature * 100}%` } as CSSProperties}
+                  fillPercent={currentTemperature * 100}
                   {...register("agentTemperature", { valueAsNumber: true })}
                 />
                 <div className={styles.rangeLabels}>
@@ -230,48 +190,35 @@ export function SettingsEditor({
                   <span>Creative (1.0)</span>
                 </div>
               </div>
-
-              <div className={styles.fieldRow}>
-                <label className={styles.fieldLabel}>Context Window (tokens)</label>
-                <input
-                  type="number"
-                  min={512}
-                  max={131072}
-                  step={512}
-                  className={styles.numberField}
-                  {...register("agentContextWindow", { valueAsNumber: true })}
-                />
-              </div>
             </div>
-          </div>
+          </Card>
         </>
       )}
 
-      <div className={styles.formFooter}>
-        {showGlobalSuccess && (
-          <StatusMessage
-            variant="success"
-            icon={<CheckCircle size={14} />}
-            message="System parameters successfully saved."
-          />
-        )}
-        {showGlobalError && (
-          <StatusMessage
-            variant="error"
-            icon={<X size={14} />}
-            message={globalErrorMessage ?? "Failed to save configuration updates."}
-          />
-        )}
-
-        <div className={styles.actionRow}>
-          <button type="submit" className={styles.btnPrimary} disabled={isSaving || isOverLimit || !isDirty}>
-            {isSaving ? <Loader size={13} className="animate-spin" /> : <CheckCircle size={13} />}
-            {isSaving ? "Saving System Settings..." : "Save changes"}
-          </button>
+      <div className={styles.saveBar} data-dirty={isDirty || undefined}>
+        <div className={styles.saveStatus}>
+          {showGlobalSuccess ? (
+            <StatusMessage variant="success" icon={<CheckCircle />} message="System parameters successfully saved." />
+          ) : showGlobalError ? (
+            <StatusMessage
+              variant="error"
+              icon={<X />}
+              message={globalErrorMessage ?? "Failed to save configuration updates."}
+            />
+          ) : (
+            <span className={styles.saveHint}>{isDirty ? "You have unsaved changes" : "All changes saved"}</span>
+          )}
         </div>
+        <Button
+          type="submit"
+          variant="primary"
+          icon={<CheckCircle size={15} />}
+          loading={isSaving}
+          disabled={isOverLimit || !isDirty}
+        >
+          {isSaving ? "Saving System Settings..." : "Save changes"}
+        </Button>
       </div>
     </form>
   );
 }
-
-

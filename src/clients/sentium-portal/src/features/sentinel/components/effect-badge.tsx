@@ -1,26 +1,24 @@
-import { CheckCircle, Siren, ShieldOff } from "lucide-react";
-import styles from "../sentinel.module.scss";
+import { CheckCircle, ShieldOff, Siren } from "lucide-react";
+import { Badge } from "@/shared/ui/badge";
 
 export function EffectBadge({ allowed, effect }: { allowed: boolean; effect: string }) {
   if (allowed) {
     return (
-      <span className={`${styles.effectBadge} ${styles.effectAllow}`}>
-        <CheckCircle size={11} /> Allow
-      </span>
+      <Badge tone="success">
+        <CheckCircle size={12} aria-hidden="true" /> Allow
+      </Badge>
     );
   }
   if (effect === "DenyWithAlert") {
     return (
-      <span className={`${styles.effectBadge} ${styles.effectAlert}`}>
-        <Siren size={11} /> Alert
-      </span>
+      <Badge tone="warning">
+        <Siren size={12} aria-hidden="true" /> Alert
+      </Badge>
     );
   }
   return (
-    <span className={`${styles.effectBadge} ${styles.effectDeny}`}>
-      <ShieldOff size={11} /> Deny
-    </span>
+    <Badge tone="danger">
+      <ShieldOff size={12} aria-hidden="true" /> Deny
+    </Badge>
   );
 }
-
-

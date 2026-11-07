@@ -1,10 +1,11 @@
 using Microsoft.Extensions.AI;
-using OllamaSharp;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Sentium.Codex.Contracts;
 using Sentium.Codex.Data;
 using Sentium.Codex.Features.Rag;
 using Sentium.Infrastructure.Extensions;
+using Sentium.Infrastructure.Inference;
 
 namespace Sentium.Codex;
 
@@ -15,7 +16,11 @@ namespace Sentium.Codex;
 /// </summary>
 public static class CodexModuleExtensions
 {
-    private const string OllamaHttpClientName = "codex-ollama";
+    /// <summary>
+    /// Named HttpClient for the embedding server. Module-specific so it never merges configuration
+    /// with the inference clients other modules register.
+    /// </summary>
+    private const string EmbeddingsHttpClientName = "codex-embeddings";
 
     public static IHostApplicationBuilder AddCodexModule(this IHostApplicationBuilder builder)
     {
@@ -28,25 +33,24 @@ public static class CodexModuleExtensions
 
         services.Configure<RagOptions>(configuration.GetSection(RagOptions.SectionName));
 
-        services.AddOllamaHttpClient(configuration, OllamaHttpClientName);
+        services.AddInferenceHttpClient(configuration, EmbeddingsHttpClientName, InferenceEndpoint.Embedding);
 
         services.AddEmbeddingGenerator(sp =>
         {
-            var ragOptions = configuration.GetSection(RagOptions.SectionName).Get<RagOptions>() ?? new RagOptions();
+            var ragOptions = sp.GetRequiredService<IOptions<RagOptions>>().Value;
 
-            var httpClient = sp.GetRequiredService<IHttpClientFactory>().CreateClient(OllamaHttpClientName);
-            IEmbeddingGenerator<string, Embedding<float>> generator = new OllamaApiClient(httpClient)
-            {
-                SelectedModel = ragOptions.EmbeddingModelName
-            };
+            var generator = sp.GetRequiredService<IInferenceClientFactory>()
+                .CreateEmbeddingGenerator(EmbeddingsHttpClientName, ragOptions.EmbeddingModelName);
 
             return new EmbeddingGeneratorBuilder<string, Embedding<float>>(generator)
                 .UseOpenTelemetry()
                 .Build();
         });
 
-        services.AddSingleton<IEmbeddingService, OllamaEmbeddingService>();
+        services.AddSingleton<IEmbeddingService, EmbeddingService>();
         services.AddScoped<IVectorRepository, PgVectorRepository>();
+        services.AddScoped<EmbeddingReindexer>();
+        services.AddHostedService<EmbeddingReindexService>();
         services.AddScoped<IDocumentIngestionService, DocumentIngestionService>();
 
         services.AddHealthChecks().AddDbContextCheck<CodexDbContext>("codex-db", tags: [ModuleName]);

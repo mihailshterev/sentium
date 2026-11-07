@@ -29,4 +29,11 @@ public sealed class KnowledgeChunk
     public DateTimeOffset CreatedAt { get; set; }
 
     public required Vector Embedding { get; set; }
+
+    /// <summary>
+    /// The embedding model that produced <see cref="Embedding"/> (<c>Rag:EmbeddingModelName</c> at write time).
+    /// Rows from another model are re-embedded by <c>EmbeddingReindexService</c>, so a search never compares
+    /// vectors from different models.
+    /// </summary>
+    public string EmbeddingModel { get; set; } = string.Empty;
 }

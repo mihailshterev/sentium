@@ -67,6 +67,17 @@ classDiagram
     class ChatClientAgent {
         <<external>>
     }
+    class IChatClient {
+        <<external>>
+    }
+    class IModelContextWindowProvider {
+        <<interface>>
+        +GetContextWindowAsync(modelId) int
+    }
+    class IModelCatalog {
+        <<interface>>
+        +ListAsync() CatalogModel[]
+    }
 
     IAgentFactory <|.. CompositeAgentFactory
     IAgent <|.. GeneralAssistant
@@ -83,6 +94,7 @@ classDiagram
     CompositeAgentFactory ..> ChatClientAgent : creates
     CompositeAgentFactory ..> IAgent : resolves definition
     CompositeAgentFactory ..> IRegistrySettingsService : model + harness
+    CompositeAgentFactory ..> IModelContextWindowProvider : compaction budget
     CompositeAgentFactory ..> IAgentToolProvider : curated tools
     CompositeAgentFactory ..> AgentInstructions : one system prompt
     CompositeAgentFactory ..> AgentChatPipeline : per-agent client
@@ -90,6 +102,8 @@ classDiagram
     CompositeAgentFactory ..> LearningsContextProvider : context provider
     CompositeAgentFactory ..> SentinelFunctionMiddleware : .Use(...)
     IAgentToolProvider ..> IAgentTool : CreateFunction()
+    IModelContextWindowProvider ..> IModelCatalog : per-slot n_ctx
+    AgentChatPipeline ..> IChatClient : shared base (OpenTelemetry → llama-server via OpenAI API)
     SentinelFunctionMiddleware --> SentinelClient : PDP check
     SentinelClient --> IPolicyDecisionPoint : in-process
 ```

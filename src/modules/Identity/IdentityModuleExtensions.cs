@@ -43,7 +43,9 @@ public static class IdentityModuleExtensions
         {
             options.Cookie.Name = "Sentium.Auth";
             options.Cookie.HttpOnly = true;
-            options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+            options.Cookie.SecurePolicy = builder.Environment.IsEnvironment("Testing")
+                ? CookieSecurePolicy.SameAsRequest
+                : CookieSecurePolicy.Always;
             options.Cookie.SameSite = SameSiteMode.Strict;
             options.ExpireTimeSpan = TimeSpan.FromDays(7);
             options.SlidingExpiration = true;
@@ -64,11 +66,13 @@ public static class IdentityModuleExtensions
                 policy.RequireAuthenticatedUser()
                       .RequireAssertion(ctx => RoleClaims.IsInRole(ctx.User, SecurityRoles.Sovereign)));
 
+        var authPermitLimit = builder.Configuration.GetValue("Identity:AuthRateLimit:PermitLimit", 10);
+
         services.AddRateLimiter(options =>
         {
             options.AddFixedWindowLimiter("auth", policy =>
             {
-                policy.PermitLimit = 10;
+                policy.PermitLimit = authPermitLimit;
                 policy.Window = TimeSpan.FromMinutes(1);
                 policy.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
                 policy.QueueLimit = 0;

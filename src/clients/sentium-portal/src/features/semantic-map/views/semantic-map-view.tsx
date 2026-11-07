@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import gsap from "gsap";
-import styles from "../semantic-map.module.scss";
+import styles from "../semantic-map.module.css";
 import { useThemeStore, resolveTheme } from "@/shared/ui/state/theme-store";
 import { fetchKnowledgeMapNodes, searchKnowledgeMap } from "@/features/semantic-map/api/semantic-map.service";
 import {
@@ -13,7 +13,15 @@ import {
   DEMO_NODES,
 } from "../engine";
 import type { GraphNode, GraphLink, Particle, CameraState, VisualizationMode } from "../engine";
-import { LoadingOverlay, Toolbar, ZoomControls, Legend, ResultsPanel, DetailPanel, ErrorToast } from "../components/hud";
+import {
+  LoadingOverlay,
+  Toolbar,
+  ZoomControls,
+  Legend,
+  ResultsPanel,
+  DetailPanel,
+  ErrorToast,
+} from "../components/hud";
 import type * as d3Type from "d3";
 import type { KnowledgeMapNode, KnowledgeMapSearchResult } from "@/features/semantic-map/types/knowledge-map";
 
@@ -416,5 +424,3 @@ export function SemanticMapView() {
     </div>
   );
 }
-
-

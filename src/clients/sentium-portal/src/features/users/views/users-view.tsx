@@ -1,16 +1,19 @@
 import { useState } from "react";
 import { UsersRound, RefreshCw, AlertCircle, UserX } from "lucide-react";
-import styles from "../users.module.scss";
+import styles from "../users.module.css";
 import { ROLE_HIERARCHY, type Role } from "@/shared/utils/roles";
 import { useRole } from "@/shared/auth/hooks/useRole";
 import { useAuthStore } from "@/shared/auth/state/auth-store";
 import { useUsers } from "@/features/users/hooks/useUsers";
-import { PageHeader } from "@/shared/ui/page-header";
+import { Badge } from "@/shared/ui/badge";
+import { Button } from "@/shared/ui/button";
+import { Card, CardHeader } from "@/shared/ui/card";
+import { Page } from "@/shared/ui/page";
 import { EmptyState } from "@/shared/ui/empty-state";
 import { LoadMore } from "@/shared/ui/load-more";
 import { SkeletonRows } from "../components/skeleton-rows";
 import { UserRow } from "../components/user-row";
-import { ConfirmDialog } from "@/shared/ui/confirm-dialog"; // Added import
+import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
 
 const ROLE_OPTIONS = ROLE_HIERARCHY as readonly Role[];
 
@@ -101,79 +104,81 @@ export function UsersView() {
   const isSelf = (userId: string) => currentUser?.sub === userId;
 
   return (
-    <div className={styles.root}>
-      <PageHeader
-        icon={<UsersRound size={18} />}
-        title="User Management"
-        subtitle="Manage system users and role assignments"
-        right={
-          <div className={styles.headerRight}>
-            {actionError && (
-              <div className={styles.errorInline}>
-                <AlertCircle size={12} />
-                <span>{actionError}</span>
-                <button onClick={() => setActionError(null)} className={styles.errorDismiss}>
-                  ✕
-                </button>
-              </div>
-            )}
-            <button
-              className={`${styles.refreshBtn} ${isFetching ? styles.spinning : ""}`}
-              onClick={() => refetch()}
-              disabled={isFetching}
-            >
-              <RefreshCw size={12} />
-              Refresh
-            </button>
-          </div>
-        }
-      />
-
-      <div className={styles.body}>
-        <div className={styles.section}>
-          <div className={styles.sectionHeader}>
-            <div className={styles.sectionTitle}>
-              <UsersRound size={13} className={styles.sectionTitleIcon} />
-              Registered Users
-            </div>
-            <span className={styles.userCount}>{!isLoading && `${totalCount} user${totalCount !== 1 ? "s" : ""}`}</span>
-          </div>
-
-          <div className={styles.tableHeader}>
-            <span className={styles.colAvatar} />
-            <span className={styles.colUser}>User</span>
-            <span className={styles.colRoles}>Roles</span>
-            {isSovereign && <span className={styles.colAssign}>Assign / Remove</span>}
-            {isSovereign && <span className={styles.colActions} />}
-          </div>
-
-          <div className={styles.tableBody}>
-            {isLoading ? (
-              <SkeletonRows />
-            ) : error ? (
-              <EmptyState icon={<AlertCircle size={28} />} title="Failed to load users" hint={error.message} />
-            ) : users.length === 0 ? (
-              <EmptyState icon={<UserX size={28} />} title="No users found" />
-            ) : (
-              users.map((user) => (
-                <UserRow
-                  key={user.id}
-                  user={user}
-                  isSelf={isSelf(user.id)}
-                  isSovereign={isSovereign}
-                  isPending={pendingUserId === user.id}
-                  roleOptions={ROLE_OPTIONS}
-                  onAssignRole={handleAssignRole}
-                  onRemoveRole={handleRemoveRole}
-                  onDeleteUser={handleDeleteUser}
-                />
-              ))
-            )}
-          </div>
-
-          <LoadMore hasMore={hasMore} isLoading={isLoadingMore} onLoadMore={loadMore} />
+    <Page
+      title="User Management"
+      subtitle="Manage system users and role assignments"
+      actions={
+        <Button
+          variant="secondary"
+          icon={<RefreshCw size={15} className={isFetching ? "animate-spin" : undefined} />}
+          onClick={() => refetch()}
+          disabled={isFetching}
+        >
+          Refresh
+        </Button>
+      }
+    >
+      {actionError && (
+        <div className={styles.actionError} role="alert">
+          <AlertCircle size={16} aria-hidden="true" />
+          <span>{actionError}</span>
+          <Button variant="ghost" size="sm" onClick={() => setActionError(null)} aria-label="Dismiss error">
+            ✕
+          </Button>
         </div>
-      </div>
+      )}
+
+      <Card padding="none" as="section">
+        <CardHeader
+          icon={<UsersRound />}
+          title="Registered users"
+          actions={
+            !isLoading && (
+              <Badge tone="neutral">
+                {totalCount} user{totalCount !== 1 ? "s" : ""}
+              </Badge>
+            )
+          }
+        />
+
+        {isLoading ? (
+          <SkeletonRows />
+        ) : error ? (
+          <EmptyState icon={<AlertCircle />} title="Failed to load users" hint={error.message} />
+        ) : users.length === 0 ? (
+          <EmptyState icon={<UserX />} title="No users found" />
+        ) : (
+          <div className="data-table-scroll">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Roles</th>
+                  {isSovereign && <th>Assign / remove</th>}
+                  {isSovereign && <th aria-label="Actions" />}
+                </tr>
+              </thead>
+              <tbody>
+                {users.map((user) => (
+                  <UserRow
+                    key={user.id}
+                    user={user}
+                    isSelf={isSelf(user.id)}
+                    isSovereign={isSovereign}
+                    isPending={pendingUserId === user.id}
+                    roleOptions={ROLE_OPTIONS}
+                    onAssignRole={handleAssignRole}
+                    onRemoveRole={handleRemoveRole}
+                    onDeleteUser={handleDeleteUser}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <LoadMore hasMore={hasMore} isLoading={isLoadingMore} onLoadMore={loadMore} />
+      </Card>
 
       <ConfirmDialog
         open={isConfirmOpen}
@@ -186,6 +191,6 @@ export function UsersView() {
         onCancel={handleCancelDelete}
         confirmWord={userToDelete?.identifier ?? undefined}
       />
-    </div>
+    </Page>
   );
 }

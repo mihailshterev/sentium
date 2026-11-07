@@ -1,6 +1,5 @@
 import { AlertTriangle, Shield, ShieldCheck, ShieldOff, Siren } from "lucide-react";
-import styles from "../sentinel.module.scss";
-import { StatCard } from "@/shared/ui/stat-card";
+import { StatCard, StatGrid } from "@/shared/ui/stat-card";
 import type { AuditStats } from "@/features/sentinel/types/sentinel";
 
 interface SentinelStatsProps {
@@ -10,17 +9,17 @@ interface SentinelStatsProps {
 
 export function SentinelStats({ stats, denialRate }: SentinelStatsProps) {
   return (
-    <div className={styles.statsRow}>
-      <StatCard icon={<Shield size={16} />} value={stats?.total ?? "—"} label="Total Decisions" iconColor="blue" />
-      <StatCard icon={<ShieldCheck size={16} />} value={stats?.allowed ?? "—"} label="Allowed" iconColor="green" />
-      <StatCard icon={<ShieldOff size={16} />} value={stats?.denied ?? "—"} label="Denied" iconColor="red" />
-      <StatCard icon={<Siren size={16} />} value={stats?.alerts ?? "—"} label="Alerts" iconColor="amber" />
+    <StatGrid>
+      <StatCard icon={<Shield />} value={stats?.total ?? "—"} label="Total Decisions" />
+      <StatCard icon={<ShieldCheck />} value={stats?.allowed ?? "—"} label="Allowed" iconColor="green" />
+      <StatCard icon={<ShieldOff />} value={stats?.denied ?? "—"} label="Denied" iconColor="red" />
+      <StatCard icon={<Siren />} value={stats?.alerts ?? "—"} label="Alerts" iconColor="amber" />
       <StatCard
-        icon={<AlertTriangle size={16} />}
+        icon={<AlertTriangle />}
         value={stats ? `${denialRate}%` : "—"}
         label="Denial Rate"
-        iconColor="purple"
+        iconColor="neutral"
       />
-    </div>
+    </StatGrid>
   );
 }

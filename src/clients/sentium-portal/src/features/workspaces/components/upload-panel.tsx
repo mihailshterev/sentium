@@ -1,5 +1,8 @@
-import { UploadCloud, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
-import styles from "../workspaces.module.scss";
+import { UploadCloud } from "lucide-react";
+import styles from "../workspaces.module.css";
+import { Button } from "@/shared/ui/button";
+import { Card, CardHeader } from "@/shared/ui/card";
+import { StatusMessage } from "@/shared/ui/status-message";
 import { formatBytesToMb } from "../../../shared/utils/formatters";
 
 interface UploadPanelProps {
@@ -38,73 +41,58 @@ export function UploadPanel({
   fileInputRef,
 }: UploadPanelProps) {
   return (
-    <form className={styles.uploadPanel} onSubmit={onSubmit}>
-      <p className={styles.panelTitle}>Upload File</p>
-      <div
-        className={`${styles.uploadArea} ${dragActive ? styles.uploadAreaActive : ""}`}
-        onClick={() => fileInputRef.current?.click()}
-        onDrop={onDrop}
-        onDragOver={onDragOver}
-        onDragLeave={onDragLeave}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => e.key === "Enter" && fileInputRef.current?.click()}
-      >
-        <UploadCloud size={28} className={styles.uploadIcon} />
-        {selectedFile ? (
-          <>
-            <span className={styles.uploadText}>{selectedFile.name}</span>
-            <span className={styles.uploadHint}>{formatBytesToMb(selectedFile.size)}</span>
-          </>
-        ) : (
-          <>
-            <span className={styles.uploadText}>Drop a file or click to browse</span>
-            <span className={styles.uploadHint}>Text files up to 100 MB — .txt .md .json .csv .yaml .py .ts …</span>
-          </>
-        )}
-      </div>
-      <input
-        ref={fileInputRef}
-        type="file"
-        className={styles.fileInput}
-        onChange={onInputChange}
-        accept={acceptedExtensions}
-      />
-
-      {fileTypeError && (
-        <div className={`${styles.statusBox} ${styles["status-error"]}`}>
-          <AlertCircle size={14} className={styles.statusIcon} />
-          <span className={styles.statusMessage}>{fileTypeError}</span>
-        </div>
-      )}
-
-      {isUploading && (
-        <div className={`${styles.statusBox} ${styles["status-loading"]}`}>
-          <Loader2 size={14} className={`${styles.statusIcon} ${styles.spin}`} />
-          <span className={styles.statusMessage}>Uploading…</span>
-        </div>
-      )}
-
-      {isUploadSuccess && (
-        <div className={`${styles.statusBox} ${styles["status-success"]}`}>
-          <CheckCircle size={14} className={styles.statusIcon} />
-          <span className={styles.statusMessage}>File uploaded — indexing in background.</span>
-        </div>
-      )}
-
-      {isUploadError && (
-        <div className={`${styles.statusBox} ${styles["status-error"]}`}>
-          <AlertCircle size={14} className={styles.statusIcon} />
-          <span className={styles.statusMessage}>
-            {uploadError instanceof Error ? uploadError.message : "Upload failed."}
+    <Card as="section" padding="md" className={styles.uploadCard}>
+      <form className={styles.uploadForm} onSubmit={onSubmit}>
+        <CardHeader icon={<UploadCloud />} title="Upload File" description="Files are indexed for RAG automatically" />
+        <div
+          className={styles.dropZone}
+          data-active={dragActive || undefined}
+          onClick={() => fileInputRef.current?.click()}
+          onDrop={onDrop}
+          onDragOver={onDragOver}
+          onDragLeave={onDragLeave}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && fileInputRef.current?.click()}
+        >
+          <span className={styles.dropIcon} aria-hidden="true">
+            <UploadCloud size={22} />
           </span>
+          {selectedFile ? (
+            <>
+              <span className={styles.dropText}>{selectedFile.name}</span>
+              <span className={styles.dropHint}>{formatBytesToMb(selectedFile.size)}</span>
+            </>
+          ) : (
+            <>
+              <span className={styles.dropText}>Drop a file or click to browse</span>
+              <span className={styles.dropHint}>Text files up to 100 MB — .txt .md .json .csv .yaml .py .ts …</span>
+            </>
+          )}
         </div>
-      )}
+        <input ref={fileInputRef} type="file" hidden onChange={onInputChange} accept={acceptedExtensions} />
 
-      <button type="submit" className={styles.submitButton} disabled={!selectedFile || isUploading}>
-        {isUploading ? <Loader2 size={14} className={styles.spin} /> : <UploadCloud size={14} />}
-        Upload to {workspaceName}
-      </button>
-    </form>
+        {fileTypeError && <StatusMessage variant="error" message={fileTypeError} />}
+        {isUploading && <StatusMessage variant="loading" message="Uploading…" />}
+        {isUploadSuccess && <StatusMessage variant="success" message="File uploaded — indexing in background." />}
+        {isUploadError && (
+          <StatusMessage
+            variant="error"
+            message={uploadError instanceof Error ? uploadError.message : "Upload failed."}
+          />
+        )}
+
+        <Button
+          type="submit"
+          variant="primary"
+          fullWidth
+          icon={<UploadCloud size={16} />}
+          loading={isUploading}
+          disabled={!selectedFile}
+        >
+          Upload to {workspaceName}
+        </Button>
+      </form>
+    </Card>
   );
 }

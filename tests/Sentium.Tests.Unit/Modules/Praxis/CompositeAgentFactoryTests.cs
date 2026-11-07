@@ -2,7 +2,6 @@ using System.ComponentModel;
 using FluentAssertions;
 using Microsoft.Extensions.AI;
 using NSubstitute;
-using OllamaSharp.Models;
 using Sentium.Praxis.Features.Agents;
 using Sentium.Praxis.Features.Learnings;
 using Sentium.Praxis.Features.Tools;
@@ -15,8 +14,8 @@ namespace Sentium.Tests.Unit.Modules.Praxis;
 
 /// <summary>
 /// Pins down the request an agent actually sends to the model: one system prompt (via ChatOptions.Instructions,
-/// which OllamaSharp maps to a single leading system message), harness before role, learnings appended, and the
-/// per-agent model / context window carried on the options - plus the Sentinel tool guard.
+/// which the OpenAI-compatible client maps to a single leading system message), harness before role, learnings
+/// appended, and the per-agent model carried on the options - plus the Sentinel tool guard.
 /// </summary>
 public sealed class CompositeAgentFactoryTests
 {
@@ -56,7 +55,7 @@ public sealed class CompositeAgentFactoryTests
     }
 
     [Fact]
-    public async Task Agent_CarriesModelAndContextWindow_AndSkillToolsNeedNoApproval()
+    public async Task Agent_CarriesModel_SizesCompactionForIt_AndSkillToolsNeedNoApproval()
     {
         var ct = TestContext.Current.CancellationToken;
         _host.RunContext.UserId = Guid.NewGuid();
@@ -67,10 +66,23 @@ public sealed class CompositeAgentFactoryTests
         var options = _host.Model.Requests.Should().ContainSingle().Subject.Options!;
 
         options.ModelId.Should().Be("qwen-override");
-        options.AdditionalProperties.Should().ContainKey(OllamaOption.NumCtx.Name).WhoseValue.Should().Be(8192);
+        options.AdditionalProperties.Should().BeNullOrEmpty("the context size is fixed per model by the inference server, not sent per request");
+        await _host.ContextWindows.Received().GetContextWindowAsync("qwen-override", Arg.Any<CancellationToken>());
 
         var loadSkill = options.Tools.Should().ContainSingle(t => t.Name == "load_skill").Subject;
         loadSkill.GetService<ApprovalRequiredAIFunction>().Should().BeNull("built-in and user skills are trusted; approval would stall workflows");
+    }
+
+    [Fact]
+    public async Task Agent_WithoutOverrideOrRegistryModel_UsesTheConfiguredDefaultModel()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        _host.RunContext.UserId = Guid.NewGuid();
+
+        var agent = await _host.CreateFactory().CreateAsync(AgentRole.GeneralAssistant, ct: ct);
+        await agent.RunAsync("hi", await agent.CreateSessionAsync(ct), cancellationToken: ct);
+
+        _host.Model.Requests.Should().ContainSingle().Subject.Options!.ModelId.Should().Be(_host.Inference.DefaultModel);
     }
 
     [Theory]

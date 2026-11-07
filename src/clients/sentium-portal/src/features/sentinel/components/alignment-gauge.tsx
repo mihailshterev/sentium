@@ -1,69 +1,56 @@
-import styles from "../sentinel.module.scss";
+import styles from "../sentinel.module.css";
+
+const RADIUS = 52;
+const CX = 70;
+const CY = 70;
+const START = -120;
+const SWEEP = 240;
+
+function polar(r: number, deg: number) {
+  const rad = ((deg - 90) * Math.PI) / 180;
+  return { x: CX + r * Math.cos(rad), y: CY + r * Math.sin(rad) };
+}
+
+function arc(startDeg: number, endDeg: number) {
+  const s = polar(RADIUS, startDeg);
+  const e = polar(RADIUS, endDeg);
+  const large = endDeg - startDeg > 180 ? 1 : 0;
+  return `M ${s.x} ${s.y} A ${RADIUS} ${RADIUS} 0 ${large} 1 ${e.x} ${e.y}`;
+}
 
 export function AlignmentGauge({ score }: { score: number | null }) {
   const pct = score !== null ? Math.round(score * 100) : null;
   const label = pct === null ? "No Data" : pct >= 70 ? "Aligned" : pct >= 40 ? "Uncertain" : "Misaligned";
-  const color =
-    pct === null
-      ? "var(--text-dim)"
-      : pct >= 70
-        ? "var(--accent-green)"
-        : pct >= 40
-          ? "var(--accent-amber)"
-          : "var(--accent-red)";
-
-  const radius = 52;
-  const cx = 70;
-  const cy = 70;
-  const startAngle = -210;
-  const totalArc = 240;
-  const filled = pct !== null ? (pct / 100) * totalArc : 0;
-
-  function polarToXY(cx: number, cy: number, r: number, deg: number) {
-    const rad = ((deg - 90) * Math.PI) / 180;
-    return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
-  }
-
-  function arcPath(cx: number, cy: number, r: number, startDeg: number, endDeg: number) {
-    const s = polarToXY(cx, cy, r, startDeg);
-    const e = polarToXY(cx, cy, r, endDeg);
-    const large = endDeg - startDeg > 180 ? 1 : 0;
-    return `M ${s.x} ${s.y} A ${r} ${r} 0 ${large} 1 ${e.x} ${e.y}`;
-  }
-
-  const trackPath = arcPath(cx, cy, radius, startAngle, startAngle + totalArc);
-  const fillPath = filled > 0 ? arcPath(cx, cy, radius, startAngle, startAngle + filled) : null;
+  const tone = pct === null ? "none" : pct >= 70 ? "ok" : pct >= 40 ? "warn" : "critical";
+  const filled = pct !== null ? (pct / 100) * SWEEP : 0;
 
   return (
-    <div className={styles.gaugeWrap}>
-      <svg width="140" height="100" viewBox="0 0 140 100">
-        <path d={trackPath} fill="none" stroke="var(--border-color)" strokeWidth="10" strokeLinecap="round" />
-        {fillPath && <path d={fillPath} fill="none" stroke={color} strokeWidth="10" strokeLinecap="round" />}
-        <text
-          x={cx}
-          y={cy - 4}
-          textAnchor="middle"
-          fill={color}
-          fontSize="20"
-          fontWeight="700"
-          fontFamily="Inter, sans-serif"
-        >
+    <div className={styles.gauge} data-tone={tone}>
+      <svg width="160" height="112" viewBox="0 0 140 100" role="img" aria-label={`Alignment ${pct ?? "unknown"}%`}>
+        <path
+          d={arc(START, START + SWEEP)}
+          className={styles.gaugeTrack}
+          fill="none"
+          strokeWidth="9"
+          strokeLinecap="round"
+        />
+        {filled > 0 && (
+          <path
+            d={arc(START, START + filled)}
+            className={styles.gaugeFill}
+            fill="none"
+            strokeWidth="9"
+            strokeLinecap="round"
+          />
+        )}
+        <text x={CX} y={CY - 2} textAnchor="middle" className={styles.gaugeValue}>
           {pct !== null ? `${pct}%` : "?"}
         </text>
-        <text
-          x={cx}
-          y={cy + 14}
-          textAnchor="middle"
-          fill="var(--text-muted)"
-          fontSize="10"
-          fontFamily="Inter, sans-serif"
-        >
+        <text x={CX} y={CY + 16} textAnchor="middle" className={styles.gaugeLabel}>
           {label}
         </text>
       </svg>
-      <p className={styles.gaugeCaption}>Avg alignment of last 20 decisions with semantic check</p>
+      <p className={styles.gaugeCaption}>Average alignment of the last 20 decisions with a semantic check</p>
     </div>
   );
 }
-
-

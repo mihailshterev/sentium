@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Pgvector;
 using Pgvector.EntityFrameworkCore;
 using Sentium.Codex.Contracts;
@@ -12,7 +13,7 @@ namespace Sentium.Codex.Features.Rag;
 /// Persists and retrieves document vectors in PostgreSQL (pgvector). Every <see cref="DocumentChunk"/> is one
 /// <see cref="KnowledgeChunk"/> row; a logical collection is the <see cref="KnowledgeChunk.Collection"/> column.
 /// </summary>
-public sealed class PgVectorRepository(CodexDbContext db, ILogger<PgVectorRepository> logger) : IVectorRepository
+public sealed class PgVectorRepository(CodexDbContext db, IOptions<RagOptions> ragOptions, ILogger<PgVectorRepository> logger) : IVectorRepository
 {
     private const int MaxPageLimit = 1000;
 
@@ -53,6 +54,7 @@ public sealed class PgVectorRepository(CodexDbContext db, ILogger<PgVectorReposi
         entity.Metadata = new Dictionary<string, string>(chunk.Metadata);
         entity.CreatedAt = chunk.CreatedAt;
         entity.Embedding = new Vector(embedding);
+        entity.EmbeddingModel = ragOptions.Value.EmbeddingModelName;
 
         await db.SaveChangesAsync(ct);
 

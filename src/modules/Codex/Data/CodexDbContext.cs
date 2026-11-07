@@ -14,7 +14,8 @@ public sealed class CodexDbContext(DbContextOptions<CodexDbContext> options) : D
 
     /// <summary>
     /// Dimensionality of the <c>embedding</c> column. Must match the embedding model output; changing the
-    /// embedding model to one with another size needs a migration (and a re-ingest).
+    /// embedding model to one with another size needs a migration. A model of the same size is re-embedded
+    /// automatically (see <c>KnowledgeChunk.EmbeddingModel</c>).
     /// </summary>
     public const int EmbeddingDimensions = 768;
 
@@ -54,6 +55,7 @@ public sealed class CodexDbContext(DbContextOptions<CodexDbContext> options) : D
                 .HasColumnType("jsonb");
 
             entity.Property(e => e.Embedding).HasColumnType($"vector({EmbeddingDimensions})");
+            entity.Property(e => e.EmbeddingModel).HasMaxLength(255);
 
             entity.HasIndex(e => e.Embedding)
                 .HasMethod("hnsw")

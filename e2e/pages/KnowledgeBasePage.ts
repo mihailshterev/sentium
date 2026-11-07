@@ -9,7 +9,7 @@ export class KnowledgeBasePage {
   }
 
   async expectLoaded(): Promise<void> {
-    await expect(this.page.getByRole("heading", { name: "Knowledge Base" })).toBeVisible();
+    await expect(this.page.getByRole("heading", { level: 1, name: "Knowledge Base" })).toBeVisible();
   }
 
   async switchToGlobalContext(): Promise<void> {

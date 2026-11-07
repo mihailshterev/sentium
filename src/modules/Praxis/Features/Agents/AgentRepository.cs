@@ -122,14 +122,4 @@ public sealed class AgentRepository(PraxisDbContext context) : IAgentRepository
 
         return affectedRows > 0;
     }
-
-    public Task<int> ResetAgentsModelAsync(string modelName, string defaultModel, CancellationToken ct = default)
-    {
-        return context.Agents
-            .Where(a => a.Model == modelName)
-            .ExecuteUpdateAsync(s => s
-                .SetProperty(a => a.Model, defaultModel)
-                .SetProperty(a => a.UpdatedAt, DateTime.UtcNow),
-            ct);
-    }
 }

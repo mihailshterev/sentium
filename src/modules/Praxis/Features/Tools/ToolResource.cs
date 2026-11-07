@@ -10,6 +10,7 @@ public enum ToolResource
     Memory,
     Code,
     External,
+    Inventory,
     Any
 }
 

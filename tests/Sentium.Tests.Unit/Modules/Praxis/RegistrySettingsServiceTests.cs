@@ -27,17 +27,17 @@ public sealed class RegistrySettingsServiceTests
         new(key, JsonSerializer.SerializeToElement(value, new JsonSerializerOptions(JsonSerializerDefaults.Web)), DateTimeOffset.UtcNow, null);
 
     [Fact]
-    public async Task GetAsync_CombinesUserHarnessWithGlobalOllamaSettings()
+    public async Task GetAsync_CombinesUserHarnessWithGlobalInferenceSettings()
     {
         _settings.GetAsync(SettingsKeys.Harness, UserId, Arg.Any<CancellationToken>())
             .Returns(Envelope(SettingsKeys.Harness, new { userHarnessPrompt = "be brief", isBuiltInHarnessEnabled = false, isPromptEnhancementEnabled = true }));
-        _settings.GetAsync(SettingsKeys.Ollama, null, Arg.Any<CancellationToken>())
-            .Returns(Envelope(SettingsKeys.Ollama, new { defaultModel = "qwen3:4b", agentTemperature = 0.7f, agentContextWindow = 8192 }));
+        _settings.GetAsync(SettingsKeys.Inference, null, Arg.Any<CancellationToken>())
+            .Returns(Envelope(SettingsKeys.Inference, new { defaultModel = "qwen3:4b", agentTemperature = 0.7f }));
 
         var snapshot = await _sut.GetAsync(UserId, Ct);
 
         snapshot.Harness.Should().Be(new HarnessSettingsSnapshot("be brief", IsBuiltInHarnessEnabled: false, IsPromptEnhancementEnabled: true));
-        snapshot.Ollama.Should().Be(new OllamaSettingsSnapshot("qwen3:4b", 0.7f, 8192));
+        snapshot.Inference.Should().Be(new InferenceSettingsSnapshot("qwen3:4b", 0.7f));
     }
 
     [Fact]
@@ -52,16 +52,16 @@ public sealed class RegistrySettingsServiceTests
     }
 
     [Fact]
-    public async Task GetAsync_KeepsHarness_WhenOnlyOllamaSettingsFail()
+    public async Task GetAsync_KeepsHarness_WhenOnlyInferenceSettingsFail()
     {
         _settings.GetAsync(SettingsKeys.Harness, UserId, Arg.Any<CancellationToken>())
             .Returns(Envelope(SettingsKeys.Harness, new { userHarnessPrompt = "custom", isBuiltInHarnessEnabled = true }));
-        _settings.GetAsync(SettingsKeys.Ollama, null, Arg.Any<CancellationToken>())
+        _settings.GetAsync(SettingsKeys.Inference, null, Arg.Any<CancellationToken>())
             .ThrowsAsync(new InvalidOperationException("unavailable"));
 
         var snapshot = await _sut.GetAsync(UserId, Ct);
 
         snapshot.Harness.UserHarnessPrompt.Should().Be("custom");
-        snapshot.Ollama.Should().BeNull();
+        snapshot.Inference.Should().BeNull();
     }
 }

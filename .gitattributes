@@ -1,0 +1,2 @@
+*.sh text eol=lf
+infra/llm/** text eol=lf

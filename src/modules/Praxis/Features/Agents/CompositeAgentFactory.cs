@@ -1,8 +1,9 @@
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
-using OllamaSharp;
-using OllamaSharp.Models;
+using Microsoft.Extensions.Options;
+using Sentium.Infrastructure.Inference;
 using Sentium.Praxis.Features.Learnings;
+using Sentium.Praxis.Features.Models;
 using Sentium.Praxis.Features.Registry;
 using Sentium.Praxis.Features.Sentinel;
 using Sentium.Praxis.Features.Skills;
@@ -20,7 +21,8 @@ namespace Sentium.Praxis.Features.Agents;
 /// </summary>
 public sealed class CompositeAgentFactory(
     [FromKeyedServices(PraxisModuleExtensions.AgentChatClientKey)] IChatClient baseChatClient,
-    OllamaOptions ollamaOptions,
+    IOptions<InferenceOptions> inferenceOptions,
+    IModelContextWindowProvider contextWindows,
     IAgentToolProvider agentToolProvider,
     IAgentRepository agentRepository,
     IRegistrySettingsService registrySettingsService,
@@ -43,19 +45,17 @@ public sealed class CompositeAgentFactory(
         var definition = await ResolveDefinitionAsync(agentName, actingUserId, ct)
             ?? throw new InvalidOperationException($"Agent '{agentName}' could not be resolved.");
 
-        var (settings, contextWindow) = await ResolveSettingsAsync(actingUserId, ct);
+        var (settings, model, contextWindow) = await ResolveSettingsAsync(overrideModel, actingUserId, ct);
 
         var tools = SelectTools(definition, allowApprovalTools, ct);
 
         var chatOptions = new ChatOptions
         {
-            ModelId = ResolveModel(overrideModel, settings.Ollama),
+            ModelId = model,
             Instructions = AgentInstructions.Compose(settings.Harness, overrideInstructions ?? definition.Instructions, [.. tools.OfType<AIFunction>()]),
             Tools = tools,
-            Temperature = settings.Ollama?.AgentTemperature ?? ollamaOptions.AgentTemperature,
+            Temperature = settings.Inference?.AgentTemperature ?? InferenceSettingsSnapshot.Default.AgentTemperature,
         };
-
-        chatOptions.AddOllamaOption(OllamaOption.NumCtx, contextWindow);
 
         var options = new ChatClientAgentOptions
         {
@@ -85,17 +85,15 @@ public sealed class CompositeAgentFactory(
         var definition = serviceProvider.GetKeyedService<IAgent>(agentName)
             ?? throw new InvalidOperationException($"Control agent '{agentName}' is not a registered native agent.");
 
-        var (settings, contextWindow) = await ResolveSettingsAsync(actingUserId, ct);
+        var (settings, model, contextWindow) = await ResolveSettingsAsync(overrideModel, actingUserId, ct);
 
         // Lean by design: no harness, tools, skills, or learnings - just the role and a deterministic temperature.
         var chatOptions = new ChatOptions
         {
-            ModelId = ResolveModel(overrideModel, settings.Ollama),
+            ModelId = model,
             Instructions = overrideInstructions ?? definition.Instructions,
             Temperature = 0f,
         };
-
-        chatOptions.AddOllamaOption(OllamaOption.NumCtx, contextWindow);
 
         var chatClient = AgentChatPipeline.Build(baseChatClient, contextWindow, loggerFactory, serviceProvider);
 
@@ -106,13 +104,22 @@ public sealed class CompositeAgentFactory(
             serviceProvider);
     }
 
-    private async Task<(SettingsSnapshot Settings, int ContextWindow)> ResolveSettingsAsync(Guid? actingUserId, CancellationToken ct)
+    /// <summary>
+    /// The acting user's settings, the model to run (override → Registry default → configured default), and that
+    /// model's per-request context window, which sizes compaction. The window is fixed per model by the inference
+    /// server, so it is never sent with the request.
+    /// </summary>
+    private async Task<(SettingsSnapshot Settings, string Model, int ContextWindow)> ResolveSettingsAsync(
+        string? overrideModel,
+        Guid? actingUserId,
+        CancellationToken ct)
     {
         // HTTP callers pass no actingUserId; the entry point has already put the user on the run context.
         var settings = await registrySettingsService.GetAsync(actingUserId ?? runContext.UserId, ct);
-        var contextWindow = settings.Ollama?.AgentContextWindow is > 0 and var configured ? configured : ollamaOptions.AgentContextWindow;
+        var model = ResolveModel(overrideModel, settings.Inference);
+        var contextWindow = await contextWindows.GetContextWindowAsync(model, ct);
 
-        return (settings, contextWindow);
+        return (settings, model, contextWindow);
     }
 
     /// <summary>
@@ -147,13 +154,13 @@ public sealed class CompositeAgentFactory(
         return dbAgent is null ? null : new DynamicCustomAgent(dbAgent.Name, dbAgent.Description);
     }
 
-    private string ResolveModel(string? overrideModel, OllamaSettingsSnapshot? ollamaSettings)
+    private string ResolveModel(string? overrideModel, InferenceSettingsSnapshot? inferenceSettings)
     {
         if (!string.IsNullOrWhiteSpace(overrideModel))
         {
             return overrideModel;
         }
 
-        return !string.IsNullOrWhiteSpace(ollamaSettings?.DefaultModel) ? ollamaSettings.DefaultModel : ollamaOptions.DefaultModel;
+        return !string.IsNullOrWhiteSpace(inferenceSettings?.DefaultModel) ? inferenceSettings.DefaultModel : inferenceOptions.Value.DefaultModel;
     }
 }

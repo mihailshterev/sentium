@@ -1,6 +1,6 @@
-import { Activity, CheckCircle, XCircle, AlertTriangle, ShieldAlert } from "lucide-react";
-import styles from "../vigil.module.scss";
-import { StatCard } from "@/shared/ui/stat-card";
+import { Activity, AlertTriangle, CheckCircle, ShieldAlert, XCircle } from "lucide-react";
+import styles from "../vigil.module.css";
+import { StatCard, StatGrid } from "@/shared/ui/stat-card";
 import type { ServiceStatus } from "@/features/vigil/types/serviceHealth";
 
 interface SummaryStatsProps {
@@ -26,47 +26,34 @@ const overallText = (status: ServiceStatus) => {
 };
 
 export function SummaryStats({ total, healthy, degraded, unhealthy, openIncidents, overallStatus }: SummaryStatsProps) {
-  const badgeClass =
-    overallStatus === "Healthy"
-      ? styles.overallBadgeGreen
-      : overallStatus === "Degraded"
-        ? styles.overallBadgeAmber
-        : styles.overallBadgeRed;
+  const Icon = overallStatus === "Healthy" ? CheckCircle : overallStatus === "Degraded" ? AlertTriangle : XCircle;
 
   return (
-    <div className={styles.summaryRow}>
-      <StatCard icon={<Activity size={16} />} value={total} label="Monitored" iconColor="blue" />
-      <StatCard icon={<CheckCircle size={16} />} value={healthy} label="Healthy" iconColor="green" />
+    <StatGrid minCellWidth={140}>
+      <div className={styles.overall} data-status={overallStatus}>
+        <span className={styles.overallIcon} aria-hidden="true">
+          <Icon size={20} />
+        </span>
+        <span className={styles.overallText}>
+          <span className={styles.overallLabel}>Overall status</span>
+          <span className={styles.overallValue}>{overallText(overallStatus)}</span>
+        </span>
+      </div>
+      <StatCard icon={<Activity />} value={total} label="Monitored" />
+      <StatCard icon={<CheckCircle />} value={healthy} label="Healthy" iconColor="green" />
       <StatCard
-        icon={<AlertTriangle size={16} />}
+        icon={<AlertTriangle />}
         value={degraded}
         label="Degraded"
-        iconColor={degraded > 0 ? "amber" : "green"}
+        iconColor={degraded > 0 ? "amber" : "neutral"}
       />
+      <StatCard icon={<XCircle />} value={unhealthy} label="Unhealthy" iconColor={unhealthy > 0 ? "red" : "neutral"} />
       <StatCard
-        icon={<XCircle size={16} />}
-        value={unhealthy}
-        label="Unhealthy"
-        iconColor={unhealthy > 0 ? "red" : "green"}
-      />
-      <StatCard
-        icon={<ShieldAlert size={16} />}
+        icon={<ShieldAlert />}
         value={openIncidents}
         label="Open Incidents"
-        iconColor={openIncidents > 0 ? "red" : "green"}
+        iconColor={openIncidents > 0 ? "red" : "neutral"}
       />
-      <div className={`${styles.overallBadge} ${badgeClass}`}>
-        {overallStatus === "Healthy" ? (
-          <CheckCircle size={13} />
-        ) : overallStatus === "Degraded" ? (
-          <AlertTriangle size={13} />
-        ) : (
-          <XCircle size={13} />
-        )}
-        <span>{overallText(overallStatus)}</span>
-      </div>
-    </div>
+    </StatGrid>
   );
 }
-
-

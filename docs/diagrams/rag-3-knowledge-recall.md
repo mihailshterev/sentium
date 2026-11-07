@@ -6,7 +6,7 @@ sequenceDiagram
     participant LS as AgentLearningService
     participant EM as Codex · EmbeddingService
     participant VR as Codex · VectorRepository (agent_learnings)
-    participant LLM as Ollama (model)
+    participant LLM as llama-server (chat model)
 
     AG->>LP: ProvideAIContextAsync(latest user message)
     LP->>LS: RecallRelevantAsync(text, userId, max 4)

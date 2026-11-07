@@ -1,10 +1,7 @@
-import { test, expect } from "../fixtures/auth.fixture";
+import { test, expect } from "../fixtures";
+import { uniqueName } from "../support/test-data";
 
-const AGENT_NAME = `e2e-agent-${Date.now()}`;
-const AGENT_DESC = "Created by Playwright E2E suite";
-const UPDATED_DESC = "Updated by Playwright E2E suite";
-
-test.describe.serial("Agent Registry", () => {
+test.describe("Agent Registry", () => {
   test.beforeEach(async ({ agentsPage }) => {
     await agentsPage.goto();
     await agentsPage.expectLoaded();
@@ -23,31 +20,34 @@ test.describe.serial("Agent Registry", () => {
     await expect(page.getByLabel("Description")).toBeVisible();
   });
 
-  test("creates a new agent", { tag: "@regression" }, async ({ agentsPage }) => {
-    await agentsPage.fillAgentName(AGENT_NAME);
-    await agentsPage.fillAgentDescription(AGENT_DESC);
-    await agentsPage.fillModel("gemma3:1b");
-    await agentsPage.submitCreate();
-
-    await agentsPage.expectAgentVisible(AGENT_NAME);
-  });
-
   test("shows validation error when name is empty", { tag: "@regression" }, async ({ page }) => {
     await page.locator("form").evaluate((form: HTMLFormElement) => form.requestSubmit());
     await expect(page.getByText(/name is required/i)).toBeVisible();
   });
 
-  test("edits an existing agent's description", { tag: "@regression" }, async ({ agentsPage }) => {
-    await agentsPage.clickEditOnAgent(AGENT_NAME);
-    await agentsPage.clearAndFillDescriptionInEdit(UPDATED_DESC);
-    await agentsPage.submitEdit();
+  test("creates, edits and deletes an agent", { tag: "@regression" }, async ({ agentsPage }) => {
+    const name = uniqueName("e2e-agent");
 
-    await agentsPage.expectAgentVisible(AGENT_NAME);
-  });
+    await test.step("create", async () => {
+      await agentsPage.fillAgentName(name);
+      await agentsPage.fillAgentDescription("Created by Playwright E2E suite");
+      // No models are installed in e2e, so the model selector is free text.
+      await agentsPage.fillModel("gemma-4-e4b");
+      await agentsPage.submitCreate();
+      await agentsPage.expectAgentVisible(name);
+    });
 
-  test("deletes an agent", { tag: "@regression" }, async ({ agentsPage }) => {
-    await agentsPage.clickDeleteOnAgent(AGENT_NAME);
-    await agentsPage.confirmDelete();
-    await agentsPage.expectAgentNotVisible(AGENT_NAME);
+    await test.step("edit the description", async () => {
+      await agentsPage.clickEditOnAgent(name);
+      await agentsPage.clearAndFillDescriptionInEdit("Updated by Playwright E2E suite");
+      await agentsPage.submitEdit();
+      await agentsPage.expectAgentVisible(name);
+    });
+
+    await test.step("delete", async () => {
+      await agentsPage.clickDeleteOnAgent(name);
+      await agentsPage.confirmDelete();
+      await agentsPage.expectAgentNotVisible(name);
+    });
   });
 });

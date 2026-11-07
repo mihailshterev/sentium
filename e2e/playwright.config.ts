@@ -1,75 +1,91 @@
-import { defineConfig, devices } from "@playwright/test";
-import path from "path";
+import { defineConfig, devices, type PlaywrightTestConfig } from "@playwright/test";
+import { appPort, baseURL, externalBaseURL, isCI, llmStubPort, paths, skipBuild } from "./support/env";
 
-const AUTH_FILE = path.join("playwright", ".auth", "user.json");
-const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || "http://localhost:5173";
+const buildCommands = skipBuild
+  ? []
+  : [
+      `pnpm --dir "${paths.portal}" exec vite build --logLevel warn`,
+      `dotnet build "${paths.webProject}" -c Release --nologo -v quiet`,
+    ];
+
+const appCommand = [
+  `docker compose -f "${paths.composeFile}" up -d --wait`,
+  ...buildCommands,
+  [
+    `dotnet run --project "${paths.webProject}" -c Release --no-build --no-launch-profile`,
+    `-- --environment Testing --urls http://localhost:${appPort}`,
+  ].join(" "),
+].join(" && ");
+
+const webServer: PlaywrightTestConfig["webServer"] = externalBaseURL
+  ? undefined
+  : [
+      {
+        name: "llm-stub",
+        command: `node support/llm-stub.ts ${llmStubPort}`,
+        url: `http://127.0.0.1:${llmStubPort}/health`,
+        reuseExistingServer: !isCI,
+        timeout: 10_000,
+      },
+      {
+        name: "sentium-web",
+        command: appCommand,
+        url: `http://localhost:${appPort}/alive`,
+        reuseExistingServer: !isCI,
+        timeout: (skipBuild ? 2 : 6) * 60_000,
+        stdout: "pipe",
+        stderr: "pipe",
+        env: {
+          ASPNETCORE_ENVIRONMENT: "Testing",
+          DOTNET_ENVIRONMENT: "Testing",
+        },
+      },
+    ];
 
 export default defineConfig({
   testDir: "./tests",
+  outputDir: "./test-results",
   fullyParallel: true,
-  forbidOnly: !!process.env.CI,
-  retries: 2,
-  workers: process.env.CI ? 1 : 3,
-  reporter: process.env.CI ? [["html", { open: "never" }], ["github"]] : [["html", { open: "on-failure" }]],
-  timeout: 60 * 1000,
+  forbidOnly: isCI,
+  retries: isCI ? 2 : 0,
+  workers: isCI ? 2 : undefined,
+  timeout: 30_000,
+  expect: { timeout: 10_000 },
+  reporter: isCI
+    ? [["github"], ["list"], ["html", { open: "never" }], ["junit", { outputFile: "test-results/junit.xml" }]]
+    : [["list"], ["html", { open: "on-failure" }]],
+
   use: {
-    baseURL: BASE_URL,
-    trace: "on-first-retry",
+    baseURL,
+    actionTimeout: 10_000,
+    navigationTimeout: 15_000,
+    trace: isCI ? "on-first-retry" : "retain-on-failure",
     screenshot: "only-on-failure",
-    video: "on-first-retry",
-    headless: true,
-    ignoreHTTPSErrors: true,
-    actionTimeout: 15_000,
-    navigationTimeout: 30_000,
-  },
-  expect: {
-    timeout: 30 * 1000,
+    video: isCI ? "on-first-retry" : "off",
+    contextOptions: { reducedMotion: "reduce" },
   },
 
   projects: [
     {
-      name: "auth-setup",
-      testMatch: /.*auth\.setup\.ts/,
-      use: {
-        ...devices["Desktop Chrome"],
-      },
+      name: "setup",
+      testMatch: /.*\.setup\.ts/,
     },
     {
       name: "chromium",
-      dependencies: ["auth-setup"],
-      use: {
-        ...devices["Desktop Chrome"],
-        storageState: AUTH_FILE,
-      },
+      dependencies: ["setup"],
+      use: { ...devices["Desktop Chrome"], storageState: paths.authState },
     },
     {
       name: "firefox",
-      dependencies: ["auth-setup"],
-      use: {
-        ...devices["Desktop Firefox"],
-        storageState: AUTH_FILE,
-      },
+      dependencies: ["setup"],
+      use: { ...devices["Desktop Firefox"], storageState: paths.authState },
     },
     {
       name: "webkit",
-      dependencies: ["auth-setup"],
-      use: {
-        ...devices["Desktop Safari"],
-        storageState: AUTH_FILE,
-      },
+      dependencies: ["setup"],
+      use: { ...devices["Desktop Safari"], storageState: paths.authState },
     },
   ],
 
-  webServer: {
-    command:
-      "dotnet run --project ../src/aspire/Sentium.AppHost/Sentium.AppHost.csproj -- --TestRun=true --environment Testing",
-    url: BASE_URL,
-    reuseExistingServer: false,
-    timeout: (process.env.CI ? 600 : 300) * 1000,
-    env: {
-      DOTNET_ASPIRE_SHOW_DASHBOARD: "false",
-    },
-    stdout: "pipe",
-    stderr: "pipe",
-  },
+  webServer,
 });

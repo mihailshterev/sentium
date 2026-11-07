@@ -5,7 +5,11 @@ export const AUTH_STATUS = {
   UNAUTHENTICATED: "unauthenticated",
 } as const;
 
-export const DEFAULT_ASSISTANT_MODEL = "gemma4:e4b";
+/**
+ * No model chosen yet: the assistant switches to the server's default model once the model list loads,
+ * and the server applies its default model to an empty model id in the meantime.
+ */
+export const DEFAULT_ASSISTANT_MODEL = "";
 
 export const SUGGESTIONS_POOL = [
   "Summarize this long document",

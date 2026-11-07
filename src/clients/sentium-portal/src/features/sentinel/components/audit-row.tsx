@@ -1,69 +1,86 @@
-import { ChevronDown, ChevronUp } from "lucide-react";
-import styles from "../sentinel.module.scss";
+import { ChevronDown } from "lucide-react";
+import styles from "../sentinel.module.css";
 import type { AuditRecord } from "@/features/sentinel/types/sentinel";
 import { formatTimeHms } from "../../../shared/utils/formatters";
-import { RiskBadge } from "./risk-badge";
-import { EffectBadge } from "./effect-badge";
 import { AlignmentBadge } from "./alignment-badge";
+import { EffectBadge } from "./effect-badge";
+import { RiskBadge } from "./risk-badge";
 
 interface AuditRowProps {
   record: AuditRecord;
   expanded: boolean;
   onToggle: () => void;
+  /** Column count, for the detail row's colspan. */
+  columns?: number;
 }
 
-export function AuditRow({ record, expanded, onToggle }: AuditRowProps) {
+export function AuditRow({ record, expanded, onToggle, columns = 8 }: AuditRowProps) {
   return (
     <>
-      <div
-        className={`${styles.auditRow} ${!record.allowed ? styles.auditRowDenied : ""} ${expanded ? styles.auditRowExpanded : ""}`}
+      <tr
+        className={styles.auditRow}
+        data-denied={!record.allowed || undefined}
+        data-expanded={expanded || undefined}
         onClick={onToggle}
-        role="button"
         tabIndex={0}
-        onKeyDown={(e) => e.key === "Enter" && onToggle()}
+        aria-expanded={expanded}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onToggle();
+          }
+        }}
       >
-        <span className={styles.auditTime}>{formatTimeHms(record.timestamp)}</span>
-        <span className={styles.auditAgent} title={record.agentId}>
+        <td className={styles.time}>{formatTimeHms(record.timestamp)}</td>
+        <td className={styles.truncate} title={record.agentId}>
           {record.agentId}
-        </span>
-        <span className={styles.auditSkill} title={record.skillName}>
+        </td>
+        <td className={`${styles.truncate} ${styles.mono}`} title={record.skillName}>
           {record.skillName || "—"}
-        </span>
-        <span className={styles.auditAction}>{record.action}</span>
-        <EffectBadge allowed={record.allowed} effect={record.effect} />
-        <RiskBadge risk={record.risk} />
-        <AlignmentBadge verdict={record.alignmentVerdict} />
-        <span className={styles.auditChevron}>{expanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}</span>
-      </div>
+        </td>
+        <td>{record.action}</td>
+        <td>
+          <EffectBadge allowed={record.allowed} effect={record.effect} />
+        </td>
+        <td>
+          <RiskBadge risk={record.risk} />
+        </td>
+        <td>
+          <AlignmentBadge verdict={record.alignmentVerdict} />
+        </td>
+        <td className={styles.chevronCell}>
+          <ChevronDown size={15} className={expanded ? styles.chevronOpen : styles.chevron} aria-hidden="true" />
+        </td>
+      </tr>
       {expanded && (
-        <div className={styles.auditDetail}>
-          <div className={styles.auditDetailGrid}>
-            <div>
-              <span className={styles.auditDetailLabel}>Resource</span>
-              <span className={styles.auditDetailValue}>
-                {record.resourceType} / {record.resourceId}
-              </span>
+        <tr className={styles.detailRow}>
+          <td colSpan={columns}>
+            <dl className={styles.detailGrid}>
+              <div>
+                <dt>Resource</dt>
+                <dd>
+                  {record.resourceType} / {record.resourceId}
+                </dd>
+              </div>
+              <div>
+                <dt>Policies triggered</dt>
+                <dd>{record.triggeredPolicies.length > 0 ? record.triggeredPolicies.join(", ") : "None"}</dd>
+              </div>
+              <div>
+                <dt>Evaluation</dt>
+                <dd>{record.evaluationDurationMs}ms</dd>
+              </div>
+              <div>
+                <dt>Correlation ID</dt>
+                <dd className={styles.mono}>{record.correlationId || "—"}</dd>
+              </div>
+            </dl>
+            <div className={styles.reason}>
+              <span className={styles.reasonLabel}>Reason</span>
+              <p className={styles.reasonText}>{record.reason}</p>
             </div>
-            <div>
-              <span className={styles.auditDetailLabel}>Policies Triggered</span>
-              <span className={styles.auditDetailValue}>
-                {record.triggeredPolicies.length > 0 ? record.triggeredPolicies.join(", ") : "None"}
-              </span>
-            </div>
-            <div>
-              <span className={styles.auditDetailLabel}>Eval Duration</span>
-              <span className={styles.auditDetailValue}>{record.evaluationDurationMs}ms</span>
-            </div>
-            <div>
-              <span className={styles.auditDetailLabel}>Correlation ID</span>
-              <span className={`${styles.auditDetailValue} ${styles.mono}`}>{record.correlationId || "—"}</span>
-            </div>
-          </div>
-          <div className={styles.auditReason}>
-            <span className={styles.auditDetailLabel}>Reason</span>
-            <p className={styles.auditReasonText}>{record.reason}</p>
-          </div>
-        </div>
+          </td>
+        </tr>
       )}
     </>
   );

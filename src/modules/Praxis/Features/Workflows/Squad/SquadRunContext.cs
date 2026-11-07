@@ -87,7 +87,7 @@ internal sealed class SquadRunContext(
     }
 
     /// <summary>
-    /// Runs a control agent with a JSON-schema response format - Ollama constrains decoding to the schema - and
+    /// Runs a control agent with a JSON-schema response format - llama-server compiles the schema to a grammar that constrains decoding - and
     /// deserializes the answer. Returns <see langword="default"/> when the model's answer cannot be read.
     /// </summary>
     public async Task<T?> RunStructuredAsync<T>(AIAgent agent, string input, CancellationToken ct, ChatResponseFormat? format = null)

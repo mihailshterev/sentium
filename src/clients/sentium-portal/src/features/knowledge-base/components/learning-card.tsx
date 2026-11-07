@@ -1,7 +1,10 @@
 import { useState } from "react";
-import { Check, Globe, Loader, Lock, Pencil, Trash2, X } from "lucide-react";
-import styles from "../knowledge-base.module.scss";
+import { Check, Globe, Lock, Pencil, Trash2, X } from "lucide-react";
+import styles from "../knowledge-base.module.css";
+import { Badge } from "@/shared/ui/badge";
+import { Button } from "@/shared/ui/button";
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
+import { Input, Textarea } from "@/shared/ui/form-controls";
 
 interface LearningCardProps {
   learning: {
@@ -24,7 +27,6 @@ export function LearningCard({ learning: l, isSaving, isDeleting, onSave, onDele
   const [editing, setEditing] = useState(false);
   const [editContent, setEditContent] = useState(l.content);
   const [editTags, setEditTags] = useState(l.tags);
-
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
 
   const handleEdit = () => {
@@ -32,8 +34,6 @@ export function LearningCard({ learning: l, isSaving, isDeleting, onSave, onDele
     setEditTags(l.tags);
     setEditing(true);
   };
-
-  const handleCancel = () => setEditing(false);
 
   const handleSave = () => {
     if (!editContent.trim()) {
@@ -43,90 +43,115 @@ export function LearningCard({ learning: l, isSaving, isDeleting, onSave, onDele
     setEditing(false);
   };
 
-  const handleConfirmDelete = () => {
-    setIsConfirmOpen(false);
-    onDelete();
-  };
+  const tags = l.tags
+    ? l.tags
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean)
+    : [];
 
   return (
-    <div
-      className={`${styles.learningCard} ${editing ? styles.learningCardEditing : ""} ${l.isGlobal ? styles.learningCardGlobal : ""}`}
-    >
-      <div className={styles.learningCardHeader}>
+    <li className={`${styles.learning} ${editing ? styles.learningEditing : ""}`}>
+      <div className={styles.learningHeader}>
         <div className={styles.learningMeta}>
-          <span className={styles.agentBadge}>{l.agentName}</span>
+          <span className={styles.agentName}>{l.agentName}</span>
           <span className={styles.learningDate}>{formatDate(l.capturedAt)}</span>
-          {l.tags &&
-            l.tags
-              .split(",")
-              .filter(Boolean)
-              .map((tag) => (
-                <span key={tag} className={styles.tag}>
-                  {tag.trim()}
-                </span>
-              ))}
-          <span
-            className={l.isGlobal ? styles.pillCyan : styles.pillMuted}
+          <Badge
+            tone={l.isGlobal ? "info" : "neutral"}
             title={l.isGlobal ? "Validated and shared with all users' agents" : "Private to your agents"}
           >
-            {l.isGlobal ? <Globe size={10} /> : <Lock size={10} />}
+            {l.isGlobal ? <Globe size={11} aria-hidden="true" /> : <Lock size={11} aria-hidden="true" />}
             {l.isGlobal ? "Global" : "Private"}
-          </span>
-          <span className={l.isIngested ? styles.pillGreen : styles.pillAmber}>
-            {l.isIngested ? "Indexed" : "Pending"}
-          </span>
+          </Badge>
+          <Badge tone={l.isIngested ? "success" : "warning"}>{l.isIngested ? "Indexed" : "Pending"}</Badge>
         </div>
 
-        <div className={styles.cardActions}>
+        <div className={styles.learningActions}>
           {editing ? (
-            <button className={`${styles.btnIcon} ${styles.btnIconActive}`} onClick={handleCancel} title="Cancel">
-              <X size={13} />
-            </button>
+            <Button
+              variant="ghost"
+              size="sm"
+              iconOnly
+              icon={<X size={15} />}
+              onClick={() => setEditing(false)}
+              title="Cancel"
+            />
           ) : (
-            <button className={styles.btnIcon} onClick={handleEdit} title="Edit learning" disabled={isDeleting}>
-              <Pencil size={13} />
-            </button>
+            <Button
+              variant="ghost"
+              size="sm"
+              iconOnly
+              icon={<Pencil size={15} />}
+              onClick={handleEdit}
+              title="Edit learning"
+              disabled={isDeleting}
+            />
           )}
-          <button
-            className={`${styles.btnIcon} ${styles.btnIconDanger}`}
-            disabled={isDeleting || isSaving}
+          <Button
+            variant="ghost"
+            size="sm"
+            iconOnly
+            icon={<Trash2 size={15} />}
+            loading={isDeleting}
+            disabled={isSaving}
             onClick={() => setIsConfirmOpen(true)}
             title="Delete learning"
-          >
-            {isDeleting ? <Loader size={13} className={styles.spin} /> : <Trash2 size={13} />}
-          </button>
+            className={styles.deleteButton}
+          />
         </div>
       </div>
 
       {editing ? (
         <div className={styles.editBody}>
-          <p className={styles.editLabel}>Content (markdown)</p>
-          <textarea
-            className={styles.editTextarea}
+          <label className={styles.editLabel} htmlFor={`learning-content-${l.id}`}>
+            Content (markdown)
+          </label>
+          <Textarea
+            id={`learning-content-${l.id}`}
+            mono
+            rows={5}
             value={editContent}
             onChange={(e) => setEditContent(e.target.value)}
             spellCheck={false}
           />
-          <p className={styles.editLabel}>Tags (comma-separated)</p>
-          <input
-            className={styles.editTagsInput}
+          <label className={styles.editLabel} htmlFor={`learning-tags-${l.id}`}>
+            Tags (comma-separated)
+          </label>
+          <Input
+            id={`learning-tags-${l.id}`}
             type="text"
             value={editTags}
             onChange={(e) => setEditTags(e.target.value)}
             placeholder="e.g. workflow, memory, agent"
           />
           <div className={styles.editActions}>
-            <button className={styles.btnSecondary} onClick={handleCancel}>
+            <Button variant="ghost" onClick={() => setEditing(false)}>
               Cancel
-            </button>
-            <button className={styles.btnPrimary} onClick={handleSave} disabled={isSaving || !editContent.trim()}>
-              {isSaving ? <Loader size={12} /> : <Check size={12} />}
+            </Button>
+            <Button
+              variant="primary"
+              icon={<Check size={15} />}
+              loading={isSaving}
+              disabled={!editContent.trim()}
+              onClick={handleSave}
+            >
               {isSaving ? "Saving…" : "Save"}
-            </button>
+            </Button>
           </div>
         </div>
       ) : (
-        <div className={styles.learningContent}>{l.content}</div>
+        <>
+          <p className={styles.learningContent}>{l.content}</p>
+          {tags.length > 0 && (
+            <div className={styles.tags}>
+              {tags.map((tag) => (
+                <span key={tag} className={styles.tag}>
+                  #{tag}
+                </span>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       <ConfirmDialog
@@ -136,11 +161,12 @@ export function LearningCard({ learning: l, isSaving, isDeleting, onSave, onDele
         description="Are you sure you want to delete this captured memory item? This cannot be undone and will remove it from the agent's contextual knowledge base."
         confirmLabel="Delete Item"
         cancelLabel="Cancel"
-        onConfirm={handleConfirmDelete}
+        onConfirm={() => {
+          setIsConfirmOpen(false);
+          onDelete();
+        }}
         onCancel={() => setIsConfirmOpen(false)}
       />
-    </div>
+    </li>
   );
 }
-
-

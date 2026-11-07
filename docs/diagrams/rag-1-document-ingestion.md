@@ -4,7 +4,7 @@ sequenceDiagram
     participant C as Caller (Praxis worker / service, in-process)
     participant DI as Codex · DocumentIngestionService
     participant TC as TextChunker
-    participant EM as OllamaEmbeddingService
+    participant EM as EmbeddingService
     participant VR as PgVectorRepository
     participant PG as PostgreSQL (codex.knowledge_chunks)
 

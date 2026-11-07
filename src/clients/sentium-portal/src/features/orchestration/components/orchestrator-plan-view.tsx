@@ -1,6 +1,6 @@
-import { Bot, Cpu, FileText, GitBranch, ChevronDown } from "lucide-react";
+import { Bot, Cpu, FileText, GitBranch } from "lucide-react";
 import type { ElementType } from "react";
-import styles from "../agent-orchestration.module.scss";
+import styles from "../agent-orchestration.module.css";
 import type { AgentAssignment } from "../../../shared/utils/agent-helpers";
 
 const roleIcon = (author: string): ElementType => {
@@ -18,32 +18,22 @@ interface OrchestratorPlanViewProps {
 
 export function OrchestratorPlanView({ assignments, getRoleClass }: OrchestratorPlanViewProps) {
   return (
-    <div className={styles.planFlow}>
+    <ol className={styles.plan} aria-label="Plan">
       {assignments.map((a, i) => {
         const Icon = roleIcon(a.agent);
-        const roleClass = styles[getRoleClass(a.agent)];
         return (
-          <div key={`${a.agent}-${i}`} className={styles.planStep}>
-            <div className={`${styles.planCard} ${roleClass}`}>
-              <span className={styles.planStepNum}>{i + 1}</span>
-              <div className={styles.planCardMain}>
-                <div className={styles.planCardHeader}>
-                  <span className={`${styles.planCardIcon} ${roleClass}`}>
-                    <Icon size={14} />
-                  </span>
-                  <span className={styles.planAgentName}>{a.agent}</span>
-                </div>
-                <div className={styles.planCardTask}>{a.task}</div>
-              </div>
+          <li key={`${a.agent}-${i}`} className={`${styles.planStep} ${styles[getRoleClass(a.agent)]}`}>
+            <span className={styles.planNum}>{i + 1}</span>
+            <div className={styles.planMain}>
+              <span className={styles.planAgent}>
+                <Icon size={14} aria-hidden="true" />
+                {a.agent}
+              </span>
+              <span className={styles.planTask}>{a.task}</span>
             </div>
-            {i < assignments.length - 1 && (
-              <div className={styles.planConnector} aria-hidden="true">
-                <ChevronDown size={14} />
-              </div>
-            )}
-          </div>
+          </li>
         );
       })}
-    </div>
+    </ol>
   );
 }

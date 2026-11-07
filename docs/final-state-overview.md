@@ -59,19 +59,21 @@ Mapping old → new:
   need for live, per-user/global settings).
 - **Sentinel** - Policy Decision Point; every agent tool call and every sandbox execution is
   checked before it runs (new governance layer, the proposal's "strict permissions" made concrete).
-- **Vigil** - system health monitoring; the read-only successor to the _Inventory & Asset
-  Service_, now focused on module and dependency health rather than household devices.
+- **Locus** - the household inventory: a location tree, assets (tags, search, attachments) and
+  the read-only view assistants get of them. The successor to the proposal's _Inventory & Asset
+  Service_; items marked as shared reach agents through the knowledge base and inventory tools.
+- **Vigil** - system health monitoring, focused on module and dependency health.
 - **Sentium.Sandbox** - isolated code execution in hardened Docker containers (new; enables safe
   agent autonomy). Stateless: it authorizes each run with Sentinel and returns the result, and
   Praxis records it.
 - **Frontend** - `sentium-portal` (React), including its own login page, built into and served by
   Sentium.Web.
 - **Infrastructure** (all local, started by Aspire): PostgreSQL with pgvector (one database, one
-  schema per module), Redis, Ollama, Azurite.
+  schema per module), Redis, llama.cpp's `llama-server` (a chat-model router plus an embeddings server), Azurite.
 
 ### AI Integration
 
-- Local inference only, via **Ollama** behind the `Microsoft.Extensions.AI` abstraction, with agents
+- Local inference only, via **llama-server**'s OpenAI-compatible API behind the `Microsoft.Extensions.AI` abstraction, with agents
   and multi-agent workflows built on the **Microsoft Agent Framework** (Gemma default, Qwen
   alternative) - no direct provider calls
 - **RAG** on **PostgreSQL + pgvector** with `embeddinggemma-2:740m` (768-dim) across three
@@ -91,6 +93,7 @@ Mapping old → new:
 - Sandboxed code execution in hardened containers
 - Policy-governed actions with a full audit trail (Sentinel)
 - Scheduled, autonomous background tasks
+- Household inventory that assistants can search ("where is the drill?") (Locus)
 - Module and dependency health monitoring and incident tracking (Vigil)
 - Semantic-map visualization of stored knowledge/memories
 

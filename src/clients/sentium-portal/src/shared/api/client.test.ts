@@ -236,3 +236,41 @@ describe("client non-401 error handling", () => {
     await expect(client.get("/bad-json")).rejects.toThrow("HTTP error! status: 503");
   });
 });
+
+describe("client.postForm()", () => {
+  beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
+
+  it("sends the form as-is and lets the browser set the multipart Content-Type", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      status: 201,
+      headers: new Headers({ "Content-Length": "10" }),
+      json: async () => ({ id: "att-1" }),
+    } as unknown as Response);
+    const form = new FormData();
+    form.append("kind", "Photo");
+
+    const result = await client.postForm<{ id: string }>("/upload", form);
+
+    const [url, config] = vi.mocked(fetch).mock.calls[0];
+    expect(url).toBe(`${BASE_URL}/upload`);
+    expect((config as RequestInit).method).toBe("POST");
+    expect((config as RequestInit).body).toBe(form);
+    expect((config as RequestInit).headers).not.toHaveProperty("Content-Type");
+    expect(result).toEqual({ id: "att-1" });
+  });
+
+  it("surfaces ProblemDetails errors as ApiError", async () => {
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      headers: new Headers(),
+      json: async () => ({ title: "Invalid request", detail: "Unsupported file type." }),
+    } as unknown as Response);
+
+    await expect(client.postForm("/upload", new FormData())).rejects.toMatchObject({
+      status: 400,
+      message: "Unsupported file type.",
+    });
+  });
+});

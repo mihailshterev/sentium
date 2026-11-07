@@ -1,11 +1,14 @@
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using NSubstitute;
+using Sentium.Infrastructure.Inference;
 using Sentium.Praxis.Entities;
 using Sentium.Praxis.Features.Agents;
 using Sentium.Praxis.Features.Agents.Native;
 using Sentium.Praxis.Features.Learnings;
+using Sentium.Praxis.Features.Models;
 using Sentium.Praxis.Features.Registry;
 using Sentium.Praxis.Features.Sentinel;
 using Sentium.Praxis.Features.Skills;
@@ -27,7 +30,8 @@ internal sealed class AgentTestHost
     public IRegistrySettingsService Settings { get; } = Substitute.For<IRegistrySettingsService>();
     public IPolicyDecisionPoint Pdp { get; } = Substitute.For<IPolicyDecisionPoint>();
     public PdpContextAccessor RunContext { get; } = new();
-    public OllamaOptions Ollama { get; } = new() { DefaultModel = "gemma-test", AgentContextWindow = 8192 };
+    public InferenceOptions Inference { get; } = new() { DefaultModel = "gemma-test" };
+    public IModelContextWindowProvider ContextWindows { get; } = Substitute.For<IModelContextWindowProvider>();
     public List<AITool> Tools { get; } = [];
 
     public AgentTestHost()
@@ -37,6 +41,7 @@ internal sealed class AgentTestHost
         Skills.GetForUserAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(Array.Empty<AgentSkill>());
         Learnings.RecallRelevantAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
             .Returns(Array.Empty<RecalledLearning>());
+        ContextWindows.GetContextWindowAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(8192);
         AllowAllTools();
     }
 
@@ -67,7 +72,8 @@ internal sealed class AgentTestHost
 
         return new CompositeAgentFactory(
             Model,
-            Ollama,
+            Options.Create(Inference),
+            ContextWindows,
             toolProvider,
             Substitute.For<IAgentRepository>(),
             Settings,

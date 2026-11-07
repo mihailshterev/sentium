@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Http.Resilience;
 using Sentium.Core.Constants;
+using Sentium.Infrastructure.Inference;
 using Sentium.Vigil.Features.Metrics;
 using Sentium.Vigil.Features.Monitoring;
 using Sentium.Vigil.Features.Monitoring.Probes;
@@ -19,6 +20,7 @@ public static class VigilModuleExtensions
         ("Sentinel", "sentinel"),
         ("Praxis",   "praxis"),
         ("Codex",    "codex"),
+        ("Locus",    "locus"),
         ("Registry", "registry")
     ];
 
@@ -83,18 +85,26 @@ public static class VigilModuleExtensions
         AddTcpProbe(services, configuration, ResourceNames.Redis, "Redis", defaultPort: 6379);
         AddTcpProbe(services, configuration, ResourceNames.Postgres, "PostgreSQL", defaultPort: 5432);
 
-        var ollamaConn = configuration.GetConnectionString(ResourceNames.Ollama);
-        var ollamaUri = EndpointResolver.ResolveUri(ollamaConn);
-        if (ollamaUri is not null)
+        // Both llama-server instances expose an unauthenticated /health that only turns healthy once their
+        // model is loaded, so a loading or crashed model shows up here, not just a dead process.
+        var inference = configuration.GetSection(InferenceOptions.SectionName).Get<InferenceOptions>() ?? new InferenceOptions();
+        AddHttpInfraProbe(services, "LLM", $"{ResourceNames.Llm}-probe", inference.ChatEndpoint);
+        AddHttpInfraProbe(services, "Embeddings", $"{ResourceNames.Embeddings}-probe", inference.EmbeddingEndpoint);
+    }
+
+    private static void AddHttpInfraProbe(IServiceCollection services, string target, string clientName, Uri baseAddress)
+    {
+#pragma warning disable EXTEXP0001
+        services.AddHttpClient(clientName, client =>
         {
-            const string ollamaClient = "ollama-probe";
-            services.AddHttpClient(ollamaClient, client => client.BaseAddress = ollamaUri);
-            services.AddSingleton<IHealthProbe>(sp => new HttpInfraHealthProbe(sp.GetRequiredService<IHttpClientFactory>(), ollamaClient, "Ollama", "api/version"));
-        }
-        else
-        {
-            AddTcpProbe(services, configuration, ResourceNames.Ollama, "Ollama", defaultPort: 11434);
-        }
+            client.BaseAddress = baseAddress;
+            client.Timeout = TimeSpan.FromSeconds(30);
+        })
+        .RemoveAllResilienceHandlers()
+        .RemoveAllLoggers();
+#pragma warning restore EXTEXP0001
+
+        services.AddSingleton<IHealthProbe>(sp => new HttpInfraHealthProbe(sp.GetRequiredService<IHttpClientFactory>(), clientName, target, "health"));
     }
 
     private static void AddTcpProbe(IServiceCollection services, IConfiguration configuration, string connectionName, string target, int defaultPort)

@@ -18,13 +18,12 @@
     <PackageVersion Include="Aspire.Hosting.Redis" Version="$(AspireVersion)" />
     <PackageVersion Include="Aspire.Npgsql.EntityFrameworkCore.PostgreSQL" Version="$(AspireVersion)" />
     <PackageVersion Include="Aspire.StackExchange.Redis.DistributedCaching" Version="$(AspireVersion)" />
-    <PackageVersion Include="CommunityToolkit.Aspire.Hosting.Ollama" Version="13.6.1" />
 
     <!-- AI -->
     <PackageVersion Include="Microsoft.Agents.AI" Version="$(AgentFrameworkVersion)" />
     <PackageVersion Include="Microsoft.Agents.AI.Workflows" Version="$(AgentFrameworkVersion)" />
     <PackageVersion Include="Microsoft.Extensions.AI" Version="10.10.0" />
-    <PackageVersion Include="OllamaSharp" Version="5.5.0" />
+    <PackageVersion Include="Microsoft.Extensions.AI.OpenAI" Version="10.10.0" />
 
     <!-- Data -->
     <PackageVersion Include="Azure.Storage.Blobs" Version="12.30.1" />
@@ -52,6 +51,7 @@
     <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery.Abstractions" Version="10.2.0" />
     <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery.Dns" Version="10.2.0" />
     <PackageVersion Include="Quartz.Extensions.Hosting" Version="3.18.0" />
+    <PackageVersion Include="Quartz.Serialization.SystemTextJson" Version="3.18.0" />
 
     <!-- Observability -->
     <PackageVersion Include="OpenTelemetry.Api" Version="1.18.0" />

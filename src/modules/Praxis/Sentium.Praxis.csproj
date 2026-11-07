@@ -14,10 +14,10 @@
     <PackageReference Include="Microsoft.Agents.AI" />
     <PackageReference Include="Microsoft.Agents.AI.Workflows" />
     <PackageReference Include="Microsoft.Extensions.AI" />
-    <PackageReference Include="OllamaSharp" />
     <PackageReference Include="Aspire.Azure.Storage.Blobs" />
     <PackageReference Include="Azure.Storage.Blobs" />
     <PackageReference Include="Quartz.Extensions.Hosting" />
+    <PackageReference Include="Quartz.Serialization.SystemTextJson" />
   </ItemGroup>
 
   <ItemGroup>
@@ -26,6 +26,7 @@
     <ProjectReference Include="..\Registry\Sentium.Registry.csproj" />
     <ProjectReference Include="..\Sentinel\Sentium.Sentinel.csproj" />
     <ProjectReference Include="..\Codex\Sentium.Codex.csproj" />
+    <ProjectReference Include="..\Locus\Sentium.Locus.csproj" />
   </ItemGroup>
 
 </Project>

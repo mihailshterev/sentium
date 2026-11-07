@@ -8,7 +8,7 @@ using Microsoft.Extensions.AI;
 namespace Sentium.Praxis.Features.Agents;
 
 /// <summary>
-/// Assembles the per-agent chat pipeline on top of the shared, singleton base client (OpenTelemetry → Ollama):
+/// Assembles the per-agent chat pipeline on top of the shared, singleton base client (OpenTelemetry → inference server):
 /// <c>FunctionInvocation → Compaction → base</c>. The two per-agent layers are cheap, resource-free decorators;
 /// telemetry instruments (ActivitySource/Meter) live only on the shared base, so nothing is created or leaked per request.
 /// </summary>
@@ -29,7 +29,7 @@ internal static class AgentChatPipeline
     private const int MinimumPreservedGroups = 4;
 
     /// <param name="baseClient">The shared agent base client (keyed <see cref="PraxisModuleExtensions.AgentChatClientKey"/>).</param>
-    /// <param name="contextWindow">The agent's <c>num_ctx</c>; compaction budgets are fractions of it.</param>
+    /// <param name="contextWindow">Tokens one request to the agent's model may use (see <see cref="Models.IModelContextWindowProvider"/>); compaction budgets are fractions of it.</param>
     /// <param name="services">Request services - flows to tools as <see cref="AIFunctionArguments.Services"/>.</param>
     public static IChatClient Build(IChatClient baseClient, int contextWindow, ILoggerFactory loggerFactory, IServiceProvider services) =>
         new ChatClientBuilder(baseClient)

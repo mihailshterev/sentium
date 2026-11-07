@@ -12,7 +12,7 @@ public sealed class ResearchAnalyst : IAgent
 {
     public string Name => AgentRole.ResearchAnalyst;
 
-    public string Description => "Finds, verifies, and summarises information from the knowledge base, learnings, and workspace files, with sources.";
+    public string Description => "Finds, verifies, and summarises information from the knowledge base, learnings, workspace files, and household inventory, with sources.";
 
     public IReadOnlyList<string>? Tools =>
     [
@@ -21,6 +21,9 @@ public sealed class ResearchAnalyst : IAgent
         ToolNames.ListWorkspaces,
         ToolNames.ListWorkspaceFiles,
         ToolNames.ReadWorkspaceFileContent,
+        ToolNames.FindAssets,
+        ToolNames.GetAsset,
+        ToolNames.ListLocationContents,
         ToolNames.CaptureAgentLearning,
     ];
 

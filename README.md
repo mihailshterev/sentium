@@ -2,7 +2,7 @@
 
 > A self-hostable, security-first platform for building, orchestrating and governing autonomous AI agents - powered entirely by local LLMs.
 
-Sentium is a multi-agent platform built on **.NET 10** - a modular monolith orchestrated by **Aspire** - and a **React** front-end. It lets you create AI agents, compose them into multi-agent workflows, give them tools (code execution, knowledge retrieval, scheduling, memory), and run the whole thing **on your own hardware** against **local models served by Ollama** - no data ever leaves the machine.
+Sentium is a multi-agent platform built on **.NET 10** - a modular monolith orchestrated by **Aspire** - and a **React** front-end. It lets you create AI agents, compose them into multi-agent workflows, give them tools (code execution, knowledge retrieval, scheduling, memory), and run the whole thing **on your own hardware** against **local models served by llama.cpp** (`llama-server`) - no data ever leaves the machine.
 
 What sets Sentium apart is that every agent action is **mediated by a security control plane**: a dedicated Policy Decision Point (Sentinel) authorizes each tool call, a hardened Docker sandbox isolates all code execution, and a continuous self-improvement loop lets agents learn from past runs.
 
@@ -22,23 +22,24 @@ What sets Sentium apart is that every agent action is **mediated by a security c
 
 ## Key features
 
-| Capability                               | Description                                                                                                                                                                               |
-| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Conversational assistant**             | A streaming (SSE) chat assistant with tool use, live "thinking" traces, and human-in-the-loop approval for high-risk tool calls.                                                          |
-| **Custom agents**                        | Define your own agents (name, persona/instructions, model) and manage them through the portal.                                                                                            |
-| **Multi-agent orchestration**            | An Orchestrator agent decomposes a goal, assembles a squad of specialist agents, runs them sequentially, then a Validator agent reviews and triggers self-correcting re-runs.             |
-| **Visual workflow builder**              | Compose reusable, ordered multi-agent workflows; run them on demand and replay every run from a persisted log.                                                                            |
-| **Retrieval-Augmented Generation (RAG)** | Document ingestion (chunk → embed → store in PostgreSQL/pgvector) across three vector collections: knowledge base, agent learnings, and user memories (the Codex module).                 |
-| **Self-improvement loop**                | Agents capture reusable learnings that are automatically, semantically recalled and injected into future runs.                                                                            |
-| **Isolated code execution**              | Agents can run Python / Node.js in a heavily hardened, network-disabled Docker sandbox; output artifacts are harvested to blob storage.                                                   |
-| **Skills**                               | Built-in skills plus user-defined and uploaded-Markdown skills, unlocked on demand via a `load_skill` mechanism.                                                                          |
-| **Autonomous scheduling**                | Agents (or users) can schedule recurring background jobs (Quartz cron) that execute code through the sandbox.                                                                             |
-| **Workspaces & files**                   | Upload files into workspaces; they are asynchronously vectorized and made available to agents as context.                                                                                 |
-| **Security control plane (Sentinel)**    | Every tool call passes a Policy Decision Point that performs rate-limiting and an LLM-based semantic-intent / prompt-injection check, with a fail-closed posture and full forensic audit. |
-| **Health monitoring (Vigil)**            | Continuous probing of every module, the sandbox and the infrastructure, incident tracking, and a live status stream.                                                                      |
-| **Knowledge map**                        | An interactive, animated visualization of the vector store and semantic search traversal.                                                                                                 |
-| **Centralized configuration (Registry)** | Per-user and global runtime settings with a two-tier cache and in-process invalidation.                                                                                                   |
-| **Identity & access**                    | ASP.NET Core Identity with cookie-based session authentication, a two-tier role model (Member / Sovereign), and per-user data isolation.                                                  |
+| Capability                               | Description                                                                                                                                                                                                                                              |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Conversational assistant**             | A streaming (SSE) chat assistant with tool use, live "thinking" traces, and human-in-the-loop approval for high-risk tool calls.                                                                                                                         |
+| **Custom agents**                        | Define your own agents (name, persona/instructions, model) and manage them through the portal.                                                                                                                                                           |
+| **Multi-agent orchestration**            | An Orchestrator agent decomposes a goal, assembles a squad of specialist agents, runs them sequentially, then a Validator agent reviews and triggers self-correcting re-runs.                                                                            |
+| **Visual workflow builder**              | Compose reusable, ordered multi-agent workflows; run them on demand and replay every run from a persisted log.                                                                                                                                           |
+| **Retrieval-Augmented Generation (RAG)** | Document ingestion (chunk → embed → store in PostgreSQL/pgvector) across three vector collections: knowledge base, agent learnings, and user memories (the Codex module).                                                                                |
+| **Self-improvement loop**                | Agents capture reusable learnings that are automatically, semantically recalled and injected into future runs.                                                                                                                                           |
+| **Isolated code execution**              | Agents can run Python / Node.js in a heavily hardened, network-disabled Docker sandbox; output artifacts are harvested to blob storage.                                                                                                                  |
+| **Skills**                               | Built-in skills plus user-defined and uploaded-Markdown skills, unlocked on demand via a `load_skill` mechanism.                                                                                                                                         |
+| **Autonomous scheduling**                | Agents (or users) can schedule recurring background jobs (Quartz cron) that execute code through the sandbox.                                                                                                                                            |
+| **Workspaces & files**                   | Upload files into workspaces; they are asynchronously vectorized and made available to agents as context.                                                                                                                                                |
+| **Household inventory (Locus)**          | A shared location tree (Home → Garage → Shelf) and asset catalogue with search, tags and photo/manual/receipt attachments; items shared with assistants are synced to the knowledge base and answerable through read-only tools ("where is the drill?"). |
+| **Security control plane (Sentinel)**    | Every tool call passes a Policy Decision Point that performs rate-limiting and an LLM-based semantic-intent / prompt-injection check, with a fail-closed posture and full forensic audit.                                                                |
+| **Health monitoring (Vigil)**            | Continuous probing of every module, the sandbox and the infrastructure, incident tracking, and a live status stream.                                                                                                                                     |
+| **Knowledge map**                        | An interactive, animated visualization of the vector store and semantic search traversal.                                                                                                                                                                |
+| **Centralized configuration (Registry)** | Per-user and global runtime settings with a two-tier cache and in-process invalidation.                                                                                                                                                                  |
+| **Identity & access**                    | ASP.NET Core Identity with cookie-based session authentication, a two-tier role model (Member / Sovereign), and per-user data isolation.                                                                                                                 |
 
 ---
 
@@ -56,12 +57,14 @@ flowchart TB
         Identity["Identity<br/>(users · roles · session)"]
         Praxis["Praxis<br/>(agents · orchestration · workflows · scheduling)"]
         Codex["Codex<br/>(RAG · knowledge base)"]
+        Locus["Locus<br/>(household inventory)"]
         Sentinel["Sentinel<br/>(Policy Decision Point)"]
         Registry["Registry<br/>(settings)"]
         Vigil["Vigil<br/>(health)"]
     end
 
-    Praxis -->|Contracts| Codex & Sentinel & Registry
+    Praxis -->|Contracts| Codex & Sentinel & Registry & Locus
+    Locus -->|Contracts| Codex
     Sentinel -->|Contracts| Registry
     Vigil -->|Contracts| Registry
 
@@ -71,11 +74,11 @@ flowchart TB
     subgraph Infrastructure
         PG[("PostgreSQL + pgvector<br/>one schema per module")]
         Redis[("Redis<br/>HybridCache L2")]
-        Ollama[("Ollama<br/>local LLMs")]
+        LLM[("llama-server<br/>chat router + embeddings")]
         Blobs[("Azurite<br/>blob storage")]
     end
 
-    Web --> PG & Redis & Ollama & Blobs
+    Web --> PG & Redis & LLM & Blobs
     Sandbox --> Blobs
 ```
 
@@ -83,14 +86,15 @@ flowchart TB
 
 ### Modules
 
-| Module       | Responsibility                                                                                                                                                                                                           |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Identity** | ASP.NET Core Identity: users, roles, profile and registration, plus the cookie session endpoints the portal uses (`/api/identity/account/login`, `/session`, `/logout`). The browser only ever holds an HttpOnly cookie. |
-| **Praxis**   | The core engine: agents, the streaming assistant, conversations, multi-agent orchestration, workflows, learnings, skills, tools, workspaces, the Quartz scheduler, and the sandbox execution history.                    |
-| **Codex**    | The knowledge base: embeddings, the pgvector store (`codex` schema), document ingestion and the knowledge map. Other modules push their content (learnings, memories, workspace files) through it.                       |
-| **Sentinel** | The Policy Decision Point (PDP). Every agent tool call and sandbox execution is authorized through a defence-in-depth policy stack, with forensic auditing and a fail-closed default.                                    |
-| **Registry** | Centralized, key-based runtime settings with per-user and global scopes, two-tier caching and in-process invalidation.                                                                                                   |
-| **Vigil**    | Probes every module, the sandbox and each infrastructure dependency, raises and resolves incidents, and streams live health over SSE.                                                                                    |
+| Module       | Responsibility                                                                                                                                                                                                                                                                                                                      |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Identity** | ASP.NET Core Identity: users, roles, profile and registration, plus the cookie session endpoints the portal uses (`/api/identity/account/login`, `/session`, `/logout`). The browser only ever holds an HttpOnly cookie.                                                                                                            |
+| **Praxis**   | The core engine: agents, the streaming assistant, conversations, multi-agent orchestration, workflows, learnings, skills, tools, workspaces, the Quartz scheduler, and the sandbox execution history.                                                                                                                               |
+| **Codex**    | The knowledge base: embeddings, the pgvector store (`codex` schema), document ingestion and the knowledge map. Other modules push their content (learnings, memories, workspace files) through it.                                                                                                                                  |
+| **Locus**    | The household inventory (`locus` schema): a location tree, assets with tags and search, and attachments in blob storage. Shared by every household member; items marked as shared are synced to the knowledge base through a durable outbox and exposed to agents read-only (`find_assets`, `get_asset`, `list_location_contents`). |
+| **Sentinel** | The Policy Decision Point (PDP). Every agent tool call and sandbox execution is authorized through a defence-in-depth policy stack, with forensic auditing and a fail-closed default.                                                                                                                                               |
+| **Registry** | Centralized, key-based runtime settings with per-user and global scopes, two-tier caching and in-process invalidation.                                                                                                                                                                                                              |
+| **Vigil**    | Probes every module, the sandbox and each infrastructure dependency, raises and resolves incidents, and streams live health over SSE.                                                                                                                                                                                               |
 
 **Sentium.Sandbox** is stateless: it has no database and no user-facing API. It accepts only `POST /execute` from Sentium.Web, asks Sentinel to authorize each run, executes the code in a hardened container and uploads any output artifacts to blob storage. Praxis records every run, including denied ones, and serves the history at `/api/sandbox/*`.
 
@@ -127,17 +131,18 @@ Modules reference each other only through `Contracts`; a unit test (`ModuleBound
 
 - .NET 10 / C# · ASP.NET Core
 - .NET Aspire (orchestration & service discovery)
-- `Microsoft.Extensions.AI` + `Microsoft.Agents.AI` (agent framework) over **Ollama**
+- `Microsoft.Extensions.AI` + `Microsoft.Agents.AI` (agent framework) over the **OpenAI-compatible API** of llama.cpp's `llama-server`
 - Entity Framework Core (PostgreSQL via Npgsql) · pgvector (vector store)
 - ASP.NET Core Identity (cookie authentication)
 - Redis (HybridCache) · Quartz.NET (scheduling)
 - Docker.DotNet (sandbox)
 - FluentValidation · Polly · Serilog → OpenTelemetry
 
-**Models (default, all local via Ollama)**
+**Models (default, all local via llama.cpp)**
 
-- Chat / reasoning: **Gemma** (`gemma4:e4b` by default; Qwen3 and others selectable)
-- Embeddings: **embeddinggemma-2:740m** (768-dimensional)
+- Chat / reasoning: **Gemma 4 E4B** (`gemma-4-e4b`, Q4_0 GGUF), served by `llama-server` in router mode. More models are declared in [`infra/llm/models.ini`](infra/llm/models.ini).
+- Embeddings: **EmbeddingGemma 2** (`embeddinggemma-2`, Q8_0, 768-dimensional) on a dedicated `llama-server`.
+- Model files are pinned by Hugging Face revision and SHA-256 in [`infra/llm/models.lock`](infra/llm/models.lock) and verified on download.
 
 **Frontend**
 
@@ -164,11 +169,11 @@ Modules reference each other only through `Contracts`; a unit test (`ModuleBound
 - **.NET 10 SDK**
 - **pnpm** (11.x)
 - **Docker** - required for the code-execution sandbox, Testcontainers, and the Aspire-managed infrastructure containers
-- An NVIDIA GPU is recommended for usable local-LLM latency (the AppHost requests GPU support for Ollama), but not strictly required
+- An NVIDIA GPU is recommended for usable local-LLM latency (the AppHost runs the CUDA build of llama-server by default; set `Llm:UseGpu=false` for CPU), but not strictly required
 
 ### Run the whole system
 
-The Aspire AppHost is the single entry point. It starts Sentium.Web, the Sandbox, the portal, and every infrastructure dependency (PostgreSQL with pgvector, Redis, Ollama, Azurite), and automatically pulls the default Ollama models on first run.
+The Aspire AppHost is the single entry point. It starts Sentium.Web, the Sandbox, the portal, and every infrastructure dependency (PostgreSQL with pgvector, Redis, the llama.cpp inference servers, Azurite), and downloads and checksum-verifies the default models on first run.
 
 ```bash
 dotnet run --project src/aspire/Sentium.AppHost/Sentium.AppHost.csproj
@@ -176,7 +181,7 @@ dotnet run --project src/aspire/Sentium.AppHost/Sentium.AppHost.csproj
 
 Then open the **Aspire dashboard** (the URL is printed on startup) to see every resource, its logs, and its endpoints. The **portal** is at `http://localhost:5173`; it sends you to its own `/login` page to sign in or register.
 
-> First start takes a while: Docker images and the Ollama models are downloaded. Subsequent starts reuse the persisted data volumes.
+> First start takes a while: Docker images and about 5 GB of model files are downloaded. Subsequent starts reuse the persisted data volumes (the models volume `sentium-llm-models` is shared with Docker Compose).
 
 ### Run with Docker Compose
 
@@ -202,13 +207,13 @@ Once the stack is healthy:
 
 - **Portal and API (Sentium.Web)** - `https://localhost:8443`
 
-Sentium.Web applies every module's EF Core migrations automatically on first start, and a one-shot `ollama-init` container pulls the chat + embedding models into a persistent volume.
+Sentium.Web applies every module's EF Core migrations automatically on first start, and a one-shot `models-init` container downloads the model files pinned in `infra/llm/models.lock` into the shared `sentium-llm-models` volume, verifying each SHA-256.
 
 **Notes & caveats**
 
 - **HTTPS for the session cookie.** Sentium.Web terminates TLS (step 2) so the session cookie can be issued as `Secure`. The built portal is served from the same origin, so no CORS is involved. This mirrors how the Aspire setup runs over HTTPS.
 - **Code sandbox.** The Sandbox mounts the host Docker socket and a job directory that must share an identical path on host and container (`SANDBOX_JOBS_DIR`). This works on Linux/macOS and the WSL2 backend; Windows users should point it at a path inside WSL2.
-- **GPU.** Local inference is slow on CPU. Uncomment the NVIDIA `deploy` block on the `ollama` service (requires the NVIDIA Container Toolkit) for GPU acceleration.
+- **GPU.** Local inference is slow on CPU. Add the GPU override (requires the NVIDIA Container Toolkit): `docker compose -f docker-compose.yml -f docker-compose.gpu.yml up --build`.
 
 > The Aspire AppHost remains the recommended path for day-to-day development (richer dashboard, hot reload, no cert setup). Docker Compose targets self-hosted deployment.
 
@@ -254,19 +259,24 @@ pnpm test:run
 pnpm test:coverage
 ```
 
-**End-to-end (Playwright)** - boots the full Aspire stack (`--TestRun=true`) in a dedicated Testing mode with a throwaway database (`sentiumdb_e2e`) and seeded baseline data:
+**End-to-end (Playwright)** - independent of Aspire. Playwright starts PostgreSQL, Redis and Azurite from `e2e/compose.e2e.yaml` (tmpfs, ports offset from the dev stack), builds the portal into `Sentium.Web/wwwroot`, and runs Sentium.Web in the `Testing` environment on `http://localhost:5180` - one origin, exactly like production. Each boot drops and re-seeds `sentiumdb_e2e`. The inference servers are replaced by a deterministic stub (`e2e/support/llm-stub.ts`) that declares no models. Needs Docker, .NET and pnpm:
 
 ```bash
 cd e2e
-pnpm test          # headless
-pnpm test:ui       # visual mode
+pnpm install && pnpm exec playwright install   # once
+pnpm test                 # all browsers, headless
+pnpm test:chromium        # one browser
+pnpm test:ui              # visual mode (reuses an already running app)
+pnpm infra:down           # remove the e2e containers
 ```
+
+Set `PLAYWRIGHT_BASE_URL` to run the suite against an already running Testing stack instead (nothing is started then).
 
 ---
 
 ## Deployment & trust model
 
-Sentium is designed to be **self-hosted** - typically by a single operator on a single host (or a single private network), with all AI inference running locally via Ollama. This deployment model is what justifies several of the security choices below, so it is worth making the trust boundary explicit:
+Sentium is designed to be **self-hosted** - typically by a single operator on a single host (or a single private network), with all AI inference running locally via llama.cpp's `llama-server`. This deployment model is what justifies several of the security choices below, so it is worth making the trust boundary explicit:
 
 - **Sentium.Web is the only public surface.** The browser talks exclusively to it over an `HttpOnly` session cookie. The Sandbox and the infrastructure run on the internal/orchestrated network and are not intended to be exposed to the public internet.
 - **Inside that boundary, Sentium.Web and the Sandbox authenticate to each other with a pre-shared internal token** (`X-Internal-Token`, the `SystemCaller` policy). For a single-operator, single-host deployment this is a right-sized, low-friction choice: there is no untrusted co-tenant on the internal network, and it avoids forcing operators to provision certificates, a PKI, or a service mesh. The internal token acts as **defense-in-depth on top of** network isolation, not as the sole control.
@@ -280,7 +290,7 @@ Sentium is designed to be **self-hosted** - typically by a single operator on a 
 Security is a first-class concern, enforced at several layers:
 
 1. **Authentication** - ASP.NET Core Identity in the Identity module. The browser only receives a `Secure`, `HttpOnly` session cookie and never holds a token.
-2. **Authorization** - a two-tier role model (`Member`, `Sovereign`). Privileged operations (user/role management, model pull/delete, global settings, audit log) require `Sovereign`.
+2. **Authorization** - a two-tier role model (`Member`, `Sovereign`). Privileged operations (user/role management, loading/unloading models, global settings, audit log) require `Sovereign`.
 3. **Data isolation** - every user-scoped entity is filtered by `UserId` through EF Core global query filters; cache keys and vector searches are user-scoped.
 4. **Policy Decision Point (Sentinel)** - every agent tool call is authorized before execution. The policy stack performs sliding-window rate limiting and an **LLM-based semantic-intent check** that compares the attempted action against the user's original prompt to catch prompt injection and agent hallucination. The engine is **fail-closed**: any error denies the action, and every decision is written to a forensic audit log.
 5. **Human-in-the-loop** - high-risk tools (e.g. code execution) pause the stream and require explicit user approval before running.
@@ -300,6 +310,7 @@ src/
   modules/
     Codex/                         # RAG and the knowledge base
     Identity/                      # users, roles, session cookie
+    Locus/                         # household inventory (locations, assets, attachments)
     Praxis/                        # core engine (agents, orchestration, workflows, scheduling)
     Registry/                      # centralized configuration
     Sentinel/                      # Policy Decision Point

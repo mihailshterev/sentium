@@ -1,0 +1,280 @@
+.root {
+  position: relative;
+  container-type: inline-size;
+  width: 100%;
+  aspect-ratio: 5 / 4;
+  margin: 0;
+  border: 1px solid var(--mat-regular-border);
+  border-radius: var(--radius-lg);
+  background: var(--mat-regular-bg);
+  box-shadow: var(--mat-regular-shadow);
+  backdrop-filter: var(--mat-regular-filter);
+
+  /* Node tones. */
+  & [data-tone="ok"] {
+    --tone: var(--success);
+  }
+
+  & [data-tone="warn"] {
+    --tone: var(--warning);
+  }
+
+  & [data-tone="critical"] {
+    --tone: var(--danger);
+  }
+
+  & [data-tone="neutral"] {
+    --tone: var(--text-muted);
+  }
+
+  & [data-tone="accent"] {
+    --tone: var(--accent);
+  }
+
+  & [data-tone="cyan"] {
+    --tone: var(--accent-cyan);
+  }
+
+  & [data-tone="purple"] {
+    --tone: var(--accent-purple);
+  }
+
+  & [data-tone="gold"] {
+    --tone: var(--gold);
+  }
+}
+
+.root.bare {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.layer {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* Isometric lattice, strongest around the rings and fading towards the frame. */
+.grid {
+  mask-image: radial-gradient(closest-side, #000 55%, rgba(0, 0, 0, 0.25) 85%, transparent 100%);
+}
+
+.gridLine {
+  fill: none;
+  stroke: var(--field-line);
+  stroke-width: 1;
+}
+
+.orbSlot {
+  position: absolute;
+  aspect-ratio: 1;
+}
+
+.orb {
+  width: 100%;
+  height: 100%;
+}
+
+.lines {
+  fill: none;
+  stroke: var(--border-color);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+
+  & * {
+    vector-effect: non-scaling-stroke;
+  }
+}
+
+.faint {
+  stroke: var(--border-subtle);
+}
+
+.strong {
+  stroke: var(--border-strong);
+}
+
+.dashed {
+  stroke-dasharray: 2 6;
+}
+
+/* Tick ring turns slowly as one compositor layer. */
+.spin {
+  transform-origin: 400px 320px;
+  animation: orbit 240s linear infinite;
+}
+
+.satellite {
+  fill: var(--accent);
+  transform-origin: 400px 320px;
+  animation: orbit 90s linear infinite reverse;
+
+  & circle {
+    filter: drop-shadow(0 0 4px var(--accent-glow));
+  }
+}
+
+.core {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.45);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.links {
+  stroke: var(--border-strong);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+  opacity: 0.55;
+
+  & line {
+    vector-effect: non-scaling-stroke;
+  }
+}
+
+.node {
+  --tone: var(--text-muted);
+}
+
+.halo {
+  fill: color-mix(in srgb, var(--tone) 12%, transparent);
+  stroke: color-mix(in srgb, var(--tone) 55%, transparent);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.dot {
+  fill: var(--tone);
+}
+
+.callout {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+
+  & * {
+    vector-effect: non-scaling-stroke;
+  }
+}
+
+/* ---------- HTML overlay (crisp text at any size) ---------- */
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.04em;
+}
+
+.label {
+  position: absolute;
+  padding: 1px 4px;
+  border-radius: var(--radius-xs);
+  background: color-mix(in srgb, var(--bg-base) 72%, transparent);
+  color: var(--text-secondary);
+  line-height: 1.3;
+  white-space: nowrap;
+
+  &[data-side="right"] {
+    transform: translate(0, -50%);
+  }
+
+  &[data-side="left"] {
+    transform: translate(-100%, -50%);
+  }
+
+  &[data-side="top"] {
+    transform: translate(-50%, -100%);
+  }
+
+  &[data-side="bottom"] {
+    transform: translate(-50%, 0);
+  }
+}
+
+.innerLabel {
+  color: var(--text-muted);
+}
+
+/* Readout sits on the leader's horizontal run, aligned to the frame edge. */
+.readout {
+  position: absolute;
+  display: grid;
+  gap: 2px;
+  min-width: 148px;
+  margin: 0;
+  padding: 7px 9px 8px;
+  border: 1px solid var(--border-subtle);
+  border-bottom: none;
+  background: color-mix(in srgb, var(--bg-base) 82%, transparent);
+  transform: translate(0, -100%);
+
+  &[data-side="right"] {
+    transform: translate(-100%, -100%);
+    text-align: right;
+  }
+}
+
+.readoutRow {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+
+  & dt {
+    color: var(--text-muted);
+  }
+
+  & dd {
+    margin: 0;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.caption {
+  position: absolute;
+  bottom: 12px;
+  padding: 1px 4px;
+  background: color-mix(in srgb, var(--bg-base) 82%, transparent);
+  color: var(--text-muted);
+}
+
+.captionLeft {
+  left: 12px;
+}
+
+.captionRight {
+  right: 12px;
+}
+
+@container (max-width: 460px) {
+  .innerLabel {
+    display: none;
+  }
+
+  .label {
+    font-size: 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin,
+  .satellite {
+    animation: none;
+  }
+}
+
+@keyframes orbit {
+  to {
+    transform: rotate(360deg);
+  }
+}

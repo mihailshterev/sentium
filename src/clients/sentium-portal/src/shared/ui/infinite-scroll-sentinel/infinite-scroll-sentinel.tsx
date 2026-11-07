@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { Loader2 } from "lucide-react";
-import styles from "./infinite-scroll-sentinel.module.scss";
+import styles from "./infinite-scroll-sentinel.module.css";
 
 interface InfiniteScrollSentinelProps {
   hasMore: boolean;

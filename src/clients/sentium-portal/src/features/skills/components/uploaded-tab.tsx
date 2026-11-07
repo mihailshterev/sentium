@@ -1,12 +1,17 @@
 import { useRef, useState } from "react";
-import { BookOpen, Check, Loader, Upload, X } from "lucide-react";
-import styles from "../skills.module.scss";
+import { BookOpen, Check, Upload } from "lucide-react";
+import styles from "../skills.module.css";
 import { useSkills } from "@/features/skills/hooks/useSkills";
 import type { AgentSkill } from "@/features/skills/types/skills";
+import { Button } from "@/shared/ui/button";
+import { Card, CardHeader } from "@/shared/ui/card";
 import { EmptyState } from "@/shared/ui/empty-state";
+import { Input, Textarea } from "@/shared/ui/form-controls";
+import { FormField } from "@/shared/ui/form-field";
 import { LoadMore } from "@/shared/ui/load-more";
 import { StatusMessage } from "@/shared/ui/status-message";
 import { SkillCard } from "./skill-card";
+import { SkillListSkeleton } from "./skill-list-skeleton";
 
 export function UploadedTab() {
   const {
@@ -35,14 +40,18 @@ export function UploadedTab() {
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      return;
+    }
     setUploadError(null);
     try {
       await uploadSkill(file);
     } catch (err) {
       setUploadError(err instanceof Error ? err.message : "Upload failed");
     } finally {
-      if (fileRef.current) fileRef.current.value = "";
+      if (fileRef.current) {
+        fileRef.current.value = "";
+      }
     }
   };
 
@@ -70,107 +79,92 @@ export function UploadedTab() {
   };
 
   return (
-    <div className={styles.card}>
-      <div className={styles.cardHeader}>
-        <div className={styles.cardHeaderLeft}>
-          <Upload size={15} className={styles.cardIconGreen} />
-          <div>
-            <p className={styles.cardTitle}>Uploaded Skills</p>
-            <p className={styles.cardSubtitle}>Skills loaded from Markdown (.md) files - editable after upload</p>
-          </div>
+    <Card padding="none" as="section">
+      <CardHeader
+        icon={<Upload />}
+        title="Uploaded Skills"
+        description="Skills loaded from Markdown (.md) files - editable after upload"
+        actions={
+          <>
+            <Button
+              variant="primary"
+              size="sm"
+              icon={<Upload size={15} />}
+              loading={isUploading}
+              onClick={() => fileRef.current?.click()}
+            >
+              Upload .md
+            </Button>
+            <input ref={fileRef} type="file" accept=".md" hidden onChange={(e) => void handleFileChange(e)} />
+          </>
+        }
+      />
+
+      {uploadError && (
+        <div className={styles.inlineMessage}>
+          <StatusMessage variant="error" message={uploadError} />
         </div>
-        <div className={styles.headerActions}>
-          {uploadError && (
-            <span className={styles.errorText}>
-              <X size={12} />
-              {uploadError}
-            </span>
-          )}
-          <button className={styles.btnPrimary} onClick={() => fileRef.current?.click()} disabled={isUploading}>
-            {isUploading ? <Loader size={13} className={styles.spin} /> : <Upload size={13} />}
-            Upload .md
-          </button>
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".md"
-            style={{ display: "none" }}
-            onChange={(e) => void handleFileChange(e)}
-          />
-        </div>
-      </div>
+      )}
 
-      <div className={styles.cardBody}>
-        {isLoading && (
-          <p className={styles.loadingText}>
-            <Loader size={14} className="animate-spin" />
-            Loading skills…
-          </p>
-        )}
-
-        {!isLoading && uploadedSkills.length === 0 && (
-          <EmptyState
-            icon={<BookOpen size={32} />}
-            title="No uploaded skills yet"
-            hint="Upload a Markdown file - the content becomes the skill instructions."
-          />
-        )}
-
-        <div className={styles.skillList}>
+      {isLoading ? (
+        <SkillListSkeleton />
+      ) : uploadedSkills.length === 0 ? (
+        <EmptyState
+          icon={<BookOpen />}
+          title="No uploaded skills yet"
+          hint="Upload a Markdown file - the content becomes the skill instructions."
+        />
+      ) : (
+        <ul className={styles.skillList}>
           {uploadedSkills.map((skill) =>
             editingId === skill.id ? (
-              <div key={skill.id} className={`${styles.skillRow} ${styles.skillRowEditing}`}>
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Name</label>
-                  <input
-                    className={styles.input}
-                    value={editForm.name}
-                    onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
-                  />
+              <li key={skill.id} className={`${styles.skillRow} ${styles.editor}`}>
+                <div className={styles.editorGrid}>
+                  <FormField id={`uploaded-name-${skill.id}`} label="Name">
+                    <Input
+                      id={`uploaded-name-${skill.id}`}
+                      value={editForm.name}
+                      onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))}
+                    />
+                  </FormField>
+                  <FormField id={`uploaded-description-${skill.id}`} label="Description">
+                    <Input
+                      id={`uploaded-description-${skill.id}`}
+                      value={editForm.description}
+                      onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
+                    />
+                  </FormField>
                 </div>
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Description</label>
-                  <input
-                    className={styles.input}
-                    value={editForm.description}
-                    onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
-                  />
-                </div>
-                <div className={styles.formGroup}>
-                  <label className={styles.label}>Instructions</label>
-                  <textarea
-                    className={styles.textarea}
+                <FormField id={`uploaded-instructions-${skill.id}`} label="Instructions">
+                  <Textarea
+                    id={`uploaded-instructions-${skill.id}`}
+                    mono
                     rows={8}
                     value={editForm.instructions}
                     onChange={(e) => setEditForm((f) => ({ ...f, instructions: e.target.value }))}
                   />
-                </div>
-                <div className={styles.formActions}>
-                  <button
-                    className={styles.btnGhost}
+                </FormField>
+                {saveError && <StatusMessage variant="error" message={saveError} />}
+                <div className={styles.editorActions}>
+                  <Button
+                    variant="ghost"
                     onClick={() => {
                       setEditingId(null);
                       setSaveError(null);
                     }}
                   >
-                    <X size={13} />
                     Cancel
-                  </button>
-                  <button
-                    className={styles.btnPrimary}
+                  </Button>
+                  <Button
+                    variant="primary"
+                    icon={<Check size={15} />}
+                    loading={isUpdating && updatingId === skill.id}
                     onClick={() => void handleSave(skill.id)}
-                    disabled={isUpdating && updatingId === skill.id}
                   >
-                    {isUpdating && updatingId === skill.id ? (
-                      <Loader size={13} className={styles.spin} />
-                    ) : (
-                      <Check size={13} />
-                    )}
                     Save
-                  </button>
+                  </Button>
                 </div>
-                {saveError && <StatusMessage variant="error" message={saveError} />}
-              </div>
+              </li>
             ) : (
               <SkillCard
                 key={skill.id}
@@ -182,16 +176,14 @@ export function UploadedTab() {
                 isDeleting={isDeleting && deletingId === skill.id}
                 isUpdating={isUpdating && updatingId === skill.id}
                 pill="uploaded"
-                pillClass={styles.pillGreen}
+                pillTone="success"
                 fileName={skill.fileName ?? undefined}
               />
             ),
           )}
-          <LoadMore hasMore={hasMore} isLoading={isLoadingMore} onLoadMore={loadMore} />
-        </div>
-      </div>
-    </div>
+        </ul>
+      )}
+      <LoadMore hasMore={hasMore} isLoading={isLoadingMore} onLoadMore={loadMore} />
+    </Card>
   );
 }
-
-

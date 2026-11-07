@@ -1,5 +1,5 @@
 import { AlertTriangle, ChevronRight, File } from "lucide-react";
-import styles from "../sandbox.module.scss";
+import styles from "../sandbox.module.css";
 import type { SandboxExecutionLog } from "@/features/sandbox/types/sandbox";
 import { formatDateTimeShort, formatRelativeTime } from "../../../shared/utils/formatters";
 import { RunStatusBadge } from "./run-status-badge";
@@ -11,37 +11,40 @@ interface RunRowProps {
 
 export function RunRow({ run, onOpen }: RunRowProps) {
   return (
-    <div
+    <tr
       className={styles.runRow}
-      role="button"
       tabIndex={0}
       onClick={() => onOpen(run.jobId)}
       onKeyDown={(e) => e.key === "Enter" && onOpen(run.jobId)}
     >
-      <span className={styles.runStatusCell}>
-        <RunStatusBadge entry={run} />
-        {run.timedOut && (
-          <span className={styles.runTimeout} title="Execution timed out">
-            <AlertTriangle size={11} />
-          </span>
-        )}
-      </span>
-      <span className={styles.runAgent} title={run.agentId}>
+      <td>
+        <span className={styles.statusCell}>
+          <RunStatusBadge entry={run} />
+          {run.timedOut && (
+            <span className={styles.timeout} title="Execution timed out">
+              <AlertTriangle size={13} />
+            </span>
+          )}
+        </span>
+      </td>
+      <td className={styles.agent} title={run.agentId}>
         {run.agentId}
-      </span>
-      <span className={`${styles.langChip} ${run.language === "Python" ? styles.langPython : styles.langNode}`}>
-        {run.language}
-      </span>
-      <span className={styles.runStarted} title={formatDateTimeShort(run.executedAt)}>
-        {formatRelativeTime(run.executedAt)}
-      </span>
-      <span className={styles.runDuration}>{run.durationMs.toLocaleString()} ms</span>
-      <span className={styles.runExit}>exit {run.exitCode}</span>
-      <span className={styles.runArtifacts}>
-        <File size={12} />
-        {run.artifacts.length}
-      </span>
-      <ChevronRight size={15} className={styles.runChevron} />
-    </div>
+      </td>
+      <td>
+        <span className={styles.lang}>{run.language}</span>
+      </td>
+      <td title={formatDateTimeShort(run.executedAt)}>{formatRelativeTime(run.executedAt)}</td>
+      <td className="num">{run.durationMs.toLocaleString()} ms</td>
+      <td className={styles.mono}>exit {run.exitCode}</td>
+      <td className="num">
+        <span className={styles.artifacts}>
+          <File size={13} aria-hidden="true" />
+          {run.artifacts.length}
+        </span>
+      </td>
+      <td className={styles.chevronCell}>
+        <ChevronRight size={16} aria-hidden="true" />
+      </td>
+    </tr>
   );
 }

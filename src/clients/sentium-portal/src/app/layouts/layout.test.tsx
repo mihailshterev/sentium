@@ -37,7 +37,7 @@ describe("Layout", () => {
       </QueryClientProvider>,
     );
 
-    expect(screen.getByText("SENTIUM")).toBeInTheDocument();
+    expect(screen.getByText("Sentium")).toBeInTheDocument();
     expect(screen.getByText("child page")).toBeInTheDocument();
     expect(screen.getByRole("main")).toBeInTheDocument();
   });

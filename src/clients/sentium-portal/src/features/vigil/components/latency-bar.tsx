@@ -1,13 +1,11 @@
-import styles from "../vigil.module.scss";
+import styles from "../vigil.module.css";
 
 export function LatencyBar({ latencyMs }: { latencyMs: number }) {
   const pct = Math.min((latencyMs / 1000) * 100, 100);
-  const color = latencyMs < 100 ? "green" : latencyMs < 400 ? "amber" : "red";
+  const tone = latencyMs < 100 ? "ok" : latencyMs < 400 ? "warn" : "critical";
   return (
-    <div className={styles.latencyBarWrap}>
-      <div className={`${styles.latencyBar} ${styles[`latencyBar_${color}`]}`} style={{ width: `${pct}%` }} />
+    <div className={styles.latencyTrack} aria-hidden="true">
+      <div className={styles.latencyFill} data-tone={tone} style={{ width: `${Math.max(pct, 3)}%` }} />
     </div>
   );
 }
-
-

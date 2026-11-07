@@ -1,9 +1,10 @@
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using OllamaSharp;
+using Microsoft.Extensions.Options;
 using Quartz;
 using Sentium.Core.Constants;
 using Sentium.Infrastructure.Extensions;
+using Sentium.Infrastructure.Inference;
 using Sentium.Infrastructure.Security;
 using Sentium.Praxis.Features.Agents;
 using Sentium.Praxis.Features.Agents.Native;
@@ -12,14 +13,17 @@ using Sentium.Praxis.Features.Conversations;
 using Sentium.Praxis.Data;
 using Sentium.Praxis.Extensions;
 using Sentium.Praxis.Features.Learnings;
+using Sentium.Praxis.Features.Models;
 using Sentium.Praxis.Features.Orchestration;
 using Sentium.Praxis.Features.Registry;
+using Sentium.Praxis.Features.Scheduling;
 using Sentium.Praxis.Features.Sentinel;
 using Sentium.Praxis.Features.Skills;
 using Sentium.Praxis.Features.Skills.BuiltIn;
 using Sentium.Praxis.Features.Storage;
 using Sentium.Praxis.Testing;
 using Sentium.Praxis.Features.Tools;
+using Sentium.Praxis.Features.Tools.Inventory;
 using Sentium.Praxis.Features.Tools.Workspace;
 using Sentium.Praxis.Features.WorkflowManagement;
 using Sentium.Praxis.Features.Workflows;
@@ -34,12 +38,12 @@ public static class PraxisModuleExtensions
 
     /// <summary>
     /// Named HttpClient for the agent chat models. Module-specific so it never merges configuration
-    /// with the Ollama clients other modules register.
+    /// with the inference clients other modules register.
     /// </summary>
-    internal const string OllamaHttpClientName = "praxis-ollama";
+    internal const string LlmHttpClientName = "praxis-llm";
 
     /// <summary>
-    /// Key of the shared base client agents run on (OpenTelemetry → Ollama). Each agent adds its own function-invocation
+    /// Key of the shared base client agents run on (OpenTelemetry → inference server). Each agent adds its own function-invocation
     /// and compaction layers on top (see <see cref="AgentChatPipeline"/>). The unkeyed <see cref="IChatClient"/> is the
     /// plain pipeline for direct, non-agent calls.
     /// </summary>
@@ -95,19 +99,16 @@ public static class PraxisModuleExtensions
         services.AddTransient<IAgentTool, WriteWorkspaceFileTool>();
         services.AddTransient<IAgentTool, CaptureAgentLearningTool>();
         services.AddTransient<IAgentTool, ScheduleTaskTool>();
+        services.AddTransient<IAgentTool, FindAssetsTool>();
+        services.AddTransient<IAgentTool, GetAssetTool>();
+        services.AddTransient<IAgentTool, ListLocationContentsTool>();
 
         services.AddScoped<IConversationRepository, ConversationRepository>();
         services.AddScoped<ConversationChatHistoryProvider>();
         services.AddScoped<IWorkflowRepository, WorkflowRepository>();
         services.AddScoped<IWorkflowRunRepository, WorkflowRunRepository>();
 
-        services.AddQuartz(q =>
-        {
-            // TODO: Enable persistent store
-            q.UseInMemoryStore();
-        });
-
-        services.AddQuartzHostedService(options => options.WaitForJobsToComplete = true);
+        AddScheduling(services);
 
         services.AddSingleton<SentinelClient>();
         services.AddSingleton<SentinelFunctionMiddleware>();
@@ -175,25 +176,59 @@ public static class PraxisModuleExtensions
 
     private static void AddInference(IServiceCollection services, IConfiguration configuration)
     {
-        var modelName = configuration["AI:ModelName"] ?? AIModels.Gemma4_E4B;
+        services.AddInferenceHttpClient(configuration, LlmHttpClientName, InferenceEndpoint.Chat)
+            .AddTypedClient<IModelCatalog, LlamaRouterModelCatalog>();
 
-        services.AddSingleton(new OllamaOptions { BaseUrl = configuration.GetOllamaBaseUrl(), DefaultModel = modelName });
-        services.AddOllamaHttpClient(configuration, OllamaHttpClientName);
+        services.AddMemoryCache();
+        services.AddScoped<IModelContextWindowProvider, CatalogModelContextWindowProvider>();
 
-        // Direct (non-agent) calls: prompt enhancement, learning sanitization.
-        services.AddChatClient(sp => CreateOllamaClient(sp, modelName))
+        // Direct (non-agent) calls on the default model: prompt enhancement, learning sanitization.
+        services.AddChatClient(CreateDefaultModelClient)
             .UseFunctionInvocation()
             .UseOpenTelemetry();
 
         // Shared agent base: telemetry records each request exactly as sent. Agents pick their model via ChatOptions.ModelId.
-        services.AddKeyedChatClient(AgentChatClientKey, sp => CreateOllamaClient(sp, modelName))
+        services.AddKeyedChatClient(AgentChatClientKey, CreateDefaultModelClient)
             .UseOpenTelemetry();
     }
 
-    private static OllamaApiClient CreateOllamaClient(IServiceProvider sp, string defaultModel)
+    private static IChatClient CreateDefaultModelClient(IServiceProvider sp)
     {
-        var httpClient = sp.GetRequiredService<IHttpClientFactory>().CreateClient(OllamaHttpClientName);
-        return new OllamaApiClient(httpClient) { SelectedModel = defaultModel };
+        var defaultModel = sp.GetRequiredService<IOptions<InferenceOptions>>().Value.DefaultModel;
+
+        return sp.GetRequiredService<IInferenceClientFactory>().CreateChatClient(LlmHttpClientName, defaultModel);
+    }
+
+    private static void AddScheduling(IServiceCollection services)
+    {
+        services.AddQuartz(q =>
+        {
+            q.SchedulerName = SchedulerDefaults.SchedulerName;
+            q.SchedulerId = "AUTO";
+
+            q.MisfireThreshold = TimeSpan.FromMinutes(1);
+
+            q.UsePersistentStore(store =>
+            {
+                store.UseProperties = true;
+                store.PerformSchemaValidation = true;
+                store.RetryInterval = TimeSpan.FromSeconds(15);
+
+                store.UsePostgres(postgres =>
+                {
+                    postgres.ConnectionStringName = ResourceNames.SentiumDb;
+                    postgres.TablePrefix = SchedulerDefaults.TablePrefix;
+                });
+
+                store.UseSystemTextJsonSerializer();
+            });
+        });
+
+        services.AddQuartzHostedService(options =>
+        {
+            options.AwaitApplicationStarted = true;
+            options.WaitForJobsToComplete = true;
+        });
     }
 
     /// <summary>

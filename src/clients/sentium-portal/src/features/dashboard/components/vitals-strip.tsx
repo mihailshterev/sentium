@@ -1,6 +1,7 @@
-import { Cpu, MemoryStick, Clock, Server } from "lucide-react";
-import styles from "../dashboard.module.scss";
+import { Clock, Cpu, MemoryStick, Server } from "lucide-react";
+import styles from "../dashboard.module.css";
 import { formatUptime } from "../../system/system-utils";
+import { Card } from "@/shared/ui/card";
 import type { SystemMetrics } from "@/features/system/types/system";
 import type { ServiceHealthStatus } from "@/features/vigil/types/serviceHealth";
 
@@ -10,87 +11,77 @@ interface VitalsStripProps {
   loading: boolean;
 }
 
-function barIconClass(pct: number): string {
+function level(pct: number): "ok" | "warn" | "critical" {
   if (pct > 90) {
-    return styles.vitalsIconRed;
+    return "critical";
   }
-  if (pct > 70) {
-    return styles.vitalsIconAmber;
-  }
-  return styles.vitalsIconGreen;
+  return pct > 70 ? "warn" : "ok";
+}
+
+interface VitalProps {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  /** 0-100; renders a meter when provided. */
+  percent?: number;
+  tone?: "ok" | "warn" | "critical";
+}
+
+function Vital({ icon, label, value, percent, tone = "ok" }: VitalProps) {
+  return (
+    <div className={styles.vital}>
+      <span className={styles.vitalIcon} data-tone={tone} aria-hidden="true">
+        {icon}
+      </span>
+      <div className={styles.vitalText}>
+        <span className={styles.vitalValue}>{value}</span>
+        <span className={styles.vitalLabel}>{label}</span>
+      </div>
+      {percent !== undefined && (
+        <div
+          className={styles.meter}
+          role="meter"
+          aria-label={label}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(percent)}
+        >
+          <div className={styles.meterFill} data-tone={tone} style={{ width: `${Math.min(percent, 100)}%` }} />
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function VitalsStrip({ metrics, services, loading }: VitalsStripProps) {
   const cpuPct = metrics?.cpu.processCpuPercent ?? 0;
   const memPct = metrics?.memory.memoryLoadPercent ?? 0;
-  const uptime = metrics ? formatUptime(metrics.host.uptime) : "—";
   const healthyCount = services.filter((s) => s.status === "Healthy").length;
   const totalServices = services.length;
 
   return (
-    <div className={styles.vitalsStrip}>
-      <div className={styles.vitalsSegment}>
-        <Cpu size={14} className={loading ? styles.vitalsIconMuted : barIconClass(cpuPct)} />
-        <div className={styles.vitalsTextGroup}>
-          <span className={styles.vitalsValue}>{loading ? "—" : `${cpuPct.toFixed(1)}%`}</span>
-          <span className={styles.vitalsLabel}>CPU</span>
-        </div>
-        <div className={styles.vitalsBar}>
-          <div
-            className={styles.vitalsBarFill}
-            style={{ width: loading ? "0%" : `${Math.min(cpuPct, 100)}%` }}
-            data-warn={cpuPct > 70 && cpuPct <= 90 ? "true" : undefined}
-            data-critical={cpuPct > 90 ? "true" : undefined}
-          />
-        </div>
-      </div>
-
-      <div className={styles.vitalsDivider} />
-
-      <div className={styles.vitalsSegment}>
-        <MemoryStick size={14} className={loading ? styles.vitalsIconMuted : barIconClass(memPct)} />
-        <div className={styles.vitalsTextGroup}>
-          <span className={styles.vitalsValue}>{loading ? "—" : `${memPct.toFixed(1)}%`}</span>
-          <span className={styles.vitalsLabel}>Memory</span>
-        </div>
-        <div className={styles.vitalsBar}>
-          <div
-            className={styles.vitalsBarFill}
-            style={{ width: loading ? "0%" : `${Math.min(memPct, 100)}%` }}
-            data-warn={memPct > 70 && memPct <= 90 ? "true" : undefined}
-            data-critical={memPct > 90 ? "true" : undefined}
-          />
-        </div>
-      </div>
-
-      <div className={styles.vitalsDivider} />
-
-      <div className={styles.vitalsSegment}>
-        <Clock size={14} className={styles.vitalsIconMuted} />
-        <div className={styles.vitalsTextGroup}>
-          <span className={styles.vitalsValue}>{uptime}</span>
-          <span className={styles.vitalsLabel}>Uptime</span>
-        </div>
-      </div>
-
-      <div className={styles.vitalsDivider} />
-
-      <div className={styles.vitalsSegment}>
-        <Server
-          size={14}
-          className={
-            totalServices > 0 && healthyCount === totalServices ? styles.vitalsIconGreen : styles.vitalsIconAmber
-          }
-        />
-        <div className={styles.vitalsTextGroup}>
-          <span className={styles.vitalsValue}>
-            {loading || totalServices === 0 ? "—" : `${healthyCount}/${totalServices}`}
-          </span>
-          <span className={styles.vitalsLabel}>Services Healthy</span>
-        </div>
-      </div>
-    </div>
+    <Card className={styles.vitals} padding="none" aria-busy={loading || undefined}>
+      <Vital
+        icon={<Cpu />}
+        label="CPU"
+        value={loading ? "—" : `${cpuPct.toFixed(1)}%`}
+        percent={loading ? 0 : cpuPct}
+        tone={level(cpuPct)}
+      />
+      <Vital
+        icon={<MemoryStick />}
+        label="Memory"
+        value={loading ? "—" : `${memPct.toFixed(1)}%`}
+        percent={loading ? 0 : memPct}
+        tone={level(memPct)}
+      />
+      <Vital icon={<Clock />} label="Uptime" value={metrics ? formatUptime(metrics.host.uptime) : "—"} />
+      <Vital
+        icon={<Server />}
+        label="Services Healthy"
+        value={loading || totalServices === 0 ? "—" : `${healthyCount}/${totalServices}`}
+        tone={totalServices > 0 && healthyCount === totalServices ? "ok" : "warn"}
+      />
+    </Card>
   );
 }
-
-
