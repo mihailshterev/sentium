@@ -1147,6 +1147,7 @@
           "Microsoft.Extensions.AI": "[10.10.0, )",
           "OllamaSharp": "[5.5.0, )",
           "Quartz.Extensions.Hosting": "[3.18.0, )",
+          "Quartz.Serialization.SystemTextJson": "[3.18.0, )",
           "Sentium.Codex": "[1.0.0, )",
           "Sentium.Core": "[1.0.0, )",
           "Sentium.Infrastructure": "[1.0.0, )",
@@ -1579,6 +1580,15 @@
         "dependencies": {
           "Microsoft.Extensions.Hosting.Abstractions": "10.0.0",
           "Quartz.Extensions.DependencyInjection": "3.18.0"
+        }
+      },
+      "Quartz.Serialization.SystemTextJson": {
+        "type": "CentralTransitive",
+        "requested": "[3.18.0, )",
+        "resolved": "3.18.0",
+        "contentHash": "p+qvJAMLoDoj1VecU1rFCsmMfvhfYCXiFK1d2dicLNPapizy3BfPhKapSwexFndOt97mFr2M0qsXYelb3pLM1A==",
+        "dependencies": {
+          "Quartz": "3.18.0"
         }
       },
       "Scalar.AspNetCore": {

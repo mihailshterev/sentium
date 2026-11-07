@@ -14,6 +14,7 @@ using Sentium.Praxis.Extensions;
 using Sentium.Praxis.Features.Learnings;
 using Sentium.Praxis.Features.Orchestration;
 using Sentium.Praxis.Features.Registry;
+using Sentium.Praxis.Features.Scheduling;
 using Sentium.Praxis.Features.Sentinel;
 using Sentium.Praxis.Features.Skills;
 using Sentium.Praxis.Features.Skills.BuiltIn;
@@ -96,13 +97,7 @@ public static class PraxisModuleExtensions
         services.AddScoped<IWorkflowRepository, WorkflowRepository>();
         services.AddScoped<IWorkflowRunRepository, WorkflowRunRepository>();
 
-        services.AddQuartz(q =>
-        {
-            // TODO: Enable persistent store
-            q.UseInMemoryStore();
-        });
-
-        services.AddQuartzHostedService(options => options.WaitForJobsToComplete = true);
+        AddScheduling(services);
 
         services.AddSingleton<SentinelClient>();
         services.AddSingleton<IPdpContextAccessor, PdpContextAccessor>();
@@ -194,6 +189,38 @@ public static class PraxisModuleExtensions
             };
 
             return client.AddSentiumPipeline();
+        });
+    }
+
+    private static void AddScheduling(IServiceCollection services)
+    {
+        services.AddQuartz(q =>
+        {
+            q.SchedulerName = SchedulerDefaults.SchedulerName;
+            q.SchedulerId = "AUTO";
+
+            q.MisfireThreshold = TimeSpan.FromMinutes(1);
+
+            q.UsePersistentStore(store =>
+            {
+                store.UseProperties = true;
+                store.PerformSchemaValidation = true;
+                store.RetryInterval = TimeSpan.FromSeconds(15);
+
+                store.UsePostgres(postgres =>
+                {
+                    postgres.ConnectionStringName = ResourceNames.SentiumDb;
+                    postgres.TablePrefix = SchedulerDefaults.TablePrefix;
+                });
+
+                store.UseSystemTextJsonSerializer();
+            });
+        });
+
+        services.AddQuartzHostedService(options =>
+        {
+            options.AwaitApplicationStarted = true;
+            options.WaitForJobsToComplete = true;
         });
     }
 

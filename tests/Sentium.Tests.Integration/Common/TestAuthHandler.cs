@@ -13,7 +13,7 @@ public class TestAuthHandler(
     : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
 {
     public const string AuthenticationScheme = "TestScheme";
-    private const string TestUserId = "11111111-0000-0000-0000-000000000001";
+    public const string TestUserId = "11111111-0000-0000-0000-000000000001";
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {

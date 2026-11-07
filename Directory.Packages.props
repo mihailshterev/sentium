@@ -52,6 +52,7 @@
     <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery.Abstractions" Version="10.2.0" />
     <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery.Dns" Version="10.2.0" />
     <PackageVersion Include="Quartz.Extensions.Hosting" Version="3.18.0" />
+    <PackageVersion Include="Quartz.Serialization.SystemTextJson" Version="3.18.0" />
 
     <!-- Observability -->
     <PackageVersion Include="OpenTelemetry.Api" Version="1.18.0" />
