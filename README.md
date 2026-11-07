@@ -258,13 +258,18 @@ pnpm test:run
 pnpm test:coverage
 ```
 
-**End-to-end (Playwright)** - boots the full Aspire stack (`--TestRun=true`) in a dedicated Testing mode with a throwaway database (`sentiumdb_e2e`) and seeded baseline data:
+**End-to-end (Playwright)** - independent of Aspire. Playwright starts PostgreSQL, Redis and Azurite from `e2e/compose.e2e.yaml` (tmpfs, ports offset from the dev stack), builds the portal into `Sentium.Web/wwwroot`, and runs Sentium.Web in the `Testing` environment on `http://localhost:5180` - one origin, exactly like production. Each boot drops and re-seeds `sentiumdb_e2e`. Ollama is replaced by a deterministic stub (`e2e/support/ollama-stub.ts`) that reports no installed models. Needs Docker, .NET and pnpm:
 
 ```bash
 cd e2e
-pnpm test          # headless
-pnpm test:ui       # visual mode
+pnpm install && pnpm exec playwright install   # once
+pnpm test                 # all browsers, headless
+pnpm test:chromium        # one browser
+pnpm test:ui              # visual mode (reuses an already running app)
+pnpm infra:down           # remove the e2e containers
 ```
+
+Set `PLAYWRIGHT_BASE_URL` to run the suite against an already running Testing stack instead (nothing is started then).
 
 ---
 

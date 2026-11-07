@@ -1,6 +1,6 @@
-import { test, expect } from "../fixtures/auth.fixture";
+import { test, expect } from "../fixtures";
 
-test.describe.serial("System", () => {
+test.describe("System", () => {
   test.beforeEach(async ({ systemPage }) => {
     await systemPage.goto();
     await systemPage.expectLoaded();

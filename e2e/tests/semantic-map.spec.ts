@@ -1,4 +1,4 @@
-import { test, expect } from "../fixtures/auth.fixture";
+import { test, expect } from "../fixtures";
 
 // Quarantined in CI: this spec drives a WebGL canvas + D3 force-simulation
 // visualization. Under software-rendered headless WebGL the page intermittently

@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 # Portal: built into src/hosts/Sentium.Web/wwwroot (vite's outDir), served by Sentium.Web itself.
 FROM node:22-alpine AS portal
-RUN npm install -g pnpm@11.0.6
+RUN npm install -g pnpm@12.9.1
 WORKDIR /src/src/clients/sentium-portal
 COPY src/clients/sentium-portal/package.json src/clients/sentium-portal/pnpm-lock.yaml src/clients/sentium-portal/pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile

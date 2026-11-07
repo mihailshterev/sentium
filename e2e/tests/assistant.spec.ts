@@ -1,22 +1,22 @@
-import { test, expect } from "../fixtures/auth.fixture";
-import { mockSseRoute, sseMessage, sseDone } from "../helpers/mock-sse";
+import { test, expect } from "../fixtures";
+import { mockSseRoute, sseMessage, sseDone } from "../support/mock-sse";
 
-test.describe.serial("Assistant", () => {
+test.describe("Assistant", () => {
   test.beforeEach(async ({ assistantPage }) => {
     await assistantPage.goto();
     await assistantPage.expectLoaded();
   });
 
   test("renders the assistant heading", { tag: "@smoke" }, async ({ page }) => {
-    await expect(page.getByRole("heading", { name: /assistant/i })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Assistant" })).toBeVisible();
   });
 
   test("shows the message input", async ({ page }) => {
     await expect(page.getByPlaceholder(/ask sentium/i)).toBeVisible();
   });
 
-  test("shows the new conversation button", async ({ page }) => {
-    await expect(page.getByRole("button", { name: /new conversation/i })).toBeVisible();
+  test("shows the new conversation button", async ({ assistantPage }) => {
+    await expect(assistantPage.newConversationButton).toBeVisible();
   });
 
   test("shows the conversation sidebar", async ({ page }) => {

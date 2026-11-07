@@ -1,13 +1,13 @@
-import { test, expect } from "../fixtures/auth.fixture";
+import { test, expect } from "../fixtures";
 
-test.describe.serial("Settings", () => {
+test.describe("Settings", () => {
   test.beforeEach(async ({ settingsPage }) => {
     await settingsPage.goto();
     await settingsPage.expectLoaded();
   });
 
   test("renders the Settings heading", { tag: "@smoke" }, async ({ page }) => {
-    await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
   });
 
   test("shows the agent harness section", { tag: "@smoke" }, async ({ page }) => {

@@ -1,10 +1,7 @@
-import { test, expect } from "../fixtures/auth.fixture";
+import { test, expect } from "../fixtures";
+import { uniqueName } from "../support/test-data";
 
-const WORKFLOW_NAME = `e2e-workflow-${Date.now()}`;
-const WORKFLOW_DESC = "E2E test workflow";
-const UPDATED_NAME = `${WORKFLOW_NAME}-updated`;
-
-test.describe.serial("Workflows", () => {
+test.describe("Workflows", () => {
   test.beforeEach(async ({ workflowsPage }) => {
     await workflowsPage.goto();
     await workflowsPage.expectLoaded();
@@ -22,27 +19,30 @@ test.describe.serial("Workflows", () => {
     await expect(page.getByRole("button", { name: /new workflow/i }).first()).toBeVisible();
   });
 
-  test("creates a new workflow", { tag: "@regression" }, async ({ workflowsPage }) => {
-    await workflowsPage.openCreateEditor();
-    await workflowsPage.fillWorkflowName(WORKFLOW_NAME);
-    await workflowsPage.fillWorkflowDescription(WORKFLOW_DESC);
-    await workflowsPage.submitSave();
+  test("creates, renames and deletes a workflow", { tag: "@regression" }, async ({ workflowsPage }) => {
+    const name = uniqueName("e2e-workflow");
+    const renamed = `${name}-renamed`;
 
-    await workflowsPage.expectWorkflowVisible(WORKFLOW_NAME);
-  });
+    await test.step("create", async () => {
+      await workflowsPage.openCreateEditor();
+      await workflowsPage.fillWorkflowName(name);
+      await workflowsPage.fillWorkflowDescription("E2E test workflow");
+      await workflowsPage.submitSave();
+      await workflowsPage.expectWorkflowVisible(name);
+    });
 
-  test("edits an existing workflow", { tag: "@regression" }, async ({ workflowsPage }) => {
-    await workflowsPage.clickEditOnWorkflow(WORKFLOW_NAME);
-    await workflowsPage.expectEditorOpen();
-    await workflowsPage.clearAndFillWorkflowName(UPDATED_NAME);
-    await workflowsPage.submitSave();
+    await test.step("rename", async () => {
+      await workflowsPage.clickEditOnWorkflow(name);
+      await workflowsPage.expectEditorOpen();
+      await workflowsPage.clearAndFillWorkflowName(renamed);
+      await workflowsPage.submitSave();
+      await workflowsPage.expectWorkflowVisible(renamed);
+    });
 
-    await workflowsPage.expectWorkflowVisible(UPDATED_NAME);
-  });
-
-  test("deletes a workflow", { tag: "@regression" }, async ({ workflowsPage }) => {
-    await workflowsPage.clickDeleteOnWorkflow(UPDATED_NAME);
-    await workflowsPage.confirmDelete();
-    await workflowsPage.expectWorkflowNotVisible(UPDATED_NAME);
+    await test.step("delete", async () => {
+      await workflowsPage.clickDeleteOnWorkflow(renamed);
+      await workflowsPage.confirmDelete();
+      await workflowsPage.expectWorkflowNotVisible(renamed);
+    });
   });
 });

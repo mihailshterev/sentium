@@ -5,7 +5,9 @@
     "moduleResolution": "bundler",
     "esModuleInterop": true,
     "strict": true,
-    "types": ["node"]
+    "types": ["node"],
+    "noEmit": true,
+    "skipLibCheck": true
   },
-  "include": ["playwright.config.ts", "tests/**/*.ts", "pages/**/*.ts", "fixtures/**/*.ts", "helpers/**/*.ts"]
+  "include": ["playwright.config.ts", "tests/**/*.ts", "pages/**/*.ts", "fixtures/**/*.ts", "support/**/*.ts"]
 }

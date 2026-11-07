@@ -1,9 +1,7 @@
-import { test, expect } from "../fixtures/auth.fixture";
+import { test, expect } from "../fixtures";
+import { uniqueName } from "../support/test-data";
 
-const WORKSPACE_NAME = `e2e-workspace-${Date.now()}`;
-const WORKSPACE_DESC = "Created by Playwright E2E suite";
-
-test.describe.serial("Workspaces", () => {
+test.describe("Workspaces", () => {
   test.beforeEach(async ({ workspacesPage }) => {
     await workspacesPage.goto();
     await workspacesPage.expectLoaded();
@@ -26,18 +24,23 @@ test.describe.serial("Workspaces", () => {
     await workspacesPage.expectWorkspaceNameInputVisible();
   });
 
-  test("creates a new workspace", { tag: "@regression" }, async ({ workspacesPage }) => {
-    await workspacesPage.createWorkspace(WORKSPACE_NAME, WORKSPACE_DESC);
-    await workspacesPage.expectWorkspaceVisible(WORKSPACE_NAME);
-  });
+  test("creates, opens and deletes a workspace", { tag: "@regression" }, async ({ workspacesPage, page }) => {
+    const name = uniqueName("e2e-workspace");
 
-  test("selects a workspace and shows file upload area", { tag: "@regression" }, async ({ workspacesPage, page }) => {
-    await workspacesPage.selectWorkspace(WORKSPACE_NAME);
-    await expect(page.getByRole("button", { name: /upload/i })).toBeVisible();
-  });
+    await test.step("create", async () => {
+      await workspacesPage.createWorkspace(name, "Created by Playwright E2E suite");
+      await workspacesPage.expectWorkspaceVisible(name);
+    });
 
-  test("deletes a workspace", { tag: "@regression" }, async ({ workspacesPage }) => {
-    await workspacesPage.deleteWorkspace(WORKSPACE_NAME);
-    await workspacesPage.expectWorkspaceNotVisible(WORKSPACE_NAME);
+    await test.step("open it and see the file upload area", async () => {
+      await workspacesPage.selectWorkspace(name);
+      await expect(page.getByRole("button", { name: /upload/i })).toBeVisible();
+    });
+
+    await test.step("delete it from the list", async () => {
+      await workspacesPage.goto();
+      await workspacesPage.deleteWorkspace(name);
+      await workspacesPage.expectWorkspaceNotVisible(name);
+    });
   });
 });

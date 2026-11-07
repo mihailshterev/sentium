@@ -1,13 +1,13 @@
-import { test, expect } from "../fixtures/auth.fixture";
+import { test, expect } from "../fixtures";
 
-test.describe.serial("Knowledge Base", () => {
+test.describe("Knowledge Base", () => {
   test.beforeEach(async ({ knowledgeBasePage }) => {
     await knowledgeBasePage.goto();
     await knowledgeBasePage.expectLoaded();
   });
 
   test("renders the Knowledge Base heading", { tag: "@smoke" }, async ({ page }) => {
-    await expect(page.getByRole("heading", { name: "Knowledge Base" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Knowledge Base" })).toBeVisible();
   });
 
   test("shows the Global Context tab", { tag: "@smoke" }, async ({ page }) => {
