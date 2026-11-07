@@ -87,11 +87,6 @@
         "resolved": "22.1.0",
         "contentHash": "mTdHWGsNCWpKyQxqyNcSS+q4BtBTSOUfhdG+Lwo6eAOznCLSwrZQ5VKtDG2G8VrUp1ul4DwWHefoBS1umjO/VQ=="
       },
-      "Aspire.Dashboard.Sdk.win-x64": {
-        "type": "Transitive",
-        "resolved": "13.6.4",
-        "contentHash": "vi7brJmlXMdNqGcDNY2wWfxn21c7mDQQ+NiIfWqG3Sat1qfQeNyfajsImsCjgfjFQ7O3+yK8a9C22q0RZy5wpg=="
-      },
       "Aspire.Hosting": {
         "type": "Transitive",
         "resolved": "13.6.4",
@@ -174,11 +169,6 @@
           "System.IO.Hashing": "10.0.12",
           "YamlDotNet": "18.1.0"
         }
-      },
-      "Aspire.Hosting.Orchestration.win-x64": {
-        "type": "Transitive",
-        "resolved": "13.6.4",
-        "contentHash": "1NACox831JWocb5cyrTQlrswsh/zieXVqyfiVYXslw9E3arxAJjW2Fv8zDyOH9mKatXrqK9s28KXkVZ6tollLw=="
       },
       "AspNetCore.HealthChecks.Azure.Storage.Blobs": {
         "type": "Transitive",
@@ -1189,12 +1179,10 @@
       "sentium.apphost": {
         "type": "Project",
         "dependencies": {
-          "Aspire.Dashboard.Sdk.win-x64": "[13.6.4, )",
           "Aspire.Hosting.AppHost": "[13.6.4, )",
           "Aspire.Hosting.Azure.Storage": "[13.6.4, )",
           "Aspire.Hosting.Docker": "[13.6.4, )",
           "Aspire.Hosting.JavaScript": "[13.6.4, )",
-          "Aspire.Hosting.Orchestration.win-x64": "[13.6.4, )",
           "Aspire.Hosting.PostgreSQL": "[13.6.4, )",
           "Aspire.Hosting.Redis": "[13.6.4, )",
           "Sentium.Core": "[1.0.0, )"
