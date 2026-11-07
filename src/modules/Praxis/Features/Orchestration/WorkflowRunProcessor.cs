@@ -2,6 +2,7 @@ using Sentium.Praxis.Extensions;
 using Sentium.Praxis.Features.Agents;
 using Sentium.Praxis.Entities;
 using Sentium.Praxis.Features.Sentinel;
+using Sentium.Praxis.Features.Titles;
 using Sentium.Praxis.Features.WorkflowManagement;
 using Sentium.Praxis.Features.Workflows;
 using Sentium.Infrastructure.Extensions;
@@ -153,6 +154,10 @@ public sealed class WorkflowRunProcessor(
         runContext.CorrelationId = trigger.StreamId;
         runContext.OriginalUserPrompt = trigger.ResolveActivity();
 
+        var title = ResolveScenario(trigger) is { } scenario
+            ? scope.ServiceProvider.GetRequiredService<ITitleGenerator>().GenerateAsync(scenario, ct)
+            : Task.FromResult<string?>(null);
+
         var result = await orchestrator.RunAsync(trigger, ct);
         var completedAt = DateTime.UtcNow;
 
@@ -164,6 +169,7 @@ public sealed class WorkflowRunProcessor(
                 Id = Guid.NewGuid(),
                 UserId = result.UserId,
                 WorkflowId = result.WorkflowId,
+                Title = await title,
                 TriggerType = trigger.TriggerType,
                 TriggerPayload = trigger.Payload,
                 Explanation = result.Explanation ?? string.Empty,
@@ -213,6 +219,7 @@ public sealed class WorkflowRunProcessor(
                 Id = Guid.NewGuid(),
                 UserId = trigger.UserId,
                 WorkflowId = null,
+                Title = TitleGenerator.FromText(ResolveScenario(trigger)),
                 TriggerType = trigger.TriggerType,
                 TriggerPayload = trigger.Payload,
                 Explanation = explanation,
@@ -227,6 +234,16 @@ public sealed class WorkflowRunProcessor(
         {
             logger.LogError(ex, "Failed to persist failed workflow run for stream {StreamId}.", trigger.StreamId);
         }
+    }
+
+    /// <summary>
+    /// The scenario the run was started with, or <see langword="null"/> when the payload carries none (a title made from
+    /// the raw JSON payload would be meaningless).
+    /// </summary>
+    private static string? ResolveScenario(WorkflowTrigger trigger)
+    {
+        var activity = trigger.ResolveActivity();
+        return string.Equals(activity, trigger.Payload, StringComparison.Ordinal) ? null : activity;
     }
 
     private void EmitSystem(string streamId, string text, string type)

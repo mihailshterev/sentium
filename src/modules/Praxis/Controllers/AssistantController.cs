@@ -12,6 +12,7 @@ using Sentium.Praxis.Features.Agents;
 using Sentium.Praxis.Features.Conversations;
 using Sentium.Praxis.Features.Registry;
 using Sentium.Praxis.Features.Sentinel;
+using Sentium.Praxis.Features.Titles;
 using ChatMessage = Microsoft.Extensions.AI.ChatMessage;
 
 namespace Sentium.Praxis.Controllers;
@@ -32,6 +33,8 @@ public sealed class AssistantController(
     IPromptEnhancementService promptEnhancementService,
     IRegistrySettingsService registrySettingsService,
     ConversationChatHistoryProvider conversationHistory,
+    IConversationService conversationService,
+    ITitleGenerator titleGenerator,
     ILogger<AssistantController> logger) : ControllerBase
 {
     private const string GenericStreamErrorMessage = "An unexpected error occurred while generating the response.";
@@ -59,6 +62,9 @@ public sealed class AssistantController(
 
         await using var sse = await SseStreamWriter.StartAsync(Response, logger, ct);
 
+        // Started before enhancement and the run so it overlaps them; it only calls the model, never the DbContext.
+        var pendingTitle = await StartTitleGenerationAsync(requestBody.ConversationId, lastUserMessage?.Content, ct);
+
         var enhancedPrompt = await TryEnhancePromptAsync(lastUserMessage?.Content, ct);
         if (enhancedPrompt is not null)
         {
@@ -81,7 +87,7 @@ public sealed class AssistantController(
             input = MapClientHistory(requestBody.Messages, enhancedPrompt);
         }
 
-        await RunStreamingAsync(agent, session, input, requestBody.ConversationId, requestBody.Model, sse, ct);
+        await RunStreamingAsync(agent, session, input, requestBody.ConversationId, requestBody.Model, sse, ct, pendingTitle);
     }
 
     /// <summary>
@@ -126,7 +132,8 @@ public sealed class AssistantController(
         Guid? conversationId,
         string model,
         SseStreamWriter sse,
-        CancellationToken ct)
+        CancellationToken ct,
+        Task<string?>? pendingTitle = null)
     {
         var text = new StringBuilder();
         var thought = new StringBuilder();
@@ -162,6 +169,8 @@ public sealed class AssistantController(
                     await sse.SendUpdateAsync(AgentUpdateTypes.Message, update.Text, ct);
                 }
             }
+
+            await PublishTitleAsync(conversationId, pendingTitle, sse, ct);
 
             if (approvalRequest is not null)
             {
@@ -239,6 +248,57 @@ public sealed class AssistantController(
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Failed to persist partial assistant response after cancellation. CorrelationId: {CorrelationId}", runContext.CorrelationId);
+        }
+    }
+
+    /// <summary>
+    /// Starts generating a title when this turn belongs to a conversation that is still untitled; otherwise
+    /// <see langword="null"/>. The returned task never faults (see <see cref="ITitleGenerator.GenerateAsync"/>).
+    /// </summary>
+    private async Task<Task<string?>?> StartTitleGenerationAsync(Guid? conversationId, string? prompt, CancellationToken ct)
+    {
+        if (conversationId is not { } id || string.IsNullOrWhiteSpace(prompt))
+        {
+            return null;
+        }
+
+        try
+        {
+            return await conversationService.IsTitlePendingAsync(id, ct) ? titleGenerator.GenerateAsync(prompt, ct) : null;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogWarning(ex, "Could not check whether conversation {ConversationId} needs a title.", id);
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Stores the generated title (unless the user renamed the conversation meanwhile) and tells the client. Best effort:
+    /// a failure leaves the conversation pending, so the next turn tries again.
+    /// </summary>
+    private async Task PublishTitleAsync(Guid? conversationId, Task<string?>? pendingTitle, SseStreamWriter sse, CancellationToken ct)
+    {
+        if (pendingTitle is null || conversationId is not { } id)
+        {
+            return;
+        }
+
+        try
+        {
+            if (await pendingTitle is { } title && await conversationService.TrySetGeneratedTitleAsync(id, title, ct))
+            {
+                await sse.SendUpdateAsync(AgentUpdateTypes.Title, title, ct);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // The client went away after the answer completed: the title is either stored (and shown on the next list
+            // refresh) or the conversation stays pending for the next turn.
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to store the generated title of conversation {ConversationId}.", id);
         }
     }
 

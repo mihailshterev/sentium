@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Sentium.Core.Common;
 using Sentium.Praxis.Features.CodeExecution;
+using Sentium.Praxis.Dtos;
 using Sentium.Praxis.Entities;
 using Sentium.Infrastructure.Security;
 
@@ -67,8 +68,7 @@ public sealed class PraxisDbContext : DbContext
             entity.Property(e => e.Title)
                 .IsRequired()
                 .HasMaxLength(255);
-            entity.HasIndex(e => new { e.UserId, e.Title })
-                .IsUnique();
+            entity.HasIndex(e => new { e.UserId, e.CreatedAt });
             entity.Property(e => e.Model)
                 .IsRequired()
                 .HasMaxLength(255);
@@ -126,6 +126,7 @@ public sealed class PraxisDbContext : DbContext
         {
             entity.HasKey(e => e.Id);
             entity.Property(e => e.TriggerType).IsRequired().HasMaxLength(255);
+            entity.Property(e => e.Title).HasMaxLength(ConversationTitles.MaxLength);
             entity.Property(e => e.TriggerPayload).IsRequired();
             entity.Property(e => e.Explanation).IsRequired();
             entity.Property(e => e.Risk).IsRequired();

@@ -37,6 +37,7 @@ public sealed class WorkflowsController(IWorkflowService workflowService, IWorkf
     /// </summary>
     /// <param name="page">1-based page number (default: 1).</param>
     /// <param name="pageSize">Number of runs per page (default: 20, max: 100).</param>
+    /// <param name="search">Optional text matched against the run title, its workflow name, or (untitled runs) the scenario.</param>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>A paginated list of workflow runs.</returns>
     [HttpGet("runs")]
@@ -44,12 +45,13 @@ public sealed class WorkflowsController(IWorkflowService workflowService, IWorkf
     public async Task<ActionResult<PagedResponse<WorkflowRunSummaryResponse>>> GetWorkflowRuns(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = PaginationQuery.DefaultPageSize,
+        [FromQuery] string? search = null,
         CancellationToken ct = default)
     {
         var query = new PaginationQuery { Page = page, PageSize = pageSize };
         (page, pageSize) = query.Normalize();
 
-        var (runs, total) = await runRepository.GetPagedAsync(page, pageSize, ct);
+        var (runs, total) = await runRepository.GetPagedAsync(page, pageSize, search, ct);
         return Ok(PagedResponse<WorkflowRunSummaryResponse>.Create(runs, total, page, pageSize));
     }
 
@@ -66,6 +68,25 @@ public sealed class WorkflowsController(IWorkflowService workflowService, IWorkf
     {
         var run = await runRepository.GetByIdAsync(runId, ct);
         return run is null ? NotFound() : Ok(run);
+    }
+
+    /// <summary>
+    /// Renames a workflow run.
+    /// </summary>
+    /// <param name="runId">The ID of the workflow run to rename.</param>
+    /// <param name="request">The new title.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>No content, or 404 Not Found when the run does not exist.</returns>
+    [HttpPut("runs/{runId:guid}/title")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RenameWorkflowRun(Guid runId, [FromBody] UpdateTitleRequest request, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var renamed = await runRepository.RenameAsync(runId, request.Title.Trim(), ct);
+        return renamed ? NoContent() : NotFound();
     }
 
     /// <summary>

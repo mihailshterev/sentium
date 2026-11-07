@@ -8,6 +8,7 @@ export { EmptyState } from "./empty-state";
 export { FormField } from "./form-field";
 export { Input, Range, SearchInput, Select, Switch, SwitchRow, Textarea } from "./form-controls";
 export { InfiniteScrollSentinel } from "./infinite-scroll-sentinel";
+export { InlineTitleEdit } from "./inline-title-edit";
 export { LoadMore } from "./load-more";
 export { ModelSelector } from "./model-selector";
 export { Page } from "./page";

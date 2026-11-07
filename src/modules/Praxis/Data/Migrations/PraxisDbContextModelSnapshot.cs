@@ -168,6 +168,9 @@ namespace Sentium.Praxis.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<bool>("IsTitlePending")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Model")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -183,8 +186,7 @@ namespace Sentium.Praxis.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId", "Title")
-                        .IsUnique();
+                    b.HasIndex("UserId", "CreatedAt");
 
                     b.ToTable("Conversations", "praxis");
                 });
@@ -345,6 +347,10 @@ namespace Sentium.Praxis.Data.Migrations
 
                     b.Property<DateTime>("StartedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Title")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
 
                     b.Property<string>("TriggerPayload")
                         .IsRequired()

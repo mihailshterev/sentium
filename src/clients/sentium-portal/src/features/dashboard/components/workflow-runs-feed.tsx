@@ -6,6 +6,7 @@ import { Card, CardHeader } from "@/shared/ui/card";
 import { EmptyState } from "@/shared/ui/empty-state";
 import { Skeleton } from "@/shared/ui/skeleton";
 import type { WorkflowRun } from "@/features/workflows/types/workflows";
+import { describeRun } from "@/features/workflows/utils/describe-run";
 
 interface WorkflowRunsFeedProps {
   runs: WorkflowRun[];
@@ -67,25 +68,37 @@ export function WorkflowRunsFeed({ runs, loading, onNavigate }: WorkflowRunsFeed
         <EmptyState icon={<Activity />} title="No workflow runs yet" hint="Run a workflow to see results here" />
       ) : (
         <ul className={styles.runList}>
-          {runs.map((run) => (
-            <li key={run.id} className={styles.runRow}>
-              <Badge tone={RISK_TONE[run.risk] ?? "neutral"} className={styles.runRisk}>
-                {run.risk}
-              </Badge>
-              <p className={styles.runText}>{run.explanation || run.recommendation || "Workflow run completed"}</p>
-              <time className={styles.runTime} dateTime={run.startedAt}>
-                {relativeTime(run.startedAt)}
-              </time>
-              <Button
-                variant="ghost"
-                size="sm"
-                iconRight={<ArrowRight size={14} />}
-                onClick={() => onNavigate(`/orchestration/runs/${run.id}`)}
-              >
-                View
-              </Button>
-            </li>
-          ))}
+          {runs.map((run) => {
+            const { title, source } = describeRun(run);
+            const summary = run.explanation || run.recommendation || "Workflow run completed";
+
+            return (
+              <li key={run.id} className={styles.runRow}>
+                <Badge tone={RISK_TONE[run.risk] ?? "neutral"} className={styles.runRisk}>
+                  {run.risk}
+                </Badge>
+                <div className={styles.runBody}>
+                  <p className={styles.runText} title={title}>
+                    {title}
+                  </p>
+                  <p className={styles.runSubtext} title={summary}>
+                    {source} · {summary}
+                  </p>
+                </div>
+                <time className={styles.runTime} dateTime={run.startedAt}>
+                  {relativeTime(run.startedAt)}
+                </time>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  iconRight={<ArrowRight size={14} />}
+                  onClick={() => onNavigate(`/orchestration/runs/${run.id}`)}
+                >
+                  View
+                </Button>
+              </li>
+            );
+          })}
         </ul>
       )}
     </Card>

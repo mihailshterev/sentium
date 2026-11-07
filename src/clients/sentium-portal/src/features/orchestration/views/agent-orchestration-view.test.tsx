@@ -251,6 +251,80 @@ const mockRun: WorkflowRun = {
   ],
 };
 
+describe("AgentOrchestration history run labels", () => {
+  it("shows the run title, its workflow and a non-completed outcome", async () => {
+    vi.mocked(workflowsService.fetchWorkflowRunsPaged).mockResolvedValue(
+      pageOf([
+        {
+          ...mockRun,
+          title: "Backup audit",
+          triggerType: "workflow.custom.workflow",
+          triggerPayload: JSON.stringify({ activity: "check backups", workflowName: "Nightly QA" }),
+          explanation: "[CANCELLED] Stopped by user.",
+        },
+      ]),
+    );
+    renderOrchestration();
+    fireEvent.click(screen.getByRole("button", { name: /history/i }));
+
+    await waitFor(() => expect(screen.getByText("Backup audit")).toBeInTheDocument());
+    expect(screen.getByText("Nightly QA")).toBeInTheDocument();
+    expect(screen.getByText("Cancelled")).toBeInTheDocument();
+  });
+
+  it("falls back to the scenario for untitled runs", async () => {
+    vi.mocked(workflowsService.fetchWorkflowRunsPaged).mockResolvedValue(
+      pageOf([
+        {
+          ...mockRun,
+          triggerType: "workflow.dynamic",
+          triggerPayload: JSON.stringify({ activity: "Scan the network" }),
+        },
+      ]),
+    );
+    renderOrchestration();
+    fireEvent.click(screen.getByRole("button", { name: /history/i }));
+
+    await waitFor(() => expect(screen.getByText("Scan the network")).toBeInTheDocument());
+    expect(screen.getByText("Dynamic")).toBeInTheDocument();
+  });
+
+  it("searches runs on the server", async () => {
+    vi.mocked(workflowsService.fetchWorkflowRunsPaged).mockResolvedValue(pageOf([mockRun]));
+    renderOrchestration();
+    fireEvent.click(screen.getByRole("button", { name: /history/i }));
+
+    fireEvent.change(await screen.findByLabelText("Search runs"), { target: { value: "backup" } });
+
+    await waitFor(() => expect(workflowsService.fetchWorkflowRunsPaged).toHaveBeenCalledWith(1, 20, "backup"));
+  });
+
+  it("says when a run search has no matches", async () => {
+    vi.mocked(workflowsService.fetchWorkflowRunsPaged).mockResolvedValue(pageOf([]));
+    renderOrchestration();
+    fireEvent.click(screen.getByRole("button", { name: /history/i }));
+
+    fireEvent.change(await screen.findByLabelText("Search runs"), { target: { value: "zebra" } });
+
+    expect(await screen.findByText("No runs match “zebra”")).toBeInTheDocument();
+  });
+
+  it("renames a run inline", async () => {
+    const rename = vi.spyOn(workflowsService, "renameWorkflowRun").mockResolvedValue(undefined);
+    vi.mocked(workflowsService.fetchWorkflowRunsPaged).mockResolvedValue(pageOf([{ ...mockRun, title: "Old name" }]));
+    renderOrchestration();
+    fireEvent.click(screen.getByRole("button", { name: /history/i }));
+
+    await waitFor(() => expect(screen.getByTitle("Rename run")).toBeInTheDocument());
+    fireEvent.click(screen.getByTitle("Rename run"));
+    const input = screen.getByLabelText("Run title");
+    fireEvent.change(input, { target: { value: "New name" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    await waitFor(() => expect(rename).toHaveBeenCalledWith("run-1", "New name"));
+  });
+});
+
 describe("AgentOrchestration history tab", () => {
   beforeEach(() => {
     vi.mocked(workflowsService.fetchWorkflowRunsPaged).mockResolvedValue(pageOf([mockRun]));
@@ -362,9 +436,9 @@ describe("AgentOrchestration LogEntryView rendering", () => {
     vi.mocked(workflowsService.fetchWorkflowRun).mockResolvedValue(thoughtRun);
     renderOrchestration();
     fireEvent.click(screen.getByRole("button", { name: /history/i }));
-    await waitFor(() => expect(document.body.textContent).toContain("entries"));
-    const runItemBtns = Array.from(document.querySelectorAll("button")).filter((b) =>
-      b.textContent?.includes("entries"),
+    await waitFor(() => expect(document.body.textContent).toMatch(/entr(y|ies)/));
+    const runItemBtns = Array.from(document.querySelectorAll("button")).filter(
+      (b) => !!b.textContent?.match(/entr(y|ies)/),
     );
     if (runItemBtns.length > 0) fireEvent.click(runItemBtns[0]);
     await waitFor(() => expect(screen.getByText("Thinking")).toBeInTheDocument());
@@ -379,9 +453,9 @@ describe("AgentOrchestration LogEntryView rendering", () => {
     vi.mocked(workflowsService.fetchWorkflowRun).mockResolvedValue(toolRun);
     renderOrchestration();
     fireEvent.click(screen.getByRole("button", { name: /history/i }));
-    await waitFor(() => expect(document.body.textContent).toContain("entries"));
-    const runItemBtns = Array.from(document.querySelectorAll("button")).filter((b) =>
-      b.textContent?.includes("entries"),
+    await waitFor(() => expect(document.body.textContent).toMatch(/entr(y|ies)/));
+    const runItemBtns = Array.from(document.querySelectorAll("button")).filter(
+      (b) => !!b.textContent?.match(/entr(y|ies)/),
     );
     if (runItemBtns.length > 0) fireEvent.click(runItemBtns[0]);
     await waitFor(() => expect(screen.getByText(/port_scan/)).toBeInTheDocument());
@@ -392,9 +466,9 @@ describe("AgentOrchestration LogEntryView rendering", () => {
     vi.mocked(workflowsService.fetchWorkflowRun).mockResolvedValue(mockRun);
     renderOrchestration();
     fireEvent.click(screen.getByRole("button", { name: /history/i }));
-    await waitFor(() => expect(document.body.textContent).toContain("entries"));
-    const runItemBtns = Array.from(document.querySelectorAll("button")).filter((b) =>
-      b.textContent?.includes("entries"),
+    await waitFor(() => expect(document.body.textContent).toMatch(/entr(y|ies)/));
+    const runItemBtns = Array.from(document.querySelectorAll("button")).filter(
+      (b) => !!b.textContent?.match(/entr(y|ies)/),
     );
     if (runItemBtns.length > 0) fireEvent.click(runItemBtns[0]);
     await waitFor(() => expect(screen.getByText(/Planning the attack/)).toBeInTheDocument());
@@ -409,9 +483,9 @@ describe("AgentOrchestration LogEntryView rendering", () => {
     vi.mocked(workflowsService.fetchWorkflowRun).mockResolvedValue(thoughtRun);
     renderOrchestration();
     fireEvent.click(screen.getByRole("button", { name: /history/i }));
-    await waitFor(() => expect(document.body.textContent).toContain("entries"));
-    const runItemBtns = Array.from(document.querySelectorAll("button")).filter((b) =>
-      b.textContent?.includes("entries"),
+    await waitFor(() => expect(document.body.textContent).toMatch(/entr(y|ies)/));
+    const runItemBtns = Array.from(document.querySelectorAll("button")).filter(
+      (b) => !!b.textContent?.match(/entr(y|ies)/),
     );
     if (runItemBtns.length > 0) fireEvent.click(runItemBtns[0]);
     await waitFor(() => screen.getByText("Thinking"));

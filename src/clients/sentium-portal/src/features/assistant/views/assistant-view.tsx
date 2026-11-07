@@ -5,6 +5,7 @@ import { ArrowDown, Loader2, PanelRightClose, PanelRightOpen } from "lucide-reac
 import { fetchConversation } from "@/features/assistant/api/assistant.service";
 import { fetchWorkspaces, fetchWorkspaceFiles } from "@/features/workspaces/api/workspaces.service";
 import { useConversations } from "@/features/assistant/hooks/useConversations";
+import { useDebouncedValue } from "@/shared/hooks/useDebouncedValue";
 import { useModels } from "@/features/models/hooks/useModels";
 import type {
   ConversationMessage,
@@ -72,15 +73,20 @@ export function AssistantView() {
     retryLastMessage,
   } = useConversationStore();
 
+  const [conversationSearch, setConversationSearch] = useState("");
+  const debouncedConversationSearch = useDebouncedValue(conversationSearch);
+
   const {
     conversations,
+    totalCount: conversationCount,
     createConversation,
     deleteConversation: deleteConversationMutate,
+    renameConversation,
     isCreating,
     hasMore: hasMoreConversations,
     loadMore: loadMoreConversations,
     isLoadingMore: isLoadingMoreConversations,
-  } = useConversations();
+  } = useConversations(debouncedConversationSearch);
 
   const { models, defaultModel } = useModels();
 
@@ -270,17 +276,8 @@ export function AssistantView() {
   };
 
   const createNewConversation = async (): Promise<string | null> => {
-    const uniqueId = Math.random().toString(36).substring(2, 5);
-    const title = `Chat ${new Date().toLocaleString("en-GB", {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: false,
-    })} ${uniqueId}`;
     try {
-      const data = await createConversation({ title, model });
+      const data = await createConversation({ model });
       setActiveConversation(data.id, [], model);
       navigate(`/assistant/${data.id}`);
       return data.id;
@@ -486,6 +483,9 @@ export function AssistantView() {
           isOpen={sidebarOpen}
           conversations={conversations}
           conversationGroups={conversationGroups}
+          totalCount={conversationCount}
+          search={conversationSearch}
+          onSearchChange={setConversationSearch}
           activeConversationId={routeConversationId ?? activeConversationId}
           isCreating={isCreating}
           hasMoreConversations={hasMoreConversations}
@@ -498,6 +498,7 @@ export function AssistantView() {
           onNewConversation={createNewConversation}
           onLoadConversation={loadConversation}
           onDeleteConversation={deleteConversation}
+          onRenameConversation={(id, title) => renameConversation({ id, title })}
           onToggleWsContext={() => setWsContextOpen((v) => !v)}
           onToggleExpandWorkspace={(wsId) => setExpandedWorkspace((v) => (v === wsId ? null : wsId))}
           onInjectWorkspaceContext={injectWorkspaceContext}

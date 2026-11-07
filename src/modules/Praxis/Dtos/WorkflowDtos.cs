@@ -33,6 +33,7 @@ public sealed record WorkflowLogEntry(string Author, string Text, string Type);
 public sealed record WorkflowRunResponse(
     Guid Id,
     Guid? WorkflowId,
+    string? Title,
     string TriggerType,
     string TriggerPayload,
     string Explanation,
@@ -45,6 +46,7 @@ public sealed record WorkflowRunResponse(
 public sealed record WorkflowRunSummaryResponse(
     Guid Id,
     Guid? WorkflowId,
+    string? Title,
     string TriggerType,
     string TriggerPayload,
     string Explanation,

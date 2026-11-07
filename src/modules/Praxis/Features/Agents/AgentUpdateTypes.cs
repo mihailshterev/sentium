@@ -11,4 +11,5 @@ public static class AgentUpdateTypes
     public const string Cancelled = "cancelled";
     public const string EnhancedPrompt = "enhanced_prompt";
     public const string Status = "status";
+    public const string Title = "title";
 }

@@ -1,8 +1,12 @@
-import { FolderOpen, GitBranch, History, Layers, Play, Sparkles, Square } from "lucide-react";
+import { useState } from "react";
+import { FolderOpen, GitBranch, History, Layers, Pencil, Play, Sparkles, Square } from "lucide-react";
 import styles from "../agent-orchestration.module.css";
+import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
-import { Select, Textarea } from "@/shared/ui/form-controls";
+import { SearchInput, Select, Textarea } from "@/shared/ui/form-controls";
 import { InfiniteScrollSentinel } from "@/shared/ui/infinite-scroll-sentinel";
+import { InlineTitleEdit } from "@/shared/ui/inline-title-edit";
+import { describeRun, RUN_OUTCOME_LABEL } from "@/features/workflows/utils/describe-run";
 import type { WorkflowRecord } from "@/features/workflows/types/workflows";
 import type { WorkflowRun } from "@/features/workflows/types/workflows";
 import type { Phase } from "@/features/orchestration/types/orchestration";
@@ -22,6 +26,9 @@ interface ExecuteSidebarProps {
   workflows: WorkflowRecord[];
   workspaces: Workspace[];
   workflowRuns: WorkflowRun[];
+  runCount: number;
+  runSearch: string;
+  onRunSearchChange: (value: string) => void;
   hasMoreRuns: boolean;
   isLoadingMoreRuns: boolean;
   onLoadMoreRuns: () => void;
@@ -41,8 +48,8 @@ interface ExecuteSidebarProps {
   onRunDynamic: () => void;
   onStopRun: () => void;
   onLoadRun: (run: WorkflowRun) => void;
+  onRenameRun: (runId: string, title: string) => void;
   formatRunLabel: (run: WorkflowRun) => string;
-  formatRunTrigger: (type: string) => string;
 }
 
 interface SegmentOption<T extends string> {
@@ -90,6 +97,9 @@ export function ExecuteSidebar({
   workflows,
   workspaces,
   workflowRuns,
+  runCount,
+  runSearch,
+  onRunSearchChange,
   hasMoreRuns,
   isLoadingMoreRuns,
   onLoadMoreRuns,
@@ -108,9 +118,10 @@ export function ExecuteSidebar({
   onRunDynamic,
   onStopRun,
   onLoadRun,
+  onRenameRun,
   formatRunLabel,
-  formatRunTrigger,
 }: ExecuteSidebarProps) {
+  const [editingRunId, setEditingRunId] = useState<string | null>(null);
   const isStopping = connection === "stopping";
 
   const statusLabel = !isRunning
@@ -295,25 +306,87 @@ export function ExecuteSidebar({
       {sidebarView === "history" && (
         <div className={styles.sidebarScroll}>
           <span className={styles.fieldLabel}>
-            Recent Runs <span className={styles.count}>{workflowRuns.length}</span>
+            Recent Runs <span className={styles.count}>{runCount}</span>
           </span>
+          <SearchInput
+            controlSize="sm"
+            placeholder="Search runs"
+            aria-label="Search runs"
+            value={runSearch}
+            onChange={(e) => onRunSearchChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape" && runSearch) {
+                e.preventDefault();
+                onRunSearchChange("");
+              }
+            }}
+          />
           <div className={styles.runList}>
-            {workflowRuns.length === 0 && <div className={styles.empty}>No runs recorded yet</div>}
-            {workflowRuns.map((run) => (
-              <button
-                key={run.id}
-                type="button"
-                className={styles.runItem}
-                aria-current={activeRunId === run.id || undefined}
-                onClick={() => onLoadRun(run)}
-              >
-                <span className={styles.runItemTop}>
-                  <span className={styles.runTrigger}>{formatRunTrigger(run.triggerType)}</span>
-                  <span className={styles.runEntries}>{run.logCount ?? run.logs?.length ?? 0} entries</span>
-                </span>
-                <span className={styles.runDate}>{formatRunLabel(run)}</span>
-              </button>
-            ))}
+            {workflowRuns.length === 0 && (
+              <div className={styles.empty}>
+                {runSearch.trim() ? `No runs match “${runSearch.trim()}”` : "No runs recorded yet"}
+              </div>
+            )}
+            {workflowRuns.map((run) => {
+              const { title, source, outcome } = describeRun(run);
+              const entries = run.logCount ?? run.logs?.length ?? 0;
+
+              return (
+                <div key={run.id} className={styles.runRow} data-current={activeRunId === run.id || undefined}>
+                  {editingRunId === run.id ? (
+                    <div className={styles.runEditing}>
+                      <InlineTitleEdit
+                        value={title}
+                        ariaLabel="Run title"
+                        onSave={(next) => {
+                          setEditingRunId(null);
+                          onRenameRun(run.id, next);
+                        }}
+                        onCancel={() => setEditingRunId(null)}
+                      />
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className={styles.runItem}
+                      aria-current={activeRunId === run.id || undefined}
+                      onClick={() => onLoadRun(run)}
+                    >
+                      <span className={styles.runItemTop}>
+                        <span className={styles.runTitle} title={title}>
+                          {title}
+                        </span>
+                        {outcome !== "completed" && (
+                          <Badge tone={outcome === "cancelled" ? "warning" : "danger"} className={styles.runOutcome}>
+                            {RUN_OUTCOME_LABEL[outcome]}
+                          </Badge>
+                        )}
+                      </span>
+                      <span className={styles.runMeta}>
+                        <span className={styles.runSource}>{source}</span>
+                        <span aria-hidden="true">·</span>
+                        <span className={styles.runDate}>{formatRunLabel(run)}</span>
+                        <span aria-hidden="true">·</span>
+                        <span className={styles.runEntries}>
+                          {entries} {entries === 1 ? "entry" : "entries"}
+                        </span>
+                      </span>
+                    </button>
+                  )}
+                  {editingRunId !== run.id && (
+                    <button
+                      type="button"
+                      className={styles.runRename}
+                      onClick={() => setEditingRunId(run.id)}
+                      title="Rename run"
+                      aria-label={`Rename ${title}`}
+                    >
+                      <Pencil size={13} />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
             <InfiniteScrollSentinel hasMore={hasMoreRuns} isLoading={isLoadingMoreRuns} onLoadMore={onLoadMoreRuns} />
           </div>
         </div>

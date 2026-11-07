@@ -9,6 +9,13 @@ public sealed class WorkflowRun
     public Guid? WorkflowId { get; set; }
     public Workflow? Workflow { get; set; }
     public string TriggerType { get; set; } = null!;
+
+    /// <summary>
+    /// Short description of what ran - generated from the scenario, or set by the user. <see langword="null"/> for runs
+    /// recorded before titles existed.
+    /// </summary>
+    public string? Title { get; set; }
+
     public string TriggerPayload { get; set; } = null!;
     public string Explanation { get; set; } = null!;
     public string Risk { get; set; } = null!;

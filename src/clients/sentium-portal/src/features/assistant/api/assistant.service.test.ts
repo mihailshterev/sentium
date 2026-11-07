@@ -28,6 +28,12 @@ describe("assistant.service conversations", () => {
     expect(client.get).toHaveBeenCalledWith("/praxis/conversations?page=1&pageSize=20");
   });
 
+  it("fetchConversations adds an encoded search term", async () => {
+    vi.mocked(client.get).mockResolvedValueOnce([]);
+    await assistantService.fetchConversations(2, 10, "  trip & tax ");
+    expect(client.get).toHaveBeenCalledWith("/praxis/conversations?page=2&pageSize=10&search=trip%20%26%20tax");
+  });
+
   it("fetchConversation calls client.get with id in path", async () => {
     vi.mocked(client.get).mockResolvedValueOnce({});
     await assistantService.fetchConversation("conv-1");
@@ -45,6 +51,12 @@ describe("assistant.service conversations", () => {
     vi.mocked(client.delete).mockResolvedValueOnce(undefined);
     await assistantService.deleteConversation("conv-1");
     expect(client.delete).toHaveBeenCalledWith("/praxis/conversations/conv-1");
+  });
+
+  it("renameConversation puts the title to the conversation's title path", async () => {
+    vi.mocked(client.put).mockResolvedValueOnce(undefined);
+    await assistantService.renameConversation("conv-1", "Trip planning");
+    expect(client.put).toHaveBeenCalledWith("/praxis/conversations/conv-1/title", { title: "Trip planning" });
   });
 });
 

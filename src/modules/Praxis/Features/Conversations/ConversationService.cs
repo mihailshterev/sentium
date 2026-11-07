@@ -1,6 +1,7 @@
 using Sentium.Praxis.Dtos;
 using Sentium.Infrastructure.Caching;
 using Sentium.Core.Results;
+using Sentium.Praxis.Common;
 
 namespace Sentium.Praxis.Features.Conversations;
 
@@ -10,16 +11,20 @@ public sealed class ConversationService(
 {
     private const string CacheTag = "conversations";
 
-    public async Task<PagedResponse<ConversationSummary>> GetConversationsAsync(int page, int pageSize, CancellationToken ct = default)
+    public async Task<PagedResponse<ConversationSummary>> GetConversationsAsync(int page, int pageSize, string? search = null, CancellationToken ct = default)
     {
         var query = new PaginationQuery { Page = page, PageSize = pageSize };
         (page, pageSize) = query.Normalize();
+        var term = TextSearch.Normalize(search);
+        var key = term is null
+            ? $"{CacheTag}:page:{page}:{pageSize}"
+            : $"{CacheTag}:page:{page}:{pageSize}:q:{term.ToLowerInvariant()}";
 
         return await cache.GetOrCreateAsync(
-            $"{CacheTag}:page:{page}:{pageSize}",
+            key,
             async token =>
             {
-                var (items, total) = await repository.GetConversationsAsync(page, pageSize, token);
+                var (items, total) = await repository.GetConversationsAsync(page, pageSize, term, token);
                 return PagedResponse<ConversationSummary>.Create(items, total, page, pageSize);
             },
             CacheTag,
@@ -49,6 +54,31 @@ public sealed class ConversationService(
         }
 
         return deleted;
+    }
+
+    public Task<bool> IsTitlePendingAsync(Guid conversationId, CancellationToken ct = default)
+        => repository.IsTitlePendingAsync(conversationId, ct);
+
+    public async Task<bool> TrySetGeneratedTitleAsync(Guid conversationId, string title, CancellationToken ct = default)
+    {
+        var updated = await repository.TrySetGeneratedTitleAsync(conversationId, title, ct);
+        if (updated)
+        {
+            await cache.InvalidateTagAsync(CacheTag, ct);
+        }
+
+        return updated;
+    }
+
+    public async Task<bool> RenameConversationAsync(Guid conversationId, string title, CancellationToken ct = default)
+    {
+        var renamed = await repository.RenameConversationAsync(conversationId, title.Trim(), ct);
+        if (renamed)
+        {
+            await cache.InvalidateTagAsync(CacheTag, ct);
+        }
+
+        return renamed;
     }
 
     public async Task AddMessageAsync(Guid conversationId, string role, string content, string? enhancedPrompt = null, string? thought = null, IReadOnlyList<string>? toolCalls = null, CancellationToken ct = default)

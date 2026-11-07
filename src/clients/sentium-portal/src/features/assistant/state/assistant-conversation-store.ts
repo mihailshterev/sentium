@@ -43,6 +43,7 @@ interface ConversationState {
   model: string;
   isStreaming: boolean;
   streamingConversationId: string | null;
+  conversationTitles: Record<string, string>;
 
   setActiveConversation: (id: string | null, messages: ConversationMessage[], model: string) => void;
   appendMessage: (message: ConversationMessage) => void;
@@ -51,6 +52,8 @@ interface ConversationState {
   setMessageError: (id: string, error: string) => void;
   clearPendingApproval: (id: string) => void;
   setModel: (model: string) => void;
+  setConversationTitle: (id: string, title: string) => void;
+  clearConversationTitle: (id: string) => void;
   clearConversation: () => void;
   sendMessage: (args: SendMessageArgs) => Promise<void>;
   retryLastMessage: () => void;
@@ -84,7 +87,8 @@ export const useConversationStore = create<ConversationState>((set, get) => {
       throw new Error("Failed to read stream");
     }
 
-    const { updateLastMessage, setEnhancedPrompt } = get();
+    const { updateLastMessage, setEnhancedPrompt, setConversationTitle } = get();
+    const conversationId = get().streamingConversationId;
     let leftover = "";
 
     let stalled = false;
@@ -140,6 +144,13 @@ export const useConversationStore = create<ConversationState>((set, get) => {
 
           const content = typeof parsed.message === "string" ? undefined : parsed.message?.content;
 
+          if (parsed.type === "title") {
+            if (content && conversationId) {
+              setConversationTitle(conversationId, content);
+            }
+            continue;
+          }
+
           if (parsed.type === "enhanced_prompt") {
             if (content && userMsgId) {
               setEnhancedPrompt(userMsgId, content);
@@ -179,6 +190,7 @@ export const useConversationStore = create<ConversationState>((set, get) => {
     model: DEFAULT_ASSISTANT_MODEL,
     isStreaming: false,
     streamingConversationId: null,
+    conversationTitles: {},
 
     setActiveConversation: (id, messages, model) =>
       set({
@@ -243,6 +255,19 @@ export const useConversationStore = create<ConversationState>((set, get) => {
       })),
 
     setModel: (model) => set({ model }),
+
+    setConversationTitle: (id, title) =>
+      set((state) => ({ conversationTitles: { ...state.conversationTitles, [id]: title } })),
+
+    clearConversationTitle: (id) =>
+      set((state) => {
+        if (!(id in state.conversationTitles)) {
+          return state;
+        }
+        const next = { ...state.conversationTitles };
+        delete next[id];
+        return { conversationTitles: next };
+      }),
 
     clearConversation: () =>
       set({

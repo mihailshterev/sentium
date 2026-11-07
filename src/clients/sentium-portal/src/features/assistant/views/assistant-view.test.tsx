@@ -45,6 +45,8 @@ const defaultConversationsHook = {
   isCreating: false,
   deleteConversation: vi.fn(),
   isDeleting: false,
+  totalCount: 1,
+  renameConversation: vi.fn(),
 };
 
 const defaultModelsHook = {
@@ -236,6 +238,57 @@ describe("Assistant new conversation button", () => {
     renderAssistant();
     fireEvent.click(screen.getByTitle("New conversation"));
     await waitFor(() => expect(createConversation).toHaveBeenCalled());
+  });
+
+  it("creates the conversation without a title so the server can name it", async () => {
+    const createConversation = vi.fn().mockResolvedValue({ id: "conv-new" });
+    vi.spyOn(useConversationsHook, "useConversations").mockReturnValue({
+      ...defaultConversationsHook,
+      createConversation,
+    });
+    renderAssistant();
+    fireEvent.click(screen.getByTitle("New conversation"));
+    await waitFor(() => expect(createConversation).toHaveBeenCalledWith({ model: "llama3.2" }));
+  });
+});
+
+describe("Assistant conversation search", () => {
+  it("passes the debounced search to the conversation list", async () => {
+    const spy = vi.spyOn(useConversationsHook, "useConversations").mockReturnValue(defaultConversationsHook);
+    renderAssistant();
+
+    fireEvent.change(screen.getByLabelText("Search conversations"), { target: { value: "trip" } });
+
+    await waitFor(() => expect(spy).toHaveBeenLastCalledWith("trip"));
+  });
+});
+
+describe("Assistant conversation rename", () => {
+  const renderWithRename = () => {
+    const renameConversation = vi.fn();
+    vi.spyOn(useConversationsHook, "useConversations").mockReturnValue({
+      ...defaultConversationsHook,
+      renameConversation,
+    });
+    renderAssistant();
+    fireEvent.click(screen.getByTitle("Rename conversation"));
+    return { renameConversation, input: screen.getByLabelText("Conversation title") };
+  };
+
+  it("renames on Enter", () => {
+    const { renameConversation, input } = renderWithRename();
+    fireEvent.change(input, { target: { value: "Trip planning" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(renameConversation).toHaveBeenCalledWith({ id: "conv-1", title: "Trip planning" });
+    expect(screen.queryByLabelText("Conversation title")).not.toBeInTheDocument();
+  });
+
+  it("keeps the old title on Escape", () => {
+    const { renameConversation, input } = renderWithRename();
+    fireEvent.change(input, { target: { value: "Discarded" } });
+    fireEvent.keyDown(input, { key: "Escape" });
+    expect(renameConversation).not.toHaveBeenCalled();
+    expect(screen.getByText("Chat Jan 1")).toBeInTheDocument();
   });
 });
 

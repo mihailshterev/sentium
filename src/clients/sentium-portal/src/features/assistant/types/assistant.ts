@@ -42,7 +42,7 @@ export interface ConversationDetail {
 }
 
 export interface CreateConversationPayload {
-  title: string;
+  title?: string;
   model: string;
 }
 

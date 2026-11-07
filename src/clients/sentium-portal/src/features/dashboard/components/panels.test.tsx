@@ -123,8 +123,21 @@ describe("WorkflowRunsFeed", () => {
   it("renders runs and navigates to a run on click", () => {
     const onNavigate = vi.fn();
     render(<WorkflowRunsFeed runs={[run("r1", "High")]} loading={false} onNavigate={onNavigate} />);
-    expect(screen.getByText("run r1")).toBeInTheDocument();
+    expect(screen.getByText("Untitled run")).toBeInTheDocument();
+    expect(screen.getByText(/run r1/)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /view/i }));
     expect(onNavigate).toHaveBeenCalledWith("/orchestration/runs/r1");
+  });
+
+  it("shows what ran and which workflow ran it", () => {
+    const titled = {
+      ...run("r2", "Low"),
+      title: "Backup audit",
+      triggerType: "workflow.custom.workflow",
+      triggerPayload: JSON.stringify({ activity: "check backups", workflowName: "Nightly QA" }),
+    } as WorkflowRun;
+    render(<WorkflowRunsFeed runs={[titled]} loading={false} onNavigate={() => {}} />);
+    expect(screen.getByText("Backup audit")).toBeInTheDocument();
+    expect(screen.getByText("Nightly QA · run r2")).toBeInTheDocument();
   });
 });

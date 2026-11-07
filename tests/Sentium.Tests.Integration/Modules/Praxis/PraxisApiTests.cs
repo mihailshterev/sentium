@@ -1,7 +1,10 @@
 using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
+using Sentium.Praxis.Data;
 using Sentium.Praxis.Dtos;
+using Sentium.Praxis.Entities;
 using Sentium.Core.Results;
 using Sentium.Tests.Integration.Common;
 using Xunit;
@@ -85,6 +88,162 @@ public class PraxisApiTests(MonolithWebApplicationFactory factory)
         detail!.Id.Should().Be(summary.Id);
         detail.Messages.Should().NotBeNull();
     }
+
+    [Fact]
+    public async Task CreateConversation_WithoutTitle_StartsAsPlaceholder()
+    {
+        var response = await _client.PostAsJsonAsync("/api/praxis/conversations", new CreateConversationRequest(null, "m"), Ct);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var summary = await response.Content.ReadFromJsonAsync<ConversationSummary>(Ct);
+        summary!.Title.Should().Be(ConversationTitles.Placeholder);
+    }
+
+    [Fact]
+    public async Task CreateConversation_DuplicateTitles_AreAllowed()
+    {
+        var title = $"Same title {Guid.NewGuid():N}";
+
+        var first = await _client.PostAsJsonAsync("/api/praxis/conversations", new CreateConversationRequest(title, "m"), Ct);
+        var second = await _client.PostAsJsonAsync("/api/praxis/conversations", new CreateConversationRequest(title, "m"), Ct);
+
+        first.StatusCode.Should().Be(HttpStatusCode.Created);
+        second.StatusCode.Should().Be(HttpStatusCode.Created);
+    }
+
+    [Fact]
+    public async Task RenameConversation_PersistsTitle()
+    {
+        var postResp = await _client.PostAsJsonAsync("/api/praxis/conversations", new CreateConversationRequest(null, "m"), Ct);
+        var summary = await postResp.Content.ReadFromJsonAsync<ConversationSummary>(Ct);
+
+        var response = await _client.PutAsJsonAsync($"/api/praxis/conversations/{summary!.Id}/title", new UpdateTitleRequest("  Trip planning  "), Ct);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var detail = await _client.GetFromJsonAsync<ConversationResponse>($"/api/praxis/conversations/{summary.Id}", Ct);
+        detail!.Title.Should().Be("Trip planning");
+    }
+
+    [Fact]
+    public async Task RenameConversation_UnknownId_ReturnsNotFound()
+    {
+        var response = await _client.PutAsJsonAsync($"/api/praxis/conversations/{Guid.NewGuid()}/title", new UpdateTitleRequest("Anything"), Ct);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task RenameConversation_BlankTitle_ReturnsBadRequest()
+    {
+        var postResp = await _client.PostAsJsonAsync("/api/praxis/conversations", new CreateConversationRequest(null, "m"), Ct);
+        var summary = await postResp.Content.ReadFromJsonAsync<ConversationSummary>(Ct);
+
+        var response = await _client.PutAsJsonAsync($"/api/praxis/conversations/{summary!.Id}/title", new UpdateTitleRequest("   "), Ct);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task RenameWorkflowRun_PersistsTitle()
+    {
+        var runId = Guid.NewGuid();
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<PraxisDbContext>();
+            db.WorkflowRuns.Add(new WorkflowRun
+            {
+                Id = runId,
+                UserId = Guid.Parse(TestAuthHandler.TestUserId),
+                TriggerType = "workflow.dynamic",
+                TriggerPayload = "{\"activity\":\"check the backups\"}",
+                Explanation = "ok",
+                Risk = string.Empty,
+                Recommendation = string.Empty,
+                StartedAt = DateTime.UtcNow,
+                CompletedAt = DateTime.UtcNow,
+            });
+            await db.SaveChangesAsync(Ct);
+        }
+
+        var response = await _client.PutAsJsonAsync($"/api/praxis/workflows/runs/{runId}/title", new UpdateTitleRequest("Backup check"), Ct);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        var run = await _client.GetFromJsonAsync<WorkflowRunResponse>($"/api/praxis/workflows/runs/{runId}", Ct);
+        run!.Title.Should().Be("Backup check");
+    }
+
+    [Fact]
+    public async Task RenameWorkflowRun_UnknownId_ReturnsNotFound()
+    {
+        var response = await _client.PutAsJsonAsync($"/api/praxis/workflows/runs/{Guid.NewGuid()}/title", new UpdateTitleRequest("Anything"), Ct);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task GetConversations_Search_MatchesTitleCaseInsensitively()
+    {
+        var marker = Guid.NewGuid().ToString("N")[..8];
+        await _client.PostAsJsonAsync("/api/praxis/conversations", new CreateConversationRequest($"Kayak trip {marker}", "m"), Ct);
+        await _client.PostAsJsonAsync("/api/praxis/conversations", new CreateConversationRequest($"Tax return {marker}", "m"), Ct);
+
+        var paged = await _client.GetFromJsonAsync<PagedResponse<ConversationSummary>>(
+            $"/api/praxis/conversations?search={Uri.EscapeDataString($"KAYAK TRIP {marker}")}", Ct);
+
+        paged!.Items.Should().ContainSingle().Which.Title.Should().Be($"Kayak trip {marker}");
+        paged.TotalCount.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task GetConversations_Search_TreatsLikeWildcardsLiterally()
+    {
+        var marker = Guid.NewGuid().ToString("N")[..8];
+        await _client.PostAsJsonAsync("/api/praxis/conversations", new CreateConversationRequest($"Growth 100% {marker}", "m"), Ct);
+        await _client.PostAsJsonAsync("/api/praxis/conversations", new CreateConversationRequest($"Growth 1000 {marker}", "m"), Ct);
+
+        var paged = await _client.GetFromJsonAsync<PagedResponse<ConversationSummary>>(
+            $"/api/praxis/conversations?search={Uri.EscapeDataString($"100% {marker}")}", Ct);
+
+        paged!.Items.Should().ContainSingle().Which.Title.Should().Be($"Growth 100% {marker}");
+    }
+
+    [Fact]
+    public async Task GetWorkflowRuns_Search_MatchesTitle_AndScenarioOfUntitledRuns()
+    {
+        var marker = Guid.NewGuid().ToString("N")[..8];
+        var titled = Guid.NewGuid();
+        var untitled = Guid.NewGuid();
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<PraxisDbContext>();
+            db.WorkflowRuns.AddRange(
+                NewRun(titled, $"Backup audit {marker}", "{\"activity\":\"unrelated\"}"),
+                NewRun(untitled, null, $"{{\"activity\":\"check the backup {marker}\"}}"),
+                NewRun(Guid.NewGuid(), $"Something else {marker}", "{\"activity\":\"nothing\"}"));
+            await db.SaveChangesAsync(Ct);
+        }
+
+        var paged = await _client.GetFromJsonAsync<PagedResponse<WorkflowRunSummaryResponse>>(
+            $"/api/praxis/workflows/runs?search={Uri.EscapeDataString($"backup")}&pageSize=100", Ct);
+
+        var ids = paged!.Items.Select(r => r.Id).ToList();
+        ids.Should().Contain([titled, untitled]);
+        paged.Items.Should().NotContain(r => r.Title == $"Something else {marker}");
+    }
+
+    private static WorkflowRun NewRun(Guid id, string? title, string payload) => new()
+    {
+        Id = id,
+        UserId = Guid.Parse(TestAuthHandler.TestUserId),
+        Title = title,
+        TriggerType = "workflow.dynamic",
+        TriggerPayload = payload,
+        Explanation = "ok",
+        Risk = string.Empty,
+        Recommendation = string.Empty,
+        StartedAt = DateTime.UtcNow,
+        CompletedAt = DateTime.UtcNow,
+    };
 
     [Fact]
     public async Task CreateWorkflow_ValidDefinition_ReturnsCreated()

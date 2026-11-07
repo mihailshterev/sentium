@@ -1,3 +1,4 @@
+using Sentium.Praxis.Common;
 using Sentium.Praxis.Dtos;
 using Sentium.Praxis.Entities;
 using Sentium.Praxis.Data;
@@ -14,11 +15,20 @@ public sealed class WorkflowRunRepository(PraxisDbContext context) : IWorkflowRu
         await context.SaveChangesAsync(ct);
     }
 
-    public async Task<(IReadOnlyList<WorkflowRunSummaryResponse> Items, int TotalCount)> GetPagedAsync(int page, int pageSize, CancellationToken ct = default)
+    public async Task<(IReadOnlyList<WorkflowRunSummaryResponse> Items, int TotalCount)> GetPagedAsync(int page, int pageSize, string? search = null, CancellationToken ct = default)
     {
-        var total = await context.WorkflowRuns.CountAsync(ct);
-        var items = await context.WorkflowRuns
-            .AsNoTracking()
+        IQueryable<WorkflowRun> runs = context.WorkflowRuns.AsNoTracking();
+        if (TextSearch.Normalize(search) is { } term)
+        {
+            var pattern = TextSearch.ToContainsPattern(term);
+            runs = runs.Where(r =>
+                (r.Title != null && EF.Functions.ILike(r.Title, pattern, TextSearch.EscapeCharacter))
+                || (r.Workflow != null && EF.Functions.ILike(r.Workflow.Name, pattern, TextSearch.EscapeCharacter))
+                || (r.Title == null && EF.Functions.ILike(r.TriggerPayload, pattern, TextSearch.EscapeCharacter)));
+        }
+
+        var total = await runs.CountAsync(ct);
+        var items = await runs
             .OrderByDescending(r => r.StartedAt)
             .ThenByDescending(r => r.Id)
             .Skip((page - 1) * pageSize)
@@ -36,5 +46,14 @@ public sealed class WorkflowRunRepository(PraxisDbContext context) : IWorkflowRu
             .Where(x => x.Id == id)
             .Select(r => WorkflowRunProjections.ToResponse(r))
             .FirstOrDefaultAsync(ct);
+    }
+
+    public async Task<bool> RenameAsync(Guid id, string title, CancellationToken ct = default)
+    {
+        var affected = await context.WorkflowRuns
+            .Where(r => r.Id == id)
+            .ExecuteUpdateAsync(s => s.SetProperty(r => r.Title, title), ct);
+
+        return affected > 0;
     }
 }

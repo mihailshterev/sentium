@@ -45,7 +45,13 @@ describe("workflows.service", () => {
   });
 
   it("fetchWorkflowRuns uses a paged query", async () => {
-    vi.mocked(client.get).mockResolvedValueOnce({ items: [], totalCount: 0, page: 1, pageSize: 5, totalPages: 0 } as never);
+    vi.mocked(client.get).mockResolvedValueOnce({
+      items: [],
+      totalCount: 0,
+      page: 1,
+      pageSize: 5,
+      totalPages: 0,
+    } as never);
     await workflowsService.fetchWorkflowRuns(5);
     expect(client.get).toHaveBeenCalledWith("/praxis/workflows/runs?page=1&pageSize=5");
   });
@@ -54,5 +60,17 @@ describe("workflows.service", () => {
     vi.mocked(client.get).mockResolvedValueOnce({});
     await workflowsService.fetchWorkflowRun("run-1");
     expect(client.get).toHaveBeenCalledWith("/praxis/workflows/runs/run-1");
+  });
+
+  it("fetchWorkflowRunsPaged adds an encoded search term", async () => {
+    vi.mocked(client.get).mockResolvedValueOnce({ items: [] });
+    await workflowsService.fetchWorkflowRunsPaged(1, 20, "backup 100%");
+    expect(client.get).toHaveBeenCalledWith("/praxis/workflows/runs?page=1&pageSize=20&search=backup%20100%25");
+  });
+
+  it("renameWorkflowRun puts the title to the run's title path", async () => {
+    vi.mocked(client.put).mockResolvedValueOnce(undefined);
+    await workflowsService.renameWorkflowRun("run-1", "Backup audit");
+    expect(client.put).toHaveBeenCalledWith("/praxis/workflows/runs/run-1/title", { title: "Backup audit" });
   });
 });
