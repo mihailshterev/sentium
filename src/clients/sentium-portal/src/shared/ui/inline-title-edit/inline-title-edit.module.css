@@ -1,0 +1,19 @@
+.input {
+  width: 100%;
+  min-width: 0;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--accent-line);
+  border-radius: var(--radius-sm);
+  background: var(--mat-thin-bg-hover);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: var(--text-sm);
+  line-height: 1.4;
+  box-shadow: var(--focus-ring);
+
+  &:focus,
+  &:focus-visible {
+    outline: none;
+  }
+}

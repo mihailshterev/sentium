@@ -5,6 +5,7 @@ import React from "react";
 import { useConversations } from "./useConversations";
 import * as assistantService from "@/features/assistant/api/assistant.service";
 import type { ConversationSummary } from "@/features/assistant/types/assistant";
+import { useConversationStore } from "@/features/assistant/state/assistant-conversation-store";
 
 const createWrapper = () => {
   const qc = new QueryClient({
@@ -93,5 +94,42 @@ describe("useConversations mutation calls", () => {
     });
     await waitFor(() => expect(result.current.isDeleting).toBe(false));
     expect(assistantService.deleteConversation).toHaveBeenCalledWith("conv-1");
+  });
+});
+
+describe("useConversations search", () => {
+  it("asks the server for matching conversations", async () => {
+    const fetch = vi.spyOn(assistantService, "fetchConversations");
+    const { result } = renderHook(() => useConversations("  trip "), { wrapper: createWrapper() });
+    await waitFor(() => expect(result.current.conversations).toHaveLength(1));
+    expect(fetch).toHaveBeenCalledWith(1, 20, "trip");
+    expect(result.current.totalCount).toBe(1);
+  });
+});
+
+describe("useConversations titles", () => {
+  beforeEach(() => {
+    useConversationStore.setState({ conversationTitles: {} });
+  });
+
+  it("shows a title generated during streaming before the list is refetched", async () => {
+    const { result } = renderHook(() => useConversations(), { wrapper: createWrapper() });
+    await waitFor(() => expect(result.current.conversations).toHaveLength(1));
+
+    act(() => useConversationStore.getState().setConversationTitle("conv-1", "Trip planning"));
+
+    await waitFor(() => expect(result.current.conversations[0].title).toBe("Trip planning"));
+  });
+
+  it("renames through the API and drops the streamed title", async () => {
+    const rename = vi.spyOn(assistantService, "renameConversation").mockResolvedValue(undefined);
+    useConversationStore.setState({ conversationTitles: { "conv-1": "Generated" } });
+    const { result } = renderHook(() => useConversations(), { wrapper: createWrapper() });
+    await waitFor(() => expect(result.current.conversations).toHaveLength(1));
+
+    act(() => result.current.renameConversation({ id: "conv-1", title: "Mine" }));
+
+    await waitFor(() => expect(rename).toHaveBeenCalledWith("conv-1", "Mine"));
+    await waitFor(() => expect(useConversationStore.getState().conversationTitles).toEqual({}));
   });
 });

@@ -292,3 +292,34 @@ describe("stopStreaming", () => {
     expect(() => useConversationStore.getState().stopStreaming()).not.toThrow();
   });
 });
+
+describe("sendMessage title frames", () => {
+  it("records the generated title and keeps it out of the answer text", async () => {
+    act(() => useConversationStore.setState({ conversationTitles: {} }));
+    vi.spyOn(assistantService, "sendChatMessage").mockResolvedValue(
+      sseResponse([
+        JSON.stringify({ type: "message", message: { content: "Sure." } }),
+        JSON.stringify({ type: "title", message: { content: "Trip planning" } }),
+        JSON.stringify({ type: "done" }),
+      ]),
+    );
+
+    await act(async () => {
+      await useConversationStore
+        .getState()
+        .sendMessage({ conversationId: "c1", model: "gemma", userContent: "Plan a trip" });
+    });
+
+    const { messages, conversationTitles } = useConversationStore.getState();
+    expect(messages[1].content).toBe("Sure.");
+    expect(conversationTitles).toEqual({ c1: "Trip planning" });
+  });
+
+  it("clears a recorded title", () => {
+    act(() => useConversationStore.setState({ conversationTitles: { c1: "Trip planning", c2: "Other" } }));
+
+    act(() => useConversationStore.getState().clearConversationTitle("c1"));
+
+    expect(useConversationStore.getState().conversationTitles).toEqual({ c2: "Other" });
+  });
+});

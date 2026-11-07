@@ -27,9 +27,9 @@ public sealed class ConversationsControllerTests
             new(Guid.NewGuid(), "Chat 1", "gemma3:1b", DateTime.UtcNow)
         };
         var paged = PagedResponse<ConversationSummary>.Create(conversations, 1, 1, 20);
-        _service.GetConversationsAsync(1, 20, Arg.Any<CancellationToken>()).Returns(paged);
+        _service.GetConversationsAsync(1, 20, null, Arg.Any<CancellationToken>()).Returns(paged);
 
-        var result = await _controller.GetConversations(1, 20, TestContext.Current.CancellationToken);
+        var result = await _controller.GetConversations(1, 20, null, TestContext.Current.CancellationToken);
 
         result.Result.Should().BeOfType<OkObjectResult>()
             .Which.Value.Should().Be(paged);
@@ -70,5 +70,25 @@ public sealed class ConversationsControllerTests
         var result = await _controller.DeleteConversation(id, TestContext.Current.CancellationToken);
 
         result.Should().BeOfType<NoContentResult>();
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task RenameConversation_ReturnsNoContent_OrNotFound(bool renamed)
+    {
+        var id = Guid.NewGuid();
+        _service.RenameConversationAsync(id, "Trip planning", Arg.Any<CancellationToken>()).Returns(renamed);
+
+        var result = await _controller.RenameConversation(id, new UpdateTitleRequest("Trip planning"), TestContext.Current.CancellationToken);
+
+        if (renamed)
+        {
+            result.Should().BeOfType<NoContentResult>();
+        }
+        else
+        {
+            result.Should().BeOfType<NotFoundResult>();
+        }
     }
 }

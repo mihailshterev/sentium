@@ -1,4 +1,4 @@
-import { useInfiniteQuery, type QueryKey } from "@tanstack/react-query";
+import { keepPreviousData, useInfiniteQuery, type QueryKey } from "@tanstack/react-query";
 import type { PagedResponse } from "@/shared/types/pagination";
 
 interface UseInfiniteListOptions {
@@ -6,6 +6,7 @@ interface UseInfiniteListOptions {
   refetchInterval?: number;
   enabled?: boolean;
   staleTime?: number;
+  keepPrevious?: boolean;
 }
 
 export function useInfiniteList<T>(
@@ -23,6 +24,7 @@ export function useInfiniteList<T>(
     refetchInterval: options.refetchInterval,
     enabled: options.enabled,
     staleTime: options.staleTime,
+    placeholderData: options.keepPrevious ? keepPreviousData : undefined,
   });
 
   return {

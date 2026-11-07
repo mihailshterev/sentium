@@ -1,7 +1,9 @@
+using Sentium.Infrastructure.Caching;
 using FluentAssertions;
 using NSubstitute;
 using Sentium.Praxis.Features.Conversations;
 using Sentium.Praxis.Dtos;
+using Sentium.Core.Results;
 using Xunit;
 
 namespace Sentium.Tests.Unit.Modules.Praxis;
@@ -25,17 +27,17 @@ public sealed class ConversationServiceTests
         {
             new(Guid.NewGuid(), "Chat 1", "gemma3:1b", DateTime.UtcNow)
         };
-        _repository.GetConversationsAsync(1, 20, ct).Returns((expected, expected.Count));
+        _repository.GetConversationsAsync(1, 20, null, ct).Returns((expected, expected.Count));
 
         // Act
-        var result = await _service.GetConversationsAsync(1, 20, ct);
+        var result = await _service.GetConversationsAsync(1, 20, null, ct);
 
         // Assert
         result.Items.Should().BeEquivalentTo(expected);
         result.TotalCount.Should().Be(expected.Count);
         result.Page.Should().Be(1);
         result.PageSize.Should().Be(20);
-        await _repository.Received(1).GetConversationsAsync(1, 20, ct);
+        await _repository.Received(1).GetConversationsAsync(1, 20, null, ct);
     }
 
     [Fact]
@@ -100,5 +102,77 @@ public sealed class ConversationServiceTests
 
         // Assert
         await _repository.Received(1).AddMessageAsync(convId, "user", "Hello", null, null, null, ct);
+    }
+
+    [Fact]
+    public async Task IsTitlePendingAsync_DelegatesToRepository()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var id = Guid.NewGuid();
+        _repository.IsTitlePendingAsync(id, ct).Returns(true);
+
+        (await _service.IsTitlePendingAsync(id, ct)).Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task TrySetGeneratedTitleAsync_InvalidatesList_OnlyWhenStored(bool stored)
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var cache = Substitute.For<IScopedCache>();
+        var service = new ConversationService(_repository, cache);
+        var id = Guid.NewGuid();
+        _repository.TrySetGeneratedTitleAsync(id, "Trip planning", ct).Returns(stored);
+
+        var result = await service.TrySetGeneratedTitleAsync(id, "Trip planning", ct);
+
+        result.Should().Be(stored);
+        await cache.Received(stored ? 1 : 0).InvalidateTagAsync("conversations", ct);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task RenameConversationAsync_TrimsTitle_AndInvalidatesList_OnlyWhenRenamed(bool renamed)
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var cache = Substitute.For<IScopedCache>();
+        var service = new ConversationService(_repository, cache);
+        var id = Guid.NewGuid();
+        _repository.RenameConversationAsync(id, "Trip planning", ct).Returns(renamed);
+
+        var result = await service.RenameConversationAsync(id, "  Trip planning  ", ct);
+
+        result.Should().Be(renamed);
+        await _repository.Received(1).RenameConversationAsync(id, "Trip planning", ct);
+        await cache.Received(renamed ? 1 : 0).InvalidateTagAsync("conversations", ct);
+    }
+
+    [Fact]
+    public async Task GetConversationsAsync_PassesNormalizedSearch_ToRepository()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        _repository.GetConversationsAsync(1, 20, "trip", ct).Returns((new List<ConversationSummary>(), 0));
+
+        await _service.GetConversationsAsync(1, 20, "  trip ", ct);
+
+        await _repository.Received(1).GetConversationsAsync(1, 20, "trip", ct);
+    }
+
+    [Fact]
+    public async Task GetConversationsAsync_CachesSearches_UnderTheirOwnKey()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var cache = Substitute.For<IScopedCache>();
+        var service = new ConversationService(_repository, cache);
+
+        await service.GetConversationsAsync(1, 20, "Trip", ct);
+
+        await cache.Received(1).GetOrCreateAsync(
+            "conversations:page:1:20:q:trip",
+            Arg.Any<Func<CancellationToken, ValueTask<PagedResponse<ConversationSummary>>>>(),
+            "conversations",
+            ct);
     }
 }

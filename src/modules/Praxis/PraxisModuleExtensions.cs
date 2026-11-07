@@ -21,6 +21,7 @@ using Sentium.Praxis.Features.Sentinel;
 using Sentium.Praxis.Features.Skills;
 using Sentium.Praxis.Features.Skills.BuiltIn;
 using Sentium.Praxis.Features.Storage;
+using Sentium.Praxis.Features.Titles;
 using Sentium.Praxis.Testing;
 using Sentium.Praxis.Features.Tools;
 using Sentium.Praxis.Features.Tools.Inventory;
@@ -84,6 +85,7 @@ public static class PraxisModuleExtensions
         services.AddScoped<IAgentToolProvider, AgentToolProvider>();
         services.AddScoped<IAgentFactory, CompositeAgentFactory>();
         services.AddScoped<IPromptEnhancementService, PromptEnhancementService>();
+        services.AddScoped<ITitleGenerator, TitleGenerator>();
         services.AddScoped<IAgentRepository, AgentRepository>();
         services.AddScoped<IWorkspaceRepository, WorkspaceRepository>();
 

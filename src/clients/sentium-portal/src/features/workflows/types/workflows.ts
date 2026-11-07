@@ -40,6 +40,7 @@ export interface RunWorkflowPayload {
 
 export interface WorkflowRun {
   id: string;
+  title?: string | null;
   triggerType: string;
   triggerPayload: string;
   explanation: string;

@@ -14,11 +14,16 @@ export const updateWorkflow = ({ id, ...payload }: UpdateWorkflowPayload) =>
 
 export const deleteWorkflow = (id: string) => client.delete<void>(`${BASE}/workflows/${id}`);
 
-export const fetchWorkflowRunsPaged = (page = 1, pageSize = 20): Promise<PagedResponse<WorkflowRun>> =>
-  client.get<PagedResponse<WorkflowRun>>(`${BASE}/workflows/runs?page=${page}&pageSize=${pageSize}`);
+export const fetchWorkflowRunsPaged = (page = 1, pageSize = 20, search?: string): Promise<PagedResponse<WorkflowRun>> =>
+  client.get<PagedResponse<WorkflowRun>>(
+    `${BASE}/workflows/runs?page=${page}&pageSize=${pageSize}${search?.trim() ? `&search=${encodeURIComponent(search.trim())}` : ""}`,
+  );
 
 export const fetchWorkflowRuns = async (pageSize = 15): Promise<WorkflowRun[]> =>
   (await fetchWorkflowRunsPaged(1, pageSize)).items;
 
 export const fetchWorkflowRun = (runId: string): Promise<WorkflowRun> =>
   client.get<WorkflowRun>(`${BASE}/workflows/runs/${runId}`);
+
+export const renameWorkflowRun = (runId: string, title: string) =>
+  client.put<void>(`${BASE}/workflows/runs/${runId}/title`, { title });

@@ -6,8 +6,10 @@ import styles from "../agent-orchestration.module.css";
 import { fetchWorkflowRunsPaged } from "@/features/workflows/api/workflows.service";
 import { fetchWorkspaces } from "@/features/workspaces/api/workspaces.service";
 import { useWorkflows } from "@/features/workflows/hooks/useWorkflows";
-import { useWorkflowRun } from "@/features/workflows/hooks/useWorkflowRuns";
+import { useRenameWorkflowRun, useWorkflowRun } from "@/features/workflows/hooks/useWorkflowRuns";
+import { describeRun } from "@/features/workflows/utils/describe-run";
 import { useInfiniteList } from "@/shared/hooks/useInfiniteList";
+import { useDebouncedValue } from "@/shared/hooks/useDebouncedValue";
 import type { Phase, LogEntry } from "@/features/orchestration/types/orchestration";
 import type { WorkflowRecord } from "@/features/workflows/types/workflows";
 import type { WorkflowRun } from "@/features/workflows/types/workflows";
@@ -78,22 +80,32 @@ export function AgentOrchestrationView() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const { run: selectedRun, isLoading: runLoading, error: runError } = useWorkflowRun(runId);
+  const { mutate: renameRun } = useRenameWorkflowRun();
 
   const { data: workspaces = [] } = useQuery({
     queryKey: ["workspaces", "options"],
     queryFn: fetchWorkspaces,
   });
 
+  const [runSearch, setRunSearch] = useState("");
+  const debouncedRunSearch = useDebouncedValue(runSearch).trim();
+
   const {
     items: workflowRuns,
+    totalCount: runCount,
     refetch: refetchRuns,
     hasMore: hasMoreRuns,
     loadMore: loadMoreRuns,
     isLoadingMore: isLoadingMoreRuns,
-  } = useInfiniteList<WorkflowRun>(["workflowRuns"], fetchWorkflowRunsPaged, {
-    enabled: sidebarView === "history",
-    refetchInterval: sidebarView === "history" ? 15_000 : undefined,
-  });
+  } = useInfiniteList<WorkflowRun>(
+    ["workflowRuns", debouncedRunSearch],
+    (page, pageSize) => fetchWorkflowRunsPaged(page, pageSize, debouncedRunSearch || undefined),
+    {
+      enabled: sidebarView === "history",
+      refetchInterval: sidebarView === "history" ? 15_000 : undefined,
+      keepPrevious: true,
+    },
+  );
 
   const toggleThought = (id: string) =>
     setExpandedThoughts((prev) => {
@@ -187,8 +199,6 @@ export function AgentOrchestrationView() {
     return `${d.toLocaleDateString("en-GB", { month: "short", day: "numeric" })} ${d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false })}`;
   };
 
-  const formatRunTrigger = (type: string) => type.split(".").filter(Boolean).pop() ?? type;
-
   const formatElapsed = (ms: number) => {
     const total = Math.max(0, Math.floor(ms / 1000));
     return `${Math.floor(total / 60)}:${(total % 60).toString().padStart(2, "0")}`;
@@ -265,7 +275,7 @@ export function AgentOrchestrationView() {
           <div className={styles.logHeader}>
             <span className={styles.logDot} data-active={isRunning || undefined} aria-hidden="true" />
             <span className={styles.logTitle}>
-              {selectedRun ? `Replay - ${formatRunTrigger(selectedRun.triggerType)}` : "Output"}
+              {selectedRun ? `Replay - ${describeRun(selectedRun).title}` : "Output"}
             </span>
             {displayPhase === "COMPLETE" && !isRunning && !viewingRun && lastOutcome === "completed" && (
               <Badge tone="success">
@@ -346,6 +356,9 @@ export function AgentOrchestrationView() {
           workflows={workflows}
           workspaces={workspaces}
           workflowRuns={workflowRuns}
+          runCount={runCount}
+          runSearch={runSearch}
+          onRunSearchChange={setRunSearch}
           hasMoreRuns={hasMoreRuns}
           isLoadingMoreRuns={isLoadingMoreRuns}
           onLoadMoreRuns={loadMoreRuns}
@@ -365,8 +378,8 @@ export function AgentOrchestrationView() {
           onRunDynamic={runDynamic}
           onStopRun={stopRun}
           onLoadRun={loadRun}
+          onRenameRun={(id, title) => renameRun({ runId: id, title })}
           formatRunLabel={formatRunLabel}
-          formatRunTrigger={formatRunTrigger}
         />
       </div>
     </Page>

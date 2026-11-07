@@ -1,3 +1,4 @@
+using Sentium.Praxis.Common;
 using Sentium.Praxis.Dtos;
 using Sentium.Praxis.Entities;
 using Sentium.Praxis.Data;
@@ -8,9 +9,14 @@ namespace Sentium.Praxis.Features.Conversations;
 
 public sealed class ConversationRepository(PraxisDbContext context) : IConversationRepository
 {
-    public async Task<(IReadOnlyList<ConversationSummary> Items, int TotalCount)> GetConversationsAsync(int page, int pageSize, CancellationToken ct = default)
+    public async Task<(IReadOnlyList<ConversationSummary> Items, int TotalCount)> GetConversationsAsync(int page, int pageSize, string? search = null, CancellationToken ct = default)
     {
         var query = context.Conversations.AsNoTracking();
+        if (TextSearch.Normalize(search) is { } term)
+        {
+            var pattern = TextSearch.ToContainsPattern(term);
+            query = query.Where(c => EF.Functions.ILike(c.Title, pattern, TextSearch.EscapeCharacter));
+        }
 
         var total = await query.CountAsync(ct);
         var items = await query
@@ -52,10 +58,12 @@ public sealed class ConversationRepository(PraxisDbContext context) : IConversat
     {
         ArgumentNullException.ThrowIfNull(request);
 
+        var title = request.Title?.Trim();
         var conversation = new Conversation
         {
             Id = Guid.NewGuid(),
-            Title = request.Title,
+            Title = string.IsNullOrEmpty(title) ? ConversationTitles.Placeholder : title,
+            IsTitlePending = string.IsNullOrEmpty(title),
             Model = request.Model,
             CreatedAt = DateTime.UtcNow
         };
@@ -71,6 +79,31 @@ public sealed class ConversationRepository(PraxisDbContext context) : IConversat
         var affected = await context.Conversations
             .Where(c => c.Id == conversationId)
             .ExecuteDeleteAsync(ct);
+
+        return affected > 0;
+    }
+
+    public async Task<bool> IsTitlePendingAsync(Guid conversationId, CancellationToken ct = default)
+        => await context.Conversations.AnyAsync(c => c.Id == conversationId && c.IsTitlePending, ct);
+
+    public async Task<bool> TrySetGeneratedTitleAsync(Guid conversationId, string title, CancellationToken ct = default)
+    {
+        var affected = await context.Conversations
+            .Where(c => c.Id == conversationId && c.IsTitlePending)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(c => c.Title, title)
+                .SetProperty(c => c.IsTitlePending, false), ct);
+
+        return affected > 0;
+    }
+
+    public async Task<bool> RenameConversationAsync(Guid conversationId, string title, CancellationToken ct = default)
+    {
+        var affected = await context.Conversations
+            .Where(c => c.Id == conversationId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(c => c.Title, title)
+                .SetProperty(c => c.IsTitlePending, false), ct);
 
         return affected > 0;
     }

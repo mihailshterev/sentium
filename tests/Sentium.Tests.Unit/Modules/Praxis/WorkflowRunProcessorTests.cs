@@ -8,6 +8,7 @@ using Sentium.Praxis.Entities;
 using Sentium.Praxis.Features.Agents;
 using Sentium.Praxis.Features.Orchestration;
 using Sentium.Praxis.Features.Sentinel;
+using Sentium.Praxis.Features.Titles;
 using Sentium.Praxis.Features.WorkflowManagement;
 using Sentium.Praxis.Features.Workflows;
 using Xunit;
@@ -24,6 +25,7 @@ public sealed class WorkflowRunProcessorTests : IAsyncDisposable
     private readonly PdpContextAccessor _runContext = new();
     private readonly IOrchestrator _orchestrator = Substitute.For<IOrchestrator>();
     private readonly IWorkflowRunRepository _runs = Substitute.For<IWorkflowRunRepository>();
+    private readonly ITitleGenerator _titles = Substitute.For<ITitleGenerator>();
     private ServiceProvider? _services;
     private WorkflowRunProcessor? _processor;
 
@@ -39,6 +41,34 @@ public sealed class WorkflowRunProcessorTests : IAsyncDisposable
 
         frames[^1].Type.Should().Be(AgentUpdateTypes.Done);
         await _runs.Received(1).AddAsync(Arg.Is<WorkflowRun>(r => r.Explanation == "ok" && r.TriggerPayload == trigger.Payload), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task CompletedRun_IsTitled_FromItsScenario()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        _orchestrator.RunAsync(Arg.Any<WorkflowTrigger>(), Arg.Any<CancellationToken>()).Returns(new WorkflowResult { Explanation = "ok" });
+        _titles.GenerateAsync("test", Arg.Any<CancellationToken>()).Returns("Generated title");
+        await StartAsync(ct);
+
+        var trigger = await EnqueueAsync(ct);
+        await ReadUntilTerminalAsync(trigger.StreamId, ct);
+
+        await _runs.Received(1).AddAsync(Arg.Is<WorkflowRun>(r => r.Title == "Generated title"), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task RunWithoutScenario_IsNotTitled()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        _orchestrator.RunAsync(Arg.Any<WorkflowTrigger>(), Arg.Any<CancellationToken>()).Returns(new WorkflowResult { Explanation = "ok" });
+        await StartAsync(ct);
+
+        var trigger = await EnqueueAsync(ct, payload: "{\"something\":\"else\"}");
+        await ReadUntilTerminalAsync(trigger.StreamId, ct);
+
+        await _runs.Received(1).AddAsync(Arg.Is<WorkflowRun>(r => r.Title == null), Arg.Any<CancellationToken>());
+        await _titles.DidNotReceive().GenerateAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -96,7 +126,7 @@ public sealed class WorkflowRunProcessorTests : IAsyncDisposable
         var frames = await ReadUntilTerminalAsync(trigger.StreamId, ct);
 
         frames[^1].Type.Should().Be(AgentUpdateTypes.Cancelled);
-        await _runs.Received(1).AddAsync(Arg.Is<WorkflowRun>(r => r.Explanation.StartsWith("[CANCELLED] Stopped by user")), Arg.Any<CancellationToken>());
+        await _runs.Received(1).AddAsync(Arg.Is<WorkflowRun>(r => r.Explanation.StartsWith("[CANCELLED] Stopped by user") && r.Title == "test"), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -163,6 +193,7 @@ public sealed class WorkflowRunProcessorTests : IAsyncDisposable
         services.AddScoped<SystemScopeContext>();
         services.AddSingleton(_orchestrator);
         services.AddSingleton(_runs);
+        services.AddSingleton(_titles);
         _services = services.BuildServiceProvider();
 
         var configuration = new ConfigurationBuilder()
@@ -181,12 +212,12 @@ public sealed class WorkflowRunProcessorTests : IAsyncDisposable
         await _processor.StartAsync(ct);
     }
 
-    private async Task<WorkflowTrigger> EnqueueAsync(CancellationToken ct, Guid? userId = null)
+    private async Task<WorkflowTrigger> EnqueueAsync(CancellationToken ct, Guid? userId = null, string payload = "{\"activity\":\"test\"}")
     {
         var trigger = new WorkflowTrigger
         {
             TriggerType = WorkflowTriggerTypes.Dynamic,
-            Payload = "{\"activity\":\"test\"}",
+            Payload = payload,
             UserId = userId,
             StreamId = Guid.NewGuid().ToString("N")
         };

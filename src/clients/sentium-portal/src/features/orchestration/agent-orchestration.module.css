@@ -705,10 +705,90 @@
   gap: var(--space-2);
 }
 
-.runTrigger {
+.runRow {
+  position: relative;
+}
+
+.runRow .runItem {
+  padding-right: 40px;
+}
+
+.runTitle {
+  min-width: 0;
+  overflow: hidden;
   color: var(--text-primary);
   font-size: var(--text-sm);
   font-weight: var(--fw-medium);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.runOutcome {
+  flex-shrink: 0;
+}
+
+.runMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+  min-width: 0;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.runSource {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text-secondary);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.runRename {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity var(--transition-fast),
+    background-color var(--transition-fast),
+    color var(--transition-fast);
+
+  &:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+    opacity: 1;
+  }
+
+  .runRow:hover & {
+    opacity: 1;
+  }
+
+  @media (hover: none) {
+    opacity: 1;
+  }
+}
+
+.runEditing {
+  padding: 8px;
+  border: 1px solid var(--accent-line);
+  border-radius: var(--radius-md);
+  background: var(--mat-thin-bg);
 }
 
 .runEntries {

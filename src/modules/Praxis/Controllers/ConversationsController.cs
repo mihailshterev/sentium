@@ -19,6 +19,7 @@ public sealed class ConversationsController(IConversationService conversationSer
     /// </summary>
     /// <param name="page">1-based page number (default: 1).</param>
     /// <param name="pageSize">Number of items per page (default: 20, max: 100).</param>
+    /// <param name="search">Optional text the conversation title must contain (case-insensitive).</param>
     /// <param name="ct">Cancellation token.</param>
     /// <returns>A paginated list of conversations.</returns>
     [HttpGet]
@@ -26,9 +27,10 @@ public sealed class ConversationsController(IConversationService conversationSer
     public async Task<ActionResult<PagedResponse<ConversationSummary>>> GetConversations(
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = PaginationQuery.DefaultPageSize,
+        [FromQuery] string? search = null,
         CancellationToken ct = default)
     {
-        var conversations = await conversationService.GetConversationsAsync(page, pageSize, ct);
+        var conversations = await conversationService.GetConversationsAsync(page, pageSize, search, ct);
         return Ok(conversations);
     }
 
@@ -59,6 +61,25 @@ public sealed class ConversationsController(IConversationService conversationSer
     {
         var result = await conversationService.CreateConversationAsync(request, ct);
         return CreatedAtAction(nameof(GetConversation), new { conversationId = result.Id }, result);
+    }
+
+    /// <summary>
+    /// Renames a conversation. A manual title is final: the conversation is no longer titled automatically.
+    /// </summary>
+    /// <param name="conversationId">The ID of the conversation to rename.</param>
+    /// <param name="request">The new title.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>No content.</returns>
+    [HttpPut("{conversationId:guid}/title")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RenameConversation(Guid conversationId, [FromBody] UpdateTitleRequest request, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var renamed = await conversationService.RenameConversationAsync(conversationId, request.Title, ct);
+        return renamed ? NoContent() : NotFound();
     }
 
     /// <summary>
