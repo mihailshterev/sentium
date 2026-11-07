@@ -8,36 +8,20 @@ namespace Sentium.Praxis.Features.Skills.BuiltIn;
 /// <summary>
 /// Built-in skill for analysing and transforming JSON data.
 /// </summary>
-internal sealed class JsonAnalyzerSkill : AgentClassSkill<JsonAnalyzerSkill>
+internal sealed class JsonAnalyzerSkill() : BuiltInSkill<JsonAnalyzerSkill>(
+    "json-analyzer",
+    "Analyse, validate, pretty-print, and summarise JSON structures. Use when the user provides JSON data or asks about JSON schemas, validation, or transformation.",
+    """
+    Use this skill when the user provides a JSON payload or asks about JSON.
+
+    1. Use the validate script to check whether the input is valid JSON.
+    2. If valid, use the summarize script to describe the top-level structure.
+    3. For pretty printing, use the pretty-print script.
+    4. Explain the structure clearly: list top-level keys, value types, and array lengths.
+    5. If the JSON is invalid, report the error message and location.
+    """)
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
-
-    internal static BuiltInSkillInfo Descriptor { get; } = new(
-        "json-analyzer",
-        "Analyse, validate, pretty-print, and summarise JSON structures. Use when the user provides JSON data or asks about JSON schemas, validation, or transformation.",
-        """
-        Use this skill when the user provides a JSON payload or asks about JSON.
-
-        1. Use the validate script to check whether the input is valid JSON.
-        2. If valid, use the summarize script to describe the top-level structure.
-        3. For pretty printing, use the pretty-print script.
-        4. Explain the structure clearly: list top-level keys, value types, and array lengths.
-        5. If the JSON is invalid, report the error message and location.
-        """);
-
-    public override AgentSkillFrontmatter Frontmatter { get; } = new(
-        "json-analyzer",
-        "Analyse, validate, pretty-print, and summarise JSON structures. Use when the user provides JSON data or asks about JSON schemas, validation, or transformation.");
-
-    protected override string Instructions => """
-        Use this skill when the user provides a JSON payload or asks about JSON.
-
-        1. Use the validate script to check whether the input is valid JSON.
-        2. If valid, use the summarize script to describe the top-level structure.
-        3. For pretty printing, use the pretty-print script.
-        4. Explain the structure clearly: list top-level keys, value types, and array lengths.
-        5. If the JSON is invalid, report the error message and location.
-        """;
 
     [AgentSkillResource("json-tips")]
     [Description("Common JSON best practices and pitfalls.")]

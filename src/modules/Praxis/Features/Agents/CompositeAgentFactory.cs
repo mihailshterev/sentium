@@ -1,123 +1,142 @@
-using Sentium.Praxis.Common.Helpers;
-using Sentium.Praxis.Features.Learnings;
-using Sentium.Praxis.Features.Registry;
-using Sentium.Praxis.Features.Tools;
-using Sentium.Praxis.Features.Skills;
-using Sentium.Praxis.Features.Sentinel;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System.Collections.Concurrent;
-using System.Text;
-using Sentium.Praxis.Extensions;
-using Sentium.Core.Constants;
 using Sentium.Infrastructure.Inference;
+using Sentium.Praxis.Features.Learnings;
+using Sentium.Praxis.Features.Models;
+using Sentium.Praxis.Features.Registry;
+using Sentium.Praxis.Features.Sentinel;
+using Sentium.Praxis.Features.Skills;
+using Sentium.Praxis.Features.Tools;
 
 namespace Sentium.Praxis.Features.Agents;
 
+/// <summary>
+/// Builds a <see cref="ChatClientAgent"/> per request on the shared agent base client, adding per-agent function
+/// invocation and context-window compaction (see <see cref="AgentChatPipeline"/>). Everything else that varies per agent
+/// is expressed through native Agent Framework / Microsoft.Extensions.AI options: the model via
+/// <see cref="ChatOptions.ModelId"/>, the composed instructions via <see cref="ChatOptions.Instructions"/> (one system
+/// message), skills / learnings via <see cref="ChatClientAgentOptions.AIContextProviders"/>, and the Sentinel tool guard
+/// as function-calling middleware.
+/// </summary>
 public sealed class CompositeAgentFactory(
+    [FromKeyedServices(PraxisModuleExtensions.AgentChatClientKey)] IChatClient baseChatClient,
     IOptions<InferenceOptions> inferenceOptions,
-    IInferenceClientFactory inferenceClientFactory,
+    IModelContextWindowProvider contextWindows,
     IAgentToolProvider agentToolProvider,
     IAgentRepository agentRepository,
-    IAgentRegistry agentRegistry,
     IRegistrySettingsService registrySettingsService,
-    IAgentLearningService learningService,
+    AgentSkillsProviderFactory skillsProviderFactory,
+    LearningsContextProvider learningsProvider,
+    SentinelFunctionMiddleware sentinelMiddleware,
+    IPdpContextAccessor runContext,
     IServiceProvider serviceProvider,
-    DynamicSkillsProvider dynamicSkillsProvider,
-    SentinelClient sentinelClient,
-    IPdpContextAccessor pdpContext,
-    ILogger<CompositeAgentFactory> logger) : IAgentFactory, IDisposable
+    ILoggerFactory loggerFactory) : IAgentFactory
 {
-    private readonly ConcurrentDictionary<string, IChatClient> clientCache = new();
-
-    public async Task<AIAgent> CreateAsync(string agentName, string? overrideInstructions = null, string? overrideModel = null, Guid? actingUserId = null, CancellationToken ct = default)
+    public async Task<AIAgent> CreateAsync(
+        string agentName,
+        string? overrideInstructions = null,
+        string? overrideModel = null,
+        Guid? actingUserId = null,
+        ChatHistoryProvider? chatHistory = null,
+        bool allowApprovalTools = true,
+        CancellationToken ct = default)
     {
-        var definition = await ResolveDefinitionAsync(agentName, actingUserId, ct);
-        if (definition is null)
-        {
-            throw new InvalidOperationException($"Agent '{agentName}' could not be resolved.");
-        }
+        var definition = await ResolveDefinitionAsync(agentName, actingUserId, ct)
+            ?? throw new InvalidOperationException($"Agent '{agentName}' could not be resolved.");
 
-        pdpContext.AgentName = definition.Name;
+        var (settings, model, contextWindow) = await ResolveSettingsAsync(overrideModel, actingUserId, ct);
 
-        if (actingUserId is { } uid)
-        {
-            pdpContext.UserId = uid;
-        }
+        var tools = SelectTools(definition, allowApprovalTools, ct);
 
-        var isOrchestrator = string.Equals(definition.Name, AgentRole.Orchestrator, StringComparison.OrdinalIgnoreCase);
-
-        var settings = await registrySettingsService.GetAsync(actingUserId, ct);
-        var inferenceSettings = settings.Inference;
-
-        var tools = isOrchestrator ? [] : agentToolProvider.GetToolsForAgent(definition.Name, ct);
-
-        var instrumentedTools = tools
-            .OfType<AIFunction>()
-            .Select(func =>
-            {
-                AIFunction current = new DiagnosticToolDecorator(func, logger);
-
-                current = new SentinelGuardedAIFunction(current, sentinelClient, pdpContext, definition.Name, logger);
-
-                if (func is ApprovalRequiredAIFunction)
-                {
-                    return new ApprovalRequiredAIFunction(current);
-                }
-
-                return current;
-            })
-            .Cast<AITool>()
-            .ToList();
-
-        var contextProviders = new List<AIContextProvider>();
-        if (!isOrchestrator)
-        {
-            contextProviders.Add(await dynamicSkillsProvider.BuildAsync(ct));
-        }
-
-        var effectiveModel = !string.IsNullOrWhiteSpace(overrideModel) ? overrideModel : inferenceSettings?.DefaultModel ?? inferenceOptions.Value.DefaultModel;
-
-        var harnessedClient = GetHarnessedClient(effectiveModel);
-
-        var capabilityBlock = isOrchestrator ? string.Empty : await BuildCapabilityBlockAsync(tools, ct);
-
-        string baseInstructions;
-        if (overrideInstructions is not null)
-        {
-            baseInstructions = overrideInstructions;
-        }
-        else if (isOrchestrator)
-        {
-            var dbAgents = actingUserId is { } orchestratorUser ? await agentRepository.GetAgentsForUserAsync(orchestratorUser, ct) : await agentRepository.GetAgentsAsync(ct);
-            baseInstructions = OrchestratorTemplate.Build(agentRegistry, dbAgents);
-        }
-        else
-        {
-            baseInstructions = definition.Instructions;
-        }
-
-        var instructions = string.IsNullOrEmpty(capabilityBlock) ? baseInstructions : $"{baseInstructions}\n\n{capabilityBlock}";
-
-        // No per-request context size: it is fixed per model by the inference server's configuration.
         var chatOptions = new ChatOptions
         {
-            Instructions = instructions,
-            Tools = instrumentedTools,
-            Temperature = inferenceSettings?.AgentTemperature ?? InferenceSettingsSnapshot.Default.AgentTemperature
+            ModelId = model,
+            Instructions = AgentInstructions.Compose(settings.Harness, overrideInstructions ?? definition.Instructions, [.. tools.OfType<AIFunction>()]),
+            Tools = tools,
+            Temperature = settings.Inference?.AgentTemperature ?? InferenceSettingsSnapshot.Default.AgentTemperature,
         };
 
         var options = new ChatClientAgentOptions
         {
             Name = definition.Name,
-            AIContextProviders = contextProviders,
-            ChatOptions = chatOptions
+            Description = definition.Description,
+            ChatOptions = chatOptions,
+            ChatHistoryProvider = chatHistory,
+            AIContextProviders = [skillsProviderFactory.Create(), learningsProvider],
         };
 
-        return new ChatClientAgent(harnessedClient, options);
+        var chatClient = AgentChatPipeline.Build(baseChatClient, contextWindow, loggerFactory, serviceProvider);
+
+        // Every Sentium tool call passes the Sentinel policy check (function-calling middleware, after approval).
+        return new ChatClientAgent(chatClient, options, loggerFactory, serviceProvider)
+            .AsBuilder()
+            .Use(sentinelMiddleware.InvokeAsync)
+            .Build(serviceProvider);
+    }
+
+    public async Task<AIAgent> CreateControlAgentAsync(
+        string agentName,
+        string? overrideInstructions = null,
+        string? overrideModel = null,
+        Guid? actingUserId = null,
+        CancellationToken ct = default)
+    {
+        var definition = serviceProvider.GetKeyedService<IAgent>(agentName)
+            ?? throw new InvalidOperationException($"Control agent '{agentName}' is not a registered native agent.");
+
+        var (settings, model, contextWindow) = await ResolveSettingsAsync(overrideModel, actingUserId, ct);
+
+        // Lean by design: no harness, tools, skills, or learnings - just the role and a deterministic temperature.
+        var chatOptions = new ChatOptions
+        {
+            ModelId = model,
+            Instructions = overrideInstructions ?? definition.Instructions,
+            Temperature = 0f,
+        };
+
+        var chatClient = AgentChatPipeline.Build(baseChatClient, contextWindow, loggerFactory, serviceProvider);
+
+        return new ChatClientAgent(
+            chatClient,
+            new ChatClientAgentOptions { Name = definition.Name, Description = definition.Description, ChatOptions = chatOptions },
+            loggerFactory,
+            serviceProvider);
+    }
+
+    /// <summary>
+    /// The acting user's settings, the model to run (override → Registry default → configured default), and that
+    /// model's per-request context window, which sizes compaction. The window is fixed per model by the inference
+    /// server, so it is never sent with the request.
+    /// </summary>
+    private async Task<(SettingsSnapshot Settings, string Model, int ContextWindow)> ResolveSettingsAsync(
+        string? overrideModel,
+        Guid? actingUserId,
+        CancellationToken ct)
+    {
+        // HTTP callers pass no actingUserId; the entry point has already put the user on the run context.
+        var settings = await registrySettingsService.GetAsync(actingUserId ?? runContext.UserId, ct);
+        var model = ResolveModel(overrideModel, settings.Inference);
+        var contextWindow = await contextWindows.GetContextWindowAsync(model, ct);
+
+        return (settings, model, contextWindow);
+    }
+
+    /// <summary>
+    /// The agent's curated tool set (all tools when it declares none). Approval-gated tools are dropped for unattended
+    /// runs: no human can answer the approval request there, so offering them only stalls the step.
+    /// </summary>
+    private List<AITool> SelectTools(IAgent definition, bool allowApprovalTools, CancellationToken ct)
+    {
+        var available = agentToolProvider.GetToolsForAgent(definition.Name, ct);
+        var allowed = definition.Tools is { } names ? new HashSet<string>(names, StringComparer.OrdinalIgnoreCase) : null;
+
+        return
+        [
+            .. available.Where(tool =>
+                (allowed is null || allowed.Contains(tool.Name))
+                && (allowApprovalTools || tool.GetService<ApprovalRequiredAIFunction>() is null))
+        ];
     }
 
     private async Task<IAgent?> ResolveDefinitionAsync(string agentName, Guid? actingUserId, CancellationToken ct)
@@ -128,92 +147,20 @@ public sealed class CompositeAgentFactory(
             return keyedAgent;
         }
 
-        var dbAgent = actingUserId is { } uid ? await agentRepository.GetAgentByNameForUserAsync(agentName, uid, ct) : await agentRepository.GetAgentByNameAsync(agentName, ct);
+        var dbAgent = actingUserId is { } uid
+            ? await agentRepository.GetAgentByNameForUserAsync(agentName, uid, ct)
+            : await agentRepository.GetAgentByNameAsync(agentName, ct);
 
-        if (dbAgent is not null)
-        {
-            return new DynamicCustomAgent(dbAgent.Name, dbAgent.Description);
-        }
-
-        return null;
+        return dbAgent is null ? null : new DynamicCustomAgent(dbAgent.Name, dbAgent.Description);
     }
 
-    private IChatClient GetHarnessedClient(string? model)
+    private string ResolveModel(string? overrideModel, InferenceSettingsSnapshot? inferenceSettings)
     {
-        var targetModel = !string.IsNullOrWhiteSpace(model) ? model : inferenceOptions.Value.DefaultModel;
-
-        return clientCache.GetOrAdd(targetModel, m =>
+        if (!string.IsNullOrWhiteSpace(overrideModel))
         {
-            if (logger.IsEnabled(LogLevel.Debug))
-            {
-                logger.LogDebug("Building harnessed client for model: {Model}", m);
-            }
-
-            return inferenceClientFactory
-                .CreateChatClient(PraxisModuleExtensions.LlmHttpClientName, m)
-                .AddSentiumPipeline()
-                .AsHarnessed(registrySettingsService, pdpContext)
-                .WithLearnings(learningService, pdpContext);
-        });
-    }
-
-    /// <summary>
-    /// Builds the per-agent capability catalogue (### AVAILABLE TOOLS / ### AVAILABLE SKILLS) listing the
-    /// exact names of the tools and skills this agent has, so smaller models stop inventing tool calls.
-    /// </summary>
-    private async Task<string> BuildCapabilityBlockAsync(IEnumerable<AITool> tools, CancellationToken ct)
-    {
-        var sb = new StringBuilder();
-
-        var functions = tools.OfType<AIFunction>().ToList();
-        if (functions.Count > 0)
-        {
-            sb.AppendLine("### AVAILABLE TOOLS");
-            foreach (var function in functions)
-            {
-                sb.Append("- ").Append(function.Name).Append(": ").AppendLine(Summarize(function.Description));
-            }
+            return overrideModel;
         }
 
-        var skills = await dynamicSkillsProvider.GetCatalogAsync(ct);
-        if (skills.Count > 0)
-        {
-            if (sb.Length > 0)
-            {
-                sb.AppendLine();
-            }
-
-            sb.AppendLine("### AVAILABLE SKILLS");
-            sb.AppendLine("Unlock with load_skill before use.");
-            foreach (var skill in skills)
-            {
-                sb.Append("- ").Append(skill.Name).Append(": ").AppendLine(Summarize(skill.Description));
-            }
-        }
-
-        return sb.ToString().TrimEnd();
-    }
-
-    private static string Summarize(string? text)
-    {
-        if (string.IsNullOrWhiteSpace(text))
-        {
-            return string.Empty;
-        }
-
-        var oneLine = text.ReplaceLineEndings(" ").Trim();
-        return oneLine.Length > 160 ? string.Concat(oneLine.AsSpan(0, 160), "…") : oneLine;
-    }
-
-    public void Dispose()
-    {
-        foreach (var client in clientCache.Values)
-        {
-            if (client is IDisposable disposable)
-            {
-                disposable.Dispose();
-            }
-        }
-        clientCache.Clear();
+        return !string.IsNullOrWhiteSpace(inferenceSettings?.DefaultModel) ? inferenceSettings.DefaultModel : inferenceOptions.Value.DefaultModel;
     }
 }

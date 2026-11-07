@@ -1,50 +1,54 @@
+using System.ComponentModel;
+using Microsoft.Extensions.AI;
 using Sentium.Codex.Contracts;
 using Sentium.Codex.Contracts.Models;
-using Sentium.Praxis.Features.Tools.Attributes;
 using Sentium.Praxis.Features.Sentinel;
-using Microsoft.Extensions.Logging;
+using Sentium.Praxis.Features.Tools.Attributes;
 
 namespace Sentium.Praxis.Features.Tools;
 
 /// <summary>
-/// Tool that allows the agent to proactively save information to its long-term vector memory.
-/// This uses the DocumentIngestionService to ensure the data is properly embedded and stored.
+/// Tool that allows the agent to save a personal fact to the acting user's long-term vector memory, through the
+/// ingestion service so it is properly chunked, embedded, and scoped to that user.
 /// </summary>
-[AgentToolPolicy(
-    AllowedAgents = [],
-    RiskLevel = ToolRiskLevel.Low,
-    RequiresApproval = false)]
+[AgentToolPolicy(RiskLevel = ToolRiskLevel.Low, Resource = ToolResource.Memory, Action = ToolAction.Write)]
 public sealed class StoreMemoryTool(
     IDocumentIngestionService ingestionService,
     IPdpContextAccessor pdpContext,
     ILogger<StoreMemoryTool> logger) : IAgentTool
 {
-    public string Name => "store_memory";
-
-    public string Description =>
+    public AIFunction CreateFunction() => AgentToolFunction.Create(
+        this,
+        StoreAsync,
+        ToolNames.StoreMemory,
         "Saves a PERSONAL fact or preference the USER explicitly asked you to remember (their name, a setting, a standing instruction) to long-term memory. " +
-        "Do NOT use this for things YOU figured out - patterns, conclusions, designs, fixes, or reusable approaches belong in capture_agent_learning instead.";
+        "Do NOT use this for things YOU figured out - patterns, conclusions, designs, fixes, or reusable approaches belong in capture_agent_learning instead.");
 
-    public IReadOnlyList<AgentToolParameter> Parameters { get; } = [new("content", "The exact fact or preference to remember, written as a self-contained sentence.")];
-
-    public async Task<string> ExecuteAsync(string input, CancellationToken ct)
+    public async Task<string> StoreAsync(
+        [Description("The exact fact or preference to remember, written as a self-contained sentence.")] string content,
+        CancellationToken ct = default)
     {
-        if (string.IsNullOrWhiteSpace(input))
+        if (string.IsNullOrWhiteSpace(content))
         {
             return "Error: Memory content cannot be empty.";
         }
 
+        // A memory is a personal fact: without an acting user there is no private scope to put it in, and
+        // falling back to the shared knowledge base would expose it to every user. Fail closed.
+        if (pdpContext.UserId is not { } userId)
+        {
+            logger.LogWarning("store_memory called without an acting user; refusing to store the memory.");
+            return "Error: Memories can only be stored on behalf of a signed-in user, and no user is associated with this run.";
+        }
+
         try
         {
-            var userId = pdpContext.UserId;
-            var scope = userId.HasValue ? KnowledgeScope.User : KnowledgeScope.Shared;
-
             var request = new IngestionRequest
             {
-                Content = input,
+                Content = content,
                 Source = "Agent_Self_Memory",
                 SourceType = IngestionSourceType.Custom,
-                Scope = scope,
+                Scope = KnowledgeScope.User,
                 UserId = userId,
                 Metadata = new Dictionary<string, string>
                 {

@@ -82,7 +82,7 @@ flowchart TB
     Sandbox --> Blobs
 ```
 
-> **Detailed diagrams.** Per-feature sequence diagrams, component diagrams of the modules and their infrastructure, and the domain class and ER diagrams live in [docs/diagrams/](docs/diagrams/). The agent-pipeline and workflow diagrams (`agents-2` to `agents-5`, `rag-3`, `workflows-3` to `workflows-5`, `structure-c`, `structure-e`, `structure-f`) have not been updated yet and still show pre-migration details (NATS, Qdrant, HTTP calls to Sentinel).
+> **Detailed diagrams.** Per-feature sequence diagrams, component diagrams of the modules and their infrastructure, and the domain class and ER diagrams live in [docs/diagrams/](docs/diagrams/).
 
 ### Modules
 

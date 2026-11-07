@@ -2,16 +2,17 @@
 classDiagram
     class IAgentFactory {
         <<interface>>
-        +CreateAsync(name, overrideInstructions, overrideModel, actingUserId) AIAgent
+        +CreateAsync(name, overrideInstructions, overrideModel, actingUserId, chatHistory, allowApprovalTools) AIAgent
+        +CreateControlAgentAsync(name, overrideInstructions, overrideModel, actingUserId) AIAgent
     }
-    class CompositeAgentFactory {
-        +CreateAsync(...) AIAgent
-    }
+    class CompositeAgentFactory
 
     class IAgent {
         <<interface>>
         +string Name
+        +string Description
         +string Instructions
+        +Tools
     }
     class GeneralAssistant
     class OrchestratorAgent
@@ -19,39 +20,63 @@ classDiagram
     class SoftwareEngineer
     class ValidationAgent
     class SummaryAgent
+    class DynamicCustomAgent
 
-    class IAgentRegistry {
-        <<interface>>
-        +GetAgentType(name) Type
-        +GetInstructions(name) string
-        +GetRegisteredNames() IEnumerable
-    }
     class IAgentToolProvider {
         <<interface>>
         +GetToolsForAgent(name) List~AITool~
     }
-    class DynamicSkillsProvider {
-        +BuildAsync() string
-    }
-
-    class IChatClient {
+    class IAgentTool {
         <<interface>>
+        +CreateFunction() AIFunction
     }
-    class DelegatingChatClient {
-        <<abstract>>
+    class AgentInstructions {
+        <<static>>
+        +Compose(harness, role, tools) string
     }
-    class HarnessedChatClient
-    class LearningAugmentedChatClient
+    class AgentChatPipeline {
+        <<static>>
+        +Build(baseClient, contextWindow, loggerFactory, services) IChatClient
+    }
 
-    class AIFunction {
-        <<abstract>>
+    class AIContextProvider {
+        <<external>>
     }
-    class SentinelGuardedAIFunction
+    class AgentSkillsProvider {
+        <<external>>
+    }
+    class LearningsContextProvider
+    class ChatHistoryProvider {
+        <<external>>
+    }
+    class ConversationChatHistoryProvider
+
+    class SentinelFunctionMiddleware {
+        +InvokeAsync(agent, context, next, ct)
+    }
     class SentinelClient {
         +EvaluateAsync(PdpRequest) PdpDecision
     }
-    class AIAgent {
+    class IPolicyDecisionPoint {
+        <<Sentinel contract>>
+    }
+    class IRegistrySettingsService {
+        <<interface>>
+        +GetAsync(userId) SettingsSnapshot
+    }
+    class ChatClientAgent {
         <<external>>
+    }
+    class IChatClient {
+        <<external>>
+    }
+    class IModelContextWindowProvider {
+        <<interface>>
+        +GetContextWindowAsync(modelId) int
+    }
+    class IModelCatalog {
+        <<interface>>
+        +ListAsync() CatalogModel[]
     }
 
     IAgentFactory <|.. CompositeAgentFactory
@@ -61,22 +86,24 @@ classDiagram
     IAgent <|.. SoftwareEngineer
     IAgent <|.. ValidationAgent
     IAgent <|.. SummaryAgent
-    IAgentToolProvider <|.. AgentToolProvider
+    IAgent <|.. DynamicCustomAgent
+    AIContextProvider <|-- AgentSkillsProvider
+    AIContextProvider <|-- LearningsContextProvider
+    ChatHistoryProvider <|-- ConversationChatHistoryProvider
 
-    IChatClient <|.. DelegatingChatClient
-    DelegatingChatClient <|-- HarnessedChatClient
-    DelegatingChatClient <|-- LearningAugmentedChatClient
-    AIFunction <|-- SentinelGuardedAIFunction
-
-    CompositeAgentFactory ..> AIAgent : creates
-    CompositeAgentFactory ..> IAgentRegistry : resolves native
-    CompositeAgentFactory ..> IAgentToolProvider : gets tools
-    CompositeAgentFactory ..> DynamicSkillsProvider : skills context
-    CompositeAgentFactory ..> LearningAugmentedChatClient : wraps
-    CompositeAgentFactory ..> SentinelGuardedAIFunction : wraps each tool
-
-    LearningAugmentedChatClient o--> HarnessedChatClient : decorates
-    HarnessedChatClient o--> IChatClient : llama-server via OpenAI API (inner)
-    SentinelGuardedAIFunction o--> AIFunction : inner tool
-    SentinelGuardedAIFunction --> SentinelClient : PDP check
+    CompositeAgentFactory ..> ChatClientAgent : creates
+    CompositeAgentFactory ..> IAgent : resolves definition
+    CompositeAgentFactory ..> IRegistrySettingsService : model + harness
+    CompositeAgentFactory ..> IModelContextWindowProvider : compaction budget
+    CompositeAgentFactory ..> IAgentToolProvider : curated tools
+    CompositeAgentFactory ..> AgentInstructions : one system prompt
+    CompositeAgentFactory ..> AgentChatPipeline : per-agent client
+    CompositeAgentFactory ..> AgentSkillsProvider : context provider
+    CompositeAgentFactory ..> LearningsContextProvider : context provider
+    CompositeAgentFactory ..> SentinelFunctionMiddleware : .Use(...)
+    IAgentToolProvider ..> IAgentTool : CreateFunction()
+    IModelContextWindowProvider ..> IModelCatalog : per-slot n_ctx
+    AgentChatPipeline ..> IChatClient : shared base (OpenTelemetry → llama-server via OpenAI API)
+    SentinelFunctionMiddleware --> SentinelClient : PDP check
+    SentinelClient --> IPolicyDecisionPoint : in-process
 ```

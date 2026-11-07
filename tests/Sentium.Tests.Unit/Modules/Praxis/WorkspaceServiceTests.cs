@@ -1,6 +1,5 @@
 using FluentAssertions;
 using NSubstitute;
-using Sentium.Praxis.Features.WorkspaceManagement;
 using Sentium.Praxis.Dtos;
 using Sentium.Praxis.Features.Storage;
 using Sentium.Praxis.Features.Workspaces;

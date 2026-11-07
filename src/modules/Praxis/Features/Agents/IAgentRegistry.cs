@@ -1,14 +1,9 @@
 namespace Sentium.Praxis.Features.Agents;
 
 /// <summary>
-/// Lookup of statically registered agents by name: their CLR type and system instructions.
+/// Names of the native (built-in) agents. They are reserved: users cannot create database agents with these names.
 /// </summary>
 public interface IAgentRegistry
 {
-    /// <summary>
-    /// Returns the agent's CLR type, or <c>null</c> if no agent is registered under <paramref name="name"/>.
-    /// </summary>
-    Type? GetAgentType(string name);
-    string GetInstructions(string name);
     IEnumerable<string> GetRegisteredNames();
 }

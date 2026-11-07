@@ -78,10 +78,10 @@ Mapping old → new:
   alternative) - no direct provider calls
 - **RAG** on **PostgreSQL + pgvector** with `embeddinggemma-2:740m` (768-dim) across three
   collections: knowledge base, learnings, and user memories
-- **Self-improvement loop**: a chat-client decorator recalls relevant past learnings and injects them
-  into the system prompt of every agent run; prompt enhancement is optional/configurable
-- **Multi-agent orchestration** (an orchestrator assembles a squad, a validator reviews and triggers
-  self-correcting re-runs) and **autonomous scheduling** for background, Sovereign-driven work
+- **Self-improvement loop**: a context provider recalls relevant past learnings and adds them to the
+  agent's instructions on every turn; prompt enhancement is optional/configurable
+- **Multi-agent orchestration** as a plan → step → check graph tuned for small local models, and
+  **autonomous scheduling** for background, Sovereign-driven work
 - Agents operate under strict, per-action permissions enforced by Sentinel and execute untrusted
   code only inside the Sandbox
 

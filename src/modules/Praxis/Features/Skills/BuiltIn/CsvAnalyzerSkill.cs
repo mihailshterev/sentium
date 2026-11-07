@@ -10,36 +10,20 @@ namespace Sentium.Praxis.Features.Skills.BuiltIn;
 /// <summary>
 /// Built-in skill for inspecting and transforming CSV data. Complements the json-analyzer skill.
 /// </summary>
-internal sealed class CsvAnalyzerSkill : AgentClassSkill<CsvAnalyzerSkill>
+internal sealed class CsvAnalyzerSkill() : BuiltInSkill<CsvAnalyzerSkill>(
+    "csv-analyzer",
+    "Parse, validate, and summarize CSV data: row/column counts, inferred column types, and conversion to JSON. Use when the user provides comma-separated data or asks about a CSV file's shape or contents.",
+    """
+    Use this skill when the user provides CSV (comma-separated) data.
+
+    1. Use the summarize script to report row count, column names, and the inferred type of each column.
+    2. Use the validate script to detect structural problems such as ragged rows (wrong number of fields).
+    3. Use the to-json script to convert the CSV into an array of objects keyed by the header row.
+    4. Assume the first row is a header unless the user says otherwise.
+    5. Quoted fields (with embedded commas, quotes, or newlines) are handled - report the parsed shape, not the raw text.
+    """)
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
-
-    internal static BuiltInSkillInfo Descriptor { get; } = new(
-        "csv-analyzer",
-        "Parse, validate, and summarize CSV data: row/column counts, inferred column types, and conversion to JSON. Use when the user provides comma-separated data or asks about a CSV file's shape or contents.",
-        """
-        Use this skill when the user provides CSV (comma-separated) data.
-
-        1. Use the summarize script to report row count, column names, and the inferred type of each column.
-        2. Use the validate script to detect structural problems such as ragged rows (wrong number of fields).
-        3. Use the to-json script to convert the CSV into an array of objects keyed by the header row.
-        4. Assume the first row is a header unless the user says otherwise.
-        5. Quoted fields (with embedded commas, quotes, or newlines) are handled - report the parsed shape, not the raw text.
-        """);
-
-    public override AgentSkillFrontmatter Frontmatter { get; } = new(
-        "csv-analyzer",
-        "Parse, validate, and summarize CSV data: row/column counts, inferred column types, and conversion to JSON. Use when the user provides comma-separated data or asks about a CSV file's shape or contents.");
-
-    protected override string Instructions => """
-        Use this skill when the user provides CSV (comma-separated) data.
-
-        1. Use the summarize script to report row count, column names, and the inferred type of each column.
-        2. Use the validate script to detect structural problems such as ragged rows (wrong number of fields).
-        3. Use the to-json script to convert the CSV into an array of objects keyed by the header row.
-        4. Assume the first row is a header unless the user says otherwise.
-        5. Quoted fields (with embedded commas, quotes, or newlines) are handled - report the parsed shape, not the raw text.
-        """;
 
     [AgentSkillResource("csv-tips")]
     [Description("Common CSV quoting, delimiter, and encoding pitfalls.")]

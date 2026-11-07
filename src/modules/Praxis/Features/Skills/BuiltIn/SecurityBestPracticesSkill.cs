@@ -7,35 +7,19 @@ namespace Sentium.Praxis.Features.Skills.BuiltIn;
 /// <summary>
 /// Built-in skill providing security best-practice guidance.
 /// </summary>
-internal sealed class SecurityBestPracticesSkill : AgentClassSkill<SecurityBestPracticesSkill>
+internal sealed class SecurityBestPracticesSkill() : BuiltInSkill<SecurityBestPracticesSkill>(
+    "security-best-practices",
+    "Security best practices covering OWASP Top 10, secure coding guidelines, authentication, secrets management, and threat modelling. Use when asked about application security, vulnerabilities, or hardening.",
+    """
+    Use this skill when the user asks about security, vulnerabilities, secure coding, or threat modelling.
+
+    1. Identify the specific security domain from the user's question (authentication, injection, secrets, etc.).
+    2. Load the relevant resource section for detailed guidance.
+    3. Give concrete, actionable recommendations with examples where possible.
+    4. Always highlight the risk level (Critical / High / Medium / Low).
+    5. Reference the relevant OWASP category when applicable.
+    """)
 {
-    internal static BuiltInSkillInfo Descriptor { get; } = new(
-        "security-best-practices",
-        "Security best practices covering OWASP Top 10, secure coding guidelines, authentication, secrets management, and threat modelling. Use when asked about application security, vulnerabilities, or hardening.",
-        """
-        Use this skill when the user asks about security, vulnerabilities, secure coding, or threat modelling.
-
-        1. Identify the specific security domain from the user's question (authentication, injection, secrets, etc.).
-        2. Load the relevant resource section for detailed guidance.
-        3. Give concrete, actionable recommendations with examples where possible.
-        4. Always highlight the risk level (Critical / High / Medium / Low).
-        5. Reference the relevant OWASP category when applicable.
-        """);
-
-    public override AgentSkillFrontmatter Frontmatter { get; } = new(
-        "security-best-practices",
-        "Security best practices covering OWASP Top 10, secure coding guidelines, authentication, secrets management, and threat modelling. Use when asked about application security, vulnerabilities, or hardening.");
-
-    protected override string Instructions => """
-        Use this skill when the user asks about security, vulnerabilities, secure coding, or threat modelling.
-
-        1. Identify the specific security domain from the user's question (authentication, injection, secrets, etc.).
-        2. Load the relevant resource section for detailed guidance.
-        3. Give concrete, actionable recommendations with examples where possible.
-        4. Always highlight the risk level (Critical / High / Medium / Low).
-        5. Reference the relevant OWASP category when applicable.
-        """;
-
     [AgentSkillResource("owasp-top-10")]
     [Description("OWASP Top 10 2021 vulnerabilities with brief descriptions and remediation guidance.")]
     public string OwaspTop10 => """

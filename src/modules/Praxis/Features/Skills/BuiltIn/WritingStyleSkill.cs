@@ -7,35 +7,19 @@ namespace Sentium.Praxis.Features.Skills.BuiltIn;
 /// <summary>
 /// Built-in skill providing writing style and communication guidelines.
 /// </summary>
-internal sealed class WritingStyleSkill : AgentClassSkill<WritingStyleSkill>
+internal sealed class WritingStyleSkill() : BuiltInSkill<WritingStyleSkill>(
+    "writing-style",
+    "Writing style guidance for technical documentation, reports, and professional communication. Use when drafting documents, reviewing writing, or asking about tone, grammar, or structure.",
+    """
+    Use this skill when the user asks for help with writing, editing, or communicating ideas clearly.
+
+    1. Identify the document type: technical doc, executive summary, email, or report.
+    2. Consult the style-guide resource for the appropriate conventions.
+    3. Apply the golden rules: clarity, brevity, active voice, and reader focus.
+    4. Suggest concrete rewrites for unclear sentences.
+    5. For technical writing: prefer short sentences, avoid jargon without definition, and use examples.
+    """)
 {
-    internal static BuiltInSkillInfo Descriptor { get; } = new(
-        "writing-style",
-        "Writing style guidance for technical documentation, reports, and professional communication. Use when drafting documents, reviewing writing, or asking about tone, grammar, or structure.",
-        """
-        Use this skill when the user asks for help with writing, editing, or communicating ideas clearly.
-
-        1. Identify the document type: technical doc, executive summary, email, or report.
-        2. Consult the style-guide resource for the appropriate conventions.
-        3. Apply the golden rules: clarity, brevity, active voice, and reader focus.
-        4. Suggest concrete rewrites for unclear sentences.
-        5. For technical writing: prefer short sentences, avoid jargon without definition, and use examples.
-        """);
-
-    public override AgentSkillFrontmatter Frontmatter { get; } = new(
-        "writing-style",
-        "Writing style guidance for technical documentation, reports, and professional communication. Use when drafting documents, reviewing writing, or asking about tone, grammar, or structure.");
-
-    protected override string Instructions => """
-        Use this skill when the user asks for help with writing, editing, or communicating ideas clearly.
-
-        1. Identify the document type: technical doc, executive summary, email, or report.
-        2. Consult the style-guide resource for the appropriate conventions.
-        3. Apply the golden rules: clarity, brevity, active voice, and reader focus.
-        4. Suggest concrete rewrites for unclear sentences.
-        5. For technical writing: prefer short sentences, avoid jargon without definition, and use examples.
-        """;
-
     [AgentSkillResource("style-guide")]
     [Description("Core writing style rules for technical and professional documents.")]
     public string StyleGuide => """

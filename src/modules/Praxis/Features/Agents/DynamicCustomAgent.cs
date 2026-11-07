@@ -5,4 +5,5 @@ public sealed class DynamicCustomAgent(string name, string instructions) : IAgen
 {
     public string Name { get; } = name;
     public string Instructions { get; } = instructions;
+    public string Description => Instructions;
 }

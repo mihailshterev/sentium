@@ -1,8 +1,10 @@
 using Sentium.Praxis.Extensions;
 using Sentium.Praxis.Features.Agents;
 using Sentium.Praxis.Entities;
+using Sentium.Praxis.Features.Sentinel;
 using Sentium.Praxis.Features.WorkflowManagement;
 using Sentium.Praxis.Features.Workflows;
+using Sentium.Infrastructure.Extensions;
 using Sentium.Infrastructure.Security;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,6 +25,7 @@ public sealed class WorkflowRunProcessor(
     IAgentStreamPublisher stream,
     IServiceScopeFactory scopeFactory,
     IWorkflowExecutionRegistry executionRegistry,
+    IPdpContextAccessor runContext,
     IConfiguration configuration,
     ILogger<WorkflowRunProcessor> logger) : BackgroundService
 {
@@ -143,6 +146,13 @@ public sealed class WorkflowRunProcessor(
         scope.ServiceProvider.GetRequiredService<SystemScopeContext>().Activate();
         var orchestrator = scope.ServiceProvider.GetRequiredService<IOrchestrator>();
 
+        // The run context is AsyncLocal: it must be set here, in the method that awaits the run, so every
+        // agent, tool and policy check inside the workflow sees the acting user. Values assigned inside a
+        // callee's async method (e.g. the agent factory) never flow back out to this caller.
+        runContext.UserId = trigger.UserId;
+        runContext.CorrelationId = trigger.StreamId;
+        runContext.OriginalUserPrompt = trigger.ResolveActivity();
+
         var result = await orchestrator.RunAsync(trigger, ct);
         var completedAt = DateTime.UtcNow;
 
@@ -237,21 +247,5 @@ public sealed class WorkflowRunProcessor(
             : DefaultMaxConcurrency;
 
     private static TimeSpan ResolveWorkflowTimeout(IConfiguration configuration)
-    {
-        var raw = configuration["Orchestration:WorkflowTimeout"];
-        if (!string.IsNullOrWhiteSpace(raw))
-        {
-            if (TimeSpan.TryParse(raw, out var asTimeSpan) && asTimeSpan > TimeSpan.Zero)
-            {
-                return asTimeSpan;
-            }
-
-            if (double.TryParse(raw, out var asMinutes) && asMinutes > 0)
-            {
-                return TimeSpan.FromMinutes(asMinutes);
-            }
-        }
-
-        return TimeSpan.FromMinutes(DefaultTimeoutMinutes);
-    }
+        => configuration.GetTimeSpan("Orchestration:WorkflowTimeout", TimeSpan.FromMinutes(DefaultTimeoutMinutes));
 }

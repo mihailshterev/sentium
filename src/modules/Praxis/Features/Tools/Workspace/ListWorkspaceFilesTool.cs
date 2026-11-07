@@ -1,56 +1,51 @@
-using Sentium.Praxis.Features.Tools;
-using Sentium.Praxis.Features.Tools.Attributes;
-using Sentium.Praxis.Data;
-using Microsoft.EntityFrameworkCore;
+using System.ComponentModel;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.AI;
+using Sentium.Praxis.Data;
+using Sentium.Praxis.Features.Sentinel;
+using Sentium.Praxis.Features.Tools.Attributes;
 
 namespace Sentium.Praxis.Features.Tools.Workspace;
 
 /// <summary>
-/// An agent tool that lists all files within a specific workspace.
+/// An agent tool that lists the files within one of the acting user's workspaces.
 /// </summary>
-[AgentToolPolicy(RiskLevel = ToolRiskLevel.Low)]
-public sealed class ListWorkspaceFilesTool(PraxisDbContext dbContext) : IAgentTool
+[AgentToolPolicy(RiskLevel = ToolRiskLevel.Low, Resource = ToolResource.File, Action = ToolAction.Read)]
+public sealed class ListWorkspaceFilesTool(PraxisDbContext dbContext, IPdpContextAccessor runContext) : IAgentTool
 {
-    private static readonly JsonSerializerOptions jsonOptions = new()
+    private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
+
+    public AIFunction CreateFunction() => AgentToolFunction.Create(
+        this,
+        ListAsync,
+        ToolNames.ListWorkspaceFiles,
+        "Lists all files available in a workspace, identified by its ID (GUID) or name.");
+
+    public async Task<string> ListAsync(
+        [Description("The workspace ID (GUID) or workspace name to list files from.")] string workspace,
+        CancellationToken ct = default)
     {
-        WriteIndented = true
-    };
+        if (runContext.UserId is not { } userId)
+        {
+            return WorkspaceToolScope.NoUserError;
+        }
 
-    public string Name => "list_workspace_files";
+        if (string.IsNullOrWhiteSpace(workspace))
+        {
+            return "Error: A workspace ID or name is required.";
+        }
 
-    public string Description => "Lists all files available in a workspace, identified by its ID (GUID) or name.";
-
-    public IReadOnlyList<AgentToolParameter> Parameters { get; } = [new("workspace", "The workspace ID (GUID) or workspace name to list files from.")];
-
-    public async Task<string> ExecuteAsync(string input, CancellationToken ct)
-    {
         try
         {
-            var trimmed = input.Trim();
-            Guid? workspaceId = null;
-
-            if (Guid.TryParse(trimmed, out var guid))
+            var workspaceId = await WorkspaceToolScope.ResolveWorkspaceIdAsync(dbContext, userId, workspace, ct);
+            if (workspaceId is null)
             {
-                workspaceId = guid;
-            }
-            else
-            {
-                var workspace = await dbContext.Workspaces
-                    .Where(w => w.Name.ToLower() == trimmed.ToLower())
-                    .Select(w => new { w.Id, w.Name })
-                    .FirstOrDefaultAsync(ct);
-
-                if (workspace is null)
-                {
-                    return $"Error: No workspace found with name or ID '{trimmed}'.";
-                }
-
-                workspaceId = workspace.Id;
+                return $"Error: No workspace found with name or ID '{workspace.Trim()}'.";
             }
 
             var files = await dbContext.ProjectFiles
-                .Where(f => f.WorkspaceId == workspaceId)
+                .Where(f => f.WorkspaceId == workspaceId && f.UserId == userId)
                 .OrderByDescending(f => f.CreatedAt)
                 .Select(f => new WorkspaceFileSummary(
                     f.Id,
@@ -61,12 +56,7 @@ public sealed class ListWorkspaceFilesTool(PraxisDbContext dbContext) : IAgentTo
                     f.CreatedAt))
                 .ToListAsync(ct);
 
-            if (files.Count == 0)
-            {
-                return "Notice: No files found in this workspace.";
-            }
-
-            return JsonSerializer.Serialize(files, jsonOptions);
+            return files.Count == 0 ? "Notice: No files found in this workspace." : JsonSerializer.Serialize(files, JsonOptions);
         }
         catch (Exception ex)
         {

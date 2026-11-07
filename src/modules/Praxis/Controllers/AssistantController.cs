@@ -1,23 +1,25 @@
-using Sentium.Praxis.Features.Agents;
-using Sentium.Praxis.Features.Conversations;
-using Sentium.Praxis.Dtos;
-using Sentium.Praxis.Features.Registry;
-using Sentium.Praxis.Features.Sentinel;
-using Sentium.Infrastructure.Security;
+using System.Text;
+using System.Text.Json;
+using Microsoft.Agents.AI;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.AI;
-using Microsoft.Agents.AI;
-using System.Text;
-using System.Text.Json;
 using Sentium.Core.Constants;
+using Sentium.Infrastructure.Security;
+using Sentium.Praxis.Common.Streaming;
+using Sentium.Praxis.Dtos;
+using Sentium.Praxis.Features.Agents;
+using Sentium.Praxis.Features.Conversations;
+using Sentium.Praxis.Features.Registry;
+using Sentium.Praxis.Features.Sentinel;
 using ChatMessage = Microsoft.Extensions.AI.ChatMessage;
-using System.Buffers;
 
 namespace Sentium.Praxis.Controllers;
 
 /// <summary>
-/// Controller for handling interactions with the general assistant agent.
+/// Streams the general assistant over Server-Sent Events. For a persisted conversation the server owns the history
+/// (<see cref="ConversationChatHistoryProvider"/>); tool-approval pauses are resumed from a serialized
+/// <see cref="AgentSession"/> in the approving request's own scope.
 /// </summary>
 [ApiController]
 [Authorize]
@@ -25,279 +27,218 @@ namespace Sentium.Praxis.Controllers;
 public sealed class AssistantController(
     IAgentFactory agentFactory,
     IPendingApprovalStore approvalStore,
-    IPdpContextAccessor pdpContext,
+    IPdpContextAccessor runContext,
     ICurrentUser currentUser,
     IPromptEnhancementService promptEnhancementService,
     IRegistrySettingsService registrySettingsService,
+    ConversationChatHistoryProvider conversationHistory,
     ILogger<AssistantController> logger) : ControllerBase
 {
     private const string GenericStreamErrorMessage = "An unexpected error occurred while generating the response.";
 
-    private static readonly byte[] DataPrefix = "data: "u8.ToArray();
-    private static readonly byte[] SseDelimiter = "\n\n"u8.ToArray();
-    private static readonly byte[] HeartbeatLine = ": ping\n\n"u8.ToArray();
-    private static readonly byte[] KeepAliveLine = ": keep-alive\n\n"u8.ToArray();
-
     /// <summary>
-    /// Handles a chat message to the assistant agent and streams back responses using Server-Sent Events (SSE).
-    /// The request can include an optional conversation ID to link messages to an existing conversation.
-    /// If the agent triggers a tool call that requires approval, the stream will send an approval request message and pause
-    /// until approval is granted via the /assistant/chat/approve endpoint.
+    /// Sends a chat message to the assistant and streams the response (thoughts, tool calls, text, approval requests).
+    /// With a <see cref="ChatRequest.ConversationId"/> only the latest user message is taken from the request - prior
+    /// turns are loaded from the persisted conversation. If a tool call needs approval, the stream ends with an
+    /// approval request; resume it via <c>chat/approve</c>.
     /// </summary>
-    /// <param name="requestBody">The chat request containing messages and optional conversation ID.</param>
-    /// <param name="scopeFactory">Service scope factory for creating scoped services during the request.</param>
+    /// <param name="requestBody">The chat request.</param>
     /// <param name="ct">Cancellation token.</param>
-    /// <returns>A streaming response with assistant messages, thoughts, tool call logs, and approval requests.</returns>
     [HttpPost("chat")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task Chat([FromBody] ChatRequest requestBody, [FromServices] IServiceScopeFactory scopeFactory, CancellationToken ct)
+    public async Task Chat([FromBody] ChatRequest requestBody, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(requestBody);
-        ArgumentNullException.ThrowIfNull(scopeFactory);
 
-        using var writeSemaphore = new SemaphoreSlim(1, 1);
-        await StartSseResponseAsync(writeSemaphore, ct);
+        var lastUserMessage = requestBody.Messages.LastOrDefault(m => IsUserRole(m.Role));
 
-        var lastUserMessage = requestBody.Messages.LastOrDefault(m => m.Role.Equals(ChatRole.User.ToString(), StringComparison.OrdinalIgnoreCase));
+        // Ambient run context (AsyncLocal): set here, in the method that awaits the agent run, so it flows to every tool.
+        runContext.OriginalUserPrompt = lastUserMessage?.Content ?? string.Empty;
+        runContext.UserId = currentUser.UserId;
+        runContext.CorrelationId = Request.Headers.TryGetValue(CommonHeaderNames.CorrelationId, out var header) ? header.ToString() : Guid.NewGuid().ToString();
 
-        pdpContext.OriginalUserPrompt = lastUserMessage?.Content ?? string.Empty;
-        pdpContext.UserId = currentUser.UserId;
+        await using var sse = await SseStreamWriter.StartAsync(Response, logger, ct);
 
-        pdpContext.CorrelationId = Request.Headers.TryGetValue(CommonHeaderNames.CorrelationId, out var hdr) ? hdr.ToString() : Guid.NewGuid().ToString();
-
-        using var heartbeatCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        var heartbeatTask = RunHeartbeatAsync(writeSemaphore, heartbeatCts.Token);
-
-        try
+        var enhancedPrompt = await TryEnhancePromptAsync(lastUserMessage?.Content, ct);
+        if (enhancedPrompt is not null)
         {
-            var enhancedPrompt = await TryEnhancePromptAsync(lastUserMessage?.Content, ct);
-
-            if (requestBody.ConversationId.HasValue && lastUserMessage is not null)
-            {
-                using var scope = scopeFactory.CreateScope();
-                var conversationService = scope.ServiceProvider.GetRequiredService<IConversationService>();
-                await conversationService.AddMessageAsync(requestBody.ConversationId.Value, ChatRole.User.ToString(), lastUserMessage.Content, enhancedPrompt: enhancedPrompt, ct: ct);
-            }
-
-            if (enhancedPrompt is not null)
-            {
-                await SendUiUpdate(AgentUpdateTypes.EnhancedPrompt, enhancedPrompt, writeSemaphore, ct);
-            }
-
-            var agent = await agentFactory.CreateAsync(AgentRole.GeneralAssistant, overrideModel: requestBody.Model, ct: ct);
-            var session = await agent.CreateSessionAsync(ct);
-
-            var chatMessages = requestBody.Messages.Select(m => new ChatMessage(
-                m.Role.Equals(ChatRole.User.ToString(), StringComparison.OrdinalIgnoreCase) ? ChatRole.User : ChatRole.Assistant,
-                m.Content
-            )).ToList();
-
-            if (enhancedPrompt is not null)
-            {
-                for (var i = chatMessages.Count - 1; i >= 0; i--)
-                {
-                    if (chatMessages[i].Role == ChatRole.User)
-                    {
-                        chatMessages[i] = new ChatMessage(ChatRole.User, enhancedPrompt);
-                        break;
-                    }
-                }
-            }
-
-            await RunStreamingAsync(agent, session, chatMessages, requestBody.ConversationId, requestBody.Model, scopeFactory, writeSemaphore, ct);
+            await sse.SendUpdateAsync(AgentUpdateTypes.EnhancedPrompt, enhancedPrompt, ct);
         }
-        finally
+
+        var persisted = requestBody.ConversationId is not null;
+        var agent = await agentFactory.CreateAsync(AgentRole.GeneralAssistant, overrideModel: requestBody.Model, chatHistory: persisted ? conversationHistory : null, ct: ct);
+        var session = await agent.CreateSessionAsync(ct);
+
+        List<ChatMessage> input;
+        if (requestBody.ConversationId is { } conversationId)
         {
-            await heartbeatCts.CancelAsync();
-            await heartbeatTask;
+            conversationHistory.Attach(session, conversationId);
+            input = lastUserMessage is null ? [] : [CreateUserTurn(lastUserMessage.Content, enhancedPrompt)];
         }
+        else
+        {
+            // Ephemeral chat: there is no server-side transcript, so the client-held history is the context.
+            input = MapClientHistory(requestBody.Messages, enhancedPrompt);
+        }
+
+        await RunStreamingAsync(agent, session, input, requestBody.ConversationId, requestBody.Model, sse, ct);
     }
 
     /// <summary>
-    /// Handles approval of a pending tool call that was triggered during an assistant chat session.
-    /// This endpoint is called by the client when the user approves or rejects a tool call.
+    /// Approves or rejects a pending tool call and streams the resumed response. Only the user who owns the paused run
+    /// can resume it.
     /// </summary>
-    /// <param name="requestBody">The approval request containing the request ID and approval decision.</param>
-    /// <param name="scopeFactory">Service scope factory for creating scoped services during the request.</param>
+    /// <param name="requestBody">The approval decision.</param>
     /// <param name="ct">Cancellation token.</param>
-    /// <returns>A streaming response with assistant messages, thoughts, tool call logs, and approval requests.</returns>
     [HttpPost("chat/approve")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task ApproveToolCall([FromBody] ApproveToolCallRequest requestBody, [FromServices] IServiceScopeFactory scopeFactory, CancellationToken ct)
+    public async Task ApproveToolCall([FromBody] ApproveToolCallRequest requestBody, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(requestBody);
-        ArgumentNullException.ThrowIfNull(scopeFactory);
 
-        if (!approvalStore.TryTake(requestBody.RequestId, out var pending) || pending is null)
+        if (!approvalStore.TryTake(requestBody.RequestId, currentUser.UserId, out var pending) || pending is null)
         {
             Response.StatusCode = StatusCodes.Status404NotFound;
             return;
         }
 
-        using var writeSemaphore = new SemaphoreSlim(1, 1);
-        await StartSseResponseAsync(writeSemaphore, ct);
+        runContext.OriginalUserPrompt = pending.OriginalUserPrompt;
+        runContext.CorrelationId = pending.CorrelationId;
+        runContext.UserId = pending.UserId;
 
-        using var heartbeatCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        var heartbeatTask = RunHeartbeatAsync(writeSemaphore, heartbeatCts.Token);
+        await using var sse = await SseStreamWriter.StartAsync(Response, logger, ct);
 
-        try
-        {
-            pdpContext.OriginalUserPrompt = pending.OriginalUserPrompt;
-            pdpContext.CorrelationId = pending.CorrelationId;
-            pdpContext.UserId = pending.UserId;
-            pdpContext.AgentName = pending.AgentName;
+        var persisted = pending.ConversationId is not null;
+        var agent = await agentFactory.CreateAsync(AgentRole.GeneralAssistant, overrideModel: pending.Model, chatHistory: persisted ? conversationHistory : null, ct: ct);
+        var session = await agent.DeserializeSessionAsync(pending.Session, cancellationToken: ct);
 
-            var approvalResponseMessage = new ChatMessage(ChatRole.User, [pending.ApprovalRequest.CreateResponse(requestBody.Approved)]);
+        // The documented resume: send only the approval response; the session supplies the rest of the context.
+        ChatMessage approval = new(ChatRole.User, [pending.ApprovalRequest.CreateResponse(requestBody.Approved)]);
 
-            var restoredHistory = new List<ChatMessage>(pending.ChatHistory)
-            {
-                approvalResponseMessage
-            };
-
-            await RunStreamingAsync(pending.Agent, pending.Session, restoredHistory, pending.ConversationId, pending.Model, scopeFactory, writeSemaphore, ct, resumeState: pending);
-        }
-        finally
-        {
-            await heartbeatCts.CancelAsync();
-            await heartbeatTask;
-        }
+        await RunStreamingAsync(agent, session, [approval], pending.ConversationId, pending.Model, sse, ct);
     }
 
     private async Task RunStreamingAsync(
         AIAgent agent,
         AgentSession session,
-        IEnumerable<ChatMessage> messages,
+        IReadOnlyList<ChatMessage> input,
         Guid? conversationId,
         string model,
-        IServiceScopeFactory scopeFactory,
-        SemaphoreSlim writeSemaphore,
-        CancellationToken ct,
-        PendingApproval? resumeState = null)
+        SseStreamWriter sse,
+        CancellationToken ct)
     {
-        ArgumentNullException.ThrowIfNull(scopeFactory);
-
-        var assistantResponse = new StringBuilder(resumeState?.PartialResponse ?? string.Empty);
-        var thoughtBuilder = new StringBuilder(resumeState?.PartialThought ?? string.Empty);
-        var toolCallLog = resumeState?.PartialToolCalls?.ToList() ?? [];
+        var text = new StringBuilder();
+        var thought = new StringBuilder();
+        var toolCalls = new List<string>();
+        ToolApprovalRequestContent? approvalRequest = null;
 
         try
         {
-            var responseStream = agent.RunStreamingAsync(messages, session, cancellationToken: ct);
-
-            await foreach (var update in responseStream)
+            await foreach (var update in agent.RunStreamingAsync(input, session, cancellationToken: ct))
             {
-                if (update.Contents.OfType<TextReasoningContent>().FirstOrDefault() is { } reasoning)
+                foreach (var content in update.Contents)
                 {
-                    thoughtBuilder.Append(reasoning.Text);
-                    await SendUiUpdate(AgentUpdateTypes.Thought, reasoning.Text, writeSemaphore, ct);
-                }
-
-                if (update.Contents.OfType<ToolApprovalRequestContent>().FirstOrDefault() is { } approvalRequest)
-                {
-                    var chatHistorySnapshot = messages.ToList();
-
-                    var approval = new PendingApproval(
-                        agent,
-                        session,
-                        approvalRequest,
-                        conversationId,
-                        model,
-                        chatHistorySnapshot,
-                        OriginalUserPrompt: pdpContext.OriginalUserPrompt,
-                        CorrelationId: pdpContext.CorrelationId,
-                        UserId: pdpContext.UserId,
-                        AgentName: pdpContext.AgentName,
-                        PartialResponse: assistantResponse.Length > 0 ? assistantResponse.ToString() : null,
-                        PartialThought: thoughtBuilder.Length > 0 ? thoughtBuilder.ToString() : null,
-                        PartialToolCalls: toolCallLog.Count > 0 ? [.. toolCallLog] : null
-                    );
-
-                    approvalStore.Add(approvalRequest.RequestId, approval);
-
-                    var toolCall = approvalRequest.ToolCall as FunctionCallContent;
-
-                    var approvalData = new ToolApprovalData(
-                        approvalRequest.RequestId,
-                        toolCall?.Name ?? "unknown",
-                        toolCall?.Arguments
-                    );
-
-                    await SendUiUpdate(AgentUpdateTypes.ApprovalRequest, JsonSerializer.Serialize(approvalData), writeSemaphore, ct);
-                    return;
-                }
-
-                if (update.Contents.OfType<FunctionCallContent>().FirstOrDefault() is { } call)
-                {
-                    var toolLabel = $"Calling {call.Name}...";
-                    toolCallLog.Add(toolLabel);
-                    await SendUiUpdate(AgentUpdateTypes.Tool, toolLabel, writeSemaphore, ct);
+                    switch (content)
+                    {
+                        case TextReasoningContent reasoning when !string.IsNullOrEmpty(reasoning.Text):
+                            thought.Append(reasoning.Text);
+                            await sse.SendUpdateAsync(AgentUpdateTypes.Thought, reasoning.Text, ct);
+                            break;
+                        case ToolApprovalRequestContent request:
+                            approvalRequest ??= request;
+                            break;
+                        case FunctionCallContent call:
+                            var label = ConversationChatHistoryProvider.ToolCallLabel(call.Name);
+                            toolCalls.Add(label);
+                            await sse.SendUpdateAsync(AgentUpdateTypes.Tool, label, ct);
+                            break;
+                    }
                 }
 
                 if (!string.IsNullOrEmpty(update.Text))
                 {
-                    assistantResponse.Append(update.Text);
-                    await SendUiUpdate(AgentUpdateTypes.Message, update.Text, writeSemaphore, ct);
+                    text.Append(update.Text);
+                    await sse.SendUpdateAsync(AgentUpdateTypes.Message, update.Text, ct);
                 }
             }
 
-            await PersistAssistantMessageAsync(scopeFactory, conversationId, assistantResponse, thoughtBuilder, toolCallLog, ct);
+            if (approvalRequest is not null)
+            {
+                await PauseForApprovalAsync(agent, session, approvalRequest, conversationId, model, sse, ct);
+                return;
+            }
 
-            await writeSemaphore.WaitAsync(ct);
-            try
-            {
-                var completeJson = JsonSerializer.Serialize(new StreamDoneFrame(AgentUpdateTypes.Done));
-                await Response.WriteAsync($"data: {completeJson}\n\n", ct);
-                await Response.Body.FlushAsync(ct);
-            }
-            finally
-            {
-                writeSemaphore.Release();
-            }
+            await sse.SendFrameAsync(new StreamDoneFrame(AgentUpdateTypes.Done), ct);
         }
         catch (OperationCanceledException)
         {
             if (logger.IsEnabled(LogLevel.Information))
             {
-                logger.LogInformation("Streaming request cancelled. CorrelationId: {CorrelationId}", pdpContext.CorrelationId);
+                logger.LogInformation("Streaming request cancelled. CorrelationId: {CorrelationId}", runContext.CorrelationId);
             }
 
-            try
-            {
-                await PersistAssistantMessageAsync(scopeFactory, conversationId, assistantResponse, thoughtBuilder, toolCallLog, CancellationToken.None);
-            }
-            catch (Exception persistEx)
-            {
-                logger.LogWarning(persistEx, "Failed to persist partial assistant response after cancellation. CorrelationId: {CorrelationId}", pdpContext.CorrelationId);
-            }
+            await PersistPartialResponseAsync(session, conversationId, text, thought, toolCalls);
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "Error while streaming assistant response. CorrelationId: {CorrelationId}", pdpContext.CorrelationId);
-
-            if (!Response.HasStarted)
-            {
-                Response.StatusCode = StatusCodes.Status500InternalServerError;
-            }
+            logger.LogError(ex, "Error while streaming assistant response. CorrelationId: {CorrelationId}", runContext.CorrelationId);
 
             try
             {
-                var errorJson = JsonSerializer.Serialize(new StreamErrorFrame(GenericStreamErrorMessage));
-                await writeSemaphore.WaitAsync(CancellationToken.None);
-                try
-                {
-                    await Response.WriteAsync($"data: {errorJson}\n\n", CancellationToken.None);
-                    await Response.Body.FlushAsync(CancellationToken.None);
-                }
-                finally
-                {
-                    writeSemaphore.Release();
-                }
+                await sse.SendFrameAsync(new StreamErrorFrame(GenericStreamErrorMessage), CancellationToken.None);
             }
             catch (Exception writeEx)
             {
                 logger.LogWarning(writeEx, "Failed to write SSE error response.");
             }
+        }
+    }
+
+    private async Task PauseForApprovalAsync(
+        AIAgent agent,
+        AgentSession session,
+        ToolApprovalRequestContent request,
+        Guid? conversationId,
+        string model,
+        SseStreamWriter sse,
+        CancellationToken ct)
+    {
+        var serializedSession = await agent.SerializeSessionAsync(session, cancellationToken: ct);
+
+        approvalStore.Add(request.RequestId, new PendingApproval(
+            serializedSession,
+            request,
+            conversationId,
+            model,
+            runContext.UserId,
+            runContext.CorrelationId,
+            runContext.OriginalUserPrompt));
+
+        var call = request.ToolCall as FunctionCallContent;
+        var approvalData = new ToolApprovalData(request.RequestId, call?.Name ?? "unknown", call?.Arguments);
+
+        await sse.SendUpdateAsync(AgentUpdateTypes.ApprovalRequest, JsonSerializer.Serialize(approvalData), ct);
+    }
+
+    private async Task PersistPartialResponseAsync(AgentSession session, Guid? conversationId, StringBuilder text, StringBuilder thought, List<string> toolCalls)
+    {
+        if (conversationId is null || text.Length == 0)
+        {
+            return;
+        }
+
+        try
+        {
+            await conversationHistory.PersistPartialResponseAsync(
+                session,
+                text.ToString(),
+                thought.Length > 0 ? thought.ToString() : null,
+                toolCalls.Count > 0 ? toolCalls : null);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to persist partial assistant response after cancellation. CorrelationId: {CorrelationId}", runContext.CorrelationId);
         }
     }
 
@@ -319,115 +260,36 @@ public sealed class AssistantController(
         return !string.IsNullOrWhiteSpace(enhanced) && !string.Equals(enhanced, prompt, StringComparison.Ordinal) ? enhanced : null;
     }
 
-    private async Task SendUiUpdate(string type, string content, SemaphoreSlim writeSemaphore, CancellationToken ct)
+    /// <summary>
+    /// The user turn sent to the model: the enhanced prompt when there is one, carrying the original text so the
+    /// transcript stores what the user actually typed.
+    /// </summary>
+    private static ChatMessage CreateUserTurn(string original, string? enhancedPrompt)
     {
-        await writeSemaphore.WaitAsync(ct);
-        try
+        if (enhancedPrompt is null)
         {
-            var pipeWriter = Response.BodyWriter;
-
-            pipeWriter.Write(DataPrefix);
-
-            await using var jsonWriter = new Utf8JsonWriter(pipeWriter);
-
-            jsonWriter.WriteStartObject();
-            jsonWriter.WriteString("type", type);
-
-            jsonWriter.WriteStartObject("message");
-            jsonWriter.WriteString("content", content);
-            jsonWriter.WriteEndObject();
-
-            jsonWriter.WriteBoolean("done", false);
-
-            jsonWriter.WriteEndObject();
-
-            await jsonWriter.FlushAsync(ct);
-
-            pipeWriter.Write(SseDelimiter);
-
-            await pipeWriter.FlushAsync(ct);
+            return new ChatMessage(ChatRole.User, original);
         }
-        finally
+
+        return new ChatMessage(ChatRole.User, enhancedPrompt)
         {
-            writeSemaphore.Release();
-        }
+            AdditionalProperties = new AdditionalPropertiesDictionary { [ConversationChatHistoryProvider.OriginalPromptProperty] = original },
+        };
     }
 
-    private async Task StartSseResponseAsync(SemaphoreSlim writeSemaphore, CancellationToken ct)
+    private static List<ChatMessage> MapClientHistory(IReadOnlyList<Dtos.ChatMessage> messages, string? enhancedPrompt)
     {
-        Response.ContentType = "text/event-stream";
-        Response.Headers.CacheControl = "no-cache";
-        Response.Headers.Connection = "keep-alive";
-        Response.Headers.Append(CommonHeaderNames.AccelBuffering, "no");
+        var mapped = messages
+            .Select(m => new ChatMessage(IsUserRole(m.Role) ? ChatRole.User : ChatRole.Assistant, m.Content))
+            .ToList();
 
-        await Response.StartAsync(ct);
+        if (enhancedPrompt is not null && mapped.FindLastIndex(m => m.Role == ChatRole.User) is var last and >= 0)
+        {
+            mapped[last] = CreateUserTurn(mapped[last].Text, enhancedPrompt);
+        }
 
-        await writeSemaphore.WaitAsync(ct);
-        try
-        {
-            var pipeWriter = Response.BodyWriter;
-            pipeWriter.Write(KeepAliveLine);
-            await pipeWriter.FlushAsync(ct);
-        }
-        finally
-        {
-            writeSemaphore.Release();
-        }
+        return mapped;
     }
 
-    private async Task RunHeartbeatAsync(SemaphoreSlim writeSemaphore, CancellationToken ct)
-    {
-        try
-        {
-            while (!ct.IsCancellationRequested)
-            {
-                await Task.Delay(TimeSpan.FromSeconds(15), ct);
-
-                await writeSemaphore.WaitAsync(ct);
-                try
-                {
-                    var pipeWriter = Response.BodyWriter;
-                    pipeWriter.Write(HeartbeatLine);
-                    await pipeWriter.FlushAsync(ct);
-                }
-                finally
-                {
-                    writeSemaphore.Release();
-                }
-            }
-        }
-        catch (OperationCanceledException)
-        {
-        }
-        catch (Exception ex)
-        {
-            logger.LogDebug(ex, "SSE heartbeat stopped due to write failure.");
-        }
-    }
-
-    private static async Task PersistAssistantMessageAsync(
-        IServiceScopeFactory scopeFactory,
-        Guid? conversationId,
-        StringBuilder assistantResponse,
-        StringBuilder thoughtBuilder,
-        List<string> toolCallLog,
-        CancellationToken ct)
-    {
-        if (!conversationId.HasValue || assistantResponse.Length == 0)
-        {
-            return;
-        }
-
-        using var scope = scopeFactory.CreateScope();
-        var conversationService = scope.ServiceProvider.GetRequiredService<IConversationService>();
-
-        await conversationService.AddMessageAsync(
-            conversationId.Value,
-            ChatRole.Assistant.ToString(),
-            assistantResponse.ToString(),
-            thought: thoughtBuilder.Length > 0 ? thoughtBuilder.ToString() : null,
-            toolCalls: toolCallLog.Count > 0 ? toolCallLog : null,
-            ct: ct
-        );
-    }
+    private static bool IsUserRole(string role) => role.Equals(ChatRole.User.ToString(), StringComparison.OrdinalIgnoreCase);
 }

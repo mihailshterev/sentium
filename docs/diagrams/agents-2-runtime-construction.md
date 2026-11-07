@@ -1,20 +1,24 @@
 ```mermaid
 sequenceDiagram
     autonumber
-    participant AR as Controller
+    participant C as Caller (controller / workflow)
     participant F as CompositeAgentFactory
     participant RS as RegistrySettingsService
+    participant CW as ModelContextWindowProvider
     participant TP as AgentToolProvider
-    participant SK as DynamicSkillsProvider
+    participant AI as AgentInstructions
+    participant P as AgentChatPipeline
 
-    AR->>F: CreateAsync(agentName, overrideModel)
-    F->>RS: GetAsync(userId) - model, temperature, harness
+    C->>F: CreateAsync(agentName, overrideModel, chatHistory)
+    F->>F: Resolve definition (native IAgent or the user's custom agent)
+    F->>RS: GetAsync(userId) - harness, default model, temperature
+    F->>CW: GetContextWindowAsync(model) - per-slot n_ctx from the model catalog (cached)
     F->>TP: GetToolsForAgent(agentName)
-    loop For each tool
-        F->>F: Diagnostic -> SentinelGuarded -> (ApprovalRequired)
-    end
-    F->>SK: BuildAsync() - dynamic skills context
-    F->>F: Assemble harnessed + learning chat client (model)
-    F->>F: Append capability block to instructions
-    F-->>AR: Ready AIAgent
+    F->>F: Keep the agent's curated tools (drop approval tools for unattended runs)
+    F->>AI: Compose(harness, role, tools) - one system prompt
+    F->>P: Build(shared base client, context window)
+    Note over P: FunctionInvocation (max 10 rounds) -> Compaction -> OpenTelemetry -> llama-server (OpenAI API)
+    F->>F: ChatClientAgent + context providers (skills, learnings) + chat history
+    F->>F: .AsBuilder().Use(SentinelFunctionMiddleware)
+    F-->>C: Ready AIAgent
 ```

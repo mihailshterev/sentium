@@ -1,4 +1,5 @@
-using Microsoft.Extensions.Logging;
+using System.ComponentModel;
+using Microsoft.Extensions.AI;
 using Sentium.Locus.Contracts;
 using Sentium.Locus.Contracts.Models;
 using Sentium.Praxis.Features.Tools.Attributes;
@@ -8,50 +9,49 @@ namespace Sentium.Praxis.Features.Tools.Inventory;
 /// <summary>
 /// Searches the household inventory (assets shared with assistants) and answers "where is X?".
 /// </summary>
-[AgentToolPolicy(RiskLevel = ToolRiskLevel.Low)]
+[AgentToolPolicy(RiskLevel = ToolRiskLevel.Low, Resource = ToolResource.Inventory, Action = ToolAction.Search)]
 public sealed class FindAssetsTool(IInventoryLookup inventory, ILogger<FindAssetsTool> logger) : IAgentTool
 {
-    public const string ToolName = "find_assets";
+    private const int DefaultLimit = 10;
+    private const int MaxLimit = 25;
 
-    public string Name => ToolName;
-
-    public string Description =>
+    public AIFunction CreateFunction() => AgentToolFunction.Create(
+        this,
+        FindAsync,
+        ToolNames.FindAssets,
         "Search the household inventory for physical items and where they are kept. Use it for questions like " +
         "'where is the drill?' or 'which chargers do we have?'. Returns each item's location path and id; " +
-        "call get_asset with an id for full details.";
+        $"call {ToolNames.GetAsset} with an id for full details.");
 
-    public IReadOnlyList<AgentToolParameter> Parameters { get; } =
-    [
-        new("query", "Words describing the item (name, brand, model, tag or room), e.g. 'cordless drill'."),
-        new("location", "Only search in this place and below it: a location name or path such as 'Garage' or 'Home/Garage'.", Required: false),
-        new("tag", "Only items with this tag, e.g. 'tools'.", Required: false),
-        new("category", "Only items in this category, e.g. 'Electronics'.", Required: false),
-        new("limit", "Maximum number of items to return (1-25, default 10).", AgentToolParameterType.Integer, Required: false),
-    ];
-
-    public async Task<string> ExecuteAsync(string input, CancellationToken ct)
+    public async Task<string> FindAsync(
+        [Description("Words describing the item (name, brand, model, tag or room), e.g. 'cordless drill'. May be empty when filtering by location, tag or category.")] string query,
+        [Description("Only search in this place and below it: a location name or path such as 'Garage' or 'Home/Garage'.")] string? location = null,
+        [Description("Only items with this tag, e.g. 'tools'.")] string? tag = null,
+        [Description("Only items in this category, e.g. 'Electronics'.")] string? category = null,
+        [Description("Maximum number of items to return (1-25, default 10).")] int? limit = null,
+        CancellationToken ct = default)
     {
-        var args = InventoryToolInput.Parse(input);
-        var query = args.GetString("query", isPrimary: true);
-        var location = args.GetString("location");
-        var tag = args.GetString("tag");
-        var category = args.GetString("category");
+        var criteria = new InventoryAssetQuery(
+            InventoryToolText.Normalize(query),
+            InventoryToolText.Normalize(location),
+            InventoryToolText.Normalize(tag),
+            InventoryToolText.Normalize(category),
+            Math.Clamp(limit ?? DefaultLimit, 1, MaxLimit));
 
-        if (query is null && location is null && tag is null && category is null)
+        if (criteria is { Query: null, Location: null, Tag: null, Category: null })
         {
             return "Provide a query (or a location, tag or category) to search the inventory.";
         }
 
         try
         {
-            var limit = Math.Clamp(args.GetInt("limit") ?? 10, 1, 25);
-            var results = await inventory.FindAssetsAsync(new InventoryAssetQuery(query, location, tag, category, limit), ct);
+            var results = await inventory.FindAssetsAsync(criteria, ct);
 
             if (results.Count == 0)
             {
-                return location is null
+                return criteria.Location is null
                     ? "No matching items were found in the household inventory."
-                    : $"No matching items were found in the household inventory at '{location}'. The location may not exist; call list_location_contents to see the locations.";
+                    : $"No matching items were found in the household inventory at '{criteria.Location}'. The location may not exist; call {ToolNames.ListLocationContents} to see the locations.";
             }
 
             return InventoryToolFormatter.FormatSummaries(results);

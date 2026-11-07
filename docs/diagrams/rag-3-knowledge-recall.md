@@ -2,20 +2,20 @@
 sequenceDiagram
     autonumber
     participant AG as AIAgent (turn)
-    participant LA as LearningAugmentedChatClient
+    participant LP as LearningsContextProvider
     participant LS as AgentLearningService
-    participant EM as EmbeddingService
-    participant Q as Qdrant (agent_learnings)
+    participant EM as Codex · EmbeddingService
+    participant VR as Codex · VectorRepository (agent_learnings)
     participant LLM as llama-server (chat model)
 
-    AG->>LA: GetStreamingResponse(messages)
-    LA->>LS: RecallRelevant(last message, userId)
-    LS->>EM: GenerateEmbedding(query)
+    AG->>LP: ProvideAIContextAsync(latest user message)
+    LP->>LS: RecallRelevantAsync(text, userId, max 4)
+    LS->>EM: GenerateEmbeddingAsync(query)
     EM-->>LS: vector
-    LS->>Q: Search(vector, threshold, scope = userId)
-    Q-->>LS: relevant learnings
-    LS-->>LA: up to 4 learnings
-    LA->>LA: Add "RELEVANT PRIOR LEARNINGS" block to system prompt
-    LA->>LLM: Request with enriched context
+    LS->>VR: SearchAsync(vector, threshold, own + shared scope)
+    VR-->>LS: relevant learnings
+    LS-->>LP: up to 4 learnings
+    LP-->>AG: AIContext.Instructions = "RELEVANT PRIOR LEARNINGS" block
+    AG->>LLM: Request - the block is merged into the single system prompt
     LLM-->>AG: response
 ```

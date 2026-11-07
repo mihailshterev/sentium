@@ -26,8 +26,8 @@ using Sentium.Praxis.Features.Tools;
 using Sentium.Praxis.Features.Tools.Inventory;
 using Sentium.Praxis.Features.Tools.Workspace;
 using Sentium.Praxis.Features.WorkflowManagement;
-using Sentium.Praxis.Features.WorkspaceManagement;
 using Sentium.Praxis.Features.Workflows;
+using Sentium.Praxis.Features.Workflows.Squad;
 using Sentium.Praxis.Features.Workspaces;
 
 namespace Sentium.Praxis;
@@ -41,6 +41,13 @@ public static class PraxisModuleExtensions
     /// with the inference clients other modules register.
     /// </summary>
     internal const string LlmHttpClientName = "praxis-llm";
+
+    /// <summary>
+    /// Key of the shared base client agents run on (OpenTelemetry → inference server). Each agent adds its own function-invocation
+    /// and compaction layers on top (see <see cref="AgentChatPipeline"/>). The unkeyed <see cref="IChatClient"/> is the
+    /// plain pipeline for direct, non-agent calls.
+    /// </summary>
+    public const string AgentChatClientKey = "praxis-agents";
 
     public static IHostApplicationBuilder AddPraxisModule(this IHostApplicationBuilder builder)
     {
@@ -68,7 +75,8 @@ public static class PraxisModuleExtensions
         services.AddSingleton<IBuiltInSkillCatalog, BuiltInSkillCatalog>();
         services.AddScoped<IAgentSkillRepository, AgentSkillRepository>();
         services.AddScoped<IAgentSkillService, AgentSkillService>();
-        services.AddScoped<DynamicSkillsProvider>();
+        services.AddScoped<AgentSkillsProviderFactory>();
+        services.AddScoped<LearningsContextProvider>();
 
         services.AddSingleton<IPendingApprovalStore, PendingApprovalStore>();
 
@@ -96,12 +104,14 @@ public static class PraxisModuleExtensions
         services.AddTransient<IAgentTool, ListLocationContentsTool>();
 
         services.AddScoped<IConversationRepository, ConversationRepository>();
+        services.AddScoped<ConversationChatHistoryProvider>();
         services.AddScoped<IWorkflowRepository, WorkflowRepository>();
         services.AddScoped<IWorkflowRunRepository, WorkflowRunRepository>();
 
         AddScheduling(services);
 
         services.AddSingleton<SentinelClient>();
+        services.AddSingleton<SentinelFunctionMiddleware>();
         services.AddSingleton<IPdpContextAccessor, PdpContextAccessor>();
 
         AddCodeExecution(services, configuration);
@@ -146,6 +156,9 @@ public static class PraxisModuleExtensions
         services.AddTransient<IWorkflowService, WorkflowService>();
         services.AddTransient<IWorkspaceService, WorkspaceService>();
         services.AddTransient<IOrchestrator, WorkflowOrchestrator>();
+        services.AddTransient<SquadWorkflowRunner>();
+        services.AddTransient<IAgentWorkflow, DynamicDiscoveryWorkflow>();
+        services.AddTransient<IAgentWorkflow, DynamicCustomWorkflow>();
 
         RegisterAgent<GeneralAssistant>(services, AgentRole.GeneralAssistant);
         RegisterAgent<OrchestratorAgent>(services, AgentRole.Orchestrator);
@@ -166,15 +179,24 @@ public static class PraxisModuleExtensions
         services.AddInferenceHttpClient(configuration, LlmHttpClientName, InferenceEndpoint.Chat)
             .AddTypedClient<IModelCatalog, LlamaRouterModelCatalog>();
 
-        // Default-model client for the non-agent passes (prompt enhancement, learning sanitization).
-        services.AddChatClient(sp =>
-        {
-            var defaultModel = sp.GetRequiredService<IOptions<InferenceOptions>>().Value.DefaultModel;
+        services.AddMemoryCache();
+        services.AddScoped<IModelContextWindowProvider, CatalogModelContextWindowProvider>();
 
-            return sp.GetRequiredService<IInferenceClientFactory>()
-                .CreateChatClient(LlmHttpClientName, defaultModel)
-                .AddSentiumPipeline();
-        });
+        // Direct (non-agent) calls on the default model: prompt enhancement, learning sanitization.
+        services.AddChatClient(CreateDefaultModelClient)
+            .UseFunctionInvocation()
+            .UseOpenTelemetry();
+
+        // Shared agent base: telemetry records each request exactly as sent. Agents pick their model via ChatOptions.ModelId.
+        services.AddKeyedChatClient(AgentChatClientKey, CreateDefaultModelClient)
+            .UseOpenTelemetry();
+    }
+
+    private static IChatClient CreateDefaultModelClient(IServiceProvider sp)
+    {
+        var defaultModel = sp.GetRequiredService<IOptions<InferenceOptions>>().Value.DefaultModel;
+
+        return sp.GetRequiredService<IInferenceClientFactory>().CreateChatClient(LlmHttpClientName, defaultModel);
     }
 
     private static void AddScheduling(IServiceCollection services)

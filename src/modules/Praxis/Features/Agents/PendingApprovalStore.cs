@@ -19,16 +19,22 @@ public sealed class PendingApprovalStore : IPendingApprovalStore
         _pending[requestId] = new Entry(approval, DateTimeOffset.UtcNow);
     }
 
-    public bool TryTake(string requestId, out PendingApproval? approval)
+    public bool TryTake(string requestId, Guid? ownerId, out PendingApproval? approval)
     {
-        if (_pending.TryRemove(requestId, out var entry) && !IsExpired(entry))
+        approval = null;
+
+        if (!_pending.TryGetValue(requestId, out var entry) || entry.Approval.UserId != ownerId)
         {
-            approval = entry.Approval;
-            return true;
+            return false;
         }
 
-        approval = null;
-        return false;
+        if (!_pending.TryRemove(new KeyValuePair<string, Entry>(requestId, entry)) || IsExpired(entry))
+        {
+            return false;
+        }
+
+        approval = entry.Approval;
+        return true;
     }
 
     private static bool IsExpired(Entry entry) => DateTimeOffset.UtcNow - entry.CreatedAt > Ttl;

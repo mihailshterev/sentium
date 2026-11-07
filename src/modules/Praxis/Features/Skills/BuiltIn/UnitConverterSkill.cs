@@ -8,36 +8,20 @@ namespace Sentium.Praxis.Features.Skills.BuiltIn;
 /// <summary>
 /// Built-in skill for converting between common units of measurement.
 /// </summary>
-internal sealed class UnitConverterSkill : AgentClassSkill<UnitConverterSkill>
+internal sealed class UnitConverterSkill() : BuiltInSkill<UnitConverterSkill>(
+    "unit-converter",
+    "Convert between common measurement units (distance, weight, temperature, volume). Use when the user asks to convert miles, kilometers, pounds, kilograms, Celsius, Fahrenheit, liters, or gallons.",
+    """
+    Use this skill when the user asks to convert between units of measurement.
+
+    1. Identify the source unit and target unit from the user's request.
+    2. Consult the conversion-tables resource for the appropriate multiplication factor.
+    3. For temperature conversions use the convert-temperature script (special formula).
+    4. For all other conversions use the convert script with the value and factor.
+    5. Present the result clearly showing both the original and converted values with units.
+    """)
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
-
-    internal static BuiltInSkillInfo Descriptor { get; } = new(
-        "unit-converter",
-        "Convert between common measurement units (distance, weight, temperature, volume). Use when the user asks to convert miles, kilometers, pounds, kilograms, Celsius, Fahrenheit, liters, or gallons.",
-        """
-        Use this skill when the user asks to convert between units of measurement.
-
-        1. Identify the source unit and target unit from the user's request.
-        2. Consult the conversion-tables resource for the appropriate multiplication factor.
-        3. For temperature conversions use the convert-temperature script (special formula).
-        4. For all other conversions use the convert script with the value and factor.
-        5. Present the result clearly showing both the original and converted values with units.
-        """);
-
-    public override AgentSkillFrontmatter Frontmatter { get; } = new(
-        "unit-converter",
-        "Convert between common measurement units (distance, weight, temperature, volume). Use when the user asks to convert miles, kilometers, pounds, kilograms, Celsius, Fahrenheit, liters, or gallons.");
-
-    protected override string Instructions => """
-        Use this skill when the user asks to convert between units of measurement.
-
-        1. Identify the source unit and target unit from the user's request.
-        2. Consult the conversion-tables resource for the appropriate multiplication factor.
-        3. For temperature conversions use the convert-temperature script (special formula).
-        4. For all other conversions use the convert script with the value and factor.
-        5. Present the result clearly showing both the original and converted values with units.
-        """;
 
     [AgentSkillResource("conversion-tables")]
     [Description("Multiplication factors for common unit conversions.")]

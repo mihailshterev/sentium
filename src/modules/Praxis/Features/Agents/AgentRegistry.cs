@@ -4,30 +4,13 @@ namespace Sentium.Praxis.Features.Agents;
 
 public sealed class AgentRegistry : IAgentRegistry
 {
-    private readonly FrozenDictionary<string, Type> agentCache;
-    private readonly FrozenDictionary<string, string> instructionCache;
+    private readonly FrozenSet<string> names;
 
-    public AgentRegistry(IEnumerable<IAgent> systemAgents)
+    public AgentRegistry(IEnumerable<IAgent> nativeAgents)
     {
-        ArgumentNullException.ThrowIfNull(systemAgents);
-
-        var tempMap = new Dictionary<string, Type>(StringComparer.OrdinalIgnoreCase);
-        var tempInstructionMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var agent in systemAgents)
-        {
-            var name = agent.Name;
-            tempMap[name] = agent.GetType();
-            tempInstructionMap[name] = agent.Instructions;
-        }
-
-        agentCache = tempMap.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
-        instructionCache = tempInstructionMap.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
+        ArgumentNullException.ThrowIfNull(nativeAgents);
+        names = nativeAgents.Select(a => a.Name).ToFrozenSet(StringComparer.OrdinalIgnoreCase);
     }
 
-    public IEnumerable<string> GetRegisteredNames() => agentCache.Keys;
-
-    public string GetInstructions(string name) => instructionCache.GetValueOrDefault(name) ?? "Specialized security agent.";
-
-    public Type? GetAgentType(string name) => agentCache.GetValueOrDefault(name);
+    public IEnumerable<string> GetRegisteredNames() => names;
 }

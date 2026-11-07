@@ -21,6 +21,18 @@ public static class Extensions
     private const string HealthEndpointPath = "/health";
     private const string AlivenessEndpointPath = "/alive";
 
+    /// <summary>
+    /// ActivitySource / Meter names used by Microsoft.Extensions.AI (<c>UseOpenTelemetry</c> on chat clients and
+    /// embedding generators) and by Agent Framework agents and workflows. Without these the GenAI spans
+    /// (<c>chat</c>, <c>execute_tool</c>, <c>invoke_agent</c>) and token-usage metrics are created but never exported.
+    /// </summary>
+    private static readonly string[] GenAiTelemetrySources =
+    [
+        "Experimental.Microsoft.Extensions.AI*",
+        "Experimental.Microsoft.Agents.AI*",
+        "Microsoft.Agents.AI*",
+    ];
+
     public static TBuilder AddServiceDefaults<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
     {
         builder.ConfigureOpenTelemetry();
@@ -60,11 +72,13 @@ public static class Extensions
             {
                 metrics.AddAspNetCoreInstrumentation()
                     .AddHttpClientInstrumentation()
-                    .AddRuntimeInstrumentation();
+                    .AddRuntimeInstrumentation()
+                    .AddMeter(GenAiTelemetrySources);
             })
             .WithTracing(tracing =>
             {
                 tracing.AddSource(builder.Environment.ApplicationName)
+                    .AddSource(GenAiTelemetrySources)
                     .AddAspNetCoreInstrumentation(tracing =>
                         // Exclude health check requests from tracing
                         tracing.Filter = context =>

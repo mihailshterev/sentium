@@ -68,7 +68,8 @@ public static class SentinelModuleExtensions
         // Bound to the default chat model; SemanticIntentPolicy overrides it per request with the
         // Registry's IntentCheckModel through ChatOptions.ModelId.
         services.AddKeyedChatClient(ChatClientKey, sp => sp.GetRequiredService<IInferenceClientFactory>()
-            .CreateChatClient(LlmHttpClientName, sp.GetRequiredService<IOptions<InferenceOptions>>().Value.DefaultModel));
+            .CreateChatClient(LlmHttpClientName, sp.GetRequiredService<IOptions<InferenceOptions>>().Value.DefaultModel))
+            .UseOpenTelemetry();
 
         services.AddSingleton<IPdpRuntimeSettingsProvider, RegistryPdpSettingsProvider>();
 

@@ -1,16 +1,18 @@
 using System.Text.Json;
-using Sentium.Praxis.Common.Helpers;
 using Sentium.Praxis.Extensions;
 using Sentium.Praxis.Features.Agents;
-using AgentResponse = Sentium.Praxis.Dtos.AgentResponse;
-using Sentium.Praxis.Features.WorkflowManagement;
 using Sentium.Praxis.Features.Orchestration;
-using Microsoft.Agents.AI;
+using Sentium.Praxis.Features.WorkflowManagement;
+using Sentium.Praxis.Features.Workflows.Squad;
+using AgentResponse = Sentium.Praxis.Dtos.AgentResponse;
 
 namespace Sentium.Praxis.Features.Workflows;
 
+/// <summary>
+/// User-defined squad: a fixed plan - the workflow's agents, in their configured order - each contributing its role.
+/// </summary>
 public sealed class DynamicCustomWorkflow(
-    IAgentFactory factory,
+    SquadWorkflowRunner squad,
     IAgentRepository agentRepository,
     IWorkflowService workflowService,
     IAgentStreamPublisher stream) : IAgentWorkflow
@@ -21,17 +23,10 @@ public sealed class DynamicCustomWorkflow(
     {
         ArgumentNullException.ThrowIfNull(trigger);
 
-        using var doc = JsonDocument.Parse(trigger.Payload);
-        var root = doc.RootElement;
-
-        var activity = root.TryGetProperty("activity", out var activityProp) ? activityProp.GetString() ?? trigger.Payload : trigger.Payload;
-
-        if (!root.TryGetProperty("workflowId", out var workflowIdProp) || !workflowIdProp.TryGetGuid(out var workflowId))
+        if (!TryReadWorkflowId(trigger.Payload, out var workflowId))
         {
             return new WorkflowResult { Explanation = "Custom workflow trigger is missing a valid workflowId." };
         }
-
-        activity = WorkspaceContextPrompt.Augment(activity, WorkspaceContextPrompt.TryExtract(trigger.Payload));
 
         var workflowDef = await workflowService.GetWorkflowAsync(workflowId, ct);
         if (workflowDef is null)
@@ -39,68 +34,69 @@ public sealed class DynamicCustomWorkflow(
             return new WorkflowResult { Explanation = $"Workflow '{workflowId}' was not found." };
         }
 
-        var orderedRefs = workflowDef.Agents.OrderBy(a => a.Order).ToList();
+        var agents = new List<AgentResponse>();
+        foreach (var agentRef in workflowDef.Agents.OrderBy(a => a.Order))
+        {
+            if (await agentRepository.GetAgentByIdAsync(agentRef.AgentId, ct) is { } agent)
+            {
+                agents.Add(agent);
+            }
+        }
 
-        if (orderedRefs.Count == 0)
+        if (agents.Count == 0)
         {
             return new WorkflowResult { Explanation = $"Workflow '{workflowDef.Name}' has no agents configured." };
         }
 
-        var resolved = new List<AgentResponse>();
-        foreach (var agentRef in orderedRefs)
-        {
-            var agentDetails = await agentRepository.GetAgentByIdAsync(agentRef.AgentId, ct);
-            if (agentDetails is not null)
-            {
-                resolved.Add(agentDetails);
-            }
-        }
+        var log = new StreamLogAccumulator();
+        WarnOnDuplicateNames(trigger, workflowDef.Name, agents, log);
 
-        var rosterNames = resolved.Select(a => a.Name).ToList();
-
-        var squadAgents = new List<AIAgent>();
-        var roster = new List<SquadMember>();
-
-        for (var i = 0; i < resolved.Count; i++)
-        {
-            var agentDetails = resolved[i];
-            var agentModel = !string.IsNullOrWhiteSpace(agentDetails.Model) ? agentDetails.Model : null;
-
-            var directive = SquadCollaborationPrompt.Build(agentDetails.Name, assignment: null, i + 1, resolved.Count, rosterNames);
-            var instructions = $"{agentDetails.Description}\n\n{directive}";
-
-            var agent = await factory.CreateAsync(agentDetails.Name, overrideInstructions: instructions, overrideModel: agentModel, actingUserId: trigger.UserId, ct: ct);
-            squadAgents.Add(agent);
-
-            roster.Add(new SquadMember(agentDetails.Name, agentDetails.Description));
-        }
-
-        var streamLog = new StreamLogAccumulator();
-
-        var duplicateNames = roster
-            .GroupBy(r => r.Name, StringComparer.OrdinalIgnoreCase)
-            .Where(g => g.Count() > 1)
-            .Select(g => g.Key)
+        var roster = agents
+            .DistinctBy(a => a.Name, StringComparer.OrdinalIgnoreCase)
+            .Select(a => new SquadMember(a.Name, a.Description, a.Description, string.IsNullOrWhiteSpace(a.Model) ? null : a.Model))
             .ToList();
 
-        if (duplicateNames.Count > 0)
+        var plan = new SquadPlan([.. agents.Select(a => new SquadStep(
+            a.Name,
+            "Contribute the part of the request that your role covers.",
+            $"A complete, correct contribution for this role: {Summarize(a.Description)}"))]);
+
+        var request = WorkspaceContextPrompt.Augment(trigger.ResolveActivity(), WorkspaceContextPrompt.TryExtract(trigger.Payload));
+        var result = await squad.RunAsync(trigger, request, roster, plan, log, ct);
+
+        return SquadResultMapper.ToWorkflowResult(result, log, $"Custom workflow '{workflowDef.Name}' completed with no output.", workflowId, workflowDef.UserId);
+    }
+
+    private void WarnOnDuplicateNames(WorkflowTrigger trigger, string workflowName, IReadOnlyList<AgentResponse> agents, StreamLogAccumulator log)
+    {
+        var duplicates = agents.GroupBy(a => a.Name, StringComparer.OrdinalIgnoreCase).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
+        if (duplicates.Count == 0)
         {
-            var warning = $"Warning: workflow '{workflowDef.Name}' has duplicate agent names ({string.Join(", ", duplicateNames)}). Targeted re-runs and per-agent attribution may be unreliable - give each agent a unique name.";
-            stream.Emit(trigger.StreamId, "System", warning, AgentUpdateTypes.Status);
-            streamLog.Add("System", warning, AgentUpdateTypes.Status);
+            return;
         }
 
-        var loop = new AgenticRefinementLoop(factory, stream);
-        var outcome = await loop.RunAsync(trigger, $"custom-{workflowDef.Name}", squadAgents, activity, streamLog, ct, roster);
+        var warning = $"Warning: workflow '{workflowName}' has duplicate agent names ({string.Join(", ", duplicates)}). Per-agent attribution may be unreliable - give each agent a unique name.";
+        stream.Emit(trigger.StreamId, SquadRunContext.SystemAuthor, warning, AgentUpdateTypes.Status);
+        log.Add(SquadRunContext.SystemAuthor, warning, AgentUpdateTypes.Status);
+    }
 
-        var explanation = string.IsNullOrWhiteSpace(outcome.SquadText) ? $"Custom workflow '{workflowDef.Name}' completed with no output." : outcome.SquadText;
-
-        return new WorkflowResult
+    private static bool TryReadWorkflowId(string payload, out Guid workflowId)
+    {
+        workflowId = Guid.Empty;
+        try
         {
-            Explanation = explanation,
-            StreamLog = streamLog.Entries,
-            WorkflowId = workflowId,
-            UserId = workflowDef.UserId
-        };
+            using var doc = JsonDocument.Parse(payload);
+            return doc.RootElement.TryGetProperty("workflowId", out var id) && id.TryGetGuid(out workflowId);
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+    }
+
+    private static string Summarize(string? text)
+    {
+        var oneLine = (text ?? string.Empty).ReplaceLineEndings(" ").Trim();
+        return oneLine.Length > 200 ? string.Concat(oneLine.AsSpan(0, 200), "…") : oneLine;
     }
 }

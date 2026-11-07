@@ -1,4 +1,5 @@
-using Microsoft.Extensions.Logging;
+using System.ComponentModel;
+using Microsoft.Extensions.AI;
 using Sentium.Locus.Contracts;
 using Sentium.Locus.Contracts.Models;
 using Sentium.Praxis.Features.Tools.Attributes;
@@ -8,27 +9,23 @@ namespace Sentium.Praxis.Features.Tools.Inventory;
 /// <summary>
 /// Returns everything assistants may know about one household item.
 /// </summary>
-[AgentToolPolicy(RiskLevel = ToolRiskLevel.Low)]
+[AgentToolPolicy(RiskLevel = ToolRiskLevel.Low, Resource = ToolResource.Inventory, Action = ToolAction.Read)]
 public sealed class GetAssetTool(IInventoryLookup inventory, ILogger<GetAssetTool> logger) : IAgentTool
 {
-    public const string ToolName = "get_asset";
-
     private const int MaxNameMatches = 3;
 
-    public string Name => ToolName;
-
-    public string Description =>
+    public AIFunction CreateFunction() => AgentToolFunction.Create(
+        this,
+        GetAsync,
+        ToolNames.GetAsset,
         "Get the full details of one household inventory item: location, maker, model, serial number, " +
-        "purchase and service dates, warranty, care instructions and attached files.";
+        "purchase and service dates, warranty, care instructions and attached files.");
 
-    public IReadOnlyList<AgentToolParameter> Parameters { get; } =
-    [
-        new("asset", "The item's id (from find_assets) or its exact name."),
-    ];
-
-    public async Task<string> ExecuteAsync(string input, CancellationToken ct)
+    public async Task<string> GetAsync(
+        [Description($"The item's id (from {ToolNames.FindAssets}) or its exact name.")] string asset,
+        CancellationToken ct = default)
     {
-        var reference = InventoryToolInput.Parse(input).GetString("asset", isPrimary: true);
+        var reference = InventoryToolText.Normalize(asset);
         if (reference is null)
         {
             return "Provide the item's id or name.";
@@ -38,21 +35,21 @@ public sealed class GetAssetTool(IInventoryLookup inventory, ILogger<GetAssetToo
         {
             if (Guid.TryParse(reference, out var id))
             {
-                var asset = await inventory.GetAssetAsync(id, ct);
-                return asset is null
+                var detail = await inventory.GetAssetAsync(id, ct);
+                return detail is null
                     ? "No shared household item has that id."
-                    : InventoryToolFormatter.FormatDetail(asset);
+                    : InventoryToolFormatter.FormatDetail(detail);
             }
 
             var matches = await inventory.FindAssetsByNameAsync(reference, MaxNameMatches + 1, ct);
 
             return matches.Count switch
             {
-                0 => $"No shared household item is named '{reference}'. Try find_assets to search.",
+                0 => $"No shared household item is named '{reference}'. Try {ToolNames.FindAssets} to search.",
                 1 => InventoryToolFormatter.FormatDetail(matches[0]),
                 _ => InventoryToolFormatter.FormatSummaries(
                     [.. matches.Take(MaxNameMatches).Select(m => new InventoryAssetSummary(m.Id, m.Name, m.Category, m.Tags, m.LocationPath))],
-                    "match that name - call get_asset again with one of the ids")
+                    $"match that name - call {ToolNames.GetAsset} again with one of the ids")
             };
         }
         catch (Exception ex) when (ex is not OperationCanceledException)

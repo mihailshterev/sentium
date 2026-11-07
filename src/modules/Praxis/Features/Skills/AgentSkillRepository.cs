@@ -14,6 +14,14 @@ public sealed class AgentSkillRepository(PraxisDbContext context) : IAgentSkillR
             .Take(PaginationQuery.MaxListCap)
             .ToListAsync(ct);
 
+    public async Task<IReadOnlyList<AgentSkill>> GetForUserAsync(Guid userId, CancellationToken ct = default)
+        => await context.AgentSkills
+            .AsNoTracking()
+            .Where(s => s.UserId == userId)
+            .OrderByDescending(s => s.CreatedAt)
+            .Take(PaginationQuery.MaxListCap)
+            .ToListAsync(ct);
+
     public async Task<(IReadOnlyList<AgentSkill> Items, int TotalCount)> GetPagedAsync(AgentSkillType? skillType, int page, int pageSize, CancellationToken ct = default)
     {
         var query = context.AgentSkills.AsNoTracking();

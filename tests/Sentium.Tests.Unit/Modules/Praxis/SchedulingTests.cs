@@ -2,6 +2,7 @@ using System.Collections.Specialized;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using Quartz;
@@ -14,6 +15,7 @@ using Sentium.Praxis.Features.Scheduling;
 using Sentium.Praxis.Features.Sentinel;
 using Sentium.Praxis.Features.Tools;
 using Sentium.Praxis.Features.Tools.Attributes;
+using Sentium.Tests.Unit.Modules.Praxis.Support;
 using Xunit;
 
 namespace Sentium.Tests.Unit.Modules.Praxis;
@@ -44,15 +46,26 @@ public sealed class SchedulingTests : IAsyncLifetime
 
     public async ValueTask DisposeAsync() => await _scheduler.Shutdown(waitForJobsToComplete: false);
 
-    private ScheduleTaskTool CreateTool(Guid? userId, string agentName = "ResearchAnalyst")
+    private ScheduleTaskTool CreateTool(Guid? userId)
     {
         _pdp.UserId.Returns(userId);
-        _pdp.AgentName.Returns(agentName);
         return new ScheduleTaskTool(_factory, _pdp, Substitute.For<ILogger<ScheduleTaskTool>>());
     }
 
-    private static string Args(string cron, string code = "print('hi')", string jobName = "Report") =>
-        $$"""{"JobName":"{{jobName}}","CronExpression":"{{cron}}","Code":"{{code}}","Language":"Python"}""";
+    /// <summary>
+    /// Schedules as the named agent would: inside its Agent Framework run, which is where the tool reads the agent from.
+    /// </summary>
+    private Task<string> ScheduleAs(
+        Guid? userId,
+        string agentName,
+        string cron = Hourly,
+        string jobName = "Report",
+        string code = "print('hi')",
+        ScheduledJobLanguage language = ScheduledJobLanguage.Python)
+    {
+        var tool = CreateTool(userId);
+        return AgentRunScope.RunAsAsync(agentName, () => tool.ScheduleAsync(jobName, cron, code, language, Ct));
+    }
 
     private async Task<IReadOnlyCollection<JobKey>> JobsOf(Guid userId) =>
         await _scheduler.GetJobKeys(GroupMatcher<JobKey>.GroupEquals(SchedulerDefaults.GroupFor(userId)), Ct);
@@ -76,13 +89,14 @@ public sealed class SchedulingTests : IAsyncLifetime
 
         policy.RequiresApproval.Should().BeTrue();
         policy.RiskLevel.Should().Be(ToolRiskLevel.High);
+        policy.Resource.Should().Be(ToolResource.Code, "Sentinel must inspect the scheduled script like any code execution");
+        CreateTool(Alice).CreateFunction().Should().BeOfType<ApprovalRequiredAIFunction>();
     }
 
     [Fact]
     public async Task Tool_SchedulesUnderOwnersGroup_WithAgentFromRunContext_InUtc()
     {
-        var result = await CreateTool(Alice).ExecuteAsync(
-            """{"AgentId":"spoofed-agent","JobName":"Report","CronExpression":"0 0 * * * ?","Code":"print(1)","Language":"NodeJs"}""", Ct);
+        var result = await ScheduleAs(Alice, "ResearchAnalyst", code: "print(1)", language: ScheduledJobLanguage.NodeJs);
 
         result.Should().StartWith("Success");
         var key = (await JobsOf(Alice)).Should().ContainSingle().Subject;
@@ -100,9 +114,26 @@ public sealed class SchedulingTests : IAsyncLifetime
     }
 
     [Fact]
+    public void Tool_OffersNoOwnerOrAgentArgument_ToTheModel()
+    {
+        var properties = CreateTool(Alice).CreateFunction().JsonSchema.GetProperty("properties");
+
+        properties.EnumerateObject().Select(p => p.Name).Should().BeEquivalentTo("jobName", "cronExpression", "code", "language");
+    }
+
+    [Fact]
+    public async Task Tool_OutsideAnAgentRun_AttributesTheJobToAGenericAgent()
+    {
+        (await CreateTool(Alice).ScheduleAsync("Report", Hourly, "print(1)", ct: Ct)).Should().StartWith("Success");
+
+        var detail = await _scheduler.GetJobDetail((await JobsOf(Alice)).Single(), Ct);
+        detail!.JobDataMap.GetString(ScheduledJobData.AgentId).Should().Be("Agent");
+    }
+
+    [Fact]
     public async Task Tool_WithoutUser_FailsClosed()
     {
-        var result = await CreateTool(userId: null).ExecuteAsync(Args(Hourly), Ct);
+        var result = await CreateTool(userId: null).ScheduleAsync("Report", Hourly, "print('hi')", ct: Ct);
 
         result.Should().StartWith("Error").And.Contain("signed-in user");
         (await _scheduler.GetJobKeys(GroupMatcher<JobKey>.AnyGroup(), Ct)).Should().BeEmpty();
@@ -114,7 +145,7 @@ public sealed class SchedulingTests : IAsyncLifetime
     [InlineData("0,10 0 * * * ?")]       // two fires 10 s apart once an hour: uneven gaps
     public async Task Tool_RejectsSchedulesBelowMinimumInterval(string cron)
     {
-        var result = await CreateTool(Alice).ExecuteAsync(Args(cron), Ct);
+        var result = await CreateTool(Alice).ScheduleAsync("Report", cron, "print('hi')", ct: Ct);
 
         result.Should().StartWith("Error").And.Contain("at least");
         (await JobsOf(Alice)).Should().BeEmpty();
@@ -125,7 +156,7 @@ public sealed class SchedulingTests : IAsyncLifetime
     [InlineData("0 0 0 1 1 ? 2000")]     // only in the past
     public async Task Tool_RejectsInvalidOrNeverFiringExpressions(string cron)
     {
-        var result = await CreateTool(Alice).ExecuteAsync(Args(cron), Ct);
+        var result = await CreateTool(Alice).ScheduleAsync("Report", cron, "print('hi')", ct: Ct);
 
         result.Should().StartWith("Error");
         (await JobsOf(Alice)).Should().BeEmpty();
@@ -137,10 +168,10 @@ public sealed class SchedulingTests : IAsyncLifetime
         var tool = CreateTool(Alice);
         for (var i = 0; i < SchedulerDefaults.MaxJobsPerUser; i++)
         {
-            (await tool.ExecuteAsync(Args(Hourly, jobName: $"job-{i}"), Ct)).Should().StartWith("Success");
+            (await tool.ScheduleAsync($"job-{i}", Hourly, "print('hi')", ct: Ct)).Should().StartWith("Success");
         }
 
-        var result = await tool.ExecuteAsync(Args(Hourly, jobName: "one-too-many"), Ct);
+        var result = await tool.ScheduleAsync("one-too-many", Hourly, "print('hi')", ct: Ct);
 
         result.Should().StartWith("Error").And.Contain("limit");
         (await JobsOf(Alice)).Should().HaveCount(SchedulerDefaults.MaxJobsPerUser);
@@ -149,8 +180,8 @@ public sealed class SchedulingTests : IAsyncLifetime
     [Fact]
     public async Task Controller_ListsOnlyTheCallersJobs_ButEverythingForSovereign()
     {
-        await CreateTool(Alice, "AliceAgent").ExecuteAsync(Args(Hourly, jobName: "alice-job"), Ct);
-        await CreateTool(Bob, "BobAgent").ExecuteAsync(Args(Hourly, jobName: "bob-job"), Ct);
+        await ScheduleAs(Alice, "AliceAgent", jobName: "alice-job");
+        await ScheduleAs(Bob, "BobAgent", jobName: "bob-job");
 
         var aliceView = await CreateController(Alice).GetAllActiveJobsAsync(Ct);
         var sovereignView = await CreateController(Guid.NewGuid(), sovereign: true).GetAllActiveJobsAsync(Ct);
@@ -163,7 +194,7 @@ public sealed class SchedulingTests : IAsyncLifetime
     [Fact]
     public async Task Controller_CannotDeleteAnotherUsersJob()
     {
-        await CreateTool(Bob, "BobAgent").ExecuteAsync(Args(Hourly), Ct);
+        await ScheduleAs(Bob, "BobAgent");
         var bobJob = (await JobsOf(Bob)).Single();
 
         var result = await CreateController(Alice).DeleteScheduledJobAsync("BobAgent", bobJob.Name, Ct);
@@ -175,8 +206,8 @@ public sealed class SchedulingTests : IAsyncLifetime
     [Fact]
     public async Task Controller_DeletesOwnJob_AndSovereignDeletesAnyJob()
     {
-        await CreateTool(Alice, "AliceAgent").ExecuteAsync(Args(Hourly), Ct);
-        await CreateTool(Bob, "BobAgent").ExecuteAsync(Args(Hourly), Ct);
+        await ScheduleAs(Alice, "AliceAgent");
+        await ScheduleAs(Bob, "BobAgent");
         var aliceJob = (await JobsOf(Alice)).Single();
         var bobJob = (await JobsOf(Bob)).Single();
 
