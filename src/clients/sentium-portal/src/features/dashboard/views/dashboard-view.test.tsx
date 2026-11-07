@@ -9,7 +9,7 @@ import * as useServiceHealthHook from "@/features/vigil/hooks/useServiceHealth";
 import * as useWorkflowRunsHook from "@/features/workflows/hooks/useWorkflowRuns";
 import * as useSystemMetricsHook from "@/features/vigil/hooks/useSystemMetrics";
 import * as useSentinelAuditHook from "@/features/sentinel/hooks/useSentinelAudit";
-import * as useOllamaModelsHook from "@/features/models/hooks/useOllamaModels";
+import * as useModelCatalogHook from "@/features/models/hooks/useModelCatalog";
 import * as useSchedulerHook from "@/features/scheduler/hooks/useScheduler";
 import * as useKnowledgeBaseStatsHook from "@/features/knowledge-base/hooks/useKnowledgeBaseStats";
 import type { AgentRecord } from "@/features/agents/types/agents";
@@ -126,8 +126,8 @@ beforeEach(() => {
   vi.spyOn(useSentinelAuditHook, "useSentinelStats").mockReturnValue(
     defaultSentinelHook as unknown as ReturnType<typeof useSentinelAuditHook.useSentinelStats>,
   );
-  vi.spyOn(useOllamaModelsHook, "useOllamaModels").mockReturnValue(
-    defaultModelsHook as unknown as ReturnType<typeof useOllamaModelsHook.useOllamaModels>,
+  vi.spyOn(useModelCatalogHook, "useModelCatalog").mockReturnValue(
+    defaultModelsHook as unknown as ReturnType<typeof useModelCatalogHook.useModelCatalog>,
   );
   vi.spyOn(useSchedulerHook, "useSchedulerJobs").mockReturnValue(
     defaultSchedulerHook as unknown as ReturnType<typeof useSchedulerHook.useSchedulerJobs>,

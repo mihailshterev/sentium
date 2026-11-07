@@ -13,6 +13,7 @@ using Sentium.Praxis.Features.Conversations;
 using Sentium.Praxis.Data;
 using Sentium.Praxis.Extensions;
 using Sentium.Praxis.Features.Learnings;
+using Sentium.Praxis.Features.Models;
 using Sentium.Praxis.Features.Orchestration;
 using Sentium.Praxis.Features.Registry;
 using Sentium.Praxis.Features.Scheduling;
@@ -162,7 +163,8 @@ public static class PraxisModuleExtensions
 
     private static void AddInference(IServiceCollection services, IConfiguration configuration)
     {
-        services.AddInferenceHttpClient(configuration, LlmHttpClientName, InferenceEndpoint.Chat);
+        services.AddInferenceHttpClient(configuration, LlmHttpClientName, InferenceEndpoint.Chat)
+            .AddTypedClient<IModelCatalog, LlamaRouterModelCatalog>();
 
         // Default-model client for the non-agent passes (prompt enhancement, learning sanitization).
         services.AddChatClient(sp =>

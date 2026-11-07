@@ -69,11 +69,11 @@ Mapping old → new:
 - **Frontend** - `sentium-portal` (React), including its own login page, built into and served by
   Sentium.Web.
 - **Infrastructure** (all local, started by Aspire): PostgreSQL with pgvector (one database, one
-  schema per module), Redis, Ollama, Azurite.
+  schema per module), Redis, llama.cpp's `llama-server` (a chat-model router plus an embeddings server), Azurite.
 
 ### AI Integration
 
-- Local inference only, via **Ollama** behind the `Microsoft.Extensions.AI` abstraction, with agents
+- Local inference only, via **llama-server**'s OpenAI-compatible API behind the `Microsoft.Extensions.AI` abstraction, with agents
   and multi-agent workflows built on the **Microsoft Agent Framework** (Gemma default, Qwen
   alternative) - no direct provider calls
 - **RAG** on **PostgreSQL + pgvector** with `embeddinggemma-2:740m` (768-dim) across three

@@ -1317,14 +1317,6 @@
           "OpenTelemetry.API": "1.15.3"
         }
       },
-      "OllamaSharp": {
-        "type": "Transitive",
-        "resolved": "5.4.12",
-        "contentHash": "uUKOgoTV9Fxo9J5syrY4OMZ/2/xlPO83tGG+FjGmY8HqJVJ1iUT5f8EsC9yNEqBBIoth9D8zzN4I5p1oQEMBhQ==",
-        "dependencies": {
-          "Microsoft.Extensions.AI.Abstractions": "10.0.0"
-        }
-      },
       "OpenAI": {
         "type": "Transitive",
         "resolved": "2.13.0",
@@ -1714,7 +1706,6 @@
           "Aspire.Hosting.Orchestration.win-x64": "[13.6.4, )",
           "Aspire.Hosting.PostgreSQL": "[13.6.4, )",
           "Aspire.Hosting.Redis": "[13.6.4, )",
-          "CommunityToolkit.Aspire.Hosting.Ollama": "[13.6.1, )",
           "Sentium.Core": "[1.0.0, )"
         }
       },
@@ -2172,16 +2163,6 @@
           "Apache.Arrow": "22.1.0",
           "Azure.Core": "1.60.0",
           "Azure.Storage.Common": "12.29.0"
-        }
-      },
-      "CommunityToolkit.Aspire.Hosting.Ollama": {
-        "type": "CentralTransitive",
-        "requested": "[13.6.1, )",
-        "resolved": "13.6.1",
-        "contentHash": "aTGCybFBr5+A3vwVgQjAi3mNoh+QxCYa9GsP9LdQTKnYTwvTJNqGim9Ak7zYDGvDek8G+zbrfK9f0wq+g39uRA==",
-        "dependencies": {
-          "Aspire.Hosting": "13.6.4",
-          "OllamaSharp": "5.4.12"
         }
       },
       "FluentValidation": {

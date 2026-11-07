@@ -2,7 +2,7 @@ import { useState } from "react";
 import { RefreshCw, ShieldCheck, Siren, Sliders } from "lucide-react";
 import { useSentinelAudit, useSentinelStats } from "@/features/sentinel/hooks/useSentinelAudit";
 import { useSentinelSettings } from "@/features/sentinel/hooks/useSentinelSettings";
-import { useOllamaModels } from "@/features/models/hooks/useOllamaModels";
+import { useModels } from "@/features/models/hooks/useModels";
 import styles from "../sentinel.module.css";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
@@ -20,7 +20,7 @@ export function SentinelView() {
   const { records, hasMore, loadMore, isLoadingMore, isLoading: auditLoading, refetch } = useSentinelAudit(20);
   const { stats } = useSentinelStats();
   const { settings, isUpdating, updateSettings } = useSentinelSettings();
-  const { models } = useOllamaModels();
+  const { models } = useModels();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [autonomyDraft, setAutonomyDraft] = useState<number | null>(null);
   const displayAutonomy = autonomyDraft ?? settings?.autonomyLevel ?? 5;

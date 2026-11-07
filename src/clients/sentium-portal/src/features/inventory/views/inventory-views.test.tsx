@@ -155,13 +155,13 @@ describe("inventory views", () => {
 
   it("retries a failed knowledge sync", () => {
     vi.mocked(hooks.useAsset).mockReturnValue({
-      asset: asset({ knowledgeStatus: "Failed", knowledgeError: "ollama down" }),
+      asset: asset({ knowledgeStatus: "Failed", knowledgeError: "embedding server down" }),
       isLoading: false,
       error: null,
     });
     renderAt("/inventory/assets/asset-1");
 
-    expect(screen.getByText("Last error: ollama down")).toBeInTheDocument();
+    expect(screen.getByText("Last error: embedding server down")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /retry/i }));
     expect(assetMutations.retrySync.mutate).toHaveBeenCalledWith("asset-1");
   });

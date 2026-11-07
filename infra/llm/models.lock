@@ -1,0 +1,11 @@
+# Model files fetched into the shared `sentium-llm-models` volume by fetch-models.sh.
+# Each line: <sha256>  <file name>  <download URL pinned to a Hugging Face commit revision>.
+# To add or upgrade a model, change the URL revision and the checksum together (both come from
+# https://huggingface.co/api/models/<repo>/tree/<revision>), then reference the file from models.ini
+# (chat models) or the embeddings server arguments.
+
+# Chat: Gemma 4 E4B instruct, Q4_0 (the format Gemma's quantization-aware training targets).
+a555b900214b477d8880e7832e0b8925e139b0159640036b09fe472b6f2097f2  gemma-4-E4B-it-Q4_0.gguf  https://huggingface.co/ggml-org/gemma-4-E4B-it-GGUF/resolve/a69f018d7678a2b9f5e705f8903d6fb29b9b25dc/gemma-4-E4B-it-Q4_0.gguf
+
+# Embeddings: EmbeddingGemma 2, text only, Q8_0. 768 dimensions = CodexDbContext.EmbeddingDimensions.
+2188ac1deca4b77dffefd603c2776a9d76d9d74ec01841392982ebb840b09135  embeddinggemma-2-Q8_0.gguf  https://huggingface.co/ggml-org/embeddinggemma-2-GGUF/resolve/6ea3e3a309d12a4779cfda98b8c19800d2d5da71/embeddinggemma-2-Q8_0.gguf

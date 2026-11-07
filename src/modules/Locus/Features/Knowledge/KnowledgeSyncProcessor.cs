@@ -114,7 +114,7 @@ public sealed class KnowledgeSyncProcessor(
 
         if (asset is null || !asset.IsAgentAccessible)
         {
-            // Needs no embedding model, so revoking access works even while Ollama is down.
+            // Needs no embedding model, so revoking access works even while the embedding server is down.
             await ingestion.RemoveBySourceAsync(source, ct: ct);
 
             if (asset?.KnowledgeContentHash is not null)

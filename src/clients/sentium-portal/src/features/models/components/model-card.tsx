@@ -1,31 +1,33 @@
-import { BrainCircuit, Trash2 } from "lucide-react";
+import { BrainCircuit, Power, PowerOff } from "lucide-react";
 import styles from "../models.module.css";
+import { Badge, type BadgeTone } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
-import type { OllamaModel } from "@/features/models/types/models";
+import type { InferenceModel } from "@/features/models/types/models";
 
-function formatBytes(bytes: number): string {
-  if (bytes === 0) {
-    return "0 B";
-  }
-  const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
-}
+const STATUS_TONE: Record<string, BadgeTone> = {
+  loaded: "success",
+  loading: "warning",
+  unloaded: "neutral",
+  sleeping: "info",
+};
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+function formatContext(tokens: number): string {
+  return tokens >= 1024 ? `${Math.round(tokens / 1024)}k ctx` : `${tokens} ctx`;
 }
 
 interface ModelCardProps {
-  model: OllamaModel;
-  deletingModel: string | null;
-  onDelete: (name: string) => void;
-  canDelete: boolean;
+  model: InferenceModel;
+  isDefault: boolean;
+  isPending: boolean;
+  canManage: boolean;
+  onLoad: (id: string) => void;
+  onUnload: (id: string) => void;
 }
 
-export function ModelCard({ model, deletingModel, onDelete, canDelete }: ModelCardProps) {
-  const details = model.details;
+export function ModelCard({ model, isDefault, isPending, canManage, onLoad, onUnload }: ModelCardProps) {
+  const isLoaded = model.status === "loaded";
+  const isChanging = model.status === "loading";
+
   return (
     <li className={styles.modelRow}>
       <span className={styles.modelIcon} aria-hidden="true">
@@ -33,29 +35,41 @@ export function ModelCard({ model, deletingModel, onDelete, canDelete }: ModelCa
       </span>
 
       <div className={styles.modelMain}>
-        <p className={styles.modelName}>{model.name}</p>
+        <p className={styles.modelName}>{model.id}</p>
         <div className={styles.specs}>
-          <span className={styles.spec}>{formatBytes(model.size)}</span>
-          {details?.parameter_size && <span className={styles.spec}>{details.parameter_size}</span>}
-          {details?.quantization_level && <span className={styles.spec}>{details.quantization_level}</span>}
-          {details?.family && <span className={styles.spec}>{details.family}</span>}
+          <Badge tone={STATUS_TONE[model.status] ?? "neutral"} dot>
+            {model.status}
+          </Badge>
+          {isDefault && <Badge tone="accent">default</Badge>}
+          {model.contextLength != null && <span className={styles.spec}>{formatContext(model.contextLength)}</span>}
         </div>
       </div>
 
-      <span className={styles.modelDate}>Modified {formatDate(model.modified_at)}</span>
-
-      {canDelete && (
-        <Button
-          variant="ghost"
-          size="sm"
-          iconOnly
-          icon={<Trash2 size={15} />}
-          loading={deletingModel === model.name}
-          onClick={() => onDelete(model.name)}
-          title={`Delete ${model.name}`}
-          className={styles.deleteButton}
-        />
-      )}
+      {canManage &&
+        (isLoaded ? (
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={<PowerOff size={15} />}
+            loading={isPending}
+            onClick={() => onUnload(model.id)}
+            title={`Unload ${model.id} from memory`}
+          >
+            Unload
+          </Button>
+        ) : (
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={<Power size={15} />}
+            loading={isPending || isChanging}
+            disabled={isChanging}
+            onClick={() => onLoad(model.id)}
+            title={`Load ${model.id} into memory`}
+          >
+            Load
+          </Button>
+        ))}
     </li>
   );
 }

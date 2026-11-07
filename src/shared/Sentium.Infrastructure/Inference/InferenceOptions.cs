@@ -16,13 +16,13 @@ public sealed class InferenceOptions : IValidatableObject
     /// Root URL of the server that serves the chat models, without the <c>/v1</c> suffix.
     /// </summary>
     [Required]
-    public Uri ChatEndpoint { get; set; } = new("http://localhost:11434");
+    public Uri ChatEndpoint { get; set; } = new("http://localhost:8090");
 
     /// <summary>
     /// Root URL of the server that serves the embedding model, without the <c>/v1</c> suffix.
     /// </summary>
     [Required]
-    public Uri EmbeddingEndpoint { get; set; } = new("http://localhost:11434");
+    public Uri EmbeddingEndpoint { get; set; } = new("http://localhost:8091");
 
     /// <summary>
     /// Bearer token the inference servers require. Leave empty when they run without authentication.

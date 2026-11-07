@@ -21,7 +21,9 @@ public static class EnvConfig
             public const string ChatEndpoint = "Inference__ChatEndpoint";
             public const string EmbeddingEndpoint = "Inference__EmbeddingEndpoint";
             public const string DefaultModel = "Inference__DefaultModel";
+            public const string ApiKey = "Inference__ApiKey";
             public const string EmbeddingModelName = "Rag__EmbeddingModelName";
+            public const string ServerApiKey = "LLAMA_API_KEY";
         }
 
         public static class Frontend

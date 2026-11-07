@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import * as modelsService from "./models.service";
-import { BASE_URL, client } from "@/shared/api/client";
+import { client } from "@/shared/api/client";
 
 vi.mock("@/shared/api/client", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/shared/api/client")>();
@@ -12,55 +12,29 @@ vi.mock("@/shared/api/client", async (importOriginal) => {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.stubGlobal("fetch", vi.fn());
-});
-
-afterEach(() => {
-  vi.unstubAllGlobals();
 });
 
 describe("models.service", () => {
-  it("fetchModels maps the Ollama models to their names", async () => {
-    vi.mocked(client.get).mockResolvedValueOnce([
-      { name: "llama3", modified_at: "", size: 0, digest: "", details: {} },
-      { name: "mistral", modified_at: "", size: 0, digest: "", details: {} },
-    ]);
-    expect(await modelsService.fetchModels()).toEqual(["llama3", "mistral"]);
+  it("fetchModelCatalog reads the model catalog", async () => {
+    const catalog = {
+      defaultModel: "gemma-4-e4b",
+      models: [{ id: "gemma-4-e4b", status: "loaded", contextLength: 16384 }],
+    };
+    vi.mocked(client.get).mockResolvedValueOnce(catalog);
+
+    expect(await modelsService.fetchModelCatalog()).toEqual(catalog);
     expect(client.get).toHaveBeenCalledWith("/praxis/models");
   });
 
-  it("fetchOllamaModels calls client.get with correct path", async () => {
-    vi.mocked(client.get).mockResolvedValueOnce([]);
-    await modelsService.fetchOllamaModels();
-    expect(client.get).toHaveBeenCalledWith("/praxis/models");
+  it("loadModel posts the model id to the load endpoint", async () => {
+    vi.mocked(client.post).mockResolvedValueOnce(undefined);
+    await modelsService.loadModel("gemma-4-e4b");
+    expect(client.post).toHaveBeenCalledWith("/praxis/models/load", { model: "gemma-4-e4b" });
   });
 
-  it("deleteOllamaModel encodes the model name", async () => {
-    vi.mocked(client.delete).mockResolvedValueOnce({} as never);
-    await modelsService.deleteOllamaModel("a/b");
-    expect(client.delete).toHaveBeenCalledWith("/praxis/models?name=a%2Fb");
-  });
-});
-
-describe("models.service pullModel()", () => {
-  it("calls fetch with POST to correct URL", async () => {
-    vi.mocked(fetch).mockResolvedValueOnce({ ok: true } as unknown as Response);
-    await modelsService.pullModel("llama3:latest");
-    expect(fetch).toHaveBeenCalledWith(`${BASE_URL}/praxis/models/pull`, expect.objectContaining({ method: "POST" }));
-  });
-
-  it("serialises model name in body", async () => {
-    vi.mocked(fetch).mockResolvedValueOnce({ ok: true } as unknown as Response);
-    await modelsService.pullModel("mistral");
-    const [, config] = vi.mocked(fetch).mock.calls[0];
-    expect((config as RequestInit).body).toBe(JSON.stringify({ name: "mistral" }));
-  });
-
-  it("forwards AbortSignal to fetch", async () => {
-    vi.mocked(fetch).mockResolvedValueOnce({ ok: true } as unknown as Response);
-    const controller = new AbortController();
-    await modelsService.pullModel("llama3", controller.signal);
-    const [, config] = vi.mocked(fetch).mock.calls[0];
-    expect((config as RequestInit).signal).toBe(controller.signal);
+  it("unloadModel posts the model id to the unload endpoint", async () => {
+    vi.mocked(client.post).mockResolvedValueOnce(undefined);
+    await modelsService.unloadModel("gemma-4-e4b");
+    expect(client.post).toHaveBeenCalledWith("/praxis/models/unload", { model: "gemma-4-e4b" });
   });
 });

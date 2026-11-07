@@ -116,18 +116,18 @@ public sealed class LocusKnowledgeAndLookupTests : IClassFixture<LocusApiFactory
         var home = await _client.CreateLocationAsync(LocusApi.Unique("Home"), ct: Ct);
         var asset = await _client.CreateAssetAsync(new SaveAssetRequest("Speaker", home.Id), Ct);
         _factory.Ingestion.IngestAsync(Arg.Any<IngestionRequest>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
-            .ThrowsAsync(new HttpRequestException("ollama unavailable"));
+            .ThrowsAsync(new HttpRequestException("embedding server unavailable"));
 
         (await ProcessAsync(asset.Id)).Should().Be(KnowledgeSyncOutcome.Failed);
 
         var entry = await WithDbAsync(db => db.KnowledgeSyncEntries.AsNoTracking().SingleAsync(e => e.AssetId == asset.Id, Ct));
         entry.Attempts.Should().Be(1);
         entry.Status.Should().Be(KnowledgeSyncStatus.Pending);
-        entry.LastError.Should().Contain("ollama unavailable");
+        entry.LastError.Should().Contain("embedding server unavailable");
         entry.NextAttemptAt.Should().BeAfter(DateTimeOffset.UtcNow);
 
         var dto = await _client.GetFromJsonAsync<AssetDto>($"/api/locus/assets/{asset.Id}", Ct);
-        dto!.KnowledgeError.Should().Contain("ollama unavailable");
+        dto!.KnowledgeError.Should().Contain("embedding server unavailable");
     }
 
     [Fact]

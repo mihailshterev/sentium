@@ -82,7 +82,7 @@ export function AssistantView() {
     isLoadingMore: isLoadingMoreConversations,
   } = useConversations();
 
-  const { models } = useModels();
+  const { models, defaultModel } = useModels();
 
   const { conversationId: routeConversationId } = useParams<{ conversationId?: string }>();
   const navigate = useNavigate();
@@ -149,10 +149,11 @@ export function AssistantView() {
   }, [messages, isTyping, isAtBottom, scrollToBottom]);
 
   useEffect(() => {
-    if (models.length > 0 && !model) {
-      setModel(models[0]);
+    const preferred = defaultModel ?? models[0];
+    if (!model && preferred) {
+      setModel(preferred);
     }
-  }, [models, model, setModel]);
+  }, [models, defaultModel, model, setModel]);
 
   useEffect(() => {
     let cancelled = false;

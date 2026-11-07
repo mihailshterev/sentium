@@ -49,6 +49,8 @@ public static class CodexModuleExtensions
 
         services.AddSingleton<IEmbeddingService, EmbeddingService>();
         services.AddScoped<IVectorRepository, PgVectorRepository>();
+        services.AddScoped<EmbeddingReindexer>();
+        services.AddHostedService<EmbeddingReindexService>();
         services.AddScoped<IDocumentIngestionService, DocumentIngestionService>();
 
         services.AddHealthChecks().AddDbContextCheck<CodexDbContext>("codex-db", tags: [ModuleName]);

@@ -1,0 +1,21 @@
+# NVIDIA GPU for the inference servers. Needs the NVIDIA Container Toolkit (or Docker Desktop with WSL2 GPU
+# support) and a driver for CUDA 12. Use it together with the base file:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.gpu.yml up -d
+#
+# Swaps in the CUDA build of the same pinned llama.cpp release and reserves the GPU. Layers that do not fit
+# in free VRAM stay on the CPU automatically (llama-server --fit is on by default).
+
+x-gpu: &gpu
+  image: ghcr.io/ggml-org/llama.cpp:server-cuda-b11804@sha256:490d8cd8000203a3ab8fdfce14ef931e2aa85affd4dd4447bcc75f299f00fd9a
+  deploy:
+    resources:
+      reservations:
+        devices:
+          - driver: nvidia
+            count: all
+            capabilities: [gpu]
+
+services:
+  llm: *gpu
+  embeddings: *gpu

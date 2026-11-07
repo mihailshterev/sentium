@@ -1,4 +1,5 @@
 using Sentium.Codex.Contracts.Models;
+using Sentium.Core.Constants;
 
 namespace Sentium.Codex.Contracts;
 
@@ -25,7 +26,7 @@ public sealed class RagOptions
     /// Embedding model requested from the embedding server. Its output size must match the vector store's
     /// <c>vector(768)</c> column (<c>CodexDbContext.EmbeddingDimensions</c>).
     /// </summary>
-    public string EmbeddingModelName { get; set; } = "embeddinggemma-2:740m";
+    public string EmbeddingModelName { get; set; } = AIModels.EmbeddingGemma2;
 
     /// <summary>
     /// Maximum character count per chunk (before overlap is applied).

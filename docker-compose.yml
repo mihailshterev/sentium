@@ -9,6 +9,18 @@ x-service-env: &service-env
   services__sentium-web__http__0: http://sentium-web:8080
   services__sandbox__http__0: http://sandbox:8080
 
+# llama.cpp's llama-server, build b11804 pinned by digest (CPU image; docker-compose.gpu.yml swaps in the
+# CUDA image). The image listens on 0.0.0.0:8080 and only answers requests carrying LLM_API_KEY, except
+# /health. Model files come from the verified models volume, read-only.
+x-llama-server: &llama-server
+  image: ghcr.io/ggml-org/llama.cpp:server-b11804@sha256:8c74db29f1a2bef3f0a331b52c4d6214601dfceed4bee0b94cc48b3b23ff257d
+  environment:
+    LLAMA_API_KEY: ${LLM_API_KEY}
+  depends_on:
+    models-init:
+      condition: service_completed_successfully
+  restart: unless-stopped
+
 services:
   postgres:
     image: pgvector/pgvector:pg18-trixie
@@ -50,51 +62,63 @@ services:
       - azurite-data:/data
     restart: unless-stopped
 
-  ollama:
-    image: ollama/ollama:0.40.6
+  # One-shot: downloads the model files pinned in infra/llm/models.lock and verifies their SHA-256
+  # (skips files already present). Exits non-zero on a checksum mismatch, which keeps the servers down.
+  models-init:
+    image: curlimages/curl:8.22.0@sha256:58adaa4e8dca9c988bae2aba4ab3434a0bb2da16bbe3f92dec39ec7785166777
+    user: "0:0"
+    entrypoint: ["sh", "/infra/fetch-models.sh"]
     environment:
-      OLLAMA_FLASH_ATTENTION: "1"
-      OLLAMA_NUM_PARALLEL: "2"
-      OLLAMA_KEEP_ALIVE: "-1"
-      OLLAMA_CONTEXT_LENGTH: "16384"
-    ports:
-      - "11434:11434"
+      HF_TOKEN: ${HF_TOKEN:-}
     volumes:
-      - ollama-data:/root/.ollama
+      - ./infra/llm:/infra:ro
+      - llm-models:/models
+    restart: "no"
+
+  # Chat models: llama-server in router mode, serving the presets in infra/llm/models.ini.
+  llm:
+    <<: *llama-server
+    command: ["--no-webui", "--metrics", "--models-preset", "/infra/models.ini", "--models-max", "2"]
+    ports:
+      - "127.0.0.1:8090:8080"
+    volumes:
+      - llm-models:/models:ro
+      - ./infra/llm:/infra:ro
     healthcheck:
-      test: ["CMD", "ollama", "list"]
+      # The router's /health is up before its models finish loading; ready = a chat model is "loaded".
+      test:
+        [
+          "CMD-SHELL",
+          'curl -fsS -H "Authorization: Bearer $$LLAMA_API_KEY" http://localhost:8080/models | grep -q ''"value":"loaded"''',
+        ]
       interval: 10s
       timeout: 5s
-      retries: 12
-      start_period: 20s
-    restart: unless-stopped
-    # GPU (NVIDIA): uncomment to enable - see docs/installation.md
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: all
-    #           capabilities: [gpu]
+      retries: 30
+      start_period: 30s
 
-  ollama-init:
-    image: ollama/ollama:0.40.6
-    depends_on:
-      ollama:
-        condition: service_healthy
-    environment:
-      OLLAMA_HOST: http://ollama:11434
-    entrypoint: ["/bin/sh", "-c"]
+  # Embeddings: a dedicated llama-server for the RAG embedding model (768 dimensions).
+  embeddings:
+    <<: *llama-server
     command:
-      - >
-        echo 'Waiting for Ollama...';
-        until ollama list >/dev/null 2>&1; do sleep 2; done;
-        for model in "${SENTIUM_MODEL}" "${SENTIUM_EMBEDDING_MODEL}"; do
-          echo "Pulling $$model...";
-          until ollama pull "$$model"; do echo "Pull of $$model failed; retrying in 5s..."; sleep 5; done;
-        done;
-        echo 'All models ready.'
-    restart: "no"
+      - --no-webui
+      - --metrics
+      - --model=/models/embeddinggemma-2-Q8_0.gguf
+      - --embeddings
+      - --ctx-size=8192
+      - --batch-size=2048
+      - --ubatch-size=2048
+      - --parallel=4
+    ports:
+      - "127.0.0.1:8091:8080"
+    volumes:
+      - llm-models:/models:ro
+    healthcheck:
+      # /health answers 503 until the model is loaded.
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 15s
 
   # The modular monolith: every module (Identity, Registry, Sentinel, Codex, Praxis, Vigil) in one
   # process. It serves the portal and the API from one HTTPS origin (the auth
@@ -110,11 +134,11 @@ services:
       ConnectionStrings__postgres: Host=postgres;Port=5432;Username=postgres;Password=${POSTGRES_PASSWORD}
       ConnectionStrings__redis: redis:6379
       ConnectionStrings__workspace-storage: ${AZURITE_CONNECTION}
-      ConnectionStrings__ollama: http://ollama:11434
-      Inference__ChatEndpoint: http://ollama:11434
-      Inference__EmbeddingEndpoint: http://ollama:11434
-      Inference__DefaultModel: ${SENTIUM_MODEL}
-      Rag__EmbeddingModelName: ${SENTIUM_EMBEDDING_MODEL}
+      Inference__ChatEndpoint: http://llm:8080
+      Inference__EmbeddingEndpoint: http://embeddings:8080
+      Inference__ApiKey: ${LLM_API_KEY}
+      Inference__DefaultModel: ${SENTIUM_MODEL:-gemma-4-e4b}
+      Rag__EmbeddingModelName: ${SENTIUM_EMBEDDING_MODEL:-embeddinggemma-2}
       ASPNETCORE_Kestrel__Certificates__Default__Path: /https/sentium.pfx
       ASPNETCORE_Kestrel__Certificates__Default__Password: ${CERT_PASSWORD}
     ports:
@@ -128,7 +152,9 @@ services:
         condition: service_healthy
       azurite:
         condition: service_started
-      ollama:
+      llm:
+        condition: service_healthy
+      embeddings:
         condition: service_healthy
     restart: unless-stopped
 
@@ -159,4 +185,6 @@ volumes:
   postgres-data:
   redis-data:
   azurite-data:
-  ollama-data:
+  # Verified model files, shared with the Aspire AppHost so they download once.
+  llm-models:
+    name: sentium-llm-models

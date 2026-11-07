@@ -31,8 +31,6 @@ public static partial class EndpointResolver
         return SplitHostPort(firstToken, defaultPort);
     }
 
-    public static Uri? ResolveUri(string? connectionString) => TryResolveUri(connectionString, out var uri) ? uri : null;
-
     private static bool TryResolveUri(string? connectionString, out Uri? uri)
     {
         uri = null;

@@ -48,7 +48,8 @@ public static class InferenceServiceCollectionExtensions
                 client.BaseAddress = endpoint == InferenceEndpoint.Chat ? options.ChatEndpoint : options.EmbeddingEndpoint;
                 client.Timeout = total;
             })
-            .AddLongRunningResilienceHandler(totalTimeout: total, attemptTimeout: attempt, retries: 0);
+            .AddLongRunningResilienceHandler(totalTimeout: total, attemptTimeout: attempt, retries: 0)
+            .AddHttpMessageHandler<InferenceApiKeyHandler>();
     }
 
     private static void AddInferenceCore(IServiceCollection services, IConfiguration configuration)
@@ -64,5 +65,6 @@ public static class InferenceServiceCollectionExtensions
             .ValidateOnStart();
 
         services.TryAddSingleton<IInferenceClientFactory, InferenceClientFactory>();
+        services.TryAddTransient<InferenceApiKeyHandler>();
     }
 }

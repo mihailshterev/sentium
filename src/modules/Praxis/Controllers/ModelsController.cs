@@ -1,178 +1,107 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using Sentium.Praxis.Features.Agents;
-using Sentium.Praxis.Dtos;
-using Sentium.Codex.Contracts;
-using Sentium.Praxis;
+using Sentium.Core.Constants;
 using Sentium.Infrastructure.Inference;
 using Sentium.Infrastructure.Security;
-using Sentium.Core.Constants;
-using System.Text;
-using System.Text.Json;
+using Sentium.Praxis.Dtos;
+using Sentium.Praxis.Features.Models;
+using Sentium.Praxis.Features.Registry;
 
 namespace Sentium.Praxis.Controllers;
 
 /// <summary>
-/// Provides endpoints for managing local Ollama models, including listing, pulling, and deleting.
-/// These use Ollama's native model-management API (relative to <c>Inference:ChatEndpoint</c>);
-/// inference itself goes through the OpenAI-compatible API.
+/// Lists the chat models the inference server serves and lets a Sovereign load or unload them.
+/// Which models exist is deployment configuration (<c>infra/llm/models.ini</c> and <c>models.lock</c>),
+/// so there is no pull or delete.
 /// </summary>
 [ApiController]
 [Authorize]
 [Route($"{PraxisRoutes.Prefix}/models")]
 public sealed class ModelsController(
-    IHttpClientFactory httpClientFactory,
-    IAgentRepository agentRepository,
-    IOptions<InferenceOptions> inferenceOptions,
-    IOptions<RagOptions> ragOptions) : ControllerBase
+    IModelCatalog catalog,
+    IRegistrySettingsService registrySettings,
+    IOptions<InferenceOptions> inferenceOptions) : ControllerBase
 {
-    private string DefaultModel => inferenceOptions.Value.DefaultModel;
-    private string EmbeddingModel => ragOptions.Value.EmbeddingModelName;
     private bool IsSovereign => RoleClaims.IsInRole(User, SecurityRoles.Sovereign);
 
     /// <summary>
-    /// Retrieves a list of all models currently installed on the local Ollama instance.
+    /// Lists the declared chat models with their runtime status, plus the effective default model.
     /// </summary>
     /// <param name="ct">Cancellation token to abort the request.</param>
-    /// <returns>A JSON array of installed models.</returns>
-    /// <response code="200">Returns the list of models.</response>
-    /// <response code="500">If the Ollama service is unreachable or returns an error.</response>
+    /// <response code="200">The models and the default model.</response>
+    /// <response code="503">The inference server is unreachable or failed.</response>
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    [ProducesResponseType(typeof(ModelsResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> GetModels(CancellationToken ct)
     {
-        var client = httpClientFactory.CreateClient(PraxisModuleExtensions.LlmHttpClientName);
-        using var response = await client.GetAsync(new Uri("api/tags", UriKind.Relative), ct);
-
-        if (!response.IsSuccessStatusCode)
+        var models = await catalog.ListAsync(ct);
+        if (models is null)
         {
-            return StatusCode((int)response.StatusCode);
+            return Problem(detail: "The inference server is unavailable.", statusCode: StatusCodes.Status503ServiceUnavailable);
         }
 
-        var tagsResponse = await response.Content.ReadFromJsonAsync<OllamaTagsResponse>(ct);
-        if (tagsResponse is null)
-        {
-            return Ok(Array.Empty<OllamaModelInfo>());
-        }
+        var settings = await registrySettings.GetAsync(userId: null, ct);
+        var defaultModel = settings.Inference?.DefaultModel ?? inferenceOptions.Value.DefaultModel;
 
-        var filtered = tagsResponse.Models
-            .Where(m => !m.Name.StartsWith(EmbeddingModel, StringComparison.OrdinalIgnoreCase))
-            .ToList();
-
-        return Ok(filtered);
+        return Ok(new ModelsResponse(defaultModel, models.Select(m => new ModelInfo(m.Id, m.Status, m.ContextLength)).ToList()));
     }
 
     /// <summary>
-    /// Pulls (downloads) a model from the Ollama library.
+    /// Starts loading a declared model into memory, ahead of its first request. Loading is asynchronous:
+    /// the model list reports <c>loading</c> until it is ready.
     /// </summary>
-    /// <remarks>
-    /// This endpoint streams progress updates using the <c>application/x-ndjson</c> format.
-    /// Each line in the response is a JSON object containing download status and progress.
-    /// </remarks>
-    /// <param name="request">The request containing the name of the model to pull.</param>
-    /// <param name="ct">Cancellation token to abort the download.</param>
-    /// <response code="200">The download has started and is being streamed.</response>
-    /// <response code="400">If the request body is invalid or the model name is missing.</response>
-    [HttpPost("pull")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    /// <response code="202">The inference server started loading the model.</response>
+    /// <response code="403">The caller is not a Sovereign.</response>
+    /// <response code="404">The model is not declared on the inference server.</response>
+    /// <response code="409">The model is still running or changing state.</response>
+    /// <response code="503">The inference server is unreachable or failed.</response>
+    [HttpPost("load")]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task PullModel([FromBody] PullModelRequest request, CancellationToken ct)
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+    public Task<IActionResult> LoadModel([FromBody] ModelActionRequest request, CancellationToken ct) =>
+        RunAsync(request, catalog.LoadAsync, ct);
+
+    /// <summary>
+    /// Starts unloading a model from memory to free GPU/CPU memory. It stays declared and loads again on
+    /// demand (its next request) or via <c>load</c>.
+    /// </summary>
+    /// <response code="202">The inference server started unloading the model.</response>
+    /// <response code="403">The caller is not a Sovereign.</response>
+    /// <response code="404">The model is not declared on the inference server.</response>
+    /// <response code="409">The model is changing state.</response>
+    /// <response code="503">The inference server is unreachable or failed.</response>
+    [HttpPost("unload")]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
+    public Task<IActionResult> UnloadModel([FromBody] ModelActionRequest request, CancellationToken ct) =>
+        RunAsync(request, catalog.UnloadAsync, ct);
+
+    private async Task<IActionResult> RunAsync(
+        ModelActionRequest request,
+        Func<string, CancellationToken, Task<ModelActionResult>> action,
+        CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(request);
 
         if (!IsSovereign)
         {
-            Response.StatusCode = StatusCodes.Status403Forbidden;
-            return;
-        }
-
-        var ollamaClient = httpClientFactory.CreateClient(PraxisModuleExtensions.LlmHttpClientName);
-
-        Response.ContentType = "application/x-ndjson";
-        Response.Headers.CacheControl = "no-cache";
-
-        var payload = JsonSerializer.Serialize(new OllamaPullRequest(request.Name, Stream: true));
-
-        using var pullContent = new StringContent(payload, Encoding.UTF8, "application/json");
-
-        using var pullRequest = new HttpRequestMessage(HttpMethod.Post, new Uri("api/pull", UriKind.Relative))
-        {
-            Content = pullContent
-        };
-
-        using var ollamaResponse = await ollamaClient.SendAsync(pullRequest, HttpCompletionOption.ResponseHeadersRead, ct);
-
-        if (!ollamaResponse.IsSuccessStatusCode)
-        {
-            Response.StatusCode = (int)ollamaResponse.StatusCode;
-            return;
-        }
-
-        await using var stream = await ollamaResponse.Content.ReadAsStreamAsync(ct);
-        using var reader = new System.IO.StreamReader(stream);
-
-        while (!ct.IsCancellationRequested)
-        {
-            var line = await reader.ReadLineAsync(ct);
-            if (line is null)
-            {
-                break;
-            }
-
-            if (string.IsNullOrWhiteSpace(line))
-            {
-                continue;
-            }
-
-            await Response.WriteAsync(line + "\n", ct);
-            await Response.Body.FlushAsync(ct);
-        }
-    }
-
-    /// <summary>
-    /// Deletes a model from the local Ollama instance and resets any agents using it to a default model.
-    /// </summary>
-    /// <param name="name">The name of the model to delete (e.g., "llama3").</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>A result object containing deletion details and the number of agents affected.</returns>
-    /// <response code="200">Model deleted successfully and agents reset.</response>
-    /// <response code="400">If the model name is missing.</response>
-    [HttpDelete]
-    [ProducesResponseType(typeof(DeleteModelResult), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
-    public async Task<IActionResult> DeleteModel([FromQuery] string name, CancellationToken ct)
-    {
-        if (!IsSovereign)
-        {
             return Forbid();
         }
 
-        if (string.IsNullOrWhiteSpace(name))
+        return await action(request.Model, ct) switch
         {
-            return BadRequest("Model name is required.");
-        }
-
-        var ollamaClient = httpClientFactory.CreateClient(PraxisModuleExtensions.LlmHttpClientName);
-
-        var payload = JsonSerializer.Serialize(new OllamaDeleteRequest(name));
-        using var request = new HttpRequestMessage(HttpMethod.Delete, new Uri("api/delete", UriKind.Relative))
-        {
-            Content = new StringContent(payload, Encoding.UTF8, "application/json")
+            ModelActionResult.Accepted => Accepted(),
+            ModelActionResult.NotFound => Problem(detail: $"Model '{request.Model}' is not served by the inference server.", statusCode: StatusCodes.Status404NotFound),
+            ModelActionResult.Conflict => Problem(detail: $"Model '{request.Model}' is still changing state; try again shortly.", statusCode: StatusCodes.Status409Conflict),
+            _ => Problem(detail: "The inference server is unavailable.", statusCode: StatusCodes.Status503ServiceUnavailable)
         };
-
-        using var response = await ollamaClient.SendAsync(request, ct);
-
-        if (!response.IsSuccessStatusCode)
-        {
-            return StatusCode((int)response.StatusCode);
-        }
-
-        var resetCount = await agentRepository.ResetAgentsModelAsync(name, DefaultModel, ct);
-
-        return Ok(new DeleteModelResult(name, DefaultModel, resetCount));
     }
 }

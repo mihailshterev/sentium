@@ -76,7 +76,7 @@ classDiagram
     CompositeAgentFactory ..> SentinelGuardedAIFunction : wraps each tool
 
     LearningAugmentedChatClient o--> HarnessedChatClient : decorates
-    HarnessedChatClient o--> IChatClient : Ollama (inner)
+    HarnessedChatClient o--> IChatClient : llama-server via OpenAI API (inner)
     SentinelGuardedAIFunction o--> AIFunction : inner tool
     SentinelGuardedAIFunction --> SentinelClient : PDP check
 ```

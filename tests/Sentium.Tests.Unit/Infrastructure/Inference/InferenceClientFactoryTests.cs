@@ -199,6 +199,37 @@ public sealed class InferenceClientFactoryTests
     }
 
     [Fact]
+    public async Task InferenceHttpClient_AddsTheApiKeyToRawManagementRequests()
+    {
+        // The router's /models API is called without the OpenAI SDK, so the client itself must add the key.
+        using var handler = new RecordingHandler("{}");
+        using var services = BuildServices(handler, new()
+        {
+            ["Inference:ChatEndpoint"] = "http://llm.test",
+            ["Inference:ApiKey"] = "s3cret",
+        });
+
+        using var http = services.GetRequiredService<IHttpClientFactory>().CreateClient(ChatClientName);
+        using var response = await http.GetAsync(new Uri("models", UriKind.Relative), Ct);
+
+        var request = handler.Requests.Single();
+        request.Uri.Should().Be(new Uri("http://llm.test/models"));
+        request.Authorization.Should().Be("Bearer s3cret");
+    }
+
+    [Fact]
+    public async Task InferenceHttpClient_SendsNoAuthorization_WhenNoApiKeyIsConfigured()
+    {
+        using var handler = new RecordingHandler("{}");
+        using var services = BuildServices(handler, new() { ["Inference:ChatEndpoint"] = "http://llm.test" });
+
+        using var http = services.GetRequiredService<IHttpClientFactory>().CreateClient(ChatClientName);
+        using var response = await http.GetAsync(new Uri("models", UriKind.Relative), Ct);
+
+        handler.Requests.Single().Authorization.Should().BeNull();
+    }
+
+    [Fact]
     public void CreateChatClient_Throws_ForAClientNotRegisteredForInference()
     {
         using var handler = new RecordingHandler(ChatCompletion);

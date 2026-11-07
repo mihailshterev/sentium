@@ -3,7 +3,7 @@ import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CheckCircle, Cpu, Shield, Sparkles, X, Zap } from "lucide-react";
 import styles from "../settings.module.css";
-import { useOllamaModels } from "@/features/models/hooks/useOllamaModels";
+import { useModels } from "@/features/models/hooks/useModels";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Card, CardHeader } from "@/shared/ui/card";
@@ -40,7 +40,7 @@ export function SettingsEditor({
   globalErrorMessage,
   resetSaveStates,
 }: SettingsEditorProps) {
-  const { models } = useOllamaModels();
+  const { models } = useModels();
 
   const {
     register,
@@ -167,12 +167,7 @@ export function SettingsEditor({
                   name="defaultModel"
                   control={control}
                   render={({ field }) => (
-                    <ModelSelector
-                      models={models.map((m) => m.name)}
-                      value={field.value}
-                      onChange={field.onChange}
-                      variant="chip"
-                    />
+                    <ModelSelector models={models} value={field.value} onChange={field.onChange} variant="chip" />
                   )}
                 />
               </div>

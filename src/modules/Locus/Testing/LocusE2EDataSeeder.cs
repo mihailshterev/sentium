@@ -8,7 +8,7 @@ namespace Sentium.Locus.Testing;
 
 /// <summary>
 /// Baseline inventory for the Playwright suite (Testing environment only). The seeded asset is private so
-/// the knowledge-sync worker never tries to embed it (the e2e stack runs without Ollama models).
+/// the knowledge-sync worker never tries to embed it (the e2e stack runs without inference models).
 /// </summary>
 public static class LocusE2EDataSeeder
 {
