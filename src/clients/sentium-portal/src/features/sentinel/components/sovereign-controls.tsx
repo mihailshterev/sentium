@@ -2,13 +2,12 @@ import styles from "../sentinel.module.css";
 import { Range } from "@/shared/ui/form-controls";
 import { ModelSelector } from "@/shared/ui/model-selector";
 import type { PdpSettings } from "@/features/sentinel/types/sentinel";
-import type { OllamaModel } from "@/features/models/types/models";
 
 interface SovereignControlsProps {
   settings: PdpSettings | undefined;
   isUpdating: boolean;
   displayAutonomy: number;
-  models: OllamaModel[];
+  models: string[];
   onLockdown: () => void;
   onSemanticToggle: () => void;
   onAutonomyChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -92,7 +91,7 @@ export function SovereignControls({
           <span className={styles.controlDesc}>Model used for semantic intent verification.</span>
         </div>
         <ModelSelector
-          models={models.map((m) => m.name)}
+          models={models}
           value={settings?.intentCheckModel ?? ""}
           onChange={onIntentModelChange}
           disabled={disabled}

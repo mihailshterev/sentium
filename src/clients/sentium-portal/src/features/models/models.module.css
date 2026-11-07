@@ -22,15 +22,15 @@
   gap: var(--space-3);
   margin: 0 var(--space-5) var(--space-3);
   padding: 8px 8px 8px 12px;
-  border: 1px solid var(--info-line);
+  border: 1px solid var(--danger-line);
   border-radius: var(--radius-md);
-  background: var(--info-soft);
+  background: var(--danger-soft);
   color: var(--text-primary);
   font-size: var(--text-sm);
 
   & > svg {
     flex-shrink: 0;
-    color: var(--info);
+    color: var(--danger);
   }
 
   & > span {
@@ -108,17 +108,6 @@
   line-height: 18px;
 }
 
-.modelDate {
-  color: var(--text-muted);
-  font-size: var(--text-xs);
-  white-space: nowrap;
-}
-
-.deleteButton:hover:not(:disabled) {
-  background: var(--danger-soft);
-  color: var(--danger);
-}
-
 .skeletonText {
   display: flex;
   flex: 1;
@@ -126,73 +115,34 @@
   gap: 8px;
 }
 
-/* ---------- Pull form ---------- */
+/* ---------- Side panel ---------- */
 
-.pullForm {
+.howTo {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
-}
-
-.progress {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.progressStatus {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
   gap: var(--space-3);
-  font-size: var(--text-sm);
-}
-
-.progressText {
-  overflow: hidden;
+  margin-bottom: var(--space-4);
   color: var(--text-secondary);
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-size: var(--text-sm);
+  line-height: 1.6;
+
+  & p {
+    margin: 0;
+  }
+
+  & code {
+    padding: 0 4px;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-xs);
+    background: var(--mat-thin-bg);
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+  }
 }
 
-.progressPercent {
-  color: var(--text-primary);
-  font-weight: var(--fw-semibold);
-  font-variant-numeric: tabular-nums;
-}
-
-.progressTrack {
-  position: relative;
-  height: 6px;
-  overflow: hidden;
-  border-radius: var(--radius-full);
-  background: var(--mat-thin-bg-hover);
-}
-
-.progressFill {
-  height: 100%;
-  border-radius: inherit;
-  background: var(--accent-fill);
-  transition: width var(--dur-slow) var(--ease-out);
-}
-
-.progressIndeterminate {
-  position: absolute;
-  inset: 0 auto 0 0;
-  width: 35%;
-  border-radius: inherit;
-  background: var(--accent-fill);
-  animation: indeterminate 1.4s var(--ease-in-out) infinite;
-}
-
-.progressBytes {
-  color: var(--text-muted);
-  font-size: var(--text-xs);
-  font-variant-numeric: tabular-nums;
-}
-
-.dismiss {
-  align-self: flex-start;
+.errorState {
+  padding: 0 var(--space-5) var(--space-5);
 }
 
 .lockedNote {
@@ -209,15 +159,5 @@
   & > svg {
     flex-shrink: 0;
     margin-top: 2px;
-  }
-}
-
-@keyframes indeterminate {
-  from {
-    transform: translateX(-100%);
-  }
-
-  to {
-    transform: translateX(300%);
   }
 }

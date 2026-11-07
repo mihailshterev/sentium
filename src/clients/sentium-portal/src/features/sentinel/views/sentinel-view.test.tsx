@@ -3,7 +3,7 @@ import { render, screen, fireEvent } from "@testing-library/react";
 import { SentinelView as Sentinel } from "./sentinel-view";
 import * as auditHook from "@/features/sentinel/hooks/useSentinelAudit";
 import * as settingsHook from "@/features/sentinel/hooks/useSentinelSettings";
-import * as modelsHook from "@/features/models/hooks/useOllamaModels";
+import * as modelsHook from "@/features/models/hooks/useModels";
 import type { AuditRecord, AuditStats, PdpSettings } from "@/features/sentinel/types/sentinel";
 
 const record = {
@@ -75,9 +75,7 @@ beforeEach(() => {
     error: null,
   } as unknown as ReturnType<typeof auditHook.useSentinelStats>);
   setSettings(settings);
-  vi.spyOn(modelsHook, "useOllamaModels").mockReturnValue({
-    models: [{ name: "gemma" }],
-  } as unknown as ReturnType<typeof modelsHook.useOllamaModels>);
+  vi.spyOn(modelsHook, "useModels").mockReturnValue({ models: ["gemma"], defaultModel: "gemma" });
 });
 
 describe("Sentinel states", () => {

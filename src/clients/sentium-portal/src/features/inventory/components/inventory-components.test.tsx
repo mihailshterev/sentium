@@ -137,8 +137,8 @@ describe("KnowledgeStatusBadge", () => {
     rerender(<KnowledgeStatusBadge status="NotShared" />);
     expect(screen.getByTestId("knowledge-status")).toHaveTextContent("Private");
 
-    rerender(<KnowledgeStatusBadge status="Failed" error="ollama down" onRetry={onRetry} />);
-    expect(screen.getByTestId("knowledge-status")).toHaveAttribute("title", "ollama down");
+    rerender(<KnowledgeStatusBadge status="Failed" error="embedding server down" onRetry={onRetry} />);
+    expect(screen.getByTestId("knowledge-status")).toHaveAttribute("title", "embedding server down");
     fireEvent.click(screen.getByRole("button", { name: /retry/i }));
     expect(onRetry).toHaveBeenCalled();
   });

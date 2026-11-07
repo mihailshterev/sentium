@@ -64,10 +64,6 @@
   font-size: var(--text-2xs);
 }
 
-.numberField {
-  width: 160px;
-}
-
 /* Sticky action bar: always reachable at the bottom of a long form. */
 .saveBar {
   position: sticky;

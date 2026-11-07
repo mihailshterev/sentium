@@ -4,10 +4,10 @@ namespace Sentium.Praxis.Features.Registry;
 
 /// <summary>
 /// Praxis' projection of the Registry settings it consumes. Property names must match the JSON
-/// properties of Registry's <c>HarnessSettings</c> and <c>OllamaSettings</c>, since
+/// properties of Registry's <c>HarnessSettings</c> and <c>InferenceSettings</c>, since
 /// <c>ISettingsService.GetValueAsync</c> deserializes the stored JSON into these records.
 /// </summary>
-public sealed record SettingsSnapshot(HarnessSettingsSnapshot Harness, OllamaSettingsSnapshot? Ollama = null)
+public sealed record SettingsSnapshot(HarnessSettingsSnapshot Harness, InferenceSettingsSnapshot? Inference = null)
 {
     /// <summary>
     /// Fallback used when the settings cannot be read from Registry.
@@ -17,10 +17,7 @@ public sealed record SettingsSnapshot(HarnessSettingsSnapshot Harness, OllamaSet
             UserHarnessPrompt: string.Empty,
             IsBuiltInHarnessEnabled: true,
             IsPromptEnhancementEnabled: false),
-        Ollama: new OllamaSettingsSnapshot(
-            DefaultModel: AIModels.Gemma4_E4B,
-            AgentTemperature: 0.3f,
-            AgentContextWindow: 16384)
+        Inference: InferenceSettingsSnapshot.Default
     );
 }
 
@@ -29,7 +26,14 @@ public sealed record HarnessSettingsSnapshot(
     bool IsBuiltInHarnessEnabled,
     bool IsPromptEnhancementEnabled = false);
 
-public sealed record OllamaSettingsSnapshot(
+public sealed record InferenceSettingsSnapshot(
     string DefaultModel,
-    float AgentTemperature,
-    int AgentContextWindow);
+    float AgentTemperature)
+{
+    /// <summary>
+    /// Mirrors the defaults of Registry's <c>InferenceSettings</c>.
+    /// </summary>
+    public static readonly InferenceSettingsSnapshot Default = new(
+        DefaultModel: AIModels.Gemma4_E4B,
+        AgentTemperature: 0.3f);
+}

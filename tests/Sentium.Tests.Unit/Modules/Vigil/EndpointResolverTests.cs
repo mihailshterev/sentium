@@ -12,7 +12,7 @@ public sealed class EndpointResolverTests
     [InlineData("redis://cache-host:6380", "cache-host", 6380)]
     [InlineData("Host=postgres;Port=5433;Username=postgres;Password=x", "postgres", 5433)]
     [InlineData("Host=pg-primary,pg-replica;Database=sentiumdb", "pg-primary", 1)]
-    [InlineData("Endpoint=http://ollama:11434", "ollama", 11434)]
+    [InlineData("Endpoint=http://azurite:10000", "azurite", 10000)]
     public void ResolveHostPort_ParsesVariousFormats(string conn, string host, int port)
     {
         var result = EndpointResolver.ResolveHostPort(conn, defaultPort: 1);
@@ -36,19 +36,5 @@ public sealed class EndpointResolverTests
     {
         EndpointResolver.ResolveHostPort(null, 1).Should().BeNull();
         EndpointResolver.ResolveHostPort("  ", 1).Should().BeNull();
-    }
-
-    [Theory]
-    [InlineData("Endpoint=http://ollama:11434", "http://ollama:11434/")]
-    [InlineData("http://ollama:11434", "http://ollama:11434/")]
-    public void ResolveUri_ExtractsHttpEndpoint(string conn, string expected)
-    {
-        EndpointResolver.ResolveUri(conn)!.ToString().Should().Be(expected);
-    }
-
-    [Fact]
-    public void ResolveUri_ReturnsNull_ForNonHttp()
-    {
-        EndpointResolver.ResolveUri("localhost:6379").Should().BeNull();
     }
 }

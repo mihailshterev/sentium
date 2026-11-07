@@ -46,6 +46,11 @@ namespace Sentium.Codex.Data.Migrations
                         .IsRequired()
                         .HasColumnType("vector(768)");
 
+                    b.Property<string>("EmbeddingModel")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
                     b.Property<string>("Metadata")
                         .IsRequired()
                         .HasColumnType("jsonb");

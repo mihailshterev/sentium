@@ -86,14 +86,4 @@ public interface IAgentRepository
     /// <param name="ct">A cancellation token.</param>
     /// <returns><see langword="true"/> if a matching agent was deleted; otherwise <see langword="false"/>.</returns>
     Task<bool> DeleteAgentAsync(Guid agentId, CancellationToken ct = default);
-
-    /// <summary>
-    /// Reassigns every agent currently using <paramref name="modelName"/> to <paramref name="defaultModel"/>,
-    /// for example after a model is removed from Ollama.
-    /// </summary>
-    /// <param name="modelName">The model being retired.</param>
-    /// <param name="defaultModel">The model to fall back to.</param>
-    /// <param name="ct">A cancellation token.</param>
-    /// <returns>The number of agents reassigned.</returns>
-    Task<int> ResetAgentsModelAsync(string modelName, string defaultModel, CancellationToken ct = default);
 }

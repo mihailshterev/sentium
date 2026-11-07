@@ -5,14 +5,14 @@ using Microsoft.Extensions.Logging;
 namespace Sentium.Codex.Features.Rag;
 
 /// <summary>
-/// Generates text embeddings by delegating to the Ollama embedding model configured
-/// via <c>appsettings.json → Rag:EmbeddingModelName</c>.
-/// Uses <see cref="IEmbeddingGenerator{TInput,TEmbedding}"/> from Microsoft.Extensions.AI,
-/// which OllamaSharp implements natively, ensuring consistent OpenTelemetry tracing.
+/// Generates text embeddings with the embedding model configured via <c>Rag:EmbeddingModelName</c>,
+/// served by the inference server's OpenAI-compatible <c>/v1/embeddings</c> endpoint.
+/// Uses <see cref="IEmbeddingGenerator{TInput,TEmbedding}"/> from Microsoft.Extensions.AI, wrapped
+/// with OpenTelemetry so embedding calls are traced consistently.
 /// </summary>
-public sealed class OllamaEmbeddingService(
+public sealed class EmbeddingService(
     IEmbeddingGenerator<string, Embedding<float>> embeddingGenerator,
-    ILogger<OllamaEmbeddingService> logger) : IEmbeddingService
+    ILogger<EmbeddingService> logger) : IEmbeddingService
 {
     public async Task<float[]> GenerateEmbeddingAsync(string text, CancellationToken ct = default)
     {

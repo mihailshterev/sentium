@@ -4,7 +4,7 @@ sequenceDiagram
     participant EN as SentinelPolicyEngine
     participant SI as SemanticIntentPolicy
     participant RS as Runtime settings (Registry)
-    participant LLM as Ollama (judge model)
+    participant LLM as llama-server (judge model)
 
     EN->>SI: EvaluateAsync(request)
     SI->>RS: GetAsync() - autonomy, model, enabled flag

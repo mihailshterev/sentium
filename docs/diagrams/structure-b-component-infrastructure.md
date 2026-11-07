@@ -13,7 +13,7 @@ flowchart LR
 
     PG[("PostgreSQL + pgvector<br/>sentiumdb")]
     REDIS[("Redis<br/>HybridCache L2")]
-    OLL["Ollama<br/>LLM + embeddings"]
+    OLL["llama-server<br/>chat router + embeddings"]
     BLOB[("Azurite<br/>Blob storage")]
     DOCKER{{"Host Docker daemon"}}
 

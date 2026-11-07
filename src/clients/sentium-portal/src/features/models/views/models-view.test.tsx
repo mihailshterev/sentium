@@ -1,40 +1,42 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor, within } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ModelsView as Models } from "./models-view";
-import * as useOllamaModelsHook from "@/features/models/hooks/useOllamaModels";
+import * as useModelCatalogHook from "@/features/models/hooks/useModelCatalog";
 import * as useRoleHook from "@/shared/auth/hooks/useRole";
-import type { PullState } from "@/features/models/hooks/useOllamaModels";
-import type { OllamaModel, DeleteModelResult } from "@/features/models/types/models";
+import type { InferenceModel } from "@/features/models/types/models";
 
-const mockModel: OllamaModel = {
-  name: "llama3.2",
-  modified_at: "2025-01-01T00:00:00Z",
-  size: 2_000_000_000,
-  digest: "sha256:abc123",
-  details: {
-    format: "gguf",
-    family: "llama",
-    parameter_size: "3.2B",
-    quantization_level: "Q4_K_M",
-  },
-};
+const loaded: InferenceModel = { id: "gemma-4-e4b", status: "loaded", contextLength: 16384 };
+const unloaded: InferenceModel = { id: "gemma-4-e2b", status: "unloaded", contextLength: null };
 
-const defaultHook = {
-  models: [mockModel],
-  isLoading: false,
-  error: null,
-  refetch: vi.fn(),
-  pullState: null as PullState | null,
-  pull: vi.fn(),
-  cancelPull: vi.fn(),
-  resetPull: vi.fn(),
-  deletingModel: null as string | null,
-  deleteModel: vi.fn(),
-  deleteResult: null as DeleteModelResult | null,
-  clearDeleteResult: vi.fn(),
-};
+type CatalogHook = ReturnType<typeof useModelCatalogHook.useModelCatalog>;
+
+const hook = (overrides: Partial<CatalogHook> = {}): CatalogHook =>
+  ({
+    models: [loaded, unloaded],
+    defaultModel: "gemma-4-e4b",
+    isLoading: false,
+    isError: false,
+    error: null,
+    refetch: vi.fn(),
+    load: vi.fn(),
+    unload: vi.fn(),
+    pendingModel: null,
+    actionError: null,
+    clearActionError: vi.fn(),
+    ...overrides,
+  }) as unknown as CatalogHook;
+
+const asRole = (isSovereign: boolean) =>
+  vi.spyOn(useRoleHook, "useRole").mockReturnValue({
+    isSovereign,
+    isMemberOrAbove: true,
+    isAuthenticated: true,
+    roles: isSovereign ? ["Sovereign"] : ["Member"],
+    highestRole: isSovereign ? ("Sovereign" as const) : ("Member" as const),
+    hasRole: () => isSovereign,
+  });
 
 const renderModels = () => {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -48,237 +50,100 @@ const renderModels = () => {
 };
 
 beforeEach(() => {
-  vi.spyOn(useOllamaModelsHook, "useOllamaModels").mockReturnValue(defaultHook);
-  vi.spyOn(useRoleHook, "useRole").mockReturnValue({
-    isSovereign: true,
-    isMemberOrAbove: true,
-    isAuthenticated: true,
-    roles: ["Sovereign"],
-    highestRole: "Sovereign" as const,
-    hasRole: () => true,
-  });
+  vi.restoreAllMocks();
+  asRole(true);
 });
 
-describe("Models loading state", () => {
-  it("shows 'Loading models…' when isLoading", () => {
-    vi.spyOn(useOllamaModelsHook, "useOllamaModels").mockReturnValue({ ...defaultHook, models: [], isLoading: true });
+describe("ModelsView", () => {
+  it("renders the heading and how many models are loaded", () => {
+    vi.spyOn(useModelCatalogHook, "useModelCatalog").mockReturnValue(hook());
     renderModels();
-    expect(screen.getByText(/loading models/i)).toBeInTheDocument();
-  });
-});
 
-describe("Models empty state", () => {
-  it("shows 'No models installed' when list is empty", () => {
-    vi.spyOn(useOllamaModelsHook, "useOllamaModels").mockReturnValue({ ...defaultHook, models: [] });
-    renderModels();
-    expect(screen.getByText(/no models installed/i)).toBeInTheDocument();
-  });
-});
-
-describe("Models success state", () => {
-  it("renders the page title", () => {
-    renderModels();
-    expect(screen.getByText("Model Management")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Model Management" })).toBeInTheDocument();
+    expect(screen.getByText("1 / 2 loaded")).toBeInTheDocument();
   });
 
-  it("renders model name", () => {
+  it("lists each model with its status, context window and the default marker", () => {
+    vi.spyOn(useModelCatalogHook, "useModelCatalog").mockReturnValue(hook());
     renderModels();
-    expect(screen.getByText("llama3.2")).toBeInTheDocument();
+
+    expect(screen.getByText("gemma-4-e4b")).toBeInTheDocument();
+    expect(screen.getByText("gemma-4-e2b")).toBeInTheDocument();
+    expect(screen.getByText("loaded")).toBeInTheDocument();
+    expect(screen.getByText("unloaded")).toBeInTheDocument();
+    expect(screen.getByText("16k ctx")).toBeInTheDocument();
+    expect(screen.getAllByText("default")).toHaveLength(1);
   });
 
-  it("renders model size in GB", () => {
+  it("lets a Sovereign unload a loaded model and load an unloaded one", () => {
+    const state = hook();
+    vi.spyOn(useModelCatalogHook, "useModelCatalog").mockReturnValue(state);
     renderModels();
-    expect(screen.getByText(/1\.9 GB/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTitle("Unload gemma-4-e4b from memory"));
+    fireEvent.click(screen.getByTitle("Load gemma-4-e2b into memory"));
+
+    expect(state.unload).toHaveBeenCalledWith("gemma-4-e4b");
+    expect(state.load).toHaveBeenCalledWith("gemma-4-e2b");
   });
 
-  it("renders model parameter size badge", () => {
+  it("disables loading while a model is already loading", () => {
+    vi.spyOn(useModelCatalogHook, "useModelCatalog").mockReturnValue(
+      hook({ models: [{ id: "gemma-4-e2b", status: "loading", contextLength: null }] }),
+    );
     renderModels();
-    expect(screen.getByText("3.2B")).toBeInTheDocument();
+
+    expect(screen.getByTitle("Load gemma-4-e2b into memory")).toBeDisabled();
   });
 
-  it("renders quantization level badge", () => {
+  it("hides load and unload from non-Sovereign users", () => {
+    asRole(false);
+    vi.spyOn(useModelCatalogHook, "useModelCatalog").mockReturnValue(hook());
     renderModels();
-    expect(screen.getByText("Q4_K_M")).toBeInTheDocument();
+
+    expect(screen.queryByTitle(/Unload gemma-4-e4b/)).not.toBeInTheDocument();
+    expect(screen.queryByTitle(/Load gemma-4-e2b/)).not.toBeInTheDocument();
+    expect(screen.getByText(/requires Sovereign access/i)).toBeInTheDocument();
   });
 
-  it("renders family badge", () => {
+  it("shows an empty state when the server declares no models", () => {
+    vi.spyOn(useModelCatalogHook, "useModelCatalog").mockReturnValue(hook({ models: [] }));
     renderModels();
-    expect(screen.getByText("llama")).toBeInTheDocument();
+
+    expect(screen.getByText("No models available")).toBeInTheDocument();
   });
 
-  it("renders model count in header badge", () => {
+  it("shows an error when the inference server is unavailable", () => {
+    vi.spyOn(useModelCatalogHook, "useModelCatalog").mockReturnValue(hook({ models: [], isError: true }));
     renderModels();
-    expect(screen.getByText("1 installed")).toBeInTheDocument();
-  });
-});
 
-describe("Models delete flow", () => {
-  it("calls deleteModel when delete button is clicked and confirmed", async () => {
-    const deleteModel = vi.fn();
-    vi.spyOn(useOllamaModelsHook, "useOllamaModels").mockReturnValue({ ...defaultHook, deleteModel });
-    renderModels();
-    fireEvent.click(screen.getByTitle("Delete llama3.2"));
-    const dialog = await screen.findByRole("dialog");
-    const confirmInput = within(dialog).getByRole("textbox");
-    fireEvent.change(confirmInput, { target: { value: "llama3.2" } });
-    const confirmBtn = within(dialog).getByRole("button", { name: /delete model/i });
-    fireEvent.click(confirmBtn);
-    await waitFor(() => expect(deleteModel).toHaveBeenCalledWith("llama3.2"));
+    expect(screen.getByRole("alert")).toHaveTextContent(/inference server is unavailable/i);
   });
 
-  it("does NOT call deleteModel when confirmation is cancelled", () => {
-    const deleteModel = vi.fn();
-    vi.spyOn(useOllamaModelsHook, "useOllamaModels").mockReturnValue({ ...defaultHook, deleteModel });
+  it("shows a failed action and lets the user dismiss it", () => {
+    const state = hook({ actionError: new Error("Model 'gemma-4-e2b' is still changing state; try again shortly.") });
+    vi.spyOn(useModelCatalogHook, "useModelCatalog").mockReturnValue(state);
     renderModels();
-    fireEvent.click(screen.getByTitle("Delete llama3.2"));
-    expect(deleteModel).not.toHaveBeenCalled();
-  });
 
-  it("shows delete result notice with agents reset info", () => {
-    const deleteResult: DeleteModelResult = {
-      deletedModel: "llama3.2",
-      agentsReset: 2,
-      defaultModel: "gemma3:1b",
-    };
-    vi.spyOn(useOllamaModelsHook, "useOllamaModels").mockReturnValue({ ...defaultHook, deleteResult });
-    renderModels();
-    expect(screen.getByText(/2 agents reset to gemma3:1b/)).toBeInTheDocument();
-  });
-
-  it("shows delete result notice with no agents affected when agentsReset is 0", () => {
-    const deleteResult: DeleteModelResult = {
-      deletedModel: "llama3.2",
-      agentsReset: 0,
-      defaultModel: "gemma3:1b",
-    };
-    vi.spyOn(useOllamaModelsHook, "useOllamaModels").mockReturnValue({ ...defaultHook, deleteResult });
-    renderModels();
-    expect(screen.getByText(/no agents were affected/i)).toBeInTheDocument();
-  });
-
-  it("calls clearDeleteResult when dismiss button is clicked", () => {
-    const clearDeleteResult = vi.fn();
-    vi.spyOn(useOllamaModelsHook, "useOllamaModels").mockReturnValue({
-      ...defaultHook,
-      deleteResult: { deletedModel: "llama3.2", agentsReset: 0, defaultModel: "" },
-      clearDeleteResult,
-    });
-    renderModels();
+    expect(screen.getByRole("alert")).toHaveTextContent(/still changing state/);
     fireEvent.click(screen.getByLabelText("Dismiss"));
-    expect(clearDeleteResult).toHaveBeenCalled();
-  });
-});
-
-describe("Models pull flow", () => {
-  it("disables Pull Model button when input is empty", () => {
-    renderModels();
-    expect(screen.getByRole("button", { name: /pull model/i })).toBeDisabled();
+    expect(state.clearActionError).toHaveBeenCalled();
   });
 
-  it("enables Pull Model button when model name is entered", () => {
+  it("refreshes the model list on demand", () => {
+    const state = hook();
+    vi.spyOn(useModelCatalogHook, "useModelCatalog").mockReturnValue(state);
     renderModels();
-    fireEvent.change(screen.getByLabelText(/model name/i), { target: { value: "mistral" } });
-    expect(screen.getByRole("button", { name: /pull model/i })).not.toBeDisabled();
-  });
 
-  it("calls pull when form is submitted with a model name", async () => {
-    const pull = vi.fn();
-    vi.spyOn(useOllamaModelsHook, "useOllamaModels").mockReturnValue({ ...defaultHook, pull });
-    renderModels();
-    fireEvent.change(screen.getByLabelText(/model name/i), { target: { value: "mistral" } });
-    fireEvent.click(screen.getByRole("button", { name: /pull model/i }));
-    await waitFor(() => expect(pull).toHaveBeenCalledWith("mistral"));
-  });
-
-  it("shows Cancel button when pulling is in progress", () => {
-    vi.spyOn(useOllamaModelsHook, "useOllamaModels").mockReturnValue({
-      ...defaultHook,
-      pullState: { status: "Pulling...", done: false },
-    });
-    renderModels();
-    expect(screen.getByRole("button", { name: /cancel/i })).toBeInTheDocument();
-  });
-
-  it("shows pull progress status text", () => {
-    vi.spyOn(useOllamaModelsHook, "useOllamaModels").mockReturnValue({
-      ...defaultHook,
-      pullState: { status: "Downloading layer", done: false },
-    });
-    renderModels();
-    expect(screen.getByText("Downloading layer")).toBeInTheDocument();
-  });
-
-  it("shows pull progress percent when total and completed are set", () => {
-    vi.spyOn(useOllamaModelsHook, "useOllamaModels").mockReturnValue({
-      ...defaultHook,
-      pullState: { status: "Downloading", total: 1000, completed: 500, done: false },
-    });
-    renderModels();
-    expect(screen.getByText(/50%/)).toBeInTheDocument();
-  });
-
-  it("shows success message when pull is done", () => {
-    vi.spyOn(useOllamaModelsHook, "useOllamaModels").mockReturnValue({
-      ...defaultHook,
-      pullState: { status: "success", done: true },
-    });
-    renderModels();
-    expect(screen.getByText(/model pulled successfully/i)).toBeInTheDocument();
-  });
-
-  it("shows error when pull fails", () => {
-    vi.spyOn(useOllamaModelsHook, "useOllamaModels").mockReturnValue({
-      ...defaultHook,
-      pullState: { status: "", error: "Model not found", done: true },
-    });
-    renderModels();
-    expect(screen.getByText("Model not found")).toBeInTheDocument();
-  });
-
-  it("calls cancelPull when Cancel button is clicked", () => {
-    const cancelPull = vi.fn();
-    vi.spyOn(useOllamaModelsHook, "useOllamaModels").mockReturnValue({
-      ...defaultHook,
-      cancelPull,
-      pullState: { status: "Pulling", done: false },
-    });
-    renderModels();
-    fireEvent.click(screen.getByRole("button", { name: /cancel/i }));
-    expect(cancelPull).toHaveBeenCalled();
-  });
-
-  it("calls refetch when refresh icon button is clicked", () => {
-    const refetch = vi.fn();
-    vi.spyOn(useOllamaModelsHook, "useOllamaModels").mockReturnValue({ ...defaultHook, refetch });
-    renderModels();
     fireEvent.click(screen.getByTitle("Refresh model list"));
-    expect(refetch).toHaveBeenCalled();
-  });
-});
-
-describe("Models edge cases", () => {
-  it("does not pull when model name is empty", () => {
-    const pull = vi.fn();
-    vi.spyOn(useOllamaModelsHook, "useOllamaModels").mockReturnValue({ ...defaultHook, pull });
-    renderModels();
-    fireEvent.submit(document.querySelector("form")!);
-    expect(pull).not.toHaveBeenCalled();
+    expect(state.refetch).toHaveBeenCalled();
   });
 
-  it("shows 0 B for model with 0 bytes", () => {
-    vi.spyOn(useOllamaModelsHook, "useOllamaModels").mockReturnValue({
-      ...defaultHook,
-      models: [
-        {
-          name: "tiny-model",
-          size: 0,
-          digest: "abc",
-          modified_at: "2025-01-01T00:00:00Z",
-          details: { format: "", family: "", parameter_size: "1B", quantization_level: "Q4" },
-        },
-      ],
-    });
+  it("explains that models are declared in deployment configuration", () => {
+    vi.spyOn(useModelCatalogHook, "useModelCatalog").mockReturnValue(hook());
     renderModels();
-    expect(screen.getByText("0 B")).toBeInTheDocument();
+
+    expect(screen.getByText("Adding Models")).toBeInTheDocument();
+    expect(screen.getByText("infra/llm/models.ini")).toBeInTheDocument();
   });
 });

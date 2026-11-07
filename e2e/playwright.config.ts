@@ -1,5 +1,5 @@
 import { defineConfig, devices, type PlaywrightTestConfig } from "@playwright/test";
-import { appPort, baseURL, externalBaseURL, isCI, ollamaStubPort, paths, skipBuild } from "./support/env";
+import { appPort, baseURL, externalBaseURL, isCI, llmStubPort, paths, skipBuild } from "./support/env";
 
 const buildCommands = skipBuild
   ? []
@@ -21,9 +21,9 @@ const webServer: PlaywrightTestConfig["webServer"] = externalBaseURL
   ? undefined
   : [
       {
-        name: "ollama-stub",
-        command: `node support/ollama-stub.ts ${ollamaStubPort}`,
-        url: `http://127.0.0.1:${ollamaStubPort}/api/version`,
+        name: "llm-stub",
+        command: `node support/llm-stub.ts ${llmStubPort}`,
+        url: `http://127.0.0.1:${llmStubPort}/health`,
         reuseExistingServer: !isCI,
         timeout: 10_000,
       },

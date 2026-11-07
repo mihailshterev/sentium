@@ -1,7 +1,7 @@
 using Microsoft.Extensions.AI;
-using OllamaSharp;
-using Sentium.Core.Constants;
+using Microsoft.Extensions.Options;
 using Sentium.Infrastructure.Extensions;
+using Sentium.Infrastructure.Inference;
 using Sentium.Sentinel.Features.Audit;
 using Sentium.Sentinel.Contracts;
 using Sentium.Sentinel.Data;
@@ -18,12 +18,16 @@ public static class SentinelModuleExtensions
     internal const string ModuleName = "sentinel";
 
     /// <summary>
-    /// DI key of Sentinel's raw (un-harnessed) Ollama chat client used for semantic intent checks.
+    /// DI key of Sentinel's raw (un-harnessed) chat client used for semantic intent checks.
     /// Keyed so it never collides with the agent chat pipeline Praxis registers.
     /// </summary>
     public const string ChatClientKey = "sentinel";
 
-    private const string OllamaHttpClientName = "sentinel-ollama";
+    /// <summary>
+    /// Named HttpClient behind <see cref="ChatClientKey"/>. Module-specific so it never merges
+    /// configuration with the agent clients Praxis registers.
+    /// </summary>
+    private const string LlmHttpClientName = "sentinel-llm";
 
     public static IHostApplicationBuilder AddSentinelModule(this IHostApplicationBuilder builder)
     {
@@ -52,26 +56,19 @@ public static class SentinelModuleExtensions
         builder.AddModuleDbContext<SentinelDbContext>(SentinelDbContext.Schema);
         services.AddScoped<IAuditLog, EfCoreAuditLog>();
 
-        var ollamaUri = new Uri(configuration["AI:OllamaBaseUrl"] ?? "http://localhost:11434");
-
-        services.AddHttpClient(OllamaHttpClientName, client =>
-        {
-            client.BaseAddress = ollamaUri;
-            client.Timeout = Timeout.InfiniteTimeSpan;
-        })
-        .AddLongRunningResilienceHandler(
+        // Intent checks are short classifications bounded by PdpOptions.IntentCheckTimeoutSeconds, so this
+        // client gets far tighter limits than the agent clients.
+        services.AddInferenceHttpClient(
+            configuration,
+            LlmHttpClientName,
+            InferenceEndpoint.Chat,
             totalTimeout: TimeSpan.FromMinutes(5),
-            attemptTimeout: TimeSpan.FromMinutes(2),
-            retries: 0
-        );
+            attemptTimeout: TimeSpan.FromMinutes(2));
 
-        var intentCheckModel = configuration["AI:ModelName"] ?? string.Empty;
-
-        services.AddKeyedChatClient(ChatClientKey, sp =>
-        {
-            var httpClient = sp.GetRequiredService<IHttpClientFactory>().CreateClient(OllamaHttpClientName);
-            return new OllamaApiClient(httpClient) { SelectedModel = intentCheckModel };
-        });
+        // Bound to the default chat model; SemanticIntentPolicy overrides it per request with the
+        // Registry's IntentCheckModel through ChatOptions.ModelId.
+        services.AddKeyedChatClient(ChatClientKey, sp => sp.GetRequiredService<IInferenceClientFactory>()
+            .CreateChatClient(LlmHttpClientName, sp.GetRequiredService<IOptions<InferenceOptions>>().Value.DefaultModel));
 
         services.AddSingleton<IPdpRuntimeSettingsProvider, RegistryPdpSettingsProvider>();
 

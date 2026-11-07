@@ -3,11 +3,11 @@ import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CheckCircle, Cpu, Shield, Sparkles, X, Zap } from "lucide-react";
 import styles from "../settings.module.css";
-import { useOllamaModels } from "@/features/models/hooks/useOllamaModels";
+import { useModels } from "@/features/models/hooks/useModels";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Card, CardHeader } from "@/shared/ui/card";
-import { Input, Range, SwitchRow, Textarea } from "@/shared/ui/form-controls";
+import { Range, SwitchRow, Textarea } from "@/shared/ui/form-controls";
 import { FormField } from "@/shared/ui/form-field";
 import { ModelSelector } from "@/shared/ui/model-selector";
 import { StatusMessage } from "@/shared/ui/status-message";
@@ -17,7 +17,7 @@ interface SettingsEditorProps {
   initialValues: SettingsEditorFormData;
   isSovereign: boolean;
   updatedByHarness: string | null;
-  updatedByOllama: string | null;
+  updatedByInference: string | null;
   onSubmitForm: (data: SettingsEditorFormData) => void;
   isSaving: boolean;
   showGlobalSuccess: boolean;
@@ -32,7 +32,7 @@ export function SettingsEditor({
   initialValues,
   isSovereign,
   updatedByHarness,
-  updatedByOllama,
+  updatedByInference,
   onSubmitForm,
   isSaving,
   showGlobalSuccess,
@@ -40,7 +40,7 @@ export function SettingsEditor({
   globalErrorMessage,
   resetSaveStates,
 }: SettingsEditorProps) {
-  const { models } = useOllamaModels();
+  const { models } = useModels();
 
   const {
     register,
@@ -150,14 +150,14 @@ export function SettingsEditor({
 
       {isSovereign && (
         <>
-          <h2 className={styles.group}>Ollama</h2>
+          <h2 className={styles.group}>Inference</h2>
 
           <Card padding="md" as="section">
             <CardHeader
               icon={<Cpu />}
-              title="Ollama Inference Settings"
-              description="Model and inference parameters applied to every agent. Changes take effect on the next agent call. BaseUrl is configured via environment variables."
-              actions={updatedByOllama && <Badge tone="neutral">Last saved by {updatedByOllama}</Badge>}
+              title="Inference Settings"
+              description="Model and sampling parameters applied to every agent. Changes take effect on the next agent call. Server endpoints and per-model context size are deployment configuration."
+              actions={updatedByInference && <Badge tone="neutral">Last saved by {updatedByInference}</Badge>}
             />
 
             <div className={styles.fields}>
@@ -167,12 +167,7 @@ export function SettingsEditor({
                   name="defaultModel"
                   control={control}
                   render={({ field }) => (
-                    <ModelSelector
-                      models={models.map((m) => m.name)}
-                      value={field.value}
-                      onChange={field.onChange}
-                      variant="chip"
-                    />
+                    <ModelSelector models={models} value={field.value} onChange={field.onChange} variant="chip" />
                   )}
                 />
               </div>
@@ -194,21 +189,6 @@ export function SettingsEditor({
                   <span>Precise (0.0)</span>
                   <span>Creative (1.0)</span>
                 </div>
-              </div>
-
-              <div className={styles.fieldRow}>
-                <label className={styles.fieldLabel} htmlFor="agent-context-window">
-                  Context Window (tokens)
-                </label>
-                <Input
-                  id="agent-context-window"
-                  type="number"
-                  min={512}
-                  max={131072}
-                  step={512}
-                  className={styles.numberField}
-                  {...register("agentContextWindow", { valueAsNumber: true })}
-                />
               </div>
             </div>
           </Card>

@@ -48,8 +48,8 @@ const defaultConversationsHook = {
 };
 
 const defaultModelsHook = {
-  models: ["llama3.2", "gemma3:1b"],
-  isLoading: false,
+  models: ["llama3.2", "gemma-4-e2b"],
+  defaultModel: null as string | null,
 };
 
 const renderAssistant = (initialPath = "/assistant") => {
@@ -121,7 +121,7 @@ describe("Assistant model selection", () => {
     const chip = screen.getByRole("button", { name: /llama3\.2/ });
     fireEvent.click(chip!);
     expect(screen.getAllByText("llama3.2").length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText("gemma3:1b")).toBeInTheDocument();
+    expect(screen.getByText("gemma-4-e2b")).toBeInTheDocument();
   });
 
   it("sets model from available models on initial render", () => {
@@ -140,8 +140,8 @@ describe("Assistant model selection", () => {
     renderAssistant();
     const chip = screen.getByRole("button", { name: /llama3\.2/ });
     fireEvent.click(chip!);
-    fireEvent.click(screen.getByText("gemma3:1b"));
-    expect(screen.getByText("gemma3:1b")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("gemma-4-e2b"));
+    expect(screen.getByText("gemma-4-e2b")).toBeInTheDocument();
   });
 
   it("updates model in text input when no models and user types", () => {

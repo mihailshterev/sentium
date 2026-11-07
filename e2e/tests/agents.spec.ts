@@ -32,7 +32,7 @@ test.describe("Agent Registry", () => {
       await agentsPage.fillAgentName(name);
       await agentsPage.fillAgentDescription("Created by Playwright E2E suite");
       // No models are installed in e2e, so the model selector is free text.
-      await agentsPage.fillModel("gemma3:1b");
+      await agentsPage.fillModel("gemma-4-e4b");
       await agentsPage.submitCreate();
       await agentsPage.expectAgentVisible(name);
     });

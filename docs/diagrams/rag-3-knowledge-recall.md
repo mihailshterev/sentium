@@ -6,7 +6,7 @@ sequenceDiagram
     participant LS as AgentLearningService
     participant EM as EmbeddingService
     participant Q as Qdrant (agent_learnings)
-    participant LLM as Ollama (model)
+    participant LLM as llama-server (chat model)
 
     AG->>LA: GetStreamingResponse(messages)
     LA->>LS: RecallRelevant(last message, userId)

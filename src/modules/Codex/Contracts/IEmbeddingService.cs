@@ -2,7 +2,7 @@ namespace Sentium.Codex.Contracts;
 
 /// <summary>
 /// Generates a dense vector embedding for a piece of text.
-/// The infrastructure implementation delegates to an Ollama embedding model.
+/// The infrastructure implementation calls the embedding server (llama-server) through Microsoft.Extensions.AI.
 /// </summary>
 public interface IEmbeddingService
 {

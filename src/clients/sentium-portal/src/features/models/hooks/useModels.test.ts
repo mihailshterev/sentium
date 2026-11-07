@@ -6,7 +6,7 @@ import { useModels } from "./useModels";
 import * as modelsService from "@/features/models/api/models.service";
 
 vi.mock("@/features/models/api/models.service", () => ({
-  fetchModels: vi.fn(),
+  fetchModelCatalog: vi.fn(),
 }));
 
 const createWrapper = () => {
@@ -18,31 +18,33 @@ const createWrapper = () => {
 };
 
 beforeEach(() => {
-  vi.mocked(modelsService.fetchModels).mockResolvedValue(["llama3", "mistral"]);
+  vi.mocked(modelsService.fetchModelCatalog).mockResolvedValue({
+    defaultModel: "gemma-4-e4b",
+    models: [
+      { id: "gemma-4-e4b", status: "loaded", contextLength: 16384 },
+      { id: "gemma-4-e2b", status: "unloaded", contextLength: null },
+    ],
+  });
 });
 
-describe("useModels fetching", () => {
-  it("starts with an empty models array", () => {
+describe("useModels", () => {
+  it("starts with no models and no default", () => {
     const { result } = renderHook(() => useModels(), { wrapper: createWrapper() });
     expect(result.current.models).toEqual([]);
+    expect(result.current.defaultModel).toBeNull();
   });
 
-  it("populates models after fetch resolves", async () => {
+  it("exposes the model ids and the default model once loaded", async () => {
     const { result } = renderHook(() => useModels(), { wrapper: createWrapper() });
-    await waitFor(() => expect(result.current.models).toEqual(["llama3", "mistral"]));
+    await waitFor(() => expect(result.current.models).toEqual(["gemma-4-e4b", "gemma-4-e2b"]));
+    expect(result.current.defaultModel).toBe("gemma-4-e4b");
   });
 
-  it("calls fetchModels exactly once on mount", async () => {
-    const spy = vi.spyOn(modelsService, "fetchModels");
-    const { result } = renderHook(() => useModels(), { wrapper: createWrapper() });
-    await waitFor(() => expect(result.current.models.length).toBeGreaterThan(0));
-    expect(spy).toHaveBeenCalledTimes(1);
-  });
-
-  it("falls back to empty array when fetch fails", async () => {
-    vi.mocked(modelsService.fetchModels).mockRejectedValueOnce(new Error("Service down"));
+  it("falls back to an empty list when the inference server is unavailable", async () => {
+    vi.mocked(modelsService.fetchModelCatalog).mockRejectedValueOnce(new Error("Service down"));
     const { result } = renderHook(() => useModels(), { wrapper: createWrapper() });
     await new Promise((r) => setTimeout(r, 50));
     expect(result.current.models).toEqual([]);
+    expect(result.current.defaultModel).toBeNull();
   });
 });

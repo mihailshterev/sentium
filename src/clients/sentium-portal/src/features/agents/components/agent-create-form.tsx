@@ -95,7 +95,7 @@ export function AgentCreateForm({
               models={models}
               value={field.value}
               onChange={field.onChange}
-              placeholder="e.g. gemma3:1b"
+              placeholder="e.g. gemma-4-e4b"
             />
           )}
         />

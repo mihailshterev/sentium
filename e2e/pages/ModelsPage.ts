@@ -12,16 +12,16 @@ export class ModelsPage {
     await expect(this.page.getByRole("heading", { name: "Model Management" })).toBeVisible();
   }
 
-  async expectInstalledPanelVisible(): Promise<void> {
-    await expect(this.page.getByText(/installed models/i)).toBeVisible();
+  async expectChatModelsPanelVisible(): Promise<void> {
+    await expect(this.page.getByText("Chat Models", { exact: true })).toBeVisible();
   }
 
-  async expectDownloadPanelVisible(): Promise<void> {
-    await expect(this.page.getByText(/download model/i)).toBeVisible();
+  async expectAddingModelsPanelVisible(): Promise<void> {
+    await expect(this.page.getByText("Adding Models", { exact: true })).toBeVisible();
   }
 
   async expectEmptyModelList(): Promise<void> {
-    await expect(this.page.getByText(/no models installed/i)).toBeVisible();
+    await expect(this.page.getByText(/no models available/i)).toBeVisible();
   }
 
   async expectModelVisible(name: string): Promise<void> {

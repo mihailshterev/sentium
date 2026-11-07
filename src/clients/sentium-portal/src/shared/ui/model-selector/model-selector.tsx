@@ -16,7 +16,7 @@ interface ModelSelectorProps {
 }
 
 /**
- * Model picker. Falls back to free text when no models are known (e.g. Ollama unreachable),
+ * Model picker. Falls back to free text when no models are known (e.g. the inference server is unreachable),
  * so a model name can always be entered.
  */
 export function ModelSelector({
@@ -59,7 +59,7 @@ export function ModelSelector({
       type="text"
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder ?? "e.g. gemma3:1b"}
+      placeholder={placeholder ?? "e.g. gemma-4-e4b"}
       autoComplete="off"
       spellCheck={false}
       disabled={disabled}

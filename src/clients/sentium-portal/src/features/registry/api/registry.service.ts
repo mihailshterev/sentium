@@ -22,14 +22,13 @@ export const fetchSettings = async (): Promise<Settings> =>
 export const updateSettings = async (payload: UpdateSettingsPayload): Promise<Settings> =>
   toSettings(await client.put<SettingsEnvelope<HarnessSettings>>(`${BASE}/settings/harness`, payload.harness));
 
-export interface OllamaSettings {
+export interface InferenceSettings {
   defaultModel: string;
   agentTemperature: number;
-  agentContextWindow: number;
 }
 
-export const fetchOllamaSettings = async (): Promise<SettingsEnvelope<OllamaSettings>> =>
-  client.get<SettingsEnvelope<OllamaSettings>>(`${BASE}/settings/ollama`);
+export const fetchInferenceSettings = async (): Promise<SettingsEnvelope<InferenceSettings>> =>
+  client.get<SettingsEnvelope<InferenceSettings>>(`${BASE}/settings/inference`);
 
-export const updateOllamaSettings = async (value: OllamaSettings): Promise<SettingsEnvelope<OllamaSettings>> =>
-  client.put<SettingsEnvelope<OllamaSettings>>(`${BASE}/settings/ollama`, value);
+export const updateInferenceSettings = async (value: InferenceSettings): Promise<SettingsEnvelope<InferenceSettings>> =>
+  client.put<SettingsEnvelope<InferenceSettings>>(`${BASE}/settings/inference`, value);

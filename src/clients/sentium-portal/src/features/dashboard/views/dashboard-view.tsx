@@ -6,7 +6,7 @@ import { useWorkflowRuns } from "@/features/workflows/hooks/useWorkflowRuns";
 import { useServiceHealth } from "@/features/vigil/hooks/useServiceHealth";
 import { useSystemMetrics } from "@/features/vigil/hooks/useSystemMetrics";
 import { useSentinelStats } from "@/features/sentinel/hooks/useSentinelAudit";
-import { useOllamaModels } from "@/features/models/hooks/useOllamaModels";
+import { useModelCatalog } from "@/features/models/hooks/useModelCatalog";
 import { useSchedulerJobs } from "@/features/scheduler/hooks/useScheduler";
 import { useKnowledgeBaseStats } from "@/features/knowledge-base/hooks/useKnowledgeBaseStats";
 import { ArrowRight, BotMessageSquare } from "lucide-react";
@@ -29,7 +29,7 @@ export function DashboardView() {
   const { services, isLoading: healthLoading } = useServiceHealth();
   const { metrics, isLoading: metricsLoading } = useSystemMetrics();
   const { stats: sentinelStats, isLoading: sentinelLoading } = useSentinelStats();
-  const { models, isLoading: modelsLoading } = useOllamaModels();
+  const { models, isLoading: modelsLoading } = useModelCatalog();
   const { jobs, isLoading: jobsLoading } = useSchedulerJobs();
   const { collections, isLoading: kbLoading } = useKnowledgeBaseStats();
 
