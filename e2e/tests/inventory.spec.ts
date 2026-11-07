@@ -1,20 +1,7 @@
-import { test, expect } from "../fixtures/auth.fixture";
+import { test, expect } from "../fixtures";
+import { uniqueName } from "../support/test-data";
 
-// Browser projects run in parallel against one database: keep every name unique per run and project.
-let suffix = "";
-const names = () => ({
-  home: `e2e-home-${suffix}`,
-  shelf: `e2e-shelf-${suffix}`,
-  asset: `e2e-lamp-${suffix}`,
-  tag: `e2e-tag-${suffix}`.slice(0, 32),
-  photo: `front-${suffix}.png`,
-});
-
-test.describe.serial("Inventory", () => {
-  test.beforeAll(({}, testInfo) => {
-    suffix = `${testInfo.project.name}-${Date.now().toString(36)}`;
-  });
-
+test.describe("Inventory", () => {
   test.beforeEach(async ({ inventoryPage }) => {
     await inventoryPage.goto();
     await inventoryPage.expectLoaded();
@@ -35,58 +22,55 @@ test.describe.serial("Inventory", () => {
     await expect(inventoryPage.assetRow("e2e-baseline-drill")).toBeVisible();
   });
 
-  test("creates a location with a sub-location", { tag: "@regression" }, async ({ inventoryPage }) => {
-    const { home, shelf } = names();
+  test("catalogues an asset through its whole lifecycle", { tag: "@regression" }, async ({ inventoryPage, page }) => {
+    test.slow();
 
-    await inventoryPage.createLocation(home);
-    await expect(inventoryPage.treeItem(home)).toHaveAttribute("aria-selected", "true");
+    const home = uniqueName("e2e-home");
+    const shelf = uniqueName("e2e-shelf");
+    const asset = uniqueName("e2e-lamp");
+    const tag = uniqueName("e2e-tag", 32);
+    const photo = `${uniqueName("front")}.png`;
 
-    await inventoryPage.addChildLocation(home, shelf);
-    await expect(inventoryPage.treeItem(shelf)).toHaveAttribute("aria-level", "3");
-  });
+    await test.step("create a location with a sub-location", async () => {
+      await inventoryPage.createLocation(home);
+      await expect(inventoryPage.treeItem(home)).toHaveAttribute("aria-selected", "true");
 
-  test("creates a tagged asset and attaches a photo", { tag: "@regression" }, async ({ inventoryPage }) => {
-    const { shelf, asset, tag, photo } = names();
+      await inventoryPage.addChildLocation(home, shelf);
+      await expect(inventoryPage.treeItem(shelf)).toHaveAttribute("aria-level", "3");
+    });
 
-    await inventoryPage.selectLocation(shelf);
-    await inventoryPage.createAsset(asset, tag);
-    await inventoryPage.expectAssetDetail(asset);
+    await test.step("create a tagged asset and attach a photo", async () => {
+      await inventoryPage.selectLocation(shelf);
+      await inventoryPage.createAsset(asset, tag);
+      await inventoryPage.expectAssetDetail(asset);
 
-    await inventoryPage.uploadAttachment(photo);
-    await inventoryPage.deleteAttachment(photo);
-  });
+      await inventoryPage.uploadAttachment(photo);
+      await inventoryPage.deleteAttachment(photo);
+    });
 
-  test("finds the asset by search and by tag", { tag: "@regression" }, async ({ inventoryPage }) => {
-    const { asset, tag } = names();
+    await test.step("find the asset by search and by tag", async () => {
+      await inventoryPage.goto();
+      await inventoryPage.search(asset);
+      await expect(inventoryPage.assetRow(asset)).toBeVisible();
+      await expect(inventoryPage.assetRow("e2e-baseline-drill")).toBeHidden();
 
-    await inventoryPage.search(asset);
-    await expect(inventoryPage.assetRow(asset)).toBeVisible();
-    await expect(inventoryPage.assetRow("e2e-baseline-drill")).toBeHidden();
+      await inventoryPage.goto(`?tag=${encodeURIComponent(tag)}`);
+      await expect(inventoryPage.assetRow(asset)).toBeVisible();
+    });
 
-    await inventoryPage.goto(`?tag=${encodeURIComponent(tag)}`);
-    await expect(inventoryPage.assetRow(asset)).toBeVisible();
-  });
-
-  test(
-    "deleting a non-empty location moves its contents to the parent",
-    { tag: "@regression" },
-    async ({ inventoryPage }) => {
-      const { home, shelf, asset } = names();
-
+    await test.step("deleting a non-empty location moves its contents to the parent", async () => {
+      await inventoryPage.goto();
       await inventoryPage.deleteLocation(shelf);
       await inventoryPage.selectLocation(home);
       await expect(inventoryPage.assetRow(asset)).toBeVisible();
-    },
-  );
+    });
 
-  test("deletes the asset and then its empty location", { tag: "@regression" }, async ({ inventoryPage, page }) => {
-    const { home, asset } = names();
+    await test.step("delete the asset and then its empty location", async () => {
+      await inventoryPage.assetRow(asset).click();
+      await inventoryPage.deleteAssetFromDetail(asset);
+      await expect(page.getByText("Nothing catalogued here yet")).toBeVisible();
 
-    await inventoryPage.selectLocation(home);
-    await inventoryPage.assetRow(asset).click();
-    await inventoryPage.deleteAssetFromDetail(asset);
-    await expect(page.getByText("Nothing catalogued here yet")).toBeVisible();
-
-    await inventoryPage.deleteLocation(home);
+      await inventoryPage.deleteLocation(home);
+    });
   });
 });

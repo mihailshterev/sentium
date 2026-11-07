@@ -4,16 +4,22 @@ import { expect } from "@playwright/test";
 export class AssistantPage {
   constructor(private readonly page: Page) {}
 
+  get newConversationButton() {
+    return this.page
+      .getByRole("complementary", { name: "Conversations" })
+      .getByRole("button", { name: "New", exact: true });
+  }
+
   async goto(): Promise<void> {
     await this.page.goto("/assistant");
   }
 
   async expectLoaded(): Promise<void> {
-    await expect(this.page.getByRole("heading", { name: /assistant/i })).toBeVisible();
+    await expect(this.page.getByRole("heading", { level: 1, name: "Assistant" })).toBeVisible();
   }
 
   async startNewConversation(): Promise<void> {
-    await this.page.getByRole("button", { name: /new conversation/i }).click();
+    await this.newConversationButton.click();
   }
 
   async selectConversation(title: string): Promise<void> {

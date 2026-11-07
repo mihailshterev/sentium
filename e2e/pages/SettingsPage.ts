@@ -9,7 +9,7 @@ export class SettingsPage {
   }
 
   async expectLoaded(): Promise<void> {
-    await expect(this.page.getByRole("heading", { name: "Settings" })).toBeVisible();
+    await expect(this.page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
   }
 
   async toggleBuiltInHarness(): Promise<void> {

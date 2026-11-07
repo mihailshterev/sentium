@@ -1,25 +1,38 @@
 name: Sentium.E2E
 
 on:
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
   workflow_dispatch:
+    inputs:
+      browser:
+        description: "Browser to run"
+        type: choice
+        options: [all, chromium, firefox, webkit]
+        default: all
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   DOTNET_VERSION: "10.0.x"
   NODE_VERSION: "24"
-  BUILD_CONFIGURATION: "Release"
+  PNPM_VERSION: "11.0.6"
 
 jobs:
   e2e:
     name: E2E Tests (Playwright)
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 30
 
     env:
-      E2E_USER_NAME: ${{ secrets.E2E_USER_NAME }}
-      E2E_USER_PASSWORD: ${{ secrets.E2E_USER_PASSWORD }}
-      PLAYWRIGHT_BASE_URL: "http://localhost:5173"
       CI: "true"
-      SSL_CERT_DIR: "/home/runner/.aspnet/dev-certs/trust:/usr/lib/ssl/certs"
+      E2E_SKIP_BUILD: "1"
+      BROWSER: ${{ github.event_name == 'pull_request' && 'chromium' || inputs.browser || 'all' }}
 
     steps:
       - uses: actions/checkout@v6
@@ -29,57 +42,72 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      - name: Restore .NET dependencies
-        run: dotnet restore
-
-      - name: Create and trust HTTPS dev certificate
-        run: dotnet dev-certs https --trust
-
-      - name: Install Aspire CLI
-        run: curl -sSL https://aspire.dev/install.sh | bash -s -- --version 13.6.4
-
-      - name: Build .NET (Release)
-        run: dotnet build --no-restore --configuration ${{ env.BUILD_CONFIGURATION }}
-
       - name: Install pnpm
         uses: pnpm/action-setup@v6
         with:
-          version: 11.0.6
+          version: ${{ env.PNPM_VERSION }}
 
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: "pnpm"
-          cache-dependency-path: "./e2e/pnpm-lock.yaml"
+          cache-dependency-path: |
+            ./e2e/pnpm-lock.yaml
+            ./src/clients/sentium-portal/pnpm-lock.yaml
+
+      - name: Build portal (into Sentium.Web/wwwroot)
+        working-directory: ./src/clients/sentium-portal
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm exec vite build
+
+      - name: Build Sentium.Web
+        run: dotnet build src/hosts/Sentium.Web/Sentium.Web.csproj -c Release
 
       - name: Install E2E dependencies
         working-directory: ./e2e
         run: pnpm install --frozen-lockfile
+
+      - name: Typecheck E2E suite
+        working-directory: ./e2e
+        run: pnpm typecheck
 
       - name: Cache Playwright browsers
         id: playwright-cache
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ hashFiles('e2e/pnpm-lock.yaml') }}
+          key: playwright-${{ runner.os }}-${{ env.BROWSER }}-${{ hashFiles('e2e/pnpm-lock.yaml') }}
 
       - name: Install Playwright browsers + OS deps
         working-directory: ./e2e
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: pnpm exec playwright install --with-deps
+        run: |
+          if [ "$BROWSER" = "all" ]; then pnpm exec playwright install --with-deps; else pnpm exec playwright install --with-deps "$BROWSER"; fi
 
       - name: Install Playwright OS deps (cache hit)
         working-directory: ./e2e
         if: steps.playwright-cache.outputs.cache-hit == 'true'
-        run: pnpm exec playwright install-deps
+        run: |
+          if [ "$BROWSER" = "all" ]; then pnpm exec playwright install-deps; else pnpm exec playwright install-deps "$BROWSER"; fi
+
+      - name: Start backing services
+        working-directory: ./e2e
+        run: pnpm infra:up
 
       - name: Run Playwright E2E tests
         working-directory: ./e2e
-        run: pnpm test
+        run: |
+          if [ "$BROWSER" = "all" ]; then pnpm test; else pnpm test --project="$BROWSER"; fi
+
+      - name: Dump backing service logs
+        if: failure()
+        working-directory: ./e2e
+        run: pnpm infra:logs
 
       - name: Upload Playwright report
-        if: always()
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
           name: playwright-report
@@ -87,7 +115,7 @@ jobs:
           retention-days: 14
 
       - name: Upload Playwright test results
-        if: always()
+        if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v7
         with:
           name: playwright-test-results

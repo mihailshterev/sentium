@@ -1,6 +1,6 @@
-import { test, expect } from "../fixtures/auth.fixture";
+import { test, expect } from "../fixtures";
 
-test.describe.serial("Automated Scheduler", () => {
+test.describe("Automated Scheduler", () => {
   test.beforeEach(async ({ schedulerPage }) => {
     await schedulerPage.goto();
     await schedulerPage.expectLoaded();
@@ -26,7 +26,7 @@ test.describe.serial("Automated Scheduler", () => {
     await expect(page.getByRole("button", { name: /refresh engine/i })).toBeVisible();
   });
 
-  test("shows the Engine Notice card", async ({ page }) => {
-    await expect(page.getByText(/engine notice/i)).toBeVisible();
+  test("warns that deleting a job stops it everywhere", async ({ page }) => {
+    await expect(page.getByText(/stops its cron loop on every application pod/i)).toBeVisible();
   });
 });

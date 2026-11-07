@@ -1,18 +1,19 @@
 {
   "name": "sentium-e2e",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Playwright end-to-end suite for Sentium",
   "scripts": {
     "test": "playwright test",
+    "test:smoke": "playwright test --grep @smoke",
+    "test:chromium": "playwright test --project=chromium",
     "test:ui": "playwright test --ui",
     "test:debug": "playwright test --debug",
     "test:headed": "playwright test --headed",
-    "test:chromium": "playwright test --project=chromium",
-    "test:firefox": "playwright test --project=firefox",
-    "test:webkit": "playwright test --project=webkit",
-    "test:auth": "playwright test --project=auth-setup",
     "report": "playwright show-report",
+    "typecheck": "tsc --noEmit",
+    "infra:up": "docker compose -f compose.e2e.yaml up -d --wait",
+    "infra:down": "docker compose -f compose.e2e.yaml down --volumes --remove-orphans",
+    "infra:logs": "docker compose -f compose.e2e.yaml logs --no-color",
     "install:browsers": "playwright install --with-deps"
   },
   "keywords": [],
@@ -28,6 +29,7 @@
   "type": "module",
   "devDependencies": {
     "@playwright/test": "1.64.1",
-    "@types/node": "24.12.0"
+    "@types/node": "24.12.0",
+    "typescript": "5.9.3"
   }
 }

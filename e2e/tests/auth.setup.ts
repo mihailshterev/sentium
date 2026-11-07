@@ -1,35 +1,23 @@
 import { test as setup, expect } from "@playwright/test";
-import path from "path";
-import { LoginPage } from "../pages/index";
+import { paths, testUser } from "../support/env";
 
-const AUTH_FILE = path.join("playwright", ".auth", "user.json");
-const APP_URL = "http://localhost:5173/";
+/**
+ * Signs the seeded user in once through the API and saves the session cookie for every browser project.
+ * Logging in through the UI is covered by auth.spec.ts; repeating it here would only add flakiness.
+ */
+setup("authenticate the seeded e2e user", async ({ page }) => {
+  const login = await page.request.post("/api/identity/account/login", {
+    data: { userName: testUser.userName, password: testUser.password },
+  });
+  expect(login.status(), await login.text()).toBe(200);
 
-setup("authenticate", async ({ page, context }) => {
-  setup.slow();
+  const session = await page.request.get("/api/identity/account/session");
+  expect(session.status()).toBe(200);
+  expect(await session.json()).toMatchObject({ name: testUser.userName });
 
-  await context.clearCookies();
+  // The portal treats this cookie as a signed-in session: confirm it end to end before sharing it.
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Control Center" })).toBeVisible();
 
-  await expect(async () => {
-    await page.goto("/", { waitUntil: "commit" });
-
-    await page.waitForURL(/\/login/, { timeout: 30_000 });
-
-    const loginPage = new LoginPage(page);
-    await loginPage.fillUserName(process.env.E2E_USER_NAME || "testuser");
-    await loginPage.fillPassword(process.env.E2E_USER_PASSWORD || "testuser1a");
-    await loginPage.submitSignIn();
-
-    await page.waitForURL(APP_URL, { timeout: 30_000, waitUntil: "commit" });
-    await expect(page.getByRole("heading", { name: /control center/i })).toBeVisible({ timeout: 20_000 });
-  }).toPass({ timeout: 150_000 });
-
-  await context.storageState({ path: AUTH_FILE });
-
-  await expect(async () => {
-    await page.goto("/agents", { waitUntil: "commit" });
-    await expect(page.getByRole("heading", { name: "Agent Registry" })).toBeVisible({ timeout: 15_000 });
-
-    expect(page.url()).toContain("localhost:5173");
-  }).toPass({ timeout: 90_000 });
+  await page.context().storageState({ path: paths.authState });
 });
