@@ -10,6 +10,7 @@ import { SystemView as System } from "../../features/system";
 import type { RouteObject } from "react-router";
 import { WorkspacesView as Workspaces } from "../../features/workspaces";
 import { WorkspaceDetailView as WorkspaceDetail } from "../../features/workspaces/views/workspace-detail-view";
+import { AssetDetailView as AssetDetail, InventoryView as Inventory } from "../../features/inventory";
 import { UsersView as Users } from "../../features/users";
 import { ProfileView as Profile } from "../../features/profile";
 import { VigilView as Vigil } from "../../features/vigil";
@@ -39,6 +40,8 @@ export const routes: RouteObject[] = [
       { path: "vigil", element: <Vigil /> },
       { path: "workspaces", element: <Workspaces /> },
       { path: "workspaces/:workspaceId", element: <WorkspaceDetail /> },
+      { path: "inventory", element: <Inventory /> },
+      { path: "inventory/assets/:assetId", element: <AssetDetail /> },
       { path: "assistant", element: <Assistant /> },
       { path: "assistant/:conversationId", element: <Assistant /> },
       { path: "orchestration", element: <AgentOrchestration /> },

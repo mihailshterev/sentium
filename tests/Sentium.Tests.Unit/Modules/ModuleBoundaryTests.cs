@@ -3,6 +3,7 @@ using FluentAssertions;
 using NetArchTest.Rules;
 using Sentium.Codex;
 using Sentium.Identity;
+using Sentium.Locus;
 using Sentium.Praxis;
 using Sentium.Registry;
 using Sentium.Sentinel;
@@ -23,6 +24,7 @@ public sealed class ModuleBoundaryTests
         typeof(RegistryModuleExtensions).Assembly,
         typeof(SentinelModuleExtensions).Assembly,
         typeof(CodexModuleExtensions).Assembly,
+        typeof(LocusModuleExtensions).Assembly,
         typeof(PraxisModuleExtensions).Assembly,
         typeof(VigilModuleExtensions).Assembly,
     ];

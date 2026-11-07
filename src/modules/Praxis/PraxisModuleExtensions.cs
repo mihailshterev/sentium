@@ -20,6 +20,7 @@ using Sentium.Praxis.Features.Skills.BuiltIn;
 using Sentium.Praxis.Features.Storage;
 using Sentium.Praxis.Testing;
 using Sentium.Praxis.Features.Tools;
+using Sentium.Praxis.Features.Tools.Inventory;
 using Sentium.Praxis.Features.Tools.Workspace;
 using Sentium.Praxis.Features.WorkflowManagement;
 using Sentium.Praxis.Features.WorkspaceManagement;
@@ -87,6 +88,9 @@ public static class PraxisModuleExtensions
         services.AddTransient<IAgentTool, WriteWorkspaceFileTool>();
         services.AddTransient<IAgentTool, CaptureAgentLearningTool>();
         services.AddTransient<IAgentTool, ScheduleTaskTool>();
+        services.AddTransient<IAgentTool, FindAssetsTool>();
+        services.AddTransient<IAgentTool, GetAssetTool>();
+        services.AddTransient<IAgentTool, ListLocationContentsTool>();
 
         services.AddScoped<IConversationRepository, ConversationRepository>();
         services.AddScoped<IWorkflowRepository, WorkflowRepository>();

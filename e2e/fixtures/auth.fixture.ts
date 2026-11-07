@@ -7,6 +7,7 @@ import {
   WorkflowsPage,
   AssistantPage,
   WorkspacesPage,
+  InventoryPage,
   SettingsPage,
   ProfilePage,
   OrchestrationPage,
@@ -30,6 +31,7 @@ export type AppFixtures = {
   workflowsPage: WorkflowsPage;
   assistantPage: AssistantPage;
   workspacesPage: WorkspacesPage;
+  inventoryPage: InventoryPage;
   settingsPage: SettingsPage;
   profilePage: ProfilePage;
   orchestrationPage: OrchestrationPage;
@@ -72,6 +74,10 @@ export const test = base.extend<AppFixtures>({
 
   workspacesPage: async ({ page }, use) => {
     await use(new WorkspacesPage(page));
+  },
+
+  inventoryPage: async ({ page }, use) => {
+    await use(new InventoryPage(page));
   },
 
   settingsPage: async ({ page }, use) => {

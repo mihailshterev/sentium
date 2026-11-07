@@ -20,6 +20,7 @@
   <Folder Name="/src/modules/">
     <Project Path="src/modules/Codex/Sentium.Codex.csproj" />
     <Project Path="src/modules/Identity/Sentium.Identity.csproj" />
+    <Project Path="src/modules/Locus/Sentium.Locus.csproj" />
     <Project Path="src/modules/Praxis/Sentium.Praxis.csproj" />
     <Project Path="src/modules/Registry/Sentium.Registry.csproj" />
     <Project Path="src/modules/Sentinel/Sentium.Sentinel.csproj" />

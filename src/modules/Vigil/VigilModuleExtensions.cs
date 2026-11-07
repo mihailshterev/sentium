@@ -19,6 +19,7 @@ public static class VigilModuleExtensions
         ("Sentinel", "sentinel"),
         ("Praxis",   "praxis"),
         ("Codex",    "codex"),
+        ("Locus",    "locus"),
         ("Registry", "registry")
     ];
 

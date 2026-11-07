@@ -22,23 +22,24 @@ What sets Sentium apart is that every agent action is **mediated by a security c
 
 ## Key features
 
-| Capability                               | Description                                                                                                                                                                               |
-| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Conversational assistant**             | A streaming (SSE) chat assistant with tool use, live "thinking" traces, and human-in-the-loop approval for high-risk tool calls.                                                          |
-| **Custom agents**                        | Define your own agents (name, persona/instructions, model) and manage them through the portal.                                                                                            |
-| **Multi-agent orchestration**            | An Orchestrator agent decomposes a goal, assembles a squad of specialist agents, runs them sequentially, then a Validator agent reviews and triggers self-correcting re-runs.             |
-| **Visual workflow builder**              | Compose reusable, ordered multi-agent workflows; run them on demand and replay every run from a persisted log.                                                                            |
-| **Retrieval-Augmented Generation (RAG)** | Document ingestion (chunk → embed → store in PostgreSQL/pgvector) across three vector collections: knowledge base, agent learnings, and user memories (the Codex module).                 |
-| **Self-improvement loop**                | Agents capture reusable learnings that are automatically, semantically recalled and injected into future runs.                                                                            |
-| **Isolated code execution**              | Agents can run Python / Node.js in a heavily hardened, network-disabled Docker sandbox; output artifacts are harvested to blob storage.                                                   |
-| **Skills**                               | Built-in skills plus user-defined and uploaded-Markdown skills, unlocked on demand via a `load_skill` mechanism.                                                                          |
-| **Autonomous scheduling**                | Agents (or users) can schedule recurring background jobs (Quartz cron) that execute code through the sandbox.                                                                             |
-| **Workspaces & files**                   | Upload files into workspaces; they are asynchronously vectorized and made available to agents as context.                                                                                 |
-| **Security control plane (Sentinel)**    | Every tool call passes a Policy Decision Point that performs rate-limiting and an LLM-based semantic-intent / prompt-injection check, with a fail-closed posture and full forensic audit. |
-| **Health monitoring (Vigil)**            | Continuous probing of every module, the sandbox and the infrastructure, incident tracking, and a live status stream.                                                                      |
-| **Knowledge map**                        | An interactive, animated visualization of the vector store and semantic search traversal.                                                                                                 |
-| **Centralized configuration (Registry)** | Per-user and global runtime settings with a two-tier cache and in-process invalidation.                                                                                                   |
-| **Identity & access**                    | ASP.NET Core Identity with cookie-based session authentication, a two-tier role model (Member / Sovereign), and per-user data isolation.                                                  |
+| Capability                               | Description                                                                                                                                                                                                                                              |
+| ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Conversational assistant**             | A streaming (SSE) chat assistant with tool use, live "thinking" traces, and human-in-the-loop approval for high-risk tool calls.                                                                                                                         |
+| **Custom agents**                        | Define your own agents (name, persona/instructions, model) and manage them through the portal.                                                                                                                                                           |
+| **Multi-agent orchestration**            | An Orchestrator agent decomposes a goal, assembles a squad of specialist agents, runs them sequentially, then a Validator agent reviews and triggers self-correcting re-runs.                                                                            |
+| **Visual workflow builder**              | Compose reusable, ordered multi-agent workflows; run them on demand and replay every run from a persisted log.                                                                                                                                           |
+| **Retrieval-Augmented Generation (RAG)** | Document ingestion (chunk → embed → store in PostgreSQL/pgvector) across three vector collections: knowledge base, agent learnings, and user memories (the Codex module).                                                                                |
+| **Self-improvement loop**                | Agents capture reusable learnings that are automatically, semantically recalled and injected into future runs.                                                                                                                                           |
+| **Isolated code execution**              | Agents can run Python / Node.js in a heavily hardened, network-disabled Docker sandbox; output artifacts are harvested to blob storage.                                                                                                                  |
+| **Skills**                               | Built-in skills plus user-defined and uploaded-Markdown skills, unlocked on demand via a `load_skill` mechanism.                                                                                                                                         |
+| **Autonomous scheduling**                | Agents (or users) can schedule recurring background jobs (Quartz cron) that execute code through the sandbox.                                                                                                                                            |
+| **Workspaces & files**                   | Upload files into workspaces; they are asynchronously vectorized and made available to agents as context.                                                                                                                                                |
+| **Household inventory (Locus)**          | A shared location tree (Home → Garage → Shelf) and asset catalogue with search, tags and photo/manual/receipt attachments; items shared with assistants are synced to the knowledge base and answerable through read-only tools ("where is the drill?"). |
+| **Security control plane (Sentinel)**    | Every tool call passes a Policy Decision Point that performs rate-limiting and an LLM-based semantic-intent / prompt-injection check, with a fail-closed posture and full forensic audit.                                                                |
+| **Health monitoring (Vigil)**            | Continuous probing of every module, the sandbox and the infrastructure, incident tracking, and a live status stream.                                                                                                                                     |
+| **Knowledge map**                        | An interactive, animated visualization of the vector store and semantic search traversal.                                                                                                                                                                |
+| **Centralized configuration (Registry)** | Per-user and global runtime settings with a two-tier cache and in-process invalidation.                                                                                                                                                                  |
+| **Identity & access**                    | ASP.NET Core Identity with cookie-based session authentication, a two-tier role model (Member / Sovereign), and per-user data isolation.                                                                                                                 |
 
 ---
 
@@ -56,12 +57,14 @@ flowchart TB
         Identity["Identity<br/>(users · roles · session)"]
         Praxis["Praxis<br/>(agents · orchestration · workflows · scheduling)"]
         Codex["Codex<br/>(RAG · knowledge base)"]
+        Locus["Locus<br/>(household inventory)"]
         Sentinel["Sentinel<br/>(Policy Decision Point)"]
         Registry["Registry<br/>(settings)"]
         Vigil["Vigil<br/>(health)"]
     end
 
-    Praxis -->|Contracts| Codex & Sentinel & Registry
+    Praxis -->|Contracts| Codex & Sentinel & Registry & Locus
+    Locus -->|Contracts| Codex
     Sentinel -->|Contracts| Registry
     Vigil -->|Contracts| Registry
 
@@ -83,14 +86,15 @@ flowchart TB
 
 ### Modules
 
-| Module       | Responsibility                                                                                                                                                                                                           |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Identity** | ASP.NET Core Identity: users, roles, profile and registration, plus the cookie session endpoints the portal uses (`/api/identity/account/login`, `/session`, `/logout`). The browser only ever holds an HttpOnly cookie. |
-| **Praxis**   | The core engine: agents, the streaming assistant, conversations, multi-agent orchestration, workflows, learnings, skills, tools, workspaces, the Quartz scheduler, and the sandbox execution history.                    |
-| **Codex**    | The knowledge base: embeddings, the pgvector store (`codex` schema), document ingestion and the knowledge map. Other modules push their content (learnings, memories, workspace files) through it.                       |
-| **Sentinel** | The Policy Decision Point (PDP). Every agent tool call and sandbox execution is authorized through a defence-in-depth policy stack, with forensic auditing and a fail-closed default.                                    |
-| **Registry** | Centralized, key-based runtime settings with per-user and global scopes, two-tier caching and in-process invalidation.                                                                                                   |
-| **Vigil**    | Probes every module, the sandbox and each infrastructure dependency, raises and resolves incidents, and streams live health over SSE.                                                                                    |
+| Module       | Responsibility                                                                                                                                                                                                                                                                                                                      |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Identity** | ASP.NET Core Identity: users, roles, profile and registration, plus the cookie session endpoints the portal uses (`/api/identity/account/login`, `/session`, `/logout`). The browser only ever holds an HttpOnly cookie.                                                                                                            |
+| **Praxis**   | The core engine: agents, the streaming assistant, conversations, multi-agent orchestration, workflows, learnings, skills, tools, workspaces, the Quartz scheduler, and the sandbox execution history.                                                                                                                               |
+| **Codex**    | The knowledge base: embeddings, the pgvector store (`codex` schema), document ingestion and the knowledge map. Other modules push their content (learnings, memories, workspace files) through it.                                                                                                                                  |
+| **Locus**    | The household inventory (`locus` schema): a location tree, assets with tags and search, and attachments in blob storage. Shared by every household member; items marked as shared are synced to the knowledge base through a durable outbox and exposed to agents read-only (`find_assets`, `get_asset`, `list_location_contents`). |
+| **Sentinel** | The Policy Decision Point (PDP). Every agent tool call and sandbox execution is authorized through a defence-in-depth policy stack, with forensic auditing and a fail-closed default.                                                                                                                                               |
+| **Registry** | Centralized, key-based runtime settings with per-user and global scopes, two-tier caching and in-process invalidation.                                                                                                                                                                                                              |
+| **Vigil**    | Probes every module, the sandbox and each infrastructure dependency, raises and resolves incidents, and streams live health over SSE.                                                                                                                                                                                               |
 
 **Sentium.Sandbox** is stateless: it has no database and no user-facing API. It accepts only `POST /execute` from Sentium.Web, asks Sentinel to authorize each run, executes the code in a hardened container and uploads any output artifacts to blob storage. Praxis records every run, including denied ones, and serves the history at `/api/sandbox/*`.
 
@@ -300,6 +304,7 @@ src/
   modules/
     Codex/                         # RAG and the knowledge base
     Identity/                      # users, roles, session cookie
+    Locus/                         # household inventory (locations, assets, attachments)
     Praxis/                        # core engine (agents, orchestration, workflows, scheduling)
     Registry/                      # centralized configuration
     Sentinel/                      # Policy Decision Point

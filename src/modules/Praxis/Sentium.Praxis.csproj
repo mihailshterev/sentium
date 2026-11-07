@@ -26,6 +26,7 @@
     <ProjectReference Include="..\Registry\Sentium.Registry.csproj" />
     <ProjectReference Include="..\Sentinel\Sentium.Sentinel.csproj" />
     <ProjectReference Include="..\Codex\Sentium.Codex.csproj" />
+    <ProjectReference Include="..\Locus\Sentium.Locus.csproj" />
   </ItemGroup>
 
 </Project>

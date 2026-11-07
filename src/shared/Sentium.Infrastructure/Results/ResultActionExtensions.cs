@@ -20,6 +20,12 @@ public static class ResultActionExtensions
                 Detail = result.Error,
                 Status = StatusCodes.Status409Conflict
             }),
+            ResultStatus.Invalid => controller.BadRequest(new ProblemDetails
+            {
+                Title = "Invalid request",
+                Detail = result.Error,
+                Status = StatusCodes.Status400BadRequest
+            }),
             _ => controller.StatusCode(StatusCodes.Status500InternalServerError)
         };
     }
