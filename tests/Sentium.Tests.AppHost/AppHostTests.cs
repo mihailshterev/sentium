@@ -43,6 +43,40 @@ public sealed class AppHostTests
         resourceNames.Should().Contain(ResourceNames.Postgres);
         resourceNames.Should().Contain(ResourceNames.SentiumDb);
         resourceNames.Should().Contain([ResourceNames.Llm, ResourceNames.Embeddings, ResourceNames.ModelsInit]);
+        resourceNames.Should().Contain(ResourceNames.Searxng);
+    }
+
+    [Fact]
+    public async Task Searxng_ShouldBePinnedByDigest()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.Sentium_AppHost>(ct);
+
+        // Act
+        var image = appHost.Resources.Single(r => r.Name == ResourceNames.Searxng)
+            .Annotations.OfType<ContainerImageAnnotation>().Single();
+
+        // Assert - the search backend is a supply-chain input too.
+        image.SHA256.Should().MatchRegex("^[0-9a-f]{64}$");
+    }
+
+    [Fact]
+    public async Task Sandbox_ShouldAllowTheWebSearchImageAndTheInternalEgressNetwork()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.Sentium_AppHost>(ct);
+        var sandbox = appHost.Resources.OfType<IResourceWithEnvironment>().Single(r => r.Name == ServiceNames.Sandbox);
+
+        // Act
+        var configuration = await ExecutionConfigurationBuilder.Create(sandbox)
+            .WithEnvironmentVariablesConfig()
+            .BuildAsync(new DistributedApplicationExecutionContext(DistributedApplicationOperation.Publish), NullLogger.Instance, ct);
+        var env = configuration.EnvironmentVariables;
+
+        // Assert - MCP containers may use only the internal network that SearXNG shares.
+        env.Should().Contain(EnvConfig.Keys.SandboxMcp.AllowedNetwork, "sentium-egress");
     }
 
     [Fact]

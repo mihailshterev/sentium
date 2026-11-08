@@ -89,14 +89,38 @@ var web = builder.AddProject<Projects.Sentium_Web>(ServiceNames.Web)
         url.Url = "/scalar/v1";
     });
 
+var egressNetwork = builder.Configuration[SearxngConfig.EgressNetworkKey] ?? SearxngConfig.EgressNetwork;
+
 var sandbox = builder.AddProject<Projects.Sentium_Sandbox>(ServiceNames.Sandbox)
     .WithReference(blobs).WaitFor(blobs)
     .WithReference(web)
     .WithEnvironment(EnvConfig.Keys.DockerHost, dockerHost)
-    .WithEnvironment(EnvConfig.Keys.InternalApiKey, internalApiKey);
+    .WithEnvironment(EnvConfig.Keys.InternalApiKey, internalApiKey)
+    .WithEnvironment(EnvConfig.Keys.SandboxMcp.Enabled, builder.Configuration["Mcp:SandboxEnabled"] ?? "true")
+    .WithEnvironment(EnvConfig.Keys.SandboxMcp.AllowedNetwork, egressNetwork);
 
 web.WithReference(sandbox);
 sandbox.WithParentRelationship(web);
+
+if (builder.ExecutionContext.IsRunMode)
+{
+    builder.Eventing.Subscribe<BeforeStartEvent>((_, ct) => InternalNetwork.EnsureAsync(egressNetwork, ct));
+}
+
+var searxngSecret = builder.AddParameter(
+    "searxng-secret",
+    new GenerateParameterDefault { MinLength = 32, Special = false },
+    secret: true,
+    persist: true);
+
+builder.AddContainer(ResourceNames.Searxng, SearxngConfig.Image)
+    .WithImageSHA256(SearxngConfig.Digest)
+    .WithHttpEndpoint(targetPort: SearxngConfig.ContainerPort, name: "http")
+    .WithBindMount(SearxngConfig.SettingsSource, SearxngConfig.SettingsPath, isReadOnly: true)
+    .WithEnvironment("SEARXNG_SECRET", searxngSecret)
+    .WithContainerRuntimeArgs("--network", $"name={egressNetwork},alias={ResourceNames.Searxng}")
+    .WithHttpHealthCheck("/healthz")
+    .WithParentRelationship(sandbox);
 
 builder.AddViteApp(ServiceNames.Frontend, "../../clients/sentium-portal")
     .WithPnpm()

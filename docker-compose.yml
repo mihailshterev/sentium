@@ -120,6 +120,32 @@ services:
       retries: 30
       start_period: 15s
 
+  searxng:
+    image: searxng/searxng@sha256:7add5ffe7933e6b46aa3a26bed8a0c342c9a45ec331d9a8cf145e46b04b24f36
+    environment:
+      SEARXNG_SECRET: ${SEARXNG_SECRET:?Set SEARXNG_SECRET in .env (see .env.example)}
+      SEARXNG_BASE_URL: http://searxng:8080/
+    volumes:
+      - ./infra/searxng/settings.yml:/etc/searxng/settings.yml:ro
+    networks:
+      - default
+      - sentium-egress
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:8080/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
   # The modular monolith: every module (Identity, Registry, Sentinel, Codex, Praxis, Vigil) in one
   # process. It serves the portal and the API from one HTTPS origin (the auth
   # cookie is Secure).

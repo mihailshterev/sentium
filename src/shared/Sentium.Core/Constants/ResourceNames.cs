@@ -10,6 +10,8 @@ public static class ResourceNames
 
     /// <summary>One-shot container that downloads and verifies the model files.</summary>
     public const string ModelsInit = "models-init";
+
+    public const string Searxng = "searxng";
     public const string Postgres = "postgres";
     public const string SentiumDb = "sentiumdb";
     public const string Redis = "redis";
