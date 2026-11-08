@@ -1,29 +1,42 @@
 using System.Collections.Frozen;
 using Microsoft.Extensions.AI;
+using Sentium.Praxis.Dtos;
 
 namespace Sentium.Praxis.Features.Tools;
 
 /// <summary>
-/// Groups the registered tools by the agents allowed to use them (<see cref="Attributes.AgentToolPolicyAttribute.AllowedAgents"/>).
+/// Groups the registered tools by the agents allowed to use them (<see cref="Attributes.AgentToolPolicyAttribute.AllowedAgents"/>)
+/// and describes them for the tool picker.
 /// </summary>
-public sealed class AgentToolProvider : IAgentToolProvider
+public sealed class AgentToolProvider : IAgentToolProvider, IToolCatalog
 {
     private const string AllAgents = "*";
 
     private readonly FrozenDictionary<string, List<AITool>> toolCache;
+    private readonly IReadOnlyList<ToolDescriptor> catalog;
+    private readonly FrozenSet<string> names;
 
     public AgentToolProvider(IEnumerable<IAgentTool> tools)
     {
         ArgumentNullException.ThrowIfNull(tools);
 
         var map = new Dictionary<string, List<AITool>>(StringComparer.OrdinalIgnoreCase);
+        var descriptors = new List<ToolDescriptor>();
 
         foreach (var tool in tools)
         {
             var function = tool.CreateFunction();
             var policy = ToolPolicyReader.GetPolicy(tool);
 
-            string[] keys = policy.AllowedAgents.Length == 0 ? [AllAgents] : policy.AllowedAgents;
+            descriptors.Add(new ToolDescriptor(
+                function.Name,
+                function.Description,
+                policy.Resource.ToString(),
+                policy.Action.ToString(),
+                policy.RiskLevel.ToString(),
+                policy.RequiresApproval));
+
+            var keys = policy.AllowedAgents.Length == 0 ? [AllAgents] : policy.AllowedAgents;
             foreach (var key in keys)
             {
                 if (!map.TryGetValue(key, out var list))
@@ -36,7 +49,16 @@ public sealed class AgentToolProvider : IAgentToolProvider
         }
 
         toolCache = map.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
+        catalog = [.. descriptors
+            .DistinctBy(d => d.Name, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(d => d.Resource, StringComparer.Ordinal)
+            .ThenBy(d => d.Name, StringComparer.Ordinal)];
+        names = catalog.Select(d => d.Name).ToFrozenSet(StringComparer.OrdinalIgnoreCase);
     }
+
+    public IReadOnlyList<ToolDescriptor> GetTools() => catalog;
+
+    public bool Contains(string name) => name is not null && names.Contains(name);
 
     public List<AITool> GetToolsForAgent(string agentName, CancellationToken ct)
     {

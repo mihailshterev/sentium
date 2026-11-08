@@ -1,9 +1,11 @@
 import { useState } from "react";
-import { Bot, Plus } from "lucide-react";
+import { Bot, Plus, Sparkles } from "lucide-react";
 import styles from "../agents.module.css";
 import { useAgents } from "@/features/agents/hooks/useAgents";
 import { useModels } from "@/features/models/hooks/useModels";
-import type { AgentRecord } from "@/features/agents/types/agents";
+import { useBuiltInAgents } from "@/features/agents/hooks/useBuiltInAgents";
+import { useToolCatalog } from "@/features/agents/hooks/useToolCatalog";
+import type { AgentRecord, BuiltInAgent, CreateAgentPayload, UpdateAgentPayload } from "@/features/agents/types/agents";
 import { Badge } from "@/shared/ui/badge";
 import { Card, CardHeader } from "@/shared/ui/card";
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
@@ -15,6 +17,8 @@ import { StatusMessage } from "@/shared/ui/status-message";
 import { AgentCard } from "../components/agent-card";
 import { AgentCreateForm } from "../components/agent-create-form";
 import { AgentEditModal } from "../components/agent-edit-modal";
+import { BuiltInAgentList } from "../components/built-in-agent-list";
+import { BuiltInToolsDialog } from "../components/built-in-tools-dialog";
 
 const LoadingRows = () => (
   <ul className={styles.agentList} aria-busy="true">
@@ -54,12 +58,15 @@ export function AgentsView() {
   } = useAgents();
 
   const { models } = useModels();
+  const { tools, isLoading: isLoadingTools } = useToolCatalog();
+  const { builtInAgents, saveTools, isSaving, saveError, resetTools, isResetting, resetError } = useBuiltInAgents();
+  const [configuring, setConfiguring] = useState<BuiltInAgent | null>(null);
 
   const [editAgent, setEditAgent] = useState<AgentRecord | null>(null);
   const [confirmState, setConfirmState] = useState<{ agentId: string } | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  const handleCreateSubmit = (data: { name: string; description: string; model: string }) => {
+  const handleCreateSubmit = (data: CreateAgentPayload) => {
     createAgent(data, {
       onSuccess: () => setTimeout(() => resetCreate(), 2500),
     });
@@ -75,7 +82,7 @@ export function AgentsView() {
     resetUpdate();
   };
 
-  const handleEditSubmit = (data: { id: string; name: string; description: string; model: string }) => {
+  const handleEditSubmit = (data: UpdateAgentPayload) => {
     updateAgent(data, {
       onSuccess: () => setTimeout(() => closeEdit(), 1000),
     });
@@ -88,45 +95,64 @@ export function AgentsView() {
       actions={<Badge tone="neutral">{totalCount} registered</Badge>}
     >
       <div className={styles.layout}>
-        <Card padding="none" as="section" className={styles.listCard}>
-          <CardHeader title="Registered agents" description="Agents available to workflows and the assistant" />
+        <div className={styles.column}>
+          <Card padding="none" as="section" className={styles.listCard}>
+            <CardHeader title="Registered agents" description="Agents available to workflows and the assistant" />
 
-          {deleteError && (
-            <div className={styles.inlineMessage}>
-              <StatusMessage variant="error" message={deleteError} />
-            </div>
-          )}
+            {deleteError && (
+              <div className={styles.inlineMessage}>
+                <StatusMessage variant="error" message={deleteError} />
+              </div>
+            )}
 
-          {isLoading ? (
-            <>
-              <span className="visually-hidden">Loading registry...</span>
-              <LoadingRows />
-            </>
-          ) : agents.length === 0 ? (
-            <EmptyState
-              icon={<Bot />}
-              title="No agents registered yet"
-              hint="Register your first agent using the form."
-            />
-          ) : (
-            <ul className={styles.agentList}>
-              {agents.map((agent) => (
-                <AgentCard
-                  key={agent.id}
-                  agent={agent}
-                  onEdit={openEdit}
-                  onDelete={(agentId) => setConfirmState({ agentId })}
-                />
-              ))}
-            </ul>
+            {isLoading ? (
+              <>
+                <span className="visually-hidden">Loading registry...</span>
+                <LoadingRows />
+              </>
+            ) : agents.length === 0 ? (
+              <EmptyState
+                icon={<Bot />}
+                title="No agents registered yet"
+                hint="Register your first agent using the form."
+              />
+            ) : (
+              <ul className={styles.agentList}>
+                {agents.map((agent) => (
+                  <AgentCard
+                    key={agent.id}
+                    agent={agent}
+                    onEdit={openEdit}
+                    onDelete={(agentId) => setConfirmState({ agentId })}
+                  />
+                ))}
+              </ul>
+            )}
+            <LoadMore hasMore={hasMore} isLoading={isLoadingMore} onLoadMore={loadMore} />
+          </Card>
+
+          {builtInAgents.length > 0 && (
+            <Card padding="none" as="section" className={styles.listCard}>
+              <CardHeader
+                icon={<Sparkles />}
+                title="Built-in agents"
+                description="Ship with Sentium. Change which tools they may call; the defaults stay one click away."
+              />
+              <BuiltInAgentList agents={builtInAgents} onConfigure={setConfiguring} />
+            </Card>
           )}
-          <LoadMore hasMore={hasMore} isLoading={isLoadingMore} onLoadMore={loadMore} />
-        </Card>
+        </div>
 
         <Card padding="md" as="section" className={styles.formCard}>
-          <CardHeader icon={<Plus />} title="Register agent" description="Name it, describe its role, pick a model" />
+          <CardHeader
+            icon={<Plus />}
+            title="Register agent"
+            description="Name it, describe its role, pick a model and tools"
+          />
           <AgentCreateForm
             models={models}
+            tools={tools}
+            isLoadingTools={isLoadingTools}
             isCreatingAgent={isCreatingAgent}
             isCreateSuccess={isCreateSuccess}
             isCreateError={isCreateError}
@@ -140,12 +166,29 @@ export function AgentsView() {
         <AgentEditModal
           agent={editAgent}
           models={models}
+          tools={tools}
+          isLoadingTools={isLoadingTools}
           isUpdatingAgent={isUpdatingAgent}
           isUpdateSuccess={isUpdateSuccess}
           isUpdateError={isUpdateError}
           updateAgentError={updateAgentError}
           onSubmit={handleEditSubmit}
           onClose={closeEdit}
+        />
+      )}
+
+      {configuring && (
+        <BuiltInToolsDialog
+          agent={configuring}
+          tools={tools}
+          isSaving={isSaving}
+          isResetting={isResetting}
+          error={saveError ?? resetError}
+          onSave={(selection) =>
+            saveTools({ name: configuring.name, tools: selection }, { onSuccess: () => setConfiguring(null) })
+          }
+          onReset={() => resetTools(configuring.name, { onSuccess: () => setConfiguring(null) })}
+          onClose={() => setConfiguring(null)}
         />
       )}
 

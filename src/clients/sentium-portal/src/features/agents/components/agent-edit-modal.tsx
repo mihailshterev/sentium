@@ -10,21 +10,27 @@ import { ModelSelector } from "@/shared/ui/model-selector";
 import { StatusMessage } from "@/shared/ui/status-message";
 import type { AgentRecord } from "@/features/agents/types/agents";
 import { agentCreateSchema, type AgentCreateFormData } from "../schemas/agent.create";
+import type { ToolDescriptor, UpdateAgentPayload } from "../types/agents";
+import { ToolPicker } from "./tool-picker";
 
 interface AgentEditModalProps {
   agent: AgentRecord;
   models: string[];
+  tools: ToolDescriptor[];
+  isLoadingTools?: boolean;
   isUpdatingAgent: boolean;
   isUpdateSuccess: boolean;
   isUpdateError: boolean;
   updateAgentError: Error | null | undefined;
-  onSubmit: (data: { id: string; name: string; description: string; model: string }) => void;
+  onSubmit: (data: UpdateAgentPayload) => void;
   onClose: () => void;
 }
 
 export function AgentEditModal({
   agent,
   models,
+  tools,
+  isLoadingTools = false,
   isUpdatingAgent,
   isUpdateSuccess,
   isUpdateError,
@@ -44,6 +50,7 @@ export function AgentEditModal({
       name: agent.name,
       description: agent.description,
       model: agent.model || models[0] || "",
+      tools: agent.tools ?? null,
     },
   });
 
@@ -51,7 +58,7 @@ export function AgentEditModal({
   const descriptionValue = watch("description") ?? "";
 
   const handleFormSubmit = (data: AgentCreateFormData) => {
-    onSubmit({ id: agent.id, name: data.name, description: data.description, model: data.model });
+    onSubmit({ id: agent.id, name: data.name, description: data.description, model: data.model, tools: data.tools });
   };
 
   return (
@@ -59,7 +66,7 @@ export function AgentEditModal({
       open
       onClose={onClose}
       title="Edit Agent"
-      description="Update the name, role description or model."
+      description="Update the name, role description, model or tools."
       icon={<Pencil />}
     >
       <form onSubmit={handleSubmit(handleFormSubmit)} className={styles.form}>
@@ -93,6 +100,25 @@ export function AgentEditModal({
                 value={field.value}
                 onChange={field.onChange}
                 placeholder="e.g. gemma-4-e4b"
+              />
+            )}
+          />
+        </FormField>
+
+        <FormField
+          label="Tools"
+          hint="What the agent may call. Approval-gated tools are skipped in unattended workflow runs."
+        >
+          <Controller
+            name="tools"
+            control={control}
+            render={({ field }) => (
+              <ToolPicker
+                id="edit-tools"
+                tools={tools}
+                isLoading={isLoadingTools}
+                value={field.value}
+                onChange={field.onChange}
               />
             )}
           />

@@ -11,6 +11,7 @@ public sealed class Message : INonAudited
     public string? EnhancedPrompt { get; set; }
     public string? Thought { get; set; }
     public string? ToolCalls { get; set; }
+    public string? Steps { get; set; }
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 
     public Conversation Conversation { get; set; } = null!;

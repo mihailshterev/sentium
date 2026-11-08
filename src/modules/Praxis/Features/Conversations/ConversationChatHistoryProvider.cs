@@ -1,6 +1,8 @@
-using System.Text;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
+using Sentium.Praxis.Dtos;
+using ChatMessage = Microsoft.Extensions.AI.ChatMessage;
+using Sentium.Praxis.Features.Agents.Activity;
 using Sentium.Praxis.Features.Sentinel;
 
 namespace Sentium.Praxis.Features.Conversations;
@@ -16,7 +18,8 @@ namespace Sentium.Praxis.Features.Conversations;
 /// run - whose only input is the approval response - sees exactly what it needs and the framework can bind the response
 /// to its request. When the turn completes, a single merged assistant message is written to the transcript.</para>
 /// <para>The user's turn is written as soon as a turn starts finishing (completed, paused, or failed), so the transcript
-/// always shows what was asked. Trailing unanswered user turns are skipped when loading, so a retry or a resume never
+/// always shows what was asked. The assistant message carries the turn's ordered activity timeline (reasoning, narration,
+/// tool calls with results and approval decisions - see <see cref="AgentTurnSteps"/>). Trailing unanswered user turns are skipped when loading, so a retry or a resume never
 /// hands the model two consecutive user messages. Ownership is checked against the acting user on every load and store.</para>
 /// </remarks>
 public sealed class ConversationChatHistoryProvider : ChatHistoryProvider
@@ -34,6 +37,7 @@ public sealed class ConversationChatHistoryProvider : ChatHistoryProvider
     private readonly IConversationService conversations;
     private readonly IPdpContextAccessor runContext;
     private readonly ILogger<ConversationChatHistoryProvider> logger;
+    private AgentActivityTranslator? activity;
 
     public ConversationChatHistoryProvider(
         IConversationRepository repository,
@@ -57,15 +61,15 @@ public sealed class ConversationChatHistoryProvider : ChatHistoryProvider
         sessionState.SaveState(session, new State { ConversationId = conversationId });
 
     /// <summary>
-    /// Label shown for a tool call in the live stream and the persisted transcript.
+    /// Supplies the tool durations measured while this request streams the run, so the stored timeline keeps them.
     /// </summary>
-    public static string ToolCallLabel(string toolName) => $"Calling {toolName}...";
+    public void TrackActivity(AgentActivityTranslator translator) => activity = translator;
 
     /// <summary>
     /// Records the partial answer of a run the client cancelled mid-stream (the framework does not store responses of
     /// cancelled runs; the user's turn itself is recorded by <see cref="InvokedCoreAsync"/>).
     /// </summary>
-    public async Task PersistPartialResponseAsync(AgentSession session, string text, string? thought, IReadOnlyList<string>? toolCalls)
+    public async Task PersistPartialResponseAsync(AgentSession session, string text, IReadOnlyList<MessageStep>? steps)
     {
         ArgumentNullException.ThrowIfNull(session);
 
@@ -74,7 +78,7 @@ public sealed class ConversationChatHistoryProvider : ChatHistoryProvider
             return;
         }
 
-        await conversations.AddMessageAsync(conversationId, ChatRole.Assistant.ToString(), text, thought: thought, toolCalls: toolCalls, ct: CancellationToken.None);
+        await conversations.AddMessageAsync(conversationId, ChatRole.Assistant.ToString(), text, steps: steps, ct: CancellationToken.None);
     }
 
     protected override async ValueTask<IEnumerable<ChatMessage>> ProvideChatHistoryAsync(InvokingContext context, CancellationToken cancellationToken = default)
@@ -131,29 +135,33 @@ public sealed class ConversationChatHistoryProvider : ChatHistoryProvider
             await PersistUserTurnsAsync(conversationId, external, cancellationToken);
         }
 
+        var durations = MergeDurations(state);
+
         if (responses.SelectMany(m => m.Contents).OfType<ToolApprovalRequestContent>().Any())
         {
-            // Paused on approval: keep the raw turn in the session until it completes.
+            // Paused on approval: keep the raw turn (and the tool timings measured so far) in the session until it completes.
             state.PendingTurn = [.. state.PendingTurn ?? [], .. external, .. responses];
+            state.ToolDurations = durations;
             sessionState.SaveState(context.Session, state);
             return;
         }
 
-        var (text, thought, toolCalls) = Summarize(resuming ? [.. state.PendingTurn!, .. responses] : responses);
-        if (text.Length > 0)
+        // On resume the external input is the approval response, which records the user's decision on the timeline.
+        var (answer, steps) = AgentTurnSteps.Build(resuming ? [.. state.PendingTurn!, .. external, .. responses] : responses, durations);
+        if (answer.Length > 0 || steps.Count > 0)
         {
             await conversations.AddMessageAsync(
                 conversationId,
                 ChatRole.Assistant.ToString(),
-                text,
-                thought: thought.Length > 0 ? thought : null,
-                toolCalls: toolCalls.Count > 0 ? toolCalls : null,
+                answer,
+                steps: steps.Count > 0 ? steps : null,
                 ct: cancellationToken);
         }
 
         if (resuming)
         {
             state.PendingTurn = null;
+            state.ToolDurations = null;
             sessionState.SaveState(context.Session, state);
         }
     }
@@ -186,35 +194,20 @@ public sealed class ConversationChatHistoryProvider : ChatHistoryProvider
         }
     }
 
-    /// <summary>
-    /// Flattens a turn into the transcript shape the UI renders: answer text, reasoning, and tool-call labels.
-    /// </summary>
-    internal static (string Text, string Thought, List<string> ToolCalls) Summarize(IEnumerable<ChatMessage> messages)
+    private Dictionary<string, long>? MergeDurations(State state)
     {
-        var text = new StringBuilder();
-        var thought = new StringBuilder();
-        var toolCalls = new List<string>();
-
-        foreach (var message in messages.Where(m => m.Role == ChatRole.Assistant))
+        if (state.ToolDurations is null && activity is null)
         {
-            foreach (var content in message.Contents)
-            {
-                switch (content)
-                {
-                    case TextContent t:
-                        text.Append(t.Text);
-                        break;
-                    case TextReasoningContent r:
-                        thought.Append(r.Text);
-                        break;
-                    case FunctionCallContent call:
-                        toolCalls.Add(ToolCallLabel(call.Name));
-                        break;
-                }
-            }
+            return null;
         }
 
-        return (text.ToString(), thought.ToString(), toolCalls);
+        var merged = new Dictionary<string, long>(state.ToolDurations ?? [], StringComparer.Ordinal);
+        foreach (var (callId, ms) in activity?.Durations ?? new Dictionary<string, long>())
+        {
+            merged[callId] = ms;
+        }
+
+        return merged;
     }
 
     private async Task PersistUserTurnsAsync(Guid conversationId, IEnumerable<ChatMessage> messages, CancellationToken ct)
@@ -262,5 +255,8 @@ public sealed class ConversationChatHistoryProvider : ChatHistoryProvider
 
         /// <summary>Raw messages of a turn paused on tool approval, replayed into the resumed run.</summary>
         public List<ChatMessage>? PendingTurn { get; set; }
+
+        /// <summary>Tool durations (ms, by call id) measured before the pause, for the completed turn's timeline.</summary>
+        public Dictionary<string, long>? ToolDurations { get; set; }
     }
 }

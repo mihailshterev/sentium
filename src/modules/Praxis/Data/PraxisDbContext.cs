@@ -23,6 +23,7 @@ public sealed class PraxisDbContext : DbContext
     }
 
     public DbSet<Agent> Agents { get; set; }
+    public DbSet<AgentToolOverride> AgentToolOverrides { get; set; }
     public DbSet<Conversation> Conversations { get; set; }
     public DbSet<Message> Messages { get; set; }
     public DbSet<Workflow> Workflows { get; set; }
@@ -62,6 +63,17 @@ public sealed class PraxisDbContext : DbContext
             entity.HasQueryFilter(e => BypassUserScope || e.UserId == ScopeUserId);
         });
 
+        builder.Entity<AgentToolOverride>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.AgentName)
+                .IsRequired()
+                .HasMaxLength(255);
+            entity.HasIndex(e => new { e.UserId, e.AgentName })
+                .IsUnique();
+            entity.HasQueryFilter(e => BypassUserScope || e.UserId == ScopeUserId);
+        });
+
         builder.Entity<Conversation>(entity =>
         {
             entity.HasKey(e => e.Id);
@@ -89,6 +101,8 @@ public sealed class PraxisDbContext : DbContext
                 .HasMaxLength(50);
             entity.Property(e => e.Content)
                 .IsRequired();
+            entity.Property(e => e.Steps)
+                .HasColumnType("jsonb");
             entity.HasOne(e => e.Conversation)
                 .WithMany(c => c.Messages)
                 .HasForeignKey(e => e.ConversationId)

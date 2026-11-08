@@ -121,9 +121,9 @@ public sealed class ConversationService(
         return renamed;
     }
 
-    public async Task AddMessageAsync(Guid conversationId, string role, string content, string? enhancedPrompt = null, string? thought = null, IReadOnlyList<string>? toolCalls = null, CancellationToken ct = default)
+    public async Task AddMessageAsync(Guid conversationId, string role, string content, string? enhancedPrompt = null, IReadOnlyList<MessageStep>? steps = null, CancellationToken ct = default)
     {
-        await repository.AddMessageAsync(conversationId, role, content, enhancedPrompt, thought, toolCalls, ct);
+        await repository.AddMessageAsync(conversationId, role, content, enhancedPrompt, steps, ct);
         await cache.RemoveAsync($"{CacheTag}:{conversationId}", ct);
     }
 }

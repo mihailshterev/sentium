@@ -9,6 +9,7 @@ public sealed class Agent : IUserOwned
     public string Name { get; set; } = null!;
     public string Description { get; set; } = null!;
     public string Model { get; set; } = string.Empty;
+    public List<string>? Tools { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }

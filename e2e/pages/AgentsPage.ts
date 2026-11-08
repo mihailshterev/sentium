@@ -61,6 +61,15 @@ export class AgentsPage {
     await this.page.getByTestId("confirm-dialog-confirm").click();
   }
 
+  builtInRow(agentName: string) {
+    return this.page.getByRole("listitem").filter({ has: this.page.getByTestId(`builtin-tools-${agentName}`) });
+  }
+
+  async openBuiltInTools(agentName: string): Promise<void> {
+    await this.page.getByTestId(`builtin-tools-${agentName}`).click();
+    await expect(this.page.getByRole("dialog", { name: `${agentName} tools` })).toBeVisible();
+  }
+
   async expectAgentVisible(name: string): Promise<void> {
     await expect(this.page.getByText(name)).toBeVisible();
   }

@@ -108,6 +108,54 @@ public class PraxisApiTests(MonolithWebApplicationFactory factory)
     }
 
     [Fact]
+    public async Task GetTools_ListsTheCatalogWithPolicy()
+    {
+        var tools = await _client.GetFromJsonAsync<List<ToolDescriptor>>("/api/praxis/tools", Ct);
+
+        tools!.Should().Contain(t => t.Name == "knowledge_base_search" && !t.RequiresApproval);
+        tools.Should().Contain(t => t.Name == "execute_code_sandbox" && t.RequiresApproval && t.Resource == "Code");
+    }
+
+    [Fact]
+    public async Task CreateAgent_WithTools_PersistsThem_AndRejectsUnknownTools()
+    {
+        var request = new CreateAgentRequest($"Tooled-{Guid.NewGuid()}", "desc", "m", ["find_assets", "knowledge_base_search"]);
+
+        var response = await _client.PostAsJsonAsync("/api/praxis/agents", request, Ct);
+        var created = await response.Content.ReadFromJsonAsync<AgentResponse>(Ct);
+        created!.Tools.Should().BeEquivalentTo("find_assets", "knowledge_base_search");
+
+        var update = new UpdateAgentRequest(created.Id, created.Name, "desc", "m", Tools: null);
+        (await _client.PutAsJsonAsync($"/api/praxis/agents/{created.Id}", update, Ct)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        (await _client.GetFromJsonAsync<AgentResponse>($"/api/praxis/agents/{created.Id}", Ct))!.Tools.Should().BeNull("null means every tool");
+
+        var invalid = await _client.PostAsJsonAsync("/api/praxis/agents", new CreateAgentRequest($"Bad-{Guid.NewGuid()}", "d", "m", ["rm_rf"]), Ct);
+        invalid.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task BuiltInAgentTools_CanBeOverriddenAndReset()
+    {
+        var initial = await _client.GetFromJsonAsync<List<BuiltInAgentResponse>>("/api/praxis/agents/built-in", Ct);
+        var analyst = initial!.Single(a => a.Name == "ResearchAnalyst");
+        analyst.IsCustomized.Should().BeFalse();
+        analyst.Tools.Should().BeEquivalentTo(analyst.DefaultTools);
+        initial.Should().NotContain(a => a.Name == "Orchestrator");
+
+        var set = await _client.PutAsJsonAsync("/api/praxis/agents/built-in/ResearchAnalyst/tools", new UpdateAgentToolsRequest(["find_assets"]), Ct);
+        set.StatusCode.Should().Be(HttpStatusCode.OK);
+        var overridden = await set.Content.ReadFromJsonAsync<BuiltInAgentResponse>(Ct);
+        overridden!.IsCustomized.Should().BeTrue();
+        overridden.Tools.Should().Equal("find_assets");
+
+        var reset = await _client.DeleteAsync("/api/praxis/agents/built-in/ResearchAnalyst/tools", Ct);
+        (await reset.Content.ReadFromJsonAsync<BuiltInAgentResponse>(Ct))!.IsCustomized.Should().BeFalse();
+
+        (await _client.PutAsJsonAsync("/api/praxis/agents/built-in/Orchestrator/tools", new UpdateAgentToolsRequest(null), Ct))
+            .StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
     public async Task GetConversationDetail_ReturnsMessages()
     {
         var postResp = await _client.PostAsJsonAsync("/api/praxis/conversations", new CreateConversationRequest("Detail Test", "m"), Ct);

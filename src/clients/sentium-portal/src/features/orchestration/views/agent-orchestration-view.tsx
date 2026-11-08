@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router";
 import { CheckCircle, Circle, History, Loader2, Square, Terminal, Zap } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -10,7 +10,7 @@ import { useRenameWorkflowRun, useWorkflowRun } from "@/features/workflows/hooks
 import { describeRun } from "@/features/workflows/utils/describe-run";
 import { useInfiniteList } from "@/shared/hooks/useInfiniteList";
 import { useDebouncedValue } from "@/shared/hooks/useDebouncedValue";
-import type { Phase, LogEntry } from "@/features/orchestration/types/orchestration";
+import type { Phase } from "@/features/orchestration/types/orchestration";
 import type { WorkflowRecord } from "@/features/workflows/types/workflows";
 import type { WorkflowRun } from "@/features/workflows/types/workflows";
 import { useOrchestrationRunStore } from "@/features/orchestration/state/orchestration-run-store";
@@ -18,7 +18,7 @@ import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { EmptyState } from "@/shared/ui/empty-state";
 import { Page } from "@/shared/ui/page";
-import { LogEntryView } from "../components/log-entry-view";
+import { WorkflowTimeline } from "../components/workflow-timeline";
 import { ExecuteSidebar, type ExecuteMode } from "../components/execute-sidebar";
 
 const ALL_PHASE_STEPS: { key: Phase; label: string; icon: React.ElementType }[] = [
@@ -33,24 +33,6 @@ const PREDEFINED_PHASE_STEPS: { key: Phase; label: string; icon: React.ElementTy
 ];
 
 const PHASE_ORDER: Phase[] = ["IDLE", "PLANNING", "SQUAD", "VALIDATING", "COMPLETE"];
-
-function coalesceLog(entries: LogEntry[]): LogEntry[] {
-  const result: LogEntry[] = [];
-  for (const entry of entries) {
-    const last = result[result.length - 1];
-    if (
-      last &&
-      (entry.type === "message" || entry.type === "thought") &&
-      last.type === entry.type &&
-      last.author === entry.author
-    ) {
-      last.text += entry.text;
-    } else {
-      result.push({ ...entry });
-    }
-  }
-  return result;
-}
 
 export function AgentOrchestrationView() {
   const { workflows } = useWorkflows();
@@ -75,7 +57,6 @@ export function AgentOrchestrationView() {
   const [selectedWorkflow, setSelectedWorkflow] = useState<WorkflowRecord | null>(null);
   const [scenarioInput, setScenarioInput] = useState("");
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string>("");
-  const [expandedThoughts, setExpandedThoughts] = useState<Set<string>>(new Set());
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -106,17 +87,6 @@ export function AgentOrchestrationView() {
       keepPrevious: true,
     },
   );
-
-  const toggleThought = (id: string) =>
-    setExpandedThoughts((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
 
   const wasRunning = useRef(false);
   useEffect(() => {
@@ -171,7 +141,6 @@ export function AgentOrchestrationView() {
   };
 
   const loadRun = (run: WorkflowRun) => {
-    setExpandedThoughts(new Set());
     navigate(`/orchestration/runs/${run.id}`);
   };
 
@@ -188,7 +157,10 @@ export function AgentOrchestrationView() {
 
   const viewingRun = !!runId;
   const isRunning = !viewingRun && storeRunning;
-  const displayLogs = viewingRun && selectedRun ? coalesceLog(selectedRun.logs ?? []) : logs;
+  const displayLogs = useMemo(
+    () => (viewingRun && selectedRun ? (selectedRun.logs ?? []) : logs),
+    [viewingRun, selectedRun, logs],
+  );
   const displayPhase: Phase = viewingRun ? "COMPLETE" : phase;
   const displayPhaseIndex = PHASE_ORDER.indexOf(displayPhase);
   const isDynamicPhase = storeRunning ? isDynamicRun : executeMode === "dynamic";
@@ -328,23 +300,7 @@ export function AgentOrchestrationView() {
               <EmptyState icon={<History />} title="No log entries recorded for this run" />
             )}
             {displayLogs.length > 0 && (
-              <ol className={styles.timeline}>
-                {displayLogs.map((log, i) => {
-                  const entryId = `${runId ?? "live"}-${i}`;
-                  const isActiveThought = isRunning && log.type === "thought" && i === displayLogs.length - 1;
-                  return (
-                    <LogEntryView
-                      key={entryId}
-                      log={log}
-                      entryId={entryId}
-                      expanded={expandedThoughts.has(entryId)}
-                      onToggle={toggleThought}
-                      getRoleClass={getRoleClass}
-                      isActiveThought={isActiveThought}
-                    />
-                  );
-                })}
-              </ol>
+              <WorkflowTimeline key={runId ?? "live"} logs={displayLogs} live={isRunning} getRoleClass={getRoleClass} />
             )}
             {isRunning && renderRunIndicator()}
           </div>

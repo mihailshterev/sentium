@@ -14,4 +14,5 @@ public sealed record StreamErrorFrame(
 public sealed record ToolApprovalData(
     [property: JsonPropertyName("requestId")] string RequestId,
     [property: JsonPropertyName("toolName")] string ToolName,
-    [property: JsonPropertyName("arguments")] object? Arguments);
+    [property: JsonPropertyName("arguments")] object? Arguments,
+    [property: JsonPropertyName("callId")] string? CallId = null);

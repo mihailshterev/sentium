@@ -19,6 +19,7 @@ public sealed class AgentRepository(PraxisDbContext context) : IAgentRepository
             Name = request.Name,
             Description = request.Description,
             Model = request.Model,
+            Tools = NormalizeTools(request.Tools),
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -102,12 +103,14 @@ public sealed class AgentRepository(PraxisDbContext context) : IAgentRepository
     {
         ArgumentNullException.ThrowIfNull(request);
 
+        var tools = NormalizeTools(request.Tools);
         var affectedRows = await context.Agents
             .Where(a => a.Id == agentId)
             .ExecuteUpdateAsync(setters => setters
                 .SetProperty(a => a.Name, request.Name)
                 .SetProperty(a => a.Description, request.Description)
                 .SetProperty(a => a.Model, request.Model)
+                .SetProperty(a => a.Tools, tools)
                 .SetProperty(a => a.UpdatedAt, DateTime.UtcNow),
             ct);
 
@@ -122,4 +125,7 @@ public sealed class AgentRepository(PraxisDbContext context) : IAgentRepository
 
         return affectedRows > 0;
     }
+
+    private static List<string>? NormalizeTools(IReadOnlyList<string>? tools) =>
+        tools is null ? null : [.. tools.Distinct(StringComparer.OrdinalIgnoreCase)];
 }

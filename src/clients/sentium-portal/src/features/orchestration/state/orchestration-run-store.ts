@@ -152,7 +152,7 @@ export const useOrchestrationRunStore = create<OrchestrationRunState>((set, get)
       }
 
       if (
-        (entryType === "message" || entryType === "thought" || entryType === "tool") &&
+        (entryType === "message" || entryType === "thought" || entryType === "tool" || entryType === "tool_call") &&
         (get().connection === "waiting" || get().connection === "connecting")
       ) {
         set({ connection: "streaming" });

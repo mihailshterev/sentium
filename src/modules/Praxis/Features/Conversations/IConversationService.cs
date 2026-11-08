@@ -13,12 +13,14 @@ public interface IConversationService
     /// <paramref name="search"/> (case-insensitive).
     /// </summary>
     Task<PagedResponse<ConversationSummary>> GetConversationsAsync(int page, int pageSize, string? search = null, CancellationToken ct = default);
+
     Task<ConversationResponse?> GetConversationAsync(Guid conversationId, CancellationToken ct = default);
     /// <summary>
     /// Creates a conversation, optionally with a specific agent (a built-in specialist or one of the user's agents).
     /// An unknown agent or a control role is <see cref="ResultStatus.Invalid"/>.
     /// </summary>
     Task<Result<ConversationSummary>> CreateConversationAsync(CreateConversationRequest request, CancellationToken ct = default);
+
     Task<bool> DeleteConversationAsync(Guid conversationId, CancellationToken ct = default);
 
     /// <summary>
@@ -45,7 +47,7 @@ public interface IConversationService
     Task<bool> RenameConversationAsync(Guid conversationId, string title, CancellationToken ct = default);
 
     /// <summary>
-    /// Appends a message (with optional enhanced prompt, thought, and tool calls) to a conversation.
+    /// Appends a message (with optional enhanced prompt and ordered activity steps) to a conversation.
     /// </summary>
-    Task AddMessageAsync(Guid conversationId, string role, string content, string? enhancedPrompt = null, string? thought = null, IReadOnlyList<string>? toolCalls = null, CancellationToken ct = default);
+    Task AddMessageAsync(Guid conversationId, string role, string content, string? enhancedPrompt = null, IReadOnlyList<MessageStep>? steps = null, CancellationToken ct = default);
 }

@@ -53,4 +53,50 @@ test.describe("Assistant", () => {
     await assistantPage.sendMessage();
     await assistantPage.expectMessageVisible("Hello from mock");
   });
+
+  test(
+    "shows the agent's thinking and tool calls as an ordered timeline",
+    { tag: "@regression" },
+    async ({ assistantPage, page }) => {
+      const toolCall = (callId: string, name: string, args: object) => ({
+        type: "tool_call",
+        message: { content: JSON.stringify({ callId, name, arguments: JSON.stringify(args) }) },
+      });
+      const toolResult = (callId: string, result: string, durationMs: number) => ({
+        type: "tool_result",
+        message: { content: JSON.stringify({ callId, status: "ok", result, durationMs }) },
+      });
+
+      await mockSseRoute(page, /\/assistant\/chat/, [
+        sseMessage({ type: "thought", message: { content: "The user wants their drill." } }),
+        sseMessage(toolCall("c1", "find_assets", { query: "drill" })),
+        sseMessage(toolResult("c1", "Cordless drill - garage", 42)),
+        sseMessage({ type: "thought", message: { content: "Found it in the garage." } }),
+        sseMessage({ type: "message", message: { content: "Your drill is in the garage." } }),
+        sseDone(),
+      ]);
+
+      await assistantPage.startNewConversation();
+      await assistantPage.typeMessage("where is my drill?");
+      await assistantPage.sendMessage();
+      await assistantPage.expectMessageVisible("Your drill is in the garage.");
+
+      const summary = page.getByRole("button", { name: /2 thoughts · 1 tool call/ });
+      await expect(summary).toBeVisible();
+      await summary.click();
+
+      const steps = page.locator("ol > li[data-kind]");
+      await expect(steps).toHaveCount(3);
+      await expect(steps.nth(0)).toHaveAttribute("data-kind", "thought");
+      await expect(steps.nth(1)).toHaveAttribute("data-kind", "tool");
+      await expect(steps.nth(2)).toHaveAttribute("data-kind", "thought");
+
+      await steps
+        .nth(1)
+        .getByRole("button", { name: /find_assets/ })
+        .click();
+      await expect(steps.nth(1).getByText("Cordless drill - garage")).toBeVisible();
+      await expect(steps.nth(1).getByText("42ms")).toBeVisible();
+    },
+  );
 });

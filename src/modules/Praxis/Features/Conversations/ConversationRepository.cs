@@ -9,6 +9,11 @@ namespace Sentium.Praxis.Features.Conversations;
 
 public sealed class ConversationRepository(PraxisDbContext context) : IConversationRepository
 {
+    private static readonly JsonSerializerOptions StepJson = new(JsonSerializerDefaults.Web)
+    {
+        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull,
+    };
+
     public async Task<(IReadOnlyList<ConversationSummary> Items, int TotalCount)> GetConversationsAsync(int page, int pageSize, string? search = null, CancellationToken ct = default)
     {
         var query = context.Conversations.AsNoTracking();
@@ -51,7 +56,8 @@ public sealed class ConversationRepository(PraxisDbContext context) : IConversat
                 m.Id, m.Role, m.Content, m.Timestamp,
                 m.EnhancedPrompt,
                 m.Thought,
-                m.ToolCalls != null ? JsonSerializer.Deserialize<List<string>>(m.ToolCalls) : null)).ToList(),
+                m.ToolCalls != null ? JsonSerializer.Deserialize<List<string>>(m.ToolCalls) : null,
+                m.Steps != null ? JsonSerializer.Deserialize<List<MessageStep>>(m.Steps, StepJson) : null)).ToList(),
             conv.AgentName);
     }
 
@@ -119,7 +125,7 @@ public sealed class ConversationRepository(PraxisDbContext context) : IConversat
         return affected > 0;
     }
 
-    public async Task AddMessageAsync(Guid conversationId, string role, string content, string? enhancedPrompt = null, string? thought = null, IReadOnlyList<string>? toolCalls = null, CancellationToken ct = default)
+    public async Task AddMessageAsync(Guid conversationId, string role, string content, string? enhancedPrompt = null, IReadOnlyList<MessageStep>? steps = null, CancellationToken ct = default)
     {
         var message = new Message
         {
@@ -128,8 +134,7 @@ public sealed class ConversationRepository(PraxisDbContext context) : IConversat
             Role = role,
             Content = content,
             EnhancedPrompt = enhancedPrompt,
-            Thought = thought,
-            ToolCalls = toolCalls != null ? JsonSerializer.Serialize(toolCalls) : null,
+            Steps = steps is { Count: > 0 } ? JsonSerializer.Serialize(steps, StepJson) : null,
             Timestamp = DateTime.UtcNow
         };
 

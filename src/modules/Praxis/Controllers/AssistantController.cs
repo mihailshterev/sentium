@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using Sentium.Praxis.Features.Agents.Activity;
 using Microsoft.Agents.AI;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -142,31 +143,21 @@ public sealed class AssistantController(
         Task<string?>? pendingTitle = null)
     {
         var text = new StringBuilder();
-        var thought = new StringBuilder();
-        var toolCalls = new List<string>();
+        var streamed = new List<AIContent>();
+        var activity = new AgentActivityTranslator();
+        conversationHistory.TrackActivity(activity);
         ToolApprovalRequestContent? approvalRequest = null;
 
         try
         {
             await foreach (var update in agent.RunStreamingAsync(input, session, cancellationToken: ct))
             {
-                foreach (var content in update.Contents)
+                streamed.AddRange(update.Contents);
+                approvalRequest ??= update.Contents.OfType<ToolApprovalRequestContent>().FirstOrDefault();
+
+                foreach (var activityEvent in activity.Translate(update.Contents))
                 {
-                    switch (content)
-                    {
-                        case TextReasoningContent reasoning when !string.IsNullOrEmpty(reasoning.Text):
-                            thought.Append(reasoning.Text);
-                            await sse.SendUpdateAsync(AgentUpdateTypes.Thought, reasoning.Text, ct);
-                            break;
-                        case ToolApprovalRequestContent request:
-                            approvalRequest ??= request;
-                            break;
-                        case FunctionCallContent call:
-                            var label = ConversationChatHistoryProvider.ToolCallLabel(call.Name);
-                            toolCalls.Add(label);
-                            await sse.SendUpdateAsync(AgentUpdateTypes.Tool, label, ct);
-                            break;
-                    }
+                    await sse.SendUpdateAsync(activityEvent.Type, activityEvent.Payload, ct);
                 }
 
                 if (!string.IsNullOrEmpty(update.Text))
@@ -193,7 +184,7 @@ public sealed class AssistantController(
                 logger.LogInformation("Streaming request cancelled. CorrelationId: {CorrelationId}", runContext.CorrelationId);
             }
 
-            await PersistPartialResponseAsync(session, conversationId, text, thought, toolCalls);
+            await PersistPartialResponseAsync(session, conversationId, text, streamed, activity);
         }
         catch (Exception ex)
         {
@@ -233,12 +224,12 @@ public sealed class AssistantController(
             agentName));
 
         var call = request.ToolCall as FunctionCallContent;
-        var approvalData = new ToolApprovalData(request.RequestId, call?.Name ?? "unknown", call?.Arguments);
+        var approvalData = new ToolApprovalData(request.RequestId, call?.Name ?? "unknown", call?.Arguments, call?.CallId);
 
         await sse.SendUpdateAsync(AgentUpdateTypes.ApprovalRequest, JsonSerializer.Serialize(approvalData), ct);
     }
 
-    private async Task PersistPartialResponseAsync(AgentSession session, Guid? conversationId, StringBuilder text, StringBuilder thought, List<string> toolCalls)
+    private async Task PersistPartialResponseAsync(AgentSession session, Guid? conversationId, StringBuilder text, List<AIContent> streamed, AgentActivityTranslator activity)
     {
         if (conversationId is null || text.Length == 0)
         {
@@ -247,11 +238,8 @@ public sealed class AssistantController(
 
         try
         {
-            await conversationHistory.PersistPartialResponseAsync(
-                session,
-                text.ToString(),
-                thought.Length > 0 ? thought.ToString() : null,
-                toolCalls.Count > 0 ? toolCalls : null);
+            var (answer, steps) = AgentTurnSteps.Build([new ChatMessage(ChatRole.Assistant, streamed)], activity.Durations);
+            await conversationHistory.PersistPartialResponseAsync(session, answer.Length > 0 ? answer : text.ToString(), steps.Count > 0 ? steps : null);
         }
         catch (Exception ex)
         {

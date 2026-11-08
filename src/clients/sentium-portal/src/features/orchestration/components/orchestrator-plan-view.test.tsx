@@ -1,7 +1,7 @@
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { OrchestratorPlanView } from "./orchestrator-plan-view";
-import { LogEntryView } from "./log-entry-view";
+import { WorkflowTimeline } from "./workflow-timeline";
 import type { LogEntry } from "@/features/orchestration/types/orchestration";
 import { parseAssignments } from "../../../shared/utils/agent-helpers";
 
@@ -42,9 +42,9 @@ describe("OrchestratorPlanView", () => {
   });
 });
 
-describe("LogEntryView orchestrator plan", () => {
+describe("WorkflowTimeline orchestrator plan", () => {
   const renderLog = (log: LogEntry) =>
-    render(<LogEntryView log={log} entryId="1" expanded={false} onToggle={vi.fn()} getRoleClass={() => "roleSquad"} />);
+    render(<WorkflowTimeline logs={[log]} live={false} getRoleClass={() => "roleSquad"} />);
 
   it("renders the Orchestrator plan JSON as cards, not raw JSON", () => {
     const { container } = renderLog({ author: "Orchestrator", text: PLAN_JSON, type: "message" });
