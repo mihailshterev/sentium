@@ -1,0 +1,21 @@
+# SearXNG for Sentium's web-search MCP server (isokoliuk/mcp-searxng). See docs/mcp-servers.md.
+#
+# SearXNG sits on two Docker networks: `default` (so it can query the search engines) and the `internal: true`
+# `sentium-egress` network that the MCP container joins. Nothing else can reach it, and it is not published to the host.
+# The secret key comes from the SEARXNG_SECRET environment variable (see .env.example), not from this file.
+use_default_settings: true
+
+general:
+  instance_name: "Sentium search"
+
+search:
+  formats:
+    - html
+    - json
+
+server:
+  # The bot-detection limiter protects public instances. Only the MCP container can reach this one, and a limiter
+  # would need a Valkey/Redis next to it.
+  limiter: false
+  public_instance: false
+  image_proxy: false
