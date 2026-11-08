@@ -26,6 +26,8 @@ builder.Services.AddHybridCache(options =>
 
 builder.AddSentiumPlatform();
 
+builder.AddSentiumDataProtection();
+
 // X-Internal-Token scheme for the out-of-process Sandbox service (Sentinel's evaluate endpoint, Praxis' sandbox client).
 builder.AddInternalApiSecurity();
 

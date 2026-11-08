@@ -1,0 +1,377 @@
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.inlineMessage {
+  padding: 0 var(--space-5) var(--space-4);
+}
+
+.muted {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+}
+
+.mono {
+  font-family: var(--font-mono);
+  overflow-wrap: anywhere;
+}
+
+.warn {
+  color: var(--warning);
+}
+
+/* ---------- Settings ---------- */
+
+.settings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: 0 var(--space-5) var(--space-5);
+}
+
+/* ---------- Server list ---------- */
+
+.serverList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.server {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.serverHead {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.serverIcon {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--accent-line);
+  border-radius: var(--radius-md);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.serverMain {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.serverTitle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.serverName {
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-semibold);
+}
+
+.slug {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+}
+
+.serverMeta {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.serverDesc {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+}
+
+.serverActions {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 2px;
+}
+
+.serverError {
+  margin: 0;
+}
+
+.chevron,
+.chevronOpen {
+  transition: transform var(--transition-base);
+}
+
+.chevronOpen {
+  transform: rotate(180deg);
+}
+
+.status {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--mat-thin-bg);
+}
+
+.stderr {
+  max-height: 200px;
+  margin: var(--space-2) 0 0;
+  padding: var(--space-2) var(--space-3);
+  overflow: auto;
+  border-radius: var(--radius-sm);
+  background: var(--terminal-bg);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  line-height: 1.55;
+  white-space: pre-wrap;
+}
+
+/* ---------- Tools ---------- */
+
+.tools {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.toolsBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.toolList {
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  list-style: none;
+}
+
+.toolRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3);
+
+  & + & {
+    border-top: 1px solid var(--border-subtle);
+  }
+}
+
+.toolMain {
+  display: flex;
+  flex: 1 1 320px;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.toolTitle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.toolName {
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  overflow-wrap: anywhere;
+}
+
+.toolDesc {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.toolDiff {
+  margin: 0;
+  padding: var(--space-1) var(--space-2);
+  border-left: 2px solid var(--danger-line);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  text-decoration: line-through;
+  text-decoration-color: var(--danger-line);
+}
+
+.toolDiffLabel {
+  font-family: var(--font-mono);
+  text-decoration: none;
+}
+
+.schema {
+  color: var(--text-muted);
+  font-size: var(--text-2xs);
+
+  & summary {
+    width: fit-content;
+    font-family: var(--font-mono);
+    cursor: pointer;
+  }
+
+  & pre {
+    max-height: 240px;
+    margin: var(--space-1) 0 0;
+    padding: var(--space-2);
+    overflow: auto;
+    border-radius: var(--radius-sm);
+    background: var(--mat-thin-bg);
+    font-family: var(--font-mono);
+  }
+}
+
+.toolControls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  cursor: pointer;
+}
+
+/* ---------- Server form ---------- */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.formGrid,
+.formGrid3,
+.formGrid4 {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.formGrid {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.formGrid3 {
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+
+.formGrid4 {
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.secrets {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+}
+
+.secretsLegend {
+  padding: 0 var(--space-1);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-label);
+}
+
+.secretsHint {
+  margin: 0 0 var(--space-1);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.secretRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) auto auto;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Stored rows have no secret toggle: the value cell takes its column too. */
+.secretRowStored > :nth-child(2) {
+  grid-column: span 2;
+}
+
+.secretValueField {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.secretValueField > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.secretName,
+.secretRemoved {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  overflow-wrap: anywhere;
+}
+
+.secretRemoved {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+.secretValue {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+@media (max-width: 560px) {
+  .serverHead {
+    flex-wrap: wrap;
+  }
+
+  .serverActions {
+    justify-content: flex-start;
+    width: 100%;
+  }
+}

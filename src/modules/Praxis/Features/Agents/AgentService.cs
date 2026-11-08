@@ -10,7 +10,7 @@ public sealed class AgentService(
     IScopedCache cache,
     IAgentRegistry registry) : IAgentService
 {
-    private const string CacheTag = "agents";
+    public const string CacheTag = "agents";
 
     public async ValueTask<Result<AgentResponse>> CreateAgentAsync(CreateAgentRequest request, CancellationToken ct = default)
     {

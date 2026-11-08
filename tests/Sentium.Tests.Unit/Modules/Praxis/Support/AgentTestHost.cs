@@ -8,6 +8,7 @@ using Sentium.Praxis.Entities;
 using Sentium.Praxis.Features.Agents;
 using Sentium.Praxis.Features.Agents.Native;
 using Sentium.Praxis.Features.Learnings;
+using Sentium.Praxis.Features.Mcp;
 using Sentium.Praxis.Features.Models;
 using Sentium.Praxis.Features.Registry;
 using Sentium.Praxis.Features.Sentinel;
@@ -35,6 +36,8 @@ internal sealed class AgentTestHost
     public List<AITool> Tools { get; } = [];
     public IAgentRepository Agents { get; } = Substitute.For<IAgentRepository>();
     public IAgentToolOverrideRepository ToolOverrides { get; } = Substitute.For<IAgentToolOverrideRepository>();
+    public List<AIFunction> McpTools { get; } = [];
+    public McpRuntimeSettings McpSettings { get; set; } = McpRuntimeSettings.Default;
 
     public AgentTestHost()
     {
@@ -73,11 +76,20 @@ internal sealed class AgentTestHost
 
         var sentinel = new SentinelClient(Pdp, NullLogger<SentinelClient>.Instance);
 
+        var mcpCatalog = Substitute.For<IMcpToolCatalog>();
+        mcpCatalog.GetFunctions(Arg.Any<IReadOnlySet<string>>())
+            .Returns(call => McpTools.Where(t => call.Arg<IReadOnlySet<string>>().Contains(t.Name)).ToList());
+
+        var mcpSettings = Substitute.For<IMcpSettingsProvider>();
+        mcpSettings.GetAsync(Arg.Any<CancellationToken>()).Returns(_ => ValueTask.FromResult(McpSettings));
+
         return new CompositeAgentFactory(
             Model,
             Options.Create(Inference),
             ContextWindows,
             toolProvider,
+            mcpCatalog,
+            mcpSettings,
             Agents,
             new BuiltInAgentService([new GeneralAssistant(), new ResearchAnalyst()], ToolOverrides),
             Settings,

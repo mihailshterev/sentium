@@ -18,6 +18,7 @@ import {
   Package,
   PanelLeftClose,
   PanelLeftOpen,
+  Plug,
   Settings,
   ShieldCog,
   UsersRound,
@@ -72,6 +73,7 @@ const NAV_GROUPS: NavGroup[] = [
       { to: "/agents", label: "Agents", icon: Bot },
       { to: "/models", label: "Models", icon: BrainCircuit },
       { to: "/skills", label: "Skills", icon: BookOpen },
+      { to: "/mcp", label: "MCP Servers", icon: Plug, sovereignOnly: true },
     ],
   },
   {

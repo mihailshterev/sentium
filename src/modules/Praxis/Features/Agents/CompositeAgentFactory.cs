@@ -3,6 +3,7 @@ using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Options;
 using Sentium.Infrastructure.Inference;
 using Sentium.Praxis.Features.Learnings;
+using Sentium.Praxis.Features.Mcp;
 using Sentium.Praxis.Features.Models;
 using Sentium.Praxis.Features.Registry;
 using Sentium.Praxis.Features.Sentinel;
@@ -24,6 +25,8 @@ public sealed class CompositeAgentFactory(
     IOptions<InferenceOptions> inferenceOptions,
     IModelContextWindowProvider contextWindows,
     IAgentToolProvider agentToolProvider,
+    IMcpToolCatalog mcpTools,
+    IMcpSettingsProvider mcpSettings,
     IAgentRepository agentRepository,
     IBuiltInAgentService builtInAgents,
     IRegistrySettingsService registrySettingsService,
@@ -48,7 +51,7 @@ public sealed class CompositeAgentFactory(
 
         var (settings, model, contextWindow) = await ResolveSettingsAsync(overrideModel, actingUserId, ct);
 
-        var tools = SelectTools(definition, allowApprovalTools, ct);
+        var tools = await SelectToolsAsync(definition, allowApprovalTools, ct);
 
         var chatOptions = new ChatOptions
         {
@@ -124,20 +127,25 @@ public sealed class CompositeAgentFactory(
     }
 
     /// <summary>
-    /// The agent's curated tool set (all tools when it declares none). Approval-gated tools are dropped for unattended
-    /// runs: no human can answer the approval request there, so offering them only stalls the step.
+    /// The agent's curated tool set (all built-in tools when it declares none). MCP tools are opt-in: an agent gets one
+    /// only when its tool list names it explicitly, so registering a server never silently widens what existing agents
+    /// can do. Approval-gated tools are dropped for unattended runs: no human can answer the approval request there, so
+    /// offering them only stalls the step.
     /// </summary>
-    private List<AITool> SelectTools(IAgent definition, bool allowApprovalTools, CancellationToken ct)
+    private async Task<List<AITool>> SelectToolsAsync(IAgent definition, bool allowApprovalTools, CancellationToken ct)
     {
         var available = agentToolProvider.GetToolsForAgent(definition.Name, ct);
         var allowed = definition.Tools is { } names ? new HashSet<string>(names, StringComparer.OrdinalIgnoreCase) : null;
 
-        return
-        [
-            .. available.Where(tool =>
-                (allowed is null || allowed.Contains(tool.Name))
-                && (allowApprovalTools || tool.GetService<ApprovalRequiredAIFunction>() is null))
-        ];
+        var candidates = available.Where(tool => allowed is null || allowed.Contains(tool.Name));
+
+        if (allowed is not null && allowed.Any(McpNames.IsMcpToolName) && (await mcpSettings.GetAsync(ct)).Enabled)
+        {
+            await mcpTools.EnsureLoadedAsync(ct);
+            candidates = candidates.Concat(mcpTools.GetFunctions(allowed));
+        }
+
+        return [.. candidates.Where(tool => allowApprovalTools || tool.GetService<ApprovalRequiredAIFunction>() is null)];
     }
 
     private async Task<IAgent?> ResolveDefinitionAsync(string agentName, Guid? actingUserId, CancellationToken ct)

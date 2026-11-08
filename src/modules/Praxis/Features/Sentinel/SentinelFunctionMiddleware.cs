@@ -43,11 +43,11 @@ public sealed class SentinelFunctionMiddleware(SentinelClient sentinel, IPdpCont
             AgentId = agentName,
             SkillName = context.Function.Name,
             ResourceType = resource,
-            ResourceId = ExtractResourceId(context.Arguments),
+            ResourceId = AgentToolFunction.TryGetResourceId(context.Function, out var declaredId) ? declaredId : ExtractResourceId(context.Arguments),
             Action = action,
             OriginalUserPrompt = runContext.OriginalUserPrompt,
             CorrelationId = runContext.CorrelationId.Length > 0 ? runContext.CorrelationId : Guid.NewGuid().ToString(),
-            Metadata = BuildMetadata(action, context.Arguments),
+            Metadata = BuildMetadata(resource, action, context.Arguments),
         }, cancellationToken);
 
         if (!decision.Allowed)
@@ -61,13 +61,14 @@ public sealed class SentinelFunctionMiddleware(SentinelClient sentinel, IPdpCont
     }
 
     /// <summary>
-    /// For write/execute actions, forwards the (capped) argument payload so Sentinel's content-inspection layers
-    /// (sensitive-data egress, semantic intent) can scan what is actually written or executed. Reads and searches carry
-    /// no payload to keep evaluation cheap and avoid leaking query text.
+    /// For write/execute actions - and any call to an <see cref="ToolResource.External"/> resource, whose arguments
+    /// leave Sentium whatever the action - forwards the (capped) argument payload so Sentinel's content-inspection layers
+    /// (sensitive-data egress, semantic intent) can scan it. Internal reads and searches carry no payload to keep
+    /// evaluation cheap.
     /// </summary>
-    private static IReadOnlyDictionary<string, string> BuildMetadata(string action, AIFunctionArguments arguments)
+    private static IReadOnlyDictionary<string, string> BuildMetadata(string resource, string action, AIFunctionArguments arguments)
     {
-        var isEgress = action is nameof(ToolAction.Write) or nameof(ToolAction.Execute);
+        var isEgress = action is nameof(ToolAction.Write) or nameof(ToolAction.Execute) || resource == nameof(ToolResource.External);
         if (!isEgress || arguments.Count == 0)
         {
             return EmptyMetadata;

@@ -18,6 +18,8 @@ RUN --mount=type=cache,target=/root/.nuget/packages,sharing=locked \
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
+# Data Protection key ring mount point (a named volume copies this directory's ownership on first use).
+RUN mkdir -p /keys && chown "$APP_UID" /keys
 COPY --from=build /app .
 ENV ASPNETCORE_URLS=https://+:8443;http://+:8080
 EXPOSE 8080

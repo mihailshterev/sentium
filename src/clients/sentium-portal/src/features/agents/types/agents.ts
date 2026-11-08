@@ -33,6 +33,7 @@ export interface ToolDescriptor {
   action: string;
   risk: string;
   requiresApproval: boolean;
+  server?: string | null;
 }
 
 export interface BuiltInAgent {

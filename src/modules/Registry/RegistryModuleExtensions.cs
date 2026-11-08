@@ -37,6 +37,10 @@ public static class RegistryModuleExtensions
             SettingsKeys.Vigil, SettingsScope.Global, c => c.Vigil, (c, v) => c.Vigil = v)
         );
 
+        services.AddSingleton<ISettingsDescriptor>(new SettingsDescriptor<McpSettings>(
+            SettingsKeys.Mcp, SettingsScope.Global, c => c.Mcp, (c, v) => c.Mcp = v)
+        );
+
         services.AddSingleton<ISettingsCatalog, SettingsCatalog>();
         services.AddScoped<SettingsService>();
         services.AddSingleton<ISettingsService, ScopedSettingsService>();

@@ -9,4 +9,5 @@ namespace Sentium.Praxis.Dtos;
 /// <param name="Action">The kind of access (<c>ToolAction</c>: Read, Search, Write, Execute).</param>
 /// <param name="Risk">The declared risk level (<c>ToolRiskLevel</c>).</param>
 /// <param name="RequiresApproval">Whether every call waits for a human (such tools are skipped in unattended workflow runs).</param>
-public sealed record ToolDescriptor(string Name, string Description, string Resource, string Action, string Risk, bool RequiresApproval);
+/// <param name="Server">For MCP tools, the display name of the MCP server providing it; <see langword="null"/> for built-in tools.</param>
+public sealed record ToolDescriptor(string Name, string Description, string Resource, string Action, string Risk, bool RequiresApproval, string? Server = null);

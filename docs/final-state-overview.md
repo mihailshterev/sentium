@@ -87,6 +87,9 @@ Mapping old → new:
   **autonomous scheduling** for background, Sovereign-driven work
 - Agents operate under strict, per-action permissions enforced by Sentinel and execute untrusted
   code only inside the Sandbox
+- **MCP tools** through the official MCP C# SDK: Sovereign-registered servers on the local network
+  (Streamable HTTP, or stdio servers the Sandbox runs in hardened containers), hash-pinned tool
+  approvals and opt-in assignment per agent - see [mcp-servers.md](mcp-servers.md)
 
 ### Example Functionalities
 

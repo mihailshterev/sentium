@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Text;
 using Docker.DotNet;
@@ -31,12 +30,12 @@ internal sealed class DockerSandboxRunner(
     IDockerClient dockerClient,
     IJobDirectoryService jobDirectoryService,
     ContainerConfigBuilder containerConfigBuilder,
+    DockerImageService imageService,
     IArtifactService artifactService,
     IOptions<SandboxOptions> options,
     ILogger<DockerSandboxRunner> logger) : ISandboxRunner
 {
     private readonly SandboxOptions _options = options.Value;
-    private static readonly ConcurrentDictionary<string, SemaphoreSlim> _imageLocks = new(StringComparer.Ordinal);
 
     public async Task<ExecutionResult> RunAsync(ExecutionRequest request, CancellationToken ct)
     {
@@ -81,7 +80,7 @@ internal sealed class DockerSandboxRunner(
 
             if (_options.PullImageIfMissing)
             {
-                await EnsureImageAsync(image, ct);
+                await imageService.EnsureImageAsync(image, ct);
             }
 
             var cmd = request.Language == ExecutionLanguage.Python ? new[] { "python", "-u", $"/job/{codeFileName}" } : new[] { "node", $"/job/{codeFileName}" };
@@ -197,58 +196,6 @@ internal sealed class DockerSandboxRunner(
         }
     }
 
-    private async Task EnsureImageAsync(string image, CancellationToken ct)
-    {
-        var semaphore = _imageLocks.GetOrAdd(image, _ => new SemaphoreSlim(1, 1));
-        await semaphore.WaitAsync(ct);
-        try
-        {
-            var (imageName, tag) = SplitImageRef(image);
-
-            try
-            {
-                var existing = await dockerClient.Images.ListImagesAsync(
-                    new ImagesListParameters
-                    {
-                        Filters = new Dictionary<string, IDictionary<string, bool>>
-                        {
-                            ["reference"] = new Dictionary<string, bool> { [image] = true }
-                        }
-                    }, ct);
-
-                if (existing.Count > 0)
-                {
-                    logger.LogDebug("Docker image {Image} already present locally.", image);
-                    return;
-                }
-            }
-            catch (Exception ex)
-            {
-                logger.LogWarning(ex, "Could not check local image cache for {Image}. Proceeding with pull.", image);
-            }
-
-            logger.LogInformation("Pulling Docker image {Image}...", image);
-
-            await dockerClient.Images.CreateImageAsync(
-                new ImagesCreateParameters { FromImage = imageName, Tag = tag },
-                authConfig: null,
-                new Progress<JSONMessage>(msg =>
-                {
-                    if (!string.IsNullOrWhiteSpace(msg.Status))
-                    {
-                        logger.LogDebug("Docker pull [{Image}]: {Status} {Progress}", image, msg.Status, msg.ProgressMessage);
-                    }
-                }),
-                ct);
-
-            logger.LogInformation("Successfully pulled Docker image {Image}.", image);
-        }
-        finally
-        {
-            semaphore.Release();
-        }
-    }
-
     private async Task KillContainerAsync(string containerId)
     {
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
@@ -319,12 +266,6 @@ internal sealed class DockerSandboxRunner(
 
         var truncated = Encoding.UTF8.GetString(bytes, 0, maxBytes);
         return truncated + $"\n[{streamName} truncated at {maxBytes} bytes]";
-    }
-
-    private static (string imageName, string tag) SplitImageRef(string imageRef)
-    {
-        var lastColon = imageRef.LastIndexOf(':');
-        return lastColon < 0 ? (imageRef, "latest") : (imageRef[..lastColon], imageRef[(lastColon + 1)..]);
     }
 
     private static string ShortId(string id) => id.Length >= 12 ? id[..12] : id;

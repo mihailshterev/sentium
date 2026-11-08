@@ -30,6 +30,7 @@ public static class Extensions
     [
         "Experimental.Microsoft.Extensions.AI*",
         "Experimental.Microsoft.Agents.AI*",
+        "Experimental.ModelContextProtocol*",
         "Microsoft.Agents.AI*",
     ];
 

@@ -1,5 +1,6 @@
 using Docker.DotNet.Models;
 using Microsoft.Extensions.Options;
+using Sentium.Sandbox.Contracts;
 using Sentium.Sandbox.Options;
 using Sentium.Sandbox.Models;
 
@@ -7,11 +8,97 @@ namespace Sentium.Sandbox.Docker;
 
 /// <summary>
 /// Builds a fully security-hardened <see cref="CreateContainerParameters"/> instance
-/// for a sandbox worker container.
+/// for a sandbox worker container or a hosted MCP server container.
 /// </summary>
-internal sealed class ContainerConfigBuilder(IOptions<SandboxOptions> options)
+internal sealed class ContainerConfigBuilder(IOptions<SandboxOptions> options, IOptions<McpHostOptions> mcpOptions)
 {
+    /// <summary>
+    /// Label marking MCP server containers (reaped on startup: the Sandbox keeps no state across restarts).
+    /// </summary>
+    public const string McpServerLabel = "sentium.mcp-server";
+
+    public const string ServiceLabel = "sentium.service";
+
+    public const string McpServiceValue = "mcp";
+
     private readonly SandboxOptions _options = options.Value;
+    private readonly McpHostOptions _mcpOptions = mcpOptions.Value;
+
+    /// <summary>
+    /// A long-lived container running a stdio MCP server: the code-execution hardening (read-only root, no
+    /// capabilities, no-new-privileges, pid/memory/cpu limits, tmpfs scratch space), an attachable stdin, and no
+    /// network unless the spec names one the operator allows. Resource requests are clamped to the operator maxima.
+    /// </summary>
+    public CreateContainerParameters BuildMcp(string serverName, McpServerLaunchSpec spec)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(serverName);
+        ArgumentNullException.ThrowIfNull(spec);
+
+        var memoryMb = Math.Clamp(spec.MemoryMb ?? _mcpOptions.DefaultMemoryMb, 32, _mcpOptions.MaxMemoryMb);
+        var cpus = Math.Clamp(spec.CpuLimit ?? _mcpOptions.DefaultCpuLimit, 0.1, _mcpOptions.MaxCpuLimit);
+        var memoryBytes = memoryMb * 1024L * 1024L;
+
+        var env = new List<string> { "HOME=/tmp", "TMPDIR=/tmp", "TERM=dumb", "NO_UPDATE_NOTIFIER=1", "PYTHONUNBUFFERED=1" };
+        env.AddRange((spec.Env ?? new Dictionary<string, string>()).Select(e => $"{e.Key}={e.Value}"));
+
+        var hasNetwork = !string.IsNullOrWhiteSpace(spec.Network);
+
+        return new CreateContainerParameters
+        {
+            Image = spec.Image,
+            Cmd = spec.Args is { Count: > 0 } args ? [.. args] : null,
+            Hostname = $"mcp-{serverName}",
+            User = string.IsNullOrWhiteSpace(_mcpOptions.RunAsUser) ? null : _mcpOptions.RunAsUser,
+            Env = env,
+
+            OpenStdin = true,
+            StdinOnce = false,
+            AttachStdin = true,
+            AttachStdout = true,
+            AttachStderr = true,
+            Tty = false,
+
+            NetworkDisabled = !hasNetwork,
+
+            Labels = new Dictionary<string, string>
+            {
+                { "sentium.managed", "true" },
+                { ServiceLabel, McpServiceValue },
+                { McpServerLabel, serverName }
+            },
+
+            HostConfig = new HostConfig
+            {
+                NetworkMode = hasNetwork ? spec.Network : "none",
+                ReadonlyRootfs = true,
+                Memory = memoryBytes,
+                MemorySwap = memoryBytes,
+                NanoCPUs = (long)(cpus * 1_000_000_000L),
+                PidsLimit = _mcpOptions.PidsLimit,
+                OomKillDisable = false,
+                CapDrop = ["ALL"],
+                CapAdd = [],
+                Privileged = false,
+                SecurityOpt = BuildSecurityOpts(),
+                Ulimits = BuildUlimits(),
+                Tmpfs = new Dictionary<string, string>
+                {
+                    { "/tmp", $"size={_mcpOptions.TmpfsSizeMb},noexec,nosuid,nodev,rw,mode=1777" }
+                },
+                AutoRemove = false,
+                RestartPolicy = new RestartPolicy { Name = RestartPolicyKind.No },
+                LogConfig = new LogConfig
+                {
+                    Type = "json-file",
+                    Config = new Dictionary<string, string>
+                    {
+                        { "max-size", "10m" },
+                        { "max-file", "1" }
+                    }
+                }
+            }
+        };
+    }
 
     public CreateContainerParameters Build(string image, string[] cmd, string hostJobDirectory, Guid jobId, ExecutionLanguage language)
     {
