@@ -1,9 +1,14 @@
 import { useEffect, useState } from "react";
 import styles from "./page-header.module.css";
 
-const formatUtc = (date: Date) => date.toISOString().slice(11, 19);
+const formatLocal = (date: Date) =>
+  date.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
 
-/** Quiet top-right status line: the physical constant joke plus a live UTC clock. */
 export function SystemReadout() {
   const [now, setNow] = useState(() => new Date());
 
@@ -16,7 +21,7 @@ export function SystemReadout() {
     <span className={styles.readout}>
       <span>V = c</span>
       <span className={styles.readoutDot} />
-      <span>UTC {formatUtc(now)}</span>
+      <span>{formatLocal(now)}</span>
     </span>
   );
 }
