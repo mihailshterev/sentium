@@ -37,8 +37,9 @@ public sealed class ConversationChatHistoryProviderTests
 
         // The service writes into the in-memory transcript, so later loads see earlier writes - as the database would.
         _conversations
-            .When(c => c.AddMessageAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<IReadOnlyList<string>?>(), Arg.Any<CancellationToken>()))
-            .Do(call => _transcript.Add(new MessageResponse(Guid.NewGuid(), call.ArgAt<string>(1), call.ArgAt<string>(2), DateTime.UtcNow, call.ArgAt<string?>(3))));
+            .When(c => c.AddMessageAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<IReadOnlyList<MessageStep>?>(), Arg.Any<CancellationToken>()))
+            .Do(call => _transcript.Add(new MessageResponse(
+                Guid.NewGuid(), call.ArgAt<string>(1), call.ArgAt<string>(2), DateTime.UtcNow, call.ArgAt<string?>(3), Steps: call.ArgAt<IReadOnlyList<MessageStep>?>(4))));
     }
 
     [Fact]
@@ -86,6 +87,35 @@ public sealed class ConversationChatHistoryProviderTests
             ("assistant", "earlier answer"),
             ("user", "run the report"),
             ("assistant", "report done"));
+
+        var step = _transcript[^1].Steps.Should().ContainSingle().Subject;
+        step.Should().BeEquivalentTo(new { Kind = "tool", CallId = "call-1", Name = "run_report", Status = "ok", Result = "rows: 42" },
+            "the completed turn keeps the approved call and its result on the timeline");
+    }
+
+    [Fact]
+    public async Task RejectedApproval_IsRecordedOnTheTimeline()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var tool = new ApprovalTool();
+        _host.Tools.Add(tool.CreateFunction());
+        _host.Model.Script(new ChatResponse(new ChatMessage(ChatRole.Assistant, [new FunctionCallContent("call-9", "run_report")])));
+        _host.Model.Script(new ChatResponse(new ChatMessage(ChatRole.Assistant, "understood, not running it")));
+
+        var history1 = CreateProvider();
+        var agent1 = await _host.CreateFactory().CreateAsync(AgentRole.GeneralAssistant, chatHistory: history1, ct: ct);
+        var session1 = await agent1.CreateSessionAsync(ct);
+        history1.Attach(session1, _conversationId);
+        var paused = await agent1.RunAsync(new ChatMessage(ChatRole.User, "run the report"), session1, cancellationToken: ct);
+        var request = paused.Messages.SelectMany(m => m.Contents).OfType<ToolApprovalRequestContent>().Single();
+        var serialized = await agent1.SerializeSessionAsync(session1, cancellationToken: ct);
+
+        var agent2 = await _host.CreateFactory().CreateAsync(AgentRole.GeneralAssistant, chatHistory: CreateProvider(), ct: ct);
+        var session2 = await agent2.DeserializeSessionAsync(serialized, cancellationToken: ct);
+        await agent2.RunAsync(new ChatMessage(ChatRole.User, [request.CreateResponse(false)]), session2, cancellationToken: ct);
+
+        tool.Invocations.Should().Be(0);
+        _transcript[^1].Steps.Should().ContainSingle(s => s.CallId == "call-9" && s.Status == "rejected");
     }
 
     [Fact]
@@ -119,7 +149,7 @@ public sealed class ConversationChatHistoryProviderTests
 
         await agent.RunAsync(new ChatMessage(ChatRole.User, "hello"), session, cancellationToken: ct);
 
-        await _conversations.DidNotReceive().AddMessageAsync(foreign, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<string?>(), Arg.Any<IReadOnlyList<string>?>(), Arg.Any<CancellationToken>());
+        await _conversations.DidNotReceive().AddMessageAsync(foreign, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<IReadOnlyList<MessageStep>?>(), Arg.Any<CancellationToken>());
     }
 
     private ConversationChatHistoryProvider CreateProvider() =>

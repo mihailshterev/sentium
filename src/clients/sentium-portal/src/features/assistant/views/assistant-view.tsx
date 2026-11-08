@@ -7,11 +7,7 @@ import { fetchWorkspaces, fetchWorkspaceFiles } from "@/features/workspaces/api/
 import { useConversations } from "@/features/assistant/hooks/useConversations";
 import { useDebouncedValue } from "@/shared/hooks/useDebouncedValue";
 import { useModels } from "@/features/models/hooks/useModels";
-import type {
-  ConversationMessage,
-  ConversationMessageDto,
-  ConversationSummary,
-} from "@/features/assistant/types/assistant";
+import type { ConversationMessage, ConversationSummary } from "@/features/assistant/types/assistant";
 import type { Workspace } from "@/features/workspaces/types/workspace";
 import { useConversationStore } from "@/features/assistant/state/assistant-conversation-store";
 import { SUGGESTIONS_POOL } from "@/shared/utils/constants";
@@ -20,6 +16,7 @@ import { Button } from "@/shared/ui/button";
 import { Page } from "@/shared/ui/page";
 import { MessageBubble } from "../components/message-bubble";
 import { useMessageListUi } from "../hooks/useMessageListUi";
+import { messageFromDto } from "../utils/message-from-dto";
 import { WelcomeScreen } from "../components/welcome-screen";
 import { ChatInputBar } from "../components/chat-input-bar";
 import { ConversationSidebar } from "../components/conversation-sidebar";
@@ -109,8 +106,7 @@ export function AssistantView() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const isTyping = isStreaming && streamingConversationId === activeConversationId;
-  const { expandedThoughts, toggleThought, copiedMessageId, copyMessage, statusIndex, statusVisible, resetStatus } =
-    useMessageListUi(isTyping);
+  const { copiedMessageId, copyMessage, statusIndex, statusVisible, resetStatus } = useMessageListUi(isTyping);
 
   const scrollToBottom = useCallback(() => {
     if (chatAreaRef.current) {
@@ -162,15 +158,7 @@ export function AssistantView() {
           if (cancelled) {
             return;
           }
-          const loadedMessages: ConversationMessage[] = (data.messages ?? []).map((m: ConversationMessageDto) => ({
-            id: m.id,
-            role: m.role,
-            content: m.content,
-            enhancedPrompt: m.enhancedPrompt,
-            thought: m.thought,
-            toolCalls: m.toolCalls,
-            timestamp: new Date(m.timestamp),
-          }));
+          const loadedMessages: ConversationMessage[] = (data.messages ?? []).map(messageFromDto);
           setActiveConversation(routeConversationId, loadedMessages, data.model);
           setModel(data.model);
         })
@@ -385,16 +373,15 @@ export function AssistantView() {
               <WelcomeScreen suggestions={randomizedSuggestions} onSelectSuggestion={(s) => setInput(s)} />
             ) : (
               <div className={styles.messagesArea}>
-                {messages.map((msg) => (
+                {messages.map((msg, i) => (
                   <MessageBubble
                     key={msg.id}
                     msg={msg}
                     isTyping={isTyping}
-                    expandedThoughts={expandedThoughts}
+                    live={isTyping && i === messages.length - 1}
                     statusIndex={statusIndex}
                     statusVisible={statusVisible}
                     copiedMessageId={copiedMessageId}
-                    onToggleThought={toggleThought}
                     onCopyMessage={copyMessage}
                     onApproval={handleApproval}
                     onRetry={msg.error ? retryLastMessage : undefined}

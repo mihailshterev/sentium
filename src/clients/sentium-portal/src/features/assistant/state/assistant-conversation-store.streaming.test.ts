@@ -77,8 +77,40 @@ describe("sendMessage streaming", () => {
     const ai = messages[1];
     expect(ai.role).toBe("assistant");
     expect(ai.content).toBe("Hello");
-    expect(ai.thought).toBe("thinking");
+    expect(ai.steps).toMatchObject([{ kind: "thought", text: "thinking" }]);
+    expect(ai.steps?.[0]).toHaveProperty("endedAt");
     expect(isStreaming).toBe(false);
+  });
+
+  it("moves narration written before a tool call onto the timeline, leaving the final answer", async () => {
+    vi.spyOn(assistantService, "sendChatMessage").mockResolvedValue(
+      sseResponse([
+        JSON.stringify({ type: "message", message: { content: "Let me look that up." } }),
+        JSON.stringify({
+          type: "tool_call",
+          message: { content: JSON.stringify({ callId: "c1", name: "find_assets" }) },
+        }),
+        JSON.stringify({
+          type: "tool_result",
+          message: { content: JSON.stringify({ callId: "c1", status: "ok", result: "drill", durationMs: 12 }) },
+        }),
+        JSON.stringify({ type: "message", message: { content: "Your drill is in the garage." } }),
+        JSON.stringify({ type: "done" }),
+      ]),
+    );
+
+    await act(async () => {
+      await useConversationStore
+        .getState()
+        .sendMessage({ conversationId: "c1", model: "gemma", userContent: "drill?" });
+    });
+
+    const ai = useConversationStore.getState().messages[1];
+    expect(ai.content).toBe("Your drill is in the garage.");
+    expect(ai.steps).toMatchObject([
+      { kind: "text", text: "Let me look that up." },
+      { kind: "tool", callId: "c1", status: "ok", durationMs: 12 },
+    ]);
   });
 
   it("captures an enhanced prompt for the user message", async () => {

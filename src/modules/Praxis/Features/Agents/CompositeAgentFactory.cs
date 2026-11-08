@@ -25,6 +25,7 @@ public sealed class CompositeAgentFactory(
     IModelContextWindowProvider contextWindows,
     IAgentToolProvider agentToolProvider,
     IAgentRepository agentRepository,
+    IBuiltInAgentService builtInAgents,
     IRegistrySettingsService registrySettingsService,
     AgentSkillsProviderFactory skillsProviderFactory,
     LearningsContextProvider learningsProvider,
@@ -144,14 +145,14 @@ public sealed class CompositeAgentFactory(
         var keyedAgent = serviceProvider.GetKeyedService<IAgent>(agentName);
         if (keyedAgent is not null)
         {
-            return keyedAgent;
+            return await builtInAgents.ApplyOverrideAsync(keyedAgent, actingUserId, ct);
         }
 
         var dbAgent = actingUserId is { } uid
             ? await agentRepository.GetAgentByNameForUserAsync(agentName, uid, ct)
             : await agentRepository.GetAgentByNameAsync(agentName, ct);
 
-        return dbAgent is null ? null : new DynamicCustomAgent(dbAgent.Name, dbAgent.Description);
+        return dbAgent is null ? null : new DynamicCustomAgent(dbAgent.Name, dbAgent.Description, dbAgent.Tools);
     }
 
     private string ResolveModel(string? overrideModel, InferenceSettingsSnapshot? inferenceSettings)

@@ -409,7 +409,7 @@ describe("AgentOrchestration workspace selection", () => {
   });
 });
 
-describe("AgentOrchestration LogEntryView rendering", () => {
+describe("AgentOrchestration run timeline rendering", () => {
   it("renders thought type log with Thinking expand button", async () => {
     vi.mocked(workflowsService.fetchWorkflowRunsPaged).mockResolvedValue(
       pageOf([
@@ -427,7 +427,7 @@ describe("AgentOrchestration LogEntryView rendering", () => {
     });
   });
 
-  it("renders thought log in history run: shows Thinking button", async () => {
+  it("renders thought log in history run as a collapsed thought step", async () => {
     const thoughtRun: WorkflowRun = {
       ...mockRun,
       logs: [{ author: "PlannerAgent", text: "Analyzing...", type: "thought" }],
@@ -441,7 +441,7 @@ describe("AgentOrchestration LogEntryView rendering", () => {
       (b) => !!b.textContent?.match(/entr(y|ies)/),
     );
     if (runItemBtns.length > 0) fireEvent.click(runItemBtns[0]);
-    await waitFor(() => expect(screen.getByText("Thinking")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByRole("button", { name: /^thought/ })).toBeInTheDocument());
   });
 
   it("renders tool type log in history run", async () => {
@@ -474,7 +474,7 @@ describe("AgentOrchestration LogEntryView rendering", () => {
     await waitFor(() => expect(screen.getByText(/Planning the attack/)).toBeInTheDocument());
   });
 
-  it("expands thought block when Thinking is clicked", async () => {
+  it("expands a thought step when clicked", async () => {
     const thoughtRun: WorkflowRun = {
       ...mockRun,
       logs: [{ author: "PlannerAgent", text: "Internal analysis...", type: "thought" }],
@@ -488,8 +488,10 @@ describe("AgentOrchestration LogEntryView rendering", () => {
       (b) => !!b.textContent?.match(/entr(y|ies)/),
     );
     if (runItemBtns.length > 0) fireEvent.click(runItemBtns[0]);
-    await waitFor(() => screen.getByText("Thinking"));
-    fireEvent.click(screen.getByText("Thinking"));
+    const toggle = await waitFor(() => screen.getByRole("button", { name: /^thought/ }));
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByText("Internal analysis...")).toBeInTheDocument();
   });
 });

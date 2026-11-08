@@ -3,6 +3,23 @@ import type { ConversationMessage } from "@/features/assistant/types/assistant";
 import { DEFAULT_ASSISTANT_MODEL } from "@/shared/utils/constants";
 import { sendChatMessage, approveToolCall } from "@/features/assistant/api/assistant.service";
 import { handleUnauthorized } from "@/shared/api/client";
+import {
+  appendContent as appendAnswer,
+  appendThought,
+  decideApproval,
+  finalizeTurn,
+  finishTool,
+  legacyToolName,
+  parseJson,
+  requestApproval,
+  startTool,
+  type ActivityTurn,
+  type ApprovalFrame,
+  type ToolCallFrame,
+  type ToolResultFrame,
+} from "@/shared/agent-activity";
+
+export type MessageUpdateKind = "content" | "thought" | "tool" | "tool_call" | "tool_result" | "approval";
 
 interface SendMessageArgs {
   conversationId: string | null;
@@ -47,10 +64,11 @@ interface ConversationState {
 
   setActiveConversation: (id: string | null, messages: ConversationMessage[], model: string) => void;
   appendMessage: (message: ConversationMessage) => void;
-  updateLastMessage: (id: string, appendContent: string, type?: "content" | "thought" | "tool" | "approval") => void;
+  updateLastMessage: (id: string, appendContent: string, type?: MessageUpdateKind) => void;
+  finalizeMessage: (id: string) => void;
   setEnhancedPrompt: (id: string, prompt: string) => void;
   setMessageError: (id: string, error: string) => void;
-  clearPendingApproval: (id: string) => void;
+  clearPendingApproval: (id: string, approved?: boolean) => void;
   setModel: (model: string) => void;
   setConversationTitle: (id: string, title: string) => void;
   clearConversationTitle: (id: string) => void;
@@ -93,7 +111,7 @@ export const createConversationStore = () => {
         throw new Error("Failed to read stream");
       }
 
-      const { updateLastMessage, setEnhancedPrompt, setConversationTitle } = get();
+      const { updateLastMessage, setEnhancedPrompt, setConversationTitle, finalizeMessage } = get();
       const conversationId = get().streamingConversationId;
       let leftover = "";
 
@@ -168,12 +186,15 @@ export const createConversationStore = () => {
               return true;
             }
             if (content) {
-              if (parsed.type === "thought") {
-                updateLastMessage(aiMsgId, content, "thought");
-              } else if (parsed.type === "tool") {
-                updateLastMessage(aiMsgId, content, "tool");
-              } else {
-                updateLastMessage(aiMsgId, content, "content");
+              switch (parsed.type) {
+                case "thought":
+                case "tool":
+                case "tool_call":
+                case "tool_result":
+                  updateLastMessage(aiMsgId, content, parsed.type);
+                  break;
+                default:
+                  updateLastMessage(aiMsgId, content, "content");
               }
             }
           }
@@ -185,6 +206,7 @@ export const createConversationStore = () => {
         throw err;
       } finally {
         clearTimeout(stallTimer);
+        finalizeMessage(aiMsgId);
       }
 
       return false;
@@ -218,31 +240,62 @@ export const createConversationStore = () => {
           }
 
           const msg = state.messages[idx];
-          let updated: ConversationMessage;
+          const turn: ActivityTurn = { content: msg.content, steps: msg.steps ?? [] };
+          let next: ActivityTurn = turn;
+          let pendingApproval = msg.pendingApproval;
 
-          if (type === "thought") {
-            updated = { ...msg, thought: (msg.thought || "") + appendContent };
-          } else if (type === "tool") {
-            updated = { ...msg, toolCalls: [...(msg.toolCalls || []), appendContent] };
-          } else if (type === "approval") {
-            try {
-              updated = {
-                ...msg,
-                pendingApproval: {
-                  ...JSON.parse(appendContent),
-                  conversationId: state.streamingConversationId ?? undefined,
-                },
-              };
-            } catch {
-              return state;
+          switch (type) {
+            case "thought":
+              next = appendThought(turn, appendContent);
+              break;
+            case "tool_call": {
+              const frame = parseJson<ToolCallFrame>(appendContent);
+              if (!frame) return state;
+              next = startTool(turn, frame);
+              break;
             }
-          } else {
-            updated = { ...msg, content: msg.content + appendContent };
+            case "tool_result": {
+              const frame = parseJson<ToolResultFrame>(appendContent);
+              if (!frame) return state;
+              next = finishTool(turn, frame);
+              break;
+            }
+            case "tool":
+              next = startTool(turn, { callId: "", name: legacyToolName(appendContent) });
+              break;
+            case "approval": {
+              const frame = parseJson<ApprovalFrame>(appendContent);
+              if (!frame) return state;
+              next = requestApproval(turn, frame);
+              pendingApproval = {
+                requestId: frame.requestId,
+                toolName: frame.toolName,
+                arguments: frame.arguments ?? {},
+                callId: frame.callId ?? undefined,
+                conversationId: state.streamingConversationId ?? undefined,
+              };
+              break;
+            }
+            default:
+              next = appendAnswer(turn, appendContent);
           }
 
-          const next = state.messages.slice();
-          next[idx] = updated;
-          return { messages: next };
+          const messages = state.messages.slice();
+          messages[idx] = { ...msg, content: next.content, steps: next.steps, pendingApproval };
+          return { messages };
+        }),
+
+      finalizeMessage: (id) =>
+        set((state) => {
+          const idx = state.messages.findLastIndex((m) => m.id === id);
+          if (idx === -1 || !state.messages[idx].steps?.length) {
+            return state;
+          }
+          const msg = state.messages[idx];
+          const settled = finalizeTurn({ content: msg.content, steps: msg.steps ?? [] });
+          const messages = state.messages.slice();
+          messages[idx] = { ...msg, content: settled.content, steps: settled.steps };
+          return { messages };
         }),
 
       setEnhancedPrompt: (id, prompt) =>
@@ -255,9 +308,16 @@ export const createConversationStore = () => {
           messages: state.messages.map((msg) => (msg.id === id ? { ...msg, error } : msg)),
         })),
 
-      clearPendingApproval: (id) =>
+      clearPendingApproval: (id, approved) =>
         set((state) => ({
-          messages: state.messages.map((msg) => (msg.id === id ? { ...msg, pendingApproval: undefined } : msg)),
+          messages: state.messages.map((msg) => {
+            if (msg.id !== id) return msg;
+            const decided =
+              approved !== undefined && msg.pendingApproval && msg.steps
+                ? decideApproval({ content: msg.content, steps: msg.steps }, msg.pendingApproval, approved).steps
+                : msg.steps;
+            return { ...msg, steps: decided, pendingApproval: undefined };
+          }),
         })),
 
       setModel: (model) => set({ model }),
@@ -350,7 +410,7 @@ export const createConversationStore = () => {
 
       respondToApproval: async ({ aiMsgId, requestId, approved, conversationId }) => {
         const { clearPendingApproval } = get();
-        clearPendingApproval(aiMsgId);
+        clearPendingApproval(aiMsgId, approved);
 
         controllers.get(STREAM_KEY)?.abort();
         const controller = new AbortController();

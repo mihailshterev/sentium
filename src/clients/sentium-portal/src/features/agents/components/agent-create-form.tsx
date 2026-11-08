@@ -9,18 +9,24 @@ import { FormField } from "@/shared/ui/form-field";
 import { ModelSelector } from "@/shared/ui/model-selector";
 import { StatusMessage } from "@/shared/ui/status-message";
 import { agentCreateSchema, type AgentCreateFormData } from "../schemas/agent.create";
+import type { CreateAgentPayload, ToolDescriptor } from "../types/agents";
+import { ToolPicker } from "./tool-picker";
 
 interface AgentCreateFormProps {
   models: string[];
+  tools: ToolDescriptor[];
+  isLoadingTools?: boolean;
   isCreatingAgent: boolean;
   isCreateSuccess: boolean;
   isCreateError: boolean;
   createAgentError: Error | null | undefined;
-  onSubmit: (data: { name: string; description: string; model: string }) => void;
+  onSubmit: (data: CreateAgentPayload) => void;
 }
 
 export function AgentCreateForm({
   models,
+  tools,
+  isLoadingTools = false,
   isCreatingAgent,
   isCreateSuccess,
   isCreateError,
@@ -43,6 +49,7 @@ export function AgentCreateForm({
       name: "",
       description: "",
       model: "",
+      tools: null,
     },
   });
 
@@ -57,8 +64,8 @@ export function AgentCreateForm({
   const descriptionValue = watch("description") ?? "";
 
   const handleFormSubmit = (data: AgentCreateFormData) => {
-    onSubmit({ name: data.name, description: data.description, model: data.model });
-    reset({ name: "", description: "", model: defaultModel });
+    onSubmit({ name: data.name, description: data.description, model: data.model, tools: data.tools });
+    reset({ name: "", description: "", model: defaultModel, tools: null });
   };
 
   return (
@@ -96,6 +103,25 @@ export function AgentCreateForm({
               value={field.value}
               onChange={field.onChange}
               placeholder="e.g. gemma-4-e4b"
+            />
+          )}
+        />
+      </FormField>
+
+      <FormField
+        label="Tools"
+        hint="What the agent may call. Approval-gated tools are skipped in unattended workflow runs."
+      >
+        <Controller
+          name="tools"
+          control={control}
+          render={({ field }) => (
+            <ToolPicker
+              id="agent-tools"
+              tools={tools}
+              isLoading={isLoadingTools}
+              value={field.value}
+              onChange={field.onChange}
             />
           )}
         />

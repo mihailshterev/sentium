@@ -1,6 +1,8 @@
 namespace Sentium.Praxis.Dtos;
 
+/// <param name="Tools">Names of the tools the agent may use; <see langword="null"/> (the default) = every tool.</param>
 public sealed record CreateAgentRequest(
     string Name,
     string Description,
-    string Model = "");
+    string Model = "",
+    IReadOnlyList<string>? Tools = null);

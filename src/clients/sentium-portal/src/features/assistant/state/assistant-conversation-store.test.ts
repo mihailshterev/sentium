@@ -84,7 +84,7 @@ describe("appendMessage()", () => {
   it("appends multiple messages in order", () => {
     const { result } = renderHook(() => useConversationStore());
 
-    act(() => result.current.appendMessage(makeMessage({ id: "msg-1" })));
+    act(() => result.current.appendMessage(makeMessage({ id: "msg-1", role: "assistant", content: "" })));
     act(() => result.current.appendMessage(makeMessage({ id: "msg-2", role: "assistant" })));
 
     expect(result.current.messages[0].id).toBe("msg-1");
@@ -102,31 +102,60 @@ describe("updateLastMessage()", () => {
     expect(result.current.messages[0].content).toBe("Hi there");
   });
 
-  it("appends thought when type is 'thought'", () => {
+  it("starts a thought step when type is 'thought'", () => {
     const { result } = renderHook(() => useConversationStore());
-    act(() => result.current.appendMessage(makeMessage({ id: "msg-1", thought: "" })));
+    act(() => result.current.appendMessage(makeMessage({ id: "msg-1", role: "assistant", content: "" })));
 
     act(() => result.current.updateLastMessage("msg-1", "thinking...", "thought"));
 
-    expect(result.current.messages[0].thought).toBe("thinking...");
+    expect(result.current.messages[0].steps).toMatchObject([{ kind: "thought", text: "thinking..." }]);
   });
 
-  it("accumulates thought across multiple calls", () => {
+  it("extends the open thought across deltas", () => {
     const { result } = renderHook(() => useConversationStore());
-    act(() => result.current.appendMessage(makeMessage({ id: "msg-1", thought: "A" })));
+    act(() => result.current.appendMessage(makeMessage({ id: "msg-1", role: "assistant", content: "" })));
 
+    act(() => result.current.updateLastMessage("msg-1", "A", "thought"));
     act(() => result.current.updateLastMessage("msg-1", "B", "thought"));
 
-    expect(result.current.messages[0].thought).toBe("AB");
+    expect(result.current.messages[0].steps).toMatchObject([{ kind: "thought", text: "AB" }]);
   });
 
-  it("appends tool call entry when type is 'tool'", () => {
+  it("keeps thinking and tool calls in order instead of merging them", () => {
     const { result } = renderHook(() => useConversationStore());
-    act(() => result.current.appendMessage(makeMessage({ id: "msg-1", toolCalls: [] })));
+    act(() => result.current.appendMessage(makeMessage({ id: "msg-1", role: "assistant", content: "" })));
 
-    act(() => result.current.updateLastMessage("msg-1", "search(query)", "tool"));
+    act(() => result.current.updateLastMessage("msg-1", "plan", "thought"));
+    act(() =>
+      result.current.updateLastMessage(
+        "msg-1",
+        JSON.stringify({ callId: "c1", name: "find_assets", arguments: '{"query":"drill"}' }),
+        "tool_call",
+      ),
+    );
+    act(() =>
+      result.current.updateLastMessage(
+        "msg-1",
+        JSON.stringify({ callId: "c1", status: "ok", result: "2 assets", durationMs: 80 }),
+        "tool_result",
+      ),
+    );
+    act(() => result.current.updateLastMessage("msg-1", "check", "thought"));
 
-    expect(result.current.messages[0].toolCalls).toContain("search(query)");
+    expect(result.current.messages[0].steps).toMatchObject([
+      { kind: "thought", text: "plan" },
+      { kind: "tool", callId: "c1", name: "find_assets", status: "ok", result: "2 assets", durationMs: 80 },
+      { kind: "thought", text: "check" },
+    ]);
+  });
+
+  it("records a legacy tool label as a tool step", () => {
+    const { result } = renderHook(() => useConversationStore());
+    act(() => result.current.appendMessage(makeMessage({ id: "msg-1", role: "assistant", content: "" })));
+
+    act(() => result.current.updateLastMessage("msg-1", "Calling search...", "tool"));
+
+    expect(result.current.messages[0].steps).toMatchObject([{ kind: "tool", name: "search" }]);
   });
 
   it("does not modify other messages", () => {
@@ -161,7 +190,7 @@ describe("setEnhancedPrompt()", () => {
 
   it("is a no-op when id is not found", () => {
     const { result } = renderHook(() => useConversationStore());
-    act(() => result.current.appendMessage(makeMessage({ id: "msg-1" })));
+    act(() => result.current.appendMessage(makeMessage({ id: "msg-1", role: "assistant", content: "" })));
 
     act(() => result.current.setEnhancedPrompt("nope", "x"));
 

@@ -18,11 +18,9 @@ const renderBubble = (msg: ConversationMessage, props: Partial<React.ComponentPr
     <MessageBubble
       msg={msg}
       isTyping={false}
-      expandedThoughts={new Set<string>()}
       statusIndex={0}
       statusVisible
       copiedMessageId={null}
-      onToggleThought={noop}
       onCopyMessage={noop}
       onApproval={noop}
       {...props}
@@ -44,21 +42,70 @@ describe("MessageBubble", () => {
     expect(onCopyMessage).toHaveBeenCalledWith("an answer", "m1");
   });
 
-  it("shows the thought timeline and toggles it", () => {
-    const onToggleThought = vi.fn();
-    renderBubble(base({ thought: "reasoning" }), {
-      onToggleThought,
-      expandedThoughts: new Set(["m1"]),
-    });
-    expect(screen.getByText("Thinking")).toBeInTheDocument();
-    expect(screen.getByText("reasoning")).toBeInTheDocument();
-    fireEvent.click(screen.getByText("Thinking"));
-    expect(onToggleThought).toHaveBeenCalledWith("m1");
+  it("folds a finished turn's activity into a summary that expands into the ordered timeline", () => {
+    renderBubble(
+      base({
+        steps: [
+          { kind: "thought", id: "t1", text: "reasoning" },
+          { kind: "tool", id: "c1", callId: "c1", name: "knowledge_base_search", status: "ok", durationMs: 420 },
+          { kind: "thought", id: "t2", text: "second pass" },
+        ],
+      }),
+    );
+
+    const summary = screen.getByRole("button", { name: /2 thoughts · 1 tool call/ });
+    expect(summary).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByText("knowledge_base_search")).not.toBeInTheDocument();
+
+    fireEvent.click(summary);
+
+    const rows = screen.getAllByRole("listitem");
+    expect(rows.map((r) => r.getAttribute("data-kind"))).toEqual(["thought", "tool", "thought"]);
+    expect(screen.getByText("knowledge_base_search")).toBeInTheDocument();
+    expect(screen.getByText("420ms")).toBeInTheDocument();
   });
 
-  it("renders tool calls", () => {
-    renderBubble(base({ content: "", toolCalls: ["search(q)"] }));
-    expect(screen.getByText("search(q)")).toBeInTheDocument();
+  it("keeps the timeline open while the turn streams", () => {
+    renderBubble(base({ content: "", steps: [{ kind: "thought", id: "t1", text: "working it out", startedAt: 1 }] }), {
+      isTyping: true,
+      live: true,
+    });
+    expect(screen.getByText("thinking")).toBeInTheDocument();
+    expect(screen.getByText("working it out")).toBeInTheDocument();
+    expect(screen.queryByText("Synthesizing latent variables...")).not.toBeInTheDocument();
+  });
+
+  it("renders an approval inline on its awaiting tool step", () => {
+    const onApproval = vi.fn();
+    renderBubble(
+      base({
+        content: "",
+        steps: [
+          {
+            kind: "tool",
+            id: "call-7",
+            callId: "call-7",
+            name: "execute_code_sandbox",
+            arguments: '{"input":"print(1)"}',
+            status: "awaiting_approval",
+          },
+        ],
+        pendingApproval: {
+          toolName: "execute_code_sandbox",
+          requestId: "req-7",
+          arguments: { input: "print(1)" },
+          callId: "call-7",
+          conversationId: "c1",
+        },
+      }),
+      { onApproval },
+    );
+
+    const group = screen.getByRole("group", { name: "Tool approval" });
+    expect(group).toHaveTextContent("print(1)");
+    fireEvent.click(screen.getByRole("button", { name: "Approve" }));
+    expect(onApproval).toHaveBeenCalledWith("m1", "req-7", true, "c1");
+    expect(screen.getAllByRole("group", { name: "Tool approval" })).toHaveLength(1);
   });
 
   it("renders a pending approval and routes approve/deny", () => {

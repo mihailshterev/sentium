@@ -166,13 +166,13 @@ public sealed class ConversationServiceTests
         // Arrange
         var ct = TestContext.Current.CancellationToken;
         var convId = Guid.NewGuid();
-        _repository.AddMessageAsync(convId, "user", "Hello", null, null, null, ct).Returns(Task.CompletedTask);
+        _repository.AddMessageAsync(convId, "user", "Hello", null, null, ct).Returns(Task.CompletedTask);
 
         // Act
         await _service.AddMessageAsync(convId, "user", "Hello", ct: ct);
 
         // Assert
-        await _repository.Received(1).AddMessageAsync(convId, "user", "Hello", null, null, null, ct);
+        await _repository.Received(1).AddMessageAsync(convId, "user", "Hello", null, null, ct);
     }
 
     [Fact]

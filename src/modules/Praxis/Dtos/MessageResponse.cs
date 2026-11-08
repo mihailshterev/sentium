@@ -7,4 +7,5 @@ public sealed record MessageResponse(
     DateTime Timestamp,
     string? EnhancedPrompt = null,
     string? Thought = null,
-    IReadOnlyList<string>? ToolCalls = null);
+    IReadOnlyList<string>? ToolCalls = null,
+    IReadOnlyList<MessageStep>? Steps = null);

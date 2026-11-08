@@ -2,6 +2,7 @@ import { Cpu, Pencil, Trash2 } from "lucide-react";
 import styles from "../agents.module.css";
 import { Button } from "@/shared/ui/button";
 import type { AgentRecord } from "@/features/agents/types/agents";
+import { describeTools } from "../utils/describe-tools";
 
 interface AgentCardProps {
   agent: AgentRecord;
@@ -44,6 +45,8 @@ export function AgentCard({ agent, onEdit, onDelete }: AgentCardProps) {
               day: "numeric",
             })}
           </span>
+          <span aria-hidden="true">·</span>
+          <span>{describeTools(agent.tools)}</span>
           <span aria-hidden="true">·</span>
           <span className={styles.agentId}>{agent.id.slice(0, 8)}</span>
         </div>

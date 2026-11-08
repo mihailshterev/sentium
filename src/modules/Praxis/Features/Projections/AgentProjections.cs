@@ -13,5 +13,6 @@ internal static class AgentProjections
             a.Description,
             a.Model,
             a.CreatedAt,
-            a.UpdatedAt);
+            a.UpdatedAt,
+            a.Tools);
 }

@@ -42,7 +42,7 @@ public interface IConversationRepository
     /// <summary>
     /// Appends a message (with optional enhanced prompt, thought, and tool calls) to a conversation.
     /// </summary>
-    Task AddMessageAsync(Guid conversationId, string role, string content, string? enhancedPrompt = null, string? thought = null, IReadOnlyList<string>? toolCalls = null, CancellationToken ct = default);
+    Task AddMessageAsync(Guid conversationId, string role, string content, string? enhancedPrompt = null, IReadOnlyList<MessageStep>? steps = null, CancellationToken ct = default);
 
     /// <summary>
     /// Whether <paramref name="conversationId"/> exists and belongs to <paramref name="userId"/>. Filters explicitly so the

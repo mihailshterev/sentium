@@ -1,3 +1,5 @@
+import type { ActivityStep, MessageStepDto } from "@/shared/agent-activity";
+
 export interface ConversationSummary {
   id: string;
   title: string;
@@ -10,6 +12,7 @@ export interface PendingApproval {
   requestId: string;
   toolName: string;
   arguments: Record<string, unknown>;
+  callId?: string | null;
   conversationId?: string;
 }
 
@@ -17,8 +20,7 @@ export interface ConversationMessage {
   id: string;
   role: "user" | "assistant";
   content: string;
-  thought?: string;
-  toolCalls?: string[];
+  steps?: ActivityStep[];
   timestamp: Date;
   pendingApproval?: PendingApproval;
   enhancedPrompt?: string;
@@ -30,9 +32,10 @@ export interface ConversationMessageDto {
   role: "user" | "assistant";
   content: string;
   timestamp: string;
-  enhancedPrompt?: string;
-  thought?: string;
-  toolCalls?: string[];
+  enhancedPrompt?: string | null;
+  steps?: MessageStepDto[] | null;
+  thought?: string | null;
+  toolCalls?: string[] | null;
 }
 
 export interface ConversationDetail {

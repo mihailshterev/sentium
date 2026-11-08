@@ -1,9 +1,11 @@
 namespace Sentium.Praxis.Dtos;
 
+/// <param name="Tools">Names of the tools the agent may use; <see langword="null"/> = every tool.</param>
 public sealed record AgentResponse(
     Guid Id,
     string Name,
     string Description,
     string Model,
     DateTime CreatedAt,
-    DateTime UpdatedAt);
+    DateTime UpdatedAt,
+    IReadOnlyList<string>? Tools = null);

@@ -1,19 +1,19 @@
 import { useState } from "react";
 import Markdown from "react-markdown";
-import { Brain, Check, ChevronDown, Copy, ShieldAlert, Sparkles, Wrench } from "lucide-react";
+import { Check, ChevronDown, Copy, ShieldAlert, Sparkles } from "lucide-react";
 import styles from "../assistant.module.css";
 import { Button } from "@/shared/ui/button";
+import { AgentTimeline } from "@/shared/agent-activity";
 import type { ConversationMessage } from "@/features/assistant/types/assistant";
 import { STATUS_MESSAGES } from "../status-messages";
 
 interface MessageBubbleProps {
   msg: ConversationMessage;
   isTyping: boolean;
-  expandedThoughts: Set<string>;
+  live?: boolean;
   statusIndex: number;
   statusVisible: boolean;
   copiedMessageId: string | null;
-  onToggleThought: (id: string) => void;
   onCopyMessage: (content: string, id: string) => void;
   onApproval: (aiMsgId: string, requestId: string, approved: boolean, conversationId?: string) => void;
   onRetry?: () => void;
@@ -23,11 +23,10 @@ interface MessageBubbleProps {
 export function MessageBubble({
   msg,
   isTyping,
-  expandedThoughts,
+  live,
   statusIndex,
   statusVisible,
   copiedMessageId,
-  onToggleThought,
   onCopyMessage,
   onApproval,
   onRetry,
@@ -37,10 +36,19 @@ export function MessageBubble({
 
   const isAssistant = msg.role === "assistant";
   const isLastMessage = isAssistant && msg.content === "" && isTyping && !msg.error;
-  const showStatusCycler = isLastMessage && !msg.thought && (!msg.toolCalls || msg.toolCalls.length === 0);
-  const isActiveThought = isTyping && msg.content === "";
-  const thoughtOpen = expandedThoughts.has(msg.id);
-  const hasActivity = isAssistant && (msg.thought !== undefined || (msg.toolCalls && msg.toolCalls.length > 0));
+  const steps = msg.steps ?? [];
+  const showStatusCycler = isLastMessage && steps.length === 0;
+  const isLive = (live ?? isLastMessage) && !msg.error;
+  const pending = msg.pendingApproval;
+
+  const approvalOnTimeline =
+    pending !== undefined &&
+    steps.some(
+      (s) =>
+        s.kind === "tool" &&
+        s.status === "awaiting_approval" &&
+        (pending.callId ? s.callId === pending.callId : s.name === pending.toolName),
+    );
 
   if (!isAssistant) {
     return (
@@ -80,49 +88,27 @@ export function MessageBubble({
       <div className={styles.aiBody}>
         <span className={styles.sender}>{senderName}</span>
 
-        {hasActivity && (
-          <div className={styles.activity}>
-            {msg.thought !== undefined && (
-              <div className={styles.thought}>
-                <button
-                  type="button"
-                  className={`${styles.disclosure} ${isActiveThought ? styles.disclosureActive : ""}`}
-                  onClick={() => onToggleThought(msg.id)}
-                  aria-expanded={thoughtOpen}
-                >
-                  <Brain size={13} aria-hidden="true" />
-                  <span>Thinking</span>
-                  {isActiveThought && (
-                    <span className={styles.dots} aria-hidden="true">
-                      <span />
-                      <span />
-                      <span />
-                    </span>
-                  )}
-                  <ChevronDown size={13} className={thoughtOpen ? styles.chevronOpen : styles.chevron} />
-                </button>
-                {thoughtOpen && (
-                  <div className={`${styles.content} ${styles.thoughtContent}`}>
-                    <Markdown>{msg.thought}</Markdown>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {msg.toolCalls && msg.toolCalls.length > 0 && (
-              <ul className={styles.toolCalls}>
-                {msg.toolCalls.map((call, i) => (
-                  <li key={`tool-${i}`} className={styles.toolCall}>
-                    <Wrench size={12} aria-hidden="true" />
-                    <span>{call}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+        {steps.length > 0 && (
+          <AgentTimeline
+            className={styles.activity}
+            steps={steps}
+            live={isLive}
+            collapsible
+            hasAnswer={msg.content.trim().length > 0}
+            approval={
+              pending && approvalOnTimeline
+                ? {
+                    callId: pending.callId,
+                    toolName: pending.toolName,
+                    disabled: isTyping,
+                    onDecide: (approved) => onApproval(msg.id, pending.requestId, approved, pending.conversationId),
+                  }
+                : undefined
+            }
+          />
         )}
 
-        {msg.pendingApproval && (
+        {msg.pendingApproval && !approvalOnTimeline && (
           <div className={styles.approval} role="group" aria-label="Tool approval">
             <div className={styles.approvalHeader}>
               <ShieldAlert size={15} aria-hidden="true" />

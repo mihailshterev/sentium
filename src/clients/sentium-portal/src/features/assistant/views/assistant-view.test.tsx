@@ -367,7 +367,7 @@ describe("Assistant conversation display", () => {
     expect(screen.getByText(/Artificial Intelligence is/)).toBeInTheDocument();
   });
 
-  it("renders thought block toggle when thought is present", () => {
+  it("renders a finished turn's activity as a collapsed summary", () => {
     useConversationStore.setState({
       activeConversationId: "conv-1",
       messages: [
@@ -375,17 +375,17 @@ describe("Assistant conversation display", () => {
           id: "m1",
           role: "assistant",
           content: "My response",
-          thought: "Internal reasoning here",
+          steps: [{ kind: "thought", id: "t1", text: "Internal reasoning here" }],
           timestamp: new Date("2025-01-01T10:00:00Z"),
         },
       ],
       model: "llama3.2",
     });
     renderAssistant();
-    expect(screen.getByText("Thinking")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /1 thought/ })).toHaveAttribute("aria-expanded", "false");
   });
 
-  it("expands thought block when Thinking button is clicked", () => {
+  it("expands the summary into thought steps and a thought into its text", () => {
     useConversationStore.setState({
       activeConversationId: "conv-1",
       messages: [
@@ -393,18 +393,21 @@ describe("Assistant conversation display", () => {
           id: "m1",
           role: "assistant",
           content: "My response",
-          thought: "Internal reasoning here",
+          steps: [{ kind: "thought", id: "t1", text: "Internal reasoning here" }],
           timestamp: new Date("2025-01-01T10:00:00Z"),
         },
       ],
       model: "llama3.2",
     });
     renderAssistant();
-    fireEvent.click(screen.getByText("Thinking"));
+    fireEvent.click(screen.getByRole("button", { name: /1 thought/ }));
+    const thought = screen.getByRole("button", { name: /^thought/ });
+    fireEvent.click(thought);
+    expect(thought).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByText(/Internal reasoning here/)).toBeInTheDocument();
   });
 
-  it("renders tool calls when present", () => {
+  it("renders tool steps when the summary is opened", () => {
     useConversationStore.setState({
       activeConversationId: "conv-1",
       messages: [
@@ -412,14 +415,16 @@ describe("Assistant conversation display", () => {
           id: "m1",
           role: "assistant",
           content: "Used a tool",
-          toolCalls: ["search(query='AI')"],
+          steps: [{ kind: "tool", id: "c1", name: "knowledge_base_search", arguments: '{"query":"AI"}', status: "ok" }],
           timestamp: new Date("2025-01-01T10:00:00Z"),
         },
       ],
       model: "llama3.2",
     });
     renderAssistant();
-    expect(screen.getByText(/search\(query='AI'\)/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /1 tool call/ }));
+    expect(screen.getByText("knowledge_base_search")).toBeInTheDocument();
+    expect(screen.getByText("AI")).toBeInTheDocument();
   });
 
   it("shows YOU and SENTIUM sender labels", () => {

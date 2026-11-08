@@ -22,14 +22,14 @@ describe("agents.service", () => {
   });
 
   it("createAgent posts payload to correct path", async () => {
-    const payload = { name: "Bot", description: "AI bot", model: "llama3" };
+    const payload = { name: "Bot", description: "AI bot", model: "llama3", tools: null };
     vi.mocked(client.post).mockResolvedValueOnce({});
     await agentsService.createAgent(payload);
     expect(client.post).toHaveBeenCalledWith("/praxis/agents", payload);
   });
 
   it("updateAgent puts to /agents/:id", async () => {
-    const payload = { id: "a-1", name: "Bot v2", description: "Updated", model: "llama3" };
+    const payload = { id: "a-1", name: "Bot v2", description: "Updated", model: "llama3", tools: null };
     vi.mocked(client.put).mockResolvedValueOnce({});
     await agentsService.updateAgent(payload);
     expect(client.put).toHaveBeenCalledWith("/praxis/agents/a-1", expect.objectContaining({ id: "a-1" }));

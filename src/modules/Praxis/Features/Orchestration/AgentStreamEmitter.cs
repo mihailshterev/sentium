@@ -1,29 +1,27 @@
 using Sentium.Praxis.Extensions;
-using Sentium.Praxis.Features.Agents;
+using Sentium.Praxis.Features.Agents.Activity;
 using Microsoft.Extensions.AI;
 
 namespace Sentium.Praxis.Features.Orchestration;
 
 internal static class AgentStreamEmitter
 {
-    public static void EmitReasoningAndTools(
+    /// <summary>
+    /// Publishes an update's reasoning, tool calls and tool results to the run's live stream and its persisted log, in
+    /// order, under <paramref name="author"/>. Tool frames carry their JSON payload as the entry text.
+    /// </summary>
+    public static void EmitActivity(
         IAgentStreamPublisher stream,
         StreamLogAccumulator streamLog,
+        AgentActivityTranslator activity,
         string streamId,
         string author,
         IEnumerable<AIContent> contents)
     {
-        if (contents.OfType<TextReasoningContent>().FirstOrDefault() is { } reasoning && !string.IsNullOrEmpty(reasoning.Text))
+        foreach (var activityEvent in activity.Translate(contents))
         {
-            stream.Emit(streamId, author, reasoning.Text, AgentUpdateTypes.Thought);
-            streamLog.Add(author, reasoning.Text, AgentUpdateTypes.Thought);
-        }
-
-        foreach (var call in contents.OfType<FunctionCallContent>())
-        {
-            var toolLabel = $"Calling {call.Name}...";
-            stream.Emit(streamId, author, toolLabel, AgentUpdateTypes.Tool);
-            streamLog.Add(author, toolLabel, AgentUpdateTypes.Tool);
+            stream.Emit(streamId, author, activityEvent.Payload, activityEvent.Type);
+            streamLog.Add(author, activityEvent.Payload, activityEvent.Type);
         }
     }
 }

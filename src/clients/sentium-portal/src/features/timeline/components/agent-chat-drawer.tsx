@@ -8,6 +8,7 @@ import { StatusMessage } from "@/shared/ui/status-message";
 import { ChatInputBar } from "@/features/assistant/components/chat-input-bar";
 import { MessageBubble } from "@/features/assistant/components/message-bubble";
 import { useMessageListUi } from "@/features/assistant/hooks/useMessageListUi";
+import { messageFromDto } from "@/features/assistant/utils/message-from-dto";
 import { createConversation, fetchConversation } from "@/features/assistant/api/assistant.service";
 import type { ConversationMessage } from "@/features/assistant/types/assistant";
 import { useAgentRoster } from "@/features/agents/hooks/useAgentRoster";
@@ -75,11 +76,7 @@ export function AgentChatDrawer({ context, today, onClose }: AgentChatDrawerProp
     fetchConversation(thread)
       .then((data) => {
         if (cancelled) return;
-        setActiveConversation(
-          thread,
-          (data.messages ?? []).map((m) => ({ ...m, timestamp: new Date(m.timestamp) })),
-          data.model,
-        );
+        setActiveConversation(thread, (data.messages ?? []).map(messageFromDto), data.model);
       })
       .catch(() => !cancelled && setError("The earlier conversation could not be loaded."));
     return () => {
@@ -190,16 +187,15 @@ export function AgentChatDrawer({ context, today, onClose }: AgentChatDrawerProp
             </div>
           </div>
         ) : (
-          visibleMessages.map((msg) => (
+          visibleMessages.map((msg, i) => (
             <MessageBubble
               key={msg.id}
               msg={msg}
               isTyping={isTyping}
-              expandedThoughts={ui.expandedThoughts}
+              live={isTyping && i === visibleMessages.length - 1}
               statusIndex={ui.statusIndex}
               statusVisible={ui.statusVisible}
               copiedMessageId={ui.copiedMessageId}
-              onToggleThought={ui.toggleThought}
               onCopyMessage={ui.copyMessage}
               onApproval={(aiMsgId, requestId, approved, conversationId) => {
                 ui.resetStatus();

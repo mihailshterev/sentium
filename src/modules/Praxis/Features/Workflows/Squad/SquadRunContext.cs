@@ -1,4 +1,5 @@
 using System.Text;
+using Sentium.Praxis.Features.Agents.Activity;
 using System.Text.Json;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
@@ -70,10 +71,11 @@ internal sealed class SquadRunContext(
     {
         var session = await agent.CreateSessionAsync(ct);
         var output = new StringBuilder();
+        var activity = new AgentActivityTranslator();
 
         await foreach (var update in agent.RunStreamingAsync(input, session, cancellationToken: ct))
         {
-            AgentStreamEmitter.EmitReasoningAndTools(stream, log, streamId, author, update.Contents);
+            AgentStreamEmitter.EmitActivity(stream, log, activity, streamId, author, update.Contents);
 
             if (!string.IsNullOrEmpty(update.Text))
             {

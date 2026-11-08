@@ -33,6 +33,8 @@ internal sealed class AgentTestHost
     public InferenceOptions Inference { get; } = new() { DefaultModel = "gemma-test" };
     public IModelContextWindowProvider ContextWindows { get; } = Substitute.For<IModelContextWindowProvider>();
     public List<AITool> Tools { get; } = [];
+    public IAgentRepository Agents { get; } = Substitute.For<IAgentRepository>();
+    public IAgentToolOverrideRepository ToolOverrides { get; } = Substitute.For<IAgentToolOverrideRepository>();
 
     public AgentTestHost()
     {
@@ -63,6 +65,7 @@ internal sealed class AgentTestHost
     {
         var services = new ServiceCollection();
         services.AddKeyedTransient<IAgent, GeneralAssistant>(AgentRole.GeneralAssistant);
+        services.AddKeyedTransient<IAgent, ResearchAnalyst>(AgentRole.ResearchAnalyst);
         var provider = services.BuildServiceProvider();
 
         var toolProvider = Substitute.For<IAgentToolProvider>();
@@ -75,7 +78,8 @@ internal sealed class AgentTestHost
             Options.Create(Inference),
             ContextWindows,
             toolProvider,
-            Substitute.For<IAgentRepository>(),
+            Agents,
+            new BuiltInAgentService([new GeneralAssistant(), new ResearchAnalyst()], ToolOverrides),
             Settings,
             new AgentSkillsProviderFactory(new BuiltInSkillCatalog(), Skills, RunContext, NullLoggerFactory.Instance),
             new LearningsContextProvider(Learnings, RunContext),

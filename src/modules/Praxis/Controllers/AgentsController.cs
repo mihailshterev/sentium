@@ -48,6 +48,86 @@ public sealed class AgentsController(IAgentService agentService) : ControllerBas
     }
 
     /// <summary>
+    /// The built-in specialists with their code-defined and effective tools for the signed-in user.
+    /// </summary>
+    [HttpGet("built-in")]
+    [ProducesResponseType(typeof(IReadOnlyList<BuiltInAgentResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetBuiltInAgents([FromServices] IBuiltInAgentService builtInAgents, [FromServices] ICurrentUser currentUser, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(builtInAgents);
+        ArgumentNullException.ThrowIfNull(currentUser);
+
+        if (currentUser.UserId is not { } userId)
+        {
+            return Unauthorized();
+        }
+
+        return Ok(await builtInAgents.GetAsync(userId, ct));
+    }
+
+    /// <summary>
+    /// Replaces a built-in agent's tools for the signed-in user (<c>tools: null</c> = every tool).
+    /// </summary>
+    /// <param name="agentName">The built-in agent's name.</param>
+    /// <param name="request">The tool names.</param>
+    /// <param name="builtInAgents">The built-in agent service.</param>
+    /// <param name="currentUser">The signed-in user.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>The updated agent, or HTTP 404 for an unknown or control agent.</returns>
+    [HttpPut("built-in/{agentName}/tools")]
+    [ProducesResponseType(typeof(BuiltInAgentResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> SetBuiltInAgentTools(
+        string agentName,
+        [FromBody] UpdateAgentToolsRequest request,
+        [FromServices] IBuiltInAgentService builtInAgents,
+        [FromServices] ICurrentUser currentUser,
+        CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        ArgumentNullException.ThrowIfNull(builtInAgents);
+        ArgumentNullException.ThrowIfNull(currentUser);
+
+        if (currentUser.UserId is not { } userId)
+        {
+            return Unauthorized();
+        }
+
+        var result = await builtInAgents.SetToolsAsync(agentName, userId, request.Tools, ct);
+        return result.Status == ResultStatus.NotFound ? NotFound() : Ok(result.Value);
+    }
+
+    /// <summary>
+    /// Restores a built-in agent's code-defined tools for the signed-in user.
+    /// </summary>
+    /// <param name="agentName">The built-in agent's name.</param>
+    /// <param name="builtInAgents">The built-in agent service.</param>
+    /// <param name="currentUser">The signed-in user.</param>
+    /// <param name="ct">Cancellation token.</param>
+    /// <returns>The agent with its default tools, or HTTP 404 for an unknown or control agent.</returns>
+    [HttpDelete("built-in/{agentName}/tools")]
+    [ProducesResponseType(typeof(BuiltInAgentResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ResetBuiltInAgentTools(
+        string agentName,
+        [FromServices] IBuiltInAgentService builtInAgents,
+        [FromServices] ICurrentUser currentUser,
+        CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(builtInAgents);
+        ArgumentNullException.ThrowIfNull(currentUser);
+
+        if (currentUser.UserId is not { } userId)
+        {
+            return Unauthorized();
+        }
+
+        var result = await builtInAgents.ResetToolsAsync(agentName, userId, ct);
+        return result.Status == ResultStatus.NotFound ? NotFound() : Ok(result.Value);
+    }
+
+    /// <summary>
     /// Returns an agent by its ID
     /// </summary>
     /// <param name="agentId">Agent ID</param>

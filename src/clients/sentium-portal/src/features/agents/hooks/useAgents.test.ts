@@ -88,7 +88,7 @@ describe("useAgents mutations", () => {
     const { result } = renderHook(() => useAgents(), { wrapper: createWrapper() });
     await waitFor(() => !result.current.isLoading);
     act(() => {
-      result.current.createAgent({ name: "New Agent", description: "", model: "llama3" });
+      result.current.createAgent({ name: "New Agent", description: "", model: "llama3", tools: null });
     });
     await waitFor(() => expect(result.current.isCreateSuccess).toBe(true));
     expect(agentsService.createAgent).toHaveBeenCalled();
@@ -98,7 +98,7 @@ describe("useAgents mutations", () => {
     const { result } = renderHook(() => useAgents(), { wrapper: createWrapper() });
     await waitFor(() => !result.current.isLoading);
     act(() => {
-      result.current.updateAgent({ id: "agent-1", name: "Updated", description: "", model: "llama3.2" });
+      result.current.updateAgent({ id: "agent-1", name: "Updated", description: "", model: "llama3.2", tools: null });
     });
     await waitFor(() => expect(result.current.isUpdatingAgent).toBe(false));
     expect(agentsService.updateAgent).toHaveBeenCalled();
@@ -118,7 +118,7 @@ describe("useAgents mutations", () => {
     const { result } = renderHook(() => useAgents(), { wrapper: createWrapper() });
     await waitFor(() => !result.current.isLoading);
     act(() => {
-      result.current.createAgent({ name: "New Agent", description: "", model: "llama3" });
+      result.current.createAgent({ name: "New Agent", description: "", model: "llama3", tools: null });
     });
     await waitFor(() => expect(result.current.isCreateSuccess).toBe(true));
     act(() => {
