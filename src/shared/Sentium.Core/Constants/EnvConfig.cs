@@ -30,6 +30,16 @@ public static class EnvConfig
         {
             public const string ApiProxyTarget = "API_PROXY_TARGET";
         }
+
+        /// <summary>
+        /// The Sandbox's MCP host (<c>Sandbox:Mcp</c>, Sentium.Sandbox's <c>McpHostOptions</c>): stdio MCP servers in
+        /// hardened containers. Arrays are indexed (<c>__0</c>, <c>__1</c>, ...).
+        /// </summary>
+        public static class SandboxMcp
+        {
+            public const string Enabled = "Sandbox__Mcp__Enabled";
+            public const string AllowedNetwork = "Sandbox__Mcp__AllowedNetworks__0";
+        }
     }
 
     public static class Values

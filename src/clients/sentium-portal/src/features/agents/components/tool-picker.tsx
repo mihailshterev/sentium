@@ -21,9 +21,14 @@ const GROUPS: { resource: string; label: string }[] = [
   { resource: "External", label: "external" },
 ];
 
-const groupLabel = (resource: string) => GROUPS.find((g) => g.resource === resource)?.label ?? "other";
-const groupOrder = (resource: string) => {
-  const i = GROUPS.findIndex((g) => g.resource === resource);
+/** MCP tools are opt-in: "all tools" (null) never includes them, so they are only offered for explicit selection. */
+const isMcp = (tool: ToolDescriptor) => Boolean(tool.server);
+
+const groupLabel = (tool: ToolDescriptor) =>
+  isMcp(tool) ? `mcp · ${tool.server}` : (GROUPS.find((g) => g.resource === tool.resource)?.label ?? "other");
+const groupOrder = (tool: ToolDescriptor) => {
+  if (isMcp(tool)) return GROUPS.length + 1;
+  const i = GROUPS.findIndex((g) => g.resource === tool.resource);
   return i < 0 ? GROUPS.length : i;
 };
 
@@ -39,13 +44,16 @@ export function ToolPicker({ id, tools, value, onChange, isLoading = false, disa
   const allTools = value === null;
   const selected = useMemo(() => new Set(value ?? []), [value]);
 
+  const builtIn = useMemo(() => tools.filter((t) => !isMcp(t)), [tools]);
+  const mcpCount = tools.length - builtIn.length;
+
   const groups = useMemo(() => {
     const map = new Map<string, ToolDescriptor[]>();
     for (const tool of tools) {
-      const key = groupLabel(tool.resource);
+      const key = groupLabel(tool);
       map.set(key, [...(map.get(key) ?? []), tool]);
     }
-    return [...map.entries()].sort(([, a], [, b]) => groupOrder(a[0].resource) - groupOrder(b[0].resource));
+    return [...map.entries()].sort(([la, a], [lb, b]) => groupOrder(a[0]) - groupOrder(b[0]) || la.localeCompare(lb));
   }, [tools]);
 
   const ordered = (names: Set<string>) => tools.map((t) => t.name).filter((n) => names.has(n));
@@ -68,7 +76,7 @@ export function ToolPicker({ id, tools, value, onChange, isLoading = false, disa
 
   const chooseMode = (all: boolean) => {
     if (all === allTools) return;
-    onChange(all ? null : tools.map((t) => t.name));
+    onChange(all ? null : builtIn.map((t) => t.name));
   };
 
   return (
@@ -95,12 +103,15 @@ export function ToolPicker({ id, tools, value, onChange, isLoading = false, disa
           </button>
         </div>
         <span className={styles.count} aria-live="polite">
-          {isLoading ? "loading…" : allTools ? `all ${tools.length}` : `${selected.size} of ${tools.length}`}
+          {isLoading ? "loading…" : allTools ? `all ${builtIn.length}` : `${selected.size} of ${tools.length}`}
         </span>
       </div>
 
       {allTools ? (
-        <p className={styles.hint}>The agent can use every tool, including ones added later.</p>
+        <p className={styles.hint}>
+          The agent can use every built-in tool, including ones added later.
+          {mcpCount > 0 && " MCP tools are never included automatically - choose “Selected” to add them."}
+        </p>
       ) : (
         <div className={styles.groups}>
           {selected.size === 0 && (
@@ -142,6 +153,7 @@ export function ToolPicker({ id, tools, value, onChange, isLoading = false, disa
                             <span className={styles.desc}>{firstSentence(tool.description)}</span>
                           </span>
                           <span className={styles.tags}>
+                            {isMcp(tool) && <span className={styles.tagExternal}>mcp</span>}
                             {tool.requiresApproval && <span className={styles.tagApproval}>approval</span>}
                             <span className={styles.tag}>{tool.action.toLowerCase()}</span>
                           </span>

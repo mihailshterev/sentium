@@ -19,6 +19,7 @@ import { ModelsView as Models } from "../../features/models";
 import { SettingsView as SettingsPage } from "../../features/registry";
 import { KnowledgeBaseView as KnowledgeBase } from "../../features/knowledge-base";
 import { SkillsView as Skills } from "../../features/skills";
+import { McpServersView as McpServers } from "../../features/mcp";
 import { SentinelView as Sentinel } from "../../features/sentinel";
 import { SandboxView as Sandbox } from "../../features/sandbox";
 import { SandboxRunDetailView as SandboxRunDetail } from "../../features/sandbox/views/sandbox-run-detail-view";
@@ -58,6 +59,7 @@ export const routes: RouteObject[] = [
       { path: "semantic-map", element: <SemanticMap /> },
       { path: "scheduler", element: <Scheduler /> },
       { path: "skills", element: <Skills /> },
+      { path: "mcp", element: <McpServers /> },
       { path: "sentinel", element: <Sentinel /> },
       { path: "sandbox", element: <Sandbox /> },
       { path: "sandbox/:jobId", element: <SandboxRunDetail /> },

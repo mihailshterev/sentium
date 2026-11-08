@@ -61,6 +61,27 @@ describe("ToolPicker", () => {
     expect(onChange).toHaveBeenLastCalledWith([]);
   });
 
+  it("never folds MCP tools into 'all tools' and groups them by server", () => {
+    const onChange = vi.fn();
+    const withMcp = [
+      ...TOOLS,
+      tool("ha__get_state", "External", { server: "Home Assistant", action: "Execute", requiresApproval: true }),
+    ];
+    const { rerender } = render(<ToolPicker tools={withMcp} value={null} onChange={onChange} />);
+
+    expect(screen.getByText("all 4")).toBeInTheDocument();
+    expect(screen.getByText(/MCP tools are never included automatically/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Selected" }));
+    expect(onChange).toHaveBeenLastCalledWith(TOOLS.map((t) => t.name));
+
+    rerender(<ToolPicker tools={withMcp} value={[]} onChange={onChange} />);
+    const server = screen.getByRole("group", { name: "mcp · Home Assistant" });
+    expect(within(server).getByText("mcp")).toBeInTheDocument();
+    fireEvent.click(within(server).getByLabelText(/ha__get_state/));
+    expect(onChange).toHaveBeenLastCalledWith(["ha__get_state"]);
+  });
+
   it("explains an empty selection", () => {
     render(<ToolPicker tools={TOOLS} value={[]} onChange={vi.fn()} />);
     expect(screen.getByText(/No tools: the agent can only answer/)).toBeInTheDocument();

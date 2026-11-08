@@ -294,8 +294,8 @@
       },
       "Microsoft.Extensions.AI.Abstractions": {
         "type": "Transitive",
-        "resolved": "10.10.1",
-        "contentHash": "Kz6ezQfRb9x2TkIWyaXkVAfpvyoAlEDfC59klPrdr2XD5WM4HNw+PREAZ+Fo43GPldtX+E0i1aYzMFQ/zXYMLg=="
+        "resolved": "10.11.0",
+        "contentHash": "h4DX/TdJU4fk1GGaf19n6Kujkj6VXbGeL4UEOsQ8+ZJC5fVApPauokCtvBP684BYbczUYZQNfo1mbmyHG4WVSg=="
       },
       "Microsoft.Extensions.AI.Evaluation": {
         "type": "Transitive",
@@ -1153,6 +1153,7 @@
           "Microsoft.Agents.AI": "[1.27.0, )",
           "Microsoft.Agents.AI.Workflows": "[1.27.0, )",
           "Microsoft.Extensions.AI": "[10.10.0, )",
+          "ModelContextProtocol.Core": "[2.4.0, )",
           "Quartz.Extensions.Hosting": "[3.18.0, )",
           "Quartz.Serialization.SystemTextJson": "[3.18.0, )",
           "Sentium.Codex": "[1.0.0, )",
@@ -1178,6 +1179,7 @@
           "Azure.Storage.Blobs": "[12.30.1, )",
           "Docker.DotNet": "[3.125.15, )",
           "Microsoft.AspNetCore.OpenApi": "[10.0.1, )",
+          "ModelContextProtocol.Core": "[2.4.0, )",
           "Scalar.AspNetCore": "[2.14.4, )",
           "Sentium.Core": "[1.0.0, )",
           "Sentium.Infrastructure": "[1.0.0, )",
@@ -1510,6 +1512,16 @@
         "requested": "[2.7.5, )",
         "resolved": "2.7.5",
         "contentHash": "0FA67RSnRM4tcBKqiqVu/HPdZ9+QOKbmeRjxRUGTCjPU4C0bmUhd97Dso7Yild5P7nOV6GxJ2xrK0Kv/O9xp0w=="
+      },
+      "ModelContextProtocol.Core": {
+        "type": "CentralTransitive",
+        "requested": "[2.4.0, )",
+        "resolved": "2.4.0",
+        "contentHash": "q98pZMlcxhsh0LpGXcT2ow7sGNveCPhDlJT3zJ7Cz5nNyPmPkm8P57dUIUpzv1w6qWbdSZcR/Z+RbZtNYjEmXQ==",
+        "dependencies": {
+          "Microsoft.Extensions.AI.Abstractions": "10.11.0",
+          "Microsoft.Extensions.Logging.Abstractions": "10.0.14"
+        }
       },
       "Npgsql.EntityFrameworkCore.PostgreSQL": {
         "type": "CentralTransitive",

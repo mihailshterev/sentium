@@ -189,7 +189,8 @@
 }
 
 .tag,
-.tagApproval {
+.tagApproval,
+.tagExternal {
   padding: 1px 6px;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-xs);
@@ -202,6 +203,11 @@
 .tagApproval {
   border-color: var(--warning-line);
   color: var(--warning);
+}
+
+.tagExternal {
+  border-color: var(--accent-line, var(--border-color));
+  color: var(--accent);
 }
 
 @media (max-width: 480px) {

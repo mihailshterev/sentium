@@ -1,4 +1,6 @@
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Sentium.Core.Common;
 using Sentium.Praxis.Features.CodeExecution;
 using Sentium.Praxis.Dtos;
@@ -33,6 +35,7 @@ public sealed class PraxisDbContext : DbContext
     public DbSet<Workspace> Workspaces { get; set; }
     public DbSet<AgentLearning> AgentLearnings { get; set; }
     public DbSet<AgentSkill> AgentSkills { get; set; }
+    public DbSet<McpServer> McpServers { get; set; }
 
     /// <summary>
     /// Sandbox run history. The Sandbox service is stateless, so Praxis records every run it dispatches.
@@ -214,6 +217,30 @@ public sealed class PraxisDbContext : DbContext
             entity.HasIndex(e => new { e.UserId, e.Name }).IsUnique();
             entity.HasIndex(e => e.CreatedAt);
             entity.HasQueryFilter(e => BypassUserScope || e.UserId == ScopeUserId);
+        });
+
+        builder.Entity<McpServer>(entity =>
+        {
+            entity.ToTable("McpServers");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(24);
+            entity.Property(e => e.DisplayName).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Description).HasMaxLength(1000);
+            entity.Property(e => e.Transport).HasConversion<string>().HasMaxLength(32);
+            entity.Property(e => e.Endpoint).HasMaxLength(2048);
+            entity.Property(e => e.Image).HasMaxLength(512);
+            entity.Property(e => e.Network).HasMaxLength(128);
+            entity.Property(e => e.Variables)
+                .HasConversion(
+                    variables => JsonSerializer.Serialize(variables, (JsonSerializerOptions?)null),
+                    json => JsonSerializer.Deserialize<Dictionary<string, string>>(json, (JsonSerializerOptions?)null) ?? new Dictionary<string, string>(),
+                    new ValueComparer<Dictionary<string, string>>(
+                        (a, b) => a != null && b != null && a.Count == b.Count && !a.Except(b).Any(),
+                        d => d.Aggregate(0, (hash, kv) => HashCode.Combine(hash, kv.Key, kv.Value)),
+                        d => new Dictionary<string, string>(d)))
+                .HasColumnType("jsonb");
+            entity.HasIndex(e => e.Name).IsUnique();
+            entity.OwnsMany(e => e.Tools, owned => owned.ToJson());
         });
 
         builder.Entity<ExecutionLogEntry>(entity =>

@@ -5,6 +5,7 @@ using Quartz;
 using Sentium.Core.Constants;
 using Sentium.Infrastructure.Extensions;
 using Sentium.Infrastructure.Inference;
+using Sentium.Infrastructure.Net;
 using Sentium.Infrastructure.Security;
 using Sentium.Praxis.Features.Agents;
 using Sentium.Praxis.Features.Agents.Native;
@@ -13,6 +14,7 @@ using Sentium.Praxis.Features.Conversations;
 using Sentium.Praxis.Data;
 using Sentium.Praxis.Extensions;
 using Sentium.Praxis.Features.Learnings;
+using Sentium.Praxis.Features.Mcp;
 using Sentium.Praxis.Features.Models;
 using Sentium.Praxis.Features.Orchestration;
 using Sentium.Praxis.Features.Registry;
@@ -129,6 +131,7 @@ public static class PraxisModuleExtensions
         services.AddSingleton<IPdpContextAccessor, PdpContextAccessor>();
 
         AddCodeExecution(services, configuration);
+        AddMcp(services);
 
         services.AddHealthChecks().AddDbContextCheck<PraxisDbContext>("praxis-db", tags: [ModuleName]);
 
@@ -244,6 +247,42 @@ public static class PraxisModuleExtensions
             options.AwaitApplicationStarted = true;
             options.WaitForJobsToComplete = true;
         });
+    }
+
+    private static void AddMcp(IServiceCollection services)
+    {
+        services.TryAddSingleton(TimeProvider.System);
+
+        services.AddSingleton<IMcpSettingsProvider, RegistryMcpSettingsProvider>();
+        services.AddSingleton<McpSecretProtector>();
+        services.AddSingleton<McpClientManager>();
+        services.AddSingleton<McpToolCatalog>();
+        services.AddSingleton<IMcpToolCatalog>(sp => sp.GetRequiredService<McpToolCatalog>());
+        services.AddScoped<IMcpServerRepository, McpServerRepository>();
+        services.AddScoped<IMcpServerService, McpServerService>();
+        services.AddHostedService<McpBackgroundService>();
+
+        // Direct MCP servers: local network only, enforced on the resolved address at connect time (DNS-rebinding safe),
+        // no proxy, no redirects. Streams stay open between calls, so no overall request timeout - calls are bounded by
+        // the per-call timeout in the MCP settings.
+        services.AddHttpClient(McpClientManager.HttpClientName, client => client.Timeout = Timeout.InfiniteTimeSpan)
+            .ConfigurePrimaryHttpMessageHandler(() => NetworkAddressPolicy.CreateHandler(NetworkAddressScope.PrivateOnly))
+            .AddLongRunningResilienceHandler(
+                totalTimeout: TimeSpan.FromMinutes(15),
+                attemptTimeout: TimeSpan.FromMinutes(15),
+                retries: 0);
+
+        // Stdio servers: the Sandbox host (internal network, internal API key) runs and speaks to them.
+        services.AddHttpClient<ISandboxMcpHostClient, SandboxMcpHostClient>(client =>
+        {
+            client.BaseAddress = new Uri($"https+http://{ServiceNames.Sandbox}");
+            client.Timeout = Timeout.InfiniteTimeSpan;
+        })
+        .AddHttpMessageHandler<InternalApiKeyDelegatingHandler>()
+        .AddLongRunningResilienceHandler(
+            totalTimeout: TimeSpan.FromMinutes(11),
+            attemptTimeout: TimeSpan.FromMinutes(10),
+            retries: 0);
     }
 
     /// <summary>

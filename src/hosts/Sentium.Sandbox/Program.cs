@@ -10,6 +10,7 @@ using Sentium.Infrastructure.Validation;
 using Sentium.Sandbox.Artifacts;
 using Sentium.Sandbox.Docker;
 using Sentium.Sandbox.Execution;
+using Sentium.Sandbox.Mcp;
 using Sentium.Sandbox.Options;
 using Sentium.Sandbox.Sentinel;
 
@@ -25,29 +26,29 @@ builder.Services.AddControllers(options => options.Filters.Add<FluentValidationF
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
 
 builder.Services.Configure<SandboxOptions>(builder.Configuration.GetSection(SandboxOptions.SectionName));
+builder.Services.Configure<McpHostOptions>(builder.Configuration.GetSection(McpHostOptions.SectionName));
 
 builder.AddAzureBlobServiceClient(ResourceNames.WorkspaceBlobs);
 builder.Services.AddSingleton<IArtifactService, ArtifactService>();
 
 builder.Services.AddSingleton<IDockerClient>(sp =>
 {
-    var sandboxOptions = sp.GetRequiredService<IOptions<SandboxOptions>>().Value;
-
-    var explicitHost = sandboxOptions.DockerHost;
-    if (string.IsNullOrWhiteSpace(explicitHost))
-    {
-        explicitHost = Environment.GetEnvironmentVariable("DOCKER_HOST") ?? string.Empty;
-    }
-
-    var config = string.IsNullOrWhiteSpace(explicitHost) ? new DockerClientConfiguration() : new DockerClientConfiguration(new Uri(explicitHost));
-
-    return config.CreateClient();
+    var endpoint = DockerEndpoint.Resolve(sp.GetRequiredService<IOptions<SandboxOptions>>().Value);
+    return new DockerClientConfiguration(endpoint).CreateClient();
 });
 
 builder.Services.AddSingleton<ContainerConfigBuilder>();
+builder.Services.AddSingleton<DockerImageService>();
 builder.Services.AddSingleton<IJobDirectoryService, JobDirectoryService>();
 builder.Services.AddSingleton<ISandboxRunner, DockerSandboxRunner>();
 builder.Services.AddScoped<SandboxOrchestrator>();
+
+// Stdio MCP servers in hardened long-lived containers, on behalf of Sentium.Web (off unless Sandbox:Mcp:Enabled).
+builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddSingleton<DockerStdioAttach>();
+builder.Services.AddSingleton<McpContainerManager>();
+builder.Services.AddSingleton<IMcpServerHost>(sp => sp.GetRequiredService<McpContainerManager>());
+builder.Services.AddHostedService<McpHostService>();
 
 builder.Services.AddTransient<InternalApiKeyDelegatingHandler>();
 

@@ -141,10 +141,12 @@ services:
       Rag__EmbeddingModelName: ${SENTIUM_EMBEDDING_MODEL:-embeddinggemma-2}
       ASPNETCORE_Kestrel__Certificates__Default__Path: /https/sentium.pfx
       ASPNETCORE_Kestrel__Certificates__Default__Password: ${CERT_PASSWORD}
+      DataProtection__KeysPath: /keys
     ports:
       - "${WEB_HTTPS_PORT:-8443}:8443"
     volumes:
       - ./certs:/https:ro
+      - web-dataprotection:/keys
     depends_on:
       postgres:
         condition: service_healthy
@@ -171,6 +173,8 @@ services:
       DOCKER_HOST: unix:///var/run/docker.sock
       Sandbox__DockerHost: unix:///var/run/docker.sock
       Sandbox__JobBaseDirectory: ${SANDBOX_JOBS_DIR:-/tmp/sentium-sandbox}
+      Sandbox__Mcp__Enabled: ${SANDBOX_MCP_ENABLED:-false}
+      Sandbox__Mcp__AllowedNetworks__0: ${SANDBOX_MCP_ALLOWED_NETWORK:-sentium-egress}
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ${SANDBOX_JOBS_DIR:-/tmp/sentium-sandbox}:${SANDBOX_JOBS_DIR:-/tmp/sentium-sandbox}
@@ -181,10 +185,19 @@ services:
         condition: service_started
     restart: unless-stopped
 
+networks:
+  # Sandbox MCP containers may join this network (SANDBOX_MCP_ALLOWED_NETWORK). `internal: true` means no route to the
+  # internet; only services also attached to it (searxng) are reachable. The explicit name keeps compose from
+  # prefixing it with the project name - the Sandbox matches the allowed network by exact name.
+  sentium-egress:
+    name: sentium-egress
+    internal: true
+
 volumes:
   postgres-data:
   redis-data:
   azurite-data:
+  web-dataprotection:
   # Verified model files, shared with the Aspire AppHost so they download once.
   llm-models:
     name: sentium-llm-models

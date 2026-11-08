@@ -15,6 +15,7 @@ public static class AgentToolFunction
 {
     private const string ResourceKey = "sentium.tool.resource";
     private const string ActionKey = "sentium.tool.action";
+    private const string ResourceIdKey = "sentium.tool.resourceId";
 
     /// <summary>
     /// Argument marshalling tuned for small local models, which often quote numbers or vary enum casing:
@@ -41,6 +42,38 @@ public static class AgentToolFunction
         });
 
         return policy.RequiresApproval ? new ApprovalRequiredAIFunction(function) : function;
+    }
+
+    /// <summary>
+    /// The <see cref="AITool.AdditionalProperties"/> that classify a function for Sentinel - for functions that are not
+    /// built from an <see cref="IAgentTool"/> (e.g. MCP tools). <paramref name="resourceId"/>, when given, is reported to
+    /// Sentinel instead of a resource id guessed from the call's argument names.
+    /// </summary>
+    public static IReadOnlyDictionary<string, object?> Classification(ToolResource resource, ToolAction action, string? resourceId = null)
+    {
+        var properties = new Dictionary<string, object?>
+        {
+            [ResourceKey] = resource.ToString(),
+            [ActionKey] = action.ToString(),
+        };
+
+        if (!string.IsNullOrWhiteSpace(resourceId))
+        {
+            properties[ResourceIdKey] = resourceId;
+        }
+
+        return properties;
+    }
+
+    /// <summary>
+    /// The fixed Sentinel resource id a function declares (see <see cref="Classification"/>), if any.
+    /// </summary>
+    public static bool TryGetResourceId(AIFunction function, [NotNullWhen(true)] out string? resourceId)
+    {
+        ArgumentNullException.ThrowIfNull(function);
+
+        resourceId = function.AdditionalProperties.TryGetValue(ResourceIdKey, out var value) ? value as string : null;
+        return resourceId is not null;
     }
 
     /// <summary>

@@ -10,8 +10,13 @@
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
     <PackageReference Include="Scalar.AspNetCore" />
     <PackageReference Include="Docker.DotNet" />
+    <PackageReference Include="ModelContextProtocol.Core" />
     <PackageReference Include="Aspire.Azure.Storage.Blobs" />
     <PackageReference Include="Azure.Storage.Blobs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Sentium.Tests.Unit" />
   </ItemGroup>
 
   <ItemGroup>

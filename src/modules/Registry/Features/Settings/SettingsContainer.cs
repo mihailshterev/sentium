@@ -24,6 +24,11 @@ public sealed class SettingsContainer
     /// Global Vigil monitoring settings.
     /// </summary>
     public VigilSettings Vigil { get; set; } = new();
+
+    /// <summary>
+    /// Global MCP (Model Context Protocol) client settings.
+    /// </summary>
+    public McpSettings Mcp { get; set; } = new();
 }
 
 /// <summary>
