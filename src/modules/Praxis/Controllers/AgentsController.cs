@@ -3,6 +3,7 @@ using Sentium.Praxis.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sentium.Core.Results;
+using Sentium.Infrastructure.Security;
 
 namespace Sentium.Praxis.Controllers;
 
@@ -30,6 +31,20 @@ public sealed class AgentsController(IAgentService agentService) : ControllerBas
     {
         var agents = await agentService.GetAgentsPagedAsync(page, pageSize, ct);
         return Ok(agents);
+    }
+
+    /// <summary>
+    /// The agents the signed-in user can work with: the built-in specialists and their own agents. Control roles
+    /// that only steer squads (planner, reviewer, summariser) are not listed.
+    /// </summary>
+    [HttpGet("roster")]
+    [ProducesResponseType(typeof(IReadOnlyList<AgentRosterEntry>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetRoster([FromServices] IAgentRoster roster, [FromServices] ICurrentUser currentUser, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(roster);
+        ArgumentNullException.ThrowIfNull(currentUser);
+
+        return Ok(await roster.GetAsync(currentUser.UserId, ct));
     }
 
     /// <summary>

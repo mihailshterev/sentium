@@ -6,7 +6,8 @@ namespace Sentium.Praxis.Dtos;
 /// </summary>
 public sealed record CreateConversationRequest(
     string? Title,
-    string Model);
+    string Model,
+    string? AgentName = null);
 
 /// <summary>
 /// Renames a conversation or a workflow run.

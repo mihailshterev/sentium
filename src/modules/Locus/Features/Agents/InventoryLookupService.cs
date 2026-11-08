@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Sentium.Core.Text;
 using Sentium.Locus.Contracts;
 using Sentium.Locus.Contracts.Models;
 using Sentium.Locus.Data;

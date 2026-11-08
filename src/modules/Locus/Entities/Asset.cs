@@ -40,7 +40,7 @@ public sealed class Asset
     public string? AgentInstructions { get; set; }
 
     /// <summary>
-    /// Normalized (lower-case, trimmed, de-duplicated) tags; see <see cref="Features.Assets.TagNormalizer"/>.
+    /// Normalized (lower-case, trimmed, de-duplicated) tags; see <see cref="Sentium.Core.Text.TagNormalizer"/>.
     /// </summary>
     public List<string> Tags { get; set; } = [];
 

@@ -112,6 +112,26 @@ public sealed class SentinelApiTests(MonolithWebApplicationFactory factory) : IC
     }
 
     [Fact]
+    public async Task EvaluateAsync_AcceptsTheTimelineResourceType()
+    {
+        var body = new PolicyEvaluationRequest
+        {
+            AgentId = $"agent-{Guid.NewGuid()}",
+            SkillName = "get_timeline_overview",
+            ResourceType = "Timeline",
+            ResourceId = "*",
+            Action = "Read",
+            OriginalUserPrompt = "how busy is my November?",
+            CorrelationId = Guid.NewGuid().ToString()
+        };
+
+        var response = await _sandboxClient.PostAsJsonAsync("/api/sentinel/policy/evaluate", body, Ct);
+        var result = await response.Content.ReadFromJsonAsync<PolicyEvaluationResponse>(Ct);
+
+        result!.Allowed.Should().BeTrue(result.Reason);
+    }
+
+    [Fact]
     public async Task EvaluateAsync_ReturnsUnauthorized_WithoutInternalToken()
     {
         var body = new PolicyEvaluationRequest

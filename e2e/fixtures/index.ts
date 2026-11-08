@@ -21,6 +21,7 @@ import {
   SystemPage,
   UsersPage,
   SemanticMapPage,
+  TimelinePage,
 } from "../pages/index";
 
 export type AppFixtures = {
@@ -45,6 +46,7 @@ export type AppFixtures = {
   systemPage: SystemPage;
   usersPage: UsersPage;
   semanticMapPage: SemanticMapPage;
+  timelinePage: TimelinePage;
 };
 
 export const test = base.extend<AppFixtures>({
@@ -130,6 +132,10 @@ export const test = base.extend<AppFixtures>({
 
   semanticMapPage: async ({ page }, use) => {
     await use(new SemanticMapPage(page));
+  },
+
+  timelinePage: async ({ page }, use) => {
+    await use(new TimelinePage(page));
   },
 });
 

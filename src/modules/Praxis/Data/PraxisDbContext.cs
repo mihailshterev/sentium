@@ -72,6 +72,8 @@ public sealed class PraxisDbContext : DbContext
             entity.Property(e => e.Model)
                 .IsRequired()
                 .HasMaxLength(255);
+            entity.Property(e => e.AgentName)
+                .HasMaxLength(255);
             entity.HasMany(c => c.Messages)
                 .WithOne(m => m.Conversation)
                 .HasForeignKey(m => m.ConversationId)

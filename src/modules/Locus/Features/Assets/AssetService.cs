@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Sentium.Core.Results;
+using Sentium.Core.Text;
 using Sentium.Infrastructure.Extensions;
 using Sentium.Infrastructure.Security;
 using Sentium.Locus.Data;

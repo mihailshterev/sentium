@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Sentium.Core.Text;
 using Sentium.Locus.Entities;
 using Sentium.Locus.Features.Assets;
 using Sentium.Locus.Features.Locations;

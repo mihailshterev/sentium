@@ -7,6 +7,7 @@ import {
   BotMessageSquare,
   BrainCircuit,
   CalendarClock,
+  CalendarRange,
   Cpu,
   Database,
   FolderOpen,
@@ -29,6 +30,7 @@ import styles from "./navbar.module.css";
 import { useAuthStore } from "@/shared/auth/state/auth-store";
 import { useConversationStore } from "@/features/assistant/state/assistant-conversation-store";
 import { useOrchestrationRunStore } from "@/features/orchestration/state/orchestration-run-store";
+import { useTimelineChatStore } from "@/features/timeline/state/timeline-chat-store";
 import { useRole } from "@/shared/auth/hooks/useRole";
 import { useProfile } from "@/features/profile/hooks/useProfile";
 import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
@@ -55,7 +57,10 @@ interface NavGroup {
 const NAV_GROUPS: NavGroup[] = [
   {
     id: "main",
-    links: [{ to: "/", label: "Dashboard", icon: LayoutDashboard, end: true }],
+    links: [
+      { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
+      { to: "/timeline", label: "Timeline", icon: CalendarRange },
+    ],
   },
   {
     id: "ai",
@@ -156,6 +161,7 @@ export function Navbar() {
 
   const assistantStreaming = useConversationStore((s) => s.isStreaming);
   const orchestrationRunning = useOrchestrationRunStore((s) => s.isRunning);
+  const timelineChatStreaming = useTimelineChatStore((s) => s.isStreaming);
 
   const storedCollapsed = useUiStore((s) => s.sidebarCollapsed);
   const toggleSidebar = useUiStore((s) => s.toggleSidebar);
@@ -177,8 +183,13 @@ export function Navbar() {
   if (assistantStreaming) {
     busyRoutes.add("/assistant");
   }
+
   if (orchestrationRunning) {
     busyRoutes.add("/orchestration");
+  }
+
+  if (timelineChatStreaming) {
+    busyRoutes.add("/timeline");
   }
 
   const displayName = profile

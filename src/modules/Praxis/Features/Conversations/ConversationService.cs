@@ -1,13 +1,18 @@
 using Sentium.Praxis.Dtos;
 using Sentium.Infrastructure.Caching;
 using Sentium.Core.Results;
+using Sentium.Infrastructure.Security;
 using Sentium.Praxis.Common;
+using Sentium.Praxis.Features.Agents;
 
 namespace Sentium.Praxis.Features.Conversations;
 
 public sealed class ConversationService(
     IConversationRepository repository,
-    IScopedCache cache) : IConversationService
+    IScopedCache cache,
+    IAgentRoster agentRoster,
+    ICurrentUser currentUser,
+    ILogger<ConversationService> logger) : IConversationService
 {
     private const string CacheTag = "conversations";
 
@@ -38,11 +43,46 @@ public sealed class ConversationService(
             CacheTag,
             ct);
 
-    public async Task<ConversationSummary> CreateConversationAsync(CreateConversationRequest request, CancellationToken ct = default)
+    public async Task<Result<ConversationSummary>> CreateConversationAsync(CreateConversationRequest request, CancellationToken ct = default)
     {
-        var result = await repository.CreateConversationAsync(request, ct);
+        ArgumentNullException.ThrowIfNull(request);
+
+        string? agentName = null;
+        if (!string.IsNullOrWhiteSpace(request.AgentName))
+        {
+            var agent = await agentRoster.FindAsync(request.AgentName, currentUser.UserId, ct);
+            if (agent is null)
+            {
+                return Result<ConversationSummary>.Invalid($"There is no agent named '{request.AgentName.Trim()}' to chat with.");
+            }
+
+            // The general assistant is the default; store the canonical spelling of any other agent.
+            agentName = string.Equals(agent.Name, AgentRole.GeneralAssistant, StringComparison.Ordinal) ? null : agent.Name;
+        }
+
+        var result = await repository.CreateConversationAsync(request with { AgentName = agentName }, ct);
         await cache.InvalidateTagAsync(CacheTag, ct);
-        return result;
+        return Result<ConversationSummary>.Success(result);
+    }
+
+    public async Task<string> ResolveChatAgentAsync(Guid? conversationId, Guid? userId, CancellationToken ct = default)
+    {
+        if (conversationId is not { } id || await repository.GetAgentNameAsync(id, userId, ct) is not { } stored)
+        {
+            return AgentRole.GeneralAssistant;
+        }
+
+        if (await agentRoster.FindAsync(stored, userId, ct) is { } agent)
+        {
+            return agent.Name;
+        }
+
+        if (logger.IsEnabled(LogLevel.Warning))
+        {
+            logger.LogWarning("Agent {AgentName} of conversation {ConversationId} no longer exists; using the general assistant.", stored, id);
+        }
+
+        return AgentRole.GeneralAssistant;
     }
 
     public async Task<bool> DeleteConversationAsync(Guid conversationId, CancellationToken ct = default)

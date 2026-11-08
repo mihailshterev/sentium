@@ -7,6 +7,7 @@ using Sentium.Locus;
 using Sentium.Praxis;
 using Sentium.Registry;
 using Sentium.Sentinel;
+using Sentium.Tempus;
 using Sentium.Vigil;
 using Xunit;
 
@@ -25,6 +26,7 @@ public sealed class ModuleBoundaryTests
         typeof(SentinelModuleExtensions).Assembly,
         typeof(CodexModuleExtensions).Assembly,
         typeof(LocusModuleExtensions).Assembly,
+        typeof(TempusModuleExtensions).Assembly,
         typeof(PraxisModuleExtensions).Assembly,
         typeof(VigilModuleExtensions).Assembly,
     ];

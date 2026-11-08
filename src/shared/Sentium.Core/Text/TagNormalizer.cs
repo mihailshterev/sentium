@@ -1,6 +1,6 @@
 using System.Text.RegularExpressions;
 
-namespace Sentium.Locus.Features.Assets;
+namespace Sentium.Core.Text;
 
 /// <summary>
 /// Tags are free-form but stored in one canonical form (trimmed, single-spaced, lower-case, unique) so

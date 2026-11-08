@@ -5,10 +5,12 @@ public sealed record ConversationResponse(
     string Title,
     string Model,
     DateTime CreatedAt,
-    IReadOnlyList<MessageResponse> Messages);
+    IReadOnlyList<MessageResponse> Messages,
+    string? AgentName = null);
 
 public sealed record ConversationSummary(
     Guid Id,
     string Title,
     string Model,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    string? AgentName = null);

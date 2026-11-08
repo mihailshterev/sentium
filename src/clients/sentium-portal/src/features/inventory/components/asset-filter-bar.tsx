@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import styles from "../inventory.module.css";
 import { SearchInput, Select, Switch } from "@/shared/ui/form-controls";
 import type { AssetFilters, AssetSort, TagCount } from "../types/inventory";
-import { TagInput } from "./tag-input";
+import { TagInput } from "@/shared/ui/tag-input";
 
 const SEARCH_DEBOUNCE_MS = 300;
 

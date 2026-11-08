@@ -24,7 +24,7 @@ public sealed class ConversationRepository(PraxisDbContext context) : IConversat
             .ThenByDescending(c => c.Id)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(c => new ConversationSummary(c.Id, c.Title, c.Model, c.CreatedAt))
+            .Select(c => new ConversationSummary(c.Id, c.Title, c.Model, c.CreatedAt, c.AgentName))
             .ToListAsync(ct);
 
         return (items, total);
@@ -51,7 +51,8 @@ public sealed class ConversationRepository(PraxisDbContext context) : IConversat
                 m.Id, m.Role, m.Content, m.Timestamp,
                 m.EnhancedPrompt,
                 m.Thought,
-                m.ToolCalls != null ? JsonSerializer.Deserialize<List<string>>(m.ToolCalls) : null)).ToList());
+                m.ToolCalls != null ? JsonSerializer.Deserialize<List<string>>(m.ToolCalls) : null)).ToList(),
+            conv.AgentName);
     }
 
     public async Task<ConversationSummary> CreateConversationAsync(CreateConversationRequest request, CancellationToken ct = default)
@@ -65,13 +66,14 @@ public sealed class ConversationRepository(PraxisDbContext context) : IConversat
             Title = string.IsNullOrEmpty(title) ? ConversationTitles.Placeholder : title,
             IsTitlePending = string.IsNullOrEmpty(title),
             Model = request.Model,
+            AgentName = string.IsNullOrWhiteSpace(request.AgentName) ? null : request.AgentName.Trim(),
             CreatedAt = DateTime.UtcNow
         };
 
         context.Conversations.Add(conversation);
         await context.SaveChangesAsync(ct);
 
-        return new ConversationSummary(conversation.Id, conversation.Title, conversation.Model, conversation.CreatedAt);
+        return new ConversationSummary(conversation.Id, conversation.Title, conversation.Model, conversation.CreatedAt, conversation.AgentName);
     }
 
     public async Task<bool> DeleteConversationAsync(Guid conversationId, CancellationToken ct = default)
@@ -82,6 +84,15 @@ public sealed class ConversationRepository(PraxisDbContext context) : IConversat
 
         return affected > 0;
     }
+
+    public async Task<string?> GetAgentNameAsync(Guid conversationId, Guid? userId, CancellationToken ct = default)
+        => userId is null
+            ? null
+            : await context.Conversations
+                .AsNoTracking()
+                .Where(c => c.Id == conversationId && c.UserId == userId)
+                .Select(c => c.AgentName)
+                .FirstOrDefaultAsync(ct);
 
     public async Task<bool> IsTitlePendingAsync(Guid conversationId, CancellationToken ct = default)
         => await context.Conversations.AnyAsync(c => c.Id == conversationId && c.IsTitlePending, ct);

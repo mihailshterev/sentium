@@ -121,5 +121,3 @@ export function toAssetPayload(form: AssetFormData): SaveAssetPayload {
     tags: form.tags,
   };
 }
-
-export const normalizeTag = (tag: string) => tag.trim().replace(/\s+/g, " ").toLowerCase();

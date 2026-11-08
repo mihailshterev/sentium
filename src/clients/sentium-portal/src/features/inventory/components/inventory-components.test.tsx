@@ -12,7 +12,7 @@ import { DeleteLocationDialog } from "./delete-location-dialog";
 import { KnowledgeStatusBadge } from "./knowledge-status-badge";
 import { LocationFormDialog } from "./location-form-dialog";
 import { LocationTree } from "./location-tree";
-import { TagInput } from "./tag-input";
+import { TagInput } from "@/shared/ui/tag-input";
 
 const locations = [
   loc("home", "Home", null, "Home", { childCount: 2, subtreeAssetCount: 3 }),

@@ -19,7 +19,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/shared/ui/button";
 import { Page } from "@/shared/ui/page";
 import { MessageBubble } from "../components/message-bubble";
-import { STATUS_MESSAGES } from "../status-messages";
+import { useMessageListUi } from "../hooks/useMessageListUi";
 import { WelcomeScreen } from "../components/welcome-screen";
 import { ChatInputBar } from "../components/chat-input-bar";
 import { ConversationSidebar } from "../components/conversation-sidebar";
@@ -95,35 +95,22 @@ export function AssistantView() {
 
   const [input, setInput] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [expandedThoughts, setExpandedThoughts] = useState<Set<string>>(new Set());
   const [wsContextOpen, setWsContextOpen] = useState(false);
   const [expandedWorkspace, setExpandedWorkspace] = useState<string | null>(null);
   const [contextPills, setContextPills] = useState<ContextPill[]>([]);
-  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
-  const [statusIndex, setStatusIndex] = useState(0);
-  const [statusVisible, setStatusVisible] = useState(true);
 
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [conversationToDelete, setConversationToDelete] = useState<string | null>(null);
   const [sendError, setSendError] = useState<string | null>(null);
-
-  const toggleThought = (id: string) =>
-    setExpandedThoughts((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
 
   const chatAreaRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const isTyping = isStreaming && streamingConversationId === activeConversationId;
+  const { expandedThoughts, toggleThought, copiedMessageId, copyMessage, statusIndex, statusVisible, resetStatus } =
+    useMessageListUi(isTyping);
 
   const scrollToBottom = useCallback(() => {
     if (chatAreaRef.current) {
@@ -199,26 +186,6 @@ export function AssistantView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routeConversationId, isStreaming, streamingConversationId, activeConversationId]);
 
-  useEffect(() => {
-    if (!isTyping) {
-      return;
-    }
-    let cancelled = false;
-    const interval = setInterval(() => {
-      setStatusVisible(false);
-      setTimeout(() => {
-        if (!cancelled) {
-          setStatusIndex((prev) => (prev + 1) % STATUS_MESSAGES.length);
-          setStatusVisible(true);
-        }
-      }, 300);
-    }, 2500);
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
-  }, [isTyping]);
-
   const [randomizedSuggestions] = useState(() => [...SUGGESTIONS_POOL].sort(() => 0.5 - Math.random()).slice(0, 4));
 
   const { data: workspaces = [] } = useQuery({
@@ -253,13 +220,6 @@ export function AssistantView() {
 
   const removeContextPill = (id: string) => {
     setContextPills((prev) => prev.filter((p) => p.id !== id));
-  };
-
-  const copyMessage = (content: string, id: string) => {
-    navigator.clipboard.writeText(content).then(() => {
-      setCopiedMessageId(id);
-      setTimeout(() => setCopiedMessageId(null), 2000);
-    });
   };
 
   const resizeTextarea = () => {
@@ -322,8 +282,7 @@ export function AssistantView() {
   };
 
   const handleApproval = (aiMsgId: string, requestId: string, approved: boolean, conversationId?: string) => {
-    setStatusIndex(0);
-    setStatusVisible(true);
+    resetStatus();
     void respondToApproval({ aiMsgId, requestId, approved, conversationId: conversationId ?? activeConversationId });
   };
 
@@ -355,8 +314,7 @@ export function AssistantView() {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }
-    setStatusIndex(0);
-    setStatusVisible(true);
+    resetStatus();
 
     void sendMessage({ conversationId, model, userContent });
   };

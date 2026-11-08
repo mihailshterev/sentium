@@ -11,7 +11,7 @@ import { StatusMessage } from "@/shared/ui/status-message";
 import { assetFormSchema, LIMITS, toAssetForm, toAssetPayload, type AssetFormData } from "../schemas/inventory.form";
 import type { Asset, InventoryLocation, SaveAssetPayload } from "../types/inventory";
 import { flattenForSelect } from "../utils/location-tree";
-import { TagInput } from "./tag-input";
+import { TagInput } from "@/shared/ui/tag-input";
 
 interface AssetFormDialogProps {
   locations: InventoryLocation[];

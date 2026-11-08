@@ -25,6 +25,7 @@ using Sentium.Praxis.Features.Titles;
 using Sentium.Praxis.Testing;
 using Sentium.Praxis.Features.Tools;
 using Sentium.Praxis.Features.Tools.Inventory;
+using Sentium.Praxis.Features.Tools.Timeline;
 using Sentium.Praxis.Features.Tools.Workspace;
 using Sentium.Praxis.Features.WorkflowManagement;
 using Sentium.Praxis.Features.Workflows;
@@ -82,6 +83,7 @@ public static class PraxisModuleExtensions
         services.AddSingleton<IPendingApprovalStore, PendingApprovalStore>();
 
         services.AddScoped<IAgentRegistry, AgentRegistry>();
+        services.AddScoped<IAgentRoster, AgentRoster>();
         services.AddScoped<IAgentToolProvider, AgentToolProvider>();
         services.AddScoped<IAgentFactory, CompositeAgentFactory>();
         services.AddScoped<IPromptEnhancementService, PromptEnhancementService>();
@@ -104,6 +106,12 @@ public static class PraxisModuleExtensions
         services.AddTransient<IAgentTool, FindAssetsTool>();
         services.AddTransient<IAgentTool, GetAssetTool>();
         services.AddTransient<IAgentTool, ListLocationContentsTool>();
+        services.AddTransient<IAgentTool, GetTimelineOverviewTool>();
+        services.AddTransient<IAgentTool, ListTimelineTasksTool>();
+        services.AddTransient<IAgentTool, GetTimelineTaskTool>();
+        services.AddTransient<IAgentTool, ProposeTimelineTaskTool>();
+        services.AddTransient<IAgentTool, ProposeTaskRescheduleTool>();
+        services.AddTransient<IAgentTool, AddTimelineNoteTool>();
 
         services.AddScoped<IConversationRepository, ConversationRepository>();
         services.AddScoped<ConversationChatHistoryProvider>();
@@ -168,6 +176,7 @@ public static class PraxisModuleExtensions
         RegisterAgent<ValidationAgent>(services, AgentRole.Validator);
         RegisterAgent<ResearchAnalyst>(services, AgentRole.ResearchAnalyst);
         RegisterAgent<SoftwareEngineer>(services, AgentRole.SoftwareEngineer);
+        RegisterAgent<TimelinePlanner>(services, AgentRole.TimelinePlanner);
     }
 
     private static void RegisterAgent<T>(IServiceCollection services, string name) where T : class, IAgent

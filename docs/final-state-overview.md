@@ -62,6 +62,9 @@ Mapping old → new:
 - **Locus** - the household inventory: a location tree, assets (tags, search, attachments) and
   the read-only view assistants get of them. The successor to the proposal's _Inventory & Asset
   Service_; items marked as shared reach agents through the knowledge base and inventory tools.
+- **Tempus** - each user's private year timeline: tasks on days or pinned to months, notes, and the
+  tasks and moves agents propose for the user to accept. Agents reach it through timeline tools and the
+  `TimelinePlanner` agent; the portal draws it as a glowing path through the months.
 - **Vigil** - system health monitoring, focused on module and dependency health.
 - **Sentium.Sandbox** - isolated code execution in hardened Docker containers (new; enables safe
   agent autonomy). Stateless: it authorizes each run with Sentinel and returns the result, and
@@ -94,6 +97,7 @@ Mapping old → new:
 - Policy-governed actions with a full audit trail (Sentinel)
 - Scheduled, autonomous background tasks
 - Household inventory that assistants can search ("where is the drill?") (Locus)
+- A year timeline that agents help plan: workload review, suggested tasks and moves, progress notes (Tempus)
 - Module and dependency health monitoring and incident tracking (Vigil)
 - Semantic-map visualization of stored knowledge/memories
 

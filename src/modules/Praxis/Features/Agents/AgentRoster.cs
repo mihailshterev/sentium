@@ -1,0 +1,67 @@
+using Sentium.Praxis.Dtos;
+
+namespace Sentium.Praxis.Features.Agents;
+
+/// <summary>
+/// The agents a user can work with directly: the built-in specialists (not the control roles that steer squads)
+/// and the user's own custom agents.
+/// </summary>
+public interface IAgentRoster
+{
+    Task<IReadOnlyList<AgentRosterEntry>> GetAsync(Guid? userId, CancellationToken ct = default);
+
+    /// <summary>
+    /// The roster entry named <paramref name="name"/> (case-insensitive), with its canonical spelling, or
+    /// <see langword="null"/> when the user has no such agent.
+    /// </summary>
+    Task<AgentRosterEntry?> FindAsync(string name, Guid? userId, CancellationToken ct = default);
+}
+
+/// <summary>
+/// Custom agents are looked up for the explicit user, never through the ambient query filter: a Sovereign (and a
+/// system-scoped agent run) bypasses that filter and would otherwise see every member's agents.
+/// </summary>
+public sealed class AgentRoster(IEnumerable<IAgent> nativeAgents, IAgentRepository agentRepository) : IAgentRoster
+{
+    public async Task<IReadOnlyList<AgentRosterEntry>> GetAsync(Guid? userId, CancellationToken ct = default)
+    {
+        var builtIn = BuiltIn().ToList();
+        var custom = await agentRepository.GetAgentsForUserAsync(userId, ct);
+
+        return
+        [
+            .. builtIn,
+            .. custom
+                .Where(a => !builtIn.Any(b => string.Equals(b.Name, a.Name, StringComparison.OrdinalIgnoreCase)))
+                .OrderBy(a => a.Name, StringComparer.OrdinalIgnoreCase)
+                .Select(a => new AgentRosterEntry(a.Name, a.Description, AgentKind.Custom, string.IsNullOrWhiteSpace(a.Model) ? null : a.Model))
+        ];
+    }
+
+    public async Task<AgentRosterEntry?> FindAsync(string name, Guid? userId, CancellationToken ct = default)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return null;
+        }
+
+        var trimmed = name.Trim();
+        var builtIn = BuiltIn().FirstOrDefault(a => string.Equals(a.Name, trimmed, StringComparison.OrdinalIgnoreCase));
+        if (builtIn is not null || AgentRole.IsControl(trimmed))
+        {
+            return builtIn;
+        }
+
+        var custom = await agentRepository.GetAgentByNameForUserAsync(trimmed, userId, ct);
+        return custom is null
+            ? null
+            : new AgentRosterEntry(custom.Name, custom.Description, AgentKind.Custom, string.IsNullOrWhiteSpace(custom.Model) ? null : custom.Model);
+    }
+
+    private IEnumerable<AgentRosterEntry> BuiltIn() => nativeAgents
+        .Where(a => !AgentRole.IsControl(a.Name))
+        .DistinctBy(a => a.Name, StringComparer.OrdinalIgnoreCase)
+        .OrderBy(a => a.Name == AgentRole.GeneralAssistant ? 0 : 1)
+        .ThenBy(a => a.Name, StringComparer.Ordinal)
+        .Select(a => new AgentRosterEntry(a.Name, a.Description, AgentKind.BuiltIn, Model: null));
+}

@@ -76,6 +76,38 @@ public class PraxisApiTests(MonolithWebApplicationFactory factory)
     }
 
     [Fact]
+    public async Task CreateConversation_WithAnAgent_StoresItsCanonicalName()
+    {
+        var response = await _client.PostAsJsonAsync("/api/praxis/conversations", new CreateConversationRequest(null, "m", "timelineplanner"), Ct);
+
+        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        var summary = await response.Content.ReadFromJsonAsync<ConversationSummary>(Ct);
+        summary!.AgentName.Should().Be("TimelinePlanner");
+
+        var detail = await _client.GetFromJsonAsync<ConversationResponse>($"/api/praxis/conversations/{summary.Id}", Ct);
+        detail!.AgentName.Should().Be("TimelinePlanner");
+    }
+
+    [Theory]
+    [InlineData("Orchestrator")]
+    [InlineData("NoSuchAgent")]
+    public async Task CreateConversation_WithAControlRoleOrUnknownAgent_Returns400(string agentName)
+    {
+        var response = await _client.PostAsJsonAsync("/api/praxis/conversations", new CreateConversationRequest(null, "m", agentName), Ct);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task GetRoster_ListsSpecialists_ButNoControlRoles()
+    {
+        var roster = await _client.GetFromJsonAsync<List<AgentRosterEntry>>("/api/praxis/agents/roster", Ct);
+
+        roster!.Select(r => r.Name).Should().Contain(["GeneralAssistant", "TimelinePlanner", "ResearchAnalyst"])
+            .And.NotContain(["Orchestrator", "Validator", "Summarizer"]);
+    }
+
+    [Fact]
     public async Task GetConversationDetail_ReturnsMessages()
     {
         var postResp = await _client.PostAsJsonAsync("/api/praxis/conversations", new CreateConversationRequest("Detail Test", "m"), Ct);
