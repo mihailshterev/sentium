@@ -25,5 +25,8 @@ public sealed class CreateConversationRequestValidator : AbstractValidator<Creat
 
         RuleFor(x => x.Model)
             .NotEmpty();
+
+        RuleFor(x => x.AgentName)
+            .MaximumLength(255);
     }
 }

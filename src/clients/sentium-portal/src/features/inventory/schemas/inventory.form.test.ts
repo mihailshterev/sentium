@@ -1,12 +1,6 @@
 import { describe, expect, it } from "vitest";
-import {
-  assetFormSchema,
-  locationFormSchema,
-  normalizeTag,
-  toAssetForm,
-  toAssetPayload,
-  toLocationPayload,
-} from "./inventory.form";
+import { normalizeTag } from "@/shared/utils/tags";
+import { assetFormSchema, locationFormSchema, toAssetForm, toAssetPayload, toLocationPayload } from "./inventory.form";
 
 describe("inventory form schemas", () => {
   const validAsset = { ...toAssetForm(null, "loc-1"), displayName: "Drill" };

@@ -11,6 +11,7 @@ import type { RouteObject } from "react-router";
 import { WorkspacesView as Workspaces } from "../../features/workspaces";
 import { WorkspaceDetailView as WorkspaceDetail } from "../../features/workspaces/views/workspace-detail-view";
 import { AssetDetailView as AssetDetail, InventoryView as Inventory } from "../../features/inventory";
+import { TimelineView as Timeline } from "../../features/timeline";
 import { UsersView as Users } from "../../features/users";
 import { ProfileView as Profile } from "../../features/profile";
 import { VigilView as Vigil } from "../../features/vigil";
@@ -42,6 +43,7 @@ export const routes: RouteObject[] = [
       { path: "workspaces/:workspaceId", element: <WorkspaceDetail /> },
       { path: "inventory", element: <Inventory /> },
       { path: "inventory/assets/:assetId", element: <AssetDetail /> },
+      { path: "timeline", element: <Timeline /> },
       { path: "assistant", element: <Assistant /> },
       { path: "assistant/:conversationId", element: <Assistant /> },
       { path: "orchestration", element: <AgentOrchestration /> },

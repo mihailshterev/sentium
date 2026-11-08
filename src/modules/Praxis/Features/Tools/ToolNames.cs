@@ -20,4 +20,10 @@ public static class ToolNames
     public const string FindAssets = "find_assets";
     public const string GetAsset = "get_asset";
     public const string ListLocationContents = "list_location_contents";
+    public const string GetTimelineOverview = "get_timeline_overview";
+    public const string ListTimelineTasks = "list_timeline_tasks";
+    public const string GetTimelineTask = "get_timeline_task";
+    public const string ProposeTimelineTask = "propose_timeline_task";
+    public const string ProposeTaskReschedule = "propose_task_reschedule";
+    public const string AddTimelineNote = "add_timeline_note";
 }

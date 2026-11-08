@@ -5,9 +5,17 @@ import { OrbitalMap, type OrbitalNode } from "@/shared/ui/orbital";
 import { SystemReadout } from "@/shared/ui/page-header";
 
 /** The platform's modules, drawn around the orb as a quiet map of what sits behind the sign-in. */
-const MODULES: OrbitalNode[] = ["identity", "registry", "sentinel", "codex", "locus", "praxis", "vigil", "sandbox"].map(
-  (name) => ({ id: name, label: name, tone: name === "identity" ? "accent" : "neutral" }),
-);
+const MODULES: OrbitalNode[] = [
+  "identity",
+  "registry",
+  "sentinel",
+  "codex",
+  "locus",
+  "tempus",
+  "praxis",
+  "vigil",
+  "sandbox",
+].map((name) => ({ id: name, label: name, tone: name === "identity" ? "accent" : "neutral" }));
 
 export function LoginView() {
   return (

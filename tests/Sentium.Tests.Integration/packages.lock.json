@@ -1760,7 +1760,8 @@
           "Sentium.Infrastructure": "[1.0.0, )",
           "Sentium.Locus": "[1.0.0, )",
           "Sentium.Registry": "[1.0.0, )",
-          "Sentium.Sentinel": "[1.0.0, )"
+          "Sentium.Sentinel": "[1.0.0, )",
+          "Sentium.Tempus": "[1.0.0, )"
         }
       },
       "sentium.registry": {
@@ -1792,6 +1793,13 @@
           "OpenTelemetry.Instrumentation.Runtime": "[1.15.1, )"
         }
       },
+      "sentium.tempus": {
+        "type": "Project",
+        "dependencies": {
+          "Sentium.Core": "[1.0.0, )",
+          "Sentium.Infrastructure": "[1.0.0, )"
+        }
+      },
       "sentium.vigil": {
         "type": "Project",
         "dependencies": {
@@ -1815,6 +1823,7 @@
           "Sentium.Registry": "[1.0.0, )",
           "Sentium.Sentinel": "[1.0.0, )",
           "Sentium.ServiceDefaults": "[1.0.0, )",
+          "Sentium.Tempus": "[1.0.0, )",
           "Sentium.Vigil": "[1.0.0, )"
         }
       },

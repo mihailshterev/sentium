@@ -6,6 +6,7 @@ using Sentium.Locus.Data;
 using Sentium.Praxis.Data;
 using Sentium.Registry.Data;
 using Sentium.Sentinel.Data;
+using Sentium.Tempus.Data;
 using Xunit;
 
 namespace Sentium.Tests.Unit.Modules;
@@ -24,6 +25,7 @@ public sealed class MigrationSnapshotTests
         ["Sentinel"] = () => new SentinelDbContextFactory().CreateDbContext([]),
         ["Codex"] = () => new CodexDbContextFactory().CreateDbContext([]),
         ["Locus"] = () => new LocusDbContextFactory().CreateDbContext([]),
+        ["Tempus"] = () => new TempusDbContextFactory().CreateDbContext([]),
         ["Praxis"] = () => new PraxisDbContextFactory().CreateDbContext([]),
     };
 

@@ -1,7 +1,7 @@
 import { useId, useState } from "react";
 import { X } from "lucide-react";
-import styles from "../inventory.module.css";
-import { normalizeTag } from "../schemas/inventory.form";
+import { normalizeTag } from "@/shared/utils/tags";
+import styles from "./tag-input.module.css";
 
 interface TagInputProps {
   id?: string;

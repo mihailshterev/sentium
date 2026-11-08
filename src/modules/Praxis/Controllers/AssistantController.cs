@@ -18,7 +18,8 @@ using ChatMessage = Microsoft.Extensions.AI.ChatMessage;
 namespace Sentium.Praxis.Controllers;
 
 /// <summary>
-/// Streams the general assistant over Server-Sent Events. For a persisted conversation the server owns the history
+/// Streams an agent over Server-Sent Events: the conversation's agent (see <see cref="IConversationService.ResolveChatAgentAsync"/>)
+/// or the general assistant. For a persisted conversation the server owns the history
 /// (<see cref="ConversationChatHistoryProvider"/>); tool-approval pauses are resumed from a serialized
 /// <see cref="AgentSession"/> in the approving request's own scope.
 /// </summary>
@@ -72,7 +73,11 @@ public sealed class AssistantController(
         }
 
         var persisted = requestBody.ConversationId is not null;
-        var agent = await agentFactory.CreateAsync(AgentRole.GeneralAssistant, overrideModel: requestBody.Model, chatHistory: persisted ? conversationHistory : null, ct: ct);
+
+        // The conversation fixes its agent; custom agents resolve for this user explicitly (a Sovereign bypasses the
+        // query filter, and must not pick up another member's same-named agent).
+        var agentName = await conversationService.ResolveChatAgentAsync(requestBody.ConversationId, currentUser.UserId, ct);
+        var agent = await agentFactory.CreateAsync(agentName, overrideModel: requestBody.Model, actingUserId: currentUser.UserId, chatHistory: persisted ? conversationHistory : null, ct: ct);
         var session = await agent.CreateSessionAsync(ct);
 
         List<ChatMessage> input;
@@ -87,7 +92,7 @@ public sealed class AssistantController(
             input = MapClientHistory(requestBody.Messages, enhancedPrompt);
         }
 
-        await RunStreamingAsync(agent, session, input, requestBody.ConversationId, requestBody.Model, sse, ct, pendingTitle);
+        await RunStreamingAsync(agent, agentName, session, input, requestBody.ConversationId, requestBody.Model, sse, ct, pendingTitle);
     }
 
     /// <summary>
@@ -116,17 +121,18 @@ public sealed class AssistantController(
         await using var sse = await SseStreamWriter.StartAsync(Response, logger, ct);
 
         var persisted = pending.ConversationId is not null;
-        var agent = await agentFactory.CreateAsync(AgentRole.GeneralAssistant, overrideModel: pending.Model, chatHistory: persisted ? conversationHistory : null, ct: ct);
+        var agent = await agentFactory.CreateAsync(pending.AgentName, overrideModel: pending.Model, actingUserId: pending.UserId, chatHistory: persisted ? conversationHistory : null, ct: ct);
         var session = await agent.DeserializeSessionAsync(pending.Session, cancellationToken: ct);
 
         // The documented resume: send only the approval response; the session supplies the rest of the context.
         ChatMessage approval = new(ChatRole.User, [pending.ApprovalRequest.CreateResponse(requestBody.Approved)]);
 
-        await RunStreamingAsync(agent, session, [approval], pending.ConversationId, pending.Model, sse, ct);
+        await RunStreamingAsync(agent, pending.AgentName, session, [approval], pending.ConversationId, pending.Model, sse, ct);
     }
 
     private async Task RunStreamingAsync(
         AIAgent agent,
+        string agentName,
         AgentSession session,
         IReadOnlyList<ChatMessage> input,
         Guid? conversationId,
@@ -174,7 +180,7 @@ public sealed class AssistantController(
 
             if (approvalRequest is not null)
             {
-                await PauseForApprovalAsync(agent, session, approvalRequest, conversationId, model, sse, ct);
+                await PauseForApprovalAsync(agent, agentName, session, approvalRequest, conversationId, model, sse, ct);
                 return;
             }
 
@@ -206,6 +212,7 @@ public sealed class AssistantController(
 
     private async Task PauseForApprovalAsync(
         AIAgent agent,
+        string agentName,
         AgentSession session,
         ToolApprovalRequestContent request,
         Guid? conversationId,
@@ -222,7 +229,8 @@ public sealed class AssistantController(
             model,
             runContext.UserId,
             runContext.CorrelationId,
-            runContext.OriginalUserPrompt));
+            runContext.OriginalUserPrompt,
+            agentName));
 
         var call = request.ToolCall as FunctionCallContent;
         var approvalData = new ToolApprovalData(request.RequestId, call?.Name ?? "unknown", call?.Arguments);

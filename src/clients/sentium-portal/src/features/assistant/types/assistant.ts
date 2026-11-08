@@ -3,6 +3,7 @@ export interface ConversationSummary {
   title: string;
   model: string;
   createdAt: string;
+  agentName?: string | null;
 }
 
 export interface PendingApproval {
@@ -39,11 +40,13 @@ export interface ConversationDetail {
   title: string;
   model: string;
   messages: ConversationMessageDto[];
+  agentName?: string | null;
 }
 
 export interface CreateConversationPayload {
   title?: string;
   model: string;
+  agentName?: string;
 }
 
 export interface CreateConversationResult {

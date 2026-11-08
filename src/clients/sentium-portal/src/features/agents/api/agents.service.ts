@@ -1,5 +1,5 @@
 import { client } from "@/shared/api/client";
-import type { AgentRecord, CreateAgentPayload, UpdateAgentPayload } from "../types/agents";
+import type { AgentRecord, AgentRosterEntry, CreateAgentPayload, UpdateAgentPayload } from "../types/agents";
 import type { PagedResponse } from "@/shared/types/pagination";
 
 const BASE = "/praxis";
@@ -13,3 +13,5 @@ export const updateAgent = ({ id, ...payload }: UpdateAgentPayload) =>
   client.put<AgentRecord>(`${BASE}/agents/${id}`, { id, ...payload });
 
 export const deleteAgent = (id: string) => client.delete<void>(`${BASE}/agents/${id}`);
+
+export const fetchAgentRoster = () => client.get<AgentRosterEntry[]>(`${BASE}/agents/roster`);

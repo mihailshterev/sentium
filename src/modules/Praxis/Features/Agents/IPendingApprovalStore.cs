@@ -19,7 +19,8 @@ public sealed record PendingApproval(
     string Model,
     Guid? UserId,
     string CorrelationId = "",
-    string OriginalUserPrompt = "");
+    string OriginalUserPrompt = "",
+    string AgentName = AgentRole.GeneralAssistant);
 
 public interface IPendingApprovalStore
 {

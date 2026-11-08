@@ -17,6 +17,7 @@ export { Skeleton, SkeletonText } from "./skeleton";
 export { StatCard, StatGrid } from "./stat-card";
 export { StatusMessage } from "./status-message";
 export { Tabs } from "./tabs";
+export { TagInput } from "./tag-input";
 export type { TabItem } from "./tabs";
 export { ThemeToggle } from "./theme-toggle";
 export { Tooltip } from "./tooltip";

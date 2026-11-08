@@ -6,6 +6,7 @@ using Sentium.Locus;
 using Sentium.Praxis;
 using Sentium.Registry;
 using Sentium.Sentinel;
+using Sentium.Tempus;
 using Sentium.Vigil;
 
 namespace Sentium.Web;
@@ -23,6 +24,7 @@ internal static class SentiumModules
         typeof(SentinelModuleExtensions).Assembly,
         typeof(CodexModuleExtensions).Assembly,
         typeof(LocusModuleExtensions).Assembly,
+        typeof(TempusModuleExtensions).Assembly,
         typeof(PraxisModuleExtensions).Assembly,
         typeof(VigilModuleExtensions).Assembly,
     ];
@@ -36,6 +38,7 @@ internal static class SentiumModules
         builder.AddSentinelModule();
         builder.AddCodexModule();
         builder.AddLocusModule();
+        builder.AddTempusModule();
         builder.AddPraxisModule();
         builder.AddVigilModule();
 
@@ -75,6 +78,7 @@ internal static class SentiumModules
         await app.InitializeSentinelModuleAsync();
         await app.InitializeCodexModuleAsync();
         await app.InitializeLocusModuleAsync();
+        await app.InitializeTempusModuleAsync();
         await app.InitializePraxisModuleAsync();
 
         logger.LogInformation("Sentium modules initialized");

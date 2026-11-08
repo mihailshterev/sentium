@@ -6,6 +6,10 @@ using System.Text.Encodings.Web;
 
 namespace Sentium.Tests.Integration.Common;
 
+/// <summary>
+/// Authenticates every request as the Sovereign <see cref="TestUserId"/>, or - when the request carries
+/// <see cref="UserHeader"/> - as a plain Member with that id, so tests can check per-user isolation.
+/// </summary>
 public class TestAuthHandler(
     IOptionsMonitor<AuthenticationSchemeOptions> options,
     ILoggerFactory logger,
@@ -14,15 +18,21 @@ public class TestAuthHandler(
 {
     public const string AuthenticationScheme = "TestScheme";
     public const string TestUserId = "11111111-0000-0000-0000-000000000001";
+    public const string UserHeader = "X-Test-User";
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
-        var claims = new[]
+        var member = Request.Headers.TryGetValue(UserHeader, out var header) && Guid.TryParse(header.ToString(), out var memberId)
+            ? memberId.ToString()
+            : null;
+
+        var userId = member ?? TestUserId;
+        var claims = new List<Claim>
         {
-            new Claim(ClaimTypes.Name, "TestUser"),
-            new Claim(ClaimTypes.NameIdentifier, TestUserId),
-            new Claim("sub", TestUserId),
-            new Claim(ClaimTypes.Role, "Sovereign")
+            new(ClaimTypes.Name, member is null ? "TestUser" : $"member-{member[..8]}"),
+            new(ClaimTypes.NameIdentifier, userId),
+            new("sub", userId),
+            new(ClaimTypes.Role, member is null ? "Sovereign" : "Member")
         };
 
         var identity = new ClaimsIdentity(claims, AuthenticationScheme);

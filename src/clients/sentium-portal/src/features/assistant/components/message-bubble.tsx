@@ -17,6 +17,7 @@ interface MessageBubbleProps {
   onCopyMessage: (content: string, id: string) => void;
   onApproval: (aiMsgId: string, requestId: string, approved: boolean, conversationId?: string) => void;
   onRetry?: () => void;
+  senderName?: string;
 }
 
 export function MessageBubble({
@@ -30,6 +31,7 @@ export function MessageBubble({
   onCopyMessage,
   onApproval,
   onRetry,
+  senderName = "Sentium",
 }: MessageBubbleProps) {
   const [enhancedOpen, setEnhancedOpen] = useState(false);
 
@@ -76,7 +78,7 @@ export function MessageBubble({
       <img src="/sentium-mark.png" alt="" className={styles.avatar} width={26} height={26} />
 
       <div className={styles.aiBody}>
-        <span className={styles.sender}>Sentium</span>
+        <span className={styles.sender}>{senderName}</span>
 
         {hasActivity && (
           <div className={styles.activity}>

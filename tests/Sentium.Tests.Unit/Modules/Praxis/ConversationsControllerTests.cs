@@ -53,12 +53,23 @@ public sealed class ConversationsControllerTests
     {
         var request = new CreateConversationRequest("New Chat", "gemma3:1b");
         var created = new ConversationSummary(Guid.NewGuid(), "New Chat", "gemma3:1b", DateTime.UtcNow);
-        _service.CreateConversationAsync(request, Arg.Any<CancellationToken>()).Returns(created);
+        _service.CreateConversationAsync(request, Arg.Any<CancellationToken>()).Returns(Result<ConversationSummary>.Success(created));
 
         var result = await _controller.CreateConversation(request, TestContext.Current.CancellationToken);
 
-        result.Result.Should().BeOfType<CreatedAtActionResult>()
+        result.Should().BeOfType<CreatedAtActionResult>()
             .Which.Value.Should().Be(created);
+    }
+
+    [Fact]
+    public async Task CreateConversation_UnknownAgent_ReturnsBadRequest()
+    {
+        var request = new CreateConversationRequest(null, "gemma3:1b", "Nobody");
+        _service.CreateConversationAsync(request, Arg.Any<CancellationToken>()).Returns(Result<ConversationSummary>.Invalid("There is no agent named Nobody."));
+
+        var result = await _controller.CreateConversation(request, TestContext.Current.CancellationToken);
+
+        result.Should().BeOfType<BadRequestObjectResult>();
     }
 
     [Fact]

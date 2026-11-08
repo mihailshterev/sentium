@@ -12,9 +12,6 @@ public sealed class DynamicDiscoveryWorkflow(
     IEnumerable<IAgent> nativeAgents,
     IAgentRepository agentRepository) : IAgentWorkflow
 {
-    /// <summary>Native roles that steer the squad rather than doing specialist work, so they are never planned as steps.</summary>
-    private static readonly HashSet<string> ControlRoles = new([AgentRole.Orchestrator, AgentRole.Validator, AgentRole.Summarizer], StringComparer.OrdinalIgnoreCase);
-
     public WorkflowType Type => WorkflowType.Dynamic;
 
     public async Task<WorkflowResult> ExecuteAsync(WorkflowTrigger trigger, CancellationToken ct)
@@ -25,7 +22,7 @@ public sealed class DynamicDiscoveryWorkflow(
 
         var roster = new List<SquadMember>();
         roster.AddRange(nativeAgents
-            .Where(a => !ControlRoles.Contains(a.Name))
+            .Where(a => !AgentRole.IsControl(a.Name))
             .DistinctBy(a => a.Name, StringComparer.OrdinalIgnoreCase)
             .Select(a => new SquadMember(a.Name, a.Description, a.Instructions)));
 

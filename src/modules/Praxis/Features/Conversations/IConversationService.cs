@@ -14,13 +14,23 @@ public interface IConversationService
     /// </summary>
     Task<PagedResponse<ConversationSummary>> GetConversationsAsync(int page, int pageSize, string? search = null, CancellationToken ct = default);
     Task<ConversationResponse?> GetConversationAsync(Guid conversationId, CancellationToken ct = default);
-    Task<ConversationSummary> CreateConversationAsync(CreateConversationRequest request, CancellationToken ct = default);
+    /// <summary>
+    /// Creates a conversation, optionally with a specific agent (a built-in specialist or one of the user's agents).
+    /// An unknown agent or a control role is <see cref="ResultStatus.Invalid"/>.
+    /// </summary>
+    Task<Result<ConversationSummary>> CreateConversationAsync(CreateConversationRequest request, CancellationToken ct = default);
     Task<bool> DeleteConversationAsync(Guid conversationId, CancellationToken ct = default);
 
     /// <summary>
     /// Whether the conversation exists and still waits for a generated title.
     /// </summary>
     Task<bool> IsTitlePendingAsync(Guid conversationId, CancellationToken ct = default);
+
+    /// <summary>
+    /// The agent a chat turn runs as: the conversation's agent when it still exists for <paramref name="userId"/>,
+    /// otherwise the general assistant.
+    /// </summary>
+    Task<string> ResolveChatAgentAsync(Guid? conversationId, Guid? userId, CancellationToken ct = default);
 
     /// <summary>
     /// Stores a generated title while the conversation is still pending (a manual rename wins).

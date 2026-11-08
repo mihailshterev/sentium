@@ -22,6 +22,12 @@ public interface IConversationRepository
     Task<bool> IsTitlePendingAsync(Guid conversationId, CancellationToken ct = default);
 
     /// <summary>
+    /// The agent of <paramref name="userId"/>'s conversation, or <see langword="null"/> (general assistant, or not
+    /// their conversation). Filters on the owner explicitly: a Sovereign bypasses the query filter.
+    /// </summary>
+    Task<string?> GetAgentNameAsync(Guid conversationId, Guid? userId, CancellationToken ct = default);
+
+    /// <summary>
     /// Stores a generated title, but only while the conversation is still pending - a concurrent manual rename wins.
     /// </summary>
     /// <returns><see langword="true"/> when the title was stored.</returns>

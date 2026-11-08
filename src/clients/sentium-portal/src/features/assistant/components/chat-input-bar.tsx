@@ -17,6 +17,8 @@ interface ChatInputBarProps {
   onRemoveContextPill: (id: string) => void;
   onSetModel: (model: string) => void;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
+  placeholder?: string;
+  hint?: string | null;
 }
 
 export function ChatInputBar({
@@ -32,6 +34,8 @@ export function ChatInputBar({
   onRemoveContextPill,
   onSetModel,
   textareaRef,
+  placeholder = "Ask Sentium Assistant...",
+  hint = "Enter: Send · Shift+Enter: New line · Ctrl+K: New chat",
 }: ChatInputBarProps) {
   return (
     <div className={styles.composerWrap}>
@@ -59,7 +63,7 @@ export function ChatInputBar({
           value={input}
           onChange={(e) => onInputChange(e.target.value)}
           onKeyDown={onKeyDown}
-          placeholder={isTyping ? "Generating..." : "Ask Sentium Assistant..."}
+          placeholder={isTyping ? "Generating..." : placeholder}
           className={styles.textarea}
           aria-label="Chat message"
           autoComplete="off"
@@ -98,7 +102,7 @@ export function ChatInputBar({
         </div>
       </form>
 
-      <p className={styles.composerHint}>Enter: Send · Shift+Enter: New line · Ctrl+K: New chat</p>
+      {hint && <p className={styles.composerHint}>{hint}</p>}
     </div>
   );
 }

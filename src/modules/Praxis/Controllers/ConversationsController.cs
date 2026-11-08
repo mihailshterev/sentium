@@ -1,6 +1,7 @@
 using Sentium.Praxis.Features.Conversations;
 using Sentium.Praxis.Dtos;
 using Sentium.Core.Results;
+using Sentium.Infrastructure.Results;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -56,11 +57,14 @@ public sealed class ConversationsController(IConversationService conversationSer
     /// <param name="ct">Cancellation token.</param>
     /// <returns>The created conversation.</returns>
     [HttpPost]
-    [ProducesResponseType(StatusCodes.Status201Created)]
-    public async Task<ActionResult<ConversationSummary>> CreateConversation([FromBody] CreateConversationRequest request, CancellationToken ct)
+    [ProducesResponseType(typeof(ConversationSummary), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CreateConversation([FromBody] CreateConversationRequest request, CancellationToken ct)
     {
         var result = await conversationService.CreateConversationAsync(request, ct);
-        return CreatedAtAction(nameof(GetConversation), new { conversationId = result.Id }, result);
+        return result.IsSuccess
+            ? CreatedAtAction(nameof(GetConversation), new { conversationId = result.Value!.Id }, result.Value)
+            : result.ToActionResult(this);
     }
 
     /// <summary>

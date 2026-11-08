@@ -12,5 +12,6 @@ public enum ResourceType
     External,
     Code,
     Inventory,
+    Timeline,
     Any
 }

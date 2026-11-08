@@ -1,0 +1,66 @@
+.tagInput {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-height: 36px;
+  padding: 4px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--field-base, var(--mat-thin-bg));
+
+  &:focus-within {
+    border-color: var(--accent-line);
+    box-shadow: var(--focus-ring);
+  }
+
+  &[data-invalid] {
+    border-color: var(--danger-line);
+  }
+}
+
+.tagChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 4px 1px 8px;
+  border: 1px solid var(--accent-line);
+  border-radius: var(--radius-full);
+  background: var(--accent-soft);
+  color: var(--text-primary);
+  font-size: var(--text-xs);
+}
+
+.tagRemove {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--mat-thin-bg-hover);
+    color: var(--text-primary);
+  }
+}
+
+.tagField {
+  flex: 1;
+  min-width: 90px;
+  padding: 2px 0;
+  border: 0;
+  outline: none;
+  background: none;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: var(--text-sm);
+
+  &::placeholder {
+    color: var(--text-dim);
+  }
+}

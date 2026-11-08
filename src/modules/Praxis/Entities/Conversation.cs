@@ -15,6 +15,14 @@ public sealed class Conversation : IUserOwned
     public bool IsTitlePending { get; set; }
 
     public string Model { get; set; } = null!;
+
+    /// <summary>
+    /// The agent this conversation talks to (a built-in specialist or one of the owner's custom agents);
+    /// <see langword="null"/> for the general assistant. Fixed at creation, so resuming or reopening the chat
+    /// elsewhere keeps the same agent.
+    /// </summary>
+    public string? AgentName { get; set; }
+
     public DateTime CreatedAt { get; set; }
 
     public ICollection<Message> Messages { get; set; } = [];

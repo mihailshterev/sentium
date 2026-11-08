@@ -1,6 +1,9 @@
 using Sentium.Infrastructure.Caching;
 using FluentAssertions;
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
+using Sentium.Infrastructure.Security;
+using Sentium.Praxis.Features.Agents;
 using Sentium.Praxis.Features.Conversations;
 using Sentium.Praxis.Dtos;
 using Sentium.Core.Results;
@@ -10,13 +13,21 @@ namespace Sentium.Tests.Unit.Modules.Praxis;
 
 public sealed class ConversationServiceTests
 {
+    private static readonly Guid UserId = Guid.NewGuid();
+
     private readonly IConversationRepository _repository = Substitute.For<IConversationRepository>();
+    private readonly IAgentRoster _roster = Substitute.For<IAgentRoster>();
+    private readonly ICurrentUser _currentUser = Substitute.For<ICurrentUser>();
     private readonly ConversationService _service;
 
     public ConversationServiceTests()
     {
-        _service = new ConversationService(_repository, new PassThroughScopedCache());
+        _currentUser.UserId.Returns(UserId);
+        _service = CreateService(new PassThroughScopedCache());
     }
+
+    private ConversationService CreateService(IScopedCache cache)
+        => new(_repository, cache, _roster, _currentUser, NullLogger<ConversationService>.Instance);
 
     [Fact]
     public async Task GetConversationsAsync_ReturnsPagedConversationSummaries_WhenCalled()
@@ -70,8 +81,68 @@ public sealed class ConversationServiceTests
         var result = await _service.CreateConversationAsync(request, ct);
 
         // Assert
-        result.Should().Be(expected);
+        result.Value.Should().Be(expected);
         await _repository.Received(1).CreateConversationAsync(request, ct);
+    }
+
+    [Fact]
+    public async Task CreateConversationAsync_StoresTheCanonicalAgentName()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        _roster.FindAsync("timelineplanner", UserId, ct).Returns(new AgentRosterEntry("TimelinePlanner", "Plans", AgentKind.BuiltIn, null));
+        _repository.CreateConversationAsync(Arg.Any<CreateConversationRequest>(), ct)
+            .Returns(new ConversationSummary(Guid.NewGuid(), "Chat", "m", DateTime.UtcNow, "TimelinePlanner"));
+
+        var result = await _service.CreateConversationAsync(new CreateConversationRequest(null, "m", "timelineplanner"), ct);
+
+        result.IsSuccess.Should().BeTrue();
+        await _repository.Received(1).CreateConversationAsync(Arg.Is<CreateConversationRequest>(r => r.AgentName == "TimelinePlanner"), ct);
+    }
+
+    [Fact]
+    public async Task CreateConversationAsync_StoresNoAgent_ForTheGeneralAssistant()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        _roster.FindAsync("GeneralAssistant", UserId, ct).Returns(new AgentRosterEntry(AgentRole.GeneralAssistant, "General", AgentKind.BuiltIn, null));
+
+        await _service.CreateConversationAsync(new CreateConversationRequest(null, "m", "GeneralAssistant"), ct);
+
+        await _repository.Received(1).CreateConversationAsync(Arg.Is<CreateConversationRequest>(r => r.AgentName == null), ct);
+    }
+
+    [Fact]
+    public async Task CreateConversationAsync_RejectsAnUnknownAgent()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        _roster.FindAsync("Orchestrator", UserId, ct).Returns((AgentRosterEntry?)null);
+
+        var result = await _service.CreateConversationAsync(new CreateConversationRequest(null, "m", "Orchestrator"), ct);
+
+        result.Status.Should().Be(ResultStatus.Invalid);
+        await _repository.DidNotReceiveWithAnyArgs().CreateConversationAsync(default!, ct);
+    }
+
+    [Fact]
+    public async Task ResolveChatAgentAsync_UsesTheConversationsAgent_WhenItStillExists()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var id = Guid.NewGuid();
+        _repository.GetAgentNameAsync(id, UserId, ct).Returns("Planner Bot");
+        _roster.FindAsync("Planner Bot", UserId, ct).Returns(new AgentRosterEntry("Planner Bot", "Mine", AgentKind.Custom, null));
+
+        (await _service.ResolveChatAgentAsync(id, UserId, ct)).Should().Be("Planner Bot");
+    }
+
+    [Fact]
+    public async Task ResolveChatAgentAsync_FallsBackToTheGeneralAssistant()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var id = Guid.NewGuid();
+        _repository.GetAgentNameAsync(id, UserId, ct).Returns("Deleted Agent");
+        _roster.FindAsync("Deleted Agent", UserId, ct).Returns((AgentRosterEntry?)null);
+
+        (await _service.ResolveChatAgentAsync(id, UserId, ct)).Should().Be(AgentRole.GeneralAssistant);
+        (await _service.ResolveChatAgentAsync(null, UserId, ct)).Should().Be(AgentRole.GeneralAssistant);
     }
 
     [Fact]
@@ -121,7 +192,7 @@ public sealed class ConversationServiceTests
     {
         var ct = TestContext.Current.CancellationToken;
         var cache = Substitute.For<IScopedCache>();
-        var service = new ConversationService(_repository, cache);
+        var service = CreateService(cache);
         var id = Guid.NewGuid();
         _repository.TrySetGeneratedTitleAsync(id, "Trip planning", ct).Returns(stored);
 
@@ -138,7 +209,7 @@ public sealed class ConversationServiceTests
     {
         var ct = TestContext.Current.CancellationToken;
         var cache = Substitute.For<IScopedCache>();
-        var service = new ConversationService(_repository, cache);
+        var service = CreateService(cache);
         var id = Guid.NewGuid();
         _repository.RenameConversationAsync(id, "Trip planning", ct).Returns(renamed);
 
@@ -165,7 +236,7 @@ public sealed class ConversationServiceTests
     {
         var ct = TestContext.Current.CancellationToken;
         var cache = Substitute.For<IScopedCache>();
-        var service = new ConversationService(_repository, cache);
+        var service = CreateService(cache);
 
         await service.GetConversationsAsync(1, 20, "Trip", ct);
 

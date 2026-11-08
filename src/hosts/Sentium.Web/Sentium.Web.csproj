@@ -21,6 +21,7 @@
     <ProjectReference Include="..\..\modules\Sentinel\Sentium.Sentinel.csproj" />
     <ProjectReference Include="..\..\modules\Codex\Sentium.Codex.csproj" />
     <ProjectReference Include="..\..\modules\Locus\Sentium.Locus.csproj" />
+    <ProjectReference Include="..\..\modules\Tempus\Sentium.Tempus.csproj" />
     <ProjectReference Include="..\..\modules\Praxis\Sentium.Praxis.csproj" />
     <ProjectReference Include="..\..\modules\Vigil\Sentium.Vigil.csproj" />
   </ItemGroup>
