@@ -8,68 +8,111 @@ import { YearTimeline } from "./year-timeline";
 const TODAY = new Date(2026, 10, 8, 12, 0);
 
 describe("YearTimeline", () => {
+  const overview2026 = {
+    ...yearOverview(2026, {
+      11: {
+        taskCount: 5,
+        openCount: 3,
+        doneCount: 2,
+        overdueCount: 1,
+        pendingProposalCount: 2,
+        agentNoteCount: 1,
+        noteCount: 1,
+      },
+    }),
+    days: [
+      { date: "2026-11-12", open: 1, done: 0, urgent: false },
+      { date: "2026-11-20", open: 2, done: 0, urgent: true },
+      { date: "2026-11-03", open: 0, done: 2, urgent: false },
+    ],
+  };
+
   const renderTimeline = (props: Partial<Parameters<typeof YearTimeline>[0]> = {}) => {
     const onSelectMonth = vi.fn();
-    render(
+    const onYearsChange = vi.fn();
+    const view = render(
       <YearTimeline
-        year={2026}
-        months={
-          yearOverview(2026, {
-            11: {
-              taskCount: 5,
-              openCount: 3,
-              doneCount: 2,
-              overdueCount: 1,
-              pendingProposalCount: 2,
-              agentNoteCount: 1,
-            },
-          }).months
-        }
+        overviews={new Map([[2026, overview2026]])}
         today={TODAY}
-        selectedMonth={null}
-        compact={false}
-        layout="horizontal"
+        selected={null}
+        home={2026 * 12 + 10}
+        overdueCount={1}
+        narrow={false}
         onSelectMonth={onSelectMonth}
+        onYearsChange={onYearsChange}
         {...props}
       />,
     );
-    return { onSelectMonth };
+    return { onSelectMonth, onYearsChange, container: view.container };
   };
 
-  it("shows twelve month nodes and marks the current month", () => {
-    renderTimeline();
+  it("runs across years around today and marks the current month", () => {
+    const { onYearsChange } = renderTimeline();
 
-    const buttons = screen.getAllByRole("button");
-    expect(buttons).toHaveLength(12);
     const november = screen.getByRole("button", { name: "November 2026, 3 open tasks, 1 overdue, 2 suggestions" });
     expect(november).toHaveAttribute("aria-current", "date");
     expect(november).toHaveAttribute("data-state", "current");
     expect(screen.getByRole("button", { name: /^October 2026/ })).toHaveAttribute("data-state", "past");
     expect(screen.getByRole("button", { name: /^December 2026/ })).toHaveAttribute("data-state", "future");
+    // A year back to scroll to, two ahead.
+    expect(screen.getByTestId("timeline-month-2025-11")).toBeInTheDocument();
+    expect(screen.getByTestId("timeline-month-2028-11")).toBeInTheDocument();
+    expect(onYearsChange).toHaveBeenCalledWith([2025, 2026, 2027, 2028]);
   });
 
-  it("reports the year's progress up to today", () => {
+  it("reports the year's progress up to today and what is overdue", () => {
     renderTimeline();
     expect(screen.getByText("day 312 / 365")).toBeInTheDocument();
     expect(screen.getByLabelText("85 percent of 2026 has passed")).toBeInTheDocument();
+    expect(screen.getByText("1 overdue")).toBeInTheDocument();
+  });
+
+  it("hangs callouts only on months with something in them", () => {
+    renderTimeline();
+    expect(screen.getByText("November")).toBeInTheDocument();
+    expect(screen.getByText("3 open")).toBeInTheDocument();
+    expect(screen.getByText("· 2 done")).toBeInTheDocument();
+    expect(screen.queryByText("October")).not.toBeInTheDocument();
+    expect(screen.queryByText("nothing planned")).not.toBeInTheDocument();
+  });
+
+  it("raises months by how many tasks they hold", () => {
+    renderTimeline();
+    const top = (id: string) => parseFloat(screen.getByTestId(id).style.top);
+
+    // November holds five tasks; October and December none, so they sit on the baseline.
+    expect(top("timeline-month-2026-11")).toBeLessThan(top("timeline-month-2026-10"));
+    expect(top("timeline-month-2026-10")).toBe(top("timeline-month-2026-12"));
+  });
+
+  it("ticks the days with tasks on the axis", () => {
+    const { container } = renderTimeline();
+    const dots = container.querySelectorAll("circle[data-tone]");
+    expect(dots).toHaveLength(3);
+    expect([...dots].map((dot) => dot.getAttribute("data-tone")).sort()).toEqual(["done", "open", "urgent"]);
   });
 
   it("opens a month from its node or its callout", () => {
     const { onSelectMonth } = renderTimeline();
 
-    fireEvent.click(screen.getByRole("button", { name: /^March 2026/ }));
+    fireEvent.click(screen.getByRole("button", { name: /^March 2027/ }));
     fireEvent.click(screen.getByText("November"));
 
-    expect(onSelectMonth).toHaveBeenNthCalledWith(1, 3);
-    expect(onSelectMonth).toHaveBeenNthCalledWith(2, 11);
+    expect(onSelectMonth).toHaveBeenNthCalledWith(1, 2027, 3);
+    expect(onSelectMonth).toHaveBeenNthCalledWith(2, 2026, 11);
   });
 
   it("collapses to a strip without callouts while a month is open", () => {
-    renderTimeline({ compact: true, selectedMonth: 11 });
+    renderTimeline({ selected: { year: 2026, month: 11 } });
 
     expect(screen.queryByText("November")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /^November 2026/ })).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByRole("figure")).toHaveAttribute("data-layout", "strip");
+  });
+
+  it("rebuilds the rail around a month far away", () => {
+    renderTimeline({ selected: { year: 2040, month: 6 } });
+    expect(screen.getByRole("button", { name: /^June 2040/ })).toHaveAttribute("aria-expanded", "true");
   });
 });
 
@@ -78,6 +121,8 @@ describe("MonthCalendar", () => {
     const handlers = {
       onSelectDay: vi.fn(),
       onClose: vi.fn(),
+      onStepMonth: vi.fn(),
+      onOpenDay: vi.fn(),
       onAddTask: vi.fn(),
       onOpenTask: vi.fn(),
       onMoveTask: vi.fn(),
@@ -116,6 +161,22 @@ describe("MonthCalendar", () => {
     expect(screen.getByTestId("day-2026-11-07")).toHaveAttribute("data-past");
     expect(screen.getByTestId("day-2026-11-30")).not.toHaveAttribute("data-past");
     expect(screen.getByLabelText("8 of 30 days passed")).toBeInTheDocument();
+  });
+
+  it("steps between months and opens the neighbouring months' days", () => {
+    const { handlers } = renderMonth();
+
+    fireEvent.click(screen.getByRole("button", { name: "Previous month" }));
+    fireEvent.click(screen.getByRole("button", { name: "Next month" }));
+    fireEvent.click(screen.getByRole("button", { name: "Open 26 October" }));
+    fireEvent.click(screen.getByRole("button", { name: "Open 6 December" }));
+
+    expect(handlers.onStepMonth.mock.calls).toEqual([[-1], [1]]);
+    expect(handlers.onOpenDay.mock.calls).toEqual([["2026-10-26"], ["2026-12-06"]]);
+    expect(screen.getByTestId("day-2026-11-08")).toHaveAttribute("data-weekend");
+    expect(screen.getByTestId("day-2026-11-09")).not.toHaveAttribute("data-weekend");
+    // The selected day (12th) says how far away it is.
+    expect(screen.getByText("in 4 days")).toBeInTheDocument();
   });
 
   it("adds tasks on a day and opens tasks for editing", () => {

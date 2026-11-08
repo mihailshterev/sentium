@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import styles from "../timeline.module.css";
 import type { MonthSummary } from "../types/timeline";
-import { MONTH_NAMES, MONTH_SHORT, type MonthState } from "../utils/calendar";
+import { MONTH_NAMES, type MonthState } from "../utils/calendar";
 
 interface MonthNodeProps {
   year: number;
@@ -10,7 +10,7 @@ interface MonthNodeProps {
   state: MonthState;
   selected: boolean;
   position: { left: string; top: string };
-  onSelect: (month: number) => void;
+  onSelect: (year: number, month: number) => void;
 }
 
 function describe(year: number, month: number, summary: MonthSummary | undefined): string {
@@ -25,13 +25,13 @@ function describe(year: number, month: number, summary: MonthSummary | undefined
 }
 
 /**
- * A month on the year path: a glowing node whose ring shows how much of the month's work is done. Past months are
- * lit, the current month pulses, future months are hollow.
+ * A month on the rail: a glowing node where the month starts, raised by how many tasks it holds, whose ring shows how
+ * much of that work is done. Past months are lit, the current month pulses, future months are hollow. Its label sits
+ * on the rail's month axis.
  */
 export function MonthNode({ year, month, summary, state, selected, position, onSelect }: MonthNodeProps) {
   const total = summary?.taskCount ?? 0;
   const done = summary?.doneCount ?? 0;
-  const open = summary?.openCount ?? 0;
 
   return (
     <button
@@ -40,12 +40,11 @@ export function MonthNode({ year, month, summary, state, selected, position, onS
       style={position}
       data-state={state}
       data-selected={selected || undefined}
-      data-overdue={(summary?.overdueCount ?? 0) > 0 || undefined}
       aria-label={describe(year, month, summary)}
       aria-expanded={selected}
       aria-current={state === "current" ? "date" : undefined}
-      data-testid={`timeline-month-${month}`}
-      onClick={() => onSelect(month)}
+      data-testid={`timeline-month-${year}-${month}`}
+      onClick={() => onSelect(year, month)}
     >
       {selected && <motion.span layoutId="timeline-selected-node" className={styles.nodeHalo} aria-hidden="true" />}
       <svg className={styles.nodeRing} viewBox="0 0 40 40" aria-hidden="true">
@@ -64,14 +63,6 @@ export function MonthNode({ year, month, summary, state, selected, position, onS
         )}
       </svg>
       <span className={styles.nodeCore} aria-hidden="true" />
-      <span className={styles.nodeLabel} aria-hidden="true">
-        {MONTH_SHORT[month - 1]}
-      </span>
-      {open > 0 && (
-        <span className={styles.nodeCount} aria-hidden="true">
-          {open}
-        </span>
-      )}
     </button>
   );
 }

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import {
   DndContext,
   DragOverlay,
@@ -8,7 +9,7 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
-import { Bot, Plus, X } from "lucide-react";
+import { Bot, ChevronLeft, ChevronRight, Plus, X } from "lucide-react";
 import styles from "../timeline.module.css";
 import { Button } from "@/shared/ui/button";
 import type {
@@ -19,10 +20,10 @@ import type {
   TimelineNote,
   TimelineTask,
 } from "../types/timeline";
-import { WEEKDAYS, daysInMonth, monthGrid, monthLabel, monthState, toIsoDate } from "../utils/calendar";
+import { WEEKDAYS, daysInMonth, isWeekend, monthGrid, monthLabel, monthState, toIsoDate } from "../utils/calendar";
 import { dropTarget } from "../utils/display";
 import { tasksOnDay } from "../utils/month-cache";
-import { DayCell } from "./day-cell";
+import { DayCell, OutsideDayCell } from "./day-cell";
 import { MonthSidePanel } from "./month-side-panel";
 import type { ProposalActions } from "./proposal-card";
 import { TaskChip } from "./task-chip";
@@ -36,6 +37,8 @@ interface MonthCalendarProps extends ProposalActions {
   selectedDay: string | null;
   onSelectDay: (date: string | null) => void;
   onClose: () => void;
+  onStepMonth: (delta: number) => void;
+  onOpenDay: (date: string) => void;
   onAddTask: (date: string | null) => void;
   onOpenTask: (task: TimelineTask) => void;
   onMoveTask: (task: TimelineTask, target: TaskPlacement) => void;
@@ -59,6 +62,8 @@ export function MonthCalendar({
   selectedDay,
   onSelectDay,
   onClose,
+  onStepMonth,
+  onOpenDay,
   onAddTask,
   onOpenTask,
   onMoveTask,
@@ -96,7 +101,27 @@ export function MonthCalendar({
     <section className={styles.month} aria-labelledby="timeline-month-title" data-testid="month-calendar">
       <header className={styles.monthHead}>
         <div className={styles.monthTitle}>
-          <h2 id="timeline-month-title">{label}</h2>
+          <div className={styles.monthStep}>
+            <Button
+              size="sm"
+              variant="ghost"
+              iconOnly
+              icon={<ChevronLeft size={16} />}
+              aria-label="Previous month"
+              title="Previous month (←)"
+              onClick={() => onStepMonth(-1)}
+            />
+            <h2 id="timeline-month-title">{label}</h2>
+            <Button
+              size="sm"
+              variant="ghost"
+              iconOnly
+              icon={<ChevronRight size={16} />}
+              aria-label="Next month"
+              title="Next month (→)"
+              onClick={() => onStepMonth(1)}
+            />
+          </div>
           <div className={styles.monthProgress} aria-label={`${elapsed} of ${days} days passed`}>
             <span className={styles.monthBar}>
               <span style={{ width: `${(elapsed / days) * 100}%` }} />
@@ -133,16 +158,19 @@ export function MonthCalendar({
         <div className={styles.monthBody} aria-busy={isLoading || undefined}>
           <div className={styles.calendar}>
             <div className={styles.weekdays} aria-hidden="true">
-              {WEEKDAYS.map((day) => (
-                <span key={day}>{day}</span>
+              {WEEKDAYS.map((day, i) => (
+                <span key={day} data-weekend={i >= 5 || undefined}>
+                  {day}
+                </span>
               ))}
             </div>
             <ol className={styles.grid} aria-label={`Days of ${label}`}>
-              {monthGrid(year, month).map((date, i) =>
-                date ? (
+              {monthGrid(year, month).map(({ date, inMonth }) =>
+                inMonth ? (
                   <DayCell
                     key={date}
                     date={date}
+                    weekend={isWeekend(date)}
                     tasks={tasksOnDay(tasks, date)}
                     proposals={proposals.filter((p) => p.date === date)}
                     noteCount={notes.filter((n) => n.date === date).length}
@@ -155,7 +183,7 @@ export function MonthCalendar({
                     {...proposalActions}
                   />
                 ) : (
-                  <li key={`blank-${i}`} className={styles.blank} aria-hidden="true" />
+                  <OutsideDayCell key={date} date={date} weekend={isWeekend(date)} onOpen={onOpenDay} />
                 ),
               )}
             </ol>
@@ -180,9 +208,12 @@ export function MonthCalendar({
           />
         </div>
 
-        <DragOverlay dropAnimation={null}>
-          {dragging && <TaskChip task={dragging} onOpen={() => {}} overlay />}
-        </DragOverlay>
+        {createPortal(
+          <DragOverlay dropAnimation={null}>
+            {dragging && <TaskChip task={dragging} onOpen={() => {}} overlay />}
+          </DragOverlay>,
+          document.body,
+        )}
       </DndContext>
     </section>
   );

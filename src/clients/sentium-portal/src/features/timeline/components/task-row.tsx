@@ -7,13 +7,14 @@ import { contextAgent } from "../utils/agent-context";
 interface TaskRowProps {
   task: TimelineTask;
   today: string;
+  when?: string;
   onOpen: (task: TimelineTask) => void;
   onToggleDone: (task: TimelineTask) => void;
   onAskAgent: (task: TimelineTask) => void;
 }
 
-/** A task in the side panel's agenda: complete it, open it, or ask its agent about it. */
-export function TaskRow({ task, today, onOpen, onToggleDone, onAskAgent }: TaskRowProps) {
+/** A task in an agenda list: complete it, open it, or ask its agent about it. */
+export function TaskRow({ task, today, when, onOpen, onToggleDone, onAskAgent }: TaskRowProps) {
   const done = task.status === "Done";
   const overdue = !done && task.dueDate !== null && task.dueDate < today;
   const agent = contextAgent({ kind: "task", task });
@@ -30,6 +31,7 @@ export function TaskRow({ task, today, onOpen, onToggleDone, onAskAgent }: TaskR
       <button type="button" className={styles.rowTitle} onClick={() => onOpen(task)}>
         <span>{task.title}</span>
         <span className={styles.rowMeta}>
+          {when && <span className={styles.rowWhen}>{when}</span>}
           <span className={styles.rowPriority}>{task.priority.toLowerCase()}</span>
           {task.status === "InProgress" && <span>in progress</span>}
           {task.dueDate && <span data-overdue={overdue || undefined}>due {formatShortDay(task.dueDate)}</span>}

@@ -9,12 +9,12 @@ test.describe("Timeline", () => {
     await timelinePage.expectLoaded();
   });
 
-  test("shows the twelve months with the current one marked", { tag: "@smoke" }, async ({ timelinePage }) => {
+  test("shows the months around today with the current one marked", { tag: "@smoke" }, async ({ timelinePage }) => {
     const today = localToday();
 
-    await expect(timelinePage.monthNodes).toHaveCount(12);
-    await expect(timelinePage.monthNode(today.month)).toHaveAttribute("aria-current", "date");
-    await expect(timelinePage.monthNode(today.month)).toHaveAccessibleName(
+    expect(await timelinePage.monthNodes.count()).toBeGreaterThanOrEqual(36);
+    await expect(timelinePage.monthNode(today.year, today.month)).toHaveAttribute("aria-current", "date");
+    await expect(timelinePage.monthNode(today.year, today.month)).toHaveAccessibleName(
       new RegExp(`^${today.monthName} ${today.year}`),
     );
   });

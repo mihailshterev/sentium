@@ -75,10 +75,27 @@ export interface MonthSummary {
   lastAgentActivityAt: string | null;
 }
 
+export interface DaySummary {
+  date: string;
+  open: number;
+  done: number;
+  urgent: boolean;
+}
+
 export interface YearOverview {
   year: number;
   today: string;
   months: MonthSummary[];
+  days: DaySummary[];
+}
+
+export interface Upcoming {
+  today: string;
+  days: number;
+  overdue: TimelineTask[];
+  overdueCount: number;
+  next: TimelineTask[];
+  pendingProposals: number;
 }
 
 export interface MonthDetail {
@@ -102,7 +119,6 @@ export interface SaveTaskPayload {
   assignedAgent: string | null;
 }
 
-/** A day, or a month without a day. */
 export interface TaskPlacement {
   year: number;
   month: number;
@@ -117,5 +133,4 @@ export interface CreateNotePayload {
   content: string;
 }
 
-/** What the agent drawer is about: one task, or a whole month. */
 export type AgentChatContext = { kind: "task"; task: TimelineTask } | { kind: "month"; year: number; month: number };

@@ -1,12 +1,13 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router";
 import * as hooks from "../hooks/useTimeline";
-import { monthDetail, proposal, task, yearOverview } from "../test-fixtures";
+import { monthDetail, proposal, task, upcoming, yearOverview } from "../test-fixtures";
 import { TimelineView } from "./timeline-view";
 
 vi.mock("../hooks/useTimeline", () => ({
-  useYearOverview: vi.fn(),
+  useYearOverviews: vi.fn(),
+  useUpcoming: vi.fn(),
   useMonthDetail: vi.fn(),
   usePendingProposals: vi.fn(),
   useTaskMutations: vi.fn(),
@@ -56,8 +57,18 @@ describe("TimelineView", () => {
   const proposalMutations = { accept: mutation(), reject: mutation() };
 
   beforeEach(() => {
-    vi.mocked(hooks.useYearOverview).mockReturnValue({
-      overview: yearOverview(2026, { 11: { taskCount: 1, openCount: 1 } }),
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(2026, 10, 8, 12, 0));
+    vi.mocked(hooks.useYearOverviews).mockReturnValue({
+      overviews: new Map([[2026, yearOverview(2026, { 11: { taskCount: 1, openCount: 1 } })]]),
+      isError: false,
+    });
+    vi.mocked(hooks.useUpcoming).mockReturnValue({
+      upcoming: upcoming({
+        next: [task()],
+        overdue: [task({ id: "late", title: "Pay rent", date: "2026-11-02" })],
+        overdueCount: 1,
+      }),
       isLoading: false,
       isError: false,
     });
@@ -72,11 +83,15 @@ describe("TimelineView", () => {
     vi.mocked(hooks.useProposalMutations).mockReturnValue(proposalMutations as never);
   });
 
-  it("shows the year and opens a month in the URL", async () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("shows the rail with what is up next and opens a month in the URL", async () => {
     renderAt("/timeline?year=2026");
 
     expect(screen.getByRole("heading", { level: 1, name: "Timeline" })).toBeInTheDocument();
-    expect(screen.getByText("Select a month to open its calendar.")).toBeInTheDocument();
+    expect(screen.getByTestId("up-next")).toHaveTextContent("Pay rent");
 
     fireEvent.click(screen.getByRole("button", { name: /^November 2026/ }));
 
@@ -94,12 +109,27 @@ describe("TimelineView", () => {
     expect(screen.getByTestId("url")).not.toHaveTextContent("month");
   });
 
-  it("switches years", () => {
-    renderAt("/timeline?year=2026&month=4");
+  it("steps months across years with the arrows and the keyboard", () => {
+    renderAt("/timeline?year=2026&month=12");
 
-    fireEvent.click(screen.getByRole("button", { name: "Next year" }));
+    // Typing keeps its arrow keys.
+    fireEvent.keyDown(screen.getByRole("textbox", { name: "New note" }), { key: "ArrowLeft" });
+    expect(screen.getByTestId("url")).toHaveTextContent("/timeline?year=2026&month=12");
 
-    expect(screen.getByTestId("url")).toHaveTextContent("/timeline?year=2027");
+    fireEvent.click(screen.getByRole("button", { name: "Next month" }));
+    expect(screen.getByTestId("url")).toHaveTextContent("/timeline?year=2027&month=1");
+
+    fireEvent.keyDown(window, { key: "ArrowLeft" });
+    expect(screen.getByTestId("url")).toHaveTextContent("/timeline?year=2026&month=12");
+  });
+
+  it("opens an upcoming task on its day", async () => {
+    renderAt("/timeline");
+
+    fireEvent.click(within(screen.getByTestId("up-next")).getByRole("button", { name: /^Book dentist/ }));
+
+    expect(screen.getByTestId("url")).toHaveTextContent("/timeline?year=2026&month=11&day=2026-11-12");
+    expect(await screen.findByRole("heading", { level: 3, name: /^Thursday 12 November/ })).toBeInTheDocument();
   });
 
   it("creates a task from a day", () => {

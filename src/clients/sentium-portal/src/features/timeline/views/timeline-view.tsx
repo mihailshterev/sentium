@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import { AnimatePresence, MotionConfig, motion } from "framer-motion";
-import { CalendarRange, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import { CalendarRange, Sparkles } from "lucide-react";
 import styles from "../timeline.module.css";
 import { Button } from "@/shared/ui/button";
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
@@ -14,6 +14,7 @@ import { AgentChatDrawer } from "../components/agent-chat-drawer";
 import { MonthCalendar } from "../components/month-calendar";
 import { ProposalsDialog } from "../components/proposals-dialog";
 import { TaskFormDialog } from "../components/task-form-dialog";
+import { UpNext } from "../components/up-next";
 import { YearTimeline } from "../components/year-timeline";
 import {
   useMonthDetail,
@@ -21,7 +22,8 @@ import {
   usePendingProposals,
   useProposalMutations,
   useTaskMutations,
-  useYearOverview,
+  useUpcoming,
+  useYearOverviews,
 } from "../hooks/useTimeline";
 import { useToday } from "../hooks/useToday";
 import type { TaskFormDefaults } from "../schemas/timeline-task.form";
@@ -32,8 +34,8 @@ import type {
   TimelineProposal,
   TimelineTask,
 } from "../types/timeline";
-import { toIsoDate } from "../utils/calendar";
-import { VIEW_BOX, layoutNodes } from "../utils/timeline-geometry";
+import { isoMonth, toIsoDate } from "../utils/calendar";
+import { MAX_MONTH_INDEX, MIN_MONTH_INDEX, monthAt, monthIndex } from "../utils/timeline-geometry";
 
 const MIN_YEAR = 2000;
 const MAX_YEAR = 2100;
@@ -43,6 +45,12 @@ const clampYear = (value: number) => Math.min(MAX_YEAR, Math.max(MIN_YEAR, value
 
 const errorText = (error: unknown, fallback: string) =>
   error instanceof ApiError && error.message ? error.message : fallback;
+
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+const isEditable = (target: EventTarget | null) =>
+  target instanceof HTMLElement &&
+  (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName));
 
 interface EditorState {
   task: TimelineTask | null;
@@ -54,13 +62,38 @@ export function TimelineView() {
   const todayIso = toIsoDate(today);
   const [params, setParams] = useSearchParams();
 
-  const year = clampYear(Number(params.get("year")) || today.getFullYear());
+  const todayIndex = monthIndex(today.getFullYear(), today.getMonth() + 1);
+  const yearParam = Number(params.get("year"));
+  const year = clampYear(yearParam || today.getFullYear());
   const monthParam = Number(params.get("month"));
   const selectedMonth = monthParam >= 1 && monthParam <= 12 ? monthParam : null;
+  const dayParam = params.get("day");
+  const linkedDay =
+    selectedMonth && dayParam && ISO_DATE.test(dayParam) && dayParam.startsWith(`${isoMonth(year, selectedMonth)}-`)
+      ? dayParam
+      : null;
 
-  const layout = useMediaQuery("(max-width: 720px)") ? "vertical" : "horizontal";
+  const narrow = useMediaQuery("(max-width: 720px)");
 
-  const { overview, isError } = useYearOverview(year, todayIso);
+  const [home, setHome] = useState(() =>
+    selectedMonth
+      ? monthIndex(year, selectedMonth)
+      : yearParam && year !== today.getFullYear()
+        ? monthIndex(year, 1)
+        : todayIndex,
+  );
+  if (selectedMonth && home !== monthIndex(year, selectedMonth)) {
+    setHome(monthIndex(year, selectedMonth));
+  }
+
+  const [railYears, setRailYears] = useState(() => [monthAt(home).year]);
+  const onYearsChange = useCallback(
+    (years: number[]) => setRailYears((previous) => (previous.join() === years.join() ? previous : years)),
+    [],
+  );
+
+  const { overviews, isError } = useYearOverviews(railYears, todayIso);
+  const { upcoming } = useUpcoming(todayIso);
   const { detail, isLoading: monthLoading } = useMonthDetail(year, selectedMonth);
   const { proposals: pending } = usePendingProposals();
   const { roster } = useAgentRoster();
@@ -68,7 +101,11 @@ export function TimelineView() {
   const noteMutations = useNoteMutations();
   const proposalMutations = useProposalMutations();
 
-  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const defaultDay = () =>
+    linkedDay ??
+    (selectedMonth && year === today.getFullYear() && selectedMonth === today.getMonth() + 1 ? todayIso : null);
+
+  const [selectedDay, setSelectedDay] = useState<string | null>(defaultDay);
   const [editor, setEditor] = useState<EditorState | null>(null);
   const [toDelete, setToDelete] = useState<TimelineTask | null>(null);
   const [chat, setChat] = useState<AgentChatContext | null>(null);
@@ -80,9 +117,7 @@ export function TimelineView() {
   const [dayMonth, setDayMonth] = useState(`${year}-${selectedMonth}`);
   if (dayMonth !== `${year}-${selectedMonth}`) {
     setDayMonth(`${year}-${selectedMonth}`);
-    setSelectedDay(
-      selectedMonth && year === today.getFullYear() && selectedMonth === today.getMonth() + 1 ? todayIso : null,
-    );
+    setSelectedDay(defaultDay());
   }
 
   useEffect(() => {
@@ -91,15 +126,34 @@ export function TimelineView() {
     return () => clearTimeout(timer);
   }, [notice]);
 
-  const go = (nextYear: number, month: number | null) => {
+  const go = (nextYear: number, month: number | null, day?: string | null) => {
     const next = new URLSearchParams();
     next.set("year", String(clampYear(nextYear)));
     if (month) next.set("month", String(month));
+    if (month && day) next.set("day", day);
     setParams(next);
   };
 
-  const selectMonth = (month: number) => go(year, month === selectedMonth ? null : month);
+  const selectMonth = (monthYear: number, month: number) =>
+    monthYear === year && month === selectedMonth ? go(year, null) : go(monthYear, month);
   const collapse = () => go(year, null);
+
+  const shownIndex = selectedMonth ? monthIndex(year, selectedMonth) : null;
+  const pendingStep = useRef<number | null>(null);
+  useEffect(() => {
+    pendingStep.current = null;
+  }, [shownIndex]);
+
+  const stepMonth = (delta: number) => {
+    if (shownIndex === null) return;
+    const index = Math.min(MAX_MONTH_INDEX, Math.max(MIN_MONTH_INDEX, (pendingStep.current ?? shownIndex) + delta));
+    pendingStep.current = index;
+    const target = monthAt(index);
+    go(target.year, target.month);
+  };
+
+  const openDay = (date: string) => go(Number(date.slice(0, 4)), Number(date.slice(5, 7)), date);
+  const openTaskMonth = (task: TimelineTask) => go(task.year, task.month, task.date);
 
   const openChat = (context: AgentChatContext) => {
     chatTrigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -113,9 +167,21 @@ export function TimelineView() {
 
   const dialogOpen = editor !== null || toDelete !== null || showProposals;
 
+  const stepRef = useRef(stepMonth);
+  useEffect(() => {
+    stepRef.current = stepMonth;
+  });
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape" || dialogOpen) return;
+      if (dialogOpen) return;
+      if ((e.key === "ArrowLeft" || e.key === "ArrowRight") && selectedMonth) {
+        if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey || isEditable(e.target)) return;
+        e.preventDefault();
+        stepRef.current(e.key === "ArrowLeft" ? -1 : 1);
+        return;
+      }
+      if (e.key !== "Escape") return;
       if (chat) {
         setChat(null);
         chatTrigger.current?.focus();
@@ -185,10 +251,6 @@ export function TimelineView() {
     [detail?.tasks],
   );
 
-  const expandOrigin = selectedMonth
-    ? `${(layoutNodes("horizontal")[selectedMonth - 1].x / VIEW_BOX.horizontal.width) * 100}% 0%`
-    : "50% 0%";
-
   const mutationError = editor?.task ? taskMutations.update.error : taskMutations.create.error;
 
   return (
@@ -200,25 +262,6 @@ export function TimelineView() {
         width="wide"
         actions={
           <div className={styles.headerActions}>
-            <Button
-              size="sm"
-              variant="ghost"
-              iconOnly
-              icon={<ChevronLeft size={16} />}
-              aria-label="Previous year"
-              onClick={() => go(year - 1, null)}
-            />
-            <span className={styles.yearLabel} aria-live="polite">
-              {year}
-            </span>
-            <Button
-              size="sm"
-              variant="ghost"
-              iconOnly
-              icon={<ChevronRight size={16} />}
-              aria-label="Next year"
-              onClick={() => go(year + 1, null)}
-            />
             <Button size="sm" onClick={() => go(today.getFullYear(), today.getMonth() + 1)}>
               Today
             </Button>
@@ -241,13 +284,14 @@ export function TimelineView() {
         <div className={styles.layout} data-chat={chat ? "open" : undefined}>
           <div className={styles.main}>
             <YearTimeline
-              year={year}
-              months={overview?.months}
+              overviews={overviews}
               today={today}
-              selectedMonth={selectedMonth}
-              compact={selectedMonth !== null}
-              layout={layout}
+              selected={selectedMonth ? { year, month: selectedMonth } : null}
+              home={home}
+              overdueCount={upcoming?.overdueCount ?? 0}
+              narrow={narrow}
               onSelectMonth={selectMonth}
+              onYearsChange={onYearsChange}
             />
 
             <AnimatePresence mode="popLayout" initial={false}>
@@ -258,7 +302,7 @@ export function TimelineView() {
                   animate={{ opacity: 1, y: 0, scaleY: 1 }}
                   exit={{ opacity: 0, y: -10, scaleY: 0.97 }}
                   transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-                  style={{ transformOrigin: expandOrigin }}
+                  style={{ transformOrigin: "50% 0%" }}
                 >
                   <MonthCalendar
                     year={year}
@@ -269,6 +313,8 @@ export function TimelineView() {
                     selectedDay={selectedDay}
                     onSelectDay={setSelectedDay}
                     onClose={collapse}
+                    onStepMonth={stepMonth}
+                    onOpenDay={openDay}
                     onAddTask={(date) => setEditor({ task: null, defaults: defaultsFor(date) })}
                     onOpenTask={(task) => setEditor({ task, defaults: defaultsFor(task.date) })}
                     onMoveTask={moveTask}
@@ -285,15 +331,19 @@ export function TimelineView() {
                   />
                 </motion.div>
               ) : (
-                <motion.p
-                  key="hint"
-                  className={styles.hint}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                >
-                  Select a month to open its calendar.
-                </motion.p>
+                <motion.div key="up-next" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                  <UpNext
+                    upcoming={upcoming}
+                    today={todayIso}
+                    onOpenTask={openTaskMonth}
+                    onToggleDone={toggleDone}
+                    onAskAgent={(task) => openChat({ kind: "task", task })}
+                    onShowSuggestions={() => setShowProposals(true)}
+                    onPlanMonth={() =>
+                      openChat({ kind: "month", year: today.getFullYear(), month: today.getMonth() + 1 })
+                    }
+                  />
+                </motion.div>
               )}
             </AnimatePresence>
           </div>

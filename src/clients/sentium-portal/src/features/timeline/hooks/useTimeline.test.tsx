@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import * as api from "../api/timeline.service";
 import { monthDetail, task } from "../test-fixtures";
-import { timelineKeys, useTaskMutations, useYearOverview } from "./useTimeline";
+import { timelineKeys, useTaskMutations, useYearOverviews } from "./useTimeline";
 import type { MonthDetail } from "../types/timeline";
 
 function setup() {
@@ -15,15 +15,18 @@ function setup() {
   return { client, wrapper };
 }
 
-describe("useYearOverview", () => {
-  it("passes the viewer's date", async () => {
-    const fetchYear = vi.spyOn(api, "fetchYear").mockResolvedValue({ year: 2026, today: "2026-11-08", months: [] });
+describe("useYearOverviews", () => {
+  it("loads every year on the rail with the viewer's date", async () => {
+    const fetchYear = vi
+      .spyOn(api, "fetchYear")
+      .mockImplementation(async (year) => ({ year, today: "2026-11-08", months: [], days: [] }));
     const { wrapper } = setup();
 
-    const { result } = renderHook(() => useYearOverview(2026, "2026-11-08"), { wrapper });
+    const { result } = renderHook(() => useYearOverviews([2026, 2027], "2026-11-08"), { wrapper });
 
-    await waitFor(() => expect(result.current.overview?.year).toBe(2026));
+    await waitFor(() => expect([...result.current.overviews.keys()]).toEqual([2026, 2027]));
     expect(fetchYear).toHaveBeenCalledWith(2026, "2026-11-08");
+    expect(fetchYear).toHaveBeenCalledWith(2027, "2026-11-08");
   });
 });
 

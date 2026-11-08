@@ -1,176 +1,427 @@
-import { useMemo } from "react";
-import { motion } from "framer-motion";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useReducedMotion } from "framer-motion";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import styles from "../timeline.module.css";
-import type { MonthSummary } from "../types/timeline";
-import { monthProgress, monthState, yearProgress, dayOfYear, daysInYear } from "../utils/calendar";
+import { Button } from "@/shared/ui/button";
+import { useDragPan } from "../hooks/useDragPan";
+import type { DaySummary, MonthSummary, YearOverview } from "../types/timeline";
 import {
-  VIEW_BOX,
+  MONTH_SHORT,
+  dayOfYear,
+  daysInMonth,
+  daysInYear,
+  monthProgress,
+  monthState,
+  yearProgress,
+} from "../utils/calendar";
+import {
+  MAX_MONTH_INDEX,
+  MIN_MONTH_INDEX,
+  boundaryX,
+  dayX,
+  focusMonth,
   fullPath,
-  layoutNodes,
+  growWindow,
+  monthAt,
+  monthIndex,
+  nodeY,
   pointAtFraction,
+  railMetrics,
+  railWidth,
+  scaleMax,
+  scrollTarget,
   segmentPath,
-  segments,
-  toPercent,
-  type Point,
-  type TimelineLayout,
+  smoothSegment,
+  windowAround,
+  windowYears,
 } from "../utils/timeline-geometry";
 import { MonthCallout } from "./month-callout";
 import { MonthNode } from "./month-node";
 
 interface YearTimelineProps {
-  year: number;
-  months: MonthSummary[] | undefined;
+  overviews: Map<number, YearOverview>;
   today: Date;
-  selectedMonth: number | null;
-  /** A month is open below: shrink to a strip without callouts. */
-  compact: boolean;
-  layout: Exclude<TimelineLayout, "strip">;
-  onSelectMonth: (month: number) => void;
+  selected: { year: number; month: number } | null;
+  home: number;
+  overdueCount: number;
+  narrow: boolean;
+  onSelectMonth: (year: number, month: number) => void;
+  onYearsChange: (years: number[]) => void;
 }
 
-/** Distance (view-box units) from a node to its callout. */
-const LEADER = 54;
+const CARD_TOP = 8;
+const NODE_RADIUS = 20;
+const PAGE_MONTHS = 6;
+const GROW_MARGIN_MONTHS = 4;
 
-type Side = "above" | "below" | "left" | "right";
+const isBusy = (s: MonthSummary | undefined) =>
+  !!s && (s.taskCount > 0 || s.noteCount > 0 || s.pendingProposalCount > 0);
 
-function calloutSide(index: number, layout: TimelineLayout): Side {
-  if (layout === "vertical") return index % 2 === 0 ? "left" : "right";
-  // Even nodes sit below the climbing trend line, odd ones above it: hang each callout on the outside.
-  return index % 2 === 0 ? "below" : "above";
-}
+const dotRadius = (day: DaySummary) => {
+  const count = day.open + day.done;
+  return count >= 3 ? 4.5 : count === 2 ? 3.5 : 2.5;
+};
 
-function leaderEnd(point: Point, side: Side): Point {
-  switch (side) {
-    case "above":
-      return { x: point.x, y: point.y - LEADER };
-    case "below":
-      return { x: point.x, y: point.y + LEADER };
-    case "left":
-      return { x: point.x - LEADER * 0.6, y: point.y };
-    default:
-      return { x: point.x + LEADER * 0.6, y: point.y };
+const dotTone = (day: DaySummary) => (day.urgent ? "urgent" : day.open > 0 ? "open" : "done");
+
+function scrollRail(el: HTMLElement, left: number, smooth: boolean) {
+  if (typeof el.scrollTo === "function") {
+    el.scrollTo({ left, behavior: smooth ? "smooth" : "auto" });
+  } else {
+    el.scrollLeft = left;
   }
 }
 
 /**
- * The year as a glowing path through twelve month nodes. The stretch already lived glows (to today, mid-month for the
- * current one); the rest is a faint dashed track. Paths are SVG; nodes, callouts and the today marker are HTML laid
- * over it at percentage positions, so they stay crisp, focusable and round at any aspect ratio.
+ * The timeline as a glowing line chart of workload you scroll along across years: months sit on a straight baseline
+ * and rise with their task count, each node where its month starts; day ticks run in a lane below, month labels
+ * under that, and months with something in them get a card in the lane on top. The stretch already lived glows (to
+ * today for the current month); the rest is a faint dashed track. The rendered window of months grows as the viewer
+ * nears either end. Paths are SVG; nodes, cards and labels are HTML laid over it, so they stay crisp and focusable.
  */
 export function YearTimeline({
-  year,
-  months,
+  overviews,
   today,
-  selectedMonth,
-  compact,
-  layout: preferred,
+  selected,
+  home,
+  overdueCount,
+  narrow,
   onSelectMonth,
+  onYearsChange,
 }: YearTimelineProps) {
-  const layout: TimelineLayout = compact ? "strip" : preferred;
-  const view = VIEW_BOX[layout];
-  const points = useMemo(() => layoutNodes(layout), [layout]);
-  const segs = useMemo(() => segments(points, layout), [points, layout]);
+  const mode = selected ? "strip" : "full";
+  const m = railMetrics(mode, narrow);
+  const anchor = selected ? monthIndex(selected.year, selected.month) : home;
+  const align = selected ? "center" : "start";
 
-  const states = Array.from({ length: 12 }, (_, i) => monthState(year, i + 1, today));
-  const fractions = Array.from({ length: 12 }, (_, i) => monthProgress(year, i + 1, today));
-  const currentIndex = states.indexOf("current");
-  const todayPoint = currentIndex >= 0 ? pointAtFraction(segs[currentIndex], fractions[currentIndex]) : null;
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const panning = useDragPan(scrollerRef);
+  const reducedMotion = useReducedMotion();
+  const [win, setWin] = useState(() => windowAround(anchor));
+  const [viewYear, setViewYear] = useState(() => monthAt(anchor).year);
 
-  const progress = yearProgress(year, today);
-  const summaryFor = (month: number) => months?.find((m) => m.month === month);
+  if (anchor < win.start || anchor >= win.start + win.count) {
+    setWin(windowAround(anchor));
+  }
+
+  const pendingShift = useRef(0);
+  const growing = useRef(false);
+
+  useLayoutEffect(() => {
+    const el = scrollerRef.current;
+    if (el && pendingShift.current !== 0) {
+      el.scrollLeft += pendingShift.current;
+    }
+    pendingShift.current = 0;
+    growing.current = false;
+  }, [win]);
+
+  const lastScroll = useRef<string | null>(null);
+  useLayoutEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) {
+      return;
+    }
+
+    const key = `${anchor}:${align}:${mode}:${narrow}`;
+    const previous = lastScroll.current;
+    if (previous === key) {
+      return;
+    }
+
+    lastScroll.current = key;
+    const sameGeometry = previous?.endsWith(`:${mode}:${narrow}`) ?? false;
+    scrollRail(el, scrollTarget(anchor, align, win, m, el.clientWidth), sameGeometry && !reducedMotion);
+    setViewYear(monthAt(anchor).year);
+  }, [anchor, align, mode, narrow, win, m, reducedMotion]);
+
+  const yearsKey = windowYears(win).join(",");
+
+  useEffect(() => {
+    onYearsChange(yearsKey.split(",").map(Number));
+  }, [yearsKey, onYearsChange]);
+
+  const onScroll = () => {
+    const el = scrollerRef.current;
+    if (!el) {
+      return;
+    }
+
+    const margin = m.step * GROW_MARGIN_MONTHS;
+    if (!growing.current && el.scrollLeft < margin && win.start > MIN_MONTH_INDEX) {
+      const next = growWindow(win, "before");
+      growing.current = true;
+      pendingShift.current = (win.start - next.start) * m.step;
+      setWin(next);
+    } else if (
+      !growing.current &&
+      el.scrollLeft + el.clientWidth > el.scrollWidth - margin &&
+      win.start + win.count - 1 < MAX_MONTH_INDEX
+    ) {
+      growing.current = true;
+      setWin(growWindow(win, "after"));
+    }
+    setViewYear(monthAt(focusMonth(el.scrollLeft, el.clientWidth, mode, win, m)).year);
+  };
+
+  const page = (direction: -1 | 1) => {
+    const el = scrollerRef.current;
+    if (!el) {
+      return;
+    }
+    scrollRail(el, Math.max(0, el.scrollLeft + direction * PAGE_MONTHS * m.step), !reducedMotion);
+  };
+
+  const months = useMemo(
+    () =>
+      Array.from({ length: win.count }, (_, i) => {
+        const index = win.start + i;
+        const { year, month } = monthAt(index);
+        return {
+          index,
+          year,
+          month,
+          state: monthState(year, month, today),
+          fraction: monthProgress(year, month, today),
+          summary: overviews.get(year)?.months[month - 1],
+        };
+      }),
+    [win, today, overviews],
+  );
+
+  const nodes = useMemo(() => {
+    const countAt = (index: number) => {
+      const { year, month } = monthAt(index);
+      return overviews.get(year)?.months[month - 1]?.taskCount ?? 0;
+    };
+    const max = scaleMax(months.map((month) => month.summary?.taskCount ?? 0));
+    return Array.from({ length: win.count + 1 }, (_, i) => ({
+      x: boundaryX(win.start + i, win.start, m),
+      y: nodeY(countAt(win.start + i), max, m),
+    }));
+  }, [months, overviews, win, m]);
+
+  const segments = useMemo(() => nodes.slice(0, -1).map((node, i) => smoothSegment(node, nodes[i + 1])), [nodes]);
+
+  const dayDots = useMemo(() => {
+    const first = win.start;
+    const last = win.start + win.count - 1;
+    return [...overviews.values()].flatMap((overview) =>
+      overview.days.flatMap((day) => {
+        const [year, month, date] = day.date.split("-").map(Number);
+        const index = monthIndex(year, month);
+        if (index < first || index > last) return [];
+        return [{ day, x: dayX(index, first, date, daysInMonth(year, month), m) }];
+      }),
+    );
+  }, [overviews, win, m]);
+
+  const currentAt = months.findIndex((month) => month.state === "current");
+  const todayPoint = currentAt >= 0 ? pointAtFraction(segments[currentAt], months[currentAt].fraction) : null;
+  const todayX =
+    currentAt >= 0
+      ? dayX(
+          months[currentAt].index,
+          win.start,
+          today.getDate(),
+          daysInMonth(today.getFullYear(), today.getMonth() + 1),
+          m,
+        )
+      : null;
+  const width = railWidth(win.count, m);
+  const line = fullPath(segments);
+  const lane = m.baseline + m.dayLane;
   const now = today.getTime();
 
+  const progress = yearProgress(viewYear, today);
+  const isTodayYear = viewYear === today.getFullYear();
+
   return (
-    <motion.figure
-      layout
+    <figure
       className={styles.timeline}
-      data-layout={layout}
-      data-compact={compact || undefined}
-      aria-label={`Year timeline ${year}`}
+      data-layout={mode}
+      data-compact={mode === "strip" || undefined}
+      aria-label="Timeline"
     >
-      <p className={styles.readout} aria-label={`${Math.round(progress * 100)} percent of ${year} has passed`}>
-        <span className={styles.readoutYear}>{year}</span>
-        <span>
-          {currentIndex >= 0 ? `day ${dayOfYear(today)} / ${daysInYear(year)}` : progress === 1 ? "complete" : "ahead"}
-        </span>
-        <span className={styles.readoutBar} aria-hidden="true">
-          <span style={{ width: `${progress * 100}%` }} />
-        </span>
-        <span>{(progress * 100).toFixed(1)}%</span>
-      </p>
-
-      <div className={styles.stage} style={{ aspectRatio: `${view.width} / ${view.height}` }}>
-        <svg className={styles.paths} viewBox={`0 0 ${view.width} ${view.height}`} aria-hidden="true">
-          <path className={styles.track} d={fullPath(segs)} />
-          {segs.slice(0, 12).map(
-            (segment, i) =>
-              fractions[i] > 0 && (
-                <g key={i} data-state={states[i]}>
-                  <path
-                    className={styles.elapsedHalo}
-                    d={segmentPath(segment)}
-                    pathLength={1}
-                    strokeDasharray="1 1"
-                    strokeDashoffset={1 - fractions[i]}
-                  />
-                  <path
-                    className={styles.elapsed}
-                    d={segmentPath(segment)}
-                    pathLength={1}
-                    strokeDasharray="1 1"
-                    strokeDashoffset={1 - fractions[i]}
-                  />
-                </g>
-              ),
-          )}
-          {!compact &&
-            points.slice(0, 12).map((point, i) => {
-              const end = leaderEnd(point, calloutSide(i, layout));
-              return <line key={i} className={styles.leader} x1={point.x} y1={point.y} x2={end.x} y2={end.y} />;
-            })}
-        </svg>
-
-        <div className={styles.overlay}>
-          {points.slice(0, 12).map((point, i) => (
-            <MonthNode
-              key={i}
-              year={year}
-              month={i + 1}
-              summary={summaryFor(i + 1)}
-              state={states[i]}
-              selected={selectedMonth === i + 1}
-              position={toPercent(point, view)}
-              onSelect={onSelectMonth}
-            />
-          ))}
-
-          {!compact &&
-            points.slice(0, 12).map((point, i) => {
-              const side = calloutSide(i, layout);
-              return (
-                <MonthCallout
-                  key={i}
-                  month={i + 1}
-                  summary={summaryFor(i + 1)}
-                  side={side}
-                  position={toPercent(leaderEnd(point, side), view)}
-                  now={now}
-                  onSelect={onSelectMonth}
-                />
-              );
-            })}
-
-          {todayPoint && (
-            <span className={styles.todayMarker} style={toPercent(todayPoint, view)} aria-hidden="true">
-              <span className={styles.todayLabel}>today</span>
-            </span>
-          )}
-
-          <span className={styles.yearEnd} style={toPercent(points[12], view)} aria-hidden="true">
-            {year + 1}
+      <div className={styles.railHead}>
+        <p className={styles.readout} aria-label={`${Math.round(progress * 100)} percent of ${viewYear} has passed`}>
+          <span className={styles.readoutYear}>{viewYear}</span>
+          <span>
+            {isTodayYear ? `day ${dayOfYear(today)} / ${daysInYear(viewYear)}` : progress === 1 ? "complete" : "ahead"}
           </span>
+          <span className={styles.readoutBar} aria-hidden="true">
+            <span style={{ width: `${progress * 100}%` }} />
+          </span>
+          <span className={styles.readoutPercent}>{(progress * 100).toFixed(1)}%</span>
+          {overdueCount > 0 && <span className={styles.readoutOverdue}>{overdueCount} overdue</span>}
+        </p>
+        <div className={styles.railNav}>
+          <Button
+            size="sm"
+            variant="ghost"
+            iconOnly
+            icon={<ChevronLeft size={16} />}
+            aria-label="Earlier months"
+            onClick={() => page(-1)}
+          />
+          <Button
+            size="sm"
+            variant="ghost"
+            iconOnly
+            icon={<ChevronRight size={16} />}
+            aria-label="Later months"
+            onClick={() => page(1)}
+          />
         </div>
       </div>
-    </motion.figure>
+
+      <div
+        ref={scrollerRef}
+        className={styles.scroller}
+        onScroll={onScroll}
+        data-panning={panning || undefined}
+        data-testid="timeline-rail"
+      >
+        <div
+          className={styles.stage}
+          style={{ width, height: m.height, "--step": `${m.step}px` } as React.CSSProperties}
+        >
+          <svg
+            className={styles.paths}
+            width={width}
+            height={m.height}
+            viewBox={`0 0 ${width} ${m.height}`}
+            aria-hidden="true"
+          >
+            {segments.length > 0 && (
+              <path
+                className={styles.area}
+                d={`${line} L ${nodes[nodes.length - 1].x} ${m.baseline} L ${nodes[0].x} ${m.baseline} Z`}
+              />
+            )}
+            <line className={styles.axis} x1={m.pad} y1={m.baseline} x2={width - m.pad} y2={m.baseline} />
+            {months.map(({ index, month }, i) =>
+              month === 1 ? (
+                <line
+                  key={index}
+                  className={styles.yearLine}
+                  x1={nodes[i].x}
+                  y1={m.baseline - m.rise - 12}
+                  x2={nodes[i].x}
+                  y2={lane + 8}
+                />
+              ) : (
+                <line
+                  key={index}
+                  className={styles.boundary}
+                  x1={nodes[i].x}
+                  y1={m.baseline}
+                  x2={nodes[i].x}
+                  y2={m.baseline + 4}
+                />
+              ),
+            )}
+            <path className={styles.track} d={line} />
+            {months.map(
+              ({ index, state, fraction }, i) =>
+                fraction > 0 && (
+                  <g key={index} data-state={state}>
+                    <path
+                      className={styles.elapsedHalo}
+                      d={segmentPath(segments[i])}
+                      pathLength={1}
+                      strokeDasharray="1 1"
+                      strokeDashoffset={1 - fraction}
+                    />
+                    <path
+                      className={styles.elapsed}
+                      d={segmentPath(segments[i])}
+                      pathLength={1}
+                      strokeDasharray="1 1"
+                      strokeDashoffset={1 - fraction}
+                    />
+                  </g>
+                ),
+            )}
+            {todayX !== null && (
+              <line className={styles.todayTick} x1={todayX} y1={lane - 7} x2={todayX} y2={lane + 7} />
+            )}
+            {dayDots.map(({ day, x }) => (
+              <circle
+                key={day.date}
+                className={styles.dayDot}
+                data-tone={dotTone(day)}
+                cx={x}
+                cy={lane}
+                r={dotRadius(day)}
+              />
+            ))}
+            {mode === "full" &&
+              months.map(({ index, summary }, i) =>
+                isBusy(summary) ? (
+                  <line
+                    key={index}
+                    className={styles.leader}
+                    x1={nodes[i].x}
+                    y1={CARD_TOP + 24}
+                    x2={nodes[i].x}
+                    y2={nodes[i].y - NODE_RADIUS}
+                  />
+                ) : null,
+              )}
+          </svg>
+
+          <div className={styles.overlay}>
+            {months.map(({ index, year, month, state }, i) => (
+              <span
+                key={index}
+                className={styles.axisLabel}
+                data-state={state}
+                data-year={month === 1 || undefined}
+                data-selected={(selected?.year === year && selected.month === month) || undefined}
+                style={{ left: nodes[i].x, top: m.baseline + m.labelGap }}
+                aria-hidden="true"
+              >
+                {month === 1 ? year : MONTH_SHORT[month - 1]}
+              </span>
+            ))}
+
+            {months.map(({ index, year, month, state, summary }, i) => (
+              <MonthNode
+                key={index}
+                year={year}
+                month={month}
+                summary={summary}
+                state={state}
+                selected={selected?.year === year && selected.month === month}
+                position={{ left: `${nodes[i].x}px`, top: `${nodes[i].y}px` }}
+                onSelect={onSelectMonth}
+              />
+            ))}
+
+            {mode === "full" &&
+              months.map(({ index, year, month, summary }, i) =>
+                isBusy(summary) ? (
+                  <MonthCallout
+                    key={index}
+                    year={year}
+                    month={month}
+                    summary={summary!}
+                    position={{ left: `${nodes[i].x}px`, top: `${CARD_TOP}px` }}
+                    now={now}
+                    onSelect={onSelectMonth}
+                  />
+                ) : null,
+              )}
+
+            {todayPoint && (
+              <span className={styles.todayMarker} style={{ left: todayPoint.x, top: todayPoint.y }} aria-hidden="true">
+                <span className={styles.todayLabel}>today</span>
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+    </figure>
   );
 }

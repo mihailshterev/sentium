@@ -4,6 +4,7 @@ import type {
   TimelineNote,
   TimelineProposal,
   TimelineTask,
+  Upcoming,
   YearOverview,
 } from "./types/timeline";
 
@@ -84,6 +85,17 @@ export const yearOverview = (year = 2026, overrides: Record<number, Partial<Mont
   year,
   today: "2026-11-08",
   months: Array.from({ length: 12 }, (_, i) => monthSummary(i + 1, overrides[i + 1])),
+  days: [],
+});
+
+export const upcoming = (overrides: Partial<Upcoming> = {}): Upcoming => ({
+  today: "2026-11-08",
+  days: 7,
+  overdue: [],
+  overdueCount: 0,
+  next: [],
+  pendingProposals: 0,
+  ...overrides,
 });
 
 export const monthDetail = (overrides: Partial<MonthDetail> = {}): MonthDetail => ({

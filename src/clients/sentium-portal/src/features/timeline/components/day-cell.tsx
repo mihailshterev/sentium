@@ -15,6 +15,7 @@ interface DayCellProps extends ProposalActions {
   noteCount: number;
   isPast: boolean;
   isToday: boolean;
+  weekend: boolean;
   selected: boolean;
   onSelect: (date: string) => void;
   onAddTask: (date: string) => void;
@@ -28,6 +29,7 @@ export function DayCell({
   noteCount,
   isPast,
   isToday,
+  weekend,
   selected,
   onSelect,
   onAddTask,
@@ -45,6 +47,7 @@ export function DayCell({
       className={styles.day}
       data-past={isPast || undefined}
       data-today={isToday || undefined}
+      data-weekend={weekend || undefined}
       data-over={isOver || undefined}
       data-selected={selected || undefined}
       data-testid={`day-${date}`}
@@ -87,6 +90,27 @@ export function DayCell({
           <ProposalGhost key={proposal.id} proposal={proposal} {...proposalActions} />
         ))}
       </div>
+    </li>
+  );
+}
+
+interface OutsideDayCellProps {
+  date: string;
+  weekend: boolean;
+  onOpen: (date: string) => void;
+}
+
+export function OutsideDayCell({ date, weekend, onOpen }: OutsideDayCellProps) {
+  return (
+    <li className={styles.outside} data-weekend={weekend || undefined}>
+      <button
+        type="button"
+        className={styles.dayNumber}
+        aria-label={`Open ${formatDayLabel(date)}`}
+        onClick={() => onOpen(date)}
+      >
+        {Number(date.slice(8))}
+      </button>
     </li>
   );
 }

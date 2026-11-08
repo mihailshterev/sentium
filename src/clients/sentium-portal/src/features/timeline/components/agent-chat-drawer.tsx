@@ -212,32 +212,34 @@ export function AgentChatDrawer({ context, today, onClose }: AgentChatDrawerProp
         )}
       </div>
 
-      {error && <StatusMessage variant="error" message={error} />}
+      <div className={styles.drawerComposer}>
+        {error && <StatusMessage variant="error" message={error} />}
 
-      <ChatInputBar
-        input={input}
-        isTyping={isTyping}
-        contextPills={[]}
-        model={effectiveModel}
-        models={models}
-        onInputChange={setInput}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" && !e.shiftKey) {
+        <ChatInputBar
+          input={input}
+          isTyping={isTyping}
+          contextPills={[]}
+          model={effectiveModel}
+          models={models}
+          onInputChange={setInput}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              void send(input);
+            }
+          }}
+          onSubmit={(e) => {
             e.preventDefault();
             void send(input);
-          }
-        }}
-        onSubmit={(e) => {
-          e.preventDefault();
-          void send(input);
-        }}
-        onStop={stopStreaming}
-        onRemoveContextPill={() => {}}
-        onSetModel={setModel}
-        textareaRef={textareaRef}
-        placeholder={`Message ${agentName}…`}
-        hint={null}
-      />
+          }}
+          onStop={stopStreaming}
+          onRemoveContextPill={() => {}}
+          onSetModel={setModel}
+          textareaRef={textareaRef}
+          placeholder={`Message ${agentName}…`}
+          hint={null}
+        />
+      </div>
     </aside>
   );
 }

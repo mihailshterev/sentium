@@ -41,11 +41,12 @@ export class TimelinePage {
 
   async expectLoaded(): Promise<void> {
     await expect(this.page.getByRole("heading", { level: 1, name: "Timeline" })).toBeVisible();
-    await expect(this.monthNode(1)).toBeVisible();
+    const today = localToday();
+    await expect(this.monthNode(today.year, today.month)).toBeVisible();
   }
 
-  monthNode(month: number): Locator {
-    return this.page.getByTestId(`timeline-month-${month}`);
+  monthNode(year: number, month: number): Locator {
+    return this.page.getByTestId(`timeline-month-${year}-${month}`);
   }
 
   get monthNodes(): Locator {
@@ -73,7 +74,7 @@ export class TimelinePage {
   }
 
   async openMonth(month: number, monthName: string, year: number): Promise<void> {
-    await this.monthNode(month).click();
+    await this.monthNode(year, month).click();
     await expect(this.page.getByRole("heading", { level: 2, name: `${monthName} ${year}` })).toBeVisible();
   }
 

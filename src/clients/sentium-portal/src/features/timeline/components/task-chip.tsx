@@ -1,5 +1,4 @@
 import { useDraggable } from "@dnd-kit/core";
-import { CSS } from "@dnd-kit/utilities";
 import styles from "../timeline.module.css";
 import type { TimelineTask } from "../types/timeline";
 import { initialsOf } from "../utils/display";
@@ -12,10 +11,11 @@ interface TaskChipProps {
 
 /**
  * A task in a day cell. Drag it to another day or to "Pinned to month"; click it to edit (a short pointer move
- * threshold keeps clicks from starting a drag).
+ * threshold keeps clicks from starting a drag). While dragging, the chip stays put as a faded placeholder and the
+ * calendar's drag overlay follows the pointer.
  */
 export function TaskChip({ task, onOpen, overlay }: TaskChipProps) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: `task:${task.id}`,
     data: { task },
     disabled: overlay,
@@ -30,7 +30,6 @@ export function TaskChip({ task, onOpen, overlay }: TaskChipProps) {
       data-done={task.status === "Done" || undefined}
       data-dragging={isDragging || undefined}
       data-overlay={overlay || undefined}
-      style={overlay ? undefined : { transform: CSS.Translate.toString(transform) }}
       title={task.title}
       aria-label={`Edit task: ${task.title}`}
       onClick={() => onOpen(task)}

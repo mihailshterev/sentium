@@ -15,6 +15,8 @@ export const MONTH_SHORT = Array.from({ length: 12 }, (_, i) =>
 
 export const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;
 
+const WEEKDAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"] as const;
+
 export const isoDate = (year: number, month: number, day: number) => `${year}-${pad2(month)}-${pad2(day)}`;
 
 export const isoMonth = (year: number, month: number) => `${year}-${pad2(month)}`;
@@ -39,21 +41,40 @@ export function dayOfYear(date: Date): number {
   );
 }
 
+export interface GridCell {
+  date: string;
+  inMonth: boolean;
+}
+
 /**
- * The month's days as a Monday-first grid: `null` pads the first and last week.
+ * The month's days as a Monday-first grid of whole weeks, the first and last week filled with the neighbouring
+ * months' days.
  */
-export function monthGrid(year: number, month: number): (string | null)[] {
+export function monthGrid(year: number, month: number): GridCell[] {
   const leading = (new Date(year, month - 1, 1).getDay() + 6) % 7;
   const days = daysInMonth(year, month);
-  const cells: (string | null)[] = Array.from({ length: leading }, () => null);
-  for (let day = 1; day <= days; day++) {
-    cells.push(isoDate(year, month, day));
-  }
-  while (cells.length % 7 !== 0) {
-    cells.push(null);
-  }
-  return cells;
+  const total = Math.ceil((leading + days) / 7) * 7;
+  return Array.from({ length: total }, (_, i) => {
+    const date = new Date(year, month - 1, i - leading + 1);
+    return { date: toIsoDate(date), inMonth: date.getMonth() === month - 1 };
+  });
 }
+
+export const isWeekend = (value: string) => [0, 6].includes(parseIsoDate(value).getDay());
+
+export const daysBetween = (from: string, to: string) =>
+  Math.round((parseIsoDate(to).getTime() - parseIsoDate(from).getTime()) / 86_400_000);
+
+export function relativeDay(value: string, today: string): string {
+  const diff = daysBetween(today, value);
+  if (diff === 0) return "today";
+  if (diff === 1) return "tomorrow";
+  if (diff === -1) return "yesterday";
+  return diff > 0 ? `in ${diff} days` : `${-diff} days ago`;
+}
+
+export const deadlineOf = (task: { dueDate: string | null; date: string | null; year: number; month: number }) =>
+  task.dueDate ?? task.date ?? isoDate(task.year, task.month, daysInMonth(task.year, task.month));
 
 export type MonthState = "past" | "current" | "future";
 
@@ -86,6 +107,12 @@ export function yearProgress(year: number, today: Date): number {
 export function formatDayLabel(value: string): string {
   const date = parseIsoDate(value);
   return `${date.getDate()} ${MONTH_NAMES[date.getMonth()]}`;
+}
+
+/** "Saturday 14 November". */
+export function formatLongDay(value: string): string {
+  const date = parseIsoDate(value);
+  return `${WEEKDAY_NAMES[(date.getDay() + 6) % 7]} ${date.getDate()} ${MONTH_NAMES[date.getMonth()]}`;
 }
 
 /** "Sat 14 Nov". */

@@ -1,4 +1,11 @@
-import { useMutation, useQuery, useQueryClient, type QueryClient, type QueryKey } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQueries,
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+  type QueryKey,
+} from "@tanstack/react-query";
 import * as api from "../api/timeline.service";
 import type {
   CreateNotePayload,
@@ -8,6 +15,7 @@ import type {
   TaskStatus,
   TimelineProposal,
   TimelineTask,
+  YearOverview,
 } from "../types/timeline";
 import { withTask, withoutTask } from "../utils/month-cache";
 
@@ -16,18 +24,34 @@ export const timelineKeys = {
   year: (year: number) => ["timeline", "year", year] as const,
   month: (year: number, month: number) => ["timeline", "month", year, month] as const,
   proposals: () => ["timeline", "proposals"] as const,
+  upcoming: () => ["timeline", "upcoming"] as const,
 };
 
 /** Agents can write from workflows and schedules too, so the open timeline refreshes itself now and then. */
 const REFRESH_MS = 60_000;
 
-export function useYearOverview(year: number, today: string) {
+/** The overviews of every year the scrollable rail shows, keyed by year (loaded ones only). */
+export function useYearOverviews(years: number[], today: string) {
+  return useQueries({
+    queries: years.map((year) => ({
+      queryKey: timelineKeys.year(year),
+      queryFn: () => api.fetchYear(year, today),
+      refetchInterval: REFRESH_MS,
+    })),
+    combine: (results) => ({
+      overviews: new Map<number, YearOverview>(results.flatMap((r) => (r.data ? [[r.data.year, r.data]] : []))),
+      isError: results.some((r) => r.isError),
+    }),
+  });
+}
+
+export function useUpcoming(today: string) {
   const { data, isLoading, isError } = useQuery({
-    queryKey: timelineKeys.year(year),
-    queryFn: () => api.fetchYear(year, today),
+    queryKey: timelineKeys.upcoming(),
+    queryFn: () => api.fetchUpcoming(today),
     refetchInterval: REFRESH_MS,
   });
-  return { overview: data, isLoading, isError };
+  return { upcoming: data, isLoading, isError };
 }
 
 export function useMonthDetail(year: number, month: number | null) {

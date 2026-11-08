@@ -89,6 +89,7 @@ public sealed class TempusApiTests(MonolithWebApplicationFactory factory) : ICla
         var done = await CreateTaskAsync(client, "Finished", Day(3));
         await client.PutAsJsonAsync($"/api/tempus/tasks/{done.Id}/status", new SetTimelineTaskStatusRequest(TimelineTaskStatus.Done), Ct);
         await CreateTaskAsync(client, "Pinned", null);
+        await CreateTaskAsync(client, "Big one", Day(2), priority: TimelineTaskPriority.Urgent);
 
         // The client's "today" is ignored unless it is within a day of UTC, so overdue is relative to the real date:
         // every task in 2030 is in the future.
@@ -96,11 +97,55 @@ public sealed class TempusApiTests(MonolithWebApplicationFactory factory) : ICla
 
         overview!.Months.Should().HaveCount(12);
         var march = overview.Months.Single(m => m.Month == Month);
-        march.TaskCount.Should().Be(3);
-        march.OpenCount.Should().Be(2);
+        march.TaskCount.Should().Be(4);
+        march.OpenCount.Should().Be(3);
         march.DoneCount.Should().Be(1);
         march.OverdueCount.Should().Be(0);
         overview.Months.Where(m => m.Month != Month).Should().OnlyContain(m => m.TaskCount == 0);
+
+        // Pinned tasks have no day, so they get no tick.
+        overview.Days.Should().Equal(
+            new DaySummaryDto(Day(2), Open: 2, Done: 0, Urgent: true),
+            new DaySummaryDto(Day(3), Open: 0, Done: 1, Urgent: false));
+    }
+
+    [Fact]
+    public async Task Upcoming_ListsOverdueAndTheComingDays_ForItsUserOnly()
+    {
+        var client = ClientFor(Guid.NewGuid());
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var twoMonthsAgo = today.AddMonths(-2);
+
+        async Task<TimelineTaskDto> Create(string title, int year, int month, DateOnly? date, TimelineTaskPriority priority = TimelineTaskPriority.Normal)
+        {
+            var response = await client.PostAsJsonAsync("/api/tempus/tasks", new SaveTimelineTaskRequest(title, null, year, month, date, null, priority), Ct);
+            response.StatusCode.Should().Be(HttpStatusCode.Created, await response.Content.ReadAsStringAsync(Ct));
+            return (await response.Content.ReadFromJsonAsync<TimelineTaskDto>(Ct))!;
+        }
+
+        var late = await Create("Late", today.AddDays(-3).Year, today.AddDays(-3).Month, today.AddDays(-3));
+        var pinnedLate = await Create("Pinned two months ago", twoMonthsAgo.Year, twoMonthsAgo.Month, null);
+        var finished = await Create("Finished late", today.AddDays(-2).Year, today.AddDays(-2).Month, today.AddDays(-2));
+        await client.PutAsJsonAsync($"/api/tempus/tasks/{finished.Id}/status", new SetTimelineTaskStatusRequest(TimelineTaskStatus.Done), Ct);
+        var soonLow = await Create("Soon, low", today.AddDays(2).Year, today.AddDays(2).Month, today.AddDays(2), TimelineTaskPriority.Low);
+        var soonUrgent = await Create("Soon, urgent", today.AddDays(2).Year, today.AddDays(2).Month, today.AddDays(2), TimelineTaskPriority.Urgent);
+        var todays = await Create("Today", today.Year, today.Month, today);
+        await Create("Far away", today.AddDays(20).Year, today.AddDays(20).Month, today.AddDays(20));
+
+        var upcoming = await client.GetFromJsonAsync<UpcomingDto>("/api/tempus/upcoming?days=7", Ct);
+
+        upcoming!.Today.Should().Be(today);
+        upcoming.Days.Should().Be(7);
+        upcoming.OverdueCount.Should().Be(2);
+        // Oldest deadline first: the end of the month two months ago comes before three days ago.
+        upcoming.Overdue.Select(t => t.Id).Should().Equal(pinnedLate.Id, late.Id);
+        // By day, then by priority within the day.
+        upcoming.Next.Select(t => t.Id).Should().Equal(todays.Id, soonUrgent.Id, soonLow.Id);
+
+        var other = await ClientFor(Guid.NewGuid()).GetFromJsonAsync<UpcomingDto>("/api/tempus/upcoming", Ct);
+        other!.Overdue.Should().BeEmpty();
+        other.Next.Should().BeEmpty();
+        other.OverdueCount.Should().Be(0);
     }
 
     [Fact]

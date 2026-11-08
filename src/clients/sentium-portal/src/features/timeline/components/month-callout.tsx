@@ -1,4 +1,4 @@
-import { AlertTriangle, Bot, CircleDot, Sparkles } from "lucide-react";
+import { AlertTriangle, Bot, Sparkles, StickyNote } from "lucide-react";
 import styles from "../timeline.module.css";
 import type { MonthSummary } from "../types/timeline";
 import { MONTH_NAMES } from "../utils/calendar";
@@ -7,44 +7,56 @@ import { MONTH_NAMES } from "../utils/calendar";
 const ACTIVE_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 interface MonthCalloutProps {
+  year: number;
   month: number;
-  summary: MonthSummary | undefined;
-  side: "above" | "below" | "left" | "right";
+  summary: MonthSummary;
   position: { left: string; top: string };
   now: number;
-  onSelect: (month: number) => void;
+  onSelect: (year: number, month: number) => void;
 }
 
-export function MonthCallout({ month, summary, side, position, now, onSelect }: MonthCalloutProps) {
-  const open = summary?.openCount ?? 0;
-  const total = summary?.taskCount ?? 0;
-  const overdue = summary?.overdueCount ?? 0;
-  const suggested = summary?.pendingProposalCount ?? 0;
-  const agentNotes = summary?.agentNoteCount ?? 0;
-  const lastAgent = summary?.lastAgentActivityAt ? new Date(summary.lastAgentActivityAt).getTime() : null;
+function Headline({ summary }: { summary: MonthSummary }) {
+  const { taskCount: total, openCount: open } = summary;
+  if (total === 0) return <>no tasks yet</>;
+  if (open === 0) return <>all {total} done</>;
+  return (
+    <>
+      {open} open
+      {total > open && <span className={styles.calloutDone}> · {total - open} done</span>}
+    </>
+  );
+}
+
+/**
+ * A hairline card in the rail's top lane for a month that has something in it (empty months show only their node),
+ * with a leader down to the node. The node is the accessible control; the card is a larger pointer target for the
+ * same action.
+ */
+export function MonthCallout({ year, month, summary, position, now, onSelect }: MonthCalloutProps) {
+  const total = summary.taskCount;
+  const overdue = summary.overdueCount;
+  const suggested = summary.pendingProposalCount;
+  const agentNotes = summary.agentNoteCount;
+  const userNotes = summary.noteCount - agentNotes;
+  const lastAgent = summary.lastAgentActivityAt ? new Date(summary.lastAgentActivityAt).getTime() : null;
   const agentActive = lastAgent !== null && now - lastAgent < ACTIVE_WINDOW_MS;
 
   return (
-    <div
-      className={styles.callout}
-      data-side={side}
-      style={position}
-      aria-hidden="true"
-      onClick={() => onSelect(month)}
-    >
+    <div className={styles.callout} style={position} aria-hidden="true" onClick={() => onSelect(year, month)}>
       <span className={styles.calloutTitle}>
         {MONTH_NAMES[month - 1]}
         {agentActive && <span className={styles.agentPulse} />}
       </span>
-      <span className={styles.calloutMeta}>{total === 0 ? "nothing planned" : `${total - open}/${total} done`}</span>
-      {(open > 0 || overdue > 0 || suggested > 0 || agentNotes > 0) && (
+      <span className={styles.calloutMeta}>
+        <Headline summary={summary} />
+      </span>
+      {total > 0 && (
+        <span className={styles.calloutBar}>
+          <span style={{ width: `${(summary.doneCount / total) * 100}%` }} />
+        </span>
+      )}
+      {(overdue > 0 || suggested > 0 || agentNotes > 0 || userNotes > 0) && (
         <span className={styles.calloutStats}>
-          {open > 0 && (
-            <span className={styles.stat} data-tone="cyan">
-              <CircleDot size={10} />
-              {open}
-            </span>
-          )}
           {overdue > 0 && (
             <span className={styles.stat} data-tone="danger">
               <AlertTriangle size={10} />
@@ -61,6 +73,12 @@ export function MonthCallout({ month, summary, side, position, now, onSelect }: 
             <span className={styles.stat} data-tone="purple">
               <Bot size={10} />
               {agentNotes}
+            </span>
+          )}
+          {userNotes > 0 && (
+            <span className={styles.stat}>
+              <StickyNote size={10} />
+              {userNotes}
             </span>
           )}
         </span>

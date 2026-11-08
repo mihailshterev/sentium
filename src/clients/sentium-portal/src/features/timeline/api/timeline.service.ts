@@ -9,6 +9,7 @@ import type {
   TimelineNote,
   TimelineProposal,
   TimelineTask,
+  Upcoming,
   YearOverview,
 } from "../types/timeline";
 
@@ -21,6 +22,9 @@ export const fetchYear = (year: number, today?: string) =>
 
 export const fetchMonth = (year: number, month: number) =>
   client.get<MonthDetail>(`${BASE}/years/${year}/months/${month}`);
+
+export const fetchUpcoming = (today: string, days = 7) =>
+  client.get<Upcoming>(`${BASE}/upcoming?today=${today}&days=${days}`);
 
 export const createTask = (payload: SaveTaskPayload) => client.post<TimelineTask>(`${BASE}/tasks`, payload);
 

@@ -6,7 +6,7 @@ import styles from "../timeline.module.css";
 import { Button } from "@/shared/ui/button";
 import { Textarea } from "@/shared/ui/form-controls";
 import type { CreateNotePayload, TimelineNote, TimelineProposal, TimelineTask } from "../types/timeline";
-import { MONTH_NAMES, formatDayLabel } from "../utils/calendar";
+import { MONTH_NAMES, formatDayLabel, formatLongDay, relativeDay } from "../utils/calendar";
 import { pinnedTasks, tasksOnDay } from "../utils/month-cache";
 import { TASK_LIMITS } from "../schemas/timeline-task.form";
 import { ProposalCard, type ProposalActions } from "./proposal-card";
@@ -75,7 +75,14 @@ export function MonthSidePanel({
     <aside className={styles.side} aria-label={`${monthName} details`}>
       <section className={styles.sideSection}>
         <header className={styles.sideHead}>
-          <h3>{selectedDay ? formatDayLabel(selectedDay) : "Pick a day"}</h3>
+          <h3>
+            {selectedDay ? formatLongDay(selectedDay) : "Pick a day"}
+            {selectedDay && (
+              <span className={styles.relative} data-today={selectedDay === today || undefined}>
+                {relativeDay(selectedDay, today)}
+              </span>
+            )}
+          </h3>
           {selectedDay && (
             <Button size="sm" variant="ghost" icon={<Plus size={14} />} onClick={() => onAddTask(selectedDay)}>
               Add
