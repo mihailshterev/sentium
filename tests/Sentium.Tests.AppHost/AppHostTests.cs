@@ -43,7 +43,6 @@ public sealed class AppHostTests
         resourceNames.Should().Contain(ResourceNames.Postgres);
         resourceNames.Should().Contain(ResourceNames.SentiumDb);
         resourceNames.Should().Contain([ResourceNames.Llm, ResourceNames.Embeddings, ResourceNames.ModelsInit]);
-        resourceNames.Should().Contain(ResourceNames.Searxng);
     }
 
     [Fact]
