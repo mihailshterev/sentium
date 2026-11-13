@@ -2,20 +2,15 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Sentium.Core.Constants;
 using Sentium.Infrastructure.Security;
 using Sentium.Praxis.Common.Streaming;
 using Sentium.Praxis.Features.Agents;
-using Sentium.Praxis.Features.Orchestration;
 using Sentium.Praxis.Features.Registry;
 using Sentium.Praxis.Features.WorkflowManagement;
 using Sentium.Praxis.Features.Workflows;
 
 namespace Sentium.Praxis.Features.Orchestration;
 
-/// <summary>
-/// Controller responsible for orchestrating agent workflows and streaming execution updates.
-/// </summary>
 [ApiController]
 [Authorize]
 [Route($"{PraxisRoutes.Prefix}/orchestration")]
@@ -34,12 +29,9 @@ public sealed class OrchestrationController(
     private readonly TimeSpan _heartbeatInterval = ResolveTimeSpan(configuration, "Orchestration:HeartbeatInterval", TimeSpan.FromSeconds(20));
 
     /// <summary>
-    /// Endpoint to trigger a dynamic workflow run with custom input. Useful for ad-hoc scenarios where the workflow definition is not known in advance.
-    /// The input is expected to be a JSON object, which will be serialized and queued for background execution.
+    /// Queues an ad-hoc dynamic workflow run. The input is a JSON object; its <c>activity</c> string is enhanced when
+    /// prompt enhancement is on. Returns the stream id to follow the run.
     /// </summary>
-    /// <param name="customInput">The custom input for the dynamic workflow.</param>
-    /// <param name="ct">The cancellation token.</param>
-    /// <returns>An accepted response indicating the workflow has been triggered.</returns>
     [HttpPost("run-dynamic-workflow")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     public async Task<ActionResult<WorkflowAcceptedResponse>> RunDynamicWorkflow([FromBody] dynamic customInput, CancellationToken ct)
@@ -81,11 +73,8 @@ public sealed class OrchestrationController(
     }
 
     /// <summary>
-    /// Endpoint to trigger a predefined workflow run based on a registered workflow ID.
+    /// Queues a run of a saved workflow. Returns the stream id to follow the run.
     /// </summary>
-    /// <param name="request">The request containing the workflow ID, scenario name, and parameters.</param>
-    /// <param name="ct">The cancellation token.</param>
-    /// <returns>An accepted response indicating the workflow has been triggered.</returns>
     [HttpPost("run-workflow")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -128,8 +117,6 @@ public sealed class OrchestrationController(
     /// Requests cancellation of an in-flight workflow run (a no-op if it is not running). The run is then
     /// recorded as cancelled and a terminal frame is emitted to its stream.
     /// </summary>
-    /// <param name="streamId">The stream identifier of the run to stop.</param>
-    /// <returns>An accepted response indicating the cancellation request was dispatched.</returns>
     [HttpPost("cancel/{streamId}")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     public IActionResult CancelRun(string streamId)
@@ -145,62 +132,25 @@ public sealed class OrchestrationController(
     }
 
     /// <summary>
-    /// Endpoint to stream real-time updates for an agent execution based on a unique event ID.
+    /// Streams a run's updates over SSE: the buffered backlog after <c>Last-Event-ID</c>, then live frames, ending with
+    /// one terminal frame. A connection is capped at <c>Orchestration:StreamMaxDuration</c>; the EventSource then
+    /// reconnects and resumes from its last id.
     /// </summary>
-    /// <param name="eventId">The unique identifier for the agent execution event.</param>
-    /// <param name="ct">The cancellation token.</param>
-    /// <returns>A task representing the asynchronous operation.</returns>
     [HttpGet("stream/{eventId}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task StreamAgentExecution(string eventId, CancellationToken ct)
     {
-        Response.Headers.Append(CommonHeaderNames.ContentType, "text/event-stream");
-        Response.Headers.Append(CommonHeaderNames.CacheControl, "no-cache");
-        Response.Headers.Append(CommonHeaderNames.Connection, "keep-alive");
-        Response.Headers.Append(CommonHeaderNames.AccelBuffering, "no");
-
         var fromSeq = ParseLastEventId(Request.Headers["Last-Event-ID"].ToString());
 
         using var streamCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
         streamCts.CancelAfter(_maxStreamDuration);
         var token = streamCts.Token;
 
-        using var writeLock = new SemaphoreSlim(1, 1);
-
-        await WriteRawAsync(": connected\n\n", writeLock, token);
-
-        using var heartbeatCts = CancellationTokenSource.CreateLinkedTokenSource(token);
-        var heartbeat = RunHeartbeatAsync(writeLock, heartbeatCts.Token);
+        await using var sse = await SseStreamWriter.StartAsync(Response, _heartbeatInterval, logger, token);
 
         try
         {
-            await foreach (var (seq, update) in streamRelay.Subscribe(eventId, fromSeq, token))
-            {
-                if (update.Type == AgentUpdateTypes.Done)
-                {
-                    await WriteFrameAsync(seq, JsonSerializer.Serialize(new StreamDoneFrame(AgentUpdateTypes.Done)), writeLock, token);
-                    break;
-                }
-
-                if (update.Type == AgentUpdateTypes.Error)
-                {
-                    await WriteFrameAsync(seq, JsonSerializer.Serialize(new StreamErrorFrame(update.Text)), writeLock, token);
-                    break;
-                }
-
-                if (update.Type == AgentUpdateTypes.Cancelled)
-                {
-                    await WriteFrameAsync(seq, JsonSerializer.Serialize(new StreamDoneFrame(AgentUpdateTypes.Cancelled)), writeLock, token);
-                    break;
-                }
-
-                if (string.IsNullOrEmpty(update.Text))
-                {
-                    continue;
-                }
-
-                await WriteFrameAsync(seq, JsonSerializer.Serialize(update), writeLock, token);
-            }
+            await sse.ForwardAsync(streamRelay.Subscribe(eventId, fromSeq, token), token);
         }
         catch (OperationCanceledException) when (ct.IsCancellationRequested)
         {
@@ -219,19 +169,7 @@ public sealed class OrchestrationController(
         catch (Exception ex)
         {
             logger.LogError(ex, "Error while streaming agent execution for event {EventId}.", eventId);
-            await TryWriteTerminalErrorAsync("An unexpected error occurred while streaming the run.", writeLock);
-        }
-        finally
-        {
-            await heartbeatCts.CancelAsync();
-            try
-            {
-                await heartbeat;
-            }
-            catch (OperationCanceledException)
-            {
-                // expected on shutdown / disconnect
-            }
+            await sse.FailAsync("An unexpected error occurred while streaming the run.");
         }
     }
 
@@ -254,75 +192,6 @@ public sealed class OrchestrationController(
         }
 
         return fallback;
-    }
-
-    private async Task WriteFrameAsync(long seq, string json, SemaphoreSlim writeLock, CancellationToken ct)
-    {
-        await writeLock.WaitAsync(ct);
-        try
-        {
-            await Response.WriteAsync($"id: {seq}\n", ct);
-            await Response.WriteAsync($"data: {json}\n\n", ct);
-            await Response.Body.FlushAsync(ct);
-        }
-        finally
-        {
-            writeLock.Release();
-        }
-    }
-
-    private async Task WriteRawAsync(string raw, SemaphoreSlim writeLock, CancellationToken ct)
-    {
-        await writeLock.WaitAsync(ct);
-        try
-        {
-            await Response.WriteAsync(raw, ct);
-            await Response.Body.FlushAsync(ct);
-        }
-        finally
-        {
-            writeLock.Release();
-        }
-    }
-
-    private async Task RunHeartbeatAsync(SemaphoreSlim writeLock, CancellationToken ct)
-    {
-        try
-        {
-            using var timer = new PeriodicTimer(_heartbeatInterval);
-            while (await timer.WaitForNextTickAsync(ct))
-            {
-                await WriteRawAsync(": heartbeat\n\n", writeLock, ct);
-            }
-        }
-        catch (OperationCanceledException)
-        {
-        }
-        catch (Exception ex)
-        {
-            logger.LogDebug(ex, "SSE heartbeat stopped due to a write failure.");
-        }
-    }
-
-    private async Task TryWriteTerminalErrorAsync(string message, SemaphoreSlim writeLock)
-    {
-        try
-        {
-            await writeLock.WaitAsync(CancellationToken.None);
-            try
-            {
-                await Response.WriteAsync($"data: {JsonSerializer.Serialize(new StreamErrorFrame(message))}\n\n", CancellationToken.None);
-                await Response.Body.FlushAsync(CancellationToken.None);
-            }
-            finally
-            {
-                writeLock.Release();
-            }
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "Failed to write terminal SSE error frame.");
-        }
     }
 
     private async Task<string> EnhanceIfEnabledAsync(string? text, CancellationToken ct)

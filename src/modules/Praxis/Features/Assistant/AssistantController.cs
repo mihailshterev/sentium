@@ -1,4 +1,3 @@
-using System.Text;
 using System.Text.Json;
 using Microsoft.Agents.AI;
 using Microsoft.AspNetCore.Authorization;
@@ -70,7 +69,7 @@ public sealed class AssistantController(
         var enhancedPrompt = await TryEnhancePromptAsync(lastUserMessage?.Content, ct);
         if (enhancedPrompt is not null)
         {
-            await sse.SendUpdateAsync(AgentUpdateTypes.EnhancedPrompt, enhancedPrompt, ct);
+            await sse.WriteUpdateAsync(AgentUpdateTypes.EnhancedPrompt, enhancedPrompt, ct);
         }
 
         var persisted = requestBody.ConversationId is not null;
@@ -142,40 +141,22 @@ public sealed class AssistantController(
         CancellationToken ct,
         Task<string?>? pendingTitle = null)
     {
-        var text = new StringBuilder();
-        var streamed = new List<AIContent>();
-        var activity = new AgentActivityTranslator();
-        conversationHistory.TrackActivity(activity);
-        ToolApprovalRequestContent? approvalRequest = null;
+        var run = new AgentRunStream(sse);
+        conversationHistory.TrackActivity(run.Activity);
 
         try
         {
-            await foreach (var update in agent.RunStreamingAsync(input, session, cancellationToken: ct))
-            {
-                streamed.AddRange(update.Contents);
-                approvalRequest ??= update.Contents.OfType<ToolApprovalRequestContent>().FirstOrDefault();
-
-                foreach (var activityEvent in activity.Translate(update.Contents))
-                {
-                    await sse.SendUpdateAsync(activityEvent.Type, activityEvent.Payload, ct);
-                }
-
-                if (!string.IsNullOrEmpty(update.Text))
-                {
-                    text.Append(update.Text);
-                    await sse.SendUpdateAsync(AgentUpdateTypes.Message, update.Text, ct);
-                }
-            }
+            await run.RunAsync(agent.RunStreamingAsync(input, session, cancellationToken: ct), ct);
 
             await PublishTitleAsync(conversationId, pendingTitle, sse, ct);
 
-            if (approvalRequest is not null)
+            if (run.ApprovalRequest is { } approvalRequest)
             {
                 await PauseForApprovalAsync(agent, agentName, session, approvalRequest, conversationId, model, sse, ct);
                 return;
             }
 
-            await sse.SendFrameAsync(new StreamDoneFrame(AgentUpdateTypes.Done), ct);
+            await sse.CompleteAsync(ct);
         }
         catch (OperationCanceledException)
         {
@@ -184,20 +165,12 @@ public sealed class AssistantController(
                 logger.LogInformation("Streaming request cancelled. CorrelationId: {CorrelationId}", runContext.CorrelationId);
             }
 
-            await PersistPartialResponseAsync(session, conversationId, text, streamed, activity);
+            await PersistPartialResponseAsync(session, conversationId, run);
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Error while streaming assistant response. CorrelationId: {CorrelationId}", runContext.CorrelationId);
-
-            try
-            {
-                await sse.SendFrameAsync(new StreamErrorFrame(GenericStreamErrorMessage), CancellationToken.None);
-            }
-            catch (Exception writeEx)
-            {
-                logger.LogWarning(writeEx, "Failed to write SSE error response.");
-            }
+            await sse.FailAsync(GenericStreamErrorMessage);
         }
     }
 
@@ -226,11 +199,12 @@ public sealed class AssistantController(
         var call = request.ToolCall as FunctionCallContent;
         var approvalData = new ToolApprovalData(request.RequestId, call?.Name ?? "unknown", call?.Arguments, call?.CallId);
 
-        await sse.SendUpdateAsync(AgentUpdateTypes.ApprovalRequest, JsonSerializer.Serialize(approvalData), ct);
+        await sse.WriteUpdateAsync(AgentUpdateTypes.ApprovalRequest, JsonSerializer.Serialize(approvalData), ct);
     }
 
-    private async Task PersistPartialResponseAsync(AgentSession session, Guid? conversationId, StringBuilder text, List<AIContent> streamed, AgentActivityTranslator activity)
+    private async Task PersistPartialResponseAsync(AgentSession session, Guid? conversationId, AgentRunStream run)
     {
+        var text = run.Text;
         if (conversationId is null || text.Length == 0)
         {
             return;
@@ -238,8 +212,8 @@ public sealed class AssistantController(
 
         try
         {
-            var (answer, steps) = AgentTurnSteps.Build([new AiChatMessage(ChatRole.Assistant, streamed)], activity.Durations);
-            await conversationHistory.PersistPartialResponseAsync(session, answer.Length > 0 ? answer : text.ToString(), steps.Count > 0 ? steps : null);
+            var (answer, steps) = AgentTurnSteps.Build([new AiChatMessage(ChatRole.Assistant, [.. run.Contents])], run.Activity.Durations);
+            await conversationHistory.PersistPartialResponseAsync(session, answer.Length > 0 ? answer : text, steps.Count > 0 ? steps : null);
         }
         catch (Exception ex)
         {
@@ -284,7 +258,7 @@ public sealed class AssistantController(
         {
             if (await pendingTitle is { } title && await conversationService.TrySetGeneratedTitleAsync(id, title, ct))
             {
-                await sse.SendUpdateAsync(AgentUpdateTypes.Title, title, ct);
+                await sse.WriteUpdateAsync(AgentUpdateTypes.Title, title, ct);
             }
         }
         catch (OperationCanceledException)

@@ -1,10 +1,8 @@
-using System.Text;
 using System.Text.Json;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Sentium.Praxis.Common.Streaming;
 using Sentium.Praxis.Features.Agents;
-using Sentium.Praxis.Features.Agents.Activity;
 using Sentium.Praxis.Features.Orchestration;
 
 namespace Sentium.Praxis.Features.Workflows.Squad;
@@ -70,22 +68,11 @@ internal sealed class SquadRunContext(
     public async Task<string> StreamAsync(AIAgent agent, string author, string input, CancellationToken ct)
     {
         var session = await agent.CreateSessionAsync(ct);
-        var output = new StringBuilder();
-        var activity = new AgentActivityTranslator();
+        var run = new AgentRunStream(new RelayUpdateSink(stream, log, streamId, author));
 
-        await foreach (var update in agent.RunStreamingAsync(input, session, cancellationToken: ct))
-        {
-            AgentStreamEmitter.EmitActivity(stream, log, activity, streamId, author, update.Contents);
+        await run.RunAsync(agent.RunStreamingAsync(input, session, cancellationToken: ct), ct);
 
-            if (!string.IsNullOrEmpty(update.Text))
-            {
-                output.Append(update.Text);
-                stream.Emit(streamId, author, update.Text);
-                log.Add(author, update.Text, AgentUpdateTypes.Message);
-            }
-        }
-
-        return output.ToString();
+        return run.Text;
     }
 
     /// <summary>
