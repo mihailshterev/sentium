@@ -40,10 +40,14 @@ public enum TimelineNoteKind
 [JsonConverter(typeof(JsonStringEnumConverter<TimelineProposalKind>))]
 public enum TimelineProposalKind
 {
-    /// <summary>A new task the agent suggests adding.</summary>
+    /// <summary>
+    /// A new task the agent suggests adding.
+    /// </summary>
     CreateTask,
 
-    /// <summary>A new day or month for an existing task.</summary>
+    /// <summary>
+    /// A new day or month for an existing task.
+    /// </summary>
     Reschedule
 }
 
@@ -54,6 +58,8 @@ public enum TimelineProposalStatus
     Accepted,
     Rejected,
 
-    /// <summary>Overtaken before the user answered: the task moved, was completed, or a newer proposal replaced it.</summary>
+    /// <summary>
+    /// Overtaken before the user answered: the task moved, was completed, or a newer proposal replaced it.
+    /// </summary>
     Superseded
 }

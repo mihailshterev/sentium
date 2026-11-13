@@ -6,19 +6,9 @@ namespace Sentium.Praxis.Features.Storage;
 
 /// <summary>
 /// Implements file storage operations using Azure Blob Storage as the backend.
+/// Files are stored in the <see cref="Sentium.Core.Constants.ResourceNames.WorkspaceBlobs"/> container, one blob per
+/// file named by a GUID, with the filename and workspace as blob metadata.
 /// </summary>
-/// <remarks>
-/// <para>
-/// This service handles the lifecycle of file blobs:
-/// - Upload: Stores files with metadata (filename, workspace association).
-/// - Retrieve: Streams file content back for ingestion or download.
-/// - Delete: Removes files after processing or on user request.
-/// </para>
-/// <para>
-/// Files are stored in a container named by <see cref="Sentium.Core.Constants.ResourceNames.WorkspaceBlobs"/>.
-/// Each blob is identified by a unique GUID and includes metadata for tracking.
-/// </para>
-/// </remarks>
 public sealed class LocalFileService(BlobServiceClient blobServiceClient) : ILocalFileService
 {
     /// <inheritdoc/>

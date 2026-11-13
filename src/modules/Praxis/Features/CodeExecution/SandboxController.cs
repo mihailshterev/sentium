@@ -69,7 +69,6 @@ public sealed class SandboxController(
     /// <summary>
     /// Returns a single sandbox execution record by its job id.
     /// </summary>
-    /// <response code="200">The execution record.</response>
     /// <response code="404">If no execution with the given job id exists.</response>
     [HttpGet("executions/{jobId:guid}")]
     [ProducesResponseType<SandboxExecutionLogRecord>(StatusCodes.Status200OK)]

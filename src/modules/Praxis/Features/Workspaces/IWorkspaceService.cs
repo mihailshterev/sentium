@@ -7,9 +7,6 @@ namespace Sentium.Praxis.Features.Workspaces;
 /// </summary>
 public interface IWorkspaceService
 {
-    /// <summary>
-    /// Retrieves all workspaces from the system.
-    /// </summary>
     Task<IReadOnlyList<WorkspaceDto>> GetWorkspacesAsync(CancellationToken ct = default);
 
     /// <summary>

@@ -19,12 +19,9 @@ public interface IRoleService
     Task<(bool Succeeded, string? Error)> AssignRoleAsync(Guid requesterId, Guid targetUserId, string roleName, CancellationToken ct);
 
     /// <summary>
-    /// Removes a role from a user.
-    /// </summary>
-    /// <remarks>
     /// Safety Logic:
     /// Prevents the removal of the final <see cref="Roles.Sovereign"/> to ensure the system remains administrable.
-    /// </remarks>
+    /// </summary>
     Task<(bool Succeeded, string? Error)> RemoveRoleAsync(Guid requesterId, Guid targetUserId, string roleName, CancellationToken ct);
 
     /// <summary>

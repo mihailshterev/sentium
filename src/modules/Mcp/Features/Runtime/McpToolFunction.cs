@@ -61,9 +61,6 @@ public sealed class McpToolFunction : AIFunction
 
     public override IReadOnlyDictionary<string, object?> AdditionalProperties { get; }
 
-    /// <summary>
-    /// The server this tool belongs to.
-    /// </summary>
     public string ServerName => server.Name;
 
     protected override async ValueTask<object?> InvokeCoreAsync(AIFunctionArguments arguments, CancellationToken cancellationToken)

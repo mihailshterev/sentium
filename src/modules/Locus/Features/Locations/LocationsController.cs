@@ -21,9 +21,6 @@ public sealed class LocationsController(ILocationService locationService) : Cont
     public async Task<IActionResult> GetLocations(CancellationToken ct)
         => Ok(await locationService.GetLocationsAsync(ct));
 
-    /// <summary>
-    /// Retrieves one location.
-    /// </summary>
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(LocationDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

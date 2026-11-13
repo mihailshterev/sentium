@@ -19,7 +19,5 @@ public interface IUserClaimsService
     /// </summary>
     /// <param name="userIds">The collection of user IDs to fetch claims for.</param>
     /// <param name="scopes">The identity/API scopes to include (e.g., <see cref="Scopes.Roles"/>).</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>A dictionary keyed by UserId containing their respective collection of claims.</returns>
     Task<IDictionary<Guid, IReadOnlyCollection<Claim>>> GetBatchClaimsAsync(IEnumerable<Guid> userIds, IEnumerable<string> scopes, CancellationToken ct);
 }

@@ -89,9 +89,6 @@ public sealed class AssetAttachmentsController(IAttachmentService attachmentServ
         return File(content.Content, content.ContentType, content.FileName, enableRangeProcessing: true);
     }
 
-    /// <summary>
-    /// Deletes an attachment.
-    /// </summary>
     [HttpDelete("{attachmentId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

@@ -19,7 +19,6 @@ public interface IAgentFactory
     /// <param name="allowApprovalTools">
     /// <see langword="false"/> for unattended runs (workflows): drops tools that require human approval, since nobody can answer the request.
     /// </param>
-    /// <param name="ct">A cancellation token.</param>
     /// <exception cref="InvalidOperationException">Thrown when <paramref name="agentName"/> matches neither a native nor a database agent.</exception>
     Task<AIAgent> CreateAsync(
         string agentName,
@@ -37,9 +36,7 @@ public interface IAgentFactory
     /// </summary>
     /// <param name="agentName">A native agent name (e.g. <see cref="AgentRole.Orchestrator"/>, <see cref="AgentRole.Validator"/>).</param>
     /// <param name="overrideInstructions">Optional instructions that replace the native agent's defaults.</param>
-    /// <param name="overrideModel">Optional model id.</param>
     /// <param name="actingUserId">The user on whose behalf the agent runs.</param>
-    /// <param name="ct">A cancellation token.</param>
     Task<AIAgent> CreateControlAgentAsync(
         string agentName,
         string? overrideInstructions = null,

@@ -45,8 +45,6 @@ public sealed class AssistantController(
     /// turns are loaded from the persisted conversation. If a tool call needs approval, the stream ends with an
     /// approval request; resume it via <c>chat/approve</c>.
     /// </summary>
-    /// <param name="requestBody">The chat request.</param>
-    /// <param name="ct">Cancellation token.</param>
     [HttpPost("chat")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task Chat([FromBody] ChatRequest requestBody, CancellationToken ct)
@@ -99,7 +97,6 @@ public sealed class AssistantController(
     /// can resume it.
     /// </summary>
     /// <param name="requestBody">The approval decision.</param>
-    /// <param name="ct">Cancellation token.</param>
     [HttpPost("chat/approve")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

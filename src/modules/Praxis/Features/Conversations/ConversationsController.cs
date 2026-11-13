@@ -6,9 +6,6 @@ using Sentium.Praxis.Features.Conversations;
 
 namespace Sentium.Praxis.Features.Conversations;
 
-/// <summary>
-/// Controller for managing assistant conversations.
-/// </summary>
 [ApiController]
 [Authorize]
 [Route($"{PraxisRoutes.Prefix}/conversations")]
@@ -20,8 +17,6 @@ public sealed class ConversationsController(IConversationService conversationSer
     /// <param name="page">1-based page number (default: 1).</param>
     /// <param name="pageSize">Number of items per page (default: 20, max: 100).</param>
     /// <param name="search">Optional text the conversation title must contain (case-insensitive).</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>A paginated list of conversations.</returns>
     [HttpGet]
     [ProducesResponseType(typeof(PagedResponse<ConversationSummary>), StatusCodes.Status200OK)]
     public async Task<ActionResult<PagedResponse<ConversationSummary>>> GetConversations(
@@ -34,12 +29,6 @@ public sealed class ConversationsController(IConversationService conversationSer
         return Ok(conversations);
     }
 
-    /// <summary>
-    /// Returns details of a specific conversation by its ID.
-    /// </summary>
-    /// <param name="conversationId">The ID of the conversation.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>Details of the conversation.</returns>
     [HttpGet("{conversationId:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -49,12 +38,7 @@ public sealed class ConversationsController(IConversationService conversationSer
         return conversation is null ? NotFound() : Ok(conversation);
     }
 
-    /// <summary>
-    /// Creates a new conversation.
-    /// </summary>
     /// <param name="request">The request containing conversation details.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>The created conversation.</returns>
     [HttpPost]
     [ProducesResponseType(typeof(ConversationSummary), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -69,10 +53,6 @@ public sealed class ConversationsController(IConversationService conversationSer
     /// <summary>
     /// Renames a conversation. A manual title is final: the conversation is no longer titled automatically.
     /// </summary>
-    /// <param name="conversationId">The ID of the conversation to rename.</param>
-    /// <param name="request">The new title.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>No content.</returns>
     [HttpPut("{conversationId:guid}/title")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -85,12 +65,6 @@ public sealed class ConversationsController(IConversationService conversationSer
         return renamed ? NoContent() : NotFound();
     }
 
-    /// <summary>
-    /// Deletes a specific conversation by its ID.
-    /// </summary>
-    /// <param name="conversationId">The ID of the conversation to delete.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>No content.</returns>
     [HttpDelete("{conversationId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

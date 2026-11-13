@@ -15,10 +15,6 @@ public sealed class RolesController(IRoleService roleService) : ControllerBase
             .Select(r => new RoleResponse(r))
             .ToList();
 
-    /// <summary>
-    /// Returns all defined system roles.
-    /// </summary>
-    /// <response code="200">Returns the full list of roles.</response>
     [HttpGet]
     [ProducesResponseType(typeof(IEnumerable<RoleResponse>), StatusCodes.Status200OK)]
     public IActionResult GetRoles() => Ok(CachedRoles);
@@ -26,9 +22,6 @@ public sealed class RolesController(IRoleService roleService) : ControllerBase
     /// <summary>
     /// Returns the roles currently assigned to a specific user.
     /// </summary>
-    /// <param name="userId">The unique identifier of the user.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <response code="200">Returns the list of role names.</response>
     [HttpGet("user/{userId:guid}")]
     [ProducesResponseType(typeof(IList<string>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetUserRoles(Guid userId, CancellationToken ct)
@@ -38,16 +31,11 @@ public sealed class RolesController(IRoleService roleService) : ControllerBase
     }
 
     /// <summary>
-    /// Assigns a role to a user.
-    /// </summary>
-    /// <remarks>
     /// Only users with 'Sovereign' status can call this.
     /// The system enforces a hierarchy check: the requester must have a higher
     /// rank than the role being assigned.
-    /// </remarks>
+    /// </summary>
     /// <param name="request">The user ID and the target role name.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <response code="204">Role assigned successfully.</response>
     /// <response code="400">If the role is invalid or hierarchy validation fails.</response>
     /// <response code="401">If the requester's identity cannot be verified.</response>
     [HttpPost("assign")]
@@ -74,13 +62,9 @@ public sealed class RolesController(IRoleService roleService) : ControllerBase
     }
 
     /// <summary>
-    /// Removes a role from a user.
-    /// </summary>
-    /// <remarks>
     /// Only users with 'Sovereign' status can call this.
     /// Hierarchy enforcement applies to removals to prevent privilege escalation or accidental de-ranking.
-    /// </remarks>
-    /// <response code="204">Role removed successfully.</response>
+    /// </summary>
     /// <response code="400">If the role removal fails due to business rules.</response>
     [HttpPost("remove")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

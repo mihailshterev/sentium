@@ -62,19 +62,27 @@ public sealed record FinalAssessment(
     [property: Description("Risk of acting on the answer, considering accuracy and completeness.")] RiskLevel Risk,
     [property: Description("One-sentence recommendation for the user.")] string Recommendation);
 
-// ---- Workflow messages: immutable, so the graph carries all run state and executors stay stateless. ----
+// Workflow messages are immutable, so the graph carries all run state and executors stay stateless.
 
-/// <summary>Run state threaded through the graph.</summary>
+/// <summary>
+/// Run state threaded through the graph.
+/// </summary>
 internal sealed record SquadState(string Request, SquadPlan Plan, IReadOnlyList<StepResult> Completed);
 
-/// <summary>Instructs the step executor to run (or re-run) one step.</summary>
+/// <summary>
+/// Instructs the step executor to run (or re-run) one step.
+/// </summary>
 internal sealed record StepRequest(SquadState State, int StepIndex, int Attempt, IReadOnlyList<string> Feedback, string? PreviousOutput)
 {
     public SquadStep Step => State.Plan.Steps[StepIndex];
 }
 
-/// <summary>A step's raw output, on its way to review.</summary>
+/// <summary>
+/// A step's raw output, on its way to review.
+/// </summary>
 internal sealed record StepOutput(StepRequest Request, string Output);
 
-/// <summary>All steps finished; ready for synthesis.</summary>
+/// <summary>
+/// All steps finished; ready for synthesis.
+/// </summary>
 internal sealed record SquadOutcome(SquadState State);

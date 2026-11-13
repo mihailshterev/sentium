@@ -23,8 +23,6 @@ public sealed class IngestionController(
     /// The service will chunk, embed, and store it in the vector store.
     /// </summary>
     /// <param name="request">The request containing the document to ingest.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>Accepted response.</returns>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     public async Task<IActionResult> IngestDocument([FromBody] IngestionRequest request, CancellationToken ct)
@@ -38,8 +36,6 @@ public sealed class IngestionController(
     /// Each document is processed independently; a failure on one does not abort the rest.
     /// </summary>
     /// <param name="requests">The requests containing the documents to ingest.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>Accepted response.</returns>
     [HttpPost("batch")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     public async Task<IActionResult> IngestBatch([FromBody] IEnumerable<IngestionRequest> requests, CancellationToken ct)
@@ -55,7 +51,6 @@ public sealed class IngestionController(
     /// </summary>
     /// <param name="sourceName">The name of the ingestion source to trigger.</param>
     /// <param name="sources">Injected enumeration of all registered ingestion sources.</param>
-    /// <param name="ct">Cancellation token.</param>
     /// <returns>Accepted if the source was found and ingestion started; 404 otherwise.</returns>
     [HttpPost("sources/{sourceName}")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
@@ -76,7 +71,6 @@ public sealed class IngestionController(
     /// <summary>
     /// Lists all named ingestion sources currently registered in the DI container.
     /// </summary>
-    /// <returns>List of ingestion sources with their names and types.</returns>
     [HttpGet("sources")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public IActionResult GetSources()
@@ -90,8 +84,6 @@ public sealed class IngestionController(
     /// Removes all vector chunks associated with the given source identifier.
     /// </summary>
     /// <param name="source">The source identifier whose vectors should be removed.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>No content if the operation is successful </returns>
     [HttpDelete]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

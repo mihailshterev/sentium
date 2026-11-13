@@ -11,9 +11,6 @@ public sealed class DocumentChunk
     /// </summary>
     public Guid Id { get; init; } = Guid.NewGuid();
 
-    /// <summary>
-    /// The text content of this chunk.
-    /// </summary>
     public required string Content { get; init; }
 
     /// <summary>

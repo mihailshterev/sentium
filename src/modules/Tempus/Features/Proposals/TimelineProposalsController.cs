@@ -16,7 +16,6 @@ namespace Sentium.Tempus.Features.Proposals;
 public sealed class TimelineProposalsController(ITimelineProposalService proposalService) : ControllerBase
 {
     /// <param name="status">Which proposals to list (default <c>Pending</c>).</param>
-    /// <param name="ct">Cancellation token.</param>
     [HttpGet]
     [ProducesResponseType(typeof(IReadOnlyList<TimelineProposalDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> ListProposals([FromQuery] TimelineProposalStatus? status, CancellationToken ct)

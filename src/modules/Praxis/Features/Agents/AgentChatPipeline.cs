@@ -20,10 +20,14 @@ internal static class AgentChatPipeline
     /// </summary>
     private const int MaxToolIterationsPerRequest = 10;
 
-    /// <summary>Collapse older tool call/result groups into one-line summaries once the request passes this share of the window.</summary>
+    /// <summary>
+    /// Collapse older tool call/result groups into one-line summaries once the request passes this share of the window.
+    /// </summary>
     private const double ToolResultCompactionShare = 0.40;
 
-    /// <summary>Emergency backstop: drop the oldest groups once the request passes this share of the window.</summary>
+    /// <summary>
+    /// Emergency backstop: drop the oldest groups once the request passes this share of the window.
+    /// </summary>
     private const double TruncationShare = 0.75;
 
     private const int MinimumPreservedGroups = 4;

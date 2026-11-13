@@ -19,7 +19,6 @@ public sealed class TimelineController(ITimelineOverviewService overviewService)
     /// </summary>
     /// <param name="year">The year (2000-2100).</param>
     /// <param name="today">The caller's local date, used for the overdue counts when within a day of UTC.</param>
-    /// <param name="ct">Cancellation token.</param>
     [HttpGet("years/{year:int:range(2000,2100)}")]
     [ProducesResponseType(typeof(YearOverviewDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetYear(int year, [FromQuery] DateOnly? today, CancellationToken ct)
@@ -38,7 +37,6 @@ public sealed class TimelineController(ITimelineOverviewService overviewService)
     /// </summary>
     /// <param name="today">The caller's local date, used when within a day of UTC.</param>
     /// <param name="days">Length of the coming-days window, today included (1-42, default 7).</param>
-    /// <param name="ct">Cancellation token.</param>
     [HttpGet("upcoming")]
     [ProducesResponseType(typeof(UpcomingDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetUpcoming([FromQuery] DateOnly? today, [FromQuery] int days = 7, CancellationToken ct = default)

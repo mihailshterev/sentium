@@ -17,9 +17,6 @@ public sealed class AccountController(
     IIdentityService identityService,
     IUserService userService) : ControllerBase
 {
-    /// <summary>
-    /// Registers a new user in the system.
-    /// </summary>
     /// <response code="200">Returns the new user's unique identifier and username.</response>
     /// <response code="400">If the registration data is invalid or the username is already in use.</response>
     [HttpPost("register")]
@@ -80,8 +77,6 @@ public sealed class AccountController(
     /// <summary>
     /// Ends the current session by clearing the auth cookie.
     /// </summary>
-    /// <response code="204">Session ended.</response>
-    /// <response code="401">If the user is not authenticated.</response>
     [HttpPost("logout")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -95,8 +90,9 @@ public sealed class AccountController(
     /// <summary>
     /// Returns the identity of the current session (subject, username and roles) straight from the auth cookie.
     /// </summary>
-    /// <remarks>Cheap by design: it never touches the database, so the portal can use it as its "am I signed in?" check.</remarks>
-    /// <response code="200">Returns the session identity.</response>
+    /// <remarks>
+    /// Cheap by design: it never touches the database, so the portal can use it as its "am I signed in?" check.
+    /// </remarks>
     /// <response code="401">If there is no valid session.</response>
     [HttpGet("session")]
     [Authorize]
@@ -115,8 +111,6 @@ public sealed class AccountController(
     /// <summary>
     /// Returns the profile of the currently authenticated user.
     /// </summary>
-    /// <response code="200">Returns the profile data.</response>
-    /// <response code="401">If the user is not authenticated.</response>
     [HttpGet("me")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -141,7 +135,6 @@ public sealed class AccountController(
     /// <summary>
     /// Updates the authenticated user's own profile information.
     /// </summary>
-    /// <response code="204">Profile updated successfully.</response>
     /// <response code="400">If the update data is invalid (e.g., username conflict).</response>
     [HttpPut("me")]
     [Authorize]

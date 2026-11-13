@@ -82,9 +82,6 @@ public sealed class VigilSettings
     /// </summary>
     public int PollIntervalSeconds { get; set; } = 15;
 
-    /// <summary>
-    /// Per-probe timeout, in seconds.
-    /// </summary>
     public int ProbeTimeoutSeconds { get; set; } = 5;
 
     /// <summary>

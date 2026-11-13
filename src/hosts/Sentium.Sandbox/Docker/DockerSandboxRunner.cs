@@ -12,7 +12,7 @@ using Sentium.Sandbox.Models;
 namespace Sentium.Sandbox.Docker;
 
 /// <summary>
-/// Executes code inside a Docker container with comprehensive security hardening.
+/// Executes code inside a hardened Docker container.
 /// </summary>
 /// <remarks>
 /// Execution lifecycle per job:

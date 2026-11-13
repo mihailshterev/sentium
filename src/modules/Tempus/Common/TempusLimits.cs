@@ -17,10 +17,14 @@ public static class TempusLimits
     public const int TagMax = 32;
     public const int MaxTagsPerTask = 10;
 
-    /// <summary>Pending agent proposals a user can have at once; further proposals are refused until some are resolved.</summary>
+    /// <summary>
+    /// Pending agent proposals a user can have at once; further proposals are refused until some are resolved.
+    /// </summary>
     public const int MaxPendingProposals = 50;
 
-    /// <summary>Notes agents may leave per user per (UTC) day.</summary>
+    /// <summary>
+    /// Notes agents may leave per user per (UTC) day.
+    /// </summary>
     public const int MaxAgentNotesPerDay = 50;
 
     public const int MaxUpcomingDays = 42;

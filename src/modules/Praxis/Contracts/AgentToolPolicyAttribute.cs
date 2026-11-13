@@ -7,17 +7,25 @@ namespace Sentium.Praxis.Contracts;
 [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
 public sealed class AgentToolPolicyAttribute : Attribute
 {
-    /// <summary>Agents that receive the tool. Empty means every (non-control) agent.</summary>
+    /// <summary>
+    /// Agents that receive the tool. Empty means every (non-control) agent.
+    /// </summary>
     public string[] AllowedAgents { get; init; } = [];
 
     public ToolRiskLevel RiskLevel { get; init; } = ToolRiskLevel.Low;
 
-    /// <summary>When <see langword="true"/> the call is surfaced for human approval before it runs.</summary>
+    /// <summary>
+    /// When <see langword="true"/> the call is surfaced for human approval before it runs.
+    /// </summary>
     public bool RequiresApproval { get; init; }
 
-    /// <summary>The resource class Sentinel evaluates the call against.</summary>
+    /// <summary>
+    /// The resource class Sentinel evaluates the call against.
+    /// </summary>
     public ToolResource Resource { get; init; } = ToolResource.Any;
 
-    /// <summary>The kind of access Sentinel evaluates. Write/Execute calls forward their payload for content inspection.</summary>
+    /// <summary>
+    /// The kind of access Sentinel evaluates. Write/Execute calls forward their payload for content inspection.
+    /// </summary>
     public ToolAction Action { get; init; } = ToolAction.Execute;
 }

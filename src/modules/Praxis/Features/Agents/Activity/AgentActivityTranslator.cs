@@ -19,7 +19,9 @@ public sealed class AgentActivityTranslator(TimeProvider? timeProvider = null)
     private readonly Dictionary<string, long> started = new(StringComparer.Ordinal);
     private readonly Dictionary<string, long> durations = new(StringComparer.Ordinal);
 
-    /// <summary>Measured tool durations in milliseconds, by call id.</summary>
+    /// <summary>
+    /// Measured tool durations in milliseconds, by call id.
+    /// </summary>
     public IReadOnlyDictionary<string, long> Durations => durations;
 
     public IEnumerable<AgentActivityEvent> Translate(IEnumerable<AIContent> contents)

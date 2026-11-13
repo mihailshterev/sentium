@@ -13,16 +13,24 @@ namespace Sentium.Locus.Features.Assets;
 [JsonConverter(typeof(JsonStringEnumConverter<AssetKnowledgeStatus>))]
 public enum AssetKnowledgeStatus
 {
-    /// <summary>The asset is private; assistants cannot see it.</summary>
+    /// <summary>
+    /// The asset is private; assistants cannot see it.
+    /// </summary>
     NotShared,
 
-    /// <summary>A knowledge-base update (or removal) is queued.</summary>
+    /// <summary>
+    /// A knowledge-base update (or removal) is queued.
+    /// </summary>
     Pending,
 
-    /// <summary>The knowledge base holds the current content.</summary>
+    /// <summary>
+    /// The knowledge base holds the current content.
+    /// </summary>
     Synced,
 
-    /// <summary>Syncing failed repeatedly; edit the asset or retry manually.</summary>
+    /// <summary>
+    /// Syncing failed repeatedly; edit the asset or retry manually.
+    /// </summary>
     Failed
 }
 
@@ -107,12 +115,16 @@ public sealed record SaveAssetRequest(
 /// </summary>
 public sealed record AssetSearchQuery : PaginationQuery
 {
-    /// <summary>Free text; every word must match a field, a tag or the name of a containing location.</summary>
+    /// <summary>
+    /// Free text; every word must match a field, a tag or the name of a containing location.
+    /// </summary>
     public string? Q { get; init; }
 
     public Guid? LocationId { get; init; }
 
-    /// <summary>With <see cref="LocationId"/>: also include assets in sub-locations (default).</summary>
+    /// <summary>
+    /// With <see cref="LocationId"/>: also include assets in sub-locations (default).
+    /// </summary>
     public bool IncludeSubLocations { get; init; } = true;
 
     public string? Category { get; init; }

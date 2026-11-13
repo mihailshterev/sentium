@@ -18,10 +18,14 @@ public static class ScheduledJobData
 /// </summary>
 public static class SchedulerDefaults
 {
-    /// <summary>Stored in every Quartz row (<c>sched_name</c>); must stay stable across releases.</summary>
+    /// <summary>
+    /// Stored in every Quartz row (<c>sched_name</c>); must stay stable across releases.
+    /// </summary>
     public const string SchedulerName = "sentium-scheduler";
 
-    /// <summary>Quartz tables live in the Praxis schema; created by the <c>AddQuartzJobStore</c> migration.</summary>
+    /// <summary>
+    /// Quartz tables live in the Praxis schema; created by the <c>AddQuartzJobStore</c> migration.
+    /// </summary>
     public const string TablePrefix = "praxis.qrtz_";
 
     /// <summary>
@@ -30,7 +34,9 @@ public static class SchedulerDefaults
     /// </summary>
     public static readonly TimeSpan MinimumInterval = TimeSpan.FromMinutes(1);
 
-    /// <summary>Maximum active scheduled jobs a single user may own.</summary>
+    /// <summary>
+    /// Maximum active scheduled jobs a single user may own.
+    /// </summary>
     public const int MaxJobsPerUser = 25;
 
     /// <summary>

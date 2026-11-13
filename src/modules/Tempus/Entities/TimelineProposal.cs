@@ -17,12 +17,16 @@ public sealed class TimelineProposal : IUserOwned
 
     public TimelineProposalStatus Status { get; set; }
 
-    /// <summary>The task to move (<see cref="TimelineProposalKind.Reschedule"/> only).</summary>
+    /// <summary>
+    /// The task to move (<see cref="TimelineProposalKind.Reschedule"/> only).
+    /// </summary>
     public Guid? TaskId { get; set; }
 
     public TimelineTask? Task { get; set; }
 
-    /// <summary>The new task's title, or the moved task's title when it was proposed.</summary>
+    /// <summary>
+    /// The new task's title, or the moved task's title when it was proposed.
+    /// </summary>
     public string Title { get; set; } = null!;
 
     public string? Description { get; set; }
@@ -35,15 +39,21 @@ public sealed class TimelineProposal : IUserOwned
 
     public DateOnly? DueDate { get; set; }
 
-    /// <summary>Target month.</summary>
+    /// <summary>
+    /// Target month.
+    /// </summary>
     public int Year { get; set; }
 
     public int Month { get; set; }
 
-    /// <summary>Target day; <see langword="null"/> pins the task to the target month.</summary>
+    /// <summary>
+    /// Target day; <see langword="null"/> pins the task to the target month.
+    /// </summary>
     public DateOnly? Date { get; set; }
 
-    /// <summary>Where the task was when the move was proposed; a task that has moved since makes the proposal stale.</summary>
+    /// <summary>
+    /// Where the task was when the move was proposed; a task that has moved since makes the proposal stale.
+    /// </summary>
     public int? FromYear { get; set; }
 
     public int? FromMonth { get; set; }

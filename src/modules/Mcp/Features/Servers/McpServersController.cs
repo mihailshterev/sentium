@@ -20,9 +20,6 @@ public sealed class McpServersController(IMcpServerService servers) : Controller
     [ProducesResponseType(typeof(IReadOnlyList<McpServerDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAll(CancellationToken ct) => Ok(await servers.GetAllAsync(ct));
 
-    /// <summary>
-    /// One MCP server.
-    /// </summary>
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(McpServerDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

@@ -34,7 +34,6 @@ public sealed class PolicyController(IPolicyDecisionPoint policyDecisionPoint, I
     /// </summary>
     /// <param name="page">1-based page number (default: 1).</param>
     /// <param name="pageSize">Number of records per page (default: 20, max: 100).</param>
-    /// <param name="ct">Cancellation token.</param>
     [HttpGet("audit")]
     [AuthorizeSovereign]
     [ProducesResponseType<PagedResponse<AuditRecord>>(StatusCodes.Status200OK)]
@@ -53,10 +52,8 @@ public sealed class PolicyController(IPolicyDecisionPoint policyDecisionPoint, I
     /// <summary>
     /// Returns a page of audit records for a specific agent. Requires authentication.
     /// </summary>
-    /// <param name="agentId">The agent identifier.</param>
     /// <param name="page">1-based page number (default: 1).</param>
     /// <param name="pageSize">Number of records per page (default: 20, max: 100).</param>
-    /// <param name="ct">Cancellation token.</param>
     [HttpGet("audit/agent/{agentId}")]
     [AuthorizeSovereign]
     [ProducesResponseType<PagedResponse<AuditRecord>>(StatusCodes.Status200OK)]

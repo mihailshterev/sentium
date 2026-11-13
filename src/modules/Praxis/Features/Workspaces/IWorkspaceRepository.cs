@@ -6,9 +6,6 @@ namespace Sentium.Praxis.Features.Workspaces;
 /// </summary>
 public interface IWorkspaceRepository
 {
-    /// <summary>
-    /// Retrieves all workspaces from the system.
-    /// </summary>
     /// <returns>All workspace DTOs, ordered by most recent first.</returns>
     Task<IReadOnlyList<WorkspaceDto>> GetWorkspacesAsync(CancellationToken ct = default);
 
@@ -33,9 +30,6 @@ public interface IWorkspaceRepository
     /// </summary>
     Task<bool> ExistsAsync(Guid id, CancellationToken ct = default);
 
-    /// <summary>
-    /// Creates a new workspace with the provided metadata.
-    /// </summary>
     /// <returns>The newly created workspace DTO with a 0 file count.</returns>
     Task<WorkspaceDto> CreateWorkspaceAsync(CreateWorkspaceRequest request, CancellationToken ct = default);
 

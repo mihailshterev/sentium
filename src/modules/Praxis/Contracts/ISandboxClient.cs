@@ -8,9 +8,6 @@ namespace Sentium.Praxis.Contracts;
 /// </summary>
 public interface ISandboxClient
 {
-    /// <summary>
-    /// Executes <paramref name="request"/> in the sandbox.
-    /// </summary>
     /// <exception cref="SandboxRejectedException">The sandbox refused the request (e.g. it failed validation).</exception>
     Task<SandboxExecutionResponse> ExecuteAsync(SandboxExecutionRequest request, string correlationId, CancellationToken ct = default);
 }

@@ -10,7 +10,6 @@ namespace Sentium.Praxis.Features.Agents;
 /// <param name="Session">The agent session serialized with <c>AIAgent.SerializeSessionAsync</c> when the run paused.</param>
 /// <param name="ApprovalRequest">The request surfaced to the user; its <c>CreateResponse</c> produces the approval message.</param>
 /// <param name="ConversationId">The persisted conversation the run belongs to, if any.</param>
-/// <param name="Model">The model the run used.</param>
 /// <param name="UserId">The user who owns the run; only they may resume it.</param>
 public sealed record PendingApproval(
     JsonElement Session,

@@ -19,8 +19,6 @@ public sealed class AgentLearningsController(IAgentLearningService learningServi
     /// <param name="agentName">Optional agent name to filter learnings.</param>
     /// <param name="page">1-based page number (default: 1).</param>
     /// <param name="pageSize">Number of learnings per page (default: 20, max: 100).</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>A paginated list of captured learnings.</returns>
     [HttpGet]
     [ProducesResponseType(typeof(PagedResponse<AgentLearningResponse>), StatusCodes.Status200OK)]
     public async Task<ActionResult<PagedResponse<AgentLearningResponse>>> GetLearnings(
@@ -36,8 +34,6 @@ public sealed class AgentLearningsController(IAgentLearningService learningServi
     /// <summary>
     /// Returns aggregate statistics about captured learnings.
     /// </summary>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>Aggregate statistics about captured learnings.</returns>
     [HttpGet("stats")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<AgentLearningStats>> GetStats(CancellationToken ct)
@@ -50,8 +46,6 @@ public sealed class AgentLearningsController(IAgentLearningService learningServi
     /// Deletes a learning and removes its vectors from the knowledge base.
     /// </summary>
     /// <param name="id">The ID of the learning to delete.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>No content if deletion is successful.</returns>
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -67,8 +61,6 @@ public sealed class AgentLearningsController(IAgentLearningService learningServi
     /// </summary>
     /// <param name="id">The ID of the learning to update.</param>
     /// <param name="request">The update request containing new content and tags.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>The updated learning.</returns>
     [HttpPut("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

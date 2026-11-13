@@ -8,7 +8,9 @@ namespace Sentium.Praxis.Features.Agents.Native;
 /// </summary>
 public sealed class OrchestratorAgent : IAgent
 {
-    /// <remarks>Must equal the key this agent is registered under (<see cref="AgentRole.Orchestrator"/>).</remarks>
+    /// <remarks>
+    /// Must equal the key this agent is registered under (<see cref="AgentRole.Orchestrator"/>).
+    /// </remarks>
     public string Name => AgentRole.Orchestrator;
 
     public string Description => "Plans which specialist agents handle a request.";

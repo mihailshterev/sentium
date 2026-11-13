@@ -37,7 +37,9 @@ internal sealed class AgentTestHost
     public IAgentRepository Agents { get; } = Substitute.For<IAgentRepository>();
     public IAgentToolOverrideRepository ToolOverrides { get; } = Substitute.For<IAgentToolOverrideRepository>();
     public List<AIFunction> McpTools { get; } = [];
-    /// <summary>Stands in for the MCP kill switch: while false the MCP source yields no tools.</summary>
+    /// <summary>
+    /// Stands in for the MCP kill switch: while false the MCP source yields no tools.
+    /// </summary>
     public bool McpEnabled { get; set; } = true;
 
     public AgentTestHost()

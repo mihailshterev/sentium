@@ -25,10 +25,14 @@ public class MonolithWebApplicationFactory : WebApplicationFactory<Sentium.Web.P
     private readonly PostgreSqlContainer _dbContainer = new PostgreSqlBuilder("pgvector/pgvector:pg17").Build();
     private readonly RedisContainer _redisContainer = new RedisBuilder("redis:7.0").Build();
 
-    /// <summary>The Testcontainers PostgreSQL connection string (available once the fixture is initialized).</summary>
+    /// <summary>
+    /// The Testcontainers PostgreSQL connection string (available once the fixture is initialized).
+    /// </summary>
     public string DatabaseConnectionString => _dbContainer.GetConnectionString();
 
-    /// <summary>The Testcontainers Redis connection string (available once the fixture is initialized).</summary>
+    /// <summary>
+    /// The Testcontainers Redis connection string (available once the fixture is initialized).
+    /// </summary>
     public string RedisConnectionString => _redisContainer.GetConnectionString();
 
     public async ValueTask InitializeAsync()

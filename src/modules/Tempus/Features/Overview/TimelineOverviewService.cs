@@ -20,7 +20,9 @@ public interface ITimelineOverviewService
 
 public sealed class TimelineOverviewService(TempusDbContext db, TimeProvider timeProvider) : ITimelineOverviewService
 {
-    /// <summary>Tasks listed per Up next column; the overdue total is reported separately.</summary>
+    /// <summary>
+    /// Tasks listed per Up next column; the overdue total is reported separately.
+    /// </summary>
     private const int UpcomingListMax = 12;
 
     public async Task<YearOverviewDto> GetYearAsync(int year, DateOnly? clientToday, CancellationToken ct = default)

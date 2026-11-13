@@ -14,7 +14,9 @@ public static class StepKinds
     public const string Tool = "tool";
 }
 
-/// <summary>Outcomes of a tool step.</summary>
+/// <summary>
+/// Outcomes of a tool step.
+/// </summary>
 public static class ToolStatuses
 {
     public const string Running = "running";
@@ -25,13 +27,19 @@ public static class ToolStatuses
     public const string Rejected = "rejected";
 }
 
-/// <summary>Payload of a <c>tool_call</c> frame.</summary>
+/// <summary>
+/// Payload of a <c>tool_call</c> frame.
+/// </summary>
 public sealed record ToolCallFrame(string CallId, string Name, string? Arguments);
 
-/// <summary>Payload of a <c>tool_result</c> frame.</summary>
+/// <summary>
+/// Payload of a <c>tool_result</c> frame.
+/// </summary>
 public sealed record ToolResultFrame(string CallId, string Status, string? Result, long? DurationMs);
 
-/// <summary>A streamed activity event: a frame type (see <see cref="AgentUpdateTypes"/>) and its text payload.</summary>
+/// <summary>
+/// A streamed activity event: a frame type (see <see cref="AgentUpdateTypes"/>) and its text payload.
+/// </summary>
 public readonly record struct AgentActivityEvent(string Type, string Payload);
 
 /// <summary>
@@ -39,13 +47,19 @@ public readonly record struct AgentActivityEvent(string Type, string Payload);
 /// </summary>
 public static class AgentActivityFormat
 {
-    /// <summary>Cap for argument JSON and result previews sent to the UI.</summary>
+    /// <summary>
+    /// Cap for argument JSON and result previews sent to the UI.
+    /// </summary>
     public const int MaxPayloadChars = 2000;
 
-    /// <summary>Prefix <c>SentinelFunctionMiddleware</c> puts on a policy denial returned as the function result.</summary>
+    /// <summary>
+    /// Prefix <c>SentinelFunctionMiddleware</c> puts on a policy denial returned as the function result.
+    /// </summary>
     public const string DeniedPrefix = "[Access Denied by Security Policy]";
 
-    /// <summary>camelCase options for frame payloads (the portal reads them as plain JSON).</summary>
+    /// <summary>
+    /// camelCase options for frame payloads (the portal reads them as plain JSON).
+    /// </summary>
     public static readonly JsonSerializerOptions FrameJson = new(JsonSerializerDefaults.Web);
 
     public static string? Arguments(IDictionary<string, object?>? arguments)

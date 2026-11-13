@@ -5,9 +5,6 @@ using Sentium.Praxis.Features.Skills;
 
 namespace Sentium.Praxis.Features.Skills.BuiltIn;
 
-/// <summary>
-/// Built-in skill that provides date and time utilities.
-/// </summary>
 internal sealed class DateTimeSkill() : BuiltInSkill<DateTimeSkill>(
     "datetime-utils",
     "Date and time utilities: current date/time in any timezone, date arithmetic, duration formatting, and ISO 8601 parsing. Use for questions involving dates, times, countdowns, or scheduling.",

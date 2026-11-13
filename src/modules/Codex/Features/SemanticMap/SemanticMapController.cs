@@ -29,8 +29,6 @@ public sealed class SemanticMapController(
     /// </summary>
     /// <param name="limit">The maximum number of nodes to return (default 300, max 500).</param>
     /// <param name="collection">Optional specific collection to query; if not provided, queries all tracked collections.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>A list of knowledge map nodes with their metadata.</returns>
     [HttpGet("nodes")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<KnowledgeMapResponse>> GetNodes(
@@ -77,8 +75,6 @@ public sealed class SemanticMapController(
     /// ranked results for query-traversal visualization.
     /// </summary>
     /// <param name="request">The search request containing the query and top-K parameter.</param>
-    /// <param name="ct">Cancellation token.</param>
-    /// <returns>A list of search results with their scores and metadata.</returns>
     [HttpPost("search")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

@@ -17,7 +17,9 @@ public sealed class TimelineNote : IUserOwned
 
     public int Month { get; set; }
 
-    /// <summary>The day the note is on; <see langword="null"/> for a month note.</summary>
+    /// <summary>
+    /// The day the note is on; <see langword="null"/> for a month note.
+    /// </summary>
     public DateOnly? Date { get; set; }
 
     public Guid? TaskId { get; set; }
@@ -28,7 +30,9 @@ public sealed class TimelineNote : IUserOwned
 
     public TimelineAuthorKind Author { get; set; }
 
-    /// <summary>The agent's name for agent notes.</summary>
+    /// <summary>
+    /// The agent's name for agent notes.
+    /// </summary>
     public string? AuthorName { get; set; }
 
     public string Content { get; set; } = null!;

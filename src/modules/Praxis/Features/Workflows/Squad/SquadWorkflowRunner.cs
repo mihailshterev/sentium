@@ -17,7 +17,9 @@ namespace Sentium.Praxis.Features.Workflows.Squad;
 /// </summary>
 public sealed class SquadWorkflowRunner(IAgentFactory factory)
 {
-    /// <summary>First attempt plus one revision.</summary>
+    /// <summary>
+    /// First attempt plus one revision.
+    /// </summary>
     public const int MaxAttemptsPerStep = 2;
 
     /// <param name="trigger">The run trigger (stream id, acting user).</param>
@@ -25,7 +27,6 @@ public sealed class SquadWorkflowRunner(IAgentFactory factory)
     /// <param name="roster">Agents available to the run.</param>
     /// <param name="fixedPlan">A predefined plan (custom workflows), or <see langword="null"/> to let the planner decide.</param>
     /// <param name="timeline">The run's timeline; the caller reads its entries into the run history.</param>
-    /// <param name="ct">Cancellation token.</param>
     public async Task<SquadResult> RunAsync(
         WorkflowTrigger trigger,
         string request,

@@ -7,9 +7,6 @@ using Sentium.Praxis.Features.Workspaces;
 
 namespace Sentium.Praxis.Features.Workspaces;
 
-/// <summary>
-/// API controller for managing workspaces.
-/// </summary>
 [ApiController]
 [Authorize]
 [Route($"{PraxisRoutes.Prefix}/workspaces")]
@@ -22,8 +19,6 @@ public sealed class WorkspacesController(IWorkspaceService workspaceService) : C
     /// </summary>
     /// <param name="page">1-based page number (default: 1).</param>
     /// <param name="pageSize">Number of items per page (default: 20, max: 100).</param>
-    /// <param name="ct">A cancellation token.</param>
-    /// <returns>An HTTP 200 response containing a paginated list of workspace DTOs.</returns>
     [HttpGet]
     [ProducesResponseType(typeof(PagedResponse<WorkspaceDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetWorkspaces(
@@ -38,8 +33,6 @@ public sealed class WorkspacesController(IWorkspaceService workspaceService) : C
     /// <summary>
     /// Retrieves a specific workspace by its identifier.
     /// </summary>
-    /// <param name="id">The unique identifier of the workspace.</param>
-    /// <param name="ct">A cancellation token.</param>
     /// <returns>
     /// An HTTP 200 response containing the workspace DTO if found;
     /// otherwise an HTTP 404 Not Found response.
@@ -58,11 +51,7 @@ public sealed class WorkspacesController(IWorkspaceService workspaceService) : C
         return Ok(workspace);
     }
 
-    /// <summary>
-    /// Creates a new workspace.
-    /// </summary>
     /// <param name="request">The creation request containing workspace name and optional description.</param>
-    /// <param name="ct">A cancellation token.</param>
     /// <returns>
     /// An HTTP 201 Created response with the new workspace DTO;
     /// an HTTP 400 Bad Request if the name is empty;
@@ -88,7 +77,6 @@ public sealed class WorkspacesController(IWorkspaceService workspaceService) : C
     /// </summary>
     /// <param name="id">The identifier of the workspace to update.</param>
     /// <param name="request">The update request containing new name and optional description.</param>
-    /// <param name="ct">A cancellation token.</param>
     /// <returns>
     /// An HTTP 200 OK response with the updated workspace DTO;
     /// an HTTP 400 Bad Request if the name is empty;
@@ -106,11 +94,7 @@ public sealed class WorkspacesController(IWorkspaceService workspaceService) : C
         return result.ToActionResult(this);
     }
 
-    /// <summary>
-    /// Deletes a workspace.
-    /// </summary>
     /// <param name="id">The identifier of the workspace to delete.</param>
-    /// <param name="ct">A cancellation token.</param>
     /// <returns>
     /// An HTTP 204 No Content response if the workspace was successfully deleted;
     /// or an HTTP 404 Not Found response if the workspace does not exist.
@@ -132,8 +116,6 @@ public sealed class WorkspacesController(IWorkspaceService workspaceService) : C
     /// <summary>
     /// Retrieves all files within a specific workspace.
     /// </summary>
-    /// <param name="id">The identifier of the workspace.</param>
-    /// <param name="ct">A cancellation token.</param>
     /// <returns>
     /// An HTTP 200 OK response containing a list of file DTOs;
     /// or an HTTP 404 Not Found response if the workspace does not exist.
@@ -148,9 +130,6 @@ public sealed class WorkspacesController(IWorkspaceService workspaceService) : C
     }
 
     /// <summary>
-    /// Uploads a file to a workspace.
-    /// </summary>
-    /// <remarks>
     /// <para>
     /// The file is validated for:
     /// - Non-zero size.
@@ -162,10 +141,9 @@ public sealed class WorkspacesController(IWorkspaceService workspaceService) : C
     /// with an initial <see cref="Core.Files.FileProcessingStatus.Pending"/> status.
     /// The background ingestion worker will process the file asynchronously for RAG indexing.
     /// </para>
-    /// </remarks>
+    /// </summary>
     /// <param name="file">The file to upload (multipart form data).</param>
     /// <param name="workspaceId">Optional workspace ID to associate with the file. If null, the file is not workspace-specific.</param>
-    /// <param name="ct">A cancellation token.</param>
     /// <returns>
     /// An HTTP 201 Created response with the file metadata DTO if successful;
     /// an HTTP 400 Bad Request if validation fails (empty file, exceeds size, disallowed extension, or workspace not found).
@@ -207,7 +185,6 @@ public sealed class WorkspacesController(IWorkspaceService workspaceService) : C
     /// Retrieves files, optionally filtered by workspace.
     /// </summary>
     /// <param name="workspaceId">Optional workspace ID to filter files. If null, returns all files.</param>
-    /// <param name="ct">A cancellation token.</param>
     /// <returns>
     /// An HTTP 200 OK response containing a list of file DTOs,  sorted by creation date (most recent first).
     /// </returns>
@@ -223,7 +200,6 @@ public sealed class WorkspacesController(IWorkspaceService workspaceService) : C
     /// Deletes a file from its workspace and blob storage.
     /// </summary>
     /// <param name="id">The unique identifier of the file to delete.</param>
-    /// <param name="ct">A cancellation token.</param>
     /// <returns>
     /// An HTTP 204 No Content response if the file was successfully deleted;
     /// or an HTTP 404 Not Found response if the file does not exist.

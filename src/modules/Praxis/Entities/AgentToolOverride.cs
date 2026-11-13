@@ -10,10 +10,14 @@ public sealed class AgentToolOverride : IUserOwned
     public Guid Id { get; set; }
     public Guid UserId { get; set; }
 
-    /// <summary>The built-in agent's name (see <c>AgentRole</c>).</summary>
+    /// <summary>
+    /// The built-in agent's name (see <c>AgentRole</c>).
+    /// </summary>
     public string AgentName { get; set; } = null!;
 
-    /// <summary>Names of the tools the agent may use; <see langword="null"/> = every tool.</summary>
+    /// <summary>
+    /// Names of the tools the agent may use; <see langword="null"/> = every tool.
+    /// </summary>
     public List<string>? Tools { get; set; }
 
     public DateTime UpdatedAt { get; set; }

@@ -16,7 +16,6 @@ public interface IIdentityService
     /// Implementation note: Successful registration currently defaults the user to the <see cref="Roles.Sovereign"/> role.
     /// This method also publishes a 'user.registered' event to the system bus.
     /// </remarks>
-    /// <returns>A tuple containing the identity result and the created user instance if successful.</returns>
     Task<(IdentityResult Result, ApplicationUser? User)> RegisterUserAsync(RegisterRequest request);
 
     /// <summary>

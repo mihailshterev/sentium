@@ -44,9 +44,6 @@ public interface IVectorRepository
     /// <summary>
     /// Deletes every entry in the collection. Use with caution!
     /// </summary>
-    /// <param name="collectionName">The name of the collection to delete.</param>
-    /// <param name="ct">A cancellation token.</param>
-    /// <returns>A task representing the asynchronous operation.</returns>
     Task DeleteCollectionAsync(string collectionName, CancellationToken ct = default);
 
     /// <summary>

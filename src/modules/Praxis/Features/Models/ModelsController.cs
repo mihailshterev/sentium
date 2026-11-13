@@ -27,8 +27,6 @@ public sealed class ModelsController(
     /// <summary>
     /// Lists the declared chat models with their runtime status, plus the effective default model.
     /// </summary>
-    /// <param name="ct">Cancellation token to abort the request.</param>
-    /// <response code="200">The models and the default model.</response>
     /// <response code="503">The inference server is unreachable or failed.</response>
     [HttpGet]
     [ProducesResponseType(typeof(ModelsResponse), StatusCodes.Status200OK)]

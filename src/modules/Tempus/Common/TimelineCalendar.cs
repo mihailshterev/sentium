@@ -11,7 +11,9 @@ public static class TimelineCalendar
 
     public static DateOnly LastDay(int year, int month) => new(year, month, DateTime.DaysInMonth(year, month));
 
-    /// <summary>Months since year 0, so month ranges compare as integers.</summary>
+    /// <summary>
+    /// Months since year 0, so month ranges compare as integers.
+    /// </summary>
     public static int MonthIndex(int year, int month) => (year * 12) + (month - 1);
 
     public static bool IsInMonth(DateOnly date, int year, int month) => date.Year == year && date.Month == month;

@@ -12,7 +12,6 @@ public sealed class SentinelClient(IPolicyDecisionPoint policyDecisionPoint, ILo
     /// Submits a full policy evaluation request and returns the PDP decision.
     /// </summary>
     /// <param name="request">The full evaluation context.</param>
-    /// <param name="ct">Cancellation token.</param>
     /// <returns>The <see cref="PdpDecision"/> from Sentinel; a deny if the evaluation itself fails.</returns>
     public async Task<PdpDecision> EvaluateAsync(PdpRequest request, CancellationToken ct)
     {

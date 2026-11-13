@@ -14,7 +14,9 @@ public sealed class UsersController(IUserService userService, IUserClaimsService
     /// <summary>
     /// Lists users registered in the system, with pagination.
     /// </summary>
-    /// <remarks>Only accessible by users with the Sovereign role.</remarks>
+    /// <remarks>
+    /// Only accessible by users with the Sovereign role.
+    /// </remarks>
     /// <param name="page">1-based page number (default: 1).</param>
     /// <param name="pageSize">Number of items per page (default: 20, max: 100).</param>
     /// <response code="200">Returns a paginated list of users with their basic profiles and roles.</response>
@@ -56,8 +58,6 @@ public sealed class UsersController(IUserService userService, IUserClaimsService
     /// Retrieves detailed information for a specific user.
     /// </summary>
     /// <param name="id">The unique identifier of the target user.</param>
-    /// <response code="200">Returns the user profile.</response>
-    /// <response code="404">If the user does not exist.</response>
     [HttpGet("{id:guid}")]
     [Authorize(Roles = Roles.Sovereign)]
     [ProducesResponseType(typeof(UserResponse), StatusCodes.Status200OK)]
@@ -86,7 +86,6 @@ public sealed class UsersController(IUserService userService, IUserClaimsService
     /// Only accessible by Sovereign.
     /// This operation is destructive and includes a hierarchy check to prevent self-deletion or unauthorized escalation.
     /// </remarks>
-    /// <response code="204">User deleted successfully.</response>
     /// <response code="400">If the deletion violates business rules (e.g., deleting yourself).</response>
     [HttpDelete("{id:guid}")]
     [Authorize(Roles = Roles.Sovereign)]

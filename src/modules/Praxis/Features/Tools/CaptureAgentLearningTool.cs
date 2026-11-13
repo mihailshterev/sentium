@@ -11,10 +11,14 @@ namespace Sentium.Praxis.Features.Tools;
 /// </summary>
 public enum LearningScope
 {
-    /// <summary>Private to the acting user (default).</summary>
+    /// <summary>
+    /// Private to the acting user (default).
+    /// </summary>
     User,
 
-    /// <summary>Shared with every user's agents - only granted after the sanitization pipeline approves it.</summary>
+    /// <summary>
+    /// Shared with every user's agents - only granted after the sanitization pipeline approves it.
+    /// </summary>
     Global
 }
 

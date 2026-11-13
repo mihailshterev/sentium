@@ -5,7 +5,9 @@ namespace Sentium.Praxis.Features.Agents.Native;
 /// </summary>
 public sealed class SummaryAgent : IAgent
 {
-    /// <remarks>Must equal the key this agent is registered under (<see cref="AgentRole.Summarizer"/>).</remarks>
+    /// <remarks>
+    /// Must equal the key this agent is registered under (<see cref="AgentRole.Summarizer"/>).
+    /// </remarks>
     public string Name => AgentRole.Summarizer;
 
     public string Description => "Combines step results into one final answer.";

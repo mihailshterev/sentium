@@ -7,10 +7,14 @@ namespace Sentium.Praxis.Common;
 /// </summary>
 public static class TextSearch
 {
-    /// <summary>Escape character passed to <c>ILike</c> together with <see cref="ToContainsPattern"/>.</summary>
+    /// <summary>
+    /// Escape character passed to <c>ILike</c> together with <see cref="ToContainsPattern"/>.
+    /// </summary>
     public const string EscapeCharacter = "\\";
 
-    /// <summary>Longest search term honoured; anything longer is cut.</summary>
+    /// <summary>
+    /// Longest search term honoured; anything longer is cut.
+    /// </summary>
     public const int MaxTermLength = 200;
 
     /// <summary>

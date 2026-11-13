@@ -11,9 +11,6 @@ public static class TextChunker
 {
     private static readonly SearchValues<char> BoundaryChars = SearchValues.Create(['.', '!', '?', '\n']);
 
-    /// <summary>
-    /// Returns an ordered list of chunks produced from <paramref name="text"/>.
-    /// </summary>
     /// <param name="text">The source text to split.</param>
     /// <param name="chunkSize">Maximum characters per chunk (before overlap).</param>
     /// <param name="overlap">

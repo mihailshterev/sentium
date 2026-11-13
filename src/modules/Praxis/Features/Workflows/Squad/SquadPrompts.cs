@@ -11,16 +11,22 @@ namespace Sentium.Praxis.Features.Workflows.Squad;
 /// </summary>
 internal static class SquadPrompts
 {
-    /// <summary>Most steps a plan may contain - long pipelines compound small-model errors and latency.</summary>
+    /// <summary>
+    /// Most steps a plan may contain - long pipelines compound small-model errors and latency.
+    /// </summary>
     public const int MaxPlanSteps = 4;
 
-    /// <summary>Character budget for earlier steps' results inside one step's input (roughly 1.5k tokens).</summary>
+    /// <summary>
+    /// Character budget for earlier steps' results inside one step's input (roughly 1.5k tokens).
+    /// </summary>
     private const int PriorResultsBudget = 6000;
 
     private const int MinPerResultBudget = 600;
     private const int ReviewedOutputBudget = 6000;
 
-    /// <summary>Appended to a specialist's role when it runs as one step of a plan.</summary>
+    /// <summary>
+    /// Appended to a specialist's role when it runs as one step of a plan.
+    /// </summary>
     public const string StepRules = """
         ### TEAM STEP
         You are one step of a team plan. Do only the task you are given, building on the earlier results provided.

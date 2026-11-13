@@ -18,9 +18,6 @@ public sealed class SkillsController(
     /// <summary>
     /// Retrieves a list of all built-in skills available in the system catalog.
     /// </summary>
-    /// <returns>A collection of information descriptors for built-in skills.</returns>
-    /// <response code="200">Returns the list of built-in skill descriptors.</response>
-    /// <response code="401">If the user is not authenticated.</response>
     [HttpGet("built-in")]
     [ProducesResponseType(typeof(IEnumerable<BuiltInSkillInfo>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -36,9 +33,6 @@ public sealed class SkillsController(
     /// <param name="skillType">Optional skill-type filter (Custom or Uploaded).</param>
     /// <param name="page">1-based page number (default: 1).</param>
     /// <param name="pageSize">Number of items per page (default: 20, max: 100).</param>
-    /// <param name="ct">The cancellation token.</param>
-    /// <returns>A paginated collection of agent skill data transfer objects.</returns>
-    /// <response code="200">Returns the page of custom skills.</response>
     [HttpGet]
     [ProducesResponseType(typeof(PagedResponse<AgentSkillDto>), StatusCodes.Status200OK)]
     public async ValueTask<IActionResult> GetSkills(
@@ -54,11 +48,6 @@ public sealed class SkillsController(
     /// <summary>
     /// Retrieves a specific agent skill by its unique identifier.
     /// </summary>
-    /// <param name="skillId">The unique ID of the skill.</param>
-    /// <param name="ct">The cancellation token.</param>
-    /// <returns>The data transfer object for the requested skill.</returns>
-    /// <response code="200">Returns the requested skill.</response>
-    /// <response code="404">If a skill with the specified ID does not exist.</response>
     [HttpGet("{skillId:guid}")]
     [ProducesResponseType(typeof(AgentSkillDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -72,8 +61,6 @@ public sealed class SkillsController(
     /// Creates a new custom agent skill.
     /// </summary>
     /// <param name="request">The data required to create the skill.</param>
-    /// <param name="ct">The cancellation token.</param>
-    /// <returns>The created skill data.</returns>
     /// <response code="201">Returns the newly created skill.</response>
     /// <response code="400">If the request is invalid.</response>
     /// <response code="409">If a skill with the same name already exists.</response>
@@ -96,8 +83,6 @@ public sealed class SkillsController(
     /// Creates a new skill by uploading a Markdown (.md) file.
     /// </summary>
     /// <param name="file">The Markdown file containing the skill instructions.</param>
-    /// <param name="ct">The cancellation token.</param>
-    /// <returns>The created skill data.</returns>
     /// <response code="201">Returns the newly created skill.</response>
     /// <response code="400">If the file is invalid, empty, or not a Markdown file.</response>
     [HttpPost("upload")]
@@ -147,13 +132,8 @@ public sealed class SkillsController(
     /// <summary>
     /// Updates the details of an existing agent skill.
     /// </summary>
-    /// <param name="skillId">The ID of the skill to update.</param>
     /// <param name="request">The updated skill details.</param>
-    /// <param name="ct">The cancellation token.</param>
-    /// <returns>No content if the update was successful.</returns>
-    /// <response code="204">Skill updated successfully.</response>
     /// <response code="400">If the request is null or invalid.</response>
-    /// <response code="404">If the skill was not found.</response>
     [HttpPut("{skillId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -167,11 +147,6 @@ public sealed class SkillsController(
     /// <summary>
     /// Permanently deletes an agent skill.
     /// </summary>
-    /// <param name="skillId">The ID of the skill to delete.</param>
-    /// <param name="ct">The cancellation token.</param>
-    /// <returns>No content if the deletion was successful.</returns>
-    /// <response code="204">Skill deleted successfully.</response>
-    /// <response code="404">If the skill was not found.</response>
     [HttpDelete("{skillId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

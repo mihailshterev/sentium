@@ -13,13 +13,7 @@ public interface ISettingsRepository
     /// </summary>
     Task<SystemSettings?> FindAsync(Guid? userId, CancellationToken ct = default);
 
-    /// <summary>
-    /// Inserts a new settings row.
-    /// </summary>
     Task AddAsync(SystemSettings entity, CancellationToken ct = default);
 
-    /// <summary>
-    /// Updates the settings.
-    /// </summary>
     Task UpdateAsync(SystemSettings entity, CancellationToken ct = default);
 }

@@ -26,8 +26,5 @@ public interface IIncidentStore
     /// </summary>
     IReadOnlyList<Incident> GetAll();
 
-    /// <summary>
-    /// Count of currently open incidents.
-    /// </summary>
     int OpenCount { get; }
 }

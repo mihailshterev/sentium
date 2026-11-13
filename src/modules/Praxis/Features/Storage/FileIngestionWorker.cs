@@ -86,9 +86,7 @@ public sealed class FileIngestionWorker(IServiceScopeFactory scopeFactory, FileI
     /// <summary>
     /// Processes a single file for RAG ingestion.
     /// </summary>
-    /// <param name="fileId">The unique identifier of the file to process.</param>
     /// <param name="workspaceId">The optional workspace ID associated with the file.</param>
-    /// <param name="ct">A cancellation token.</param>
     /// <remarks>
     /// <para>
     /// Processing flow:

@@ -23,11 +23,8 @@ namespace Sentium.Praxis.Features.Files;
 public static class AllowedFileTypes
 {
     /// <summary>
-    /// Gets the read-only set of allowed file extensions (case-insensitive).
+    /// Case-insensitive; each extension includes the leading dot (e.g., ".txt", ".json").
     /// </summary>
-    /// <remarks>
-    /// Each extension includes the leading dot (e.g., ".txt", ".json").
-    /// </remarks>
     public static readonly IReadOnlySet<string> Extensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
         ".txt",
