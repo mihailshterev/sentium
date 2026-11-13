@@ -1,9 +1,8 @@
-using Sentium.Praxis.Common;
-using Sentium.Praxis.Dtos;
-using Sentium.Praxis.Entities;
-using Sentium.Praxis.Data;
-using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
+using Sentium.Praxis.Common;
+using Sentium.Praxis.Data;
+using Sentium.Praxis.Entities;
 
 namespace Sentium.Praxis.Features.Conversations;
 

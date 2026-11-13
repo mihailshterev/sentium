@@ -2,8 +2,8 @@ using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Options;
 using Sentium.Infrastructure.Inference;
+using Sentium.Praxis.Contracts;
 using Sentium.Praxis.Features.Learnings;
-using Sentium.Praxis.Features.Mcp;
 using Sentium.Praxis.Features.Models;
 using Sentium.Praxis.Features.Registry;
 using Sentium.Praxis.Features.Sentinel;
@@ -25,8 +25,7 @@ public sealed class CompositeAgentFactory(
     IOptions<InferenceOptions> inferenceOptions,
     IModelContextWindowProvider contextWindows,
     IAgentToolProvider agentToolProvider,
-    IMcpToolCatalog mcpTools,
-    IMcpSettingsProvider mcpSettings,
+    IEnumerable<IAgentToolSource> toolSources,
     IAgentRepository agentRepository,
     IBuiltInAgentService builtInAgents,
     IRegistrySettingsService registrySettingsService,
@@ -127,7 +126,7 @@ public sealed class CompositeAgentFactory(
     }
 
     /// <summary>
-    /// The agent's curated tool set (all built-in tools when it declares none). MCP tools are opt-in: an agent gets one
+    /// The agent's curated tool set (all built-in tools when it declares none). External-source (e.g. MCP) tools are opt-in: an agent gets one
     /// only when its tool list names it explicitly, so registering a server never silently widens what existing agents
     /// can do. Approval-gated tools are dropped for unattended runs: no human can answer the approval request there, so
     /// offering them only stalls the step.
@@ -139,10 +138,12 @@ public sealed class CompositeAgentFactory(
 
         var candidates = available.Where(tool => allowed is null || allowed.Contains(tool.Name));
 
-        if (allowed is not null && allowed.Any(McpNames.IsMcpToolName) && (await mcpSettings.GetAsync(ct)).Enabled)
+        if (allowed is not null)
         {
-            await mcpTools.EnsureLoadedAsync(ct);
-            candidates = candidates.Concat(mcpTools.GetFunctions(allowed));
+            foreach (var source in toolSources)
+            {
+                candidates = candidates.Concat(await source.GetFunctionsAsync(allowed, ct));
+            }
         }
 
         return [.. candidates.Where(tool => allowApprovalTools || tool.GetService<ApprovalRequiredAIFunction>() is null)];

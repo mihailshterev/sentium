@@ -3,7 +3,7 @@ sequenceDiagram
     autonumber
     participant DB as PostgreSQL (praxis.qrtz_*)
     participant SCH as Quartz Scheduler (ADO.NET store)
-    participant EJ as Praxis · ExecuteJob
+    participant EJ as Scheduling · ExecuteJob
     participant SB as Sentium.Sandbox (/execute)
     participant SE as Sentinel (Sentium.Web)
     participant LOG as PostgreSQL (praxis.ExecutionLogs)

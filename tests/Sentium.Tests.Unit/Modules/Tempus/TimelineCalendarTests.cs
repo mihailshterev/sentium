@@ -1,4 +1,5 @@
 using FluentAssertions;
+using Sentium.Tempus.Common;
 using Sentium.Tempus.Contracts.Models;
 using Sentium.Tempus.Features;
 using Xunit;

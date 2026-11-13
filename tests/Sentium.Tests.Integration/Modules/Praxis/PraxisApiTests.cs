@@ -2,10 +2,14 @@ using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
-using Sentium.Praxis.Data;
-using Sentium.Praxis.Dtos;
-using Sentium.Praxis.Entities;
 using Sentium.Core.Results;
+using Sentium.Praxis.Contracts;
+using Sentium.Praxis.Data;
+using Sentium.Praxis.Entities;
+using Sentium.Praxis.Features.Agents;
+using Sentium.Praxis.Features.Conversations;
+using Sentium.Praxis.Features.Tools;
+using Sentium.Praxis.Features.Workflows;
 using Sentium.Tests.Integration.Common;
 using Xunit;
 

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Sentium.Locus.Common;
 using Sentium.Locus.Entities;
 
 namespace Sentium.Locus.Data;

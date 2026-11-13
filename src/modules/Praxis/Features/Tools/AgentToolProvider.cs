@@ -1,14 +1,13 @@
 using System.Collections.Frozen;
 using Microsoft.Extensions.AI;
-using Sentium.Praxis.Dtos;
-using Sentium.Praxis.Features.Mcp;
+using Sentium.Praxis.Contracts;
 
 namespace Sentium.Praxis.Features.Tools;
 
 /// <summary>
 /// Groups the registered tools by the agents allowed to use them (<see cref="Attributes.AgentToolPolicyAttribute.AllowedAgents"/>)
-/// and describes them for the tool picker. The catalogue also lists the approved MCP tools (read live from
-/// <see cref="IMcpToolCatalog"/>, which changes at runtime); <see cref="GetToolsForAgent"/> stays built-in only, because MCP
+/// and describes them for the tool picker. The catalogue also lists the approved tools of external sources such as MCP (read live from
+/// the registered <see cref="IAgentToolSource"/>s, which change at runtime); <see cref="GetToolsForAgent"/> stays built-in only, because MCP
 /// tools are opt-in and selected by name (see <c>CompositeAgentFactory</c>).
 /// </summary>
 public sealed class AgentToolProvider : IAgentToolProvider, IToolCatalog
@@ -18,13 +17,13 @@ public sealed class AgentToolProvider : IAgentToolProvider, IToolCatalog
     private readonly FrozenDictionary<string, List<AITool>> toolCache;
     private readonly IReadOnlyList<ToolDescriptor> catalog;
     private readonly FrozenSet<string> names;
-    private readonly IMcpToolCatalog? mcpTools;
+    private readonly IReadOnlyList<IAgentToolSource> sources;
 
-    public AgentToolProvider(IEnumerable<IAgentTool> tools, IMcpToolCatalog? mcpTools = null)
+    public AgentToolProvider(IEnumerable<IAgentTool> tools, IEnumerable<IAgentToolSource>? sources = null)
     {
         ArgumentNullException.ThrowIfNull(tools);
 
-        this.mcpTools = mcpTools;
+        this.sources = [.. sources ?? []];
 
         var map = new Dictionary<string, List<AITool>>(StringComparer.OrdinalIgnoreCase);
         var descriptors = new List<ToolDescriptor>();
@@ -63,9 +62,9 @@ public sealed class AgentToolProvider : IAgentToolProvider, IToolCatalog
     }
 
     public IReadOnlyList<ToolDescriptor> GetTools() =>
-        mcpTools?.Descriptors is { Count: > 0 } mcp ? [.. catalog, .. mcp] : catalog;
+        sources.Count == 0 ? catalog : [.. catalog, .. sources.SelectMany(s => s.Descriptors)];
 
-    public bool Contains(string name) => name is not null && (names.Contains(name) || (mcpTools?.Contains(name) ?? false));
+    public bool Contains(string name) => name is not null && (names.Contains(name) || sources.Any(s => s.Contains(name)));
 
     public List<AITool> GetToolsForAgent(string agentName, CancellationToken ct)
     {

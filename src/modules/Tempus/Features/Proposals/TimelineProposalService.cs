@@ -1,9 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 using Sentium.Core.Results;
 using Sentium.Infrastructure.Extensions;
+using Sentium.Tempus.Common;
 using Sentium.Tempus.Contracts.Models;
 using Sentium.Tempus.Data;
-using Sentium.Tempus.Dtos;
 using Sentium.Tempus.Entities;
 using Sentium.Tempus.Features.Tasks;
 

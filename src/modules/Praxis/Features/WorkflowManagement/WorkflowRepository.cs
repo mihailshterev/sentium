@@ -1,8 +1,8 @@
-using Sentium.Praxis.Dtos;
-using Sentium.Praxis.Entities;
-using Sentium.Praxis.Data;
-using Sentium.Core.Results;
 using Microsoft.EntityFrameworkCore;
+using Sentium.Core.Results;
+using Sentium.Praxis.Data;
+using Sentium.Praxis.Entities;
+using Sentium.Praxis.Features.Workflows;
 
 namespace Sentium.Praxis.Features.WorkflowManagement;
 

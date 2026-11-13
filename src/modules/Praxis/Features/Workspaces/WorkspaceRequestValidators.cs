@@ -1,0 +1,30 @@
+using FluentValidation;
+using Sentium.Praxis.Features.Agents;
+
+namespace Sentium.Praxis.Features.Workspaces;
+
+public sealed class CreateWorkspaceRequestValidator : AbstractValidator<CreateWorkspaceRequest>
+{
+    public CreateWorkspaceRequestValidator()
+    {
+        RuleFor(x => x.Name)
+            .NotEmpty()
+            .MaximumLength(100);
+
+        RuleFor(x => x.Description)
+            .MaximumLength(2000);
+    }
+}
+
+public sealed class UpdateWorkspaceRequestValidator : AbstractValidator<UpdateWorkspaceRequest>
+{
+    public UpdateWorkspaceRequestValidator()
+    {
+        RuleFor(x => x.Name)
+            .NotEmpty()
+            .MaximumLength(100);
+
+        RuleFor(x => x.Description)
+            .MaximumLength(2000);
+    }
+}

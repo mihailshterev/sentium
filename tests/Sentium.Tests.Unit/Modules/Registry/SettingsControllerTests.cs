@@ -4,10 +4,9 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
-using Sentium.Registry.Contracts;
-using Sentium.Registry.Controllers;
-using Sentium.Registry.Features.Settings;
 using Sentium.Core.Constants;
+using Sentium.Registry.Contracts;
+using Sentium.Registry.Features.Settings;
 using Xunit;
 
 namespace Sentium.Tests.Unit.Modules.Registry;

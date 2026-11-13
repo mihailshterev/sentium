@@ -1,6 +1,6 @@
-using Sentium.Praxis.Extensions;
-using Sentium.Praxis.Features.Agents.Activity;
 using Microsoft.Extensions.AI;
+using Sentium.Praxis.Common.Streaming;
+using Sentium.Praxis.Features.Agents.Activity;
 
 namespace Sentium.Praxis.Features.Orchestration;
 

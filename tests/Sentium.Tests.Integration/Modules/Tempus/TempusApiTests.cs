@@ -5,7 +5,10 @@ using Microsoft.Extensions.DependencyInjection;
 using Sentium.Core.Results;
 using Sentium.Tempus.Contracts;
 using Sentium.Tempus.Contracts.Models;
-using Sentium.Tempus.Dtos;
+using Sentium.Tempus.Features.Notes;
+using Sentium.Tempus.Features.Overview;
+using Sentium.Tempus.Features.Proposals;
+using Sentium.Tempus.Features.Tasks;
 using Sentium.Tests.Integration.Common;
 using Xunit;
 

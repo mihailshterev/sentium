@@ -3,13 +3,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using Sentium.Sentinel.Features.Audit;
-using Sentium.Sentinel.Contracts;
-using Sentium.Sentinel.Features.Engine;
-using Sentium.Sentinel.Controllers;
-using Sentium.Sentinel.Dtos;
-using Sentium.Sentinel.Features.Policies;
 using Sentium.Core.Results;
+using Sentium.Sentinel.Contracts;
+using Sentium.Sentinel.Features.Audit;
+using Sentium.Sentinel.Features.Engine;
+using Sentium.Sentinel.Features.Policies;
 using Xunit;
 
 namespace Sentium.Tests.Unit.Modules.Sentinel;

@@ -1,30 +1,27 @@
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
-using Quartz;
 using Sentium.Core.Constants;
 using Sentium.Infrastructure.Extensions;
 using Sentium.Infrastructure.Inference;
 using Sentium.Infrastructure.Net;
 using Sentium.Infrastructure.Security;
+using Sentium.Praxis.Common.Streaming;
+using Sentium.Praxis.Contracts;
+using Sentium.Praxis.Data;
 using Sentium.Praxis.Features.Agents;
 using Sentium.Praxis.Features.Agents.Native;
 using Sentium.Praxis.Features.CodeExecution;
 using Sentium.Praxis.Features.Conversations;
-using Sentium.Praxis.Data;
-using Sentium.Praxis.Extensions;
 using Sentium.Praxis.Features.Learnings;
-using Sentium.Praxis.Features.Mcp;
 using Sentium.Praxis.Features.Models;
 using Sentium.Praxis.Features.Orchestration;
 using Sentium.Praxis.Features.Registry;
-using Sentium.Praxis.Features.Scheduling;
 using Sentium.Praxis.Features.Sentinel;
 using Sentium.Praxis.Features.Skills;
 using Sentium.Praxis.Features.Skills.BuiltIn;
 using Sentium.Praxis.Features.Storage;
 using Sentium.Praxis.Features.Titles;
-using Sentium.Praxis.Testing;
 using Sentium.Praxis.Features.Tools;
 using Sentium.Praxis.Features.Tools.Inventory;
 using Sentium.Praxis.Features.Tools.Timeline;
@@ -90,6 +87,7 @@ public static class PraxisModuleExtensions
         services.AddScoped<IAgentToolProvider>(sp => sp.GetRequiredService<AgentToolProvider>());
         services.AddScoped<IToolCatalog>(sp => sp.GetRequiredService<AgentToolProvider>());
         services.AddScoped<IAgentToolOverrideRepository, AgentToolOverrideRepository>();
+        services.AddScoped<IAgentToolReferenceCleaner, AgentToolReferenceCleaner>();
         services.AddScoped<IBuiltInAgentService, BuiltInAgentService>();
         services.AddScoped<IAgentFactory, CompositeAgentFactory>();
         services.AddScoped<IPromptEnhancementService, PromptEnhancementService>();
@@ -108,7 +106,6 @@ public static class PraxisModuleExtensions
         services.AddTransient<IAgentTool, ReadWorkspaceFileContentTool>();
         services.AddTransient<IAgentTool, WriteWorkspaceFileTool>();
         services.AddTransient<IAgentTool, CaptureAgentLearningTool>();
-        services.AddTransient<IAgentTool, ScheduleTaskTool>();
         services.AddTransient<IAgentTool, FindAssetsTool>();
         services.AddTransient<IAgentTool, GetAssetTool>();
         services.AddTransient<IAgentTool, ListLocationContentsTool>();
@@ -124,14 +121,11 @@ public static class PraxisModuleExtensions
         services.AddScoped<IWorkflowRepository, WorkflowRepository>();
         services.AddScoped<IWorkflowRunRepository, WorkflowRunRepository>();
 
-        AddScheduling(services);
-
         services.AddSingleton<SentinelClient>();
         services.AddSingleton<SentinelFunctionMiddleware>();
         services.AddSingleton<IPdpContextAccessor, PdpContextAccessor>();
 
         AddCodeExecution(services, configuration);
-        AddMcp(services);
 
         services.AddHealthChecks().AddDbContextCheck<PraxisDbContext>("praxis-db", tags: [ModuleName]);
 
@@ -143,17 +137,6 @@ public static class PraxisModuleExtensions
         ArgumentNullException.ThrowIfNull(app);
 
         await app.Services.MigrateModuleDbContextAsync<PraxisDbContext>();
-
-        if (app.Environment.IsEnvironment("Testing"))
-        {
-            await using var scope = app.Services.CreateAsyncScope();
-            scope.ServiceProvider.GetRequiredService<SystemScopeContext>().Activate();
-
-            var db = scope.ServiceProvider.GetRequiredService<PraxisDbContext>();
-            var testUserId = Guid.Parse(app.Configuration["E2E:UserId"] ?? "e2e00000-0000-0000-0000-000000000001");
-
-            await E2EDataSeeder.SeedAsync(db, testUserId);
-        }
     }
 
     private static void AddOrchestration(IServiceCollection services)
@@ -215,74 +198,6 @@ public static class PraxisModuleExtensions
         var defaultModel = sp.GetRequiredService<IOptions<InferenceOptions>>().Value.DefaultModel;
 
         return sp.GetRequiredService<IInferenceClientFactory>().CreateChatClient(LlmHttpClientName, defaultModel);
-    }
-
-    private static void AddScheduling(IServiceCollection services)
-    {
-        services.AddQuartz(q =>
-        {
-            q.SchedulerName = SchedulerDefaults.SchedulerName;
-            q.SchedulerId = "AUTO";
-
-            q.MisfireThreshold = TimeSpan.FromMinutes(1);
-
-            q.UsePersistentStore(store =>
-            {
-                store.UseProperties = true;
-                store.PerformSchemaValidation = true;
-                store.RetryInterval = TimeSpan.FromSeconds(15);
-
-                store.UsePostgres(postgres =>
-                {
-                    postgres.ConnectionStringName = ResourceNames.SentiumDb;
-                    postgres.TablePrefix = SchedulerDefaults.TablePrefix;
-                });
-
-                store.UseSystemTextJsonSerializer();
-            });
-        });
-
-        services.AddQuartzHostedService(options =>
-        {
-            options.AwaitApplicationStarted = true;
-            options.WaitForJobsToComplete = true;
-        });
-    }
-
-    private static void AddMcp(IServiceCollection services)
-    {
-        services.TryAddSingleton(TimeProvider.System);
-
-        services.AddSingleton<IMcpSettingsProvider, RegistryMcpSettingsProvider>();
-        services.AddSingleton<McpSecretProtector>();
-        services.AddSingleton<McpClientManager>();
-        services.AddSingleton<McpToolCatalog>();
-        services.AddSingleton<IMcpToolCatalog>(sp => sp.GetRequiredService<McpToolCatalog>());
-        services.AddScoped<IMcpServerRepository, McpServerRepository>();
-        services.AddScoped<IMcpServerService, McpServerService>();
-        services.AddHostedService<McpBackgroundService>();
-
-        // Direct MCP servers: local network only, enforced on the resolved address at connect time (DNS-rebinding safe),
-        // no proxy, no redirects. Streams stay open between calls, so no overall request timeout - calls are bounded by
-        // the per-call timeout in the MCP settings.
-        services.AddHttpClient(McpClientManager.HttpClientName, client => client.Timeout = Timeout.InfiniteTimeSpan)
-            .ConfigurePrimaryHttpMessageHandler(() => NetworkAddressPolicy.CreateHandler(NetworkAddressScope.PrivateOnly))
-            .AddLongRunningResilienceHandler(
-                totalTimeout: TimeSpan.FromMinutes(15),
-                attemptTimeout: TimeSpan.FromMinutes(15),
-                retries: 0);
-
-        // Stdio servers: the Sandbox host (internal network, internal API key) runs and speaks to them.
-        services.AddHttpClient<ISandboxMcpHostClient, SandboxMcpHostClient>(client =>
-        {
-            client.BaseAddress = new Uri($"https+http://{ServiceNames.Sandbox}");
-            client.Timeout = Timeout.InfiniteTimeSpan;
-        })
-        .AddHttpMessageHandler<InternalApiKeyDelegatingHandler>()
-        .AddLongRunningResilienceHandler(
-            totalTimeout: TimeSpan.FromMinutes(11),
-            attemptTimeout: TimeSpan.FromMinutes(10),
-            retries: 0);
     }
 
     /// <summary>

@@ -14,6 +14,7 @@
     <Project Path="src/shared/Sentium.Infrastructure/Sentium.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/src/hosts/">
+    <Project Path="src/hosts/Sentium.E2ESeed/Sentium.E2ESeed.csproj" />
     <Project Path="src/hosts/Sentium.Sandbox/Sentium.Sandbox.csproj" />
     <Project Path="src/hosts/Sentium.Web/Sentium.Web.csproj" />
   </Folder>
@@ -21,9 +22,11 @@
     <Project Path="src/modules/Codex/Sentium.Codex.csproj" />
     <Project Path="src/modules/Identity/Sentium.Identity.csproj" />
     <Project Path="src/modules/Locus/Sentium.Locus.csproj" />
+    <Project Path="src/modules/Mcp/Sentium.Mcp.csproj" />
     <Project Path="src/modules/Tempus/Sentium.Tempus.csproj" />
     <Project Path="src/modules/Praxis/Sentium.Praxis.csproj" />
     <Project Path="src/modules/Registry/Sentium.Registry.csproj" />
+    <Project Path="src/modules/Scheduling/Sentium.Scheduling.csproj" />
     <Project Path="src/modules/Sentinel/Sentium.Sentinel.csproj" />
     <Project Path="src/modules/Vigil/Sentium.Vigil.csproj" />
   </Folder>

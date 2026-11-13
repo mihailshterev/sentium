@@ -2,8 +2,8 @@ using Microsoft.EntityFrameworkCore;
 using Sentium.Core.Results;
 using Sentium.Infrastructure.Extensions;
 using Sentium.Infrastructure.Security;
+using Sentium.Locus.Common;
 using Sentium.Locus.Data;
-using Sentium.Locus.Dtos;
 using Sentium.Locus.Entities;
 using Sentium.Locus.Features.Knowledge;
 

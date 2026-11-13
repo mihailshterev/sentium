@@ -1,4 +1,5 @@
-using Sentium.Praxis.Dtos;
+using Sentium.Praxis.Features.Workflows;
+
 
 namespace Sentium.Praxis.Entities;
 

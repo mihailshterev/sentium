@@ -1,5 +1,6 @@
 using System.Text;
 using Microsoft.Extensions.AI;
+using Sentium.Praxis.Contracts;
 using Sentium.Praxis.Features.Harness;
 using Sentium.Praxis.Features.Registry;
 using Sentium.Praxis.Features.Tools;

@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Sentium.Codex.Contracts;
 using Sentium.Codex.Contracts.Models;
+using Sentium.Locus.Common;
 using Sentium.Locus.Data;
 using Sentium.Locus.Entities;
 using Sentium.Locus.Features.Locations;

@@ -227,83 +227,6 @@ namespace Sentium.Praxis.Data.Migrations
                     b.ToTable("Conversations", "praxis");
                 });
 
-            modelBuilder.Entity("Sentium.Praxis.Entities.McpServer", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.PrimitiveCollection<List<string>>("Args")
-                        .IsRequired()
-                        .HasColumnType("text[]");
-
-                    b.Property<double?>("CpuLimit")
-                        .HasColumnType("double precision");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Description")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
-                    b.Property<string>("DisplayName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<bool>("Enabled")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Endpoint")
-                        .HasMaxLength(2048)
-                        .HasColumnType("character varying(2048)");
-
-                    b.Property<string>("Image")
-                        .HasMaxLength(512)
-                        .HasColumnType("character varying(512)");
-
-                    b.Property<string>("LastError")
-                        .HasColumnType("text");
-
-                    b.Property<DateTimeOffset?>("LastSyncedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int?>("MemoryMb")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(24)
-                        .HasColumnType("character varying(24)");
-
-                    b.Property<string>("Network")
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
-
-                    b.Property<string>("ProtectedSecrets")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Transport")
-                        .IsRequired()
-                        .HasMaxLength(32)
-                        .HasColumnType("character varying(32)");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Variables")
-                        .IsRequired()
-                        .HasColumnType("jsonb");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Name")
-                        .IsUnique();
-
-                    b.ToTable("McpServers", "praxis");
-                });
-
             modelBuilder.Entity("Sentium.Praxis.Entities.Message", b =>
                 {
                     b.Property<Guid>("Id")
@@ -593,64 +516,6 @@ namespace Sentium.Praxis.Data.Migrations
                     b.ToTable("ExecutionLogs", "praxis");
                 });
 
-            modelBuilder.Entity("Sentium.Praxis.Entities.McpServer", b =>
-                {
-                    b.OwnsMany("Sentium.Praxis.Entities.McpToolEntry", "Tools", b1 =>
-                        {
-                            b1.Property<Guid>("McpServerId");
-
-                            b1.Property<int>("__synthesizedOrdinal")
-                                .ValueGeneratedOnAdd();
-
-                            b1.Property<string>("ApprovedDescription");
-
-                            b1.Property<string>("ApprovedHash");
-
-                            b1.Property<string>("DefinitionHash")
-                                .IsRequired();
-
-                            b1.Property<string>("Description");
-
-                            b1.Property<bool?>("DestructiveHint");
-
-                            b1.Property<bool>("Enabled");
-
-                            b1.Property<bool?>("IdempotentHint");
-
-                            b1.Property<string>("InputSchema")
-                                .IsRequired();
-
-                            b1.Property<bool>("Missing");
-
-                            b1.Property<string>("Name")
-                                .IsRequired();
-
-                            b1.Property<bool?>("OpenWorldHint");
-
-                            b1.Property<string>("QualifiedName")
-                                .IsRequired();
-
-                            b1.Property<bool?>("ReadOnlyHint");
-
-                            b1.Property<bool>("RequiresApproval");
-
-                            b1.Property<string>("Title");
-
-                            b1.HasKey("McpServerId", "__synthesizedOrdinal");
-
-                            b1.ToTable("McpServers", "praxis");
-
-                            b1
-                                .ToJson("Tools")
-                                .HasColumnType("jsonb");
-
-                            b1.WithOwner()
-                                .HasForeignKey("McpServerId");
-                        });
-
-                    b.Navigation("Tools");
-                });
-
             modelBuilder.Entity("Sentium.Praxis.Entities.Message", b =>
                 {
                     b.HasOne("Sentium.Praxis.Entities.Conversation", "Conversation")
@@ -698,7 +563,7 @@ namespace Sentium.Praxis.Data.Migrations
                         .HasForeignKey("WorkflowId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.OwnsMany("Sentium.Praxis.Dtos.WorkflowLogEntry", "Logs", b1 =>
+                    b.OwnsMany("Sentium.Praxis.Features.Workflows.WorkflowLogEntry", "Logs", b1 =>
                         {
                             b1.Property<Guid>("WorkflowRunId");
 

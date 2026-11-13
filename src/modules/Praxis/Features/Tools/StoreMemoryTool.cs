@@ -2,8 +2,8 @@ using System.ComponentModel;
 using Microsoft.Extensions.AI;
 using Sentium.Codex.Contracts;
 using Sentium.Codex.Contracts.Models;
+using Sentium.Praxis.Contracts;
 using Sentium.Praxis.Features.Sentinel;
-using Sentium.Praxis.Features.Tools.Attributes;
 
 namespace Sentium.Praxis.Features.Tools;
 

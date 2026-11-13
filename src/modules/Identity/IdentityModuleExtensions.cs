@@ -2,11 +2,12 @@ using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 using Sentium.Core.Constants;
-using Sentium.Identity.Features.Abstractions;
 using Sentium.Identity.Data;
 using Sentium.Identity.Entities;
+using Sentium.Identity.Features.Account;
+using Sentium.Identity.Features.RoleManagement;
 using Sentium.Identity.Features.Security;
-using Sentium.Identity.Features.Services;
+using Sentium.Identity.Features.Users;
 using Sentium.Infrastructure.Extensions;
 using Sentium.Infrastructure.Security;
 

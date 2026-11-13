@@ -1,10 +1,9 @@
 using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
-using Sentium.Identity.Dtos;
 using NSubstitute;
 using Sentium.Identity.Entities;
-using Sentium.Identity.Features.Services;
+using Sentium.Identity.Features.Account;
 using Xunit;
 
 namespace Sentium.Tests.Unit.Modules.Identity;

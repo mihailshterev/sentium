@@ -1,7 +1,6 @@
-using Sentium.Praxis.Features.WorkflowManagement;
-using Sentium.Praxis.Dtos;
-using Sentium.Infrastructure.Caching;
 using Sentium.Core.Results;
+using Sentium.Infrastructure.Caching;
+using Sentium.Praxis.Features.WorkflowManagement;
 
 namespace Sentium.Praxis.Features.Agents;
 

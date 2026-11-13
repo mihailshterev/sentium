@@ -1,7 +1,6 @@
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
-using Sentium.Vigil.Controllers;
 using Sentium.Vigil.Features.Monitoring;
 using Sentium.Vigil.Features.Settings;
 using Xunit;

@@ -69,33 +69,6 @@
           "System.Numerics.Tensors": "10.0.12"
         }
       },
-      "ModelContextProtocol.Core": {
-        "type": "Direct",
-        "requested": "[2.4.0, )",
-        "resolved": "2.4.0",
-        "contentHash": "q98pZMlcxhsh0LpGXcT2ow7sGNveCPhDlJT3zJ7Cz5nNyPmPkm8P57dUIUpzv1w6qWbdSZcR/Z+RbZtNYjEmXQ==",
-        "dependencies": {
-          "Microsoft.Extensions.AI.Abstractions": "10.11.0"
-        }
-      },
-      "Quartz.Extensions.Hosting": {
-        "type": "Direct",
-        "requested": "[3.18.0, )",
-        "resolved": "3.18.0",
-        "contentHash": "DOIgnLibu9sEYqHAKRQYz+0oWZ5q2LP55oNUtosOygEiIxCvTtHAwkZdf6Ea0VCucZ1oO9SeWLoA4q4WFbZspw==",
-        "dependencies": {
-          "Quartz.Extensions.DependencyInjection": "3.18.0"
-        }
-      },
-      "Quartz.Serialization.SystemTextJson": {
-        "type": "Direct",
-        "requested": "[3.18.0, )",
-        "resolved": "3.18.0",
-        "contentHash": "p+qvJAMLoDoj1VecU1rFCsmMfvhfYCXiFK1d2dicLNPapizy3BfPhKapSwexFndOt97mFr2M0qsXYelb3pLM1A==",
-        "dependencies": {
-          "Quartz": "3.18.0"
-        }
-      },
       "Apache.Arrow": {
         "type": "Transitive",
         "resolved": "22.1.0",
@@ -259,8 +232,8 @@
       },
       "Microsoft.Extensions.AI.Abstractions": {
         "type": "Transitive",
-        "resolved": "10.11.0",
-        "contentHash": "h4DX/TdJU4fk1GGaf19n6Kujkj6VXbGeL4UEOsQ8+ZJC5fVApPauokCtvBP684BYbczUYZQNfo1mbmyHG4WVSg=="
+        "resolved": "10.10.1",
+        "contentHash": "Kz6ezQfRb9x2TkIWyaXkVAfpvyoAlEDfC59klPrdr2XD5WM4HNw+PREAZ+Fo43GPldtX+E0i1aYzMFQ/zXYMLg=="
       },
       "Microsoft.Extensions.AI.Evaluation": {
         "type": "Transitive",
@@ -477,19 +450,6 @@
         "contentHash": "ehTImQ/eUyO07VYW2WvwSmU9rRH200SKJ/3jku9rOkyWE0A2JxNFmAVms8dSn49QLSjmjFRRSgfNyOgr/2PSmA==",
         "dependencies": {
           "Polly.Core": "8.4.2"
-        }
-      },
-      "Quartz": {
-        "type": "Transitive",
-        "resolved": "3.18.0",
-        "contentHash": "l+PY20yF32ljFkP/OROYc7Z7Wv3rhGARqxGkDMaCwOJ3aGA/94fPSBYtJpZKciLbc/89xfVlpEZbIzIPE0hHHQ=="
-      },
-      "Quartz.Extensions.DependencyInjection": {
-        "type": "Transitive",
-        "resolved": "3.18.0",
-        "contentHash": "YAtrZ+pYtPPnWKKuHII1x16E6HxyT1eHWQCvAR4zkMT8xmfuz1KCRHCg3+b8z/nGXpWyR6WpSoIh7dsR4jI+iA==",
-        "dependencies": {
-          "Quartz": "3.18.0"
         }
       },
       "Serilog": {

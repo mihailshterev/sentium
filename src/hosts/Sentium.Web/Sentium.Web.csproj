@@ -16,6 +16,7 @@
     <ProjectReference Include="..\..\shared\Sentium.ServiceDefaults\Sentium.ServiceDefaults.csproj" />
     <ProjectReference Include="..\..\shared\Sentium.Core\Sentium.Core.csproj" />
     <ProjectReference Include="..\..\shared\Sentium.Infrastructure\Sentium.Infrastructure.csproj" />
+    <ProjectReference Include="..\Sentium.E2ESeed\Sentium.E2ESeed.csproj" />
     <ProjectReference Include="..\..\modules\Identity\Sentium.Identity.csproj" />
     <ProjectReference Include="..\..\modules\Registry\Sentium.Registry.csproj" />
     <ProjectReference Include="..\..\modules\Sentinel\Sentium.Sentinel.csproj" />
@@ -23,6 +24,8 @@
     <ProjectReference Include="..\..\modules\Locus\Sentium.Locus.csproj" />
     <ProjectReference Include="..\..\modules\Tempus\Sentium.Tempus.csproj" />
     <ProjectReference Include="..\..\modules\Praxis\Sentium.Praxis.csproj" />
+    <ProjectReference Include="..\..\modules\Mcp\Sentium.Mcp.csproj" />
+    <ProjectReference Include="..\..\modules\Scheduling\Sentium.Scheduling.csproj" />
     <ProjectReference Include="..\..\modules\Vigil\Sentium.Vigil.csproj" />
   </ItemGroup>
 

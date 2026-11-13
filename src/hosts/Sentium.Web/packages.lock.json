@@ -617,6 +617,16 @@
       "sentium.core": {
         "type": "Project"
       },
+      "sentium.e2eseed": {
+        "type": "Project",
+        "dependencies": {
+          "Sentium.Core": "[1.0.0, )",
+          "Sentium.Infrastructure": "[1.0.0, )",
+          "Sentium.Locus": "[1.0.0, )",
+          "Sentium.Praxis": "[1.0.0, )",
+          "Sentium.Tempus": "[1.0.0, )"
+        }
+      },
       "sentium.identity": {
         "type": "Project",
         "dependencies": {
@@ -653,6 +663,17 @@
           "Sentium.Infrastructure": "[1.0.0, )"
         }
       },
+      "sentium.mcp": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.AI": "[10.10.0, )",
+          "ModelContextProtocol.Core": "[2.4.0, )",
+          "Sentium.Core": "[1.0.0, )",
+          "Sentium.Infrastructure": "[1.0.0, )",
+          "Sentium.Praxis": "[1.0.0, )",
+          "Sentium.Registry": "[1.0.0, )"
+        }
+      },
       "sentium.praxis": {
         "type": "Project",
         "dependencies": {
@@ -661,9 +682,6 @@
           "Microsoft.Agents.AI": "[1.27.0, )",
           "Microsoft.Agents.AI.Workflows": "[1.27.0, )",
           "Microsoft.Extensions.AI": "[10.10.0, )",
-          "ModelContextProtocol.Core": "[2.4.0, )",
-          "Quartz.Extensions.Hosting": "[3.18.0, )",
-          "Quartz.Serialization.SystemTextJson": "[3.18.0, )",
           "Sentium.Codex": "[1.0.0, )",
           "Sentium.Core": "[1.0.0, )",
           "Sentium.Infrastructure": "[1.0.0, )",
@@ -678,6 +696,16 @@
         "dependencies": {
           "Sentium.Core": "[1.0.0, )",
           "Sentium.Infrastructure": "[1.0.0, )"
+        }
+      },
+      "sentium.scheduling": {
+        "type": "Project",
+        "dependencies": {
+          "Quartz.Extensions.Hosting": "[3.18.0, )",
+          "Quartz.Serialization.SystemTextJson": "[3.18.0, )",
+          "Sentium.Core": "[1.0.0, )",
+          "Sentium.Infrastructure": "[1.0.0, )",
+          "Sentium.Praxis": "[1.0.0, )"
         }
       },
       "sentium.sentinel": {

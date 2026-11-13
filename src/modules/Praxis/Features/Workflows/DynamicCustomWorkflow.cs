@@ -1,10 +1,10 @@
 using System.Text.Json;
-using Sentium.Praxis.Extensions;
+using Sentium.Praxis.Common.Streaming;
 using Sentium.Praxis.Features.Agents;
 using Sentium.Praxis.Features.Orchestration;
 using Sentium.Praxis.Features.WorkflowManagement;
 using Sentium.Praxis.Features.Workflows.Squad;
-using AgentResponse = Sentium.Praxis.Dtos.AgentResponse;
+using AgentResponse = Sentium.Praxis.Features.Agents.AgentResponse;
 
 namespace Sentium.Praxis.Features.Workflows;
 

@@ -1,6 +1,6 @@
 using System.Linq.Expressions;
-using Sentium.Praxis.Dtos;
 using Sentium.Praxis.Entities;
+using Sentium.Praxis.Features.Agents;
 
 namespace Sentium.Praxis.Features.Projections;
 

@@ -1,8 +1,8 @@
 using System.ComponentModel;
 using System.Text;
 using Microsoft.Extensions.AI;
+using Sentium.Praxis.Contracts;
 using Sentium.Praxis.Features.CodeExecution;
-using Sentium.Praxis.Features.Tools.Attributes;
 using Sentium.Praxis.Features.Sentinel;
 
 namespace Sentium.Praxis.Features.Tools;

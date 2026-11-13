@@ -2,7 +2,7 @@ using System.ComponentModel;
 using Microsoft.Extensions.AI;
 using Sentium.Locus.Contracts;
 using Sentium.Locus.Contracts.Models;
-using Sentium.Praxis.Features.Tools.Attributes;
+using Sentium.Praxis.Contracts;
 
 namespace Sentium.Praxis.Features.Tools.Inventory;
 

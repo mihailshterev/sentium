@@ -3,7 +3,7 @@ using Microsoft.Extensions.AI;
 
 namespace Sentium.Praxis.Features.Agents.Activity;
 
-/// <summary>Kinds of <see cref="Dtos.MessageStep"/>.</summary>
+/// <summary>Kinds of <see cref="Conversations.MessageStep"/>.</summary>
 public static class StepKinds
 {
     public const string Thought = "thought";

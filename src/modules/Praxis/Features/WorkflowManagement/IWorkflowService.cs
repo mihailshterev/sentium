@@ -1,5 +1,5 @@
-using Sentium.Praxis.Dtos;
 using Sentium.Core.Results;
+using Sentium.Praxis.Features.Workflows;
 
 namespace Sentium.Praxis.Features.WorkflowManagement;
 

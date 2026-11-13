@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Sentium.Core.Common;
 using Sentium.Infrastructure.Security;
+using Sentium.Tempus.Common;
 using Sentium.Tempus.Entities;
 
 namespace Sentium.Tempus.Data;

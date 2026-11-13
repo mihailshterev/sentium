@@ -4,8 +4,10 @@ using NetArchTest.Rules;
 using Sentium.Codex;
 using Sentium.Identity;
 using Sentium.Locus;
+using Sentium.Mcp;
 using Sentium.Praxis;
 using Sentium.Registry;
+using Sentium.Scheduling;
 using Sentium.Sentinel;
 using Sentium.Tempus;
 using Sentium.Vigil;
@@ -28,6 +30,8 @@ public sealed class ModuleBoundaryTests
         typeof(LocusModuleExtensions).Assembly,
         typeof(TempusModuleExtensions).Assembly,
         typeof(PraxisModuleExtensions).Assembly,
+        typeof(SchedulingModuleExtensions).Assembly,
+        typeof(McpModuleExtensions).Assembly,
         typeof(VigilModuleExtensions).Assembly,
     ];
 

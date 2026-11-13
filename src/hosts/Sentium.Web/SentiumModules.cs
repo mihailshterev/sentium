@@ -1,10 +1,15 @@
 using System.Reflection;
 using Sentium.Codex;
+using Sentium.E2ESeed;
 using Sentium.Identity;
 using Sentium.Infrastructure.Extensions;
+using Sentium.Infrastructure.Security;
+using Sentium.Infrastructure.Testing;
 using Sentium.Locus;
+using Sentium.Mcp;
 using Sentium.Praxis;
 using Sentium.Registry;
+using Sentium.Scheduling;
 using Sentium.Sentinel;
 using Sentium.Tempus;
 using Sentium.Vigil;
@@ -26,6 +31,8 @@ internal static class SentiumModules
         typeof(LocusModuleExtensions).Assembly,
         typeof(TempusModuleExtensions).Assembly,
         typeof(PraxisModuleExtensions).Assembly,
+        typeof(SchedulingModuleExtensions).Assembly,
+        typeof(McpModuleExtensions).Assembly,
         typeof(VigilModuleExtensions).Assembly,
     ];
 
@@ -40,7 +47,14 @@ internal static class SentiumModules
         builder.AddLocusModule();
         builder.AddTempusModule();
         builder.AddPraxisModule();
+        builder.AddSchedulingModule();
+        builder.AddMcpModule();
         builder.AddVigilModule();
+
+        if (builder.Environment.IsEnvironment("Testing"))
+        {
+            builder.Services.AddE2ESeeders();
+        }
 
         return builder;
     }
@@ -80,7 +94,28 @@ internal static class SentiumModules
         await app.InitializeLocusModuleAsync();
         await app.InitializeTempusModuleAsync();
         await app.InitializePraxisModuleAsync();
+        await app.InitializeMcpModuleAsync();
+
+        if (app.Environment.IsEnvironment("Testing"))
+        {
+            await SeedE2EDataAsync(app);
+        }
 
         logger.LogInformation("Sentium modules initialized");
+    }
+
+    private static async Task SeedE2EDataAsync(WebApplication app)
+    {
+        await using var scope = app.Services.CreateAsyncScope();
+        scope.ServiceProvider.GetRequiredService<SystemScopeContext>().Activate();
+
+        var context = new E2ESeedContext(
+            Guid.Parse(app.Configuration["E2E:UserId"] ?? "e2e00000-0000-0000-0000-000000000001"),
+            TimeProvider.System);
+
+        foreach (var seeder in scope.ServiceProvider.GetServices<IE2ESeeder>())
+        {
+            await seeder.SeedAsync(scope.ServiceProvider, context);
+        }
     }
 }

@@ -1,12 +1,12 @@
 using System.ComponentModel;
 using System.Text;
 using Microsoft.Extensions.AI;
+using Sentium.Praxis.Contracts;
 using Sentium.Praxis.Data;
 using Sentium.Praxis.Entities;
 using Sentium.Praxis.Features.Files;
 using Sentium.Praxis.Features.Sentinel;
 using Sentium.Praxis.Features.Storage;
-using Sentium.Praxis.Features.Tools.Attributes;
 
 namespace Sentium.Praxis.Features.Tools.Workspace;
 

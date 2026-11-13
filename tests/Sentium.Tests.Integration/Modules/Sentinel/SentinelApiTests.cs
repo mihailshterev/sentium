@@ -3,7 +3,7 @@ using System.Net.Http.Json;
 using FluentAssertions;
 using Sentium.Core.Constants;
 using Sentium.Sentinel.Contracts;
-using Sentium.Sentinel.Dtos;
+using Sentium.Sentinel.Features.Audit;
 using Sentium.Tests.Integration.Common;
 using Xunit;
 

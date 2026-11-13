@@ -19,6 +19,7 @@ public static class VigilModuleExtensions
         ("Identity", "identity"),
         ("Sentinel", "sentinel"),
         ("Praxis",   "praxis"),
+        ("MCP",      "mcp"),
         ("Codex",    "codex"),
         ("Locus",    "locus"),
         ("Tempus",   "tempus"),

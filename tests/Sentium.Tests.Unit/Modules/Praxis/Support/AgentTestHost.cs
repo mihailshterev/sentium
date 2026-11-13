@@ -4,11 +4,11 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NSubstitute;
 using Sentium.Infrastructure.Inference;
+using Sentium.Praxis.Contracts;
 using Sentium.Praxis.Entities;
 using Sentium.Praxis.Features.Agents;
 using Sentium.Praxis.Features.Agents.Native;
 using Sentium.Praxis.Features.Learnings;
-using Sentium.Praxis.Features.Mcp;
 using Sentium.Praxis.Features.Models;
 using Sentium.Praxis.Features.Registry;
 using Sentium.Praxis.Features.Sentinel;
@@ -37,7 +37,8 @@ internal sealed class AgentTestHost
     public IAgentRepository Agents { get; } = Substitute.For<IAgentRepository>();
     public IAgentToolOverrideRepository ToolOverrides { get; } = Substitute.For<IAgentToolOverrideRepository>();
     public List<AIFunction> McpTools { get; } = [];
-    public McpRuntimeSettings McpSettings { get; set; } = McpRuntimeSettings.Default;
+    /// <summary>Stands in for the MCP kill switch: while false the MCP source yields no tools.</summary>
+    public bool McpEnabled { get; set; } = true;
 
     public AgentTestHost()
     {
@@ -76,20 +77,18 @@ internal sealed class AgentTestHost
 
         var sentinel = new SentinelClient(Pdp, NullLogger<SentinelClient>.Instance);
 
-        var mcpCatalog = Substitute.For<IMcpToolCatalog>();
-        mcpCatalog.GetFunctions(Arg.Any<IReadOnlySet<string>>())
-            .Returns(call => McpTools.Where(t => call.Arg<IReadOnlySet<string>>().Contains(t.Name)).ToList());
-
-        var mcpSettings = Substitute.For<IMcpSettingsProvider>();
-        mcpSettings.GetAsync(Arg.Any<CancellationToken>()).Returns(_ => ValueTask.FromResult(McpSettings));
+        // Stands in for the MCP source: like the real one it yields nothing while MCP is disabled.
+        var mcpSource = Substitute.For<IAgentToolSource>();
+        mcpSource.GetFunctionsAsync(Arg.Any<IReadOnlySet<string>>(), Arg.Any<CancellationToken>())
+            .Returns(call => ValueTask.FromResult<IReadOnlyList<AIFunction>>(
+                McpEnabled ? [.. McpTools.Where(t => call.Arg<IReadOnlySet<string>>().Contains(t.Name))] : []));
 
         return new CompositeAgentFactory(
             Model,
             Options.Create(Inference),
             ContextWindows,
             toolProvider,
-            mcpCatalog,
-            mcpSettings,
+            [mcpSource],
             Agents,
             new BuiltInAgentService([new GeneralAssistant(), new ResearchAnalyst()], ToolOverrides),
             Settings,
@@ -134,3 +133,4 @@ internal sealed class RecordingChatClient : IChatClient
     {
     }
 }
+

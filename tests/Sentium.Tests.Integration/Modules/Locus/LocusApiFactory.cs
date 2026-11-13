@@ -6,8 +6,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using NSubstitute;
 using Sentium.Codex.Contracts;
-using Sentium.Locus.Dtos;
+using Sentium.Locus.Features.Assets;
 using Sentium.Locus.Features.Attachments;
+using Sentium.Locus.Features.Locations;
 using Sentium.Tests.Integration.Common;
 
 namespace Sentium.Tests.Integration.Modules.Locus;

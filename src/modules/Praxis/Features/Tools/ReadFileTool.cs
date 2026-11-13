@@ -1,7 +1,7 @@
 using System.ComponentModel;
 using System.Security;
 using Microsoft.Extensions.AI;
-using Sentium.Praxis.Features.Tools.Attributes;
+using Sentium.Praxis.Contracts;
 
 namespace Sentium.Praxis.Features.Tools;
 

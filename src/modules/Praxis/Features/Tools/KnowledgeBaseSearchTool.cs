@@ -1,12 +1,12 @@
 using System.ComponentModel;
 using System.Text;
 using Microsoft.Extensions.AI;
-using Sentium.Codex.Contracts;
-using Sentium.Codex.Contracts.Models;
-using Sentium.Praxis.Features.Tools.Attributes;
-using Sentium.Praxis.Features.Sentinel;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Sentium.Codex.Contracts;
+using Sentium.Codex.Contracts.Models;
+using Sentium.Praxis.Contracts;
+using Sentium.Praxis.Features.Sentinel;
 
 namespace Sentium.Praxis.Features.Tools;
 

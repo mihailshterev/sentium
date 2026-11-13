@@ -1,3 +1,5 @@
+using Sentium.Praxis.Contracts;
+
 namespace Sentium.Praxis.Features.CodeExecution;
 
 public sealed record SandboxExecutionLogRecord

@@ -1,4 +1,3 @@
-using Sentium.Praxis.Dtos;
 using Sentium.Core.Results;
 
 namespace Sentium.Praxis.Features.Agents;

@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.DependencyInjection;
+using Sentium.Mcp.Data;
 using Sentium.Praxis.Data;
 using Sentium.Tests.Integration.Common;
 using Xunit;
@@ -25,7 +26,10 @@ public sealed class PraxisModelIdMigrationTests(MonolithWebApplicationFactory fa
         await using var scope = factory.Services.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<PraxisDbContext>();
         var migrator = db.GetService<IMigrator>();
+        var mcpMigrator = scope.ServiceProvider.GetRequiredService<McpDbContext>().GetService<IMigrator>();
 
+        // MCP servers moved to the Mcp module; hand its table back to Praxis before rolling Praxis back past AddMcpServers.
+        await mcpMigrator.MigrateAsync("0", Ct);
         await migrator.MigrateAsync(PreviousMigration, Ct);
 
         var user = Guid.NewGuid();
@@ -65,6 +69,7 @@ public sealed class PraxisModelIdMigrationTests(MonolithWebApplicationFactory fa
         finally
         {
             await migrator.MigrateAsync(cancellationToken: Ct);
+            await mcpMigrator.MigrateAsync(cancellationToken: Ct);
         }
 
         (await ModelOfAsync(db, "Agents", agents["gemma4:e4b"])).Should().Be("gemma-4-e4b");

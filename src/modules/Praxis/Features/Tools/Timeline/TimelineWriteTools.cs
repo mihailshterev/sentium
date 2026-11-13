@@ -1,9 +1,9 @@
 using System.ComponentModel;
 using Microsoft.Extensions.AI;
 using Sentium.Core.Results;
+using Sentium.Praxis.Contracts;
 using Sentium.Praxis.Features.Agents;
 using Sentium.Praxis.Features.Sentinel;
-using Sentium.Praxis.Features.Tools.Attributes;
 using Sentium.Tempus.Contracts;
 using Sentium.Tempus.Contracts.Models;
 

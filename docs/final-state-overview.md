@@ -45,11 +45,11 @@
 
 ### Core System Components
 
-The five originally-proposed services became six modules in one host plus the isolated Sandbox.
+The five originally-proposed services became ten modules in one host plus the isolated Sandbox.
 Mapping old → new:
 
 - **Praxis** - the core AI execution engine (agents, the streaming assistant, conversations,
-  multi-agent orchestration, workflows, learnings, skills, tools, workspaces, scheduling, and the
+  multi-agent orchestration, workflows, learnings, skills, tools, workspaces, and the
   sandbox execution history). Absorbs the old _AI Agent Service_ and _Analytics Service_.
 - **Codex** - the knowledge base: embeddings, the pgvector store, document ingestion and the
   knowledge map. Other modules push their content (learnings, memories, workspace files) through it.
@@ -65,6 +65,11 @@ Mapping old → new:
 - **Tempus** - each user's private year timeline: tasks on days or pinned to months, notes, and the
   tasks and moves agents propose for the user to accept. Agents reach it through timeline tools and the
   `TimelinePlanner` agent; the portal draws it as a glowing path through the months.
+- **Mcp** - Model Context Protocol integration: the registry of MCP servers, the approved tool
+  catalogue and the client for HTTP and Sandbox-hosted stdio servers. It plugs into Praxis as an
+  `IAgentToolSource`, so agents only get MCP tools they name explicitly.
+- **Scheduling** - agent-scheduled recurring jobs on a persistent Quartz scheduler, exposed to agents as
+  the approval-gated `schedule_recurring_task` tool.
 - **Vigil** - system health monitoring, focused on module and dependency health.
 - **Sentium.Sandbox** - isolated code execution in hardened Docker containers (new; enables safe
   agent autonomy). Stateless: it authorizes each run with Sentinel and returns the result, and

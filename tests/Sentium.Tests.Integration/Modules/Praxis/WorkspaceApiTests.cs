@@ -5,9 +5,9 @@ using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using NSubstitute;
-using Sentium.Praxis.Dtos;
-using Sentium.Praxis.Features.Storage;
 using Sentium.Core.Results;
+using Sentium.Praxis.Features.Storage;
+using Sentium.Praxis.Features.Workspaces;
 using Sentium.Tests.Integration.Common;
 using Xunit;
 
