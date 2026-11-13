@@ -83,7 +83,7 @@ export function SettingsView() {
   const combinedSaving = isHarnessSaving || isInferenceSaving;
   const combinedSuccess = isHarnessSuccess || isInferenceSuccess;
   const combinedError = isHarnessError || isInferenceError;
-  const activeErrorMessage = harnessError?.message || (inferenceError as Error)?.message || null;
+  const activeErrorMessage = harnessError?.message || inferenceError?.message || null;
 
   return (
     <Page title="Settings" subtitle="System configuration and global agent behavior">

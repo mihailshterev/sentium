@@ -5,24 +5,18 @@ export type ThemePreference = "dark" | "light" | "system";
 export type ResolvedTheme = "dark" | "light";
 
 const colorSchemeQuery = (): MediaQueryList | null =>
-  typeof window !== "undefined" && typeof window.matchMedia === "function"
-    ? window.matchMedia("(prefers-color-scheme: dark)")
-    : null;
+  typeof window.matchMedia === "function" ? window.matchMedia("(prefers-color-scheme: dark)") : null;
 
 export const resolveTheme = (preference: ThemePreference): ResolvedTheme => {
   if (preference !== "system") {
     return preference;
   }
 
-  const mq = colorSchemeQuery();
-
-  return mq?.matches ? "dark" : "light";
+  return colorSchemeQuery()?.matches ? "dark" : "light";
 };
 
 export const applyTheme = (theme: ResolvedTheme) => {
-  if (typeof document !== "undefined") {
-    document.documentElement.setAttribute("data-theme", theme);
-  }
+  document.documentElement.setAttribute("data-theme", theme);
 };
 
 interface ThemeState {
@@ -37,49 +31,30 @@ export const useThemeStore = create<ThemeState>()(
       preference: "system",
 
       setPreference: (preference) => {
-        const resolved = resolveTheme(preference);
-
-        applyTheme(resolved);
-
+        applyTheme(resolveTheme(preference));
         set({ preference });
       },
 
       toggle: () => {
-        const currentResolved = resolveTheme(get().preference);
-
-        const next: ResolvedTheme = currentResolved === "dark" ? "light" : "dark";
-
+        const next: ResolvedTheme = resolveTheme(get().preference) === "dark" ? "light" : "dark";
         applyTheme(next);
-
-        set({
-          preference: next,
-        });
+        set({ preference: next });
       },
     }),
     {
       name: "sentium-theme",
 
-      partialize: (state) => ({
-        preference: state.preference,
-      }),
-
+      partialize: (state) => ({ preference: state.preference }),
       onRehydrateStorage: () => (state) => {
         if (!state) return;
-
         applyTheme(resolveTheme(state.preference));
       },
     },
   ),
 );
 
-const mq = colorSchemeQuery();
-
-mq?.addEventListener("change", () => {
-  const { preference } = useThemeStore.getState();
-
-  if (preference !== "system") {
-    return;
+colorSchemeQuery()?.addEventListener("change", () => {
+  if (useThemeStore.getState().preference === "system") {
+    applyTheme(resolveTheme("system"));
   }
-
-  applyTheme(resolveTheme("system"));
 });

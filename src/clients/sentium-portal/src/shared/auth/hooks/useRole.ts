@@ -6,9 +6,9 @@ export function useRole() {
   const user = useAuthStore((s) => s.user);
   const roles = user?.roles ?? [];
 
-  const highestRole = [...roles]
+  const highestRole = roles
     .filter((r): r is Role => ROLE_HIERARCHY.includes(r as Role))
-    .sort((a, b) => ROLE_HIERARCHY.indexOf(b as Role) - ROLE_HIERARCHY.indexOf(a as Role))[0] as Role | undefined;
+    .sort((a, b) => ROLE_HIERARCHY.indexOf(b) - ROLE_HIERARCHY.indexOf(a))[0] as Role | undefined;
 
   const isSovereign = roles.includes("Sovereign");
   const isMemberOrAbove = isSovereign || roles.includes("Member");

@@ -37,7 +37,7 @@ export const useAuthStore = create<AuthState>((set) => ({
           return;
         }
       } catch {
-        //
+        // Network error: retry below.
       }
 
       if (attempt < maxAttempts) {
