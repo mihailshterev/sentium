@@ -1,11 +1,21 @@
+using Microsoft.Extensions.DependencyInjection;
+using Sentium.Infrastructure.Testing;
 using Sentium.Praxis.Data;
 using Sentium.Praxis.Entities;
 
 namespace Sentium.E2ESeed;
 
-public static class PraxisE2EDataSeeder
+public sealed class PraxisE2EDataSeeder : IE2ESeeder
 {
-    public static async Task SeedAsync(PraxisDbContext db, Guid testUserId)
+    public Task SeedAsync(IServiceProvider services, E2ESeedContext context, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(context);
+
+        return SeedAsync(services.GetRequiredService<PraxisDbContext>(), context.UserId);
+    }
+
+    private static async Task SeedAsync(PraxisDbContext db, Guid testUserId)
     {
         var now = DateTime.UtcNow;
 

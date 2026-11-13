@@ -1,4 +1,5 @@
 using Microsoft.Extensions.AI;
+using Sentium.Praxis.Common.Streaming;
 
 namespace Sentium.Praxis.Features.Agents.Activity;
 

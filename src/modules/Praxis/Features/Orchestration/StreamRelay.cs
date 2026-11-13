@@ -1,15 +1,12 @@
 using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using System.Threading.Channels;
-using Sentium.Praxis.Features.Agents;
-using Sentium.Praxis.Features.Workflows;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Sentium.Praxis.Common.Streaming;
 
 namespace Sentium.Praxis.Features.Orchestration;
-
-public readonly record struct StreamFrame(long Seq, AgentStreamUpdate Update);
 
 /// <summary>
 /// Write side of the agent stream: workflows push every update for a run here, keyed by its stream id.

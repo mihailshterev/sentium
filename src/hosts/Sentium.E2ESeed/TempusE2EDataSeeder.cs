@@ -1,9 +1,10 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Sentium.Infrastructure.Testing;
 using Sentium.Tempus.Common;
 using Sentium.Tempus.Contracts.Models;
 using Sentium.Tempus.Data;
 using Sentium.Tempus.Entities;
-using Sentium.Tempus.Features;
 
 namespace Sentium.E2ESeed;
 
@@ -12,14 +13,22 @@ namespace Sentium.E2ESeed;
 /// agent note. Proposals are not seeded - every browser project shares the seeded user, so tests that accept or
 /// reject proposals mock them instead.
 /// </summary>
-public static class TempusE2EDataSeeder
+public sealed class TempusE2EDataSeeder : IE2ESeeder
 {
     public const string TodayTaskTitle = "e2e-baseline-today";
     public const string PinnedTaskTitle = "e2e-baseline-pinned";
     public const string DoneTaskTitle = "e2e-baseline-done";
     public const string AgentNoteContent = "e2e-baseline progress report";
 
-    public static async Task SeedAsync(TempusDbContext db, Guid userId, TimeProvider timeProvider, CancellationToken ct = default)
+    public Task SeedAsync(IServiceProvider services, E2ESeedContext context, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(context);
+
+        return SeedAsync(services.GetRequiredService<TempusDbContext>(), context.UserId, context.TimeProvider, ct);
+    }
+
+    private static async Task SeedAsync(TempusDbContext db, Guid userId, TimeProvider timeProvider, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(db);
         ArgumentNullException.ThrowIfNull(timeProvider);

@@ -1,9 +1,7 @@
 namespace Sentium.Praxis.Common.Streaming;
 
 /// <summary>
-/// Where <see cref="AgentRunStream"/> sends each update of a run: the assistant's SSE response
-/// (<see cref="SseStreamWriter"/>) or a workflow's relay stream and persisted log
-/// (<see cref="Features.Orchestration.RelayUpdateSink"/>).
+/// Receives each update of an agent run as a typed text frame (see <see cref="AgentUpdateTypes"/>).
 /// </summary>
 public interface IAgentUpdateSink
 {

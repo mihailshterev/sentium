@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Sentium.Infrastructure.Testing;
 using Sentium.Locus.Data;
 using Sentium.Locus.Entities;
 using Sentium.Locus.Features.Assets;
@@ -10,13 +12,21 @@ namespace Sentium.E2ESeed;
 /// Baseline inventory for the Playwright suite (Testing environment only). The seeded asset is private so
 /// the knowledge-sync worker never tries to embed it (the e2e stack runs without inference models).
 /// </summary>
-public static class LocusE2EDataSeeder
+public sealed class LocusE2EDataSeeder : IE2ESeeder
 {
     public const string HomeName = "e2e-baseline-home";
     public const string GarageName = "e2e-baseline-garage";
     public const string AssetName = "e2e-baseline-drill";
 
-    public static async Task SeedAsync(LocusDbContext db, TimeProvider timeProvider, CancellationToken ct = default)
+    public Task SeedAsync(IServiceProvider services, E2ESeedContext context, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(context);
+
+        return SeedAsync(services.GetRequiredService<LocusDbContext>(), context.TimeProvider, ct);
+    }
+
+    private static async Task SeedAsync(LocusDbContext db, TimeProvider timeProvider, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(db);
         ArgumentNullException.ThrowIfNull(timeProvider);

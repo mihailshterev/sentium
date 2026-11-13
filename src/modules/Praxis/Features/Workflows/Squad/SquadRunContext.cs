@@ -13,14 +13,10 @@ namespace Sentium.Praxis.Features.Workflows.Squad;
 /// </summary>
 internal sealed class SquadRunContext(
     IAgentFactory factory,
-    IAgentStreamPublisher stream,
-    StreamLogAccumulator log,
-    string streamId,
+    WorkflowTimeline timeline,
     Guid? userId,
     IReadOnlyList<SquadMember> roster)
 {
-    public const string SystemAuthor = "System";
-
     private static readonly JsonSerializerOptions StructuredJson = new(JsonSerializerDefaults.Web);
 
     private readonly Dictionary<string, AIAgent> specialists = new(StringComparer.OrdinalIgnoreCase);
@@ -32,8 +28,7 @@ internal sealed class SquadRunContext(
 
     public void Status(string author, string text)
     {
-        stream.Emit(streamId, author, text, AgentUpdateTypes.Status);
-        log.Add(author, text, AgentUpdateTypes.Status);
+        timeline.Post(author, text, AgentUpdateTypes.Status);
     }
 
     /// <summary>
@@ -68,7 +63,7 @@ internal sealed class SquadRunContext(
     public async Task<string> StreamAsync(AIAgent agent, string author, string input, CancellationToken ct)
     {
         var session = await agent.CreateSessionAsync(ct);
-        var run = new AgentRunStream(new RelayUpdateSink(stream, log, streamId, author));
+        var run = new AgentRunStream(timeline.For(author));
 
         await run.RunAsync(agent.RunStreamingAsync(input, session, cancellationToken: ct), ct);
 

@@ -10,6 +10,7 @@ using Sentium.Identity.Features.Security;
 using Sentium.Identity.Features.Users;
 using Sentium.Infrastructure.Extensions;
 using Sentium.Infrastructure.Security;
+using Sentium.Infrastructure.Testing;
 
 namespace Sentium.Identity;
 
@@ -44,7 +45,7 @@ public static class IdentityModuleExtensions
         {
             options.Cookie.Name = "Sentium.Auth";
             options.Cookie.HttpOnly = true;
-            options.Cookie.SecurePolicy = builder.Environment.IsEnvironment("Testing")
+            options.Cookie.SecurePolicy = builder.Environment.IsTesting()
                 ? CookieSecurePolicy.SameAsRequest
                 : CookieSecurePolicy.Always;
             options.Cookie.SameSite = SameSiteMode.Strict;

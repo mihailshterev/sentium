@@ -1,5 +1,6 @@
 using Microsoft.Agents.AI.Workflows;
 using Sentium.Praxis.Features.Agents;
+using Sentium.Praxis.Features.Orchestration;
 
 namespace Sentium.Praxis.Features.Workflows.Squad;
 
@@ -27,7 +28,7 @@ internal sealed class PlannerExecutor(SquadRunContext run) : Executor<string>("p
         if (plan is null)
         {
             steps = Fallback(message);
-            run.Status(SquadRunContext.SystemAuthor, "The plan could not be read - continuing with a single general step.");
+            run.Status(WorkflowTimeline.SystemAuthor, "The plan could not be read - continuing with a single general step.");
         }
 
         var state = new SquadState(message, new SquadPlan(steps), []);
@@ -77,7 +78,7 @@ internal sealed class StepExecutor(SquadRunContext run) : Executor<StepRequest>(
         var step = message.Step;
         var position = $"Step {message.StepIndex + 1}/{message.State.Plan.Steps.Count}";
 
-        run.Status(SquadRunContext.SystemAuthor, message.Attempt == 1
+        run.Status(WorkflowTimeline.SystemAuthor, message.Attempt == 1
             ? $"{position} - {step.Agent}: {step.Task}"
             : $"{position} - {step.Agent}: revising (attempt {message.Attempt})");
 
@@ -126,11 +127,11 @@ internal sealed class StepCheckExecutor(SquadRunContext run, int maxAttempts) : 
         else if (verdict is null)
         {
             // An unreadable review must not block the run; accept the step as unverified.
-            run.Status(SquadRunContext.SystemAuthor, $"{label}: the review could not be read - accepting the step as is.");
+            run.Status(WorkflowTimeline.SystemAuthor, $"{label}: the review could not be read - accepting the step as is.");
         }
         else if (stuck)
         {
-            run.Status(SquadRunContext.SystemAuthor, $"{label}: the revision repeated the previous attempt - keeping it and moving on.");
+            run.Status(WorkflowTimeline.SystemAuthor, $"{label}: the revision repeated the previous attempt - keeping it and moving on.");
         }
         else
         {

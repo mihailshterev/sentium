@@ -2,16 +2,17 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Sentium.Core.Constants;
-using Sentium.Praxis.Features.Agents;
-using Sentium.Praxis.Features.Orchestration;
 
 namespace Sentium.Praxis.Common.Streaming;
 
 /// <summary>
-/// The Server-Sent Events transport for the assistant and workflow streams. Every write goes through one lock, so the
-/// keep-alive heartbeat never interleaves with a frame. A stream ends with at most one terminal frame
-/// (<see cref="CompleteAsync"/>, <see cref="FailAsync"/> or a terminal relay update in <see cref="ForwardAsync"/>);
-/// anything written after it is dropped. Dispose to stop the heartbeat.
+/// The Server-Sent Events transport for the assistant and workflow streams. It speaks two frame shapes: the assistant
+/// writes <c>{"type", "message": {"content"}, "done"}</c> frames through <see cref="WriteUpdateAsync"/>, while
+/// <see cref="ForwardAsync"/> relays a workflow's <see cref="AgentStreamUpdate"/>s as-is, with the relay sequence
+/// number as the SSE <c>id</c>. Both end with the shared <see cref="StreamDoneFrame"/> or <see cref="StreamErrorFrame"/>.
+/// Every write goes through one lock, so the keep-alive heartbeat never interleaves with a frame. A stream ends with at
+/// most one terminal frame (<see cref="CompleteAsync"/>, <see cref="FailAsync"/> or a terminal relay update in
+/// <see cref="ForwardAsync"/>); anything written after it is dropped. Dispose to stop the heartbeat.
 /// </summary>
 public sealed class SseStreamWriter : IAgentUpdateSink, IAsyncDisposable
 {

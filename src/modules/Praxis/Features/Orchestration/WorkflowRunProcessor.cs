@@ -7,8 +7,6 @@ using Sentium.Infrastructure.Security;
 using Sentium.Praxis.Common.Streaming;
 using Sentium.Praxis.Contracts;
 using Sentium.Praxis.Entities;
-using Sentium.Praxis.Features.Agents;
-using Sentium.Praxis.Features.Sentinel;
 using Sentium.Praxis.Features.Titles;
 using Sentium.Praxis.Features.WorkflowManagement;
 using Sentium.Praxis.Features.Workflows;
@@ -251,7 +249,7 @@ public sealed class WorkflowRunProcessor(
     {
         try
         {
-            stream.Emit(streamId, "System", text, type);
+            stream.Publish(streamId, new AgentStreamUpdate(WorkflowTimeline.SystemAuthor, text, type));
         }
         catch (Exception ex)
         {

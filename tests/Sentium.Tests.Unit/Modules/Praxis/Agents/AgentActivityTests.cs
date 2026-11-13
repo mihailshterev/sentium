@@ -1,7 +1,7 @@
 using System.Text.Json;
 using FluentAssertions;
 using Microsoft.Extensions.AI;
-using Sentium.Praxis.Features.Agents;
+using Sentium.Praxis.Common.Streaming;
 using Sentium.Praxis.Features.Agents.Activity;
 using Xunit;
 using ChatMessage = Microsoft.Extensions.AI.ChatMessage;

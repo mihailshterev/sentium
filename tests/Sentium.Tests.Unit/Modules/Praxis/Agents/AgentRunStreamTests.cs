@@ -5,11 +5,11 @@ using Sentium.Praxis.Common.Streaming;
 using Sentium.Praxis.Features.Agents;
 using Xunit;
 
-namespace Sentium.Tests.Unit.Modules.Praxis.Streaming;
+namespace Sentium.Tests.Unit.Modules.Praxis.Agents;
 
 /// <summary>
 /// One agent run turned into stream updates: activity before answer text within each update, the answer accumulated,
-/// and the raw contents and first approval request kept for the caller.
+/// and the raw contents kept for the caller.
 /// </summary>
 public sealed class AgentRunStreamTests
 {
@@ -39,20 +39,6 @@ public sealed class AgentRunStreamTests
         run.Text.Should().Be("Hello");
         run.Contents.Should().HaveCount(5);
         run.Activity.Durations.Should().ContainKey("c1");
-        run.ApprovalRequest.Should().BeNull();
-    }
-
-    [Fact]
-    public async Task RunAsync_KeepsTheFirstApprovalRequest()
-    {
-        var ct = TestContext.Current.CancellationToken;
-        var first = new ToolApprovalRequestContent("r1", new FunctionCallContent("c1", "execute_code_sandbox"));
-        var second = new ToolApprovalRequestContent("r2", new FunctionCallContent("c2", "write_workspace_file"));
-        var run = new AgentRunStream(_sink);
-
-        await run.RunAsync(Updates([first], [second]), ct);
-
-        run.ApprovalRequest.Should().BeSameAs(first);
     }
 
     [Fact]

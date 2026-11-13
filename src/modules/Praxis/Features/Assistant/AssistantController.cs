@@ -11,7 +11,6 @@ using Sentium.Praxis.Features.Agents;
 using Sentium.Praxis.Features.Agents.Activity;
 using Sentium.Praxis.Features.Conversations;
 using Sentium.Praxis.Features.Registry;
-using Sentium.Praxis.Features.Sentinel;
 using Sentium.Praxis.Features.Titles;
 using AiChatMessage = Microsoft.Extensions.AI.ChatMessage;
 
@@ -150,7 +149,7 @@ public sealed class AssistantController(
 
             await PublishTitleAsync(conversationId, pendingTitle, sse, ct);
 
-            if (run.ApprovalRequest is { } approvalRequest)
+            if (run.Contents.OfType<ToolApprovalRequestContent>().FirstOrDefault() is { } approvalRequest)
             {
                 await PauseForApprovalAsync(agent, agentName, session, approvalRequest, conversationId, model, sse, ct);
                 return;

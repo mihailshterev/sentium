@@ -1,5 +1,5 @@
-using Sentium.Praxis.Features.Orchestration;
 using Sentium.Praxis.Features.Agents;
+using Sentium.Praxis.Features.Orchestration;
 using Sentium.Praxis.Features.Workflows.Squad;
 
 namespace Sentium.Praxis.Features.Workflows;
@@ -10,7 +10,8 @@ namespace Sentium.Praxis.Features.Workflows;
 public sealed class DynamicDiscoveryWorkflow(
     SquadWorkflowRunner squad,
     IEnumerable<IAgent> nativeAgents,
-    IAgentRepository agentRepository) : IAgentWorkflow
+    IAgentRepository agentRepository,
+    IAgentStreamPublisher stream) : IAgentWorkflow
 {
     public WorkflowType Type => WorkflowType.Dynamic;
 
@@ -29,9 +30,9 @@ public sealed class DynamicDiscoveryWorkflow(
         var userAgents = await agentRepository.GetAgentsForUserAsync(trigger.UserId, ct);
         roster.AddRange(userAgents.Select(a => new SquadMember(a.Name, a.Description, a.Description, string.IsNullOrWhiteSpace(a.Model) ? null : a.Model)));
 
-        var log = new StreamLogAccumulator();
-        var result = await squad.RunAsync(trigger, request, roster, fixedPlan: null, log, ct);
+        var timeline = new WorkflowTimeline(stream, trigger.StreamId);
+        var result = await squad.RunAsync(trigger, request, roster, fixedPlan: null, timeline, ct);
 
-        return SquadResultMapper.ToWorkflowResult(result, log, "No specialist agents were needed for this request.", workflowId: null, trigger.UserId);
+        return SquadResultMapper.ToWorkflowResult(result, timeline, "No specialist agents were needed for this request.", workflowId: null, trigger.UserId);
     }
 }

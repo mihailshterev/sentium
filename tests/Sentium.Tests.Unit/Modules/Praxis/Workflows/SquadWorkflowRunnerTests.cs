@@ -131,7 +131,7 @@ public sealed class SquadWorkflowRunnerTests
     }
 
     private Task<SquadResult> RunAsync(SquadPlan? fixedPlan, CancellationToken ct) =>
-        new SquadWorkflowRunner(_factory, _stream).RunAsync(_trigger, "Deploy the service", Roster, fixedPlan, new StreamLogAccumulator(), ct);
+        new SquadWorkflowRunner(_factory).RunAsync(_trigger, "Deploy the service", Roster, fixedPlan, new WorkflowTimeline(_stream, _trigger.StreamId), ct);
 
     private static string Plan(params (string Agent, string Task, string Expected)[] steps) =>
         JsonSerializer.Serialize(new { steps = steps.Select(s => new { agent = s.Agent, task = s.Task, expectedOutput = s.Expected }) });

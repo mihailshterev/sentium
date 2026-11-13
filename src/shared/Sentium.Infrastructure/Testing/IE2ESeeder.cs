@@ -8,6 +8,3 @@ public interface IE2ESeeder
 {
     Task SeedAsync(IServiceProvider services, E2ESeedContext context, CancellationToken ct = default);
 }
-
-/// <summary>Shared inputs for every <see cref="IE2ESeeder"/>.</summary>
-public sealed record E2ESeedContext(Guid UserId, TimeProvider TimeProvider);

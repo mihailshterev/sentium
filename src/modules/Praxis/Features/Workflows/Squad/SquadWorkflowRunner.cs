@@ -15,7 +15,7 @@ namespace Sentium.Praxis.Features.Workflows.Squad;
 /// typed message instead of a shared chat transcript; each step is reviewed on its own (a narrow question small models
 /// answer reliably) and retried at most once.
 /// </summary>
-public sealed class SquadWorkflowRunner(IAgentFactory factory, IAgentStreamPublisher stream)
+public sealed class SquadWorkflowRunner(IAgentFactory factory)
 {
     /// <summary>First attempt plus one revision.</summary>
     public const int MaxAttemptsPerStep = 2;
@@ -24,20 +24,20 @@ public sealed class SquadWorkflowRunner(IAgentFactory factory, IAgentStreamPubli
     /// <param name="request">The user's request.</param>
     /// <param name="roster">Agents available to the run.</param>
     /// <param name="fixedPlan">A predefined plan (custom workflows), or <see langword="null"/> to let the planner decide.</param>
-    /// <param name="log">Collects the timeline for the run history.</param>
+    /// <param name="timeline">The run's timeline; the caller reads its entries into the run history.</param>
     /// <param name="ct">Cancellation token.</param>
     public async Task<SquadResult> RunAsync(
         WorkflowTrigger trigger,
         string request,
         IReadOnlyList<SquadMember> roster,
         SquadPlan? fixedPlan,
-        StreamLogAccumulator log,
+        WorkflowTimeline timeline,
         CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(trigger);
         ArgumentNullException.ThrowIfNull(roster);
 
-        var run = new SquadRunContext(factory, stream, log, trigger.StreamId, trigger.UserId, roster);
+        var run = new SquadRunContext(factory, timeline, trigger.UserId, roster);
 
         var step = new StepExecutor(run);
         var check = new StepCheckExecutor(run, MaxAttemptsPerStep);

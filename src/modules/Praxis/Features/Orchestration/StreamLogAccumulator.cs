@@ -1,5 +1,5 @@
 using System.Text;
-using Sentium.Praxis.Features.Agents;
+using Sentium.Praxis.Common.Streaming;
 using Sentium.Praxis.Features.Workflows;
 
 namespace Sentium.Praxis.Features.Orchestration;

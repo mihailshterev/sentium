@@ -1,4 +1,4 @@
-namespace Sentium.Praxis.Features.Agents;
+namespace Sentium.Praxis.Common.Streaming;
 
 public static class AgentUpdateTypes
 {
