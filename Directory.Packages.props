@@ -2,7 +2,7 @@
   <PropertyGroup>
     <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
-    <AspireVersion>13.6.4</AspireVersion>
+    <AspireVersion>13.6.5</AspireVersion>
     <EntityFrameworkCoreVersion>10.0.14</EntityFrameworkCoreVersion>
     <AgentFrameworkVersion>1.27.0</AgentFrameworkVersion>
   </PropertyGroup>
