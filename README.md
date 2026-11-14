@@ -37,6 +37,7 @@ What sets Sentium apart is that every agent action is **mediated by a security c
 | **Workspaces & files**                   | Upload files into workspaces; they are asynchronously vectorized and made available to agents as context.                                                                                                                                                                                                            |
 | **Household inventory (Locus)**          | A shared location tree (Home → Garage → Shelf) and asset catalogue with search, tags and photo/manual/receipt attachments; items shared with assistants are synced to the knowledge base and answerable through read-only tools ("where is the drill?").                                                             |
 | **Year timeline (Tempus)**               | A private year planner drawn as a glowing path through twelve month nodes: expand a month into a calendar, drag tasks between days or pin them to the month, and let agents read the workload, suggest tasks and moves (which you accept or reject) and leave progress notes.                                        |
+| **Notifications (Nuntius)**              | A personal inbox behind a bell in the sidebar: incidents (for Sovereigns), timeline suggestions and finished workflow runs arrive live, and repeats of the same alert fold into one entry instead of flooding it.                                                                                                    |
 | **Security control plane (Sentinel)**    | Every tool call passes a Policy Decision Point that performs rate-limiting and an LLM-based semantic-intent / prompt-injection check, with a fail-closed posture and full forensic audit.                                                                                                                            |
 | **Health monitoring (Vigil)**            | Continuous probing of every module, the sandbox and the infrastructure, incident tracking, and a live status stream.                                                                                                                                                                                                 |
 | **Knowledge map**                        | An interactive, animated visualization of the vector store and semantic search traversal.                                                                                                                                                                                                                            |
@@ -63,17 +64,20 @@ flowchart TB
         Codex["Codex<br/>(RAG · knowledge base)"]
         Locus["Locus<br/>(household inventory)"]
         Tempus["Tempus<br/>(year timeline)"]
+        Nuntius["Nuntius<br/>(notifications · inbox)"]
         Sentinel["Sentinel<br/>(Policy Decision Point)"]
         Registry["Registry<br/>(settings)"]
         Vigil["Vigil<br/>(health)"]
     end
 
-    Praxis -->|Contracts| Codex & Sentinel & Registry & Locus & Tempus
+    Praxis -->|Contracts| Codex & Sentinel & Registry & Locus & Tempus & Nuntius
     Mcp -->|Contracts| Praxis & Registry
     Scheduling -->|Contracts| Praxis
     Locus -->|Contracts| Codex
+    Tempus -->|Contracts| Nuntius
+    Nuntius -->|Contracts| Identity
     Sentinel -->|Contracts| Registry
-    Vigil -->|Contracts| Registry
+    Vigil -->|Contracts| Registry & Nuntius
 
     Praxis -->|X-Internal-Token| Sandbox["Sentium.Sandbox<br/>(hardened Docker exec)"]
     Sandbox -->|X-Internal-Token<br/>policy evaluation| Sentinel
@@ -102,6 +106,7 @@ flowchart TB
 | **Codex**      | The knowledge base: embeddings, the pgvector store (`codex` schema), document ingestion and the knowledge map. Other modules push their content (learnings, memories, workspace files) through it.                                                                                                                                                                                                                                                         |
 | **Locus**      | The household inventory (`locus` schema): a location tree, assets with tags and search, and attachments in blob storage. Shared by every household member; items marked as shared are synced to the knowledge base through a durable outbox and exposed to agents read-only (`find_assets`, `get_asset`, `list_location_contents`).                                                                                                                        |
 | **Tempus**     | Each user's private year timeline (`tempus` schema): tasks on days or pinned to months (priority, due date, tags, assigned agent), notes, and the changes agents propose. Agents use it through `ITimelineAgentAccess` (`get_timeline_overview`, `list_timeline_tasks`, `get_timeline_task`, `propose_timeline_task`, `propose_task_reschedule`, `add_timeline_note`): they read and annotate, but every new task or move waits for the user to accept it. |
+| **Nuntius**    | Notifications and each user's private Inbox (`nuntius` schema). Other modules publish through `INotifier` to a user, every Sovereign or the whole household; each Notification lands in the recipient's Inbox and is pushed live to their open portal sessions over SSE. A repeated alert with the same dedupe key updates the unread entry; entries are swept after 90 days.                                                                              |
 | **Sentinel**   | The Policy Decision Point (PDP). Every agent tool call and sandbox execution is authorized through a defence-in-depth policy stack, with forensic auditing and a fail-closed default.                                                                                                                                                                                                                                                                      |
 | **Registry**   | Centralized, key-based runtime settings with per-user and global scopes, two-tier caching and in-process invalidation.                                                                                                                                                                                                                                                                                                                                     |
 | **Vigil**      | Probes every module, the sandbox and each infrastructure dependency, raises and resolves incidents, and streams live health over SSE.                                                                                                                                                                                                                                                                                                                      |
@@ -324,6 +329,7 @@ src/
     Identity/                      # users, roles, session cookie
     Locus/                         # household inventory (locations, assets, attachments)
     Mcp/                           # MCP server registry and approved tool catalogue
+    Nuntius/                       # notifications and each user's inbox
     Praxis/                        # core engine (agents, orchestration, workflows)
     Registry/                      # centralized configuration
     Scheduling/                    # Quartz scheduler and agent-scheduled jobs

@@ -250,6 +250,30 @@ SystemSettings {
 }
 ```
 
+# Notifications Domain (`nuntius` schema)
+
+```mermaid
+erDiagram
+
+Notifications {
+    guid Id PK
+    guid UserId
+    string Category
+    string Severity
+    string Title
+    string Body
+    string Link
+    string DedupeKey
+    int Occurrences
+    datetimeoffset CreatedAt
+    datetimeoffset UpdatedAt
+    datetimeoffset ReadAt
+}
+```
+
+`UserId` references an Identity user by value (no cross-schema foreign key). A partial unique index on
+`(UserId, DedupeKey) WHERE ReadAt IS NULL AND DedupeKey IS NOT NULL` keeps at most one unread Notification per key.
+
 # Execution Domain (`praxis` schema)
 
 ```mermaid

@@ -7,6 +7,7 @@ flowchart LR
         CDX["Codex"]
         PRX["Praxis"]
         VIG["Vigil"]
+        NUN["Nuntius"]
     end
 
     SBX["Sentium.Sandbox"]
@@ -22,6 +23,7 @@ flowchart LR
     SEN -->|"sentinel schema"| PG
     CDX -->|"codex schema (vectors)"| PG
     PRX -->|"praxis schema"| PG
+    NUN -->|"nuntius schema"| PG
 
     WEB --> REDIS
 
