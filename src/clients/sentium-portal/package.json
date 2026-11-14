@@ -27,7 +27,7 @@
     "react-hook-form": "7.75.0",
     "react-markdown": "10.1.0",
     "react-router": "8.4.0",
-    "zod": "4.4.3",
+    "zod": "4.6.7",
     "zustand": "5.0.12"
   },
   "devDependencies": {
@@ -40,7 +40,7 @@
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "@vitejs/plugin-react": "6.1.2",
-    "@vitest/coverage-v8": "5.0.3",
+    "@vitest/coverage-v8": "5.1.0",
     "eslint": "10.3.0",
     "eslint-plugin-react-hooks": "7.1.1",
     "eslint-plugin-react-refresh": "0.5.7",
@@ -50,7 +50,7 @@
     "typescript": "5.9.3",
     "typescript-eslint": "8.59.4",
     "vite": "8.3.4",
-    "vitest": "5.0.3"
+    "vitest": "5.1.0"
   },
   "packageManager": "pnpm@12.9.1",
   "devEngines": {
