@@ -64,7 +64,7 @@ if (app.Environment.IsDevelopment())
     });
 }
 
-app.UseStaticFiles();
+app.UseStaticFiles(PortalStaticFiles.Options);
 app.UseRouting();
 app.UseRateLimiter();
 app.UseAuthentication();
@@ -75,7 +75,7 @@ app.MapControllers();
 
 // Unknown API routes must 404 instead of falling through to the SPA shell.
 app.MapFallback("api/{**path}", () => Results.NotFound());
-app.MapFallbackToFile("index.html");
+app.MapFallbackToFile("index.html", PortalStaticFiles.Options);
 
 app.Run();
 

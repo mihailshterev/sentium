@@ -209,35 +209,36 @@ Then open the **Aspire dashboard** (the URL is printed on startup) to see every 
 
 If you'd rather self-host the whole platform with plain Docker (no .NET SDK on the host), a complete [`docker-compose.yml`](docker-compose.yml) builds the Sentium.Web, Sandbox and portal images and starts all infrastructure. It wires them together with the same connection strings and service-discovery keys that Aspire injects.
 
-**Prerequisites:** Docker (with the Compose plugin) and the .NET SDK **only** for the one-time dev-certificate step below.
+**Prerequisites:** Docker with the Compose plugin.
 
 ```bash
-# 1. Configure secrets and ports
+# 1. Configure secrets and the LAN hostname (SENTIUM_HOSTNAME, default sentium.home.arpa)
 cp .env.example .env            # then edit the secrets in .env
 
-# 2. Generate the TLS dev certificate for Sentium.Web (the session cookie is Secure),
-#    using the same password you set for CERT_PASSWORD in .env, and trust it locally:
-mkdir certs            # dotnet dev-certs does not create the target directory
-dotnet dev-certs https -ep certs/sentium.pfx -p <CERT_PASSWORD>
-dotnet dev-certs https --trust
-
-# 3. Build and start everything
+# 2. Build and start everything
 docker compose up --build
+
+# 3. Export the installation's root certificate and trust it on each device
+docker compose cp caddy:/data/caddy/pki/authorities/local/root.crt ./sentium-root-ca.crt
 ```
 
-Once the stack is healthy:
+Point the hostname at the host (a DNS entry on your router, or a hosts-file line), trust `sentium-root-ca.crt` on each device, then open:
 
-- **Portal and API (Sentium.Web)** - `https://localhost:8443`
+- **Portal and API** - `https://sentium.home.arpa`
+
+The [installation guide](docs/installation.md#lan-access-https-on-every-device) walks through DNS and trusting the certificate on Windows, Android and Linux.
 
 Sentium.Web applies every module's EF Core migrations automatically on first start, and a one-shot `models-init` container downloads the model files pinned in `infra/llm/models.lock` into the shared `sentium-llm-models` volume, verifying each SHA-256.
 
 **Notes & caveats**
 
-- **HTTPS for the session cookie.** Sentium.Web terminates TLS (step 2) so the session cookie can be issued as `Secure`. The built portal is served from the same origin, so no CORS is involved. This mirrors how the Aspire setup runs over HTTPS.
+- **HTTPS on the LAN.** A `caddy` service terminates TLS with a certificate from a certificate authority created for this installation (its private key never leaves the `caddy-data` volume) and renews it automatically. Sentium.Web sits behind it on plain HTTP and publishes no port. HTTPS is what lets browsers install the portal as an app and use the microphone on a non-`localhost` address, and the session cookie stays `Secure`. The portal is served from the same origin as the API, so no CORS is involved.
+- **No third-party requests.** The portal bundles its fonts and is served with a Content-Security-Policy that allows only its own origin, so it works with the host offline.
+- **Away from home.** Sentium is not meant to face the internet. For remote access, use a VPN into your home network (WireGuard or Tailscale, for example).
 - **Code sandbox.** The Sandbox mounts the host Docker socket and a job directory that must share an identical path on host and container (`SANDBOX_JOBS_DIR`). This works on Linux/macOS and the WSL2 backend; Windows users should point it at a path inside WSL2.
 - **GPU.** Local inference is slow on CPU. Add the GPU override (requires the NVIDIA Container Toolkit): `docker compose -f docker-compose.yml -f docker-compose.gpu.yml up --build`.
 
-> The Aspire AppHost remains the recommended path for day-to-day development (richer dashboard, hot reload, no cert setup). Docker Compose targets self-hosted deployment.
+> The Aspire AppHost remains the recommended path for day-to-day development (richer dashboard, hot reload, `localhost` with the .NET dev certificate). Docker Compose targets self-hosted deployment.
 
 ### Front-end only (against a running Sentium.Web)
 

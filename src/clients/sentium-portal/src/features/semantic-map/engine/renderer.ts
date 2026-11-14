@@ -1,4 +1,6 @@
 import { Application, Container, Graphics, Texture, Sprite, Ticker, Text, TextStyle } from "pixi.js";
+// The Content-Security-Policy forbids eval; this swaps Pixi's generated shader/uniform code for eval-free versions.
+import "pixi.js/unsafe-eval";
 import type { GraphNode, GraphLink, Particle, TraversalWave, CameraState } from "./types";
 
 const MIN_ZOOM = 0.15;
