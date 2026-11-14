@@ -101,11 +101,3 @@ export interface McpServerStatus {
   sandbox: SandboxMcpServerStatus | null;
   sandboxError: string | null;
 }
-
-export interface McpSettings {
-  enabled: boolean;
-  connectTimeoutSeconds: number;
-  callTimeoutSeconds: number;
-  idleTimeoutMinutes: number;
-  maxResultChars: number;
-}

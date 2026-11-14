@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Plug, Plus, ShieldAlert } from "lucide-react";
+import { Link } from "react-router";
+import { Plug, Plus, Settings2, ShieldAlert } from "lucide-react";
 import { useRole } from "@/shared/auth/hooks/useRole";
-import { Button } from "@/shared/ui/button";
+import { Button, buttonClass } from "@/shared/ui/button";
 import { Card, CardHeader } from "@/shared/ui/card";
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
 import { EmptyState } from "@/shared/ui/empty-state";
@@ -10,7 +11,6 @@ import { SkeletonText } from "@/shared/ui/skeleton";
 import { StatusMessage } from "@/shared/ui/status-message";
 import { McpServerCard } from "../components/mcp-server-card";
 import { McpServerDialog } from "../components/mcp-server-dialog";
-import { McpSettingsCard } from "../components/mcp-settings-card";
 import { useMcpServers } from "../hooks/useMcpServers";
 import type { McpServer } from "../types/mcp";
 import { describeError } from "../utils/errors";
@@ -56,17 +56,21 @@ function McpServersAdmin() {
 
   return (
     <div className={styles.stack}>
-      <McpSettingsCard />
-
       <Card as="section" padding="none">
         <CardHeader
           icon={<Plug />}
           title="Servers"
           description="Tools are opt-in: approve them here, then pick them per agent. 'All tools' never includes MCP tools."
           actions={
-            <Button variant="primary" size="sm" icon={<Plus size={15} />} onClick={() => setCreating(true)}>
-              Register server
-            </Button>
+            <>
+              <Link to="/settings/mcp" className={buttonClass({ variant: "ghost", size: "sm" })}>
+                <Settings2 size={14} aria-hidden="true" />
+                Settings
+              </Link>
+              <Button variant="primary" size="sm" icon={<Plus size={15} />} onClick={() => setCreating(true)}>
+                Register server
+              </Button>
+            </>
           }
         />
 

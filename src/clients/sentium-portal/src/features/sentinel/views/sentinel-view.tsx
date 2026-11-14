@@ -2,7 +2,6 @@ import { useState } from "react";
 import { RefreshCw, ShieldCheck, Siren, Sliders } from "lucide-react";
 import { useSentinelAudit, useSentinelStats } from "@/features/sentinel/hooks/useSentinelAudit";
 import { useSentinelSettings } from "@/features/sentinel/hooks/useSentinelSettings";
-import { useModels } from "@/features/models/hooks/useModels";
 import styles from "../sentinel.module.css";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
@@ -20,19 +19,9 @@ export function SentinelView() {
   const { records, hasMore, loadMore, isLoadingMore, isLoading: auditLoading, refetch } = useSentinelAudit(20);
   const { stats } = useSentinelStats();
   const { settings, isUpdating, updateSettings } = useSentinelSettings();
-  const { models } = useModels();
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [autonomyDraft, setAutonomyDraft] = useState<number | null>(null);
-  const displayAutonomy = autonomyDraft ?? settings?.autonomyLevel ?? 5;
 
   const toggle = (id: string) => setExpandedId((prev) => (prev === id ? null : id));
-
-  const commitAutonomy = () => {
-    if (autonomyDraft !== null && autonomyDraft !== settings?.autonomyLevel) {
-      updateSettings({ autonomyLevel: autonomyDraft });
-    }
-    setAutonomyDraft(null);
-  };
 
   const denialRate = stats && stats.total > 0 ? Math.round((stats.denied / stats.total) * 100) : 0;
 
@@ -132,15 +121,7 @@ export function SentinelView() {
             <SovereignControls
               settings={settings}
               isUpdating={isUpdating}
-              displayAutonomy={displayAutonomy}
-              models={models}
               onLockdown={() => settings && updateSettings({ lockdownMode: !settings.lockdownMode })}
-              onSemanticToggle={() =>
-                settings && updateSettings({ semanticIntentCheckEnabled: !settings.semanticIntentCheckEnabled })
-              }
-              onAutonomyChange={(e) => setAutonomyDraft(Number(e.target.value))}
-              commitAutonomy={commitAutonomy}
-              onIntentModelChange={(model) => updateSettings({ intentCheckModel: model })}
             />
           </Card>
 

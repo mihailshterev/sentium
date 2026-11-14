@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render as rtlRender, screen, fireEvent } from "@testing-library/react";
+import { MemoryRouter } from "react-router";
 import { SentinelView as Sentinel } from "./sentinel-view";
 import * as auditHook from "@/features/sentinel/hooks/useSentinelAudit";
 import * as settingsHook from "@/features/sentinel/hooks/useSentinelSettings";
-import * as modelsHook from "@/features/models/hooks/useModels";
 import type { AuditRecord, AuditStats, PdpSettings } from "@/features/sentinel/types/sentinel";
 
 const record = {
@@ -45,6 +45,8 @@ const settings = {
   rateLimitWindowSeconds: 60,
 } as unknown as PdpSettings;
 
+const render = (ui: React.ReactElement) => rtlRender(<MemoryRouter>{ui}</MemoryRouter>);
+
 const updateSettings = vi.fn();
 const refetch = vi.fn();
 
@@ -75,7 +77,6 @@ beforeEach(() => {
     error: null,
   } as unknown as ReturnType<typeof auditHook.useSentinelStats>);
   setSettings(settings);
-  vi.spyOn(modelsHook, "useModels").mockReturnValue({ models: ["gemma"], defaultModel: "gemma" });
 });
 
 describe("Sentinel states", () => {
@@ -119,18 +120,13 @@ describe("Sentinel sovereign controls", () => {
     expect(updateSettings).toHaveBeenCalledWith({ lockdownMode: true });
   });
 
-  it("toggles the semantic intent check", () => {
+  it("summarizes the policy and links to its settings", () => {
     render(<Sentinel />);
-    fireEvent.click(screen.getByTestId("semantic-intent-toggle"));
-    expect(updateSettings).toHaveBeenCalledWith({ semanticIntentCheckEnabled: false });
-  });
-
-  it("commits a new autonomy level", () => {
-    render(<Sentinel />);
-    const slider = screen.getByTestId("autonomy-slider");
-    fireEvent.change(slider, { target: { value: "8" } });
-    fireEvent.keyUp(slider);
-    expect(updateSettings).toHaveBeenCalledWith({ autonomyLevel: 8 });
+    expect(screen.getByText("100 req / 60s")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /configure policy in settings/i })).toHaveAttribute(
+      "href",
+      "/settings/security",
+    );
   });
 
   it("refetches audit records on refresh", () => {

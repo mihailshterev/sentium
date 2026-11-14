@@ -1,4 +1,5 @@
-import { Activity, Database, RefreshCw, Server, ShieldAlert } from "lucide-react";
+import { Link } from "react-router";
+import { Activity, Database, RefreshCw, Server, Settings2, ShieldAlert } from "lucide-react";
 import styles from "../vigil.module.css";
 import { useServiceHealth } from "@/features/vigil/hooks/useServiceHealth";
 import { useSystemMetrics } from "@/features/vigil/hooks/useSystemMetrics";
@@ -7,14 +8,13 @@ import { useIncidents } from "@/features/vigil/hooks/useIncidents";
 import { useVigilStream } from "@/features/vigil/hooks/useVigilStream";
 import { useRole } from "@/shared/auth/hooks/useRole";
 import { Badge } from "@/shared/ui/badge";
-import { Button } from "@/shared/ui/button";
+import { Button, buttonClass } from "@/shared/ui/button";
 import { Card, CardHeader } from "@/shared/ui/card";
 import { Page } from "@/shared/ui/page";
 import { Skeleton } from "@/shared/ui/skeleton";
 import { ServiceRow } from "../components/service-row";
 import { SummaryStats } from "../components/summary-stats";
 import { IncidentTimeline } from "../components/incident-timeline";
-import { VigilConfigPanel } from "../components/vigil-config-panel";
 import type { ServiceHealthStatus, ServiceStatus } from "@/features/vigil/types/serviceHealth";
 
 const countBy = (services: ServiceHealthStatus[], status: ServiceStatus) =>
@@ -122,14 +122,22 @@ export function VigilView() {
       subtitle="Service & infrastructure health, incidents, and diagnostics"
       width="wide"
       actions={
-        <Button
-          variant="secondary"
-          icon={<RefreshCw size={15} className={healthLoading ? "animate-spin" : undefined} />}
-          onClick={() => refetch()}
-          disabled={healthLoading}
-        >
-          Refresh
-        </Button>
+        <>
+          {isSovereign && (
+            <Link to="/settings/monitoring" className={buttonClass({ variant: "ghost" })}>
+              <Settings2 size={15} aria-hidden="true" />
+              Configure
+            </Link>
+          )}
+          <Button
+            variant="secondary"
+            icon={<RefreshCw size={15} className={healthLoading ? "animate-spin" : undefined} />}
+            onClick={() => refetch()}
+            disabled={healthLoading}
+          >
+            Refresh
+          </Button>
+        </>
       }
     >
       <SummaryStats
@@ -189,8 +197,6 @@ export function VigilView() {
               </dl>
             )}
           </Card>
-
-          {isSovereign && <VigilConfigPanel />}
         </div>
       </div>
     </Page>

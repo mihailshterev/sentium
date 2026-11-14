@@ -1,12 +1,10 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { IncidentTimeline } from "./incident-timeline";
 import { SeverityBadge } from "./severity-badge";
 import { SubcheckList } from "./subcheck-list";
 import { StatusIcon } from "./status-icon";
 import { ServiceRow } from "./service-row";
-import { VigilConfigPanel } from "./vigil-config-panel";
-import * as useVigilConfigHook from "@/features/vigil/hooks/useVigilConfig";
 import type {
   Incident,
   HealthCheckEntry,
@@ -105,55 +103,5 @@ describe("ServiceRow", () => {
     expect(screen.queryByText("ping")).not.toBeInTheDocument();
     fireEvent.click(screen.getByText("Praxis"));
     expect(screen.getByText("ping")).toBeInTheDocument();
-  });
-});
-
-describe("VigilConfigPanel", () => {
-  const config = {
-    pollIntervalSeconds: 30,
-    probeTimeoutSeconds: 5,
-    degradedLatencyMs: 500,
-    consecutiveFailuresToOpenIncident: 3,
-    sampleHistorySize: 50,
-  };
-  const saveConfig = vi.fn();
-
-  const setHook = (overrides: Record<string, unknown> = {}) =>
-    vi.spyOn(useVigilConfigHook, "useVigilConfig").mockReturnValue({
-      config,
-      isLoading: false,
-      error: null,
-      saveConfig,
-      isSaving: false,
-      isSaveSuccess: false,
-      isSaveError: false,
-      saveError: null,
-      resetSave: vi.fn(),
-      ...overrides,
-    } as unknown as ReturnType<typeof useVigilConfigHook.useVigilConfig>);
-
-  beforeEach(() => {
-    saveConfig.mockReset();
-    setHook();
-  });
-
-  it("shows a loading state while config loads", () => {
-    setHook({ config: undefined, isLoading: true });
-    render(<VigilConfigPanel />);
-    expect(screen.getByText(/loading/i)).toBeInTheDocument();
-  });
-
-  it("renders the config fields and saves edits", () => {
-    render(<VigilConfigPanel />);
-    const pollInput = screen.getByDisplayValue("30");
-    fireEvent.change(pollInput, { target: { value: "45" } });
-    fireEvent.click(screen.getByRole("button", { name: /save/i }));
-    expect(saveConfig).toHaveBeenCalled();
-  });
-
-  it("shows a success indicator after saving", () => {
-    setHook({ isSaveSuccess: true });
-    render(<VigilConfigPanel />);
-    expect(screen.getByText("Saved")).toBeInTheDocument();
   });
 });

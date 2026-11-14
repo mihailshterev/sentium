@@ -3,7 +3,6 @@ import type {
   CreateMcpServerPayload,
   McpServer,
   McpServerStatus,
-  McpSettings,
   McpToolUpdate,
   UpdateMcpServerPayload,
 } from "../types/mcp";
@@ -25,16 +24,3 @@ export const updateMcpTools = (id: string, tools: McpToolUpdate[]) =>
   client.put<McpServer>(`${BASE}/${id}/tools`, { tools });
 
 export const fetchMcpServerStatus = (id: string) => client.get<McpServerStatus>(`${BASE}/${id}/status`);
-
-interface SettingsEnvelope<T> {
-  key: string;
-  value: T;
-  updatedAt: string;
-  updatedBy: string | null;
-}
-
-export const fetchMcpSettings = async (): Promise<McpSettings> =>
-  (await client.get<SettingsEnvelope<McpSettings>>("/registry/settings/mcp")).value;
-
-export const updateMcpSettings = async (settings: McpSettings): Promise<McpSettings> =>
-  (await client.put<SettingsEnvelope<McpSettings>>("/registry/settings/mcp", settings)).value;

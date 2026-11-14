@@ -32,24 +32,12 @@ export class SentinelPage {
     return this.page.getByTestId("lockdown-toggle");
   }
 
-  async getSemanticIntentToggle() {
-    return this.page.getByTestId("semantic-intent-toggle");
-  }
-
-  async getAutonomySlider() {
-    return this.page.getByTestId("autonomy-slider");
-  }
-
   async expectLockdownToggleVisible(): Promise<void> {
     await expect(this.page.getByTestId("lockdown-toggle")).toBeVisible();
   }
 
-  async expectSemanticIntentToggleVisible(): Promise<void> {
-    await expect(this.page.getByTestId("semantic-intent-toggle")).toBeVisible();
-  }
-
-  async expectAutonomySliderVisible(): Promise<void> {
-    await expect(this.page.getByTestId("autonomy-slider")).toBeVisible();
+  async expectPolicySettingsLinkVisible(): Promise<void> {
+    await expect(this.page.getByRole("link", { name: /configure policy in settings/i })).toBeVisible();
   }
 
   async clickRefresh(): Promise<void> {
