@@ -1,5 +1,5 @@
 import { useId } from "react";
-import { NebulaOrb } from "./nebula-orb";
+import { LatticeCore } from "./lattice-core";
 import {
   CX,
   CY,
@@ -62,6 +62,8 @@ const TICKS = Array.from({ length: 72 }, (_, i) => i * 5);
 const RINGS = [R_RIM, R_INNER, R_OUTER];
 /** Corner bracket of the square reticle; mirrored into the four corners. */
 const BRACKET = 22;
+/** Leaves the lattice clear of the rim ring even at its nearest, perspective-enlarged vertex. */
+const LATTICE_RADIUS = R_ORB * 0.9;
 
 /** Isometric (60°) grid tile: two verticals and one line of each 30° family. */
 const TILE_W = 69.282;
@@ -92,7 +94,7 @@ function Label({ placed, className }: { placed: PlacedNode<OrbitalNode>; classNa
 }
 
 /**
- * Orbital node map: a nebula orb framed by concentric wireframe rings, ticks and a square reticle over an
+ * Orbital node map: a lattice core framed by concentric wireframe rings, ticks and a square reticle over an
  * isometric grid, with data nodes on two rings and a callout readout for the focused node.
  */
 export function OrbitalMap({
@@ -142,15 +144,13 @@ export function OrbitalMap({
       </svg>
 
       <div
-        className={styles.orbSlot}
+        className={styles.glow}
         style={{
           left: `${((CX - R_ORB) / VIEW_W) * 100}%`,
           top: `${((CY - R_ORB) / VIEW_H) * 100}%`,
           width: `${((R_ORB * 2) / VIEW_W) * 100}%`,
         }}
-      >
-        <NebulaOrb className={styles.orb} />
-      </div>
+      />
 
       <svg className={styles.layer} viewBox={`0 0 ${VIEW_W} ${VIEW_H}`} aria-hidden="true">
         <g className={styles.lines}>
@@ -187,11 +187,7 @@ export function OrbitalMap({
           <circle cx={CX + R_EDGE} cy={CY} r={3} />
         </g>
 
-        {/* Centre reticle over the nebula core. */}
-        <path
-          className={styles.core}
-          d={`M ${CX - 14} ${CY} H ${CX - 5} M ${CX + 5} ${CY} H ${CX + 14} M ${CX} ${CY - 14} V ${CY - 5} M ${CX} ${CY + 5} V ${CY + 14}`}
-        />
+        <LatticeCore cx={CX} cy={CY} radius={LATTICE_RADIUS} />
 
         <g className={styles.links}>
           {innerPlaced.map((p) => {

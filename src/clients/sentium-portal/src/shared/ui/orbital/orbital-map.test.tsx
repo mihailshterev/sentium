@@ -9,10 +9,11 @@ const outer = [
 const inner = [{ id: "a1", label: "a01", tone: "cyan" as const }];
 
 describe("OrbitalMap", () => {
-  it("exposes the figure by its label and draws the nebula fallback without WebGL", () => {
+  it("exposes the figure by its label and draws the lattice core", () => {
     const { container } = render(<OrbitalMap aria-label="System map" outer={outer} inner={inner} />);
     expect(screen.getByRole("figure", { name: "System map" })).toBeInTheDocument();
-    expect(container.querySelector("canvas")).not.toBeNull();
+    // Two 30-edge shells plus one trail per pulse.
+    expect(container.querySelectorAll("[data-lattice] line")).toHaveLength(64);
   });
 
   it("labels every node except the focused one, which the readout names", () => {

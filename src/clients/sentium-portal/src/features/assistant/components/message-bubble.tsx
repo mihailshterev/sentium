@@ -3,6 +3,7 @@ import Markdown from "react-markdown";
 import { Check, ChevronDown, Copy, ShieldAlert, Sparkles } from "lucide-react";
 import styles from "../assistant.module.css";
 import { Button } from "@/shared/ui/button";
+import { SentiumMark } from "@/shared/ui/sentium-mark";
 import { AgentTimeline } from "@/shared/agent-activity";
 import type { ConversationMessage } from "@/features/assistant/types/assistant";
 import { STATUS_MESSAGES } from "../status-messages";
@@ -83,7 +84,7 @@ export function MessageBubble({
 
   return (
     <div className={`${styles.message} ${styles.messageAi}`}>
-      <img src="/sentium-mark.png" alt="" className={styles.avatar} width={26} height={26} />
+      <SentiumMark size={26} className={styles.avatar} />
 
       <div className={styles.aiBody}>
         <span className={styles.sender}>{senderName}</span>

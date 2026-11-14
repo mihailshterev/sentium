@@ -93,7 +93,7 @@
   --accent-fill-hover: #9be4c6;
   --on-accent: #04110c;
 
-  /* Brand gold (logo) and data hues */
+  /* Gold and data hues */
   --gold: #d9ad5f;
   --accent-green: #62cf96;
   --accent-green-rgb: 98, 207, 150;
@@ -163,11 +163,6 @@
   --field-star: #dfe7ff;
   --field-stars: 1;
   --grain-opacity: 0.06;
-
-  /* Nebula orb: a window into space, identical in both themes */
-  --orb-teal: #45c6da;
-  --orb-violet: #8c6cf2;
-  --orb-gold: #d9ad5f;
 
   /* Legacy one-offs, removed as pages migrate */
   --texture-dot: rgba(200, 212, 235, 0.05);
