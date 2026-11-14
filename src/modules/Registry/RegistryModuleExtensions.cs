@@ -38,6 +38,14 @@ public static class RegistryModuleExtensions
             SettingsKeys.Mcp, SettingsScope.Global, c => c.Mcp, (c, v) => c.Mcp = v)
         );
 
+        services.AddSingleton<ISettingsDescriptor>(new SettingsDescriptor<CalendarSettings>(
+            SettingsKeys.Calendar, SettingsScope.Global, c => c.Calendar, (c, v) => c.Calendar = v)
+        );
+
+        services.AddSingleton<ISettingsDescriptor>(new SettingsDescriptor<UserCalendarSettings>(
+            SettingsKeys.UserCalendar, SettingsScope.PerUser, c => c.UserCalendar, (c, v) => c.UserCalendar = v)
+        );
+
         services.AddSingleton<ISettingsCatalog, SettingsCatalog>();
         services.AddScoped<SettingsService>();
         services.AddSingleton<ISettingsService, ScopedSettingsService>();

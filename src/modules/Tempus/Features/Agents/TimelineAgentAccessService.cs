@@ -9,6 +9,7 @@ using Sentium.Tempus.Contracts;
 using Sentium.Tempus.Contracts.Models;
 using Sentium.Tempus.Data;
 using Sentium.Tempus.Entities;
+using Sentium.Tempus.Features.Calendar;
 using Sentium.Tempus.Features.Tasks;
 
 namespace Sentium.Tempus.Features.Agents;
@@ -18,7 +19,11 @@ namespace Sentium.Tempus.Features.Agents;
 /// <see cref="ScopedTimelineAgentAccess"/>), which bypasses the DbContext's per-user filter - so EVERY query here
 /// filters on the explicit <c>userId</c>, and every insert sets it.
 /// </summary>
-internal sealed class TimelineAgentAccessService(TempusDbContext db, TimeProvider timeProvider, INotifier notifier) : ITimelineAgentAccess
+internal sealed class TimelineAgentAccessService(
+    TempusDbContext db,
+    TimeProvider timeProvider,
+    INotifier notifier,
+    IUserCalendarProvider calendars) : ITimelineAgentAccess
 {
     /// <summary>
     /// One unread suggestions Notification per user: an agent proposing many tasks in one run updates it instead of
@@ -28,15 +33,17 @@ internal sealed class TimelineAgentAccessService(TempusDbContext db, TimeProvide
 
     public async Task<TimelineAgentOverview> GetOverviewAsync(Guid userId, int? year = null, int upcomingDays = 14, CancellationToken ct = default)
     {
-        var today = TimelineCalendar.UtcToday(timeProvider);
+        var today = await TodayAsync(userId, ct);
         var overviewYear = year is { } y && TempusLimits.IsValidYear(y) ? y : today.Year;
         var days = Math.Clamp(upcomingDays, 1, TempusLimits.MaxUpcomingDays);
         var lastDay = today.AddDays(days - 1);
 
-        var tasks = await Tasks(userId)
+        var entries = await Tasks(userId)
             .Where(t => t.Year == overviewYear)
-            .Select(t => new { t.Month, t.Date, t.DueDate, t.Status })
+            .Select(t => new { t.Kind, t.Month, t.Date, t.DueDate, t.Status })
             .ToListAsync(ct);
+
+        var tasks = entries.Where(t => t.Kind == TimelineEntryKind.Task).ToList();
 
         var pendingByMonth = await Proposals(userId)
             .Where(p => p.Status == TimelineProposalStatus.Pending && p.Year == overviewYear)
@@ -45,13 +52,19 @@ internal sealed class TimelineAgentAccessService(TempusDbContext db, TimeProvide
             .ToDictionaryAsync(g => g.Month, g => g.Count, ct);
 
         var upcoming = await Tasks(userId)
-            .Where(t => t.Status != TimelineTaskStatus.Done && t.Date != null && t.Date >= today && t.Date <= lastDay)
+            .Where(t => t.Kind == TimelineEntryKind.Task && t.Status != TimelineTaskStatus.Done && t.Date != null && t.Date >= today && t.Date <= lastDay)
             .GroupBy(t => t.Date!.Value)
             .Select(g => new { Date = g.Key, Open = g.Count() })
             .ToDictionaryAsync(g => g.Date, g => g.Open, ct);
 
+        var upcomingEvents = await Tasks(userId)
+            .Where(t => t.Kind == TimelineEntryKind.CalendarEvent && t.Date != null && t.Date >= today && t.Date <= lastDay)
+            .GroupBy(t => t.Date!.Value)
+            .Select(g => new { Date = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(g => g.Date, g => g.Count, ct);
+
         var pinnedOpenThisMonth = await Tasks(userId)
-            .CountAsync(t => t.Year == today.Year && t.Month == today.Month && t.Date == null && t.Status != TimelineTaskStatus.Done, ct);
+            .CountAsync(t => t.Kind == TimelineEntryKind.Task && t.Year == today.Year && t.Month == today.Month && t.Date == null && t.Status != TimelineTaskStatus.Done, ct);
 
         var pendingTotal = await Proposals(userId).CountAsync(p => p.Status == TimelineProposalStatus.Pending, ct);
 
@@ -63,12 +76,13 @@ internal sealed class TimelineAgentAccessService(TempusDbContext db, TimeProvide
                 inMonth.Count(t => t.Status != TimelineTaskStatus.Done),
                 inMonth.Count(t => t.Status == TimelineTaskStatus.Done),
                 inMonth.Count(t => TimelineCalendar.IsOverdue(t.Status, t.DueDate, t.Date, overviewYear, month, today)),
-                pendingByMonth.GetValueOrDefault(month));
+                pendingByMonth.GetValueOrDefault(month),
+                entries.Count(e => e.Kind == TimelineEntryKind.CalendarEvent && e.Month == month));
         }).ToList();
 
         var upcomingDaysLoad = Enumerable.Range(0, days)
             .Select(offset => today.AddDays(offset))
-            .Select(day => new TimelineDayLoad(day, upcoming.GetValueOrDefault(day)))
+            .Select(day => new TimelineDayLoad(day, upcoming.GetValueOrDefault(day), upcomingEvents.GetValueOrDefault(day)))
             .ToList();
 
         return new TimelineAgentOverview(today, overviewYear, months, upcomingDaysLoad, pinnedOpenThisMonth, pendingTotal);
@@ -86,6 +100,11 @@ internal sealed class TimelineAgentAccessService(TempusDbContext db, TimeProvide
         var tasks = Tasks(userId).Where(t =>
             (t.Date != null && t.Date >= from && t.Date <= to)
             || (includePinned && t.Date == null && (t.Year * 12) + t.Month - 1 >= fromMonth && (t.Year * 12) + t.Month - 1 <= toMonth));
+
+        if (query.Kind is { } kind)
+        {
+            tasks = tasks.Where(t => t.Kind == kind);
+        }
 
         if (query.Status is { } status)
         {
@@ -112,11 +131,13 @@ internal sealed class TimelineAgentAccessService(TempusDbContext db, TimeProvide
             .Take(Math.Clamp(query.Limit, 1, TempusLimits.MaxListedTasks))
             .ToListAsync(ct);
 
+        var today = await TodayAsync(userId, ct);
+
         // Day order from SQL; priority within a day/month in memory (priorities are stored by name).
         return [.. rows
             .GroupBy(t => (t.Date, t.Year, t.Month))
             .SelectMany(g => TaskRules.OrderForDisplay(g, t => t))
-            .Select(TimelineMapping.ToInfo)];
+            .Select(t => TimelineMapping.ToInfo(t, today))];
     }
 
     public async Task<TimelineTaskDetail?> GetTaskAsync(Guid userId, Guid taskId, CancellationToken ct = default)
@@ -137,7 +158,7 @@ internal sealed class TimelineAgentAccessService(TempusDbContext db, TimeProvide
         var pending = await Proposals(userId).CountAsync(p => p.TaskId == taskId && p.Status == TimelineProposalStatus.Pending, ct);
 
         return new TimelineTaskDetail(
-            TimelineMapping.ToInfo(task),
+            TimelineMapping.ToInfo(task, await TodayAsync(userId, ct)),
             task.Description,
             task.CompletedAt,
             [.. notes.Select(TimelineMapping.ToInfo)],
@@ -155,21 +176,71 @@ internal sealed class TimelineAgentAccessService(TempusDbContext db, TimeProvide
 
         var title = proposal.Title?.Trim() ?? string.Empty;
         var tags = TagNormalizer.Normalize(proposal.Tags);
-        var error = title.Length == 0 ? "A task needs a title."
-            : title.Length > TempusLimits.TitleMax ? Limit("The title", TempusLimits.TitleMax)
-            : proposal.Description?.Length > TempusLimits.DescriptionMax ? Limit("The description", TempusLimits.DescriptionMax)
-            : proposal.Rationale?.Length > TempusLimits.RationaleMax ? Limit("The rationale", TempusLimits.RationaleMax)
-            : proposal.AssignedAgent?.Trim().Length > TempusLimits.AgentNameMax ? Limit("The agent name", TempusLimits.AgentNameMax)
-            : tags.Count > TempusLimits.MaxTagsPerTask ? string.Create(CultureInfo.InvariantCulture, $"A task can have at most {TempusLimits.MaxTagsPerTask} tags.")
-            : tags.Any(t => t.Length > TempusLimits.TagMax || t.Contains(',', StringComparison.Ordinal)) ? string.Create(CultureInfo.InvariantCulture, $"Tags can be at most {TempusLimits.TagMax} characters and cannot contain commas.")
-            : TaskRules.ValidatePlacement(proposal.Year, proposal.Month, proposal.Date) ?? TaskRules.ValidateDueDate(proposal.DueDate);
+        var error = (title.Length == 0 ? "A task needs a title." : null)
+            ?? ValidateCreate(title, proposal.Description, proposal.Rationale, proposal.AssignedAgent, tags)
+            ?? TaskRules.ValidatePlacement(proposal.Year, proposal.Month, proposal.Date)
+            ?? TaskRules.ValidateDueDate(proposal.DueDate);
 
         if (error is not null)
         {
             return Result<TimelineProposalReceipt>.Invalid(error);
         }
 
-        var result = await db.Database.ExecuteInTransactionAsync(() => AddTaskProposalAsync(userId, agentName, proposal, title, tags, ct), ct: ct);
+        var entity = new TimelineProposal
+        {
+            Kind = TimelineProposalKind.CreateTask,
+            Title = title,
+            Description = Blank(proposal.Description),
+            Priority = proposal.Priority,
+            Tags = tags,
+            AssignedAgent = Blank(proposal.AssignedAgent),
+            DueDate = proposal.DueDate,
+            Year = proposal.Year,
+            Month = proposal.Month,
+            Date = proposal.Date,
+            Rationale = Blank(proposal.Rationale)
+        };
+
+        var result = await db.Database.ExecuteInTransactionAsync(() => AddCreateProposalAsync(userId, agentName, entity, ct), ct: ct);
+        await NotifyNewProposalAsync(userId, agentName, result, ct);
+        return result;
+    }
+
+    public async Task<Result<TimelineProposalReceipt>> ProposeEventAsync(Guid userId, string agentName, TimelineEventProposal proposal, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(proposal);
+
+        if (userId == Guid.Empty)
+        {
+            return Result<TimelineProposalReceipt>.Invalid("No user is associated with this request.");
+        }
+
+        var title = proposal.Title?.Trim() ?? string.Empty;
+        var tags = TagNormalizer.Normalize(proposal.Tags);
+        var error = ValidateCreate(title, proposal.Description, proposal.Rationale, null, tags)
+            ?? TaskRules.ValidatePlacement(proposal.Year, proposal.Month, proposal.Date)
+            ?? TaskRules.ValidateTiming(proposal.Date, proposal.StartTime, proposal.EndDate);
+
+        if (error is not null)
+        {
+            return Result<TimelineProposalReceipt>.Invalid(error);
+        }
+
+        var entity = new TimelineProposal
+        {
+            Kind = TimelineProposalKind.CreateEvent,
+            Title = title,
+            Description = Blank(proposal.Description),
+            Tags = tags,
+            Year = proposal.Year,
+            Month = proposal.Month,
+            Date = proposal.Date,
+            StartTime = proposal.StartTime,
+            EndDate = proposal.EndDate,
+            Rationale = Blank(proposal.Rationale)
+        };
+
+        var result = await db.Database.ExecuteInTransactionAsync(() => AddCreateProposalAsync(userId, agentName, entity, ct), ct: ct);
         await NotifyNewProposalAsync(userId, agentName, result, ct);
         return result;
     }
@@ -279,17 +350,20 @@ internal sealed class TimelineAgentAccessService(TempusDbContext db, TimeProvide
         return Result<TimelineNoteReceipt>.Success(new TimelineNoteReceipt(entity.Id, entity.Year, entity.Month, entity.Date, entity.TaskId));
     }
 
-    private async Task<Result<TimelineProposalReceipt>> AddTaskProposalAsync(Guid userId, string agentName, TimelineTaskProposal proposal, string title, List<string> tags, CancellationToken ct)
+    /// <summary>
+    /// Adds a CreateTask or CreateEvent proposal, unless the same one is already pending.
+    /// </summary>
+    private async Task<Result<TimelineProposalReceipt>> AddCreateProposalAsync(Guid userId, string agentName, TimelineProposal entity, CancellationToken ct)
     {
         db.ChangeTracker.Clear();
 
-        var lowered = title.ToLowerInvariant();
+        var lowered = entity.Title.ToLowerInvariant();
         var duplicate = await Proposals(userId)
             .Where(p => p.Status == TimelineProposalStatus.Pending
-                && p.Kind == TimelineProposalKind.CreateTask
-                && p.Year == proposal.Year
-                && p.Month == proposal.Month
-                && p.Date == proposal.Date
+                && p.Kind == entity.Kind
+                && p.Year == entity.Year
+                && p.Month == entity.Month
+                && p.Date == entity.Date
                 && p.Title.ToLower() == lowered)
             .Select(p => (Guid?)p.Id)
             .FirstOrDefaultAsync(ct);
@@ -304,25 +378,11 @@ internal sealed class TimelineAgentAccessService(TempusDbContext db, TimeProvide
             return TooManyPending<TimelineProposalReceipt>();
         }
 
-        var entity = new TimelineProposal
-        {
-            Id = Guid.CreateVersion7(),
-            UserId = userId,
-            Kind = TimelineProposalKind.CreateTask,
-            Status = TimelineProposalStatus.Pending,
-            Title = title,
-            Description = Blank(proposal.Description),
-            Priority = proposal.Priority,
-            Tags = tags,
-            AssignedAgent = Blank(proposal.AssignedAgent),
-            DueDate = proposal.DueDate,
-            Year = proposal.Year,
-            Month = proposal.Month,
-            Date = proposal.Date,
-            Rationale = Blank(proposal.Rationale),
-            ProposedBy = AgentName(agentName),
-            CreatedAt = timeProvider.GetUtcNow()
-        };
+        entity.Id = Guid.CreateVersion7();
+        entity.UserId = userId;
+        entity.Status = TimelineProposalStatus.Pending;
+        entity.ProposedBy = AgentName(agentName);
+        entity.CreatedAt = timeProvider.GetUtcNow();
 
         db.TimelineProposals.Add(entity);
         await db.SaveChangesAsync(ct);
@@ -340,14 +400,14 @@ internal sealed class TimelineAgentAccessService(TempusDbContext db, TimeProvide
             return Result<TimelineProposalReceipt>.NotFound($"No task with id {proposal.TaskId} exists.");
         }
 
-        if (task.Status == TimelineTaskStatus.Done)
+        if (task.Kind == TimelineEntryKind.Task && task.Status == TimelineTaskStatus.Done)
         {
             return Result<TimelineProposalReceipt>.Invalid("The task is already done.");
         }
 
         if (TaskRules.IsAt(task, proposal.Year, proposal.Month, proposal.Date))
         {
-            return Result<TimelineProposalReceipt>.Invalid("The task is already planned there.");
+            return Result<TimelineProposalReceipt>.Invalid("The entry is already planned there.");
         }
 
         var now = timeProvider.GetUtcNow();
@@ -373,6 +433,8 @@ internal sealed class TimelineAgentAccessService(TempusDbContext db, TimeProvide
             Tags = [.. task.Tags],
             AssignedAgent = task.AssignedAgent,
             DueDate = task.DueDate,
+            StartTime = task.StartTime,
+            EndDate = task.EndDate,
             Year = proposal.Year,
             Month = proposal.Month,
             Date = proposal.Date,
@@ -410,7 +472,12 @@ internal sealed class TimelineAgentAccessService(TempusDbContext db, TimeProvide
             return;
         }
 
-        var verb = proposal.Kind == TimelineProposalKind.Reschedule ? "moving" : "adding";
+        var verb = proposal.Kind switch
+        {
+            TimelineProposalKind.Reschedule => "moving",
+            TimelineProposalKind.CreateEvent => "adding the event",
+            _ => "adding"
+        };
         var message = new NotificationMessage(
             NotificationCategories.TimelineProposal,
             NotificationSeverity.Info,
@@ -420,6 +487,21 @@ internal sealed class TimelineAgentAccessService(TempusDbContext db, TimeProvide
             ProposalDedupeKey);
 
         await notifier.NotifyAsync(NotificationRecipient.User(userId), message, ct);
+    }
+
+    private async Task<DateOnly> TodayAsync(Guid userId, CancellationToken ct)
+        => (await calendars.GetAsync(userId, ct)).Today(timeProvider.GetUtcNow());
+
+    private static string? ValidateCreate(string title, string? description, string? rationale, string? assignedAgent, List<string> tags)
+    {
+        return title.Length == 0 ? "A title is required."
+            : title.Length > TempusLimits.TitleMax ? Limit("The title", TempusLimits.TitleMax)
+            : description?.Length > TempusLimits.DescriptionMax ? Limit("The description", TempusLimits.DescriptionMax)
+            : rationale?.Length > TempusLimits.RationaleMax ? Limit("The rationale", TempusLimits.RationaleMax)
+            : assignedAgent?.Trim().Length > TempusLimits.AgentNameMax ? Limit("The agent name", TempusLimits.AgentNameMax)
+            : tags.Count > TempusLimits.MaxTagsPerTask ? string.Create(CultureInfo.InvariantCulture, $"An entry can have at most {TempusLimits.MaxTagsPerTask} tags.")
+            : tags.Any(t => t.Length > TempusLimits.TagMax || t.Contains(',', StringComparison.Ordinal)) ? string.Create(CultureInfo.InvariantCulture, $"Tags can be at most {TempusLimits.TagMax} characters and cannot contain commas.")
+            : null;
     }
 
     private IQueryable<TimelineTask> Tasks(Guid userId) => db.TimelineTasks.AsNoTracking().Where(t => t.UserId == userId);

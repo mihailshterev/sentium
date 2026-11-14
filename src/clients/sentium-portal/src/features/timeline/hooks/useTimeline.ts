@@ -9,6 +9,7 @@ import {
 import * as api from "../api/timeline.service";
 import type {
   CreateNotePayload,
+  EditScope,
   MonthDetail,
   SaveTaskPayload,
   TaskPlacement,
@@ -54,10 +55,10 @@ export function useUpcoming(today: string) {
   return { upcoming: data, isLoading, isError };
 }
 
-export function useMonthDetail(year: number, month: number | null) {
+export function useMonthDetail(year: number, month: number | null, today?: string) {
   const { data, isLoading, isError } = useQuery({
     queryKey: timelineKeys.month(year, month ?? 0),
-    queryFn: () => api.fetchMonth(year, month!),
+    queryFn: () => api.fetchMonth(year, month!, today),
     enabled: month !== null,
     refetchInterval: REFRESH_MS,
   });
@@ -98,12 +99,13 @@ export function useTaskMutations() {
   });
 
   const update = useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: SaveTaskPayload }) => api.updateTask(id, payload),
+    mutationFn: ({ id, payload, scope }: { id: string; payload: SaveTaskPayload; scope?: EditScope }) =>
+      api.updateTask(id, payload, scope),
     onSuccess: invalidate,
   });
 
   const remove = useMutation({
-    mutationFn: (id: string) => api.deleteTask(id),
+    mutationFn: ({ id, scope }: { id: string; scope?: EditScope }) => api.deleteTask(id, scope),
     onSuccess: invalidate,
   });
 

@@ -13,6 +13,7 @@ import { useAgentRoster } from "@/features/agents/hooks/useAgentRoster";
 import { AgentChatDrawer } from "../components/agent-chat-drawer";
 import { MonthCalendar } from "../components/month-calendar";
 import { ProposalsDialog } from "../components/proposals-dialog";
+import { SeriesScopeDialog } from "../components/series-scope-dialog";
 import { TaskFormDialog } from "../components/task-form-dialog";
 import { UpNext } from "../components/up-next";
 import { YearTimeline } from "../components/year-timeline";
@@ -29,12 +30,14 @@ import { useToday } from "../hooks/useToday";
 import type { TaskFormDefaults } from "../schemas/timeline-task.form";
 import type {
   AgentChatContext,
+  EditScope,
   SaveTaskPayload,
   TaskPlacement,
   TimelineProposal,
   TimelineTask,
 } from "../types/timeline";
 import { isoMonth, toIsoDate } from "../utils/calendar";
+import { isEvent } from "../utils/display";
 import { MAX_MONTH_INDEX, MIN_MONTH_INDEX, monthAt, monthIndex } from "../utils/timeline-geometry";
 
 const MIN_YEAR = 2000;
@@ -56,6 +59,9 @@ interface EditorState {
   task: TimelineTask | null;
   defaults: TaskFormDefaults;
 }
+
+/** An edit or delete of a repeating Entry, waiting for "this one" or "this and all following". */
+type ScopePrompt = { action: "edit"; task: TimelineTask; payload: SaveTaskPayload } | { action: "delete"; task: TimelineTask };
 
 export function TimelineView() {
   const today = useToday();
@@ -94,7 +100,7 @@ export function TimelineView() {
 
   const { overviews, isError } = useYearOverviews(railYears, todayIso);
   const { upcoming } = useUpcoming(todayIso);
-  const { detail, isLoading: monthLoading } = useMonthDetail(year, selectedMonth);
+  const { detail, isLoading: monthLoading } = useMonthDetail(year, selectedMonth, todayIso);
   const { proposals: pending } = usePendingProposals();
   const { roster } = useAgentRoster();
   const taskMutations = useTaskMutations();
@@ -108,6 +114,7 @@ export function TimelineView() {
   const [selectedDay, setSelectedDay] = useState<string | null>(defaultDay);
   const [editor, setEditor] = useState<EditorState | null>(null);
   const [toDelete, setToDelete] = useState<TimelineTask | null>(null);
+  const [scopePrompt, setScopePrompt] = useState<ScopePrompt | null>(null);
   const [chat, setChat] = useState<AgentChatContext | null>(null);
   const [showProposals, setShowProposals] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -165,7 +172,7 @@ export function TimelineView() {
     chatTrigger.current?.focus();
   };
 
-  const dialogOpen = editor !== null || toDelete !== null || showProposals;
+  const dialogOpen = editor !== null || toDelete !== null || scopePrompt !== null || showProposals;
 
   const stepRef = useRef(stepMonth);
   useEffect(() => {
@@ -203,11 +210,34 @@ export function TimelineView() {
 
   const saveTask = (payload: SaveTaskPayload) => {
     if (!editor) return;
-    const close = { onSuccess: () => setEditor(null) };
-    if (editor.task) {
-      taskMutations.update.mutate({ id: editor.task.id, payload }, close);
+    if (editor.task?.seriesId) {
+      setScopePrompt({ action: "edit", task: editor.task, payload });
+    } else if (editor.task) {
+      taskMutations.update.mutate({ id: editor.task.id, payload }, { onSuccess: () => setEditor(null) });
     } else {
-      taskMutations.create.mutate(payload, close);
+      taskMutations.create.mutate(payload, { onSuccess: () => setEditor(null) });
+    }
+  };
+
+  const askDelete = (task: TimelineTask) =>
+    task.seriesId ? setScopePrompt({ action: "delete", task }) : setToDelete(task);
+
+  const applyScope = (scope: EditScope) => {
+    if (!scopePrompt) return;
+    const done = {
+      onSuccess: () => {
+        setScopePrompt(null);
+        setEditor(null);
+      },
+      onError: (error: unknown) => {
+        setScopePrompt(null);
+        setNotice(errorText(error, `"${scopePrompt.task.title}" could not be changed.`));
+      },
+    };
+    if (scopePrompt.action === "edit") {
+      taskMutations.update.mutate({ id: scopePrompt.task.id, payload: scopePrompt.payload, scope }, done);
+    } else {
+      taskMutations.remove.mutate({ id: scopePrompt.task.id, scope }, done);
     }
   };
 
@@ -375,7 +405,7 @@ export function TimelineView() {
               taskMutations.update.reset();
               setEditor(null);
             }}
-            onDelete={(task) => setToDelete(task)}
+            onDelete={askDelete}
             onDiscuss={(task) => {
               setEditor(null);
               openChat({ kind: "task", task });
@@ -388,13 +418,13 @@ export function TimelineView() {
         <ConfirmDialog
           open={toDelete !== null}
           variant="danger"
-          title="Delete task"
+          title={toDelete && isEvent(toDelete) ? "Delete event" : "Delete task"}
           description={toDelete ? `Delete "${toDelete.title}" with its notes and pending suggestions?` : ""}
           confirmLabel="Delete"
           cancelLabel="Cancel"
           onConfirm={() =>
             toDelete &&
-            taskMutations.remove.mutate(toDelete.id, {
+            taskMutations.remove.mutate({ id: toDelete.id }, {
               onSuccess: () => {
                 setToDelete(null);
                 setEditor(null);
@@ -403,6 +433,15 @@ export function TimelineView() {
           }
           onCancel={() => setToDelete(null)}
         />
+
+        {scopePrompt && (
+          <SeriesScopeDialog
+            action={scopePrompt.action}
+            title={scopePrompt.task.title}
+            onChoose={applyScope}
+            onCancel={() => setScopePrompt(null)}
+          />
+        )}
 
         {showProposals && (
           <ProposalsDialog proposals={pending} onClose={() => setShowProposals(false)} {...proposalActions} />

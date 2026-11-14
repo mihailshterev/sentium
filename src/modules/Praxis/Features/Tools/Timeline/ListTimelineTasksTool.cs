@@ -7,7 +7,7 @@ using Sentium.Tempus.Contracts.Models;
 namespace Sentium.Praxis.Features.Tools.Timeline;
 
 /// <summary>
-/// The tasks planned in a date range, grouped by day, plus the tasks pinned to the months it covers.
+/// The Tasks and Calendar Events planned in a date range, grouped by day, plus those pinned to the months it covers.
 /// </summary>
 [AgentToolPolicy(RiskLevel = ToolRiskLevel.Low, Resource = ToolResource.Timeline, Action = ToolAction.Search)]
 internal sealed class ListTimelineTasksTool(
@@ -26,8 +26,9 @@ internal sealed class ListTimelineTasksTool(
             this,
             ListAsync,
             ToolNames.ListTimelineTasks,
-            "List the tasks on the user's timeline between two dates, grouped by day, with priority, status, due date, tags, " +
-            "assigned agent and id; tasks pinned to a month without a day are listed per month. Defaults to the next 30 days.");
+            "List the tasks and calendar events on the user's timeline between two dates, grouped by day, with priority, " +
+            "status, due date, tags, assigned agent and id; events are marked [Event] (never ticked, 'past' once over). " +
+            "Entries pinned to a month without a day are listed per month. Defaults to the next 30 days.");
     }
 
     public async Task<string> ListAsync(
@@ -37,6 +38,7 @@ internal sealed class ListTimelineTasksTool(
         [Description("Only tasks with this tag.")] string? tag = null,
         [Description("Only tasks assigned to this agent, e.g. your own name.")] string? assignedAgent = null,
         [Description("Maximum number of tasks (1-100, default 50).")] int? limit = null,
+        [Description("Only 'tasks' or only 'events' (default: both).")] string? kind = null,
         CancellationToken ct = default)
     {
         if (pdpContext.UserId is not { } userId || userId == Guid.Empty)
@@ -78,9 +80,25 @@ internal sealed class ListTimelineTasksTool(
             }
         }
 
+        TimelineEntryKind? kindFilter = null;
+        if (TimelineToolText.Normalize(kind) is { } kindText)
+        {
+            kindFilter = kindText.ToLowerInvariant() switch
+            {
+                "task" or "tasks" => TimelineEntryKind.Task,
+                "event" or "events" => TimelineEntryKind.CalendarEvent,
+                _ => null
+            };
+
+            if (kindFilter is null)
+            {
+                return "Error: kind must be 'tasks' or 'events'.";
+            }
+        }
+
         try
         {
-            var query = new TimelineTaskQuery(start, end, statusFilter, TimelineToolText.Normalize(tag), TimelineToolText.Normalize(assignedAgent), IncludePinned: true, limit ?? DefaultLimit);
+            var query = new TimelineTaskQuery(start, end, statusFilter, TimelineToolText.Normalize(tag), TimelineToolText.Normalize(assignedAgent), IncludePinned: true, limit ?? DefaultLimit, kindFilter);
             var tasks = await timeline.ListTasksAsync(userId, query, ct);
             return TimelineToolFormatter.FormatTasks(tasks, start, end, today);
         }

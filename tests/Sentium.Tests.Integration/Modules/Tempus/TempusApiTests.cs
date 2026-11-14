@@ -108,8 +108,8 @@ public sealed class TempusApiTests(MonolithWebApplicationFactory factory) : ICla
 
         // Pinned tasks have no day, so they get no tick.
         overview.Days.Should().Equal(
-            new DaySummaryDto(Day(2), Open: 2, Done: 0, Urgent: true),
-            new DaySummaryDto(Day(3), Open: 0, Done: 1, Urgent: false));
+            new DaySummaryDto(Day(2), Open: 2, Done: 0, Urgent: true, Events: 0),
+            new DaySummaryDto(Day(3), Open: 0, Done: 1, Urgent: false, Events: 0));
     }
 
     [Fact]

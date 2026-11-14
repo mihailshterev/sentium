@@ -51,6 +51,24 @@
   font-weight: var(--fw-medium);
 }
 
+.fieldLabelGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.fieldHint {
+  color: var(--text-dim);
+  font-size: var(--text-2xs);
+  font-weight: var(--fw-regular);
+}
+
+/* A compact control on the right of a label row, like the model chip. */
+.fieldControl {
+  width: min(280px, 100%);
+  flex: none;
+}
+
 .fieldValue {
   color: var(--accent);
   font-family: var(--font-mono);

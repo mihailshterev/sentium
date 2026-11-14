@@ -1,4 +1,9 @@
-import type { TaskPlacement, TimelineProposal } from "../types/timeline";
+import type { TaskPlacement, TimelineProposal, TimelineTask } from "../types/timeline";
+
+export const isEvent = (task: Pick<TimelineTask, "kind">) => task.kind === "CalendarEvent";
+
+/** `HH:mm:ss` to `HH:mm`; empty for an Entry without a time. */
+export const formatTime = (time: string | null) => (time ? time.slice(0, 5) : "");
 
 /** "TimelinePlanner" -> "TP", "budget bot" -> "BB". */
 export const initialsOf = (name: string) =>
@@ -11,7 +16,7 @@ export const initialsOf = (name: string) =>
     .join("");
 
 export const describeProposal = (p: TimelineProposal) =>
-  p.kind === "Reschedule" ? `Move "${p.title}"` : `Add "${p.title}"`;
+  p.kind === "Reschedule" ? `Move "${p.title}"` : p.kind === "CreateEvent" ? `Add event "${p.title}"` : `Add "${p.title}"`;
 
 /** Where a dragged task was dropped: a day of this month, the month's pinned list, or nowhere useful. */
 export function dropTarget(overId: string | null, year: number, month: number): TaskPlacement | null {

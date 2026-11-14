@@ -114,6 +114,7 @@ public static class PraxisModuleExtensions
         services.AddTransient<IAgentTool, ListTimelineTasksTool>();
         services.AddTransient<IAgentTool, GetTimelineTaskTool>();
         services.AddTransient<IAgentTool, ProposeTimelineTaskTool>();
+        services.AddTransient<IAgentTool, ProposeTimelineEventTool>();
         services.AddTransient<IAgentTool, ProposeTaskRescheduleTool>();
         services.AddTransient<IAgentTool, AddTimelineNoteTool>();
 

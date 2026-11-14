@@ -16,9 +16,17 @@ export function withTask(detail: MonthDetail, task: TimelineTask): MonthDetail {
   };
 }
 
-/** Tasks planned on `date`, open ones first. */
-export const tasksOnDay = (tasks: TimelineTask[], date: string) =>
-  tasks.filter((t) => t.date === date).sort((a, b) => Number(a.status === "Done") - Number(b.status === "Done"));
+const covers = (task: TimelineTask, date: string) =>
+  task.date === date || (task.date !== null && task.endDate !== null && task.date <= date && date <= task.endDate);
+
+/** Calendar Events first, then open Tasks before done ones; within each, by time with untimed entries last. */
+const dayOrder = (a: TimelineTask, b: TimelineTask) =>
+  Number(a.kind === "Task") - Number(b.kind === "Task") ||
+  Number(a.status === "Done") - Number(b.status === "Done") ||
+  (a.startTime ?? "99").localeCompare(b.startTime ?? "99");
+
+/** Entries on `date`, including every day of a multi-day Calendar Event. */
+export const tasksOnDay = (tasks: TimelineTask[], date: string) => tasks.filter((t) => covers(t, date)).sort(dayOrder);
 
 export const pinnedTasks = (tasks: TimelineTask[]) =>
   tasks.filter((t) => t.date === null).sort((a, b) => Number(a.status === "Done") - Number(b.status === "Done"));

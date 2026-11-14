@@ -20,6 +20,7 @@ interface DayCellProps extends ProposalActions {
   onSelect: (date: string) => void;
   onAddTask: (date: string) => void;
   onOpenTask: (task: TimelineTask) => void;
+  onToggleDone: (task: TimelineTask) => void;
 }
 
 export function DayCell({
@@ -34,6 +35,7 @@ export function DayCell({
   onSelect,
   onAddTask,
   onOpenTask,
+  onToggleDone,
   ...proposalActions
 }: DayCellProps) {
   const { setNodeRef, isOver } = useDroppable({ id: `day:${date}` });
@@ -79,7 +81,7 @@ export function DayCell({
 
       <div className={styles.dayItems}>
         {tasks.slice(0, VISIBLE_TASKS).map((task) => (
-          <TaskChip key={task.id} task={task} onOpen={onOpenTask} />
+          <TaskChip key={task.id} task={task} onOpen={onOpenTask} onToggleDone={onToggleDone} />
         ))}
         {hidden > 0 && (
           <button type="button" className={styles.dayMore} onClick={() => onSelect(date)}>

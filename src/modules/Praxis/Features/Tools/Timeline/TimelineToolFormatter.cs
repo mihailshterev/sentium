@@ -30,13 +30,18 @@ internal static class TimelineToolFormatter
             var name = CultureInfo.InvariantCulture.DateTimeFormat.GetAbbreviatedMonthName(month.Month);
             builder.Append("- ").Append(name).Append(": ");
 
-            if (month is { Open: 0, Done: 0, PendingProposals: 0 })
+            if (month is { Open: 0, Done: 0, PendingProposals: 0, Events: 0 })
             {
                 builder.AppendLine("nothing planned");
                 continue;
             }
 
             builder.Append(CultureInfo.InvariantCulture, $"{month.Open} open, {month.Done} done");
+            if (month.Events > 0)
+            {
+                builder.Append(CultureInfo.InvariantCulture, $", {month.Events} event(s)");
+            }
+
             if (month.Overdue > 0)
             {
                 builder.Append(CultureInfo.InvariantCulture, $", {month.Overdue} OVERDUE");
@@ -56,7 +61,7 @@ internal static class TimelineToolFormatter
             foreach (var day in overview.UpcomingDays)
             {
                 builder.Append("- ").Append(TimelineToolText.Format(day.Date)).Append(' ').Append(TimelineToolText.Weekday(day.Date)).Append(": ")
-                    .AppendLine(day.Open == 0 ? "free" : day.Open.ToString(CultureInfo.InvariantCulture));
+                    .AppendLine(DayLoad(day));
             }
         }
 
@@ -102,13 +107,26 @@ internal static class TimelineToolFormatter
         var task = detail.Task;
         var builder = new StringBuilder();
         builder.AppendLine(TodayLine(today));
-        builder.Append("[Timeline task] ").AppendLine(Title(task.Title));
+        var isEvent = task.Kind == TimelineEntryKind.CalendarEvent;
+        builder.Append(isEvent ? "[Timeline event] " : "[Timeline task] ").AppendLine(Title(task.Title));
         Line(builder, "Id", task.Id.ToString());
         Line(builder, "Planned", task.Date is { } date ? $"{TimelineToolText.Format(date)} ({TimelineToolText.Weekday(date)})" : $"{TimelineToolText.FormatMonth(task.Year, task.Month)} (pinned to the month, no day yet)");
-        Line(builder, "Due", task.DueDate is { } due ? TimelineToolText.Format(due) : null);
-        Line(builder, "Priority", task.Priority.ToString());
-        Line(builder, "Status", StatusText(task.Status));
-        Line(builder, "Completed", detail.CompletedAt?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+        Line(builder, "Time", task.StartTime?.ToString("HH:mm", CultureInfo.InvariantCulture));
+        Line(builder, "Until", task.EndDate is { } end ? TimelineToolText.Format(end) : null);
+        Line(builder, "Repeats", task.Repeats ? "yes" : null);
+
+        if (isEvent)
+        {
+            Line(builder, "State", task.IsPast ? "past (over; events are never ticked)" : "upcoming");
+        }
+        else
+        {
+            Line(builder, "Due", task.DueDate is { } due ? TimelineToolText.Format(due) : null);
+            Line(builder, "Priority", task.Priority.ToString());
+            Line(builder, "Status", StatusText(task.Status));
+            Line(builder, "Completed", detail.CompletedAt?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+        }
+
         Line(builder, "Tags", task.Tags.Count > 0 ? string.Join(", ", task.Tags) : null);
         Line(builder, "Assigned agent", task.AssignedAgent);
 
@@ -141,10 +159,32 @@ internal static class TimelineToolFormatter
 
     public static string Title(string title) => OneLine(title, MaxTitleLength);
 
+    private static string DayLoad(TimelineDayLoad day)
+    {
+        var tasks = day.Open == 0 ? "free" : day.Open.ToString(CultureInfo.InvariantCulture);
+        return day.Events == 0 ? tasks : string.Create(CultureInfo.InvariantCulture, $"{tasks}, {day.Events} event(s)");
+    }
+
     private static void AppendTaskLine(StringBuilder builder, TimelineTaskInfo task, DateOnly today)
     {
+        if (task.Kind == TimelineEntryKind.CalendarEvent)
+        {
+            AppendEventLine(builder, task);
+            return;
+        }
+
         builder.Append("- [").Append(task.Priority).Append("] ").Append(Title(task.Title))
             .Append(" | ").Append(StatusText(task.Status));
+
+        if (task.StartTime is { } time)
+        {
+            builder.Append(" | at ").Append(time.ToString("HH:mm", CultureInfo.InvariantCulture));
+        }
+
+        if (task.Repeats)
+        {
+            builder.Append(" | repeats");
+        }
 
         if (task.DueDate is { } due)
         {
@@ -166,6 +206,38 @@ internal static class TimelineToolFormatter
         }
 
         builder.Append(" | id: ").Append(task.Id).AppendLine();
+    }
+
+    private static void AppendEventLine(StringBuilder builder, TimelineTaskInfo entry)
+    {
+        builder.Append("- [Event] ").Append(Title(entry.Title));
+
+        if (entry.StartTime is { } time)
+        {
+            builder.Append(" | at ").Append(time.ToString("HH:mm", CultureInfo.InvariantCulture));
+        }
+
+        if (entry.EndDate is { } end)
+        {
+            builder.Append(" | until ").Append(TimelineToolText.Format(end));
+        }
+
+        if (entry.IsPast)
+        {
+            builder.Append(" | past");
+        }
+
+        if (entry.Repeats)
+        {
+            builder.Append(" | repeats");
+        }
+
+        if (entry.Tags.Count > 0)
+        {
+            builder.Append(" | tags: ").Append(string.Join(", ", entry.Tags));
+        }
+
+        builder.Append(" | id: ").Append(entry.Id).AppendLine();
     }
 
     private static string StatusText(TimelineTaskStatus status)

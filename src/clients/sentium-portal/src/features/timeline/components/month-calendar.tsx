@@ -180,6 +180,7 @@ export function MonthCalendar({
                     onSelect={onSelectDay}
                     onAddTask={onAddTask}
                     onOpenTask={onOpenTask}
+                    onToggleDone={onToggleDone}
                     {...proposalActions}
                   />
                 ) : (

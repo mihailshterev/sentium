@@ -27,6 +27,19 @@ internal static class TimelineCalendar
     public static bool IsOverdue(TimelineTaskStatus status, DateOnly? dueDate, DateOnly? date, int year, int month, DateOnly today)
         => status != TimelineTaskStatus.Done && EffectiveDeadline(dueDate, date, year, month) < today;
 
+    /// <summary>
+    /// A Calendar Event is past once its last day (the end day, else its day, else its month's end) is before
+    /// <paramref name="today"/>. Derived on every read, never stored.
+    /// </summary>
+    public static bool IsPast(DateOnly? date, DateOnly? endDate, int year, int month, DateOnly today)
+        => (endDate ?? date ?? LastDay(year, month)) < today;
+
+    public static DateOnly TodayIn(TimeZoneInfo zone, DateTimeOffset now)
+    {
+        ArgumentNullException.ThrowIfNull(zone);
+        return DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(now, zone).DateTime);
+    }
+
     public static DateOnly UtcToday(TimeProvider timeProvider)
     {
         ArgumentNullException.ThrowIfNull(timeProvider);

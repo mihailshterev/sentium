@@ -35,6 +35,8 @@ internal sealed class TempusDbContext : DbContext
 
     public DbSet<TimelineProposal> TimelineProposals => Set<TimelineProposal>();
 
+    public DbSet<TimelineSeries> TimelineSeries => Set<TimelineSeries>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -54,11 +56,30 @@ internal sealed class TempusDbContext : DbContext
             entity.Property(e => e.AssignedAgent).HasMaxLength(TempusLimits.AgentNameMax);
             entity.Property(e => e.CreatedByAgent).HasMaxLength(TempusLimits.AgentNameMax);
 
+            // No HasDefaultValue: EF would then skip sending the CLR default. The migration backfills 'Task'.
+            entity.Property(e => e.Kind).HasConversion<string>().HasMaxLength(16);
+
             entity.HasIndex(e => new { e.UserId, e.Year, e.Month });
             entity.HasIndex(e => new { e.UserId, e.Date });
             entity.HasIndex(e => e.Tags).HasMethod("gin");
 
-            entity.ToTable(t => AddPlacementChecks(t, "TimelineTasks"));
+            // Materialising a Series is idempotent: an occurrence exists at most once.
+            entity.HasIndex(e => new { e.SeriesId, e.OccurrenceDate }).IsUnique();
+
+            entity.HasIndex(e => e.ReminderDueAt).HasFilter("\"ReminderSentAt\" IS NULL");
+
+            entity.HasOne(e => e.Series)
+                .WithMany()
+                .HasForeignKey(e => e.SeriesId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .IsRequired(false);
+
+            entity.ToTable(t =>
+            {
+                AddPlacementChecks(t, "TimelineTasks");
+                t.HasCheckConstraint("CK_TimelineTasks_EndDate", "\"EndDate\" IS NULL OR (\"Date\" IS NOT NULL AND \"EndDate\" >= \"Date\")");
+                t.HasCheckConstraint("CK_TimelineTasks_StartTime", "\"StartTime\" IS NULL OR \"Date\" IS NOT NULL");
+            });
             entity.HasQueryFilter(e => IsSystemScope || e.UserId == ScopeUserId);
         });
 
@@ -107,6 +128,8 @@ internal sealed class TempusDbContext : DbContext
             entity.ToTable(t => AddPlacementChecks(t, "TimelineProposals"));
             entity.HasQueryFilter(e => IsSystemScope || e.UserId == ScopeUserId);
         });
+
+        ConfigureSeries(builder);
     }
 
     public override int SaveChanges(bool acceptAllChangesOnSuccess)
@@ -130,6 +153,26 @@ internal sealed class TempusDbContext : DbContext
         table.HasCheckConstraint(
             $"CK_{name}_DateInMonth",
             "\"Date\" IS NULL OR (EXTRACT(YEAR FROM \"Date\") = \"Year\" AND EXTRACT(MONTH FROM \"Date\") = \"Month\")");
+    }
+
+    private void ConfigureSeries(ModelBuilder builder)
+    {
+        builder.Entity<TimelineSeries>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Kind).HasConversion<string>().HasMaxLength(16);
+            entity.Property(e => e.Priority).HasConversion<string>().HasMaxLength(16);
+            entity.Property(e => e.Frequency).HasConversion<string>().HasMaxLength(16);
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(TempusLimits.TitleMax);
+            entity.Property(e => e.Description).HasMaxLength(TempusLimits.DescriptionMax);
+            entity.Property(e => e.Tags).IsRequired();
+            entity.Property(e => e.Weekdays).IsRequired();
+            entity.Property(e => e.ExcludedDates).IsRequired();
+            entity.Property(e => e.AssignedAgent).HasMaxLength(TempusLimits.AgentNameMax);
+
+            entity.HasIndex(e => e.UserId);
+            entity.HasQueryFilter(e => IsSystemScope || e.UserId == ScopeUserId);
+        });
     }
 
     private void StampUserOwnership()

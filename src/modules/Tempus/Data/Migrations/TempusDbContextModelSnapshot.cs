@@ -104,6 +104,9 @@ namespace Sentium.Tempus.Data.Migrations
                     b.Property<DateOnly?>("DueDate")
                         .HasColumnType("date");
 
+                    b.Property<DateOnly?>("EndDate")
+                        .HasColumnType("date");
+
                     b.Property<DateOnly?>("FromDate")
                         .HasColumnType("date");
 
@@ -137,6 +140,9 @@ namespace Sentium.Tempus.Data.Migrations
 
                     b.Property<DateTimeOffset?>("ResolvedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<TimeOnly?>("StartTime")
+                        .HasColumnType("time without time zone");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -177,6 +183,95 @@ namespace Sentium.Tempus.Data.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Sentium.Tempus.Entities.TimelineSeries", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AssignedAgent")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<int?>("DueOffsetDays")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("DurationDays")
+                        .HasColumnType("integer");
+
+                    b.PrimitiveCollection<List<DateOnly>>("ExcludedDates")
+                        .IsRequired()
+                        .HasColumnType("date[]");
+
+                    b.Property<string>("Frequency")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<int>("Interval")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsPinned")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<DateOnly?>("MaterializedThrough")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Priority")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
+                    b.Property<int?>("ReminderOffsetMinutes")
+                        .HasColumnType("integer");
+
+                    b.Property<DateOnly>("StartDate")
+                        .HasColumnType("date");
+
+                    b.Property<TimeOnly?>("StartTime")
+                        .HasColumnType("time without time zone");
+
+                    b.PrimitiveCollection<List<string>>("Tags")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateOnly?>("Until")
+                        .HasColumnType("date");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.PrimitiveCollection<int[]>("Weekdays")
+                        .IsRequired()
+                        .HasColumnType("integer[]");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("TimelineSeries", "tempus");
+                });
+
             modelBuilder.Entity("Sentium.Tempus.Entities.TimelineTask", b =>
                 {
                     b.Property<Guid>("Id")
@@ -207,8 +302,22 @@ namespace Sentium.Tempus.Data.Migrations
                     b.Property<DateOnly?>("DueDate")
                         .HasColumnType("date");
 
+                    b.Property<DateOnly?>("EndDate")
+                        .HasColumnType("date");
+
+                    b.Property<bool>("IsDetached")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Kind")
+                        .IsRequired()
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)");
+
                     b.Property<int>("Month")
                         .HasColumnType("integer");
+
+                    b.Property<DateOnly?>("OccurrenceDate")
+                        .HasColumnType("date");
 
                     b.Property<string>("Origin")
                         .IsRequired()
@@ -219,6 +328,21 @@ namespace Sentium.Tempus.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(16)
                         .HasColumnType("character varying(16)");
+
+                    b.Property<DateTimeOffset?>("ReminderDueAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("ReminderOffsetMinutes")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset?>("ReminderSentAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("SeriesId")
+                        .HasColumnType("uuid");
+
+                    b.Property<TimeOnly?>("StartTime")
+                        .HasColumnType("time without time zone");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -245,9 +369,15 @@ namespace Sentium.Tempus.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ReminderDueAt")
+                        .HasFilter("\"ReminderSentAt\" IS NULL");
+
                     b.HasIndex("Tags");
 
                     NpgsqlIndexBuilderExtensions.HasMethod(b.HasIndex("Tags"), "gin");
+
+                    b.HasIndex("SeriesId", "OccurrenceDate")
+                        .IsUnique();
 
                     b.HasIndex("UserId", "Date");
 
@@ -257,7 +387,11 @@ namespace Sentium.Tempus.Data.Migrations
                         {
                             t.HasCheckConstraint("CK_TimelineTasks_DateInMonth", "\"Date\" IS NULL OR (EXTRACT(YEAR FROM \"Date\") = \"Year\" AND EXTRACT(MONTH FROM \"Date\") = \"Month\")");
 
+                            t.HasCheckConstraint("CK_TimelineTasks_EndDate", "\"EndDate\" IS NULL OR (\"Date\" IS NOT NULL AND \"EndDate\" >= \"Date\")");
+
                             t.HasCheckConstraint("CK_TimelineTasks_Month", "\"Month\" BETWEEN 1 AND 12");
+
+                            t.HasCheckConstraint("CK_TimelineTasks_StartTime", "\"StartTime\" IS NULL OR \"Date\" IS NOT NULL");
                         });
                 });
 
@@ -279,6 +413,16 @@ namespace Sentium.Tempus.Data.Migrations
                         .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("Task");
+                });
+
+            modelBuilder.Entity("Sentium.Tempus.Entities.TimelineTask", b =>
+                {
+                    b.HasOne("Sentium.Tempus.Entities.TimelineSeries", "Series")
+                        .WithMany()
+                        .HasForeignKey("SeriesId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Series");
                 });
 
             modelBuilder.Entity("Sentium.Tempus.Entities.TimelineTask", b =>

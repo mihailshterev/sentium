@@ -40,6 +40,16 @@ internal sealed class TimelineProposal : IUserOwned
     public DateOnly? DueDate { get; set; }
 
     /// <summary>
+    /// The proposed Calendar Event's time of day (<see cref="TimelineProposalKind.CreateEvent"/> only).
+    /// </summary>
+    public TimeOnly? StartTime { get; set; }
+
+    /// <summary>
+    /// The proposed Calendar Event's last day (<see cref="TimelineProposalKind.CreateEvent"/> only).
+    /// </summary>
+    public DateOnly? EndDate { get; set; }
+
+    /// <summary>
     /// Target month.
     /// </summary>
     public int Year { get; set; }

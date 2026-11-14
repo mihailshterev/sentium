@@ -9,15 +9,20 @@ namespace Sentium.Tempus.Common;
 
 internal static class TimelineMapping
 {
-    public static TimelineTaskDto ToDto(TimelineTask task, int noteCount)
+    /// <param name="series">The Entry's Series, when it is an occurrence.</param>
+    /// <param name="today">Today in the user's time zone, for <see cref="TimelineTaskDto.IsPast"/>.</param>
+    public static TimelineTaskDto ToDto(TimelineTask task, int noteCount, TimelineSeries? series, DateOnly today)
     {
         return new(
             task.Id,
+            task.Kind,
             task.Title,
             task.Description,
             task.Year,
             task.Month,
             task.Date,
+            task.StartTime,
+            task.EndDate,
             task.DueDate,
             task.Priority,
             task.Status,
@@ -27,9 +32,21 @@ internal static class TimelineMapping
             task.Origin,
             task.CreatedByAgent,
             noteCount,
+            task.SeriesId,
+            task.OccurrenceDate,
+            task.IsDetached,
+            series is null ? null : ToRepeat(series),
+            task.ReminderOffsetMinutes,
+            IsPast(task, today),
             task.CreatedAt,
             task.UpdatedAt);
     }
+
+    public static TimelineRepeat ToRepeat(TimelineSeries series)
+        => new(series.Frequency, series.Interval, series.Weekdays.Count == 0 ? null : series.Weekdays, series.Until);
+
+    public static bool IsPast(TimelineTask task, DateOnly today)
+        => task.Kind == TimelineEntryKind.CalendarEvent && TimelineCalendar.IsPast(task.Date, task.EndDate, task.Year, task.Month, today);
 
     public static TimelineNoteDto ToDto(TimelineNote note)
     {
@@ -59,6 +76,8 @@ internal static class TimelineMapping
             proposal.Tags,
             proposal.AssignedAgent,
             proposal.DueDate,
+            proposal.StartTime,
+            proposal.EndDate,
             proposal.Year,
             proposal.Month,
             proposal.Date,
@@ -71,7 +90,7 @@ internal static class TimelineMapping
             proposal.ResolvedAt);
     }
 
-    public static TimelineTaskInfo ToInfo(TimelineTask task)
+    public static TimelineTaskInfo ToInfo(TimelineTask task, DateOnly today)
     {
         return new(
             task.Id,
@@ -83,7 +102,12 @@ internal static class TimelineMapping
             task.Priority,
             task.Status,
             task.Tags,
-            task.AssignedAgent);
+            task.AssignedAgent,
+            task.Kind,
+            task.StartTime,
+            task.EndDate,
+            IsPast(task, today),
+            task.SeriesId is not null);
     }
 
     public static TimelineNoteInfo ToInfo(TimelineNote note)

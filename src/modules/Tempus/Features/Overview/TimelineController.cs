@@ -17,24 +17,26 @@ internal sealed class TimelineController(ITimelineOverviewService overviewServic
     /// day with tasks planned on it.
     /// </summary>
     /// <param name="year">The year (2000-2100).</param>
-    /// <param name="today">The caller's local date, used for the overdue counts when within a day of UTC.</param>
+    /// <param name="today">The caller's local date, used for the overdue counts when within a day of the user's zone.</param>
     [HttpGet("years/{year:int:range(2000,2100)}")]
     [ProducesResponseType(typeof(YearOverviewDto), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetYear(int year, [FromQuery] DateOnly? today, CancellationToken ct)
         => Ok(await overviewService.GetYearAsync(year, today, ct));
 
     /// <summary>
-    /// The month's tasks, notes and pending agent proposals.
+    /// The month's Tasks, Calendar Events, notes and pending agent proposals.
     /// </summary>
+    /// <param name="today">The caller's local date, used for which Calendar Events are past.</param>
     [HttpGet("years/{year:int:range(2000,2100)}/months/{month:int:range(1,12)}")]
     [ProducesResponseType(typeof(MonthDetailDto), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetMonth(int year, int month, CancellationToken ct)
-        => Ok(await overviewService.GetMonthAsync(year, month, ct));
+    public async Task<IActionResult> GetMonth(int year, int month, [FromQuery] DateOnly? today, CancellationToken ct)
+        => Ok(await overviewService.GetMonthAsync(year, month, today, ct));
 
     /// <summary>
-    /// Overdue tasks, the open tasks of the coming days and the number of pending agent suggestions.
+    /// Overdue tasks, the open tasks and Calendar Events of the coming days and the number of pending agent
+    /// suggestions.
     /// </summary>
-    /// <param name="today">The caller's local date, used when within a day of UTC.</param>
+    /// <param name="today">The caller's local date, used when within a day of the user's zone.</param>
     /// <param name="days">Length of the coming-days window, today included (1-42, default 7).</param>
     [HttpGet("upcoming")]
     [ProducesResponseType(typeof(UpcomingDto), StatusCodes.Status200OK)]

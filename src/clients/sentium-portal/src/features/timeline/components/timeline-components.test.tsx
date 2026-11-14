@@ -21,9 +21,9 @@ describe("YearTimeline", () => {
       },
     }),
     days: [
-      { date: "2026-11-12", open: 1, done: 0, urgent: false },
-      { date: "2026-11-20", open: 2, done: 0, urgent: true },
-      { date: "2026-11-03", open: 0, done: 2, urgent: false },
+      { date: "2026-11-12", open: 1, done: 0, urgent: false, events: 0 },
+      { date: "2026-11-20", open: 2, done: 0, urgent: true, events: 0 },
+      { date: "2026-11-03", open: 0, done: 2, urgent: false, events: 0 },
     ],
   };
 
@@ -194,8 +194,12 @@ describe("MonthCalendar", () => {
   it("shows the selected day's agenda, pinned tasks, suggestions and notes", () => {
     const { handlers, dentist } = renderMonth();
 
-    fireEvent.click(screen.getByRole("checkbox", { name: "Complete Book dentist" }));
+    // Ticked from the agenda row and from the chip in its day cell.
+    const [, rowTick] = screen.getAllByRole("checkbox", { name: "Complete Book dentist" });
+    fireEvent.click(rowTick);
+    fireEvent.click(within(screen.getByTestId("day-2026-11-12")).getByRole("checkbox", { name: "Complete Book dentist" }));
     fireEvent.click(screen.getByRole("button", { name: "Ask ResearchAnalyst about Book dentist" }));
+    expect(handlers.onToggleDone).toHaveBeenCalledTimes(2);
     expect(handlers.onToggleDone).toHaveBeenCalledWith(dentist);
     expect(handlers.onAskAgent).toHaveBeenCalledWith({ kind: "task", task: dentist });
 
@@ -303,7 +307,7 @@ describe("TaskFormDialog", () => {
     fireEvent.click(screen.getByLabelText("On a day"));
     fireEvent.click(screen.getByRole("button", { name: "Add task" }));
 
-    expect(await screen.findByText("Choose a day, or pin the task to the month")).toBeInTheDocument();
+    expect(await screen.findByText("Choose a day, or pin it to the month")).toBeInTheDocument();
     expect(onSubmit).not.toHaveBeenCalled();
   });
 });

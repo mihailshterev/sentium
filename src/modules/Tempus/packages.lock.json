@@ -435,6 +435,13 @@
           "Sentium.Infrastructure": "[1.0.0, )"
         }
       },
+      "sentium.registry": {
+        "type": "Project",
+        "dependencies": {
+          "Sentium.Core": "[1.0.0, )",
+          "Sentium.Infrastructure": "[1.0.0, )"
+        }
+      },
       "Aspire.Npgsql.EntityFrameworkCore.PostgreSQL": {
         "type": "CentralTransitive",
         "requested": "[13.6.5, )",
