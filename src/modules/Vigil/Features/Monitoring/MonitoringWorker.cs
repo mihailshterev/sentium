@@ -1,11 +1,14 @@
+using System.Globalization;
+using Sentium.Nuntius.Contracts;
 using Sentium.Vigil.Features.Settings;
 
 namespace Sentium.Vigil.Features.Monitoring;
 
 /// <summary>
 /// Periodically probes every monitored target (services and infrastructure), records the result,
-/// evaluates incidents, and broadcasts changes through <see cref="IVigilFeed"/> for the live SSE stream. Cadence and
-/// thresholds are read from the Registry-backed settings on every cycle so changes apply live.
+/// evaluates incidents, and broadcasts changes through <see cref="IVigilFeed"/> for the live SSE stream. Incidents
+/// opening and resolving also notify the Sovereigns. Cadence and thresholds are read from the Registry-backed
+/// settings on every cycle so changes apply live.
 /// </summary>
 internal sealed class MonitoringWorker(
     IEnumerable<IHealthProbe> probes,
@@ -13,8 +16,13 @@ internal sealed class MonitoringWorker(
     IIncidentStore incidentStore,
     IVigilSettingsProvider settingsProvider,
     IVigilFeed feed,
+    INotifier notifier,
     ILogger<MonitoringWorker> logger) : BackgroundService
 {
+    private const string IncidentLink = "/vigil";
+    private const string OpenedState = "opened";
+    private const string ResolvedState = "resolved";
+
     private readonly IReadOnlyList<IHealthProbe> _probes = [.. probes];
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -82,7 +90,7 @@ internal sealed class MonitoringWorker(
 
         var current = stateStore.UpdateStatus(raw);
 
-        EvaluateIncident(probe, current, settings);
+        await EvaluateIncidentAsync(probe, current, settings, stoppingToken);
         LogTransition(previous, current);
 
         if (previous is null || previous.Status != current.Status)
@@ -91,26 +99,28 @@ internal sealed class MonitoringWorker(
         }
     }
 
-    private void EvaluateIncident(IHealthProbe probe, ServiceHealthStatus current, VigilRuntimeSettings settings)
+    private async Task EvaluateIncidentAsync(IHealthProbe probe, ServiceHealthStatus current, VigilRuntimeSettings settings, CancellationToken ct)
     {
         var open = incidentStore.GetOpen(probe.Target);
 
         switch (current.Status)
         {
             case ServiceStatus.Unhealthy when open is null:
-                PublishIncident(
+                await PublishIncidentAsync(
                     incidentStore.Open(probe.Target, probe.Kind, IncidentSeverity.Critical, current.Status, current.Details),
-                    VigilFeedEventTypes.IncidentOpened);
+                    VigilFeedEventTypes.IncidentOpened,
+                    ct);
                 break;
 
             case ServiceStatus.Degraded when open is null && current.ConsecutiveFailures >= settings.ConsecutiveFailuresToOpenIncident:
-                PublishIncident(
+                await PublishIncidentAsync(
                     incidentStore.Open(probe.Target, probe.Kind, IncidentSeverity.Warning, current.Status, current.Details),
-                    VigilFeedEventTypes.IncidentOpened);
+                    VigilFeedEventTypes.IncidentOpened,
+                    ct);
                 break;
 
             case ServiceStatus.Healthy when open is not null:
-                PublishIncident(incidentStore.Resolve(probe.Target), VigilFeedEventTypes.IncidentResolved);
+                await PublishIncidentAsync(incidentStore.Resolve(probe.Target), VigilFeedEventTypes.IncidentResolved, ct);
                 break;
         }
     }
@@ -145,18 +155,57 @@ internal sealed class MonitoringWorker(
         feed.Publish(new VigilFeedEvent(VigilFeedEventTypes.Status, payload));
     }
 
-    private void PublishIncident(Incident? incident, string type)
+    private async Task PublishIncidentAsync(Incident? incident, string type, CancellationToken ct)
     {
         if (incident is null)
         {
             return;
         }
 
+        var resolved = type == VigilFeedEventTypes.IncidentResolved;
+
         logger.LogWarning("Incident {Action} for {Target} (severity {Severity})",
-            type == VigilFeedEventTypes.IncidentResolved ? "RESOLVED" : "OPENED", incident.Target, incident.Severity);
+            resolved ? "RESOLVED" : "OPENED", incident.Target, incident.Severity);
 
         feed.Publish(new VigilFeedEvent(type, incident));
+
+        await notifier.NotifyAsync(NotificationRecipient.Sovereigns, resolved ? ResolvedMessage(incident) : OpenedMessage(incident), ct);
     }
+
+    /// <summary>
+    /// The dedupe key is per target AND state: a flapping probe folds into at most one unread outage and one unread
+    /// recovery per target, while a recovery never overwrites the outage the Sovereign has not seen yet.
+    /// </summary>
+    private static NotificationMessage OpenedMessage(Incident incident)
+    {
+        var critical = incident.Severity == IncidentSeverity.Critical;
+
+        return new NotificationMessage(
+            NotificationCategories.SystemIncident,
+            critical ? NotificationSeverity.Critical : NotificationSeverity.Warning,
+            critical ? $"{incident.Target} is down" : $"{incident.Target} is degraded",
+            incident.Description,
+            IncidentLink,
+            IncidentDedupeKey(incident, OpenedState));
+    }
+
+    private static NotificationMessage ResolvedMessage(Incident incident)
+    {
+        var duration = incident.DurationMs is { } ms
+            ? string.Create(CultureInfo.InvariantCulture, $"Recovered after {TimeSpan.FromMilliseconds(ms):g}.")
+            : null;
+
+        return new NotificationMessage(
+            NotificationCategories.SystemIncident,
+            NotificationSeverity.Info,
+            $"{incident.Target} recovered",
+            duration,
+            IncidentLink,
+            IncidentDedupeKey(incident, ResolvedState));
+    }
+
+    private static string IncidentDedupeKey(Incident incident, string state)
+        => $"{NotificationCategories.SystemIncident}:{incident.Target}:{state}";
 
     private static ServiceHealthStatus ProbeFault(IHealthProbe probe, string message)
     {

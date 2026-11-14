@@ -600,6 +600,13 @@
       "sentium.core": {
         "type": "Project"
       },
+      "sentium.identity": {
+        "type": "Project",
+        "dependencies": {
+          "Sentium.Core": "[1.0.0, )",
+          "Sentium.Infrastructure": "[1.0.0, )"
+        }
+      },
       "sentium.infrastructure": {
         "type": "Project",
         "dependencies": {
@@ -629,6 +636,14 @@
           "Sentium.Infrastructure": "[1.0.0, )"
         }
       },
+      "sentium.nuntius": {
+        "type": "Project",
+        "dependencies": {
+          "Sentium.Core": "[1.0.0, )",
+          "Sentium.Identity": "[1.0.0, )",
+          "Sentium.Infrastructure": "[1.0.0, )"
+        }
+      },
       "sentium.registry": {
         "type": "Project",
         "dependencies": {
@@ -649,7 +664,8 @@
         "type": "Project",
         "dependencies": {
           "Sentium.Core": "[1.0.0, )",
-          "Sentium.Infrastructure": "[1.0.0, )"
+          "Sentium.Infrastructure": "[1.0.0, )",
+          "Sentium.Nuntius": "[1.0.0, )"
         }
       },
       "Aspire.Npgsql.EntityFrameworkCore.PostgreSQL": {

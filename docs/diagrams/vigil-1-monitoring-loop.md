@@ -7,8 +7,9 @@ sequenceDiagram
     participant ST as State store
     participant IN as Incident store
     participant FD as VigilFeed (in-process)
+    participant NT as Nuntius · INotifier
 
-    Note over PR: Modules - in-process health checks by tag (Identity, Sentinel, Praxis, Codex, Registry)<br/>Sandbox - HTTP /health · LLM, Embeddings - HTTP /health · PostgreSQL, Redis - TCP
+    Note over PR: Modules - in-process health checks by tag (Identity, Sentinel, Praxis, MCP, Codex, Locus, Tempus, Nuntius, Registry)<br/>Sandbox - HTTP /health · LLM, Embeddings - HTTP /health · PostgreSQL, Redis - TCP
     loop Every PollInterval
         MW->>RS: GetAsync() - cadence and thresholds
         par For each target
@@ -22,6 +23,8 @@ sequenceDiagram
             end
             opt Incident opened/resolved
                 MW->>FD: Publish("incident.opened" / "incident.resolved")
+                MW->>NT: NotifyAsync(Sovereigns, system.incident)
+                Note right of NT: Dedupe key per target and state<br/>(…:opened / …:resolved)
             end
         end
     end

@@ -15,6 +15,7 @@ import { TimelineView as Timeline } from "../../features/timeline";
 import { UsersView as Users } from "../../features/users";
 import { ProfileView as Profile } from "../../features/profile";
 import { VigilView as Vigil } from "../../features/vigil";
+import { InboxView as Inbox } from "../../features/notifications";
 import { ModelsView as Models } from "../../features/models";
 import { SettingsView as SettingsPage } from "../../features/registry";
 import { KnowledgeBaseView as KnowledgeBase } from "../../features/knowledge-base";
@@ -39,6 +40,7 @@ export const routes: RouteObject[] = [
     children: [
       { index: true, element: <Dashboard /> },
       { path: "profile", element: <Profile /> },
+      { path: "inbox", element: <Inbox /> },
       { path: "vigil", element: <Vigil /> },
       { path: "workspaces", element: <Workspaces /> },
       { path: "workspaces/:workspaceId", element: <WorkspaceDetail /> },

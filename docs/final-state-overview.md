@@ -65,6 +65,10 @@ Mapping old → new:
 - **Tempus** - each user's private year timeline: tasks on days or pinned to months, notes, and the
   tasks and moves agents propose for the user to accept. Agents reach it through timeline tools and the
   `TimelinePlanner` agent; the portal draws it as a glowing path through the months.
+- **Nuntius** - notifications and each user's private Inbox. Other modules publish through the
+  `INotifier` contract (to one user, every Sovereign or the household); the portal shows an unread
+  badge and receives new Notifications live over SSE. Vigil incidents, agent timeline suggestions and
+  finished workflow runs are the first publishers.
 - **Mcp** - Model Context Protocol integration: the registry of MCP servers, the approved tool
   catalogue and the client for HTTP and Sandbox-hosted stdio servers. It plugs into Praxis as an
   `IAgentToolSource`, so agents only get MCP tools they name explicitly.
@@ -107,6 +111,7 @@ Mapping old → new:
 - Household inventory that assistants can search ("where is the drill?") (Locus)
 - A year timeline that agents help plan: workload review, suggested tasks and moves, progress notes (Tempus)
 - Module and dependency health monitoring and incident tracking (Vigil)
+- A personal inbox for incidents, agent suggestions and finished runs, updated live (Nuntius)
 - Semantic-map visualization of stored knowledge/memories
 
 ### Research Focus

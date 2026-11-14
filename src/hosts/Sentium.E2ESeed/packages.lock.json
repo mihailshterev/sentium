@@ -165,8 +165,8 @@
       },
       "Microsoft.Extensions.AI.Abstractions": {
         "type": "Transitive",
-        "resolved": "10.11.0",
-        "contentHash": "h4DX/TdJU4fk1GGaf19n6Kujkj6VXbGeL4UEOsQ8+ZJC5fVApPauokCtvBP684BYbczUYZQNfo1mbmyHG4WVSg=="
+        "resolved": "10.10.1",
+        "contentHash": "Kz6ezQfRb9x2TkIWyaXkVAfpvyoAlEDfC59klPrdr2XD5WM4HNw+PREAZ+Fo43GPldtX+E0i1aYzMFQ/zXYMLg=="
       },
       "Microsoft.Extensions.AI.Evaluation": {
         "type": "Transitive",
@@ -385,19 +385,6 @@
           "Polly.Core": "8.4.2"
         }
       },
-      "Quartz": {
-        "type": "Transitive",
-        "resolved": "3.18.0",
-        "contentHash": "l+PY20yF32ljFkP/OROYc7Z7Wv3rhGARqxGkDMaCwOJ3aGA/94fPSBYtJpZKciLbc/89xfVlpEZbIzIPE0hHHQ=="
-      },
-      "Quartz.Extensions.DependencyInjection": {
-        "type": "Transitive",
-        "resolved": "3.18.0",
-        "contentHash": "YAtrZ+pYtPPnWKKuHII1x16E6HxyT1eHWQCvAR4zkMT8xmfuz1KCRHCg3+b8z/nGXpWyR6WpSoIh7dsR4jI+iA==",
-        "dependencies": {
-          "Quartz": "3.18.0"
-        }
-      },
       "Serilog": {
         "type": "Transitive",
         "resolved": "4.3.0",
@@ -546,6 +533,13 @@
       "sentium.core": {
         "type": "Project"
       },
+      "sentium.identity": {
+        "type": "Project",
+        "dependencies": {
+          "Sentium.Core": "[1.0.0, )",
+          "Sentium.Infrastructure": "[1.0.0, )"
+        }
+      },
       "sentium.infrastructure": {
         "type": "Project",
         "dependencies": {
@@ -575,6 +569,14 @@
           "Sentium.Infrastructure": "[1.0.0, )"
         }
       },
+      "sentium.nuntius": {
+        "type": "Project",
+        "dependencies": {
+          "Sentium.Core": "[1.0.0, )",
+          "Sentium.Identity": "[1.0.0, )",
+          "Sentium.Infrastructure": "[1.0.0, )"
+        }
+      },
       "sentium.praxis": {
         "type": "Project",
         "dependencies": {
@@ -583,13 +585,11 @@
           "Microsoft.Agents.AI": "[1.27.0, )",
           "Microsoft.Agents.AI.Workflows": "[1.27.0, )",
           "Microsoft.Extensions.AI": "[10.10.0, )",
-          "ModelContextProtocol.Core": "[2.4.0, )",
-          "Quartz.Extensions.Hosting": "[3.18.0, )",
-          "Quartz.Serialization.SystemTextJson": "[3.18.0, )",
           "Sentium.Codex": "[1.0.0, )",
           "Sentium.Core": "[1.0.0, )",
           "Sentium.Infrastructure": "[1.0.0, )",
           "Sentium.Locus": "[1.0.0, )",
+          "Sentium.Nuntius": "[1.0.0, )",
           "Sentium.Registry": "[1.0.0, )",
           "Sentium.Sentinel": "[1.0.0, )",
           "Sentium.Tempus": "[1.0.0, )"
@@ -615,7 +615,8 @@
         "type": "Project",
         "dependencies": {
           "Sentium.Core": "[1.0.0, )",
-          "Sentium.Infrastructure": "[1.0.0, )"
+          "Sentium.Infrastructure": "[1.0.0, )",
+          "Sentium.Nuntius": "[1.0.0, )"
         }
       },
       "Aspire.Azure.Storage.Blobs": {
@@ -784,15 +785,6 @@
           "Microsoft.Extensions.Resilience": "10.11.0"
         }
       },
-      "ModelContextProtocol.Core": {
-        "type": "CentralTransitive",
-        "requested": "[2.4.0, )",
-        "resolved": "2.4.0",
-        "contentHash": "q98pZMlcxhsh0LpGXcT2ow7sGNveCPhDlJT3zJ7Cz5nNyPmPkm8P57dUIUpzv1w6qWbdSZcR/Z+RbZtNYjEmXQ==",
-        "dependencies": {
-          "Microsoft.Extensions.AI.Abstractions": "10.11.0"
-        }
-      },
       "Npgsql.EntityFrameworkCore.PostgreSQL": {
         "type": "CentralTransitive",
         "requested": "[10.0.3, )",
@@ -827,24 +819,6 @@
         "dependencies": {
           "Npgsql.EntityFrameworkCore.PostgreSQL": "9.0.1",
           "Pgvector": "0.3.2"
-        }
-      },
-      "Quartz.Extensions.Hosting": {
-        "type": "CentralTransitive",
-        "requested": "[3.18.0, )",
-        "resolved": "3.18.0",
-        "contentHash": "DOIgnLibu9sEYqHAKRQYz+0oWZ5q2LP55oNUtosOygEiIxCvTtHAwkZdf6Ea0VCucZ1oO9SeWLoA4q4WFbZspw==",
-        "dependencies": {
-          "Quartz.Extensions.DependencyInjection": "3.18.0"
-        }
-      },
-      "Quartz.Serialization.SystemTextJson": {
-        "type": "CentralTransitive",
-        "requested": "[3.18.0, )",
-        "resolved": "3.18.0",
-        "contentHash": "p+qvJAMLoDoj1VecU1rFCsmMfvhfYCXiFK1d2dicLNPapizy3BfPhKapSwexFndOt97mFr2M0qsXYelb3pLM1A==",
-        "dependencies": {
-          "Quartz": "3.18.0"
         }
       },
       "Serilog.AspNetCore": {

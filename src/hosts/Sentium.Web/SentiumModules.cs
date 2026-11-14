@@ -7,6 +7,7 @@ using Sentium.Infrastructure.Security;
 using Sentium.Infrastructure.Testing;
 using Sentium.Locus;
 using Sentium.Mcp;
+using Sentium.Nuntius;
 using Sentium.Praxis;
 using Sentium.Registry;
 using Sentium.Scheduling;
@@ -29,6 +30,7 @@ internal static class SentiumModules
     [
         new(typeof(IdentityModuleExtensions), b => b.AddIdentityModule(), a => a.InitializeIdentityModuleAsync()),
         new(typeof(RegistryModuleExtensions), b => b.AddRegistryModule(), a => a.InitializeRegistryModuleAsync()),
+        new(typeof(NuntiusModuleExtensions), b => b.AddNuntiusModule(), a => a.InitializeNuntiusModuleAsync()),
         new(typeof(SentinelModuleExtensions), b => b.AddSentinelModule(), a => a.InitializeSentinelModuleAsync()),
         new(typeof(CodexModuleExtensions), b => b.AddCodexModule(), a => a.InitializeCodexModuleAsync()),
         new(typeof(LocusModuleExtensions), b => b.AddLocusModule(), a => a.InitializeLocusModuleAsync()),

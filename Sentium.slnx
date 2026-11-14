@@ -23,6 +23,7 @@
     <Project Path="src/modules/Identity/Sentium.Identity.csproj" />
     <Project Path="src/modules/Locus/Sentium.Locus.csproj" />
     <Project Path="src/modules/Mcp/Sentium.Mcp.csproj" />
+    <Project Path="src/modules/Nuntius/Sentium.Nuntius.csproj" />
     <Project Path="src/modules/Tempus/Sentium.Tempus.csproj" />
     <Project Path="src/modules/Praxis/Sentium.Praxis.csproj" />
     <Project Path="src/modules/Registry/Sentium.Registry.csproj" />

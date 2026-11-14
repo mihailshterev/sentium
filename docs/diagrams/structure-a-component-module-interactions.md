@@ -11,6 +11,7 @@ flowchart TB
         MCP["Mcp<br/>(MCP servers · tool catalogue)"]
         SCH["Scheduling<br/>(Quartz · recurring jobs)"]
         VIG["Vigil<br/>(health monitoring)"]
+        NUN["Nuntius<br/>(notifications · inbox)"]
     end
 
     SBX["Sentium.Sandbox<br/>(isolated execution, stateless)"]
@@ -25,6 +26,9 @@ flowchart TB
     SCH -->|"Contracts: agent tools · sandbox"| PRX
     SEN -->|"Contracts: settings"| REG
     VIG -->|"Contracts: settings"| REG
+    VIG -->|"Contracts: notify Sovereigns"| NUN
+    PRX -->|"Contracts: notify run owner"| NUN
+    NUN -->|"Contracts: user directory"| ID
 
     PRX -->|"POST /execute<br/>(X-Internal-Token)"| SBX
     SBX -->|"POST /api/sentinel/policy/evaluate<br/>(X-Internal-Token)"| SEN
@@ -34,8 +38,11 @@ flowchart TB
     VIG -.->|"in-process health checks"| PRX
     VIG -.->|"in-process health checks"| CDX
     VIG -.->|"in-process health checks"| REG
+    VIG -.->|"in-process health checks"| NUN
     VIG -.->|"HTTP /health"| SBX
 ```
+
+Portal → Nuntius also carries a live SSE stream (`GET /api/nuntius/stream`) of the signed-in user's Notifications.
 
 Solid arrows inside Sentium.Web are in-process calls through the target module's `Contracts`
 (`ModuleBoundaryTests` rejects any other dependency). Only the two Sandbox arrows cross a process

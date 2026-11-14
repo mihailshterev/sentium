@@ -19,6 +19,7 @@
     <ProjectReference Include="..\Sentium.E2ESeed\Sentium.E2ESeed.csproj" />
     <ProjectReference Include="..\..\modules\Identity\Sentium.Identity.csproj" />
     <ProjectReference Include="..\..\modules\Registry\Sentium.Registry.csproj" />
+    <ProjectReference Include="..\..\modules\Nuntius\Sentium.Nuntius.csproj" />
     <ProjectReference Include="..\..\modules\Sentinel\Sentium.Sentinel.csproj" />
     <ProjectReference Include="..\..\modules\Codex\Sentium.Codex.csproj" />
     <ProjectReference Include="..\..\modules\Locus\Sentium.Locus.csproj" />

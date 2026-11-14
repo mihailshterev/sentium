@@ -32,6 +32,7 @@ import { useAuthStore } from "@/shared/auth/state/auth-store";
 import { useConversationStore } from "@/features/assistant/state/assistant-conversation-store";
 import { useOrchestrationRunStore } from "@/features/orchestration/state/orchestration-run-store";
 import { useTimelineChatStore } from "@/features/timeline/state/timeline-chat-store";
+import { NotificationBell } from "@/features/notifications";
 import { useRole } from "@/shared/auth/hooks/useRole";
 import { useProfile } from "@/features/profile/hooks/useProfile";
 import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
@@ -252,6 +253,7 @@ export function Navbar() {
           </Tooltip>
 
           <div className={styles.actions}>
+            <NotificationBell tooltipSide={actionTooltipSide} />
             <Tooltip content="Toggle theme" side={actionTooltipSide}>
               <ThemeToggle />
             </Tooltip>
