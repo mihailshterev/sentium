@@ -34,6 +34,20 @@ internal static class TimelineCalendar
     public static bool IsPast(DateOnly? date, DateOnly? endDate, int year, int month, DateOnly today)
         => (endDate ?? date ?? LastDay(year, month)) < today;
 
+    /// <summary>
+    /// The days from <paramref name="start"/> through <paramref name="end"/>, clipped to the window
+    /// <paramref name="from"/>..<paramref name="to"/>.
+    /// </summary>
+    public static IEnumerable<DateOnly> DaysBetween(DateOnly start, DateOnly end, DateOnly from, DateOnly to)
+    {
+        var first = start > from ? start : from;
+        var last = end < to ? end : to;
+        for (var day = first; day <= last; day = day.AddDays(1))
+        {
+            yield return day;
+        }
+    }
+
     public static DateOnly TodayIn(TimeZoneInfo zone, DateTimeOffset now)
     {
         ArgumentNullException.ThrowIfNull(zone);

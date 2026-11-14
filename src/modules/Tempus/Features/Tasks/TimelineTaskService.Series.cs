@@ -12,7 +12,7 @@ internal sealed partial class TimelineTaskService
     {
         db.ChangeTracker.Clear();
 
-        var series = TimelineSeriesWriter.Create(UserId, request.Kind, request, repeat, timeProvider.GetUtcNow());
+        var series = TimelineSeriesWriter.Create(UserId, request.Kind ?? TimelineEntryKind.Task, request, repeat, timeProvider.GetUtcNow());
         db.TimelineSeries.Add(series);
         await seriesWriter.MaterializeAsync(series, calendar, timeProvider.GetUtcNow(), ct);
 

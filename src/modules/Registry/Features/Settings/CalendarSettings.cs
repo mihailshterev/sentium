@@ -6,13 +6,17 @@ namespace Sentium.Registry.Features.Settings;
 /// </summary>
 internal sealed class CalendarSettings
 {
+    public const string DefaultTimeZone = "UTC";
+
+    public static readonly TimeOnly DefaultDayStart = new(8, 0);
+
     /// <summary>
     /// An IANA time zone id, for example <c>Europe/Sofia</c>.
     /// </summary>
-    public string TimeZone { get; set; } = "UTC";
+    public string TimeZone { get; set; } = DefaultTimeZone;
 
     /// <summary>
     /// When the day starts: Reminders for Entries without a time fire then.
     /// </summary>
-    public TimeOnly DayStart { get; set; } = new(8, 0);
+    public TimeOnly DayStart { get; set; } = DefaultDayStart;
 }

@@ -23,88 +23,19 @@ internal sealed class TimelineOverviewService(
     {
         var today = await TodayAsync(clientToday, ct);
         var firstDay = TimelineCalendar.FirstDay(year, 1);
-        var lastDay = TimelineCalendar.LastDay(year, 12);
 
         // Overdue needs each task's month end, so Entries are aggregated in memory (a year of one user's Entries).
         // A multi-day Calendar Event that started last year still ticks this year's days.
         var entries = await db.TimelineTasks
             .AsNoTracking()
             .Where(t => t.Year == year || (t.EndDate != null && t.Date < firstDay && t.EndDate >= firstDay))
-            .Select(t => new { t.Kind, t.Year, t.Month, t.Date, t.EndDate, t.DueDate, t.Status, t.Priority, Assigned = t.AssignedAgent != null })
+            .Select(t => new YearEntry(t.Kind, t.Year, t.Month, t.Date, t.EndDate, t.DueDate, t.Status, t.Priority, t.AssignedAgent != null))
             .ToListAsync(ct);
 
-        var tasks = entries.Where(t => t.Kind == TimelineEntryKind.Task).ToList();
-        var events = entries.Where(t => t.Kind == TimelineEntryKind.CalendarEvent).ToList();
+        var notes = await LoadNoteStatsAsync(year, ct);
+        var proposals = await LoadProposalStatsAsync(year, ct);
 
-        var notes = await db.TimelineNotes
-            .AsNoTracking()
-            .Where(n => n.Year == year)
-            .GroupBy(n => n.Month)
-            .Select(g => new
-            {
-                Month = g.Key,
-                Count = g.Count(),
-                AgentCount = g.Sum(n => n.Author == TimelineAuthorKind.Agent ? 1 : 0),
-                LastAgentAt = g.Max(n => n.Author == TimelineAuthorKind.Agent ? (DateTimeOffset?)n.CreatedAt : null)
-            })
-            .ToDictionaryAsync(g => g.Month, ct);
-
-        var proposals = await db.TimelineProposals
-            .AsNoTracking()
-            .Where(p => p.Year == year && p.Status == TimelineProposalStatus.Pending)
-            .GroupBy(p => p.Month)
-            .Select(g => new { Month = g.Key, Count = g.Count(), LastAt = g.Max(p => (DateTimeOffset?)p.CreatedAt) })
-            .ToDictionaryAsync(g => g.Month, ct);
-
-        var months = Enumerable.Range(1, 12).Select(month =>
-        {
-            var inMonth = tasks.Where(t => t.Month == month).ToList();
-            var noteStats = notes.GetValueOrDefault(month);
-            var proposalStats = proposals.GetValueOrDefault(month);
-
-            return new MonthSummaryDto(
-                month,
-                inMonth.Count,
-                inMonth.Count(t => t.Status != TimelineTaskStatus.Done),
-                inMonth.Count(t => t.Status == TimelineTaskStatus.Done),
-                inMonth.Count(t => TimelineCalendar.IsOverdue(t.Status, t.DueDate, t.Date, year, month, today)),
-                inMonth.Count(t => t.Assigned),
-                noteStats?.Count ?? 0,
-                noteStats?.AgentCount ?? 0,
-                proposalStats?.Count ?? 0,
-                Latest(noteStats?.LastAgentAt, proposalStats?.LastAt),
-                events.Count(e => e.Year == year && e.Month == month));
-        }).ToList();
-
-        var eventDays = events
-            .Where(e => e.Date is not null)
-            .SelectMany(e => DaysOf(e.Date!.Value, e.EndDate, firstDay, lastDay))
-            .GroupBy(d => d)
-            .ToDictionary(g => g.Key, g => g.Count());
-
-        var taskDays = tasks
-            .Where(t => t.Date is not null)
-            .GroupBy(t => t.Date!.Value)
-            .ToDictionary(g => g.Key, g => g.ToList());
-
-        var days = taskDays.Keys
-            .Union(eventDays.Keys)
-            .Order()
-            .Select(day =>
-            {
-                var onDay = taskDays.GetValueOrDefault(day) ?? [];
-                return new DaySummaryDto(
-                    day,
-                    onDay.Count(t => t.Status != TimelineTaskStatus.Done),
-                    onDay.Count(t => t.Status == TimelineTaskStatus.Done),
-                    onDay.Any(t => t.Status != TimelineTaskStatus.Done
-                        && (t.Priority >= TimelineTaskPriority.High
-                            || TimelineCalendar.IsOverdue(t.Status, t.DueDate, t.Date, year, t.Month, today))),
-                    eventDays.GetValueOrDefault(day));
-            })
-            .ToList();
-
-        return new YearOverviewDto(year, today, months, days);
+        return new YearOverviewDto(year, today, SummariseMonths(year, entries, notes, proposals, today), SummariseDays(year, entries, today));
     }
 
     public async Task<UpcomingDto> GetUpcomingAsync(DateOnly? clientToday, int days, CancellationToken ct = default)
@@ -190,6 +121,30 @@ internal sealed class TimelineOverviewService(
             [.. proposals.Select(TimelineMapping.ToDto)]);
     }
 
+    private async Task<Dictionary<int, NoteStats>> LoadNoteStatsAsync(int year, CancellationToken ct)
+    {
+        return await db.TimelineNotes
+            .AsNoTracking()
+            .Where(n => n.Year == year)
+            .GroupBy(n => n.Month)
+            .Select(g => new NoteStats(
+                g.Key,
+                g.Count(),
+                g.Sum(n => n.Author == TimelineAuthorKind.Agent ? 1 : 0),
+                g.Max(n => n.Author == TimelineAuthorKind.Agent ? (DateTimeOffset?)n.CreatedAt : null)))
+            .ToDictionaryAsync(g => g.Month, ct);
+    }
+
+    private async Task<Dictionary<int, ProposalStats>> LoadProposalStatsAsync(int year, CancellationToken ct)
+    {
+        return await db.TimelineProposals
+            .AsNoTracking()
+            .Where(p => p.Year == year && p.Status == TimelineProposalStatus.Pending)
+            .GroupBy(p => p.Month)
+            .Select(g => new ProposalStats(g.Key, g.Count(), g.Max(p => (DateTimeOffset?)p.CreatedAt)))
+            .ToDictionaryAsync(g => g.Month, ct);
+    }
+
     private async Task<DateOnly> TodayAsync(DateOnly? clientToday, CancellationToken ct)
     {
         var calendar = await calendars.GetAsync(currentUser.UserId ?? Guid.Empty, ct);
@@ -200,19 +155,89 @@ internal sealed class TimelineOverviewService(
         => TimelineMapping.ToDto(row.Task, row.NoteCount, row.Series, today);
 
     /// <summary>
-    /// The days an Entry covers (its day through its end day), clipped to the overview's year.
+    /// Task counts per month (the workload) plus each month's Calendar Events, notes and pending proposals.
     /// </summary>
-    private static IEnumerable<DateOnly> DaysOf(DateOnly date, DateOnly? endDate, DateOnly firstDay, DateOnly lastDay)
+    private static List<MonthSummaryDto> SummariseMonths(
+        int year,
+        List<YearEntry> entries,
+        Dictionary<int, NoteStats> notes,
+        Dictionary<int, ProposalStats> proposals,
+        DateOnly today)
     {
-        var from = date < firstDay ? firstDay : date;
-        var to = endDate is { } end && end < lastDay ? end : endDate is null ? date : lastDay;
-
-        for (var day = from; day <= to; day = day.AddDays(1))
+        return [.. Enumerable.Range(1, 12).Select(month =>
         {
-            yield return day;
-        }
+            var inMonth = entries.Where(e => e.Year == year && e.Month == month).ToList();
+            var tasks = inMonth.Where(e => e.Kind == TimelineEntryKind.Task).ToList();
+            var noteStats = notes.GetValueOrDefault(month);
+            var proposalStats = proposals.GetValueOrDefault(month);
+
+            return new MonthSummaryDto(
+                month,
+                tasks.Count,
+                tasks.Count(t => t.Status != TimelineTaskStatus.Done),
+                tasks.Count(t => t.Status == TimelineTaskStatus.Done),
+                tasks.Count(t => TimelineCalendar.IsOverdue(t.Status, t.DueDate, t.Date, year, month, today)),
+                tasks.Count(t => t.Assigned),
+                noteStats?.Count ?? 0,
+                noteStats?.AgentCount ?? 0,
+                proposalStats?.Count ?? 0,
+                Latest(noteStats?.LastAgentAt, proposalStats?.LastAt),
+                inMonth.Count - tasks.Count);
+        })];
+    }
+
+    /// <summary>
+    /// Every day of the year with Entries: its open, done and urgent Tasks, and the Calendar Events covering it
+    /// (each day of a multi-day one).
+    /// </summary>
+    private static List<DaySummaryDto> SummariseDays(int year, List<YearEntry> entries, DateOnly today)
+    {
+        var firstDay = TimelineCalendar.FirstDay(year, 1);
+        var lastDay = TimelineCalendar.LastDay(year, 12);
+
+        var eventDays = entries
+            .Where(e => e.Kind == TimelineEntryKind.CalendarEvent && e.Date is not null)
+            .SelectMany(e => TimelineCalendar.DaysBetween(e.Date!.Value, e.EndDate ?? e.Date!.Value, firstDay, lastDay))
+            .GroupBy(day => day)
+            .ToDictionary(g => g.Key, g => g.Count());
+
+        var taskDays = entries
+            .Where(e => e.Kind == TimelineEntryKind.Task && e.Date is not null)
+            .GroupBy(e => e.Date!.Value)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        return [.. taskDays.Keys
+            .Union(eventDays.Keys)
+            .Order()
+            .Select(day =>
+            {
+                var onDay = taskDays.GetValueOrDefault(day) ?? [];
+                return new DaySummaryDto(
+                    day,
+                    onDay.Count(t => t.Status != TimelineTaskStatus.Done),
+                    onDay.Count(t => t.Status == TimelineTaskStatus.Done),
+                    onDay.Any(t => t.Status != TimelineTaskStatus.Done
+                        && (t.Priority >= TimelineTaskPriority.High
+                            || TimelineCalendar.IsOverdue(t.Status, t.DueDate, t.Date, year, t.Month, today))),
+                    eventDays.GetValueOrDefault(day));
+            })];
     }
 
     private static DateTimeOffset? Latest(DateTimeOffset? a, DateTimeOffset? b)
         => a is null ? b : b is null ? a : a > b ? a : b;
+
+    private sealed record YearEntry(
+        TimelineEntryKind Kind,
+        int Year,
+        int Month,
+        DateOnly? Date,
+        DateOnly? EndDate,
+        DateOnly? DueDate,
+        TimelineTaskStatus Status,
+        TimelineTaskPriority Priority,
+        bool Assigned);
+
+    private sealed record NoteStats(int Month, int Count, int AgentCount, DateTimeOffset? LastAgentAt);
+
+    private sealed record ProposalStats(int Month, int Count, DateTimeOffset? LastAt);
 }

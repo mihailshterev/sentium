@@ -131,23 +131,6 @@ internal static class TaskRules
         return offset is >= 0 and <= ReminderSchedule.WeekBefore ? null : "A Reminder can be at most a week before.";
     }
 
-    private static string? ValidateKindFields(SaveTimelineTaskRequest request)
-    {
-        if (!Enum.IsDefined(request.Kind))
-        {
-            return "Unknown kind.";
-        }
-
-        if (request.Kind == TimelineEntryKind.Task)
-        {
-            return request.EndDate is null ? null : "Only a Calendar Event has an end day.";
-        }
-
-        return request.Priority is not null || request.Status is not null || request.DueDate is not null || !string.IsNullOrWhiteSpace(request.AssignedAgent)
-            ? "A Calendar Event has no status, priority, due date or assigned agent."
-            : null;
-    }
-
     /// <summary>
     /// The SQL form of <see cref="TimelineCalendar.IsOverdue"/>, for Tasks only: an open Task whose deadline (due
     /// date, else day, else month end) is before today. Calendar Events are never overdue.
@@ -248,5 +231,31 @@ internal static class TaskRules
             .ThenByDescending(i => task(i).Priority)
             .ThenBy(i => task(i).DueDate ?? DateOnly.MaxValue)
             .ThenBy(i => task(i).CreatedAt);
+    }
+
+    /// <summary>
+    /// Task-only and Calendar Event-only fields. Without a kind (an update that omits it) the rules wait until the
+    /// stored kind is known.
+    /// </summary>
+    private static string? ValidateKindFields(SaveTimelineTaskRequest request)
+    {
+        if (request.Kind is not { } kind)
+        {
+            return null;
+        }
+
+        if (!Enum.IsDefined(kind))
+        {
+            return "Unknown kind.";
+        }
+
+        if (kind == TimelineEntryKind.Task)
+        {
+            return request.EndDate is null ? null : "Only a Calendar Event has an end day.";
+        }
+
+        return request.Priority is not null || request.Status is not null || request.DueDate is not null || !string.IsNullOrWhiteSpace(request.AssignedAgent)
+            ? "A Calendar Event has no status, priority, due date or assigned agent."
+            : null;
     }
 }

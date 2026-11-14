@@ -37,15 +37,16 @@ internal sealed partial class TimelineTaskService(
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        if (Validate(request) is { } error)
+        var typed = request with { Kind = request.Kind ?? TimelineEntryKind.Task };
+        if (Validate(typed) is { } error)
         {
             return Result<TimelineTaskDto>.Invalid(error);
         }
 
         var calendar = await calendars.GetAsync(UserId, ct);
-        var id = request.Repeat is { } repeat
-            ? await db.Database.ExecuteInTransactionAsync(() => CreateSeriesAsync(request, repeat, calendar, ct), ct: ct)
-            : await CreateOneAsync(request, calendar, ct);
+        var id = typed.Repeat is { } repeat
+            ? await db.Database.ExecuteInTransactionAsync(() => CreateSeriesAsync(typed, repeat, calendar, ct), ct: ct)
+            : await CreateOneAsync(typed, calendar, ct);
 
         return Result<TimelineTaskDto>.Success((await GetAsync(id, ct))!);
     }
@@ -58,6 +59,11 @@ internal sealed partial class TimelineTaskService(
         if (kind is not { } existingKind)
         {
             return Result<TimelineTaskDto>.NotFound();
+        }
+
+        if (request.Kind is { } asked && asked != existingKind)
+        {
+            return Result<TimelineTaskDto>.Invalid("An entry's kind never changes; delete it and add a new one instead.");
         }
 
         var typed = request with { Kind = existingKind };
@@ -111,7 +117,7 @@ internal sealed partial class TimelineTaskService(
         var task = new TimelineTask
         {
             Id = Guid.CreateVersion7(),
-            Kind = request.Kind,
+            Kind = request.Kind ?? TimelineEntryKind.Task,
             Origin = TimelineAuthorKind.User,
             CreatedAt = now
         };

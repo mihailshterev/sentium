@@ -14,7 +14,7 @@ public sealed class TempusValidatorTests
         int year = 2026,
         int month = 11,
         DateOnly? date = null,
-        IReadOnlyList<string>? tags = null) => new(title, null, year, month, date, null, TimelineTaskPriority.Normal, TimelineTaskStatus.Todo, tags);
+        IReadOnlyList<string>? tags = null) => new(title, null, year, month, date, null, TimelineTaskPriority.Normal, TimelineTaskStatus.Todo, tags, Kind: TimelineEntryKind.Task);
 
     [Fact]
     public void SaveTask_AcceptsADayTask_AndAPinnedTask()
@@ -64,6 +64,14 @@ public sealed class TempusValidatorTests
         validator.Validate(Event(new DateOnly(2026, 11, 14))).IsValid.Should().BeTrue();
         validator.Validate(Event(new DateOnly(2026, 11, 14), new DateOnly(2026, 12, 2))).IsValid.Should().BeTrue();
         validator.Validate(Event()).IsValid.Should().BeTrue();
+    }
+
+    [Fact]
+    public void SaveEntry_WithoutAKind_LeavesTheKindRulesToTheStoredEntry()
+    {
+        var update = Event(new DateOnly(2026, 11, 14), new DateOnly(2026, 11, 16)) with { Kind = null };
+
+        new SaveTimelineTaskRequestValidator().Validate(update).IsValid.Should().BeTrue();
     }
 
     [Fact]

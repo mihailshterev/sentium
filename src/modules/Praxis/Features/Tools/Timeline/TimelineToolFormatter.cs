@@ -111,7 +111,7 @@ internal static class TimelineToolFormatter
         builder.Append(isEvent ? "[Timeline event] " : "[Timeline task] ").AppendLine(Title(task.Title));
         Line(builder, "Id", task.Id.ToString());
         Line(builder, "Planned", task.Date is { } date ? $"{TimelineToolText.Format(date)} ({TimelineToolText.Weekday(date)})" : $"{TimelineToolText.FormatMonth(task.Year, task.Month)} (pinned to the month, no day yet)");
-        Line(builder, "Time", task.StartTime?.ToString("HH:mm", CultureInfo.InvariantCulture));
+        Line(builder, "Time", task.StartTime is { } startTime ? TimelineToolText.FormatTime(startTime) : null);
         Line(builder, "Until", task.EndDate is { } end ? TimelineToolText.Format(end) : null);
         Line(builder, "Repeats", task.Repeats ? "yes" : null);
 
@@ -178,7 +178,7 @@ internal static class TimelineToolFormatter
 
         if (task.StartTime is { } time)
         {
-            builder.Append(" | at ").Append(time.ToString("HH:mm", CultureInfo.InvariantCulture));
+            builder.Append(" | at ").Append(TimelineToolText.FormatTime(time));
         }
 
         if (task.Repeats)
@@ -214,7 +214,7 @@ internal static class TimelineToolFormatter
 
         if (entry.StartTime is { } time)
         {
-            builder.Append(" | at ").Append(time.ToString("HH:mm", CultureInfo.InvariantCulture));
+            builder.Append(" | at ").Append(TimelineToolText.FormatTime(time));
         }
 
         if (entry.EndDate is { } end)

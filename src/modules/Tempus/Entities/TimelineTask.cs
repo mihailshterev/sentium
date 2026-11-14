@@ -5,7 +5,7 @@ namespace Sentium.Tempus.Entities;
 
 /// <summary>
 /// An Entry on the user's year timeline - a Task or a Calendar Event (<see cref="Kind"/>) - planned on a day, or
-/// pinned to a month until it gets one. Kept under its original name; the kind is an added column.
+/// pinned to a month until it gets one.
 /// </summary>
 internal sealed class TimelineTask : IUserOwned
 {

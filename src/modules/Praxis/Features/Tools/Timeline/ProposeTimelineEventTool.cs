@@ -1,5 +1,5 @@
 using System.ComponentModel;
-using System.Globalization;
+using Sentium.Core.Results;
 using Microsoft.Extensions.AI;
 using Sentium.Praxis.Contracts;
 using Sentium.Tempus.Contracts;
@@ -18,8 +18,6 @@ internal sealed class ProposeTimelineEventTool(
     TimeProvider timeProvider,
     ILogger<ProposeTimelineEventTool> logger) : IAgentTool
 {
-    private const string TimeFormat = "HH:mm";
-
     public AIFunction CreateFunction()
     {
         return AgentToolFunction.Create(
@@ -60,26 +58,9 @@ internal sealed class ProposeTimelineEventTool(
             return error ?? $"Error: Give a date (YYYY-MM-DD) or a month (YYYY-MM). Today is {TimelineToolText.Format(today)}.";
         }
 
-        TimeOnly? startTime = null;
-        if (TimelineToolText.Normalize(time) is { } timeText)
+        if (ParseTiming(time, endDate, today, out var startTime, out var end) is { } timingError)
         {
-            if (!TimeOnly.TryParseExact(timeText, TimeFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out var parsedTime))
-            {
-                return "Error: time must be HH:mm, for example 18:30.";
-            }
-
-            startTime = parsedTime;
-        }
-
-        DateOnly? end = null;
-        if (TimelineToolText.Normalize(endDate) is not null)
-        {
-            if (!TimelineToolText.TryParseDate(endDate, today, out var parsedEnd))
-            {
-                return TimelineToolText.DateError("endDate", today);
-            }
-
-            end = parsedEnd;
+            return timingError;
         }
 
         try
@@ -96,19 +77,53 @@ internal sealed class ProposeTimelineEventTool(
                 TimelineToolText.Normalize(rationale));
 
             var result = await timeline.ProposeEventAsync(userId, AgentToolFunction.CurrentAgentName, proposal, ct);
-            if (!result.IsSuccess)
-            {
-                return TimelineWriteResults.Describe(result);
-            }
-
-            return result.Value!.AlreadyPending
-                ? $"The same event suggestion ('{TimelineToolFormatter.Title(eventTitle)}' on {placement.Describe()}) is already waiting for the user's review."
-                : $"Suggested the event '{TimelineToolFormatter.Title(eventTitle)}' for {placement.Describe()}. It is a proposal awaiting the user's review - the event is not on the timeline until they accept it.";
+            return Describe(result, eventTitle, placement);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             logger.LogWarning(ex, "Timeline event proposal failed");
             return TimelineToolMessages.WriteFailed;
         }
+    }
+
+    /// <returns>An error for the model, or <see langword="null"/>.</returns>
+    private static string? ParseTiming(string? time, string? endDate, DateOnly today, out TimeOnly? startTime, out DateOnly? end)
+    {
+        startTime = null;
+        end = null;
+
+        if (TimelineToolText.Normalize(time) is not null)
+        {
+            if (!TimelineToolText.TryParseTime(time, out var parsedTime))
+            {
+                return "Error: time must be HH:mm, for example 18:30.";
+            }
+
+            startTime = parsedTime;
+        }
+
+        if (TimelineToolText.Normalize(endDate) is not null)
+        {
+            if (!TimelineToolText.TryParseDate(endDate, today, out var parsedEnd))
+            {
+                return TimelineToolText.DateError("endDate", today);
+            }
+
+            end = parsedEnd;
+        }
+
+        return null;
+    }
+
+    private static string Describe(Result<TimelineProposalReceipt> result, string title, TimelinePlacement placement)
+    {
+        if (!result.IsSuccess)
+        {
+            return TimelineWriteResults.Describe(result);
+        }
+
+        return result.Value!.AlreadyPending
+            ? $"The same event suggestion ('{TimelineToolFormatter.Title(title)}' on {placement.Describe()}) is already waiting for the user's review."
+            : $"Suggested the event '{TimelineToolFormatter.Title(title)}' for {placement.Describe()}. It is a proposal awaiting the user's review - the event is not on the timeline until they accept it.";
     }
 }

@@ -57,11 +57,15 @@ internal sealed class TimelineAgentAccessService(
             .Select(g => new { Date = g.Key, Open = g.Count() })
             .ToDictionaryAsync(g => g.Date, g => g.Open, ct);
 
-        var upcomingEvents = await Tasks(userId)
-            .Where(t => t.Kind == TimelineEntryKind.CalendarEvent && t.Date != null && t.Date >= today && t.Date <= lastDay)
-            .GroupBy(t => t.Date!.Value)
-            .Select(g => new { Date = g.Key, Count = g.Count() })
-            .ToDictionaryAsync(g => g.Date, g => g.Count, ct);
+        // A multi-day Calendar Event counts on every day it covers, also when it started before today.
+        var upcomingEvents = (await Tasks(userId)
+                .Where(t => t.Kind == TimelineEntryKind.CalendarEvent
+                    && t.Date != null && t.Date <= lastDay && (t.EndDate ?? t.Date) >= today)
+                .Select(t => new { Start = t.Date!.Value, End = t.EndDate ?? t.Date!.Value })
+                .ToListAsync(ct))
+            .SelectMany(e => TimelineCalendar.DaysBetween(e.Start, e.End, today, lastDay))
+            .GroupBy(day => day)
+            .ToDictionary(g => g.Key, g => g.Count());
 
         var pinnedOpenThisMonth = await Tasks(userId)
             .CountAsync(t => t.Kind == TimelineEntryKind.Task && t.Year == today.Year && t.Month == today.Month && t.Date == null && t.Status != TimelineTaskStatus.Done, ct);
@@ -176,8 +180,7 @@ internal sealed class TimelineAgentAccessService(
 
         var title = proposal.Title?.Trim() ?? string.Empty;
         var tags = TagNormalizer.Normalize(proposal.Tags);
-        var error = (title.Length == 0 ? "A task needs a title." : null)
-            ?? ValidateCreate(title, proposal.Description, proposal.Rationale, proposal.AssignedAgent, tags)
+        var error = ValidateCreate("A task needs a title.", title, proposal.Description, proposal.Rationale, proposal.AssignedAgent, tags)
             ?? TaskRules.ValidatePlacement(proposal.Year, proposal.Month, proposal.Date)
             ?? TaskRules.ValidateDueDate(proposal.DueDate);
 
@@ -217,7 +220,7 @@ internal sealed class TimelineAgentAccessService(
 
         var title = proposal.Title?.Trim() ?? string.Empty;
         var tags = TagNormalizer.Normalize(proposal.Tags);
-        var error = ValidateCreate(title, proposal.Description, proposal.Rationale, null, tags)
+        var error = ValidateCreate("An event needs a title.", title, proposal.Description, proposal.Rationale, null, tags)
             ?? TaskRules.ValidatePlacement(proposal.Year, proposal.Month, proposal.Date)
             ?? TaskRules.ValidateTiming(proposal.Date, proposal.StartTime, proposal.EndDate);
 
@@ -492,9 +495,10 @@ internal sealed class TimelineAgentAccessService(
     private async Task<DateOnly> TodayAsync(Guid userId, CancellationToken ct)
         => (await calendars.GetAsync(userId, ct)).Today(timeProvider.GetUtcNow());
 
-    private static string? ValidateCreate(string title, string? description, string? rationale, string? assignedAgent, List<string> tags)
+    /// <param name="missingTitle">The error for an empty title, which names the kind being proposed.</param>
+    private static string? ValidateCreate(string missingTitle, string title, string? description, string? rationale, string? assignedAgent, List<string> tags)
     {
-        return title.Length == 0 ? "A title is required."
+        return title.Length == 0 ? missingTitle
             : title.Length > TempusLimits.TitleMax ? Limit("The title", TempusLimits.TitleMax)
             : description?.Length > TempusLimits.DescriptionMax ? Limit("The description", TempusLimits.DescriptionMax)
             : rationale?.Length > TempusLimits.RationaleMax ? Limit("The rationale", TempusLimits.RationaleMax)

@@ -283,6 +283,46 @@ public sealed class TempusEntriesTests(MonolithWebApplicationFactory factory) : 
     }
 
     [Fact]
+    public async Task UpdatingAnEvent_UsesItsStoredKind_EvenWhenTheRequestOmitsIt()
+    {
+        var client = ClientFor(Guid.NewGuid());
+        var day = Today.AddDays(3);
+        var trip = await CreateAsync(client, Event("Trip", day, endDate: day.AddDays(2)));
+
+        var withoutKind = new { title = "Longer trip", year = day.Year, month = day.Month, date = day, endDate = day.AddDays(4) };
+        var response = await client.PutAsJsonAsync($"{Tasks}/{trip.Id}", withoutKind, Ct);
+
+        response.StatusCode.Should().Be(HttpStatusCode.OK, await response.Content.ReadAsStringAsync(Ct));
+        var updated = (await response.Content.ReadFromJsonAsync<TimelineTaskDto>(Ct))!;
+        updated.Kind.Should().Be(TimelineEntryKind.CalendarEvent);
+        updated.EndDate.Should().Be(day.AddDays(4));
+    }
+
+    [Fact]
+    public async Task AnEntrysKind_CannotBeChanged()
+    {
+        var client = ClientFor(Guid.NewGuid());
+        var task = await CreateAsync(client, Task("Pay bills", Today.AddDays(2)));
+
+        var asEvent = Event("Pay bills", Today.AddDays(2));
+        var response = await client.PutAsJsonAsync($"{Tasks}/{task.Id}", asEvent, Ct);
+
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+    }
+
+    [Fact]
+    public async Task TheAgentOverview_CountsAMultiDayEventAlreadyUnderWay()
+    {
+        var userId = Guid.NewGuid();
+        var client = ClientFor(userId);
+        await CreateAsync(client, Event("Conference", Today.AddDays(-1), endDate: Today.AddDays(1)));
+
+        var overview = await Agents.GetOverviewAsync(userId, upcomingDays: 3, ct: Ct);
+
+        overview.UpcomingDays.Select(d => d.Events).Should().Equal(1, 1, 0);
+    }
+
+    [Fact]
     public async Task AnAcceptedEventProposal_BecomesACalendarEvent()
     {
         var userId = Guid.NewGuid();

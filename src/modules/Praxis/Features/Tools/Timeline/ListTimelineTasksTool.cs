@@ -48,13 +48,44 @@ internal sealed class ListTimelineTasksTool(
 
         var today = TimelineToolMessages.Today(timeProvider);
 
-        var start = today;
+        if (ParseRange(from, to, today, out var start, out var end) is { } rangeError)
+        {
+            return rangeError;
+        }
+
+        if (ParseFilters(status, kind, out var statusFilter, out var kindFilter) is { } filterError)
+        {
+            return filterError;
+        }
+
+        try
+        {
+            var query = new TimelineTaskQuery(start, end, statusFilter, TimelineToolText.Normalize(tag), TimelineToolText.Normalize(assignedAgent), IncludePinned: true, limit ?? DefaultLimit, kindFilter);
+            var tasks = await timeline.ListTasksAsync(userId, query, ct);
+            return TimelineToolFormatter.FormatTasks(tasks, start, end, today);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogWarning(ex, "Timeline task listing failed");
+            return TimelineToolMessages.Unavailable;
+        }
+    }
+
+    /// <summary>
+    /// The day range, defaulting to today and the 30 days after; swapped when reversed and capped in length.
+    /// </summary>
+    /// <returns>An error for the model, or <see langword="null"/>.</returns>
+    private static string? ParseRange(string? from, string? to, DateOnly today, out DateOnly start, out DateOnly end)
+    {
+        start = today;
+        end = default;
+
         if (TimelineToolText.Normalize(from) is not null && !TimelineToolText.TryParseDate(from, today, out start))
         {
             return TimelineToolText.DateError("from", today);
         }
 
-        var end = start.AddDays(DefaultRangeDays);
+        end = start.AddDays(DefaultRangeDays);
         if (TimelineToolText.Normalize(to) is not null && !TimelineToolText.TryParseDate(to, today, out end))
         {
             return TimelineToolText.DateError("to", today);
@@ -70,42 +101,22 @@ internal sealed class ListTimelineTasksTool(
             end = start.AddDays(MaxRangeDays);
         }
 
-        TimelineTaskStatus? statusFilter = null;
-        if (TimelineToolText.Normalize(status) is not null)
+        return null;
+    }
+
+    /// <returns>An error for the model, or <see langword="null"/>.</returns>
+    private static string? ParseFilters(string? status, string? kind, out TimelineTaskStatus? statusFilter, out TimelineEntryKind? kindFilter)
+    {
+        statusFilter = TimelineToolText.ParseStatus(status);
+        kindFilter = TimelineToolText.ParseEntryKind(kind);
+
+        if (TimelineToolText.Normalize(status) is not null && statusFilter is null)
         {
-            statusFilter = TimelineToolText.ParseStatus(status);
-            if (statusFilter is null)
-            {
-                return "Error: status must be one of: todo, in progress, done.";
-            }
+            return "Error: status must be one of: todo, in progress, done.";
         }
 
-        TimelineEntryKind? kindFilter = null;
-        if (TimelineToolText.Normalize(kind) is { } kindText)
-        {
-            kindFilter = kindText.ToLowerInvariant() switch
-            {
-                "task" or "tasks" => TimelineEntryKind.Task,
-                "event" or "events" => TimelineEntryKind.CalendarEvent,
-                _ => null
-            };
-
-            if (kindFilter is null)
-            {
-                return "Error: kind must be 'tasks' or 'events'.";
-            }
-        }
-
-        try
-        {
-            var query = new TimelineTaskQuery(start, end, statusFilter, TimelineToolText.Normalize(tag), TimelineToolText.Normalize(assignedAgent), IncludePinned: true, limit ?? DefaultLimit, kindFilter);
-            var tasks = await timeline.ListTasksAsync(userId, query, ct);
-            return TimelineToolFormatter.FormatTasks(tasks, start, end, today);
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            logger.LogWarning(ex, "Timeline task listing failed");
-            return TimelineToolMessages.Unavailable;
-        }
+        return TimelineToolText.Normalize(kind) is not null && kindFilter is null
+            ? "Error: kind must be 'tasks' or 'events'."
+            : null;
     }
 }
