@@ -45,6 +45,46 @@ public sealed class TimelineCalendarTests
     public void ResolveToday_WithoutAClientDate_IsUtc()
         => TimelineCalendar.ResolveToday(null, Today).Should().Be(Today);
 
+    [Theory]
+    [InlineData(6, null, true)]
+    [InlineData(7, null, false)]
+    [InlineData(5, 6, true)]
+    [InlineData(5, 7, false)]
+    public void IsPast_ForADayEvent_AfterItsLastDay(int day, int? endDay, bool expected)
+    {
+        var end = endDay is { } e ? new DateOnly(2026, 11, e) : (DateOnly?)null;
+
+        TimelineCalendar.IsPast(new DateOnly(2026, 11, day), end, 2026, 11, Today).Should().Be(expected);
+    }
+
+    [Fact]
+    public void IsPast_ForAPinnedEvent_OnceItsMonthIsOver()
+    {
+        TimelineCalendar.IsPast(null, null, 2026, 10, Today).Should().BeTrue();
+        TimelineCalendar.IsPast(null, null, 2026, 11, Today).Should().BeFalse();
+        TimelineCalendar.IsPast(null, null, 2026, 11, new DateOnly(2026, 12, 1)).Should().BeTrue();
+    }
+
+    [Fact]
+    public void TodayIn_UsesTheZonesDate_NotUtcs()
+    {
+        var sofia = TimeZoneInfo.FindSystemTimeZoneById("Europe/Sofia");
+        var lateUtc = new DateTimeOffset(2026, 11, 6, 22, 30, 0, TimeSpan.Zero);
+
+        TimelineCalendar.TodayIn(sofia, lateUtc).Should().Be(Today);
+        TimelineCalendar.TodayIn(TimeZoneInfo.Utc, lateUtc).Should().Be(new DateOnly(2026, 11, 6));
+    }
+
+    [Fact]
+    public void AnEventOnYesterday_InSofia_IsPastJustAfterLocalMidnight()
+    {
+        var sofia = TimeZoneInfo.FindSystemTimeZoneById("Europe/Sofia");
+        var today = TimelineCalendar.TodayIn(sofia, new DateTimeOffset(2026, 10, 31, 22, 5, 0, TimeSpan.Zero));
+
+        TimelineCalendar.IsPast(new DateOnly(2026, 10, 31), null, 2026, 10, today).Should().BeTrue();
+        TimelineCalendar.IsPast(null, null, 2026, 10, today).Should().BeTrue();
+    }
+
     [Fact]
     public void MonthIndex_OrdersMonthsAcrossYears()
     {

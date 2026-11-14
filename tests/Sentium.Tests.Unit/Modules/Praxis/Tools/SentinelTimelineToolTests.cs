@@ -52,6 +52,7 @@ public sealed class SentinelTimelineToolTests
             new ListTimelineTasksTool(timeline, pdp, clock, NullLogger<ListTimelineTasksTool>.Instance),
             new GetTimelineTaskTool(timeline, pdp, clock, NullLogger<GetTimelineTaskTool>.Instance),
             new ProposeTimelineTaskTool(timeline, Substitute.For<IAgentRoster>(), pdp, clock, NullLogger<ProposeTimelineTaskTool>.Instance),
+            new ProposeTimelineEventTool(timeline, pdp, clock, NullLogger<ProposeTimelineEventTool>.Instance),
             new ProposeTaskRescheduleTool(timeline, pdp, clock, NullLogger<ProposeTaskRescheduleTool>.Instance),
             new AddTimelineNoteTool(timeline, pdp, clock, NullLogger<AddTimelineNoteTool>.Instance),
         ];
@@ -66,6 +67,7 @@ public sealed class SentinelTimelineToolTests
         { ToolNames.GetTimelineTask, new() { ["taskId"] = "0b9e7c1e-0000-0000-0000-000000000001" }, "Read", "0b9e7c1e-0000-0000-0000-000000000001", false },
         { ToolNames.ProposeTimelineTask, new() { ["title"] = "Drop off the car", ["date"] = "2026-11-12" }, "Write", "2026-11-12", true },
         { ToolNames.ProposeTimelineTask, new() { ["title"] = "Secret Santa shopping", ["month"] = "2026-12" }, "Write", "2026-12", true },
+        { ToolNames.ProposeTimelineEvent, new() { ["title"] = "Maria's birthday", ["date"] = "2026-11-21", ["time"] = "18:00" }, "Write", "2026-11-21", true },
         { ToolNames.ProposeTaskReschedule, new() { ["taskId"] = "0b9e7c1e-0000-0000-0000-000000000002", ["date"] = "2026-11-20" }, "Write", "0b9e7c1e-0000-0000-0000-000000000002", true },
         { ToolNames.AddTimelineNote, new() { ["content"] = "Reviewed", ["month"] = "2026-11" }, "Write", "2026-11", true },
     };
@@ -116,7 +118,7 @@ public sealed class SentinelTimelineToolTests
     [Fact]
     public void NoTimelineTool_IsApprovalGated_SoUnattendedRunsCanUseThem()
     {
-        string[] names = [ToolNames.GetTimelineOverview, ToolNames.ListTimelineTasks, ToolNames.GetTimelineTask, ToolNames.ProposeTimelineTask, ToolNames.ProposeTaskReschedule, ToolNames.AddTimelineNote];
+        string[] names = [ToolNames.GetTimelineOverview, ToolNames.ListTimelineTasks, ToolNames.GetTimelineTask, ToolNames.ProposeTimelineTask, ToolNames.ProposeTimelineEvent, ToolNames.ProposeTaskReschedule, ToolNames.AddTimelineNote];
 
         foreach (var name in names)
         {

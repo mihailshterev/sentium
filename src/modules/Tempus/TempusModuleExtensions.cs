@@ -1,18 +1,23 @@
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Sentium.Infrastructure.Extensions;
+using Sentium.Registry.Contracts;
 using Sentium.Tempus.Contracts;
 using Sentium.Tempus.Data;
 using Sentium.Tempus.Features.Agents;
+using Sentium.Tempus.Features.Calendar;
 using Sentium.Tempus.Features.Notes;
 using Sentium.Tempus.Features.Overview;
 using Sentium.Tempus.Features.Proposals;
+using Sentium.Tempus.Features.Reminders;
+using Sentium.Tempus.Features.Series;
 using Sentium.Tempus.Features.Tasks;
 
 namespace Sentium.Tempus;
 
 /// <summary>
-/// Tempus: each user's private year timeline - tasks on days or pinned to months, notes, and the changes agents
-/// propose - plus the read/suggest/annotate view assistants get of it (through <see cref="ITimelineAgentAccess"/>).
+/// Tempus: each user's private year timeline - Tasks and Calendar Events on days or pinned to months, repeating
+/// Series, Reminders, notes, and the changes agents propose - plus the read/suggest/annotate view assistants get of
+/// it (through <see cref="ITimelineAgentAccess"/>).
 /// </summary>
 public static class TempusModuleExtensions
 {
@@ -28,6 +33,8 @@ public static class TempusModuleExtensions
 
         services.TryAddSingleton(TimeProvider.System);
 
+        services.AddSingleton<IUserCalendarProvider, UserCalendarProvider>();
+        services.AddScoped<TimelineSeriesWriter>();
         services.AddScoped<ITimelineTaskService, TimelineTaskService>();
         services.AddScoped<ITimelineOverviewService, TimelineOverviewService>();
         services.AddScoped<ITimelineNoteService, TimelineNoteService>();
@@ -35,6 +42,12 @@ public static class TempusModuleExtensions
 
         services.AddScoped<TimelineAgentAccessService>();
         services.AddSingleton<ITimelineAgentAccess, ScopedTimelineAgentAccess>();
+
+        services.AddScoped<TimelineSeriesMaterializer>();
+        services.AddScoped<TimelineReminderSweep>();
+        services.AddSingleton<ISettingsChangedHandler, TimelineReminderRearmer>();
+        services.AddHostedService<TimelineSeriesWorker>();
+        services.AddHostedService<TimelineReminderWorker>();
 
         services.AddHealthChecks().AddDbContextCheck<TempusDbContext>("tempus-db", tags: [ModuleName]);
 

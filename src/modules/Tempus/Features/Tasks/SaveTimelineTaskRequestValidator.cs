@@ -22,6 +22,7 @@ internal sealed class SaveTimelineTaskRequestValidator : AbstractValidator<SaveT
             .WithMessage($"The due date must be between {TempusLimits.MinYear} and {TempusLimits.MaxYear}.");
         RuleFor(x => x.Priority).IsInEnum();
         RuleFor(x => x.Status).IsInEnum();
+        RuleFor(x => x.Kind).IsInEnum();
         RuleFor(x => x.AssignedAgent).MaximumLength(TempusLimits.AgentNameMax);
 
         RuleFor(x => x.Tags)
@@ -32,5 +33,13 @@ internal sealed class SaveTimelineTaskRequestValidator : AbstractValidator<SaveT
             .Must(t => !string.IsNullOrWhiteSpace(t)).WithMessage("Tags cannot be empty.")
             .Must(t => t is null || t.Trim().Length <= TempusLimits.TagMax).WithMessage($"Tags can be at most {TempusLimits.TagMax} characters.")
             .Must(t => t is null || !t.Contains(',', StringComparison.Ordinal)).WithMessage("Tags cannot contain commas.");
+
+        RuleFor(x => x).Custom((request, context) =>
+        {
+            if (TaskRules.ValidateEntry(request) is { } error)
+            {
+                context.AddFailure(error);
+            }
+        });
     }
 }

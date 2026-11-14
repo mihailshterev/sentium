@@ -5,7 +5,7 @@ using Sentium.Infrastructure.Results;
 namespace Sentium.Tempus.Features.Tasks;
 
 /// <summary>
-/// The signed-in user's timeline tasks.
+/// The signed-in user's timeline Entries: Tasks and Calendar Events.
 /// </summary>
 [ApiController]
 [Authorize]
@@ -22,7 +22,8 @@ internal sealed class TimelineTasksController(ITimelineTaskService taskService) 
     }
 
     /// <summary>
-    /// Adds a task on a day, or pinned to a month when no date is given.
+    /// Adds a Task or Calendar Event on a day, or pinned to a month when no date is given. With a repeat rule it
+    /// creates the Series and returns its first occurrence.
     /// </summary>
     [HttpPost]
     [ProducesResponseType(typeof(TimelineTaskDto), StatusCodes.Status201Created)]
@@ -35,15 +36,16 @@ internal sealed class TimelineTasksController(ITimelineTaskService taskService) 
             : result.ToActionResult(this);
     }
 
+    /// <param name="scope">For an occurrence: <c>One</c> (default) or <c>Following</c>.</param>
     [HttpPut("{id:guid}")]
     [ProducesResponseType(typeof(TimelineTaskDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> UpdateTask(Guid id, [FromBody] SaveTimelineTaskRequest request, CancellationToken ct)
-        => (await taskService.UpdateAsync(id, request, ct)).ToActionResult(this);
+    public async Task<IActionResult> UpdateTask(Guid id, [FromBody] SaveTimelineTaskRequest request, [FromQuery] TimelineEditScope scope = TimelineEditScope.One, CancellationToken ct = default)
+        => (await taskService.UpdateAsync(id, request, scope, ct)).ToActionResult(this);
 
     /// <summary>
-    /// Moves a task to another day, or pins it to a month.
+    /// Moves an Entry to another day, or pins it to a month. An occurrence is detached from its Series.
     /// </summary>
     [HttpPut("{id:guid}/schedule")]
     [ProducesResponseType(typeof(TimelineTaskDto), StatusCodes.Status200OK)]
@@ -52,6 +54,9 @@ internal sealed class TimelineTasksController(ITimelineTaskService taskService) 
     public async Task<IActionResult> ScheduleTask(Guid id, [FromBody] ScheduleTimelineTaskRequest request, CancellationToken ct)
         => (await taskService.ScheduleAsync(id, request, ct)).ToActionResult(this);
 
+    /// <summary>
+    /// Ticks or unticks a Task; a Calendar Event is refused.
+    /// </summary>
     [HttpPut("{id:guid}/status")]
     [ProducesResponseType(typeof(TimelineTaskDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -63,11 +68,12 @@ internal sealed class TimelineTasksController(ITimelineTaskService taskService) 
     }
 
     /// <summary>
-    /// Deletes a task with its notes and pending proposals.
+    /// Deletes an Entry with its notes and pending proposals. <c>Following</c> also deletes the later occurrences of
+    /// its Series that are neither done nor past.
     /// </summary>
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> DeleteTask(Guid id, CancellationToken ct)
-        => await taskService.DeleteAsync(id, ct) ? NoContent() : NotFound();
+    public async Task<IActionResult> DeleteTask(Guid id, [FromQuery] TimelineEditScope scope = TimelineEditScope.One, CancellationToken ct = default)
+        => await taskService.DeleteAsync(id, scope, ct) ? NoContent() : NotFound();
 }

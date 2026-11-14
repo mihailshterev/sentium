@@ -201,6 +201,11 @@
   &[data-tone="done"] {
     fill: var(--text-dim);
   }
+
+  &[data-tone="event"] {
+    fill: var(--bg-base);
+    stroke: var(--accent-purple);
+  }
 }
 
 .overlay {
@@ -784,7 +789,32 @@
   cursor: pointer;
 }
 
-/* Task chip: priority as a tone dot; drag to move, click to edit. */
+/* A chip with a Task's tick box beside it (a checkbox cannot sit inside the chip's button). */
+.chipWrap {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+}
+
+.chipTick {
+  flex: none;
+  width: 11px;
+  height: 11px;
+  margin: 0;
+  accent-color: var(--accent-fill);
+  cursor: pointer;
+}
+
+.chipTime {
+  flex: none;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 9px;
+}
+
+/* Task chip: priority as a tone dot; drag to move, click to edit. A Calendar Event is a hollow ring on a purple
+   wash and is never ticked; it fades once past. */
 .chip {
   --tone: var(--accent-cyan);
 
@@ -819,6 +849,22 @@
     .chipTitle {
       text-decoration: line-through;
     }
+  }
+
+  &[data-kind="event"] {
+    --tone: var(--accent-purple);
+
+    border-style: dashed;
+
+    .chipDot {
+      border: 1.5px solid var(--tone);
+      background: transparent;
+      box-shadow: none;
+    }
+  }
+
+  &[data-past] {
+    opacity: 0.45;
   }
 
   &[data-dragging] {
@@ -1000,6 +1046,41 @@
     color: var(--text-muted);
     text-decoration: line-through;
   }
+
+  &[data-kind="event"] {
+    --tone: var(--accent-purple);
+  }
+
+  &[data-past] {
+    opacity: 0.55;
+  }
+}
+
+.rowEventIcon {
+  flex: none;
+  margin-top: 3px;
+  color: var(--accent-purple);
+}
+
+.weekdayPicker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+
+  & label {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+    cursor: pointer;
+  }
+}
+
+.scopeText {
+  margin: 0 0 var(--space-4);
+  color: var(--text-secondary);
 }
 
 .rowCheck {

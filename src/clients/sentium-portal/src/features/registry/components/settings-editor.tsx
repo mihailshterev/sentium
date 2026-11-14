@@ -1,13 +1,13 @@
 import { useEffect, useRef } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { CheckCircle, Cpu, Shield, Sparkles, X, Zap } from "lucide-react";
+import { CheckCircle, Clock, Cpu, Shield, Sparkles, X, Zap } from "lucide-react";
 import styles from "../settings.module.css";
 import { useModels } from "@/features/models/hooks/useModels";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Card, CardHeader } from "@/shared/ui/card";
-import { Range, SwitchRow, Textarea } from "@/shared/ui/form-controls";
+import { Input, Range, Select, SwitchRow, Textarea } from "@/shared/ui/form-controls";
 import { FormField } from "@/shared/ui/form-field";
 import { ModelSelector } from "@/shared/ui/model-selector";
 import { StatusMessage } from "@/shared/ui/status-message";
@@ -18,6 +18,8 @@ interface SettingsEditorProps {
   isSovereign: boolean;
   updatedByHarness: string | null;
   updatedByInference: string | null;
+  /** The household's zone for the "Household default" label; unknown to non-Sovereigns. */
+  householdTimeZone: string | null;
   onSubmitForm: (data: SettingsEditorFormData) => void;
   isSaving: boolean;
   showGlobalSuccess: boolean;
@@ -28,11 +30,20 @@ interface SettingsEditorProps {
 
 const PROMPT_LIMIT = 16000;
 
+const TIME_ZONES = [...new Set(["UTC", ...Intl.supportedValuesOf("timeZone")])];
+
+const zoneOptions = TIME_ZONES.map((zone) => (
+  <option key={zone} value={zone}>
+    {zone}
+  </option>
+));
+
 export function SettingsEditor({
   initialValues,
   isSovereign,
   updatedByHarness,
   updatedByInference,
+  householdTimeZone,
   onSubmitForm,
   isSaving,
   showGlobalSuccess,
@@ -194,6 +205,68 @@ export function SettingsEditor({
           </Card>
         </>
       )}
+
+      <h2 className={styles.group}>Calendar</h2>
+
+      <Card padding="md" as="section">
+        <CardHeader
+          icon={<Clock />}
+          title="Time Zone & Day Start"
+          description="When your day turns over: events count as past after your midnight, and reminders for entries without a time fire at your day start."
+        />
+
+        <div className={styles.fields}>
+          <div className={styles.fieldRow}>
+            <label className={styles.fieldLabel} htmlFor="calendar-zone">
+              My time zone
+            </label>
+            <Select id="calendar-zone" wrapperClassName={styles.fieldControl} {...register("timeZone")}>
+              <option value="">{householdTimeZone ? `Household default (${householdTimeZone})` : "Household default"}</option>
+              {zoneOptions}
+            </Select>
+          </div>
+
+          <div className={styles.fieldRow}>
+            <div className={styles.fieldLabelGroup}>
+              <label className={styles.fieldLabel} htmlFor="calendar-start">
+                My day starts at
+              </label>
+              <span className={styles.fieldHint}>Leave empty to use the household's</span>
+            </div>
+            <Input id="calendar-start" type="time" className={styles.fieldControl} {...register("dayStart")} />
+          </div>
+
+          {isSovereign && (
+            <>
+              <div className={styles.fieldRow}>
+                <label className={styles.fieldLabel} htmlFor="calendar-household-zone">
+                  Household time zone
+                </label>
+                <Select
+                  id="calendar-household-zone"
+                  wrapperClassName={styles.fieldControl}
+                  {...register("householdTimeZone")}
+                >
+                  {zoneOptions}
+                </Select>
+              </div>
+
+              <div className={styles.fieldRow}>
+                <label className={styles.fieldLabel} htmlFor="calendar-household-start">
+                  Household day starts at
+                </label>
+                <Input
+                  id="calendar-household-start"
+                  type="time"
+                  required
+                  className={styles.fieldControl}
+                  {...register("householdDayStart")}
+                />
+              </div>
+            </>
+          )}
+        </div>
+      </Card>
 
       <div className={styles.saveBar} data-dirty={isDirty || undefined}>
         <div className={styles.saveStatus}>

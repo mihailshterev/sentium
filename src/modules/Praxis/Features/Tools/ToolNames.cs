@@ -23,6 +23,7 @@ internal static class ToolNames
     public const string ListTimelineTasks = "list_timeline_tasks";
     public const string GetTimelineTask = "get_timeline_task";
     public const string ProposeTimelineTask = "propose_timeline_task";
+    public const string ProposeTimelineEvent = "propose_timeline_event";
     public const string ProposeTaskReschedule = "propose_task_reschedule";
     public const string AddTimelineNote = "add_timeline_note";
 }

@@ -6,8 +6,9 @@ namespace Sentium.Tempus.Contracts;
 /// <summary>
 /// The assistants' view of a user's year timeline. Every call names the user explicitly: agent runs (chat
 /// approvals, workflows, schedules) carry the acting user on their run context, not on an HTTP request, so the
-/// facade never relies on ambient identity. Assistants can read, suggest and annotate - they never change a task
-/// directly; tasks and moves they propose wait for the user to accept them.
+/// facade never relies on ambient identity. Assistants can read, suggest and annotate - they never change an Entry
+/// directly; Tasks, Calendar Events and moves they propose wait for the user to accept them. Reads cover both
+/// kinds; workload counts are Tasks only, with Calendar Events counted separately.
 /// </summary>
 public interface ITimelineAgentAccess
 {
@@ -26,7 +27,13 @@ public interface ITimelineAgentAccess
     Task<Result<TimelineProposalReceipt>> ProposeTaskAsync(Guid userId, string agentName, TimelineTaskProposal proposal, CancellationToken ct = default);
 
     /// <summary>
-    /// Suggests moving a task; replaces the agent suggestions still pending for the same task. An unknown task is
+    /// Suggests a new Calendar Event. Invalid input is <see cref="ResultStatus.Invalid"/>; too many pending proposals
+    /// is <see cref="ResultStatus.Conflict"/>.
+    /// </summary>
+    Task<Result<TimelineProposalReceipt>> ProposeEventAsync(Guid userId, string agentName, TimelineEventProposal proposal, CancellationToken ct = default);
+
+    /// <summary>
+    /// Suggests moving a Task or Calendar Event; replaces the agent suggestions still pending for the same task. An unknown task is
     /// <see cref="ResultStatus.NotFound"/>.
     /// </summary>
     Task<Result<TimelineProposalReceipt>> ProposeRescheduleAsync(Guid userId, string agentName, TimelineRescheduleProposal proposal, CancellationToken ct = default);

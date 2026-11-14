@@ -25,6 +25,9 @@ internal sealed class ScopedTimelineAgentAccess(IServiceScopeFactory scopeFactor
     public Task<Result<TimelineProposalReceipt>> ProposeTaskAsync(Guid userId, string agentName, TimelineTaskProposal proposal, CancellationToken ct = default)
         => RunAsync(s => s.ProposeTaskAsync(userId, agentName, proposal, ct));
 
+    public Task<Result<TimelineProposalReceipt>> ProposeEventAsync(Guid userId, string agentName, TimelineEventProposal proposal, CancellationToken ct = default)
+        => RunAsync(s => s.ProposeEventAsync(userId, agentName, proposal, ct));
+
     public Task<Result<TimelineProposalReceipt>> ProposeRescheduleAsync(Guid userId, string agentName, TimelineRescheduleProposal proposal, CancellationToken ct = default)
         => RunAsync(s => s.ProposeRescheduleAsync(userId, agentName, proposal, ct));
 

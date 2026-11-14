@@ -23,28 +23,37 @@ describe("timeline service", () => {
 
   it("writes tasks under /tempus/tasks", async () => {
     const payload: SaveTaskPayload = {
+      kind: "Task",
       title: "Plan",
       description: null,
       year: 2026,
       month: 11,
       date: null,
+      startTime: null,
+      endDate: null,
       dueDate: null,
       priority: "Normal",
       status: "Todo",
       tags: [],
       assignedAgent: null,
+      repeat: null,
+      reminderOffsetMinutes: null,
     };
     await api.createTask(payload);
     await api.updateTask("t 1", payload);
     await api.scheduleTask("t1", { year: 2026, month: 12, date: "2026-12-01" });
     await api.setTaskStatus("t1", "Done");
+    await api.updateTask("t1", payload, "Following");
     await api.deleteTask("t1");
+    await api.deleteTask("t2", "Following");
 
     expect(client.post).toHaveBeenCalledWith("/tempus/tasks", payload);
-    expect(client.put).toHaveBeenCalledWith("/tempus/tasks/t%201", payload);
+    expect(client.put).toHaveBeenCalledWith("/tempus/tasks/t%201?scope=One", payload);
+    expect(client.put).toHaveBeenCalledWith("/tempus/tasks/t1?scope=Following", payload);
     expect(client.put).toHaveBeenCalledWith("/tempus/tasks/t1/schedule", { year: 2026, month: 12, date: "2026-12-01" });
     expect(client.put).toHaveBeenCalledWith("/tempus/tasks/t1/status", { status: "Done" });
-    expect(client.delete).toHaveBeenCalledWith("/tempus/tasks/t1");
+    expect(client.delete).toHaveBeenCalledWith("/tempus/tasks/t1?scope=One");
+    expect(client.delete).toHaveBeenCalledWith("/tempus/tasks/t2?scope=Following");
   });
 
   it("answers proposals and manages notes", async () => {

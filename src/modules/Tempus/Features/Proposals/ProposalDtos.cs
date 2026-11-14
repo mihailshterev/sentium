@@ -13,6 +13,8 @@ internal sealed record TimelineProposalDto(
     IReadOnlyList<string> Tags,
     string? AssignedAgent,
     DateOnly? DueDate,
+    TimeOnly? StartTime,
+    DateOnly? EndDate,
     int Year,
     int Month,
     DateOnly? Date,

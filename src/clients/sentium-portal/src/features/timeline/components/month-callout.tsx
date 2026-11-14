@@ -1,4 +1,4 @@
-import { AlertTriangle, Bot, Sparkles, StickyNote } from "lucide-react";
+import { AlertTriangle, Bot, CalendarDays, Sparkles, StickyNote } from "lucide-react";
 import styles from "../timeline.module.css";
 import type { MonthSummary } from "../types/timeline";
 import { MONTH_NAMES } from "../utils/calendar";
@@ -17,7 +17,7 @@ interface MonthCalloutProps {
 
 function Headline({ summary }: { summary: MonthSummary }) {
   const { taskCount: total, openCount: open } = summary;
-  if (total === 0) return <>no tasks yet</>;
+  if (total === 0) return <>{summary.eventCount > 0 ? "no tasks" : "no tasks yet"}</>;
   if (open === 0) return <>all {total} done</>;
   return (
     <>
@@ -38,6 +38,7 @@ export function MonthCallout({ year, month, summary, position, now, onSelect }: 
   const suggested = summary.pendingProposalCount;
   const agentNotes = summary.agentNoteCount;
   const userNotes = summary.noteCount - agentNotes;
+  const events = summary.eventCount;
   const lastAgent = summary.lastAgentActivityAt ? new Date(summary.lastAgentActivityAt).getTime() : null;
   const agentActive = lastAgent !== null && now - lastAgent < ACTIVE_WINDOW_MS;
 
@@ -55,8 +56,14 @@ export function MonthCallout({ year, month, summary, position, now, onSelect }: 
           <span style={{ width: `${(summary.doneCount / total) * 100}%` }} />
         </span>
       )}
-      {(overdue > 0 || suggested > 0 || agentNotes > 0 || userNotes > 0) && (
+      {(overdue > 0 || suggested > 0 || agentNotes > 0 || userNotes > 0 || events > 0) && (
         <span className={styles.calloutStats}>
+          {events > 0 && (
+            <span className={styles.stat} data-tone="purple" title={`${events} ${events === 1 ? "event" : "events"}`}>
+              <CalendarDays size={10} />
+              {events}
+            </span>
+          )}
           {overdue > 0 && (
             <span className={styles.stat} data-tone="danger">
               <AlertTriangle size={10} />

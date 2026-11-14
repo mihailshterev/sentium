@@ -1,4 +1,4 @@
-import { AlertTriangle, Bot, CalendarClock, Sparkles } from "lucide-react";
+import { AlertTriangle, Bot, CalendarClock, CalendarDays, Sparkles } from "lucide-react";
 import styles from "../timeline.module.css";
 import { Button } from "@/shared/ui/button";
 import type { TimelineTask, Upcoming } from "../types/timeline";
@@ -44,6 +44,7 @@ export function UpNext({
   const overdueCount = upcoming?.overdueCount ?? 0;
   const next = upcoming?.next ?? [];
   const pending = upcoming?.pendingProposals ?? 0;
+  const events = upcoming?.events ?? [];
   const rowProps = { today, onOpen: onOpenTask, onToggleDone, onAskAgent };
 
   return (
@@ -83,6 +84,21 @@ export function UpNext({
           </ul>
         )}
       </section>
+
+      {events.length > 0 && (
+        <section className={styles.upColumn}>
+          <header className={styles.sideHead}>
+            <h3>
+              <CalendarDays size={13} aria-hidden="true" /> Events
+            </h3>
+          </header>
+          <ul className={styles.rows}>
+            {events.map((event) => (
+              <TaskRow key={event.id} task={event} when={nextWhen(event, today)} {...rowProps} />
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section className={styles.upColumn}>
         <header className={styles.sideHead}>

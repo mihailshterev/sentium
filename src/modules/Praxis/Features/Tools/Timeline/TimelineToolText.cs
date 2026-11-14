@@ -12,6 +12,7 @@ internal static class TimelineToolText
 {
     public const string DateFormat = "yyyy-MM-dd";
     public const string MonthFormat = "yyyy-MM";
+    public const string TimeFormat = "HH:mm";
 
     public static string? Normalize(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
 
@@ -20,6 +21,14 @@ internal static class TimelineToolText
     public static string FormatMonth(int year, int month) => string.Create(CultureInfo.InvariantCulture, $"{year:D4}-{month:D2}");
 
     public static string Weekday(DateOnly date) => date.DayOfWeek.ToString()[..3];
+
+    public static string FormatTime(TimeOnly time) => time.ToString(TimeFormat, CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// <c>HH:mm</c> on the 24-hour clock.
+    /// </summary>
+    public static bool TryParseTime(string? text, out TimeOnly time)
+        => TimeOnly.TryParseExact(Normalize(text), TimeFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out time);
 
     /// <summary>
     /// <c>YYYY-MM-DD</c>, or <c>today</c>/<c>tomorrow</c>/<c>yesterday</c> relative to <paramref name="today"/>.
@@ -99,6 +108,16 @@ internal static class TimelineToolText
             "todo" or "open" => TimelineTaskStatus.Todo,
             "inprogress" or "started" or "doing" => TimelineTaskStatus.InProgress,
             "done" or "completed" or "complete" => TimelineTaskStatus.Done,
+            _ => null
+        };
+    }
+
+    public static TimelineEntryKind? ParseEntryKind(string? text)
+    {
+        return Compact(text) switch
+        {
+            "task" or "tasks" => TimelineEntryKind.Task,
+            "event" or "events" or "calendarevent" or "calendarevents" => TimelineEntryKind.CalendarEvent,
             _ => null
         };
     }

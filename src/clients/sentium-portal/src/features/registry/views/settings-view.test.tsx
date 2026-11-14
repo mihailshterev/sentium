@@ -4,6 +4,7 @@ import { MemoryRouter } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { SettingsView as SettingsPage } from "./settings-view";
 import * as useSystemSettingsHook from "@/features/registry/hooks/useSystemSettings";
+import * as useCalendarSettingsHook from "@/features/registry/hooks/useCalendarSettings";
 import type { Settings } from "../types/settings";
 
 const mockSettings: Settings = {
@@ -39,8 +40,21 @@ const renderSettings = () => {
   );
 };
 
+const calendarHook = {
+  own: { timeZone: null, dayStart: null },
+  household: null,
+  isLoading: false,
+  save: vi.fn(),
+  isSaving: false,
+  isSaveSuccess: false,
+  isSaveError: false,
+  saveError: null,
+  resetSave: vi.fn(),
+};
+
 beforeEach(() => {
   vi.spyOn(useSystemSettingsHook, "useSystemSettings").mockReturnValue(defaultHook);
+  vi.spyOn(useCalendarSettingsHook, "useCalendarSettings").mockReturnValue({ ...calendarHook, save: vi.fn() });
 });
 
 describe("Settings loading state", () => {
@@ -201,5 +215,42 @@ describe("Settings editing interactions", () => {
     renderSettings();
     // Should still show characters remaining in the warn style (near limit)
     expect(screen.getByText(/characters remaining/i)).toBeInTheDocument();
+  });
+});
+
+describe("Calendar settings", () => {
+  it("shows the calendar as its own group inside the settings form", () => {
+    renderSettings();
+    expect(screen.getByRole("heading", { level: 2, name: "Calendar" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Household default" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /save calendar/i })).not.toBeInTheDocument();
+  });
+
+  it("saves a changed time zone and day start through the shared save bar", async () => {
+    const save = vi.fn();
+    vi.spyOn(useCalendarSettingsHook, "useCalendarSettings").mockReturnValue({ ...calendarHook, save });
+    renderSettings();
+
+    fireEvent.change(screen.getByLabelText("My time zone"), { target: { value: "Europe/Sofia" } });
+    fireEvent.change(screen.getByLabelText("My day starts at"), { target: { value: "07:30" } });
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() =>
+      expect(save).toHaveBeenCalledWith({ own: { timeZone: "Europe/Sofia", dayStart: "07:30:00" } }),
+    );
+  });
+
+  it("leaves the calendar alone when only other settings changed", async () => {
+    const save = vi.fn();
+    const saveHarness = vi.fn();
+    vi.spyOn(useSystemSettingsHook, "useSystemSettings").mockReturnValue({ ...defaultHook, save: saveHarness });
+    vi.spyOn(useCalendarSettingsHook, "useCalendarSettings").mockReturnValue({ ...calendarHook, save });
+    renderSettings();
+
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "Updated prompt." } });
+    fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
+
+    await waitFor(() => expect(saveHarness).toHaveBeenCalled());
+    expect(save).not.toHaveBeenCalled();
   });
 });

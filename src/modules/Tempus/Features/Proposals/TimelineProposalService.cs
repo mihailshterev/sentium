@@ -1,10 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using Sentium.Core.Results;
 using Sentium.Infrastructure.Extensions;
+using Sentium.Infrastructure.Security;
 using Sentium.Tempus.Common;
 using Sentium.Tempus.Contracts.Models;
 using Sentium.Tempus.Data;
 using Sentium.Tempus.Entities;
+using Sentium.Tempus.Features.Calendar;
 using Sentium.Tempus.Features.Tasks;
 
 namespace Sentium.Tempus.Features.Proposals;
@@ -12,7 +14,9 @@ namespace Sentium.Tempus.Features.Proposals;
 internal sealed class TimelineProposalService(
     TempusDbContext db,
     ITimelineTaskService taskService,
-    TimeProvider timeProvider) : ITimelineProposalService
+    TimeProvider timeProvider,
+    ICurrentUser currentUser,
+    IUserCalendarProvider calendars) : ITimelineProposalService
 {
     private const int MaxListed = 200;
 
@@ -32,7 +36,8 @@ internal sealed class TimelineProposalService(
 
     public async Task<Result<TimelineTaskDto>> AcceptAsync(Guid id, CancellationToken ct = default)
     {
-        var result = await db.Database.ExecuteInTransactionAsync(() => AcceptPendingAsync(id, ct), ct: ct);
+        var calendar = await calendars.GetAsync(currentUser.UserId ?? Guid.Empty, ct);
+        var result = await db.Database.ExecuteInTransactionAsync(() => AcceptPendingAsync(id, calendar, ct), ct: ct);
 
         return result.IsSuccess
             ? Result<TimelineTaskDto>.Success((await taskService.GetAsync(result.Value, ct))!)
@@ -53,7 +58,7 @@ internal sealed class TimelineProposalService(
         return Result<TimelineProposalDto>.Success(TimelineMapping.ToDto(proposal));
     }
 
-    private async Task<Result<Guid>> AcceptPendingAsync(Guid id, CancellationToken ct)
+    private async Task<Result<Guid>> AcceptPendingAsync(Guid id, UserCalendar calendar, CancellationToken ct)
     {
         db.ChangeTracker.Clear();
 
@@ -70,9 +75,9 @@ internal sealed class TimelineProposalService(
 
         var now = timeProvider.GetUtcNow();
 
-        return proposal.Kind == TimelineProposalKind.CreateTask
-            ? await AcceptCreateAsync(proposal, now, ct)
-            : await AcceptRescheduleAsync(proposal, now, ct);
+        return proposal.Kind == TimelineProposalKind.Reschedule
+            ? await AcceptRescheduleAsync(proposal, calendar, now, ct)
+            : await AcceptCreateAsync(proposal, now, ct);
     }
 
     private async Task<Result<Guid>> AcceptCreateAsync(TimelineProposal proposal, DateTimeOffset now, CancellationToken ct)
@@ -86,6 +91,9 @@ internal sealed class TimelineProposalService(
         {
             Id = Guid.CreateVersion7(),
             UserId = proposal.UserId,
+            Kind = proposal.Kind == TimelineProposalKind.CreateEvent ? TimelineEntryKind.CalendarEvent : TimelineEntryKind.Task,
+            StartTime = proposal.StartTime,
+            EndDate = proposal.EndDate,
             Title = proposal.Title,
             Description = proposal.Description,
             Year = proposal.Year,
@@ -108,21 +116,21 @@ internal sealed class TimelineProposalService(
         return Result<Guid>.Success(task.Id);
     }
 
-    private async Task<Result<Guid>> AcceptRescheduleAsync(TimelineProposal proposal, DateTimeOffset now, CancellationToken ct)
+    private async Task<Result<Guid>> AcceptRescheduleAsync(TimelineProposal proposal, UserCalendar calendar, DateTimeOffset now, CancellationToken ct)
     {
         var task = proposal.TaskId is { } taskId
             ? await db.TimelineTasks.FirstOrDefaultAsync(t => t.Id == taskId, ct)
             : null;
 
         var stale = task is null
-            || task.Status == TimelineTaskStatus.Done
+            || (task.Kind == TimelineEntryKind.Task && task.Status == TimelineTaskStatus.Done)
             || !TaskRules.IsAt(task, proposal.FromYear ?? 0, proposal.FromMonth ?? 0, proposal.FromDate);
 
         if (stale)
         {
             // Committed with the conflict, so the stale suggestion stops showing.
             await TryResolveAsync(proposal.Id, TimelineProposalStatus.Superseded, now, ct);
-            return Result<Guid>.Conflict("The task has changed since this move was proposed.");
+            return Result<Guid>.Conflict("The entry has changed since this move was proposed.");
         }
 
         if (!await TryResolveAsync(proposal.Id, TimelineProposalStatus.Accepted, now, ct))
@@ -130,15 +138,12 @@ internal sealed class TimelineProposalService(
             return Result<Guid>.Conflict("The proposal was resolved meanwhile.");
         }
 
-        task!.Year = proposal.Year;
-        task.Month = proposal.Month;
-        task.Date = proposal.Date;
-        task.UpdatedAt = now;
+        TaskRules.MoveTo(task!, proposal.Year, proposal.Month, proposal.Date, calendar, now);
         await db.SaveChangesAsync(ct);
 
-        await TaskRules.AfterMoveAsync(db, task, now, keepProposalId: proposal.Id, ct);
+        await TaskRules.AfterMoveAsync(db, task!, now, keepProposalId: proposal.Id, ct);
 
-        return Result<Guid>.Success(task.Id);
+        return Result<Guid>.Success(task!.Id);
     }
 
     /// <summary>

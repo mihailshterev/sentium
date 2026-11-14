@@ -29,4 +29,14 @@ internal sealed class SettingsContainer
     /// Global MCP (Model Context Protocol) client settings.
     /// </summary>
     public McpSettings Mcp { get; set; } = new();
+
+    /// <summary>
+    /// Global household calendar defaults.
+    /// </summary>
+    public CalendarSettings Calendar { get; set; } = new();
+
+    /// <summary>
+    /// Per-user calendar overrides.
+    /// </summary>
+    public UserCalendarSettings UserCalendar { get; set; } = new();
 }

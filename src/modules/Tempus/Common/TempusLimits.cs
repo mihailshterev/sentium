@@ -27,6 +27,13 @@ internal static class TempusLimits
     /// </summary>
     public const int MaxAgentNotesPerDay = 50;
 
+    public const int MaxRepeatInterval = 99;
+
+    /// <summary>
+    /// How far ahead a Series' occurrences are created.
+    /// </summary>
+    public const int SeriesHorizonMonths = 12;
+
     public const int MaxUpcomingDays = 42;
     public const int MaxListedTasks = 100;
     public const int MaxTaskNotes = 20;

@@ -55,14 +55,16 @@ const PAGE_MONTHS = 6;
 const GROW_MARGIN_MONTHS = 4;
 
 const isBusy = (s: MonthSummary | undefined) =>
-  !!s && (s.taskCount > 0 || s.noteCount > 0 || s.pendingProposalCount > 0);
+  !!s && (s.taskCount > 0 || s.eventCount > 0 || s.noteCount > 0 || s.pendingProposalCount > 0);
 
 const dotRadius = (day: DaySummary) => {
   const count = day.open + day.done;
   return count >= 3 ? 4.5 : count === 2 ? 3.5 : 2.5;
 };
 
-const dotTone = (day: DaySummary) => (day.urgent ? "urgent" : day.open > 0 ? "open" : "done");
+/** Task days by their tasks; a day with only Calendar Events gets the hollow event tone. */
+const dotTone = (day: DaySummary) =>
+  day.urgent ? "urgent" : day.open > 0 ? "open" : day.done > 0 ? "done" : day.events > 0 ? "event" : "done";
 
 function scrollRail(el: HTMLElement, left: number, smooth: boolean) {
   if (typeof el.scrollTo === "function") {

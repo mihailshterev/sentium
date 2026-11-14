@@ -635,7 +635,8 @@
         "dependencies": {
           "Sentium.Core": "[1.0.0, )",
           "Sentium.Infrastructure": "[1.0.0, )",
-          "Sentium.Nuntius": "[1.0.0, )"
+          "Sentium.Nuntius": "[1.0.0, )",
+          "Sentium.Registry": "[1.0.0, )"
         }
       },
       "Aspire.Azure.Storage.Blobs": {

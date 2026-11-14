@@ -61,8 +61,9 @@ test.describe("Timeline", () => {
         .getByRole("button", { name: new RegExp(`^${today.label}`) })
         .click();
       // Controlled by the optimistic cache update, which lands a tick after the click.
-      await page.getByRole("checkbox", { name: `Complete ${title}` }).click();
-      await expect(page.getByRole("checkbox", { name: `Reopen ${title}` })).toBeChecked();
+      const agenda = page.getByRole("complementary", { name: `${today.monthName} details` });
+      await agenda.getByRole("checkbox", { name: `Complete ${title}` }).click();
+      await expect(agenda.getByRole("checkbox", { name: `Reopen ${title}` })).toBeChecked();
       await expect(timelinePage.chip(title)).toHaveAttribute("data-done", "true");
     });
 
@@ -109,7 +110,8 @@ test.describe("Timeline", () => {
     };
 
     // Every browser project shares the seeded user, so the suggestion is mocked rather than stored.
-    await page.route(/\/api\/tempus\/years\/\d+\/months\/\d+$/, async (route) => {
+    // The portal requests the month with a `?today=` query, which the pattern must allow for.
+    await page.route(/\/api\/tempus\/years\/\d+\/months\/\d+(\?|$)/, async (route) => {
       const response = await route.fetch();
       const body = await response.json();
       await route.fulfill({ response, json: { ...body, proposals: [suggestion] } });

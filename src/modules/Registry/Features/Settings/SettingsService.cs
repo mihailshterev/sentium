@@ -77,7 +77,24 @@ internal sealed class SettingsService(
 
         logger.LogInformation("Settings '{Key}' updated for {Scope} by {By}; cache invalidated", descriptor.Key, scopeUserId?.ToString() ?? "global", updatedBy ?? "system");
 
+        await NotifyHandlersAsync(descriptor.Key, scopeUserId, ct);
+
         return new SettingsEnvelope(descriptor.Key, JsonSerializer.SerializeToElement(value, value.GetType(), WebOptions), entity.UpdatedAt, entity.UpdatedBy);
+    }
+
+    private async Task NotifyHandlersAsync(string key, Guid? scopeUserId, CancellationToken ct)
+    {
+        foreach (var handler in serviceProvider.GetService<IEnumerable<ISettingsChangedHandler>>() ?? [])
+        {
+            try
+            {
+                await handler.OnSettingsChangedAsync(key, scopeUserId, ct);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                logger.LogError(ex, "Settings-changed handler {Handler} failed for '{Key}'", handler.GetType().Name, key);
+            }
+        }
     }
 
     private static JsonElement MergePayload(object current, JsonElement patch)

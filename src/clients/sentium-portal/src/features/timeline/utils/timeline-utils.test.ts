@@ -254,3 +254,22 @@ describe("month cache", () => {
     expect(pinnedTasks(tasks).map((t) => t.id)).toEqual(["c"]);
   });
 });
+
+describe("entries on a day", () => {
+  it("shows a multi-day event on every day it covers, and events before tasks", () => {
+    const trip = task({ id: "trip", kind: "CalendarEvent", date: "2026-11-12", endDate: "2026-11-14" });
+    const dentist = task({ id: "dentist", date: "2026-11-13" });
+
+    expect(tasksOnDay([dentist, trip], "2026-11-13").map((t) => t.id)).toEqual(["trip", "dentist"]);
+    expect(tasksOnDay([dentist, trip], "2026-11-14").map((t) => t.id)).toEqual(["trip"]);
+    expect(tasksOnDay([dentist, trip], "2026-11-15")).toEqual([]);
+  });
+
+  it("orders a day's entries by time, untimed last", () => {
+    const late = task({ id: "late", startTime: "18:00:00" });
+    const early = task({ id: "early", startTime: "08:30:00" });
+    const untimed = task({ id: "untimed" });
+
+    expect(tasksOnDay([untimed, late, early], "2026-11-12").map((t) => t.id)).toEqual(["early", "late", "untimed"]);
+  });
+});

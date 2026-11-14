@@ -10,11 +10,14 @@ import type {
 
 export const task = (overrides: Partial<TimelineTask> = {}): TimelineTask => ({
   id: "task-1",
+  kind: "Task",
   title: "Book dentist",
   description: null,
   year: 2026,
   month: 11,
   date: "2026-11-12",
+  startTime: null,
+  endDate: null,
   dueDate: null,
   priority: "Normal",
   status: "Todo",
@@ -24,6 +27,12 @@ export const task = (overrides: Partial<TimelineTask> = {}): TimelineTask => ({
   origin: "User",
   createdByAgent: null,
   noteCount: 0,
+  seriesId: null,
+  occurrenceDate: null,
+  isDetached: false,
+  repeat: null,
+  reminderOffsetMinutes: null,
+  isPast: false,
   createdAt: "2026-11-01T10:00:00Z",
   updatedAt: "2026-11-01T10:00:00Z",
   ...overrides,
@@ -54,6 +63,8 @@ export const proposal = (overrides: Partial<TimelineProposal> = {}): TimelinePro
   tags: [],
   assignedAgent: null,
   dueDate: null,
+  startTime: null,
+  endDate: null,
   year: 2026,
   month: 11,
   date: "2026-11-20",
@@ -78,6 +89,7 @@ export const monthSummary = (month: number, overrides: Partial<MonthSummary> = {
   agentNoteCount: 0,
   pendingProposalCount: 0,
   lastAgentActivityAt: null,
+  eventCount: 0,
   ...overrides,
 });
 
@@ -95,6 +107,7 @@ export const upcoming = (overrides: Partial<Upcoming> = {}): Upcoming => ({
   overdueCount: 0,
   next: [],
   pendingProposals: 0,
+  events: [],
   ...overrides,
 });
 
