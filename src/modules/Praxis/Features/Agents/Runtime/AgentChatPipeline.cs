@@ -4,7 +4,7 @@
 using Microsoft.Agents.AI.Compaction;
 using Microsoft.Extensions.AI;
 
-namespace Sentium.Praxis.Features.Agents;
+namespace Sentium.Praxis.Features.Agents.Runtime;
 
 /// <summary>
 /// Assembles the per-agent chat pipeline on top of the shared, singleton base client (OpenTelemetry → inference server):

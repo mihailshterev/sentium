@@ -1,5 +1,5 @@
 using Microsoft.Agents.AI.Workflows;
-using Sentium.Praxis.Features.Agents;
+using Sentium.Praxis.Features.Agents.Runtime;
 using Sentium.Praxis.Features.Orchestration;
 
 namespace Sentium.Praxis.Features.Workflows.Squad;

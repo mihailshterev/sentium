@@ -8,6 +8,8 @@ using Sentium.Praxis.Contracts;
 using Sentium.Praxis.Entities;
 using Sentium.Praxis.Features.Agents;
 using Sentium.Praxis.Features.Agents.Native;
+using Sentium.Praxis.Features.Agents.Runtime;
+using Sentium.Praxis.Features.Agents.ToolOverrides;
 using Sentium.Praxis.Features.Learnings;
 using Sentium.Praxis.Features.Models;
 using Sentium.Praxis.Features.Registry;

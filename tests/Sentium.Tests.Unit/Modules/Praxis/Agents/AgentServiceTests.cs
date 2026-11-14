@@ -2,6 +2,7 @@ using FluentAssertions;
 using NSubstitute;
 using Sentium.Core.Results;
 using Sentium.Praxis.Features.Agents;
+using Sentium.Praxis.Features.Agents.Runtime;
 using Xunit;
 
 namespace Sentium.Tests.Unit.Modules.Praxis.Agents;

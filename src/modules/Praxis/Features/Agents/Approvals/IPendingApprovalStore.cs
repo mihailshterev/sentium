@@ -1,4 +1,4 @@
-namespace Sentium.Praxis.Features.Agents;
+namespace Sentium.Praxis.Features.Agents.Approvals;
 
 public interface IPendingApprovalStore
 {

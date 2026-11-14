@@ -7,6 +7,7 @@ using Sentium.Praxis.Contracts;
 using Sentium.Praxis.Data;
 using Sentium.Praxis.Entities;
 using Sentium.Praxis.Features.Agents;
+using Sentium.Praxis.Features.Agents.Runtime;
 using Sentium.Praxis.Features.Conversations;
 using Sentium.Praxis.Features.Workflows;
 using Sentium.Tests.Integration.Common;

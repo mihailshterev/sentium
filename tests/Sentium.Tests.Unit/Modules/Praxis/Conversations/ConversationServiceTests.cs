@@ -5,6 +5,7 @@ using Sentium.Core.Results;
 using Sentium.Infrastructure.Caching;
 using Sentium.Infrastructure.Security;
 using Sentium.Praxis.Features.Agents;
+using Sentium.Praxis.Features.Agents.Runtime;
 using Sentium.Praxis.Features.Conversations;
 using Xunit;
 

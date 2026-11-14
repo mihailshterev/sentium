@@ -1,4 +1,4 @@
-namespace Sentium.Praxis.Features.Agents;
+namespace Sentium.Praxis.Features.Agents.ToolOverrides;
 
 /// <summary>
 /// Persistence for per-user overrides of built-in agents' tool lists. Every lookup takes the owning user explicitly:

@@ -1,6 +1,6 @@
 using System.Collections.Concurrent;
 
-namespace Sentium.Praxis.Features.Agents;
+namespace Sentium.Praxis.Features.Agents.Approvals;
 
 /// <summary>
 /// In-memory store for tool-approval continuations.

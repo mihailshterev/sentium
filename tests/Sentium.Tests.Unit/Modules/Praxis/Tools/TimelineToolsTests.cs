@@ -7,6 +7,7 @@ using NSubstitute.ExceptionExtensions;
 using Sentium.Core.Results;
 using Sentium.Praxis.Contracts;
 using Sentium.Praxis.Features.Agents;
+using Sentium.Praxis.Features.Agents.Runtime;
 using Sentium.Praxis.Features.Sentinel;
 using Sentium.Praxis.Features.Tools.Timeline;
 using Sentium.Tempus.Contracts;

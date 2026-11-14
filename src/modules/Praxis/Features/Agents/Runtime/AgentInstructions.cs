@@ -4,7 +4,7 @@ using Sentium.Praxis.Contracts;
 using Sentium.Praxis.Features.Harness;
 using Sentium.Praxis.Features.Registry;
 
-namespace Sentium.Praxis.Features.Agents;
+namespace Sentium.Praxis.Features.Agents.Runtime;
 
 /// <summary>
 /// Composes an agent's complete system instructions - sent as <see cref="ChatOptions.Instructions"/>, i.e. exactly one

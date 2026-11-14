@@ -1,5 +1,5 @@
 
-namespace Sentium.Praxis.Features.Agents;
+namespace Sentium.Praxis.Features.Agents.Runtime;
 
 /// <summary>
 /// Custom agents are looked up for the explicit user, never through the ambient query filter: a Sovereign (and a

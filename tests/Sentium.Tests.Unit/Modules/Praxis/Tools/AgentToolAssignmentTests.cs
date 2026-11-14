@@ -2,6 +2,7 @@ using FluentAssertions;
 using Microsoft.Extensions.AI;
 using NSubstitute;
 using Sentium.Praxis.Features.Agents;
+using Sentium.Praxis.Features.Agents.ToolOverrides;
 using Sentium.Praxis.Features.Tools;
 using Sentium.Tests.Unit.Modules.Praxis.Support;
 using Xunit;

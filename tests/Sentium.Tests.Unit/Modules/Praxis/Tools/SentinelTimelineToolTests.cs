@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Sentium.Praxis.Contracts;
 using Sentium.Praxis.Features.Agents;
+using Sentium.Praxis.Features.Agents.Runtime;
 using Sentium.Praxis.Features.Sentinel;
 using Sentium.Praxis.Features.Tools;
 using Sentium.Praxis.Features.Tools.Timeline;

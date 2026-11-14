@@ -1,7 +1,7 @@
 using System.ComponentModel;
 using Microsoft.Extensions.AI;
 using Sentium.Praxis.Contracts;
-using Sentium.Praxis.Features.Agents;
+using Sentium.Praxis.Features.Agents.Runtime;
 using Sentium.Tempus.Contracts;
 using Sentium.Tempus.Contracts.Models;
 

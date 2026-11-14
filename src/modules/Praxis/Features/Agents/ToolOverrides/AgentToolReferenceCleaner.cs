@@ -3,7 +3,7 @@ using Microsoft.Extensions.Caching.Hybrid;
 using Sentium.Praxis.Contracts;
 using Sentium.Praxis.Data;
 
-namespace Sentium.Praxis.Features.Agents;
+namespace Sentium.Praxis.Features.Agents.ToolOverrides;
 
 /// <summary>
 /// Strips tools that an external source no longer offers from every agent's tool list and built-in override (across all

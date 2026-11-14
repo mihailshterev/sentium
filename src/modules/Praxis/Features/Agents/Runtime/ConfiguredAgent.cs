@@ -1,4 +1,4 @@
-namespace Sentium.Praxis.Features.Agents;
+namespace Sentium.Praxis.Features.Agents.Runtime;
 
 /// <summary>
 /// A built-in agent whose tool list the user replaced; everything else comes from <paramref name="inner"/>.

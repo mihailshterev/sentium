@@ -1,7 +1,7 @@
 using System.Text.Json;
 using FluentAssertions;
 using Microsoft.Extensions.AI;
-using Sentium.Praxis.Features.Agents;
+using Sentium.Praxis.Features.Agents.Approvals;
 using Xunit;
 
 namespace Sentium.Tests.Unit.Modules.Praxis.Agents;

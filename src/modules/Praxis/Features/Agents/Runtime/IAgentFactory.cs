@@ -1,6 +1,6 @@
 using Microsoft.Agents.AI;
 
-namespace Sentium.Praxis.Features.Agents;
+namespace Sentium.Praxis.Features.Agents.Runtime;
 
 /// <summary>
 /// Builds runnable <see cref="AIAgent"/> instances by name. Resolves native built-in agents first and falls back

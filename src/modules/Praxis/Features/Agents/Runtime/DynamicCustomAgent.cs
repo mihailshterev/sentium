@@ -1,5 +1,5 @@
 
-namespace Sentium.Praxis.Features.Agents;
+namespace Sentium.Praxis.Features.Agents.Runtime;
 
 /// <summary>
 /// A user-defined agent: its description doubles as the persona prompt, and <paramref name="tools"/> (<see langword="null"/>

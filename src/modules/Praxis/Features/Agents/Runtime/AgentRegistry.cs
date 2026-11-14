@@ -1,6 +1,6 @@
 using System.Collections.Frozen;
 
-namespace Sentium.Praxis.Features.Agents;
+namespace Sentium.Praxis.Features.Agents.Runtime;
 
 public sealed class AgentRegistry : IAgentRegistry
 {

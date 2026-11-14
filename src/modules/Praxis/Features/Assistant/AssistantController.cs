@@ -9,6 +9,8 @@ using Sentium.Praxis.Common.Streaming;
 using Sentium.Praxis.Contracts;
 using Sentium.Praxis.Features.Agents;
 using Sentium.Praxis.Features.Agents.Activity;
+using Sentium.Praxis.Features.Agents.Approvals;
+using Sentium.Praxis.Features.Agents.Runtime;
 using Sentium.Praxis.Features.Conversations;
 using Sentium.Praxis.Features.Registry;
 using Sentium.Praxis.Features.Titles;

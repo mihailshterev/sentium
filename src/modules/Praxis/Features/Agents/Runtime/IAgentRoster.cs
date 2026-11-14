@@ -1,5 +1,5 @@
 
-namespace Sentium.Praxis.Features.Agents;
+namespace Sentium.Praxis.Features.Agents.Runtime;
 
 /// <summary>
 /// The agents a user can work with directly: the built-in specialists (not the control roles that steer squads)

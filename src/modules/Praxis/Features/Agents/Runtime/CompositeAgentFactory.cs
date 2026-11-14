@@ -10,7 +10,7 @@ using Sentium.Praxis.Features.Sentinel;
 using Sentium.Praxis.Features.Skills;
 using Sentium.Praxis.Features.Tools;
 
-namespace Sentium.Praxis.Features.Agents;
+namespace Sentium.Praxis.Features.Agents.Runtime;
 
 /// <summary>
 /// Builds a <see cref="ChatClientAgent"/> per request on the shared agent base client, adding per-agent function

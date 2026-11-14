@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Microsoft.Extensions.AI;
 
-namespace Sentium.Praxis.Features.Agents;
+namespace Sentium.Praxis.Features.Agents.Approvals;
 
 /// <summary>
 /// Everything needed to resume an agent run that paused on a tool-approval request - as data, not live objects. The agent

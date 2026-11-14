@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Sentium.Praxis.Data;
 using Sentium.Praxis.Entities;
 
-namespace Sentium.Praxis.Features.Agents;
+namespace Sentium.Praxis.Features.Agents.ToolOverrides;
 
 public sealed class AgentToolOverrideRepository(PraxisDbContext context) : IAgentToolOverrideRepository
 {

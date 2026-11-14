@@ -4,7 +4,7 @@ using Microsoft.Extensions.AI;
 using Sentium.Praxis.Common.Streaming;
 using Sentium.Praxis.Features.Agents.Activity;
 
-namespace Sentium.Praxis.Features.Agents;
+namespace Sentium.Praxis.Features.Agents.Runtime;
 
 /// <summary>
 /// Streams one agent run to an <see cref="IAgentUpdateSink"/>: for each update, its activity (reasoning, tool calls,
