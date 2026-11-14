@@ -1,6 +1,6 @@
 using FluentAssertions;
-using Sentium.Locus.Dtos;
-using Sentium.Locus.Validation;
+using Sentium.Locus.Features.Assets;
+using Sentium.Locus.Features.Locations;
 using Xunit;
 
 namespace Sentium.Tests.Unit.Modules.Locus;

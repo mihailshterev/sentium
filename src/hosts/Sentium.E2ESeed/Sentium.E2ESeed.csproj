@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\shared\Sentium.Core\Sentium.Core.csproj" />
+    <ProjectReference Include="..\..\shared\Sentium.Infrastructure\Sentium.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\modules\Locus\Sentium.Locus.csproj" />
+    <ProjectReference Include="..\..\modules\Tempus\Sentium.Tempus.csproj" />
+    <ProjectReference Include="..\..\modules\Praxis\Sentium.Praxis.csproj" />
+  </ItemGroup>
+
+</Project>

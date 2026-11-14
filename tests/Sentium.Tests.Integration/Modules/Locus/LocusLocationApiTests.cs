@@ -5,7 +5,8 @@ using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Sentium.Locus.Data;
-using Sentium.Locus.Dtos;
+using Sentium.Locus.Features.Assets;
+using Sentium.Locus.Features.Locations;
 using Xunit;
 
 namespace Sentium.Tests.Integration.Modules.Locus;

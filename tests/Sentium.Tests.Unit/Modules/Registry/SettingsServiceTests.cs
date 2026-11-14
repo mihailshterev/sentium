@@ -29,12 +29,15 @@ public sealed class SettingsServiceTests
         _sut = CreateSut(new PassThroughHybridCache());
     }
 
-    private SettingsService CreateSut(HybridCache cache) => new(
-        _repository,
-        _catalog,
-        cache,
-        Substitute.For<IServiceProvider>(),
-        NullLogger<SettingsService>.Instance);
+    private SettingsService CreateSut(HybridCache cache)
+    {
+        return new(
+            _repository,
+            _catalog,
+            cache,
+            Substitute.For<IServiceProvider>(),
+            NullLogger<SettingsService>.Instance);
+    }
 
     private static readonly JsonSerializerOptions WebOptions = new(JsonSerializerDefaults.Web);
 

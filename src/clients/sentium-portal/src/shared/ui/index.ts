@@ -13,6 +13,7 @@ export { LoadMore } from "./load-more";
 export { ModelSelector } from "./model-selector";
 export { Page } from "./page";
 export { PageHeader } from "./page-header";
+export { SentiumMark } from "./sentium-mark";
 export { Skeleton, SkeletonText } from "./skeleton";
 export { StatCard, StatGrid } from "./stat-card";
 export { StatusMessage } from "./status-message";

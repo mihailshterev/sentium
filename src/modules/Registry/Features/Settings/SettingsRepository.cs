@@ -16,10 +16,12 @@ public sealed class SettingsRepository(RegistryDbContext db) : ISettingsReposito
     }
 
     public Task UpdateAsync(SystemSettings entity, CancellationToken ct = default)
-        => db.SystemSettings
+    {
+        return db.SystemSettings
             .Where(s => s.Id == entity.Id)
             .ExecuteUpdateAsync(setters => setters
                 .SetProperty(s => s.Settings, entity.Settings)
                 .SetProperty(s => s.UpdatedAt, entity.UpdatedAt)
                 .SetProperty(s => s.UpdatedBy, entity.UpdatedBy), ct);
+    }
 }

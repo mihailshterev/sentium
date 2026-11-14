@@ -1,14 +1,12 @@
+using System.Security.Claims;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
-using Sentium.Identity.Dtos;
-using Sentium.Identity.Controllers;
-using Sentium.Identity.Features.Abstractions;
-using Sentium.Identity.Features.Users;
 using Sentium.Identity.Entities;
-using System.Security.Claims;
+using Sentium.Identity.Features.Account;
+using Sentium.Identity.Features.Users;
 using Xunit;
 
 namespace Sentium.Tests.Unit.Modules.Identity;

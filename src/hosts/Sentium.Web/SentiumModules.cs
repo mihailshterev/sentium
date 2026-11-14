@@ -1,10 +1,15 @@
 using System.Reflection;
 using Sentium.Codex;
+using Sentium.E2ESeed;
 using Sentium.Identity;
 using Sentium.Infrastructure.Extensions;
+using Sentium.Infrastructure.Security;
+using Sentium.Infrastructure.Testing;
 using Sentium.Locus;
+using Sentium.Mcp;
 using Sentium.Praxis;
 using Sentium.Registry;
+using Sentium.Scheduling;
 using Sentium.Sentinel;
 using Sentium.Tempus;
 using Sentium.Vigil;
@@ -12,35 +17,43 @@ using Sentium.Vigil;
 namespace Sentium.Web;
 
 /// <summary>
-/// Composition root for the Sentium modules. Registration and initialization run in dependency
-/// order: a module is always added after the modules whose contracts it consumes.
+/// Composition root for the Sentium modules. <see cref="Modules"/> is the single ordered list: registration and
+/// initialization run in that order, and a module always comes after the modules whose contracts it consumes.
 /// </summary>
 internal static class SentiumModules
 {
-    public static readonly Assembly[] Assemblies =
+    private const string E2EUserIdKey = "E2E:UserId";
+    private const string DefaultE2EUserId = "e2e00000-0000-0000-0000-000000000001";
+
+    private static readonly SentiumModule[] Modules =
     [
-        typeof(IdentityModuleExtensions).Assembly,
-        typeof(RegistryModuleExtensions).Assembly,
-        typeof(SentinelModuleExtensions).Assembly,
-        typeof(CodexModuleExtensions).Assembly,
-        typeof(LocusModuleExtensions).Assembly,
-        typeof(TempusModuleExtensions).Assembly,
-        typeof(PraxisModuleExtensions).Assembly,
-        typeof(VigilModuleExtensions).Assembly,
+        new(typeof(IdentityModuleExtensions), b => b.AddIdentityModule(), a => a.InitializeIdentityModuleAsync()),
+        new(typeof(RegistryModuleExtensions), b => b.AddRegistryModule(), a => a.InitializeRegistryModuleAsync()),
+        new(typeof(SentinelModuleExtensions), b => b.AddSentinelModule(), a => a.InitializeSentinelModuleAsync()),
+        new(typeof(CodexModuleExtensions), b => b.AddCodexModule(), a => a.InitializeCodexModuleAsync()),
+        new(typeof(LocusModuleExtensions), b => b.AddLocusModule(), a => a.InitializeLocusModuleAsync()),
+        new(typeof(TempusModuleExtensions), b => b.AddTempusModule(), a => a.InitializeTempusModuleAsync()),
+        new(typeof(PraxisModuleExtensions), b => b.AddPraxisModule(), a => a.InitializePraxisModuleAsync()),
+        new(typeof(SchedulingModuleExtensions), b => b.AddSchedulingModule()),
+        new(typeof(McpModuleExtensions), b => b.AddMcpModule(), a => a.InitializeMcpModuleAsync()),
+        new(typeof(VigilModuleExtensions), b => b.AddVigilModule()),
     ];
+
+    public static IReadOnlyList<Assembly> Assemblies { get; } = [.. Modules.Select(m => m.Marker.Assembly)];
 
     public static IHostApplicationBuilder AddSentiumModules(this IHostApplicationBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
 
-        builder.AddIdentityModule();
-        builder.AddRegistryModule();
-        builder.AddSentinelModule();
-        builder.AddCodexModule();
-        builder.AddLocusModule();
-        builder.AddTempusModule();
-        builder.AddPraxisModule();
-        builder.AddVigilModule();
+        foreach (var module in Modules)
+        {
+            module.Add(builder);
+        }
+
+        if (builder.Environment.IsTesting())
+        {
+            builder.Services.AddE2ESeeders();
+        }
 
         return builder;
     }
@@ -67,20 +80,49 @@ internal static class SentiumModules
 
         var logger = app.Services.GetRequiredService<ILoggerFactory>().CreateLogger(typeof(SentiumModules));
 
-        if (app.Environment.IsEnvironment("Testing"))
+        if (app.Environment.IsTesting())
         {
             logger.LogInformation("Dropping the Sentium e2e database...");
             await app.Services.DropSentiumDatabaseAsync();
         }
 
-        await app.InitializeIdentityModuleAsync();
-        await app.InitializeRegistryModuleAsync();
-        await app.InitializeSentinelModuleAsync();
-        await app.InitializeCodexModuleAsync();
-        await app.InitializeLocusModuleAsync();
-        await app.InitializeTempusModuleAsync();
-        await app.InitializePraxisModuleAsync();
+        foreach (var module in Modules)
+        {
+            if (module.InitializeAsync is { } initialize)
+            {
+                await initialize(app);
+            }
+        }
+
+        if (app.Environment.IsTesting())
+        {
+            await SeedE2EDataAsync(app);
+        }
 
         logger.LogInformation("Sentium modules initialized");
     }
+
+    private static async Task SeedE2EDataAsync(WebApplication app)
+    {
+        await using var scope = app.Services.CreateAsyncScope();
+        scope.ServiceProvider.GetRequiredService<SystemScopeContext>().Activate();
+
+        var context = new E2ESeedContext(
+            Guid.Parse(app.Configuration[E2EUserIdKey] ?? DefaultE2EUserId),
+            TimeProvider.System);
+
+        foreach (var seeder in scope.ServiceProvider.GetServices<IE2ESeeder>())
+        {
+            await seeder.SeedAsync(scope.ServiceProvider, context);
+        }
+    }
+
+    /// <summary>
+    /// One module: a type from its assembly (for controllers and validators), its registration and, when it has
+    /// one, its startup initialization.
+    /// </summary>
+    private sealed record SentiumModule(
+        Type Marker,
+        Func<IHostApplicationBuilder, IHostApplicationBuilder> Add,
+        Func<WebApplication, Task>? InitializeAsync = null);
 }

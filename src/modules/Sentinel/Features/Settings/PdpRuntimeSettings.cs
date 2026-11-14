@@ -12,14 +12,3 @@ public sealed record PdpRuntimeSettings
     public int RateLimitMaxRequests { get; init; } = 120;
     public int RateLimitWindowSeconds { get; init; } = 60;
 }
-
-/// <summary>
-/// Provides cached, Registry-backed access to the runtime PDP settings.
-/// </summary>
-public interface IPdpRuntimeSettingsProvider
-{
-    /// <summary>
-    /// Returns the current runtime PDP settings.
-    /// </summary>
-    ValueTask<PdpRuntimeSettings> GetAsync(CancellationToken ct = default);
-}

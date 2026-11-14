@@ -5,8 +5,10 @@ using Microsoft.AspNetCore.Mvc;
 using Sentium.Codex;
 using Sentium.Identity;
 using Sentium.Locus;
+using Sentium.Mcp;
 using Sentium.Praxis;
 using Sentium.Registry;
+using Sentium.Scheduling;
 using Sentium.Sentinel;
 using Sentium.Tempus;
 using Sentium.Vigil;
@@ -31,6 +33,8 @@ public sealed class ControllerAuthorizationTests
         typeof(LocusModuleExtensions).Assembly,
         typeof(TempusModuleExtensions).Assembly,
         typeof(PraxisModuleExtensions).Assembly,
+        typeof(SchedulingModuleExtensions).Assembly,
+        typeof(McpModuleExtensions).Assembly,
         typeof(VigilModuleExtensions).Assembly,
         typeof(Sentium.Sandbox.Controllers.SandboxController).Assembly,
     ];
@@ -57,10 +61,12 @@ public sealed class ControllerAuthorizationTests
             "anonymous access must be opted into with [AllowAnonymous]; these actions declare no rule");
     }
 
-    private static bool IsController(Type type) =>
-        type is { IsClass: true, IsAbstract: false, IsPublic: true }
+    private static bool IsController(Type type)
+    {
+        return type is { IsClass: true, IsAbstract: false, IsPublic: true }
         && typeof(ControllerBase).IsAssignableFrom(type)
         && !type.IsDefined(typeof(NonControllerAttribute), inherit: true);
+    }
 
     private static bool HasAuthorizationRule(MemberInfo member) =>
         member.GetCustomAttributes(inherit: true).Any(a => a is IAuthorizeData or IAllowAnonymous);

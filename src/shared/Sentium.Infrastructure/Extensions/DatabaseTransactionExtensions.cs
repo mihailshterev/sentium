@@ -13,29 +13,41 @@ public static class DatabaseTransactionExtensions
         CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(database);
-        return database.CreateExecutionStrategy().ExecuteAsync(async () =>
-        {
-            await using var tx = await database.BeginTransactionAsync(isolationLevel, ct);
-            await operation();
-            await tx.CommitAsync(ct);
-        });
+        return database.CreateExecutionStrategy().ExecuteAsync(
+            () => RunInTransactionAsync(database, operation, isolationLevel, ct));
     }
 
-    public static async Task<T> ExecuteInTransactionAsync<T>(
+    public static Task<T> ExecuteInTransactionAsync<T>(
         this DatabaseFacade database,
         Func<Task<T>> operation,
         IsolationLevel isolationLevel = IsolationLevel.ReadCommitted,
         CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(database);
-        T result = default!;
-        await database.CreateExecutionStrategy().ExecuteAsync(async () =>
-        {
-            await using var tx = await database.BeginTransactionAsync(isolationLevel, ct);
-            result = await operation();
-            await tx.CommitAsync(ct);
-        });
+        return database.CreateExecutionStrategy().ExecuteAsync(
+            () => RunInTransactionAsync(database, operation, isolationLevel, ct));
+    }
 
+    private static async Task RunInTransactionAsync(
+        DatabaseFacade database,
+        Func<Task> operation,
+        IsolationLevel isolationLevel,
+        CancellationToken ct)
+    {
+        await using var tx = await database.BeginTransactionAsync(isolationLevel, ct);
+        await operation();
+        await tx.CommitAsync(ct);
+    }
+
+    private static async Task<T> RunInTransactionAsync<T>(
+        DatabaseFacade database,
+        Func<Task<T>> operation,
+        IsolationLevel isolationLevel,
+        CancellationToken ct)
+    {
+        await using var tx = await database.BeginTransactionAsync(isolationLevel, ct);
+        var result = await operation();
+        await tx.CommitAsync(ct);
         return result;
     }
 }

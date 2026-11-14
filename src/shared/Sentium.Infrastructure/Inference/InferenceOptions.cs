@@ -66,12 +66,3 @@ public sealed class InferenceOptions : IValidatableObject
         }
     }
 }
-
-/// <summary>
-/// Which inference server a named HttpClient talks to.
-/// </summary>
-public enum InferenceEndpoint
-{
-    Chat,
-    Embedding
-}

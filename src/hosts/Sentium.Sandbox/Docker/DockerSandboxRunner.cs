@@ -2,7 +2,6 @@ using System.Diagnostics;
 using System.Text;
 using Docker.DotNet;
 using Docker.DotNet.Models;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Sentium.Sandbox.Artifacts;
 using Sentium.Sandbox.Options;
@@ -12,7 +11,7 @@ using Sentium.Sandbox.Models;
 namespace Sentium.Sandbox.Docker;
 
 /// <summary>
-/// Executes code inside a Docker container with comprehensive security hardening.
+/// Executes code inside a hardened Docker container.
 /// </summary>
 /// <remarks>
 /// Execution lifecycle per job:

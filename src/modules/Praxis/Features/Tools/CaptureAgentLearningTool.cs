@@ -1,22 +1,9 @@
 using System.ComponentModel;
 using Microsoft.Extensions.AI;
+using Sentium.Praxis.Contracts;
 using Sentium.Praxis.Features.Learnings;
-using Sentium.Praxis.Features.Sentinel;
-using Sentium.Praxis.Features.Tools.Attributes;
 
 namespace Sentium.Praxis.Features.Tools;
-
-/// <summary>
-/// Visibility requested for a captured learning.
-/// </summary>
-public enum LearningScope
-{
-    /// <summary>Private to the acting user (default).</summary>
-    User,
-
-    /// <summary>Shared with every user's agents - only granted after the sanitization pipeline approves it.</summary>
-    Global
-}
 
 /// <summary>
 /// Allows agents to persist a discrete insight or conclusion to the long-term knowledge base so that future agent
@@ -28,15 +15,18 @@ public sealed class CaptureAgentLearningTool(
     IPdpContextAccessor pdpContext,
     ILogger<CaptureAgentLearningTool> logger) : IAgentTool
 {
-    public AIFunction CreateFunction() => AgentToolFunction.Create(
-        this,
-        CaptureAsync,
-        ToolNames.CaptureAgentLearning,
-        "Captures and stores a discrete learning or insight from this interaction for long-term self-improvement. " +
-        "This is the right place for anything YOU figured out - an architecture blueprint, a debugging fix, a design pattern, or a comparison/conclusion you produced. " +
-        "Use this tool at the end of significant analyses to record conclusions, patterns, or lessons. " +
-        "Use scope 'Global' ONLY for an abstracted, reusable architectural pattern or execution optimization that any user's agents could benefit from, with NO user-specific details (no names, emails, file paths, hostnames, or personal facts); global requests are validated by the platform and may be kept private if they don't qualify. " +
-        "Personal facts and preferences belong in store_memory, not here.");
+    public AIFunction CreateFunction()
+    {
+        return AgentToolFunction.Create(
+            this,
+            CaptureAsync,
+            ToolNames.CaptureAgentLearning,
+            "Captures and stores a discrete learning or insight from this interaction for long-term self-improvement. " +
+            "This is the right place for anything YOU figured out - an architecture blueprint, a debugging fix, a design pattern, or a comparison/conclusion you produced. " +
+            "Use this tool at the end of significant analyses to record conclusions, patterns, or lessons. " +
+            "Use scope 'Global' ONLY for an abstracted, reusable architectural pattern or execution optimization that any user's agents could benefit from, with NO user-specific details (no names, emails, file paths, hostnames, or personal facts); global requests are validated by the platform and may be kept private if they don't qualify. " +
+            "Personal facts and preferences belong in store_memory, not here.");
+    }
 
     public async Task<string> CaptureAsync(
         [Description("The learning text - a self-contained insight, pattern, or fix, written in markdown.")] string content,

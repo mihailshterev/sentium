@@ -3,7 +3,7 @@ sequenceDiagram
     autonumber
     actor U as User
     participant FE as sentium-portal (Scheduler)
-    participant SC as Praxis · SchedulerController
+    participant SC as Scheduling · SchedulerController
     participant SCH as Quartz Scheduler
 
     U->>FE: Open "Scheduler"

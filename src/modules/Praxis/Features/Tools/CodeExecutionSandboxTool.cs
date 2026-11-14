@@ -1,16 +1,13 @@
 using System.ComponentModel;
 using System.Text;
 using Microsoft.Extensions.AI;
+using Sentium.Praxis.Contracts;
 using Sentium.Praxis.Features.CodeExecution;
-using Sentium.Praxis.Features.Tools.Attributes;
-using Sentium.Praxis.Features.Sentinel;
 
 namespace Sentium.Praxis.Features.Tools;
 
 /// <summary>
-/// Autonomous execution gateway that links the AI Agent session to the Sandbox service isolation sandboxes.
-/// This tool forces code execution requests to clear the Sentinel PDP guard rails and user approvals
-/// before hitting the backend endpoint.
+/// Runs agent-written code in the Sandbox. Calls need user approval and pass the Sentinel PDP before they reach it.
 /// </summary>
 [AgentToolPolicy(RiskLevel = ToolRiskLevel.High, RequiresApproval = true, Resource = ToolResource.Code, Action = ToolAction.Execute)]
 public sealed class CodeExecutionSandboxTool(
@@ -18,17 +15,16 @@ public sealed class CodeExecutionSandboxTool(
     IPdpContextAccessor pdpContext,
     ILogger<CodeExecutionSandboxTool> logger) : IAgentTool
 {
-    private readonly ISandboxClient _sandboxClient = sandboxClient ?? throw new ArgumentNullException(nameof(sandboxClient));
-    private readonly IPdpContextAccessor _pdpContext = pdpContext ?? throw new ArgumentNullException(nameof(pdpContext));
-    private readonly ILogger<CodeExecutionSandboxTool> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-
     private const string NoExternalLibraries = "USE NO EXTERNAL LIBRARIES. ONLY NATIVE LANGUAGE ONES.";
 
-    public AIFunction CreateFunction() => AgentToolFunction.Create(
-        this,
-        ExecuteAsync,
-        ToolNames.ExecuteCode,
-        $"Executes code (Python or Node.js) safely within an isolated, ephemeral sandbox environment. {NoExternalLibraries}");
+    public AIFunction CreateFunction()
+    {
+        return AgentToolFunction.Create(
+            this,
+            ExecuteAsync,
+            ToolNames.ExecuteCode,
+            $"Executes code (Python or Node.js) safely within an isolated, ephemeral sandbox environment. {NoExternalLibraries}");
+    }
 
     public async Task<string> ExecuteAsync(
         [Description($"The source code to execute. {NoExternalLibraries}")] string code,
@@ -40,25 +36,25 @@ public sealed class CodeExecutionSandboxTool(
             return "Execution failed: Source code script cannot be null or empty.";
         }
 
-        _logger.LogInformation(
+        logger.LogInformation(
             "Agent triggering isolated sandbox container execution. Language: {Language}, CorrelationId: {CorrelationId}",
-            language, _pdpContext.CorrelationId);
+            language, pdpContext.CorrelationId);
 
         try
         {
-            var correlationId = _pdpContext.CorrelationId.Length > 0 ? _pdpContext.CorrelationId : Guid.NewGuid().ToString();
+            var correlationId = pdpContext.CorrelationId.Length > 0 ? pdpContext.CorrelationId : Guid.NewGuid().ToString();
 
-            var result = await _sandboxClient.ExecuteAsync(new SandboxExecutionRequest
+            var result = await sandboxClient.ExecuteAsync(new SandboxExecutionRequest
             {
                 Language = language.ToString(),
                 Code = code,
                 AgentId = AgentToolFunction.CurrentAgentName,
-                OriginalUserPrompt = _pdpContext.OriginalUserPrompt
+                OriginalUserPrompt = pdpContext.OriginalUserPrompt
             }, correlationId, ct);
 
             if (result.PolicyDenied)
             {
-                _logger.LogWarning("Sandbox execution denied by security policy. Reason: {Reason}", result.PolicyDenialReason);
+                logger.LogWarning("Sandbox execution denied by security policy. Reason: {Reason}", result.PolicyDenialReason);
 
                 return $"Execution Blocked/Failed by Container Host: Forbidden - Execution denied by security policy: {result.PolicyDenialReason}";
             }
@@ -67,7 +63,7 @@ public sealed class CodeExecutionSandboxTool(
         }
         catch (SandboxRejectedException ex)
         {
-            _logger.LogWarning(
+            logger.LogWarning(
                 "Sandbox execution returned non-success code: {Status}. Context: {Message}",
                 ex.StatusCode, ex.Details);
 
@@ -75,7 +71,7 @@ public sealed class CodeExecutionSandboxTool(
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Fatal failure routing script execution payload to the sandbox cluster.");
+            logger.LogError(ex, "Fatal failure routing script execution payload to the sandbox cluster.");
             return $"Critical structural error executing code: {ex.Message}";
         }
     }

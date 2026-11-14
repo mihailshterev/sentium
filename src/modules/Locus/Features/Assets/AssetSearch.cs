@@ -1,5 +1,6 @@
 using System.Text;
 using Microsoft.EntityFrameworkCore;
+using Sentium.Locus.Common;
 using Sentium.Locus.Entities;
 using Sentium.Locus.Features.Locations;
 

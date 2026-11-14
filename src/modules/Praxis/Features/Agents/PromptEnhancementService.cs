@@ -1,5 +1,4 @@
 using Microsoft.Extensions.AI;
-using Microsoft.Extensions.Logging;
 
 namespace Sentium.Praxis.Features.Agents;
 

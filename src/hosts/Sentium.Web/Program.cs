@@ -2,8 +2,8 @@ using FluentValidation;
 using Microsoft.Extensions.Caching.Hybrid;
 using Scalar.AspNetCore;
 using Sentium.Core.Constants;
-using Sentium.Infrastructure.Diagnostics;
 using Sentium.Infrastructure.Extensions;
+using Sentium.Infrastructure.Testing;
 using Sentium.Infrastructure.Validation;
 using Sentium.Web;
 
@@ -45,7 +45,7 @@ app.UseSentiumTracing();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 
-if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
+if (app.Environment.IsDevelopment() || app.Environment.IsTesting())
 {
     await app.InitializeSentiumModulesAsync();
 }

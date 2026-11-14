@@ -2,7 +2,6 @@ using Sentium.Sentinel.Features.Settings;
 
 namespace Sentium.Tests.Unit.Modules.Sentinel;
 
-/// <summary>Test double for <see cref="IPdpRuntimeSettingsProvider"/>.</summary>
 internal sealed class FakePdpRuntimeSettingsProvider(PdpRuntimeSettings? settings = null) : IPdpRuntimeSettingsProvider
 {
     public PdpRuntimeSettings Current { get; set; } = settings ?? new PdpRuntimeSettings();

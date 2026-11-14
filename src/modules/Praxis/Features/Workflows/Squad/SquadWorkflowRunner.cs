@@ -1,5 +1,5 @@
 using Microsoft.Agents.AI.Workflows;
-using Sentium.Praxis.Features.Agents;
+using Sentium.Praxis.Features.Agents.Runtime;
 using Sentium.Praxis.Features.Orchestration;
 
 namespace Sentium.Praxis.Features.Workflows.Squad;
@@ -15,29 +15,30 @@ namespace Sentium.Praxis.Features.Workflows.Squad;
 /// typed message instead of a shared chat transcript; each step is reviewed on its own (a narrow question small models
 /// answer reliably) and retried at most once.
 /// </summary>
-public sealed class SquadWorkflowRunner(IAgentFactory factory, IAgentStreamPublisher stream)
+public sealed class SquadWorkflowRunner(IAgentFactory factory)
 {
-    /// <summary>First attempt plus one revision.</summary>
+    /// <summary>
+    /// First attempt plus one revision.
+    /// </summary>
     public const int MaxAttemptsPerStep = 2;
 
     /// <param name="trigger">The run trigger (stream id, acting user).</param>
     /// <param name="request">The user's request.</param>
     /// <param name="roster">Agents available to the run.</param>
     /// <param name="fixedPlan">A predefined plan (custom workflows), or <see langword="null"/> to let the planner decide.</param>
-    /// <param name="log">Collects the timeline for the run history.</param>
-    /// <param name="ct">Cancellation token.</param>
+    /// <param name="timeline">The run's timeline; the caller reads its entries into the run history.</param>
     public async Task<SquadResult> RunAsync(
         WorkflowTrigger trigger,
         string request,
         IReadOnlyList<SquadMember> roster,
         SquadPlan? fixedPlan,
-        StreamLogAccumulator log,
+        WorkflowTimeline timeline,
         CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(trigger);
         ArgumentNullException.ThrowIfNull(roster);
 
-        var run = new SquadRunContext(factory, stream, log, trigger.StreamId, trigger.UserId, roster);
+        var run = new SquadRunContext(factory, timeline, trigger.UserId, roster);
 
         var step = new StepExecutor(run);
         var check = new StepCheckExecutor(run, MaxAttemptsPerStep);
@@ -65,12 +66,14 @@ public sealed class SquadWorkflowRunner(IAgentFactory factory, IAgentStreamPubli
         return await ExecuteAsync(fixedWorkflow, new StepRequest(state, 0, 1, [], null), ct);
     }
 
-    private static WorkflowBuilder WireLoop(WorkflowBuilder builder, StepExecutor step, StepCheckExecutor check, SynthesisExecutor synthesis) =>
-        builder
+    private static WorkflowBuilder WireLoop(WorkflowBuilder builder, StepExecutor step, StepCheckExecutor check, SynthesisExecutor synthesis)
+    {
+        return builder
             .AddEdge(step, check)
             .AddEdge<object?>(check, step, m => m is StepRequest)
             .AddEdge<object?>(check, synthesis, m => m is SquadOutcome)
             .WithOutputFrom(synthesis);
+    }
 
     private static async Task<SquadResult> ExecuteAsync<TInput>(Workflow workflow, TInput input, CancellationToken ct)
         where TInput : notnull

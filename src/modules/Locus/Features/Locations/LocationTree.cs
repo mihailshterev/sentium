@@ -1,9 +1,5 @@
 namespace Sentium.Locus.Features.Locations;
 
-public sealed record LocationNode(Guid Id, Guid? ParentId, string Name);
-
-public sealed record LocationCrumb(Guid Id, string Name);
-
 /// <summary>
 /// In-memory view of the whole location hierarchy. A household has at most a few hundred locations, so
 /// loading them all is cheaper and far simpler than recursive SQL, and every traversal here is guarded

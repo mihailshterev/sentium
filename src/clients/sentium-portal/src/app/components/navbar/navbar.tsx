@@ -38,6 +38,7 @@ import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
 import { useUiStore } from "@/shared/ui/state/ui-store";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
+import { SentiumMark } from "@/shared/ui/sentium-mark";
 import { ThemeToggle } from "@/shared/ui/theme-toggle";
 import { Tooltip } from "@/shared/ui/tooltip";
 
@@ -205,7 +206,7 @@ export function Navbar() {
     <MotionConfig reducedMotion="user">
       <nav className={`frame ${styles.nav}`} data-collapsed={collapsed || undefined} aria-label="Main navigation">
         <div className={styles.brand}>
-          <img src="/sentium-mark.png" alt="" className={styles.logo} width={28} height={28} />
+          <SentiumMark className={styles.logo} />
           <span className={styles.wordmark}>Sentium</span>
         </div>
 

@@ -14,24 +14,3 @@ public interface ISentinelGateway
     /// </summary>
     Task<SentinelAuthorizationResult> AuthorizeExecutionAsync(ExecutionRequest request, CancellationToken ct);
 }
-
-public sealed record SentinelAuthorizationResult
-{
-    public required bool IsAllowed { get; init; }
-    public required string Reason { get; init; }
-    public required Guid AuditId { get; init; }
-
-    public static SentinelAuthorizationResult Allow(Guid auditId) => new()
-    {
-        IsAllowed = true,
-        Reason = "All policy checks passed.",
-        AuditId = auditId
-    };
-
-    public static SentinelAuthorizationResult Deny(string reason, Guid auditId = default) => new()
-    {
-        IsAllowed = false,
-        Reason = reason,
-        AuditId = auditId
-    };
-}

@@ -1,5 +1,3 @@
-using System.Text.Json.Serialization;
-
 namespace Sentium.Locus.Entities;
 
 /// <summary>
@@ -35,13 +33,4 @@ public sealed class AssetAttachment
     public string? CreatedBy { get; set; }
 
     public Asset Asset { get; set; } = null!;
-}
-
-[JsonConverter(typeof(JsonStringEnumConverter<AttachmentKind>))]
-public enum AttachmentKind
-{
-    Photo,
-    Manual,
-    Receipt,
-    Other
 }

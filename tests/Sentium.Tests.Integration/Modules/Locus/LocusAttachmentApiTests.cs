@@ -3,8 +3,9 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
 using FluentAssertions;
-using Sentium.Locus.Dtos;
 using Sentium.Locus.Entities;
+using Sentium.Locus.Features.Assets;
+using Sentium.Locus.Features.Attachments;
 using Xunit;
 
 namespace Sentium.Tests.Integration.Modules.Locus;

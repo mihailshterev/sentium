@@ -3,13 +3,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
-using Sentium.Sentinel.Features.Audit;
-using Sentium.Sentinel.Contracts;
-using Sentium.Sentinel.Features.Engine;
-using Sentium.Sentinel.Controllers;
-using Sentium.Sentinel.Dtos;
-using Sentium.Sentinel.Features.Policies;
 using Sentium.Core.Results;
+using Sentium.Sentinel.Contracts;
+using Sentium.Sentinel.Features.Audit;
+using Sentium.Sentinel.Features.Engine;
+using Sentium.Sentinel.Features.Policies;
 using Xunit;
 
 namespace Sentium.Tests.Unit.Modules.Sentinel;
@@ -35,8 +33,9 @@ public sealed class PolicyControllerTests : IDisposable
 
     public void Dispose() => _services.Dispose();
 
-    private static AuditRecord MakeAuditRecord(bool allowed = true) =>
-        new()
+    private static AuditRecord MakeAuditRecord(bool allowed = true)
+    {
+        return new()
         {
             Id = Guid.NewGuid(),
             Timestamp = DateTimeOffset.UtcNow,
@@ -54,6 +53,7 @@ public sealed class PolicyControllerTests : IDisposable
             Risk = PolicyRiskLevel.Low,
             TriggeredPolicies = []
         };
+    }
 
     [Fact]
     public async Task GetAudit_ReturnsOk_WithRecords()

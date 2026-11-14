@@ -1,0 +1,56 @@
+.root {
+  fill: none;
+  stroke-width: 1;
+  stroke-linecap: round;
+
+  & line,
+  & circle {
+    vector-effect: non-scaling-stroke;
+  }
+}
+
+.outer {
+  stroke: color-mix(in srgb, var(--accent-cyan) 45%, var(--text-primary));
+}
+
+.inner {
+  stroke: var(--accent-purple);
+}
+
+.vertices {
+  fill: color-mix(in srgb, var(--accent-cyan) 35%, var(--text-primary));
+}
+
+.pulses {
+  stroke: var(--accent);
+  stroke-width: 2;
+  filter: drop-shadow(0 0 3px var(--accent-glow));
+}
+
+.heads {
+  fill: var(--accent);
+  filter: drop-shadow(0 0 4px var(--accent));
+}
+
+.core {
+  fill: var(--accent);
+  filter: drop-shadow(0 0 6px var(--accent)) drop-shadow(0 0 16px var(--accent-glow));
+  animation: breathe 5s var(--ease-in-out, ease-in-out) infinite;
+}
+
+.coreRing {
+  stroke: color-mix(in srgb, var(--accent) 45%, transparent);
+  stroke-dasharray: 2 5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .core {
+    animation: none;
+  }
+}
+
+@keyframes breathe {
+  50% {
+    opacity: 0.55;
+  }
+}

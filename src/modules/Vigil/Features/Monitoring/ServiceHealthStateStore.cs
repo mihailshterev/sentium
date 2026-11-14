@@ -51,12 +51,14 @@ public sealed class ServiceHealthStateStore : IServiceHealthStateStore
     }
 
     public IReadOnlyList<ServiceHealthStatus> GetAll()
-        => [.. _targets.Values
+    {
+        return [.. _targets.Values
             .Select(t => t.Latest)
             .Where(s => s is not null)
             .Select(s => s!)
             .OrderBy(s => s.Kind)
             .ThenBy(s => s.ServiceName)];
+    }
 
     public ServiceHealthStatus? Get(string serviceName) => _targets.GetValueOrDefault(serviceName)?.Latest;
 

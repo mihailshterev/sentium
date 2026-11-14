@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Sentium.Identity.Entities;
 using Sentium.Identity.Features.Security;
-using Sentium.Identity.Features.Services;
+using Sentium.Identity.Features.Users;
 using Xunit;
 
 namespace Sentium.Tests.Unit.Modules.Identity;

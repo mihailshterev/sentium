@@ -6,8 +6,8 @@
   place-items: center;
   padding: var(--space-6);
   overflow-y: auto;
-  background: color-mix(in srgb, var(--bg-base) 55%, transparent);
-  backdrop-filter: blur(6px);
+  /* A plain scrim: blurring the whole page behind a dialog re-blurs it on every background frame. */
+  background: color-mix(in srgb, var(--bg-base) 72%, transparent);
   animation: overlayIn var(--dur-base) var(--ease-out);
 }
 

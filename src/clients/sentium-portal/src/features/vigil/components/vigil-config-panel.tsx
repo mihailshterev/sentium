@@ -81,7 +81,7 @@ export function VigilConfigPanel() {
         ))}
       </div>
 
-      {isSaveError && <StatusMessage variant="error" message={(saveError as Error)?.message ?? "Failed to save"} />}
+      {isSaveError && <StatusMessage variant="error" message={saveError?.message ?? "Failed to save"} />}
 
       <div className={styles.configFooter}>
         {isSaveSuccess && <span className={styles.saved}>Saved</span>}

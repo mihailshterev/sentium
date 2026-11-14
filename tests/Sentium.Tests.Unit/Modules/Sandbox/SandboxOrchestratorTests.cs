@@ -19,17 +19,20 @@ public sealed class SandboxOrchestratorTests
         _sut = new SandboxOrchestrator(_runner, _sentinel, NullLogger<SandboxOrchestrator>.Instance);
     }
 
-    private static ExecutionRequest MakeRequest(string agentId = "agent-1") =>
-        new()
+    private static ExecutionRequest MakeRequest(string agentId = "agent-1")
+    {
+        return new()
         {
             Language = ExecutionLanguage.Python,
             Code = "print('hello')",
             AgentId = agentId,
             CorrelationId = Guid.NewGuid().ToString()
         };
+    }
 
-    private static ExecutionResult MakeSuccessResult(Guid? auditId = null) =>
-        new()
+    private static ExecutionResult MakeSuccessResult(Guid? auditId = null)
+    {
+        return new()
         {
             Succeeded = true,
             ExitCode = 0,
@@ -41,6 +44,7 @@ public sealed class SandboxOrchestratorTests
             DurationMs = 100,
             SentinelAuditId = auditId ?? Guid.NewGuid()
         };
+    }
 
     [Fact]
     public async Task ExecuteAsync_ReturnsDeniedResult_WhenSentinelDenies()

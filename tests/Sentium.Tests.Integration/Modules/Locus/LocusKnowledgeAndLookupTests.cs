@@ -10,8 +10,8 @@ using Sentium.Infrastructure.Security;
 using Sentium.Locus.Contracts;
 using Sentium.Locus.Contracts.Models;
 using Sentium.Locus.Data;
-using Sentium.Locus.Dtos;
 using Sentium.Locus.Entities;
+using Sentium.Locus.Features.Assets;
 using Sentium.Locus.Features.Knowledge;
 using Xunit;
 

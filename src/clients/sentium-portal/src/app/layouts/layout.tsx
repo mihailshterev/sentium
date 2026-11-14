@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { Loader2 } from "lucide-react";
 import { Outlet, useLocation } from "react-router";
 import { Navbar } from "../components/navbar/navbar";
 import { CosmosBackground } from "@/shared/ui/cosmos-background";
@@ -13,7 +15,15 @@ export function Layout() {
       <CosmosBackground paused={backgroundPaused} />
       <Navbar />
       <main className={styles.contentArea}>
-        <Outlet />
+        <Suspense
+          fallback={
+            <div className={styles.routeFallback} role="status" aria-label="Loading page">
+              <Loader2 className="animate-spin" size={22} aria-hidden="true" />
+            </div>
+          }
+        >
+          <Outlet />
+        </Suspense>
       </main>
     </div>
   );

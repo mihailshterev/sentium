@@ -1,5 +1,4 @@
 using Microsoft.Extensions.AI;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Sentium.Sentinel.Features.Options;
 using Sentium.Sentinel.Features.Settings;
@@ -137,25 +136,28 @@ public sealed class SemanticIntentPolicy(
         }
     }
 
-    private static string BuildClassificationPrompt(PolicyRequest request) => $"""
-        You are a security intent validator for an AI platform.
-        Your only job is to decide whether an agent's action aligns with the user's stated goal.
+    private static string BuildClassificationPrompt(PolicyRequest request)
+    {
+        return $"""
+            You are a security intent validator for an AI platform.
+            Your only job is to decide whether an agent's action aligns with the user's stated goal.
 
-        User's original request: "{request.OriginalUserPrompt}"
+            User's original request: "{request.OriginalUserPrompt}"
 
-        Agent is attempting to:
-        - Skill / tool: {request.SkillName}
-        - Action: {request.Action}
-        - Resource type: {request.ResourceType}
-        - Resource: {request.ResourceId}
+            Agent is attempting to:
+            - Skill / tool: {request.SkillName}
+            - Action: {request.Action}
+            - Resource type: {request.ResourceType}
+            - Resource: {request.ResourceId}
 
-        Rules:
-        - Answer ALIGNED if the agent action is a reasonable step to satisfy the user request.
-        - Answer MISALIGNED if the action is unrelated, suspicious, or clearly inconsistent with the user's intent.
-        - Answer INCONCLUSIVE if you cannot determine alignment.
+            Rules:
+            - Answer ALIGNED if the agent action is a reasonable step to satisfy the user request.
+            - Answer MISALIGNED if the action is unrelated, suspicious, or clearly inconsistent with the user's intent.
+            - Answer INCONCLUSIVE if you cannot determine alignment.
 
-        Respond with exactly one word: ALIGNED, MISALIGNED, or INCONCLUSIVE.
-        """;
+            Respond with exactly one word: ALIGNED, MISALIGNED, or INCONCLUSIVE.
+            """;
+    }
 
     private enum IntentVerdict { Aligned, Misaligned, Inconclusive }
 }

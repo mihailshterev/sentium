@@ -1,7 +1,7 @@
 using FluentAssertions;
 using Sentium.Tempus.Contracts.Models;
-using Sentium.Tempus.Dtos;
-using Sentium.Tempus.Validation;
+using Sentium.Tempus.Features.Notes;
+using Sentium.Tempus.Features.Tasks;
 using Xunit;
 
 namespace Sentium.Tests.Unit.Modules.Tempus;

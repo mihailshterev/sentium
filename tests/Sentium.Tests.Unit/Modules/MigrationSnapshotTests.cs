@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Sentium.Codex.Data;
 using Sentium.Identity.Data;
 using Sentium.Locus.Data;
+using Sentium.Mcp.Data;
 using Sentium.Praxis.Data;
 using Sentium.Registry.Data;
 using Sentium.Sentinel.Data;
@@ -27,6 +28,7 @@ public sealed class MigrationSnapshotTests
         ["Locus"] = () => new LocusDbContextFactory().CreateDbContext([]),
         ["Tempus"] = () => new TempusDbContextFactory().CreateDbContext([]),
         ["Praxis"] = () => new PraxisDbContextFactory().CreateDbContext([]),
+        ["Mcp"] = () => new McpDbContextFactory().CreateDbContext([]),
     };
 
     public static TheoryData<string> ModuleNames() => [.. Contexts.Keys];

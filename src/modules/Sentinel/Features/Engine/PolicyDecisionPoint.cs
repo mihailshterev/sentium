@@ -48,14 +48,17 @@ public sealed class PolicyDecisionPoint(IServiceScopeFactory scopeFactory) : IPo
         };
     }
 
-    private static PolicyEvaluationResponse Deny(string reason) => new()
+    private static PolicyEvaluationResponse Deny(string reason)
     {
-        Allowed = false,
-        Effect = nameof(PolicyEffect.Deny),
-        Reason = reason,
-        Risk = nameof(PolicyRiskLevel.High),
-        AuditId = Guid.Empty,
-        Timestamp = DateTimeOffset.UtcNow,
-        TriggeredPolicies = ["InvalidRequest"]
-    };
+        return new()
+        {
+            Allowed = false,
+            Effect = nameof(PolicyEffect.Deny),
+            Reason = reason,
+            Risk = nameof(PolicyRiskLevel.High),
+            AuditId = Guid.Empty,
+            Timestamp = DateTimeOffset.UtcNow,
+            TriggeredPolicies = ["InvalidRequest"]
+        };
+    }
 }

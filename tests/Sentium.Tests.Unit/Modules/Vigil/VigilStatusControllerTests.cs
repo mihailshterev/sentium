@@ -1,7 +1,6 @@
 using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
-using Sentium.Vigil.Controllers;
 using Sentium.Vigil.Features.Monitoring;
 using Sentium.Vigil.Features.Settings;
 using Xunit;
@@ -21,8 +20,9 @@ public sealed class VigilStatusControllerTests
         _controller = new VigilStatusController(_stateStore, _incidentStore, _settings);
     }
 
-    private static ServiceHealthStatus MakeStatus(string name = "gateway", ComponentKind kind = ComponentKind.Service) =>
-        new()
+    private static ServiceHealthStatus MakeStatus(string name = "gateway", ComponentKind kind = ComponentKind.Service)
+    {
+        return new()
         {
             ServiceName = name,
             Kind = kind,
@@ -30,6 +30,7 @@ public sealed class VigilStatusControllerTests
             LatencyMs = 10,
             CheckedAt = DateTimeOffset.UtcNow
         };
+    }
 
     [Fact]
     public void GetAll_ReturnsOk_WithAllStatuses()

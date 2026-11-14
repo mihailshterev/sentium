@@ -7,7 +7,9 @@ namespace Sentium.Praxis.Features.Agents.Native;
 /// </summary>
 public sealed class ValidationAgent : IAgent
 {
-    /// <remarks>Must equal the key this agent is registered under (<see cref="AgentRole.Validator"/>).</remarks>
+    /// <remarks>
+    /// Must equal the key this agent is registered under (<see cref="AgentRole.Validator"/>).
+    /// </remarks>
     public string Name => AgentRole.Validator;
 
     public string Description => "Reviews whether a step's output accomplishes its task.";

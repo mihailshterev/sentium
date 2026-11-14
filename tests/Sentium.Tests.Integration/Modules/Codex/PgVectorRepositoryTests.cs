@@ -193,17 +193,22 @@ public sealed class PgVectorRepositoryTests(MonolithWebApplicationFactory factor
 
     private static string NewCollection() => $"test_{Guid.NewGuid():N}";
 
-    private static DocumentChunk Chunk(string content, string scope = KnowledgeScope.Shared, Guid? userId = null, string source = "test-source", DateTimeOffset? createdAt = null) => new()
+    private static DocumentChunk Chunk(string content, string scope = KnowledgeScope.Shared, Guid? userId = null, string source = "test-source", DateTimeOffset? createdAt = null)
     {
-        Content = content,
-        Source = source,
-        SourceType = IngestionSourceType.Custom,
-        Scope = scope,
-        UserId = userId,
-        CreatedAt = createdAt ?? DateTimeOffset.UtcNow
-    };
+        return new()
+        {
+            Content = content,
+            Source = source,
+            SourceType = IngestionSourceType.Custom,
+            Scope = scope,
+            UserId = userId,
+            CreatedAt = createdAt ?? DateTimeOffset.UtcNow
+        };
+    }
 
-    /// <summary>Unit vector along dimension <paramref name="i"/>.</summary>
+    /// <summary>
+    /// Unit vector along dimension <paramref name="i"/>.
+    /// </summary>
     private static float[] Basis(int i)
     {
         var v = new float[CodexDbContext.EmbeddingDimensions];
@@ -211,7 +216,9 @@ public sealed class PgVectorRepositoryTests(MonolithWebApplicationFactory factor
         return v;
     }
 
-    /// <summary>Vector mostly along <paramref name="primary"/> with a <c>1 - weight</c> component along <paramref name="secondary"/>.</summary>
+    /// <summary>
+    /// Vector mostly along <paramref name="primary"/> with a <c>1 - weight</c> component along <paramref name="secondary"/>.
+    /// </summary>
     private static float[] Mix(int primary, int secondary, float weight)
     {
         var v = new float[CodexDbContext.EmbeddingDimensions];

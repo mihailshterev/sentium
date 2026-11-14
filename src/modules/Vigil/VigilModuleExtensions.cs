@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-using Microsoft.Extensions.Http.Resilience;
 using Sentium.Core.Constants;
 using Sentium.Infrastructure.Inference;
 using Sentium.Vigil.Features.Metrics;
@@ -19,6 +18,7 @@ public static class VigilModuleExtensions
         ("Identity", "identity"),
         ("Sentinel", "sentinel"),
         ("Praxis",   "praxis"),
+        ("MCP",      "mcp"),
         ("Codex",    "codex"),
         ("Locus",    "locus"),
         ("Tempus",   "tempus"),

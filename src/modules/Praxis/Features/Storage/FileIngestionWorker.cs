@@ -3,9 +3,6 @@ using Sentium.Codex.Contracts.Models;
 using Sentium.Praxis.Data;
 using Sentium.Infrastructure.Security;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Sentium.Praxis.Features.Files;
 
 namespace Sentium.Praxis.Features.Storage;
@@ -20,7 +17,7 @@ namespace Sentium.Praxis.Features.Storage;
 /// 2. Retrieves file content from blob storage.
 /// 3. Vectorizes the content using a semantic embedding model.
 /// 4. Stores the vectors in the Codex vector store (pgvector).
-/// 5. Updates the <see cref="Core.Entities.ProjectFile.ProcessingStatus"/> to Completed or Failed.
+/// 5. Updates the <see cref="Entities.ProjectFile.ProcessingStatus"/> to Completed or Failed.
 /// </para>
 /// <para>
 /// This asynchronous processing ensures that file uploads complete quickly without waiting for
@@ -34,7 +31,6 @@ public sealed class FileIngestionWorker(IServiceScopeFactory scopeFactory, FileI
     /// <summary>
     /// Re-queues unfinished files, then processes queued files one at a time until shutdown.
     /// </summary>
-    /// <param name="stoppingToken">A cancellation token to signal shutdown.</param>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         logger.LogInformation("File Ingestion Worker started.");
@@ -86,9 +82,6 @@ public sealed class FileIngestionWorker(IServiceScopeFactory scopeFactory, FileI
     /// <summary>
     /// Processes a single file for RAG ingestion.
     /// </summary>
-    /// <param name="fileId">The unique identifier of the file to process.</param>
-    /// <param name="workspaceId">The optional workspace ID associated with the file.</param>
-    /// <param name="ct">A cancellation token.</param>
     /// <remarks>
     /// <para>
     /// Processing flow:

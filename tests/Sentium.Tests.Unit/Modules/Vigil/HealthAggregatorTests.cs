@@ -6,13 +6,16 @@ namespace Sentium.Tests.Unit.Modules.Vigil;
 
 public sealed class HealthAggregatorTests
 {
-    private static ServiceHealthStatus Status(ServiceStatus status) => new()
+    private static ServiceHealthStatus Status(ServiceStatus status)
     {
-        ServiceName = status.ToString(),
-        Status = status,
-        LatencyMs = 1,
-        CheckedAt = DateTimeOffset.UtcNow
-    };
+        return new()
+        {
+            ServiceName = status.ToString(),
+            Status = status,
+            LatencyMs = 1,
+            CheckedAt = DateTimeOffset.UtcNow
+        };
+    }
 
     [Fact]
     public void BuildOverview_AllHealthy_IsHealthy()

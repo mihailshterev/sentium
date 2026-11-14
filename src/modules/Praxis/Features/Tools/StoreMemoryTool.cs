@@ -2,8 +2,7 @@ using System.ComponentModel;
 using Microsoft.Extensions.AI;
 using Sentium.Codex.Contracts;
 using Sentium.Codex.Contracts.Models;
-using Sentium.Praxis.Features.Sentinel;
-using Sentium.Praxis.Features.Tools.Attributes;
+using Sentium.Praxis.Contracts;
 
 namespace Sentium.Praxis.Features.Tools;
 
@@ -17,12 +16,15 @@ public sealed class StoreMemoryTool(
     IPdpContextAccessor pdpContext,
     ILogger<StoreMemoryTool> logger) : IAgentTool
 {
-    public AIFunction CreateFunction() => AgentToolFunction.Create(
-        this,
-        StoreAsync,
-        ToolNames.StoreMemory,
-        "Saves a PERSONAL fact or preference the USER explicitly asked you to remember (their name, a setting, a standing instruction) to long-term memory. " +
-        "Do NOT use this for things YOU figured out - patterns, conclusions, designs, fixes, or reusable approaches belong in capture_agent_learning instead.");
+    public AIFunction CreateFunction()
+    {
+        return AgentToolFunction.Create(
+            this,
+            StoreAsync,
+            ToolNames.StoreMemory,
+            "Saves a PERSONAL fact or preference the USER explicitly asked you to remember (their name, a setting, a standing instruction) to long-term memory. " +
+            "Do NOT use this for things YOU figured out - patterns, conclusions, designs, fixes, or reusable approaches belong in capture_agent_learning instead.");
+    }
 
     public async Task<string> StoreAsync(
         [Description("The exact fact or preference to remember, written as a self-contained sentence.")] string content,

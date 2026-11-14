@@ -57,7 +57,9 @@ flowchart TB
 
     subgraph Web["Sentium.Web (modular monolith)"]
         Identity["Identity<br/>(users · roles · session)"]
-        Praxis["Praxis<br/>(agents · orchestration · workflows · scheduling)"]
+        Praxis["Praxis<br/>(agents · orchestration · workflows)"]
+        Mcp["Mcp<br/>(MCP servers · approved tools)"]
+        Scheduling["Scheduling<br/>(Quartz · recurring jobs)"]
         Codex["Codex<br/>(RAG · knowledge base)"]
         Locus["Locus<br/>(household inventory)"]
         Tempus["Tempus<br/>(year timeline)"]
@@ -67,6 +69,8 @@ flowchart TB
     end
 
     Praxis -->|Contracts| Codex & Sentinel & Registry & Locus & Tempus
+    Mcp -->|Contracts| Praxis & Registry
+    Scheduling -->|Contracts| Praxis
     Locus -->|Contracts| Codex
     Sentinel -->|Contracts| Registry
     Vigil -->|Contracts| Registry
@@ -89,16 +93,18 @@ flowchart TB
 
 ### Modules
 
-| Module       | Responsibility                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Identity** | ASP.NET Core Identity: users, roles, profile and registration, plus the cookie session endpoints the portal uses (`/api/identity/account/login`, `/session`, `/logout`). The browser only ever holds an HttpOnly cookie.                                                                                                                                                                                                                                   |
-| **Praxis**   | The core engine: agents, the streaming assistant, conversations, multi-agent orchestration, workflows, learnings, skills, tools, workspaces, the Quartz scheduler, and the sandbox execution history.                                                                                                                                                                                                                                                      |
-| **Codex**    | The knowledge base: embeddings, the pgvector store (`codex` schema), document ingestion and the knowledge map. Other modules push their content (learnings, memories, workspace files) through it.                                                                                                                                                                                                                                                         |
-| **Locus**    | The household inventory (`locus` schema): a location tree, assets with tags and search, and attachments in blob storage. Shared by every household member; items marked as shared are synced to the knowledge base through a durable outbox and exposed to agents read-only (`find_assets`, `get_asset`, `list_location_contents`).                                                                                                                        |
-| **Tempus**   | Each user's private year timeline (`tempus` schema): tasks on days or pinned to months (priority, due date, tags, assigned agent), notes, and the changes agents propose. Agents use it through `ITimelineAgentAccess` (`get_timeline_overview`, `list_timeline_tasks`, `get_timeline_task`, `propose_timeline_task`, `propose_task_reschedule`, `add_timeline_note`): they read and annotate, but every new task or move waits for the user to accept it. |
-| **Sentinel** | The Policy Decision Point (PDP). Every agent tool call and sandbox execution is authorized through a defence-in-depth policy stack, with forensic auditing and a fail-closed default.                                                                                                                                                                                                                                                                      |
-| **Registry** | Centralized, key-based runtime settings with per-user and global scopes, two-tier caching and in-process invalidation.                                                                                                                                                                                                                                                                                                                                     |
-| **Vigil**    | Probes every module, the sandbox and each infrastructure dependency, raises and resolves incidents, and streams live health over SSE.                                                                                                                                                                                                                                                                                                                      |
+| Module         | Responsibility                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Identity**   | ASP.NET Core Identity: users, roles, profile and registration, plus the cookie session endpoints the portal uses (`/api/identity/account/login`, `/session`, `/logout`). The browser only ever holds an HttpOnly cookie.                                                                                                                                                                                                                                   |
+| **Praxis**     | The core engine: agents, the streaming assistant, conversations, multi-agent orchestration, workflows, learnings, skills, tools, workspaces, and the sandbox execution history. MCP and the scheduler plug into it through `Praxis.Contracts`.                                                                                                                                                                                                             |
+| **Mcp**        | Model Context Protocol integration (`mcp` schema): the registry of MCP servers, the hash-pinned approved tool catalogue and the client for HTTP and Sandbox-hosted stdio servers. It offers its tools to Praxis through `IAgentToolSource`; agents only get tools their tool list names. See [docs/mcp-servers.md](docs/mcp-servers.md).                                                                                                                   |
+| **Scheduling** | Agent-scheduled recurring jobs: a persistent Quartz scheduler (tables in the `praxis` schema), the approval-gated `schedule_recurring_task` tool and the scheduler endpoints. Jobs run code through the sandbox.                                                                                                                                                                                                                                           |
+| **Codex**      | The knowledge base: embeddings, the pgvector store (`codex` schema), document ingestion and the knowledge map. Other modules push their content (learnings, memories, workspace files) through it.                                                                                                                                                                                                                                                         |
+| **Locus**      | The household inventory (`locus` schema): a location tree, assets with tags and search, and attachments in blob storage. Shared by every household member; items marked as shared are synced to the knowledge base through a durable outbox and exposed to agents read-only (`find_assets`, `get_asset`, `list_location_contents`).                                                                                                                        |
+| **Tempus**     | Each user's private year timeline (`tempus` schema): tasks on days or pinned to months (priority, due date, tags, assigned agent), notes, and the changes agents propose. Agents use it through `ITimelineAgentAccess` (`get_timeline_overview`, `list_timeline_tasks`, `get_timeline_task`, `propose_timeline_task`, `propose_task_reschedule`, `add_timeline_note`): they read and annotate, but every new task or move waits for the user to accept it. |
+| **Sentinel**   | The Policy Decision Point (PDP). Every agent tool call and sandbox execution is authorized through a defence-in-depth policy stack, with forensic auditing and a fail-closed default.                                                                                                                                                                                                                                                                      |
+| **Registry**   | Centralized, key-based runtime settings with per-user and global scopes, two-tier caching and in-process invalidation.                                                                                                                                                                                                                                                                                                                                     |
+| **Vigil**      | Probes every module, the sandbox and each infrastructure dependency, raises and resolves incidents, and streams live health over SSE.                                                                                                                                                                                                                                                                                                                      |
 
 **Sentium.Sandbox** is stateless: it has no database and no user-facing API. It accepts only `POST /execute` from Sentium.Web, asks Sentinel to authorize each run, executes the code in a hardened container and uploads any output artifacts to blob storage. Praxis records every run, including denied ones, and serves the history at `/api/sandbox/*`.
 
@@ -108,14 +114,15 @@ Every module is one class library under `src/modules/<Module>`:
 
 ```
 Contracts/                    → the only surface other modules may use (interfaces + DTOs)
-Features/<Feature>/           → the module's features (services, repositories, workers)
-Controllers/  Dtos/  Validation/  Entities/
+Features/<Feature>/           → everything for one feature: controller, DTOs, validators, services, repositories, workers
+Common/                       → helpers shared by several features of the module
+Entities/                     → EF entities (one DbContext per module, so they stay module-level)
 Data/                         → <Module>DbContext + migrations (the module's own schema)
 <Module>ModuleExtensions.cs   → DI registration, migrations on startup, endpoint mapping
 <Module>Routes.cs             → the module's route prefix (api/<module>)
 ```
 
-Modules reference each other only through `Contracts`; a unit test (`ModuleBoundaryTests`) fails the build if one module uses another module's internals.
+Modules reference each other only through `Contracts`; a unit test (`ModuleBoundaryTests`) fails the build if one module uses another module's internals, and `ModuleLayeringTests` keeps the layers inside a module honest (entities do not depend on features, controllers do not touch a `DbContext`, nothing depends on a controller).
 
 ### Cross-cutting patterns
 
@@ -311,12 +318,15 @@ src/
   hosts/
     Sentium.Web/                   # the modular monolith host (API, session, portal static files)
     Sentium.Sandbox/               # isolated, stateless code-execution service
+    Sentium.E2ESeed/               # baseline data for the Playwright suite (Testing environment only)
   modules/
     Codex/                         # RAG and the knowledge base
     Identity/                      # users, roles, session cookie
     Locus/                         # household inventory (locations, assets, attachments)
-    Praxis/                        # core engine (agents, orchestration, workflows, scheduling)
+    Mcp/                           # MCP server registry and approved tool catalogue
+    Praxis/                        # core engine (agents, orchestration, workflows)
     Registry/                      # centralized configuration
+    Scheduling/                    # Quartz scheduler and agent-scheduled jobs
     Sentinel/                      # Policy Decision Point
     Tempus/                        # year timeline (tasks, notes, agent proposals)
     Vigil/                         # health monitoring

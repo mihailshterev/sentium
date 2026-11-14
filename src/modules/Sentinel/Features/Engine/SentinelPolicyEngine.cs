@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using Microsoft.Extensions.Logging;
 using Sentium.Sentinel.Features.Audit;
 using Sentium.Sentinel.Features.Policies;
 

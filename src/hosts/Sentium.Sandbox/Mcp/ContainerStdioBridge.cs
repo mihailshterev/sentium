@@ -5,29 +5,6 @@ using System.Text;
 namespace Sentium.Sandbox.Mcp;
 
 /// <summary>
-/// The container side of an attached stdio session: what it writes to stdout/stderr and a sink for its stdin.
-/// </summary>
-internal interface IContainerStdio : IDisposable
-{
-    Task<StdioChunk> ReadAsync(byte[] buffer, CancellationToken ct);
-
-    Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken ct);
-
-    /// <summary>
-    /// Signals end-of-input to the process.
-    /// </summary>
-    void CloseInput();
-}
-
-internal enum StdioTarget
-{
-    Stdout,
-    Stderr
-}
-
-internal readonly record struct StdioChunk(int Count, StdioTarget Target, bool EndOfStream);
-
-/// <summary>
 /// Turns a container's stdio into the two plain streams the MCP SDK's <c>StreamClientTransport</c> expects:
 /// <see cref="ServerInput"/> (what the client writes - the container's stdin) and <see cref="ServerOutput"/> (what it
 /// reads - the container's stdout). A pump demultiplexes the attach stream, keeps a bounded tail of stderr for

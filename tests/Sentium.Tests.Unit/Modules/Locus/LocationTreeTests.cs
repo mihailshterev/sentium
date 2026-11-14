@@ -12,14 +12,17 @@ public sealed class LocationTreeTests
     private static readonly Guid Kitchen = Guid.NewGuid();
     private static readonly Guid Cabin = Guid.NewGuid();
 
-    private static LocationTree CreateTree() => new(
-    [
-        new LocationNode(Home, null, "Home"),
-        new LocationNode(Garage, Home, "Garage"),
-        new LocationNode(Shelf, Garage, "Shelf B"),
-        new LocationNode(Kitchen, Home, "Kitchen"),
-        new LocationNode(Cabin, null, "Cabin"),
-    ]);
+    private static LocationTree CreateTree()
+    {
+        return new(
+            [
+                new LocationNode(Home, null, "Home"),
+                new LocationNode(Garage, Home, "Garage"),
+                new LocationNode(Shelf, Garage, "Shelf B"),
+                new LocationNode(Kitchen, Home, "Kitchen"),
+                new LocationNode(Cabin, null, "Cabin"),
+            ]);
+    }
 
     [Fact]
     public void GetPath_ReturnsRootFirstCrumbs_AndReadablePath()

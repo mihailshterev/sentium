@@ -1,9 +1,8 @@
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
-using Sentium.Praxis.Dtos;
-using ChatMessage = Microsoft.Extensions.AI.ChatMessage;
+using Sentium.Praxis.Contracts;
 using Sentium.Praxis.Features.Agents.Activity;
-using Sentium.Praxis.Features.Sentinel;
+using ChatMessage = Microsoft.Extensions.AI.ChatMessage;
 
 namespace Sentium.Praxis.Features.Conversations;
 
@@ -253,10 +252,14 @@ public sealed class ConversationChatHistoryProvider : ChatHistoryProvider
     {
         public Guid? ConversationId { get; set; }
 
-        /// <summary>Raw messages of a turn paused on tool approval, replayed into the resumed run.</summary>
+        /// <summary>
+        /// Raw messages of a turn paused on tool approval, replayed into the resumed run.
+        /// </summary>
         public List<ChatMessage>? PendingTurn { get; set; }
 
-        /// <summary>Tool durations (ms, by call id) measured before the pause, for the completed turn's timeline.</summary>
+        /// <summary>
+        /// Tool durations (ms, by call id) measured before the pause, for the completed turn's timeline.
+        /// </summary>
         public Dictionary<string, long>? ToolDurations { get; set; }
     }
 }

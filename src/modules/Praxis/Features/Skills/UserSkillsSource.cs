@@ -1,5 +1,5 @@
 using Microsoft.Agents.AI;
-using Sentium.Praxis.Features.Sentinel;
+using Sentium.Praxis.Contracts;
 
 namespace Sentium.Praxis.Features.Skills;
 

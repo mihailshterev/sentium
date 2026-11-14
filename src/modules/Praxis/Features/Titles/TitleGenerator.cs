@@ -9,19 +9,29 @@ namespace Sentium.Praxis.Features.Titles;
 /// </summary>
 public sealed partial class TitleGenerator(IChatClient chatClient, ILogger<TitleGenerator> logger) : ITitleGenerator
 {
-    /// <summary>Longest generated title, in characters.</summary>
+    /// <summary>
+    /// Longest generated title, in characters.
+    /// </summary>
     public const int MaxTitleLength = 60;
 
-    /// <summary>Longest heuristic (fallback) title before the ellipsis, in characters.</summary>
+    /// <summary>
+    /// Longest heuristic (fallback) title before the ellipsis, in characters.
+    /// </summary>
     public const int MaxFallbackLength = 50;
 
-    /// <summary>How much of the source text is sent to the model; the start of a request carries its topic.</summary>
+    /// <summary>
+    /// How much of the source text is sent to the model; the start of a request carries its topic.
+    /// </summary>
     private const int MaxInputLength = 2000;
 
-    /// <summary>Quotes and markdown a model wraps a title in.</summary>
+    /// <summary>
+    /// Quotes and markdown a model wraps a title in.
+    /// </summary>
     private static readonly char[] Decoration = ['"', '\'', '`', '*', '#', '_', '“', '”', '‘', '’', '«', '»', ' '];
 
-    /// <summary>Decoration plus the punctuation a title should not end with.</summary>
+    /// <summary>
+    /// Decoration plus the punctuation a title should not end with.
+    /// </summary>
     private static readonly char[] TrailingNoise = [.. Decoration, '.', ',', ';', ':', '!', '?', '…'];
 
     private const string SystemPrompt = """

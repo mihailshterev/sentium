@@ -1,5 +1,5 @@
-using Sentium.Praxis.Dtos;
 using Sentium.Praxis.Entities;
+using Sentium.Praxis.Features.Workflows;
 
 namespace Sentium.Praxis.Features.WorkflowManagement;
 
@@ -23,7 +23,6 @@ public interface IWorkflowRunRepository
     /// Optional text matched (case-insensitive) against the run title and the name of the workflow that ran; runs recorded
     /// before titles existed are matched against their trigger payload (the scenario) instead.
     /// </param>
-    /// <param name="ct">Cancellation token.</param>
     Task<(IReadOnlyList<WorkflowRunSummaryResponse> Items, int TotalCount)> GetPagedAsync(int page, int pageSize, string? search = null, CancellationToken ct = default);
 
     /// <summary>

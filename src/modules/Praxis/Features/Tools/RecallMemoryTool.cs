@@ -3,8 +3,7 @@ using System.Text;
 using Microsoft.Extensions.AI;
 using Sentium.Codex.Contracts;
 using Sentium.Codex.Contracts.Models;
-using Sentium.Praxis.Features.Sentinel;
-using Sentium.Praxis.Features.Tools.Attributes;
+using Sentium.Praxis.Contracts;
 
 namespace Sentium.Praxis.Features.Tools;
 
@@ -17,12 +16,15 @@ public sealed class RecallMemoryTool(
     IVectorRepository vectorRepository,
     IPdpContextAccessor pdpContext) : IAgentTool
 {
-    public AIFunction CreateFunction() => AgentToolFunction.Create(
-        this,
-        RecallAsync,
-        ToolNames.RecallMemory,
-        "Searches your personal long-term memory for facts about the user, preferences, or past project notes. " +
-        "Use this when you need to remember something the user told you in a previous session.");
+    public AIFunction CreateFunction()
+    {
+        return AgentToolFunction.Create(
+            this,
+            RecallAsync,
+            ToolNames.RecallMemory,
+            "Searches your personal long-term memory for facts about the user, preferences, or past project notes. " +
+            "Use this when you need to remember something the user told you in a previous session.");
+    }
 
     public async Task<string> RecallAsync(
         [Description("What to search your long-term memory for - a topic, fact, name, or keywords.")] string query,

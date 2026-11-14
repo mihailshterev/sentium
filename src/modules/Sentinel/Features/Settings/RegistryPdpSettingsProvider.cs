@@ -25,25 +25,31 @@ public sealed class RegistryPdpSettingsProvider(
         }
     }
 
-    private static PdpRuntimeSettings Fallback() => new()
+    private static PdpRuntimeSettings Fallback()
     {
-        LockdownMode = false,
-        AutonomyLevel = 5,
-        SemanticIntentCheckEnabled = true,
-        IntentCheckModel = string.Empty,
-        RateLimitMaxRequests = 120,
-        RateLimitWindowSeconds = 60
-    };
+        return new()
+        {
+            LockdownMode = false,
+            AutonomyLevel = 5,
+            SemanticIntentCheckEnabled = true,
+            IntentCheckModel = string.Empty,
+            RateLimitMaxRequests = 120,
+            RateLimitWindowSeconds = 60
+        };
+    }
 
-    private static PdpRuntimeSettings Map(PdpSettingsResponse dto) => new()
+    private static PdpRuntimeSettings Map(PdpSettingsResponse dto)
     {
-        LockdownMode = dto.LockdownMode,
-        AutonomyLevel = dto.AutonomyLevel,
-        SemanticIntentCheckEnabled = dto.SemanticIntentCheckEnabled,
-        IntentCheckModel = dto.IntentCheckModel,
-        RateLimitMaxRequests = dto.RateLimitMaxRequests,
-        RateLimitWindowSeconds = dto.RateLimitWindowSeconds
-    };
+        return new()
+        {
+            LockdownMode = dto.LockdownMode,
+            AutonomyLevel = dto.AutonomyLevel,
+            SemanticIntentCheckEnabled = dto.SemanticIntentCheckEnabled,
+            IntentCheckModel = dto.IntentCheckModel,
+            RateLimitMaxRequests = dto.RateLimitMaxRequests,
+            RateLimitWindowSeconds = dto.RateLimitWindowSeconds
+        };
+    }
 
     private sealed record PdpSettingsResponse(
         bool LockdownMode,

@@ -4,11 +4,13 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NSubstitute;
 using Sentium.Infrastructure.Inference;
+using Sentium.Praxis.Contracts;
 using Sentium.Praxis.Entities;
 using Sentium.Praxis.Features.Agents;
 using Sentium.Praxis.Features.Agents.Native;
+using Sentium.Praxis.Features.Agents.Runtime;
+using Sentium.Praxis.Features.Agents.ToolOverrides;
 using Sentium.Praxis.Features.Learnings;
-using Sentium.Praxis.Features.Mcp;
 using Sentium.Praxis.Features.Models;
 using Sentium.Praxis.Features.Registry;
 using Sentium.Praxis.Features.Sentinel;
@@ -37,7 +39,10 @@ internal sealed class AgentTestHost
     public IAgentRepository Agents { get; } = Substitute.For<IAgentRepository>();
     public IAgentToolOverrideRepository ToolOverrides { get; } = Substitute.For<IAgentToolOverrideRepository>();
     public List<AIFunction> McpTools { get; } = [];
-    public McpRuntimeSettings McpSettings { get; set; } = McpRuntimeSettings.Default;
+    /// <summary>
+    /// Stands in for the MCP kill switch: while false the MCP source yields no tools.
+    /// </summary>
+    public bool McpEnabled { get; set; } = true;
 
     public AgentTestHost()
     {
@@ -50,7 +55,8 @@ internal sealed class AgentTestHost
         AllowAllTools();
     }
 
-    public void AllowAllTools(bool allowed = true, string reason = "ok") =>
+    public void AllowAllTools(bool allowed = true, string reason = "ok")
+    {
         Pdp.EvaluateAsync(Arg.Any<PolicyEvaluationRequest>(), Arg.Any<CancellationToken>()).Returns(new PolicyEvaluationResponse
         {
             Allowed = allowed,
@@ -60,6 +66,7 @@ internal sealed class AgentTestHost
             AuditId = Guid.NewGuid(),
             Timestamp = DateTimeOffset.UtcNow,
         });
+    }
 
     /// <summary>
     /// A fresh factory - as a new request's DI scope would build one - sharing this host's model and data services.
@@ -76,20 +83,18 @@ internal sealed class AgentTestHost
 
         var sentinel = new SentinelClient(Pdp, NullLogger<SentinelClient>.Instance);
 
-        var mcpCatalog = Substitute.For<IMcpToolCatalog>();
-        mcpCatalog.GetFunctions(Arg.Any<IReadOnlySet<string>>())
-            .Returns(call => McpTools.Where(t => call.Arg<IReadOnlySet<string>>().Contains(t.Name)).ToList());
-
-        var mcpSettings = Substitute.For<IMcpSettingsProvider>();
-        mcpSettings.GetAsync(Arg.Any<CancellationToken>()).Returns(_ => ValueTask.FromResult(McpSettings));
+        // Stands in for the MCP source: like the real one it yields nothing while MCP is disabled.
+        var mcpSource = Substitute.For<IAgentToolSource>();
+        mcpSource.GetFunctionsAsync(Arg.Any<IReadOnlySet<string>>(), Arg.Any<CancellationToken>())
+            .Returns(call => ValueTask.FromResult<IReadOnlyList<AIFunction>>(
+                McpEnabled ? [.. McpTools.Where(t => call.Arg<IReadOnlySet<string>>().Contains(t.Name))] : []));
 
         return new CompositeAgentFactory(
             Model,
             Options.Create(Inference),
             ContextWindows,
             toolProvider,
-            mcpCatalog,
-            mcpSettings,
+            [mcpSource],
             Agents,
             new BuiltInAgentService([new GeneralAssistant(), new ResearchAnalyst()], ToolOverrides),
             Settings,
@@ -99,38 +104,5 @@ internal sealed class AgentTestHost
             RunContext,
             provider,
             NullLoggerFactory.Instance);
-    }
-}
-
-/// <summary>
-/// A model stand-in: records every request and replies with queued responses, then "ok".
-/// </summary>
-internal sealed class RecordingChatClient : IChatClient
-{
-    private readonly Queue<ChatResponse> _scripted = new();
-
-    public List<(List<ChatMessage> Messages, ChatOptions? Options)> Requests { get; } = [];
-
-    public void Script(ChatResponse response) => _scripted.Enqueue(response);
-
-    public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
-    {
-        Requests.Add(([.. messages], options?.Clone()));
-        return Task.FromResult(_scripted.TryDequeue(out var next) ? next : new ChatResponse(new ChatMessage(ChatRole.Assistant, "ok")));
-    }
-
-    public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
-    {
-        var response = await GetResponseAsync(messages, options, cancellationToken);
-        foreach (var update in response.ToChatResponseUpdates())
-        {
-            yield return update;
-        }
-    }
-
-    public object? GetService(Type serviceType, object? serviceKey = null) => serviceType.IsInstanceOfType(this) ? this : null;
-
-    public void Dispose()
-    {
     }
 }

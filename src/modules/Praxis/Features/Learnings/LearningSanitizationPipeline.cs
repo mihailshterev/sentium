@@ -1,6 +1,5 @@
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.AI;
-using Microsoft.Extensions.Logging;
 using System.ComponentModel;
 using Sentium.Codex.Contracts;
 using Sentium.Codex.Contracts.Models;

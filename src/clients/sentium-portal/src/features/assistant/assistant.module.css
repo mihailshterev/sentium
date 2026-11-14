@@ -32,7 +32,8 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  scroll-behavior: smooth;
+  /* No smooth scrolling: following a streaming answer re-targets the bottom on every chunk, and an animated
+     scroll falls behind it, which reads as the view no longer being pinned to the bottom. */
 }
 
 .loadingConversation {

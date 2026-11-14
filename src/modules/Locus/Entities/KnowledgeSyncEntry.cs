@@ -1,4 +1,3 @@
-using System.Text.Json.Serialization;
 using Sentium.Core.Common;
 
 namespace Sentium.Locus.Entities;
@@ -27,11 +26,4 @@ public sealed class KnowledgeSyncEntry : INonAudited
     public DateTimeOffset NextAttemptAt { get; set; }
 
     public string? LastError { get; set; }
-}
-
-[JsonConverter(typeof(JsonStringEnumConverter<KnowledgeSyncStatus>))]
-public enum KnowledgeSyncStatus
-{
-    Pending,
-    Failed
 }

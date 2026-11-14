@@ -1,9 +1,5 @@
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Hosting;
 using Sentium.Infrastructure.Extensions;
-using Sentium.Infrastructure.Security;
 using Sentium.Locus.Contracts;
 using Sentium.Locus.Data;
 using Sentium.Locus.Features.Agents;
@@ -11,7 +7,6 @@ using Sentium.Locus.Features.Assets;
 using Sentium.Locus.Features.Attachments;
 using Sentium.Locus.Features.Knowledge;
 using Sentium.Locus.Features.Locations;
-using Sentium.Locus.Testing;
 
 namespace Sentium.Locus;
 
@@ -56,14 +51,5 @@ public static class LocusModuleExtensions
         ArgumentNullException.ThrowIfNull(app);
 
         await app.Services.MigrateModuleDbContextAsync<LocusDbContext>();
-
-        if (app.Environment.IsEnvironment("Testing"))
-        {
-            await using var scope = app.Services.CreateAsyncScope();
-            scope.ServiceProvider.GetRequiredService<SystemScopeContext>().Activate();
-
-            var db = scope.ServiceProvider.GetRequiredService<LocusDbContext>();
-            await LocusE2EDataSeeder.SeedAsync(db, TimeProvider.System);
-        }
     }
 }

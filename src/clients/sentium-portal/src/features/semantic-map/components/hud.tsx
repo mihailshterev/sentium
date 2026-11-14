@@ -16,48 +16,34 @@ import {
 } from "lucide-react";
 import styles from "../semantic-map.module.css";
 import type { GraphNode, VisualizationMode } from "../engine";
-import { COLLECTION_COLORS } from "../engine";
+import { COLLECTION_COLORS, getCollectionTheme } from "../engine";
 import type { KnowledgeMapSearchResult } from "@/features/semantic-map/types/knowledge-map";
 
+/*
+ * Panel transitions animate opacity and transform only. Both stay on the compositor; a `filter: blur()`
+ * transition would re-rasterise the panel every frame on top of the canvas animating underneath.
+ */
 const panelVariants = {
-  hidden: { opacity: 0, scale: 0.96, y: 8, filter: "blur(8px)" },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    y: 0,
-    filter: "blur(0px)",
-    transition: { duration: 0.4, ease: [0.16, 1, 0.3, 1] as const },
-  },
-  exit: {
-    opacity: 0,
-    scale: 0.96,
-    y: 8,
-    filter: "blur(8px)",
-    transition: { duration: 0.25, ease: "easeIn" as const },
-  },
+  hidden: { opacity: 0, y: 8 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.22, ease: [0.16, 1, 0.3, 1] as const } },
+  exit: { opacity: 0, y: 8, transition: { duration: 0.15, ease: "easeIn" as const } },
 };
 
 const slideInRight = {
-  hidden: { opacity: 0, x: 30, filter: "blur(6px)" },
-  visible: {
-    opacity: 1,
-    x: 0,
-    filter: "blur(0px)",
-    transition: { duration: 0.45, ease: [0.16, 1, 0.3, 1] as const },
-  },
-  exit: {
-    opacity: 0,
-    x: 30,
-    filter: "blur(6px)",
-    transition: { duration: 0.25, ease: "easeIn" as const },
-  },
+  hidden: { opacity: 0, x: 16 },
+  visible: { opacity: 1, x: 0, transition: { duration: 0.24, ease: [0.16, 1, 0.3, 1] as const } },
+  exit: { opacity: 0, x: 16, transition: { duration: 0.15, ease: "easeIn" as const } },
 };
 
 const fadeIn = {
   initial: { opacity: 0 },
-  animate: { opacity: 1, transition: { duration: 0.3 } },
-  exit: { opacity: 0, transition: { duration: 0.2 } },
+  animate: { opacity: 1, transition: { duration: 0.2 } },
+  exit: { opacity: 0, transition: { duration: 0.15 } },
 };
+
+const MODES: VisualizationMode[] = ["constellation", "neural", "cluster"];
+
+const formatScore = (score: number) => `${Math.round(score * 100)}%`;
 
 export function LoadingOverlay({ visible }: { visible: boolean }) {
   return (
@@ -67,12 +53,13 @@ export function LoadingOverlay({ visible }: { visible: boolean }) {
           className={styles.loadingOverlay}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          exit={{ opacity: 0, transition: { duration: 0.6 } }}
+          exit={{ opacity: 0, transition: { duration: 0.3 } }}
+          role="status"
         >
           <div className={styles.loadingInner}>
             <div className={styles.loadingOrb} />
-            <Loader2 size={22} className={styles.loadingSpinner} />
-            <p className={styles.loadingText}>Initializing semantic universe…</p>
+            <Loader2 size={22} className={styles.loadingSpinner} aria-hidden="true" />
+            <p className={styles.loadingText}>Loading knowledge map…</p>
           </div>
         </motion.div>
       )}
@@ -106,68 +93,82 @@ export function Toolbar({
   return (
     <motion.div
       className={styles.toolbar}
-      initial={{ y: -60, opacity: 0 }}
+      initial={{ y: -16, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
+      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
     >
       <div className={styles.toolbarLeft}>
         <div className={styles.brandBadge}>
-          <Waypoints size={15} />
+          <Waypoints size={15} aria-hidden="true" />
           <span>sentium / semantic-map</span>
         </div>
 
         <AnimatePresence>
           {isDemo && (
-            <motion.div className={styles.demoBadge} {...fadeIn}>
-              <Sparkles size={12} />
+            <motion.div className={styles.demoBadge} title="No indexed knowledge yet — showing sample data" {...fadeIn}>
+              <Sparkles size={12} aria-hidden="true" />
               <span>Demo</span>
             </motion.div>
           )}
         </AnimatePresence>
 
         <div className={styles.statsRow}>
-          <span className={styles.statChip} style={{ color: COLLECTION_COLORS.knowledge_base.color }}>
-            <Database size={11} />
+          <span className={styles.statChip} title="Knowledge base chunks">
+            <Database size={12} style={{ color: COLLECTION_COLORS.knowledge_base.color }} aria-hidden="true" />
             {stats.kb} KB
           </span>
-          <span className={styles.statChip} style={{ color: COLLECTION_COLORS.agent_learnings.color }}>
-            <Brain size={11} />
+          <span className={styles.statChip} title="Agent learnings">
+            <Brain size={12} style={{ color: COLLECTION_COLORS.agent_learnings.color }} aria-hidden="true" />
             {stats.learnings} Learnings
           </span>
-          <span className={styles.statChip} style={{ color: COLLECTION_COLORS.user_memories.color }}>
-            <Sparkles size={11} />
+          <span className={styles.statChip} title="User memories">
+            <Sparkles size={12} style={{ color: COLLECTION_COLORS.user_memories.color }} aria-hidden="true" />
             {stats.memories} Memories
           </span>
         </div>
       </div>
 
       <div className={styles.toolbarCenter}>
-        <div className={styles.searchWrap}>
-          <Search size={14} className={styles.searchIcon} />
+        <form
+          className={styles.searchWrap}
+          role="search"
+          onSubmit={(e) => {
+            e.preventDefault();
+            onSearchSubmit(searchQuery);
+          }}
+        >
+          <Search size={15} className={styles.searchIcon} aria-hidden="true" />
           <input
             className={styles.searchInput}
-            placeholder="Semantic search — illuminate knowledge…"
+            type="text"
+            enterKeyHint="search"
+            aria-label="Search the knowledge map"
+            placeholder="Search by meaning, then press Enter"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") onSearchSubmit(searchQuery);
-            }}
           />
-          {isSearching && <Loader2 size={13} className={styles.searchSpinner} />}
+          {isSearching && <Loader2 size={14} className={styles.searchSpinner} aria-label="Searching" />}
           {searchQuery && !isSearching && (
-            <button className={styles.searchClear} onClick={onSearchClear}>
-              <X size={13} />
+            <button
+              type="button"
+              className={`${styles.iconBtn} ${styles.searchClear}`}
+              onClick={onSearchClear}
+              aria-label="Clear search"
+            >
+              <X size={14} />
             </button>
           )}
-        </div>
+        </form>
       </div>
 
       <div className={styles.toolbarRight}>
-        <div className={styles.modeSelector}>
-          {(["constellation", "neural", "cluster"] as VisualizationMode[]).map((m) => (
+        <div className={styles.modeSelector} role="group" aria-label="Layout">
+          {MODES.map((m) => (
             <button
               key={m}
+              type="button"
               className={`${styles.modeBtn} ${mode === m ? styles.modeBtnActive : ""}`}
+              aria-pressed={mode === m}
               onClick={() => onModeChange(m)}
             >
               {m}
@@ -180,31 +181,39 @@ export function Toolbar({
 }
 
 interface ZoomControlsProps {
+  legendVisible: boolean;
   onZoomIn: () => void;
   onZoomOut: () => void;
   onReset: () => void;
   onToggleLegend: () => void;
 }
 
-export function ZoomControls({ onZoomIn, onZoomOut, onReset, onToggleLegend }: ZoomControlsProps) {
+export function ZoomControls({ legendVisible, onZoomIn, onZoomOut, onReset, onToggleLegend }: ZoomControlsProps) {
   return (
     <motion.div
       className={styles.zoomControls}
-      initial={{ x: -40, opacity: 0 }}
+      initial={{ x: -16, opacity: 0 }}
       animate={{ x: 0, opacity: 1 }}
-      transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1], delay: 0.4 }}
+      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
     >
-      <button className={styles.zoomBtn} onClick={onZoomIn} title="Zoom in">
-        <ZoomIn size={15} />
+      <button type="button" className={styles.zoomBtn} onClick={onZoomIn} title="Zoom in" aria-label="Zoom in">
+        <ZoomIn size={16} />
       </button>
-      <button className={styles.zoomBtn} onClick={onZoomOut} title="Zoom out">
-        <ZoomOut size={15} />
+      <button type="button" className={styles.zoomBtn} onClick={onZoomOut} title="Zoom out" aria-label="Zoom out">
+        <ZoomOut size={16} />
       </button>
-      <button className={styles.zoomBtn} onClick={onReset} title="Reset view">
-        <RotateCcw size={15} />
+      <button type="button" className={styles.zoomBtn} onClick={onReset} title="Reset view" aria-label="Reset view">
+        <RotateCcw size={16} />
       </button>
-      <button className={styles.zoomBtn} onClick={onToggleLegend} title="Toggle legend">
-        <Layers size={15} />
+      <button
+        type="button"
+        className={styles.zoomBtn}
+        onClick={onToggleLegend}
+        title="Toggle legend"
+        aria-label="Toggle legend"
+        aria-pressed={legendVisible}
+      >
+        <Layers size={16} />
       </button>
     </motion.div>
   );
@@ -220,16 +229,13 @@ export function Legend({ visible }: { visible: boolean }) {
             .filter(([k]) => k !== "default")
             .map(([key, val]) => (
               <div key={key} className={styles.legendItem}>
-                <span
-                  className={styles.legendDot}
-                  style={{ background: val.color, boxShadow: `0 0 6px ${val.color}` }}
-                />
+                <span className={styles.legendDot} style={{ background: val.color }} />
                 <span className={styles.legendLabel}>{val.label}</span>
               </div>
             ))}
           <div className={styles.legendDivider} />
           <p className={styles.legendHint}>Scroll to zoom · Drag to pan</p>
-          <p className={styles.legendHint}>Click node to inspect</p>
+          <p className={styles.legendHint}>Click a node to inspect · Esc to close</p>
         </motion.div>
       )}
     </AnimatePresence>
@@ -237,6 +243,7 @@ export function Legend({ visible }: { visible: boolean }) {
 }
 
 interface ResultsPanelProps {
+  /** Null while no search is active; an empty array is a search that matched nothing. */
   results: KnowledgeMapSearchResult[] | null;
   onClose: () => void;
   onSelectResult: (id: string) => void;
@@ -245,51 +252,54 @@ interface ResultsPanelProps {
 export function ResultsPanel({ results, onClose, onSelectResult }: ResultsPanelProps) {
   return (
     <AnimatePresence>
-      {results && results.length > 0 && (
-        <motion.div
+      {results && (
+        <motion.section
           className={styles.resultsPanel}
+          aria-label="Search results"
           variants={slideInRight}
           initial="hidden"
           animate="visible"
           exit="exit"
         >
           <div className={styles.resultsPanelHeader}>
-            <span className={styles.resultsPanelTitle}>
-              <Search size={13} />
-              {results.length} results
+            <span className={styles.resultsPanelTitle} role="status">
+              <Search size={14} aria-hidden="true" />
+              {results.length === 1 ? "1 result" : `${results.length} results`}
             </span>
-            <button className={styles.resultsClose} onClick={onClose}>
-              <X size={13} />
+            <button type="button" className={styles.iconBtn} onClick={onClose} aria-label="Close search results">
+              <X size={14} />
             </button>
           </div>
-          <div className={styles.resultsList}>
-            {results.slice(0, 8).map((r, i) => {
-              const col = COLLECTION_COLORS[r.collection] ?? COLLECTION_COLORS.default;
-              return (
-                <motion.div
-                  key={r.id}
-                  className={styles.resultItem}
-                  onClick={() => onSelectResult(r.id)}
-                  initial={{ opacity: 0, x: 15 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.05, duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                >
-                  <div className={styles.resultScore}>
-                    <div
-                      className={styles.resultBar}
-                      style={{ width: `${Math.round(r.score * 100)}%`, background: col.color }}
-                    />
-                    <span style={{ color: col.color }}>{Math.round(r.score * 100)}%</span>
-                  </div>
-                  <p className={styles.resultContent}>{r.content}</p>
-                  <span className={styles.resultSource} style={{ color: col.color }}>
-                    {r.source}
-                  </span>
-                </motion.div>
-              );
-            })}
-          </div>
-        </motion.div>
+          {results.length === 0 ? (
+            <p className={styles.resultsEmpty}>Nothing matched. Try different wording or a broader question.</p>
+          ) : (
+            <ul className={styles.resultsList}>
+              {results.map((r) => {
+                const col = COLLECTION_COLORS[r.collection] ?? COLLECTION_COLORS.default;
+                return (
+                  <li key={r.id}>
+                    <button type="button" className={styles.resultItem} onClick={() => onSelectResult(r.id)}>
+                      <span className={styles.resultScore}>
+                        <span className={styles.resultTrack}>
+                          <span
+                            className={styles.resultBar}
+                            style={{ width: formatScore(r.score), background: col.color }}
+                          />
+                        </span>
+                        <span className={styles.resultPercent}>{formatScore(r.score)}</span>
+                      </span>
+                      <span className={styles.resultContent}>{r.content}</span>
+                      <span className={styles.resultSource}>
+                        <span className={styles.legendDot} style={{ background: col.color }} />
+                        {r.source}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </motion.section>
       )}
     </AnimatePresence>
   );
@@ -304,8 +314,9 @@ export function DetailPanel({ node, onClose }: DetailPanelProps) {
   return (
     <AnimatePresence>
       {node && (
-        <motion.div
+        <motion.section
           className={styles.detailPanel}
+          aria-label="Selected node"
           variants={panelVariants}
           initial="hidden"
           animate="visible"
@@ -314,21 +325,16 @@ export function DetailPanel({ node, onClose }: DetailPanelProps) {
         >
           <div className={styles.detailHeader}>
             <div className={styles.detailHeaderLeft}>
-              <motion.span
-                className={styles.detailCollectionDot}
-                style={{ background: node.colorStr, boxShadow: `0 0 8px ${node.colorStr}` }}
-                animate={{ scale: [1, 1.3, 1] }}
-                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-              />
-              <div>
+              <span className={styles.detailCollectionDot} style={{ background: node.colorStr }} />
+              <div className={styles.detailTitle}>
                 <p className={styles.detailSource}>{node.source}</p>
                 <p className={styles.detailMeta}>
-                  {node.collection} · {node.sourceType}
+                  {getCollectionTheme(node.collection).label} · {node.sourceType}
                 </p>
               </div>
             </div>
-            <button className={styles.detailClose} onClick={onClose}>
-              <X size={14} />
+            <button type="button" className={styles.iconBtn} onClick={onClose} aria-label="Close details">
+              <X size={15} />
             </button>
           </div>
 
@@ -336,15 +342,12 @@ export function DetailPanel({ node, onClose }: DetailPanelProps) {
             <div className={styles.detailScore}>
               <span>Relevance</span>
               <div className={styles.detailScoreBar}>
-                <motion.div
+                <div
                   className={styles.detailScoreFill}
-                  style={{ background: node.colorStr }}
-                  initial={{ width: 0 }}
-                  animate={{ width: `${Math.round(node.queryScore * 100)}%` }}
-                  transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
+                  style={{ background: node.colorStr, width: formatScore(node.queryScore) }}
                 />
               </div>
-              <span style={{ color: node.colorStr }}>{Math.round(node.queryScore * 100)}%</span>
+              <span className={styles.resultPercent}>{formatScore(node.queryScore)}</span>
             </div>
           )}
 
@@ -353,7 +356,7 @@ export function DetailPanel({ node, onClose }: DetailPanelProps) {
           {Object.keys(node.metadata).length > 0 && (
             <div className={styles.detailMeta2}>
               <p className={styles.detailMetaTitle}>
-                <Info size={11} />
+                <Info size={12} aria-hidden="true" />
                 Metadata
               </p>
               {Object.entries(node.metadata).map(([k, v]) => (
@@ -366,10 +369,10 @@ export function DetailPanel({ node, onClose }: DetailPanelProps) {
           )}
 
           <p className={styles.detailDate}>
-            <ChevronRight size={10} />
+            <ChevronRight size={12} aria-hidden="true" />
             Ingested {new Date(node.createdAt).toLocaleString()}
           </p>
-        </motion.div>
+        </motion.section>
       )}
     </AnimatePresence>
   );
@@ -385,11 +388,12 @@ export function ErrorToast({ error, onDismiss }: { error: string | null; onDismi
           initial="hidden"
           animate="visible"
           exit="exit"
+          role="alert"
         >
-          <Info size={13} />
+          <Info size={14} aria-hidden="true" />
           {error}
-          <button onClick={onDismiss}>
-            <X size={12} />
+          <button type="button" onClick={onDismiss} aria-label="Dismiss">
+            <X size={14} />
           </button>
         </motion.div>
       )}

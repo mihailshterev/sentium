@@ -7,8 +7,7 @@ using Npgsql;
 using Quartz;
 using Quartz.Impl.AdoJobStore;
 using Sentium.Core.Constants;
-using Sentium.Praxis.Dtos;
-using Sentium.Praxis.Features.Scheduling;
+using Sentium.Scheduling.Features.Jobs;
 using Sentium.Tests.Integration.Common;
 using Xunit;
 
@@ -63,7 +62,7 @@ public class SchedulerPersistenceTests(MonolithWebApplicationFactory factory) : 
             await connection.OpenAsync(Ct);
             await using var command = new NpgsqlCommand(
                 """
-                SELECT ct.cron_expression, ct.time_zone_id
+                SELECT ct.cron_expression, ct.time_zone_id, jd.job_class_name
                 FROM praxis.qrtz_job_details jd
                 JOIN praxis.qrtz_triggers t ON t.sched_name = jd.sched_name AND t.job_name = jd.job_name AND t.job_group = jd.job_group
                 JOIN praxis.qrtz_cron_triggers ct ON ct.sched_name = t.sched_name AND ct.trigger_name = t.trigger_name AND ct.trigger_group = t.trigger_group
@@ -77,6 +76,8 @@ public class SchedulerPersistenceTests(MonolithWebApplicationFactory factory) : 
             (await reader.ReadAsync(Ct)).Should().BeTrue("the job and its cron trigger must be persisted");
             reader.GetString(0).Should().Be(FarFuture);
             reader.GetString(1).Should().Be(TimeZoneInfo.Utc.Id);
+            reader.GetString(2).Should().Be("Sentium.Scheduling.Features.Jobs.ExecuteJob, Sentium.Scheduling",
+                "the RenameScheduledJobType migration rewrites persisted jobs to exactly this name");
         }
 
         var response = await _client.GetAsync("/api/praxis/scheduler/jobs", Ct);

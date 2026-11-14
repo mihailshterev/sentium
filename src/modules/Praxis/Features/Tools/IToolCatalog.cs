@@ -1,4 +1,5 @@
-using Sentium.Praxis.Dtos;
+using Sentium.Praxis.Contracts;
+
 
 namespace Sentium.Praxis.Features.Tools;
 

@@ -15,70 +15,6 @@ using Sentium.Sandbox.Options;
 namespace Sentium.Sandbox.Mcp;
 
 /// <summary>
-/// A launch request the operator's limits do not allow (image or network not allow-listed, too many servers, ...).
-/// </summary>
-public sealed class McpHostRejectedException : Exception
-{
-    public McpHostRejectedException()
-    {
-    }
-
-    public McpHostRejectedException(string message) : base(message)
-    {
-    }
-
-    public McpHostRejectedException(string message, Exception innerException) : base(message, innerException)
-    {
-    }
-}
-
-/// <summary>
-/// The server container could not be started or did not complete the MCP handshake.
-/// </summary>
-public sealed class McpServerStartException : Exception
-{
-    public McpServerStartException()
-    {
-    }
-
-    public McpServerStartException(string message) : base(message)
-    {
-    }
-
-    public McpServerStartException(string message, Exception innerException) : base(message, innerException)
-    {
-    }
-}
-
-/// <summary>
-/// Hosts stdio MCP servers for Sentium.Web.
-/// </summary>
-public interface IMcpServerHost
-{
-    bool Enabled { get; }
-
-    /// <summary>
-    /// Starts the server (or keeps it running when the spec is unchanged). Throws <see cref="McpHostRejectedException"/>
-    /// when the operator's limits forbid the spec and <see cref="McpServerStartException"/> when it fails to start.
-    /// </summary>
-    Task<McpServerStatus> EnsureAsync(string name, McpServerLaunchSpec spec, CancellationToken ct);
-
-    /// <summary>
-    /// The server's tools, or <see langword="null"/> when the server is unknown.
-    /// </summary>
-    Task<ListToolsResult?> ListToolsAsync(string name, CancellationToken ct);
-
-    /// <summary>
-    /// The tool's result, or <see langword="null"/> when the server is unknown.
-    /// </summary>
-    Task<CallToolResult?> CallToolAsync(string name, CallToolRequestParams request, CancellationToken ct);
-
-    McpServerStatus? GetStatus(string name);
-
-    Task<bool> StopAsync(string name);
-}
-
-/// <summary>
 /// Runs stdio MCP servers in hardened, long-lived containers and holds one MCP client session per server (Docker attach
 /// ⇄ <see cref="ContainerStdioBridge"/> ⇄ <see cref="StreamClientTransport"/> ⇄ <see cref="McpClient"/>). Launch specs
 /// live in memory only - the Sandbox stays stateless; Sentium.Web re-sends the spec when the Sandbox does not know a
@@ -441,13 +377,16 @@ internal sealed partial class McpContainerManager(
 
         public bool IsRunning => Client is not null && !Client.Completion.IsCompleted && Bridge is { Completion.IsCompleted: false };
 
-        public McpServerStatus ToStatus() => new(
-            Name,
-            IsRunning,
-            ContainerId,
-            StartedAt,
-            LastUsedAt,
-            LastError,
-            Bridge?.StderrTail ?? LastStderr);
+        public McpServerStatus ToStatus()
+        {
+            return new(
+                Name,
+                IsRunning,
+                ContainerId,
+                StartedAt,
+                LastUsedAt,
+                LastError,
+                Bridge?.StderrTail ?? LastStderr);
+        }
     }
 }

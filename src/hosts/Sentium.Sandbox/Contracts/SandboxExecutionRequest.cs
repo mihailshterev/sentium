@@ -8,9 +8,3 @@ public sealed record SandboxExecutionRequest
     public required string AgentId { get; init; }
     public string? OriginalUserPrompt { get; init; }
 }
-
-public sealed record SandboxFileContextDto
-{
-    public required string FileName { get; init; }
-    public required string Content { get; init; }
-}

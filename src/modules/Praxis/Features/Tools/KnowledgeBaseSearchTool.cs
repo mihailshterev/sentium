@@ -1,12 +1,10 @@
 using System.ComponentModel;
 using System.Text;
 using Microsoft.Extensions.AI;
+using Microsoft.Extensions.Options;
 using Sentium.Codex.Contracts;
 using Sentium.Codex.Contracts.Models;
-using Sentium.Praxis.Features.Tools.Attributes;
-using Sentium.Praxis.Features.Sentinel;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
+using Sentium.Praxis.Contracts;
 
 namespace Sentium.Praxis.Features.Tools;
 
@@ -26,11 +24,14 @@ public sealed class KnowledgeBaseSearchTool(
 
     private const int MaxTopK = 20;
 
-    public AIFunction CreateFunction() => AgentToolFunction.Create(
-        this,
-        SearchAsync,
-        ToolNames.KnowledgeBaseSearch,
-        "Search ALL of your knowledge - the shared knowledge base, your captured learnings, and your saved memories - for relevant context.");
+    public AIFunction CreateFunction()
+    {
+        return AgentToolFunction.Create(
+            this,
+            SearchAsync,
+            ToolNames.KnowledgeBaseSearch,
+            "Search ALL of your knowledge - the shared knowledge base, your captured learnings, and your saved memories - for relevant context.");
+    }
 
     public async Task<string> SearchAsync(
         [Description("The search string describing what you are looking for.")] string query,
@@ -115,11 +116,14 @@ public sealed class KnowledgeBaseSearchTool(
         return sb.ToString();
     }
 
-    private static string StoreLabel(string collection) => collection switch
+    private static string StoreLabel(string collection)
     {
-        KnowledgeCollections.KnowledgeBase => "Knowledge Base",
-        KnowledgeCollections.AgentLearnings => "Captured Learning",
-        KnowledgeCollections.UserMemories => "Saved Memory",
-        _ => collection
-    };
+        return collection switch
+        {
+            KnowledgeCollections.KnowledgeBase => "Knowledge Base",
+            KnowledgeCollections.AgentLearnings => "Captured Learning",
+            KnowledgeCollections.UserMemories => "Saved Memory",
+            _ => collection
+        };
+    }
 }

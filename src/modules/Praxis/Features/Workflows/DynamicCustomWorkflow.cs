@@ -1,10 +1,10 @@
 using System.Text.Json;
-using Sentium.Praxis.Extensions;
+using Sentium.Praxis.Common.Streaming;
 using Sentium.Praxis.Features.Agents;
 using Sentium.Praxis.Features.Orchestration;
 using Sentium.Praxis.Features.WorkflowManagement;
 using Sentium.Praxis.Features.Workflows.Squad;
-using AgentResponse = Sentium.Praxis.Dtos.AgentResponse;
+using AgentResponse = Sentium.Praxis.Features.Agents.AgentResponse;
 
 namespace Sentium.Praxis.Features.Workflows;
 
@@ -48,8 +48,8 @@ public sealed class DynamicCustomWorkflow(
             return new WorkflowResult { Explanation = $"Workflow '{workflowDef.Name}' has no agents configured." };
         }
 
-        var log = new StreamLogAccumulator();
-        WarnOnDuplicateNames(trigger, workflowDef.Name, agents, log);
+        var timeline = new WorkflowTimeline(stream, trigger.StreamId);
+        WarnOnDuplicateNames(timeline, workflowDef.Name, agents);
 
         var roster = agents
             .DistinctBy(a => a.Name, StringComparer.OrdinalIgnoreCase)
@@ -62,12 +62,12 @@ public sealed class DynamicCustomWorkflow(
             $"A complete, correct contribution for this role: {Summarize(a.Description)}"))]);
 
         var request = WorkspaceContextPrompt.Augment(trigger.ResolveActivity(), WorkspaceContextPrompt.TryExtract(trigger.Payload));
-        var result = await squad.RunAsync(trigger, request, roster, plan, log, ct);
+        var result = await squad.RunAsync(trigger, request, roster, plan, timeline, ct);
 
-        return SquadResultMapper.ToWorkflowResult(result, log, $"Custom workflow '{workflowDef.Name}' completed with no output.", workflowId, workflowDef.UserId);
+        return SquadResultMapper.ToWorkflowResult(result, timeline, $"Custom workflow '{workflowDef.Name}' completed with no output.", workflowId, workflowDef.UserId);
     }
 
-    private void WarnOnDuplicateNames(WorkflowTrigger trigger, string workflowName, IReadOnlyList<AgentResponse> agents, StreamLogAccumulator log)
+    private static void WarnOnDuplicateNames(WorkflowTimeline timeline, string workflowName, IReadOnlyList<AgentResponse> agents)
     {
         var duplicates = agents.GroupBy(a => a.Name, StringComparer.OrdinalIgnoreCase).Where(g => g.Count() > 1).Select(g => g.Key).ToList();
         if (duplicates.Count == 0)
@@ -76,8 +76,7 @@ public sealed class DynamicCustomWorkflow(
         }
 
         var warning = $"Warning: workflow '{workflowName}' has duplicate agent names ({string.Join(", ", duplicates)}). Per-agent attribution may be unreliable - give each agent a unique name.";
-        stream.Emit(trigger.StreamId, SquadRunContext.SystemAuthor, warning, AgentUpdateTypes.Status);
-        log.Add(SquadRunContext.SystemAuthor, warning, AgentUpdateTypes.Status);
+        timeline.Post(WorkflowTimeline.SystemAuthor, warning, AgentUpdateTypes.Status);
     }
 
     private static bool TryReadWorkflowId(string payload, out Guid workflowId)

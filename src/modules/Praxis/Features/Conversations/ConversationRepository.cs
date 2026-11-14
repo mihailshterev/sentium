@@ -1,9 +1,8 @@
-using Sentium.Praxis.Common;
-using Sentium.Praxis.Dtos;
-using Sentium.Praxis.Entities;
-using Sentium.Praxis.Data;
-using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
+using Sentium.Praxis.Common;
+using Sentium.Praxis.Data;
+using Sentium.Praxis.Entities;
 
 namespace Sentium.Praxis.Features.Conversations;
 
@@ -92,13 +91,15 @@ public sealed class ConversationRepository(PraxisDbContext context) : IConversat
     }
 
     public async Task<string?> GetAgentNameAsync(Guid conversationId, Guid? userId, CancellationToken ct = default)
-        => userId is null
+    {
+        return userId is null
             ? null
             : await context.Conversations
                 .AsNoTracking()
                 .Where(c => c.Id == conversationId && c.UserId == userId)
                 .Select(c => c.AgentName)
                 .FirstOrDefaultAsync(ct);
+    }
 
     public async Task<bool> IsTitlePendingAsync(Guid conversationId, CancellationToken ct = default)
         => await context.Conversations.AnyAsync(c => c.Id == conversationId && c.IsTitlePending, ct);

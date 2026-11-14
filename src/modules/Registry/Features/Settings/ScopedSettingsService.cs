@@ -1,5 +1,4 @@
 using System.Text.Json;
-using Microsoft.Extensions.DependencyInjection;
 using Sentium.Registry.Contracts;
 
 namespace Sentium.Registry.Features.Settings;

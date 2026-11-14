@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using Sentium.Vigil.Features.Monitoring;
 
 namespace Sentium.Vigil.Features.Monitoring.Probes;
 

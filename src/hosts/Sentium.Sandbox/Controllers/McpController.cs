@@ -129,15 +129,10 @@ public sealed class McpController(IMcpServerHost host) : ControllerBase
         }
     }
 
-    private ObjectResult? Disabled() => host.Enabled
-        ? null
-        : Problem(statusCode: StatusCodes.Status503ServiceUnavailable, title: "MCP host disabled", detail: "The Sandbox MCP host is disabled (Sandbox:Mcp:Enabled).");
-}
-
-internal static partial class McpServerNames
-{
-    public static bool IsValid(string? name) => name is not null && Pattern().IsMatch(name);
-
-    [System.Text.RegularExpressions.GeneratedRegex("^[a-z0-9][a-z0-9-]{1,23}$", System.Text.RegularExpressions.RegexOptions.CultureInvariant)]
-    private static partial System.Text.RegularExpressions.Regex Pattern();
+    private ObjectResult? Disabled()
+    {
+        return host.Enabled
+            ? null
+            : Problem(statusCode: StatusCodes.Status503ServiceUnavailable, title: "MCP host disabled", detail: "The Sandbox MCP host is disabled (Sandbox:Mcp:Enabled).");
+    }
 }

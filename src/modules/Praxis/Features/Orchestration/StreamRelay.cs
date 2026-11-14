@@ -1,43 +1,9 @@
 using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using System.Threading.Channels;
-using Sentium.Praxis.Features.Agents;
-using Sentium.Praxis.Features.Workflows;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
+using Sentium.Praxis.Common.Streaming;
 
 namespace Sentium.Praxis.Features.Orchestration;
-
-public readonly record struct StreamFrame(long Seq, AgentStreamUpdate Update);
-
-/// <summary>
-/// Write side of the agent stream: workflows push every update for a run here, keyed by its stream id.
-/// </summary>
-public interface IAgentStreamPublisher
-{
-    /// <summary>
-    /// Appends <paramref name="update"/> to the stream's replay buffer and fans it out to live subscribers.
-    /// Never blocks: slow subscribers drop their oldest queued frames instead of stalling the producer.
-    /// </summary>
-    void Publish(string streamId, AgentStreamUpdate update);
-}
-
-/// <summary>
-/// In-process fan-out + replay buffer for agent stream updates. Producers write through
-/// <see cref="IAgentStreamPublisher"/>; the stream's buffer exists from the first update, so nothing is lost
-/// when the SSE client connects after the run already started. SSE consumers attach via <see cref="Subscribe"/>
-/// and receive the full backlog (filtered by <c>Last-Event-ID</c>) followed by live updates, which also makes
-/// EventSource reconnects replay cleanly without duplicates.
-/// </summary>
-public interface IStreamRelay
-{
-    /// <summary>
-    /// Replays buffered frames with <c>Seq &gt; <paramref name="fromSeqExclusive"/></c> then yields live frames,
-    /// completing when a terminal (Done/Error) frame has been delivered or <paramref name="ct"/> fires.
-    /// </summary>
-    IAsyncEnumerable<StreamFrame> Subscribe(string streamId, long fromSeqExclusive, CancellationToken ct);
-}
 
 public sealed class StreamRelay(IConfiguration configuration, ILogger<StreamRelay> logger) : BackgroundService, IStreamRelay, IAgentStreamPublisher
 {

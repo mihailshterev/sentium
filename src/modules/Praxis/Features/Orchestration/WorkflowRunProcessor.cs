@@ -1,16 +1,11 @@
-using Sentium.Praxis.Extensions;
-using Sentium.Praxis.Features.Agents;
+using Sentium.Infrastructure.Extensions;
+using Sentium.Infrastructure.Security;
+using Sentium.Praxis.Common.Streaming;
+using Sentium.Praxis.Contracts;
 using Sentium.Praxis.Entities;
-using Sentium.Praxis.Features.Sentinel;
 using Sentium.Praxis.Features.Titles;
 using Sentium.Praxis.Features.WorkflowManagement;
 using Sentium.Praxis.Features.Workflows;
-using Sentium.Infrastructure.Extensions;
-using Sentium.Infrastructure.Security;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 
 namespace Sentium.Praxis.Features.Orchestration;
 
@@ -250,7 +245,7 @@ public sealed class WorkflowRunProcessor(
     {
         try
         {
-            stream.Emit(streamId, "System", text, type);
+            stream.Publish(streamId, new AgentStreamUpdate(WorkflowTimeline.SystemAuthor, text, type));
         }
         catch (Exception ex)
         {
@@ -259,9 +254,11 @@ public sealed class WorkflowRunProcessor(
     }
 
     private static int ResolveMaxConcurrency(IConfiguration configuration)
-        => int.TryParse(configuration["Orchestration:MaxConcurrentWorkflows"], out var configured) && configured > 0
+    {
+        return int.TryParse(configuration["Orchestration:MaxConcurrentWorkflows"], out var configured) && configured > 0
             ? configured
             : DefaultMaxConcurrency;
+    }
 
     private static TimeSpan ResolveWorkflowTimeout(IConfiguration configuration)
         => configuration.GetTimeSpan("Orchestration:WorkflowTimeout", TimeSpan.FromMinutes(DefaultTimeoutMinutes));

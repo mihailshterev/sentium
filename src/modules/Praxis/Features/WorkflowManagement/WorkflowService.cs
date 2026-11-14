@@ -1,6 +1,6 @@
-using Sentium.Praxis.Dtos;
-using Sentium.Infrastructure.Caching;
 using Sentium.Core.Results;
+using Sentium.Infrastructure.Caching;
+using Sentium.Praxis.Features.Workflows;
 
 namespace Sentium.Praxis.Features.WorkflowManagement;
 
@@ -11,11 +11,13 @@ public sealed class WorkflowService(
     public const string CacheTag = "workflows";
 
     public async Task<IReadOnlyList<WorkflowResponse>> GetWorkflowsAsync(CancellationToken ct = default)
-        => await cache.GetOrCreateAsync(
+    {
+        return await cache.GetOrCreateAsync(
             $"{CacheTag}:all",
             async token => await repository.GetWorkflowsAsync(token),
             CacheTag,
             ct);
+    }
 
     public async Task<PagedResponse<WorkflowResponse>> GetWorkflowsPagedAsync(int page, int pageSize, CancellationToken ct = default)
     {
@@ -23,21 +25,19 @@ public sealed class WorkflowService(
 
         return await cache.GetOrCreateAsync(
             $"{CacheTag}:page:{page}:{pageSize}",
-            async token =>
-            {
-                var (items, total) = await repository.GetPagedAsync(page, pageSize, token);
-                return PagedResponse<WorkflowResponse>.Create(items, total, page, pageSize);
-            },
+            token => LoadPageAsync(page, pageSize, token),
             CacheTag,
             ct);
     }
 
     public async Task<WorkflowResponse?> GetWorkflowAsync(Guid workflowId, CancellationToken ct = default)
-        => await cache.GetOrCreateAsync(
+    {
+        return await cache.GetOrCreateAsync(
             $"{CacheTag}:{workflowId}",
             async token => await repository.GetWorkflowAsync(workflowId, token),
             CacheTag,
             ct);
+    }
 
     public async Task<WorkflowResponse> CreateWorkflowAsync(CreateWorkflowRequest request, CancellationToken ct = default)
     {
@@ -66,5 +66,11 @@ public sealed class WorkflowService(
         }
 
         return deleted;
+    }
+
+    private async ValueTask<PagedResponse<WorkflowResponse>> LoadPageAsync(int page, int pageSize, CancellationToken ct)
+    {
+        var (items, total) = await repository.GetPagedAsync(page, pageSize, ct);
+        return PagedResponse<WorkflowResponse>.Create(items, total, page, pageSize);
     }
 }

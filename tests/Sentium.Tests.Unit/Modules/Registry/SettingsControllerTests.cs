@@ -4,10 +4,9 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
-using Sentium.Registry.Contracts;
-using Sentium.Registry.Controllers;
-using Sentium.Registry.Features.Settings;
 using Sentium.Core.Constants;
+using Sentium.Registry.Contracts;
+using Sentium.Registry.Features.Settings;
 using Xunit;
 
 namespace Sentium.Tests.Unit.Modules.Registry;
@@ -22,14 +21,16 @@ public sealed class SettingsControllerTests
         new SettingsDescriptor<PdpSettings>(SettingsKeys.Pdp, SettingsScope.Global, c => c.Pdp, (c, v) => c.Pdp = v),
     });
 
-    private SettingsController NewController(params Claim[] claims) =>
-        new(_service, _catalog)
+    private SettingsController NewController(params Claim[] claims)
+    {
+        return new(_service, _catalog)
         {
             ControllerContext = new ControllerContext
             {
                 HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test")) }
             }
         };
+    }
 
     private static readonly JsonSerializerOptions WebOptions = new(JsonSerializerDefaults.Web);
 

@@ -6,9 +6,6 @@ namespace Sentium.Codex.Contracts.Models;
 /// </summary>
 public sealed class VectorSearchResult
 {
-    /// <summary>
-    /// The matching document chunk.
-    /// </summary>
     public required DocumentChunk Chunk { get; init; }
 
     /// <summary>

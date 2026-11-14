@@ -3,7 +3,6 @@ using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Agents.AI;
-using Sentium.Praxis.Features.Skills;
 
 namespace Sentium.Praxis.Features.Skills.BuiltIn;
 

@@ -11,16 +11,22 @@ namespace Sentium.Praxis.Features.Workflows.Squad;
 /// </summary>
 internal static class SquadPrompts
 {
-    /// <summary>Most steps a plan may contain - long pipelines compound small-model errors and latency.</summary>
+    /// <summary>
+    /// Most steps a plan may contain - long pipelines compound small-model errors and latency.
+    /// </summary>
     public const int MaxPlanSteps = 4;
 
-    /// <summary>Character budget for earlier steps' results inside one step's input (roughly 1.5k tokens).</summary>
+    /// <summary>
+    /// Character budget for earlier steps' results inside one step's input (roughly 1.5k tokens).
+    /// </summary>
     private const int PriorResultsBudget = 6000;
 
     private const int MinPerResultBudget = 600;
     private const int ReviewedOutputBudget = 6000;
 
-    /// <summary>Appended to a specialist's role when it runs as one step of a plan.</summary>
+    /// <summary>
+    /// Appended to a specialist's role when it runs as one step of a plan.
+    /// </summary>
     public const string StepRules = """
         ### TEAM STEP
         You are one step of a team plan. Do only the task you are given, building on the earlier results provided.
@@ -128,16 +134,19 @@ internal static class SquadPrompts
         return sb.ToString();
     }
 
-    public static string CheckInput(SquadStep step, string output) => $"""
-        ## Task
-        {step.Task.Trim()}
+    public static string CheckInput(SquadStep step, string output)
+    {
+        return $"""
+            ## Task
+            {step.Task.Trim()}
 
-        ## Expected output
-        {step.ExpectedOutput.Trim()}
+            ## Expected output
+            {step.ExpectedOutput.Trim()}
 
-        ## Output to review
-        {Truncate(output, ReviewedOutputBudget)}
-        """;
+            ## Output to review
+            {Truncate(output, ReviewedOutputBudget)}
+            """;
+    }
 
     public static string SynthesisInput(string request, IReadOnlyList<StepResult> results)
     {
@@ -153,13 +162,16 @@ internal static class SquadPrompts
         return sb.ToString();
     }
 
-    public static string AssessmentInput(string request, string answer) => $"""
-        ## Request
-        {request.Trim()}
+    public static string AssessmentInput(string request, string answer)
+    {
+        return $"""
+            ## Request
+            {request.Trim()}
 
-        ## Final answer
-        {Truncate(answer, ReviewedOutputBudget)}
-        """;
+            ## Final answer
+            {Truncate(answer, ReviewedOutputBudget)}
+            """;
+    }
 
     public static string DescribePlan(SquadPlan plan) =>
         string.Join(" → ", plan.Steps.Select((s, i) => $"{i + 1}. {s.Agent}: {OneLine(s.Task, 120)}"));

@@ -1,10 +1,8 @@
-using System.Text;
-using Sentium.Praxis.Features.Agents.Activity;
 using System.Text.Json;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
-using Sentium.Praxis.Extensions;
-using Sentium.Praxis.Features.Agents;
+using Sentium.Praxis.Common.Streaming;
+using Sentium.Praxis.Features.Agents.Runtime;
 using Sentium.Praxis.Features.Orchestration;
 
 namespace Sentium.Praxis.Features.Workflows.Squad;
@@ -15,14 +13,10 @@ namespace Sentium.Praxis.Features.Workflows.Squad;
 /// </summary>
 internal sealed class SquadRunContext(
     IAgentFactory factory,
-    IAgentStreamPublisher stream,
-    StreamLogAccumulator log,
-    string streamId,
+    WorkflowTimeline timeline,
     Guid? userId,
     IReadOnlyList<SquadMember> roster)
 {
-    public const string SystemAuthor = "System";
-
     private static readonly JsonSerializerOptions StructuredJson = new(JsonSerializerDefaults.Web);
 
     private readonly Dictionary<string, AIAgent> specialists = new(StringComparer.OrdinalIgnoreCase);
@@ -34,8 +28,7 @@ internal sealed class SquadRunContext(
 
     public void Status(string author, string text)
     {
-        stream.Emit(streamId, author, text, AgentUpdateTypes.Status);
-        log.Add(author, text, AgentUpdateTypes.Status);
+        timeline.Post(author, text, AgentUpdateTypes.Status);
     }
 
     /// <summary>
@@ -70,22 +63,11 @@ internal sealed class SquadRunContext(
     public async Task<string> StreamAsync(AIAgent agent, string author, string input, CancellationToken ct)
     {
         var session = await agent.CreateSessionAsync(ct);
-        var output = new StringBuilder();
-        var activity = new AgentActivityTranslator();
+        var run = new AgentRunStream(timeline.For(author));
 
-        await foreach (var update in agent.RunStreamingAsync(input, session, cancellationToken: ct))
-        {
-            AgentStreamEmitter.EmitActivity(stream, log, activity, streamId, author, update.Contents);
+        await run.RunAsync(agent.RunStreamingAsync(input, session, cancellationToken: ct), ct);
 
-            if (!string.IsNullOrEmpty(update.Text))
-            {
-                output.Append(update.Text);
-                stream.Emit(streamId, author, update.Text);
-                log.Add(author, update.Text, AgentUpdateTypes.Message);
-            }
-        }
-
-        return output.ToString();
+        return run.Text;
     }
 
     /// <summary>

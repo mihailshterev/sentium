@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Polly.CircuitBreaker;
@@ -76,12 +75,15 @@ public sealed class LlamaRouterModelCatalog(HttpClient httpClient, ILogger<Llama
         }
     }
 
-    private static bool IsUnavailable(Exception ex, CancellationToken ct) => ex switch
+    private static bool IsUnavailable(Exception ex, CancellationToken ct)
     {
-        HttpRequestException or TimeoutRejectedException or BrokenCircuitException or JsonException => true,
-        TaskCanceledException => !ct.IsCancellationRequested,
-        _ => false
-    };
+        return ex switch
+        {
+            HttpRequestException or TimeoutRejectedException or BrokenCircuitException or JsonException => true,
+            TaskCanceledException => !ct.IsCancellationRequested,
+            _ => false
+        };
+    }
 
     private sealed record RouterModelList([property: JsonPropertyName("data")] List<RouterModel>? Data);
 

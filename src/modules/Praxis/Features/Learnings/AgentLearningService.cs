@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using Sentium.Praxis.Entities;
 using Sentium.Codex.Contracts;
 using Sentium.Codex.Contracts.Models;
@@ -32,21 +31,19 @@ public sealed class AgentLearningService(
 
         return await cache.GetOrCreateAsync(
             $"{CacheTag}:{agentName ?? "all"}:page:{page}:{pageSize}",
-            async token =>
-            {
-                var (items, total) = await repository.GetAllAsync(agentName, page, pageSize, token);
-                return PagedResponse<AgentLearningResponse>.Create(items, total, page, pageSize);
-            },
+            token => LoadPageAsync(agentName, page, pageSize, token),
             CacheTag,
             ct);
     }
 
     public async Task<AgentLearningStats> GetStatsAsync(CancellationToken ct = default)
-        => await cache.GetOrCreateAsync(
+    {
+        return await cache.GetOrCreateAsync(
             $"{CacheTag}:stats",
             async token => await repository.GetStatsAsync(token),
             CacheTag,
             ct);
+    }
 
     public async Task<AgentLearningResponse> CaptureAsync(CaptureAgentLearningRequest request, CancellationToken ct = default)
     {
@@ -229,5 +226,11 @@ public sealed class AgentLearningService(
 
             {entity.Content}
             """;
+    }
+
+    private async ValueTask<PagedResponse<AgentLearningResponse>> LoadPageAsync(string? agentName, int page, int pageSize, CancellationToken ct)
+    {
+        var (items, total) = await repository.GetAllAsync(agentName, page, pageSize, ct);
+        return PagedResponse<AgentLearningResponse>.Create(items, total, page, pageSize);
     }
 }

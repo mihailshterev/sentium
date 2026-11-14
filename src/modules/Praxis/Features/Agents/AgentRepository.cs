@@ -1,9 +1,8 @@
-using Sentium.Praxis.Dtos;
-using Sentium.Praxis.Entities;
-using Sentium.Praxis.Data;
-using Sentium.Praxis.Features.Projections;
-using Sentium.Core.Results;
 using Microsoft.EntityFrameworkCore;
+using Sentium.Core.Results;
+using Sentium.Praxis.Data;
+using Sentium.Praxis.Entities;
+using Sentium.Praxis.Features.Projections;
 
 namespace Sentium.Praxis.Features.Agents;
 

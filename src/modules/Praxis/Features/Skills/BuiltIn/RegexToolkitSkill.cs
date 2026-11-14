@@ -2,7 +2,6 @@ using System.ComponentModel;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.Agents.AI;
-using Sentium.Praxis.Features.Skills;
 
 namespace Sentium.Praxis.Features.Skills.BuiltIn;
 

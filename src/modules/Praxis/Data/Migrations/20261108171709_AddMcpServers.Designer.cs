@@ -230,7 +230,7 @@ namespace Sentium.Praxis.Data.Migrations
                     b.ToTable("Conversations", "praxis");
                 });
 
-            modelBuilder.Entity("Sentium.Praxis.Entities.McpServer", b =>
+            modelBuilder.Entity("Sentium.Mcp.Entities.McpServer", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -592,9 +592,9 @@ namespace Sentium.Praxis.Data.Migrations
                     b.ToTable("ExecutionLogs", "praxis");
                 });
 
-            modelBuilder.Entity("Sentium.Praxis.Entities.McpServer", b =>
+            modelBuilder.Entity("Sentium.Mcp.Entities.McpServer", b =>
                 {
-                    b.OwnsMany("Sentium.Praxis.Entities.McpToolEntry", "Tools", b1 =>
+                    b.OwnsMany("Sentium.Mcp.Entities.McpToolEntry", "Tools", b1 =>
                         {
                             b1.Property<Guid>("McpServerId");
 
@@ -697,7 +697,7 @@ namespace Sentium.Praxis.Data.Migrations
                         .HasForeignKey("WorkflowId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.OwnsMany("Sentium.Praxis.Dtos.WorkflowLogEntry", "Logs", b1 =>
+                    b.OwnsMany("Sentium.Praxis.Features.Workflows.WorkflowLogEntry", "Logs", b1 =>
                         {
                             b1.Property<Guid>("WorkflowRunId");
 

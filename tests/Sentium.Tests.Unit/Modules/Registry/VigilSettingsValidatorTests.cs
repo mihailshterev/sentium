@@ -1,5 +1,4 @@
 using FluentAssertions;
-using Sentium.Registry.Validation;
 using Sentium.Registry.Features.Settings;
 using Xunit;
 

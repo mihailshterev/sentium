@@ -1,12 +1,11 @@
 using System.ComponentModel;
 using System.Text;
 using Microsoft.Extensions.AI;
+using Sentium.Praxis.Contracts;
 using Sentium.Praxis.Data;
 using Sentium.Praxis.Entities;
 using Sentium.Praxis.Features.Files;
-using Sentium.Praxis.Features.Sentinel;
 using Sentium.Praxis.Features.Storage;
-using Sentium.Praxis.Features.Tools.Attributes;
 
 namespace Sentium.Praxis.Features.Tools.Workspace;
 
@@ -20,11 +19,14 @@ public sealed class WriteWorkspaceFileTool(
     IFileIngestionQueue ingestionQueue,
     IPdpContextAccessor runContext) : IAgentTool
 {
-    public AIFunction CreateFunction() => AgentToolFunction.Create(
-        this,
-        WriteAsync,
-        ToolNames.WriteWorkspaceFile,
-        "Saves a new text file to a workspace. Accepts a workspace ID (GUID) or workspace name.");
+    public AIFunction CreateFunction()
+    {
+        return AgentToolFunction.Create(
+            this,
+            WriteAsync,
+            ToolNames.WriteWorkspaceFile,
+            "Saves a new text file to a workspace. Accepts a workspace ID (GUID) or workspace name.");
+    }
 
     public async Task<string> WriteAsync(
         [Description("The target workspace ID (GUID) or workspace name.")] string workspace,

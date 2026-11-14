@@ -27,14 +27,17 @@ public sealed class RegistryVigilSettingsProvider(
 
     private static VigilRuntimeSettings Fallback() => new();
 
-    private static VigilRuntimeSettings Map(VigilSettingsResponse dto) => new()
+    private static VigilRuntimeSettings Map(VigilSettingsResponse dto)
     {
-        PollIntervalSeconds = dto.PollIntervalSeconds,
-        ProbeTimeoutSeconds = dto.ProbeTimeoutSeconds,
-        DegradedLatencyMs = dto.DegradedLatencyMs,
-        ConsecutiveFailuresToOpenIncident = dto.ConsecutiveFailuresToOpenIncident,
-        SampleHistorySize = dto.SampleHistorySize
-    };
+        return new()
+        {
+            PollIntervalSeconds = dto.PollIntervalSeconds,
+            ProbeTimeoutSeconds = dto.ProbeTimeoutSeconds,
+            DegradedLatencyMs = dto.DegradedLatencyMs,
+            ConsecutiveFailuresToOpenIncident = dto.ConsecutiveFailuresToOpenIncident,
+            SampleHistorySize = dto.SampleHistorySize
+        };
+    }
 
     private sealed record VigilSettingsResponse(
         int PollIntervalSeconds,

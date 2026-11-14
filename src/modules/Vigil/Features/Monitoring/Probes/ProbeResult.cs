@@ -1,5 +1,3 @@
-using Sentium.Vigil.Features.Monitoring;
-
 namespace Sentium.Vigil.Features.Monitoring.Probes;
 
 internal static class ProbeResult

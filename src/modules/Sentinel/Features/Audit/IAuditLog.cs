@@ -6,9 +6,6 @@ namespace Sentium.Sentinel.Features.Audit;
 /// </summary>
 public interface IAuditLog
 {
-    /// <summary>
-    /// Records a decision asynchronously.
-    /// </summary>
     ValueTask RecordAsync(AuditRecord record, CancellationToken ct = default);
 
     /// <summary>

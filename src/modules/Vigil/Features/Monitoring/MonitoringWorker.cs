@@ -1,5 +1,3 @@
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Sentium.Vigil.Features.Settings;
 
 namespace Sentium.Vigil.Features.Monitoring;
@@ -160,13 +158,16 @@ public sealed class MonitoringWorker(
         feed.Publish(new VigilFeedEvent(type, incident));
     }
 
-    private static ServiceHealthStatus ProbeFault(IHealthProbe probe, string message) => new()
+    private static ServiceHealthStatus ProbeFault(IHealthProbe probe, string message)
     {
-        ServiceName = probe.Target,
-        Kind = probe.Kind,
-        Status = ServiceStatus.Unhealthy,
-        LatencyMs = 0,
-        CheckedAt = DateTimeOffset.UtcNow,
-        Details = message
-    };
+        return new()
+        {
+            ServiceName = probe.Target,
+            Kind = probe.Kind,
+            Status = ServiceStatus.Unhealthy,
+            LatencyMs = 0,
+            CheckedAt = DateTimeOffset.UtcNow,
+            Details = message
+        };
+    }
 }

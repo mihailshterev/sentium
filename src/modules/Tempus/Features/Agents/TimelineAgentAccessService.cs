@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Sentium.Core.Results;
 using Sentium.Core.Text;
 using Sentium.Infrastructure.Extensions;
+using Sentium.Tempus.Common;
 using Sentium.Tempus.Contracts;
 using Sentium.Tempus.Contracts.Models;
 using Sentium.Tempus.Data;
@@ -161,56 +162,7 @@ public sealed class TimelineAgentAccessService(TempusDbContext db, TimeProvider 
             return Result<TimelineProposalReceipt>.Invalid(error);
         }
 
-        return await db.Database.ExecuteInTransactionAsync(async () =>
-        {
-            db.ChangeTracker.Clear();
-
-            var lowered = title.ToLowerInvariant();
-            var duplicate = await Proposals(userId)
-                .Where(p => p.Status == TimelineProposalStatus.Pending
-                    && p.Kind == TimelineProposalKind.CreateTask
-                    && p.Year == proposal.Year
-                    && p.Month == proposal.Month
-                    && p.Date == proposal.Date
-                    && p.Title.ToLower() == lowered)
-                .Select(p => (Guid?)p.Id)
-                .FirstOrDefaultAsync(ct);
-
-            if (duplicate is { } existingId)
-            {
-                return Result<TimelineProposalReceipt>.Success(new TimelineProposalReceipt(existingId, AlreadyPending: true, Superseded: 0));
-            }
-
-            if (await PendingLimitReachedAsync(userId, ct))
-            {
-                return TooManyPending<TimelineProposalReceipt>();
-            }
-
-            var entity = new TimelineProposal
-            {
-                Id = Guid.CreateVersion7(),
-                UserId = userId,
-                Kind = TimelineProposalKind.CreateTask,
-                Status = TimelineProposalStatus.Pending,
-                Title = title,
-                Description = Blank(proposal.Description),
-                Priority = proposal.Priority,
-                Tags = tags,
-                AssignedAgent = Blank(proposal.AssignedAgent),
-                DueDate = proposal.DueDate,
-                Year = proposal.Year,
-                Month = proposal.Month,
-                Date = proposal.Date,
-                Rationale = Blank(proposal.Rationale),
-                ProposedBy = AgentName(agentName),
-                CreatedAt = timeProvider.GetUtcNow()
-            };
-
-            db.TimelineProposals.Add(entity);
-            await db.SaveChangesAsync(ct);
-
-            return Result<TimelineProposalReceipt>.Success(new TimelineProposalReceipt(entity.Id, AlreadyPending: false, Superseded: 0));
-        }, ct: ct);
+        return await db.Database.ExecuteInTransactionAsync(() => AddTaskProposalAsync(userId, agentName, proposal, title, tags, ct), ct: ct);
     }
 
     public async Task<Result<TimelineProposalReceipt>> ProposeRescheduleAsync(Guid userId, string agentName, TimelineRescheduleProposal proposal, CancellationToken ct = default)
@@ -231,65 +183,7 @@ public sealed class TimelineAgentAccessService(TempusDbContext db, TimeProvider 
             return Result<TimelineProposalReceipt>.Invalid(error);
         }
 
-        return await db.Database.ExecuteInTransactionAsync(async () =>
-        {
-            db.ChangeTracker.Clear();
-
-            var task = await Tasks(userId).FirstOrDefaultAsync(t => t.Id == proposal.TaskId, ct);
-            if (task is null)
-            {
-                return Result<TimelineProposalReceipt>.NotFound($"No task with id {proposal.TaskId} exists.");
-            }
-
-            if (task.Status == TimelineTaskStatus.Done)
-            {
-                return Result<TimelineProposalReceipt>.Invalid("The task is already done.");
-            }
-
-            if (TaskRules.IsAt(task, proposal.Year, proposal.Month, proposal.Date))
-            {
-                return Result<TimelineProposalReceipt>.Invalid("The task is already planned there.");
-            }
-
-            var now = timeProvider.GetUtcNow();
-
-            // The newest suggestion for a task replaces the older ones (they would conflict on accept anyway).
-            var superseded = await TaskRules.SupersedePendingReschedulesAsync(db, task.Id, now, keepProposalId: null, ct);
-
-            if (await PendingLimitReachedAsync(userId, ct))
-            {
-                return TooManyPending<TimelineProposalReceipt>();
-            }
-
-            var entity = new TimelineProposal
-            {
-                Id = Guid.CreateVersion7(),
-                UserId = userId,
-                Kind = TimelineProposalKind.Reschedule,
-                Status = TimelineProposalStatus.Pending,
-                TaskId = task.Id,
-                Title = task.Title,
-                Description = task.Description,
-                Priority = task.Priority,
-                Tags = [.. task.Tags],
-                AssignedAgent = task.AssignedAgent,
-                DueDate = task.DueDate,
-                Year = proposal.Year,
-                Month = proposal.Month,
-                Date = proposal.Date,
-                FromYear = task.Year,
-                FromMonth = task.Month,
-                FromDate = task.Date,
-                Rationale = Blank(proposal.Rationale),
-                ProposedBy = AgentName(agentName),
-                CreatedAt = now
-            };
-
-            db.TimelineProposals.Add(entity);
-            await db.SaveChangesAsync(ct);
-
-            return Result<TimelineProposalReceipt>.Success(new TimelineProposalReceipt(entity.Id, AlreadyPending: false, superseded));
-        }, ct: ct);
+        return await db.Database.ExecuteInTransactionAsync(() => AddRescheduleProposalAsync(userId, agentName, proposal, ct), ct: ct);
     }
 
     public async Task<Result<TimelineNoteReceipt>> AddNoteAsync(Guid userId, string agentName, TimelineNoteInput note, CancellationToken ct = default)
@@ -374,6 +268,117 @@ public sealed class TimelineAgentAccessService(TempusDbContext db, TimeProvider 
         return Result<TimelineNoteReceipt>.Success(new TimelineNoteReceipt(entity.Id, entity.Year, entity.Month, entity.Date, entity.TaskId));
     }
 
+    private async Task<Result<TimelineProposalReceipt>> AddTaskProposalAsync(Guid userId, string agentName, TimelineTaskProposal proposal, string title, List<string> tags, CancellationToken ct)
+    {
+        db.ChangeTracker.Clear();
+
+        var lowered = title.ToLowerInvariant();
+        var duplicate = await Proposals(userId)
+            .Where(p => p.Status == TimelineProposalStatus.Pending
+                && p.Kind == TimelineProposalKind.CreateTask
+                && p.Year == proposal.Year
+                && p.Month == proposal.Month
+                && p.Date == proposal.Date
+                && p.Title.ToLower() == lowered)
+            .Select(p => (Guid?)p.Id)
+            .FirstOrDefaultAsync(ct);
+
+        if (duplicate is { } existingId)
+        {
+            return Result<TimelineProposalReceipt>.Success(new TimelineProposalReceipt(existingId, AlreadyPending: true, Superseded: 0));
+        }
+
+        if (await PendingLimitReachedAsync(userId, ct))
+        {
+            return TooManyPending<TimelineProposalReceipt>();
+        }
+
+        var entity = new TimelineProposal
+        {
+            Id = Guid.CreateVersion7(),
+            UserId = userId,
+            Kind = TimelineProposalKind.CreateTask,
+            Status = TimelineProposalStatus.Pending,
+            Title = title,
+            Description = Blank(proposal.Description),
+            Priority = proposal.Priority,
+            Tags = tags,
+            AssignedAgent = Blank(proposal.AssignedAgent),
+            DueDate = proposal.DueDate,
+            Year = proposal.Year,
+            Month = proposal.Month,
+            Date = proposal.Date,
+            Rationale = Blank(proposal.Rationale),
+            ProposedBy = AgentName(agentName),
+            CreatedAt = timeProvider.GetUtcNow()
+        };
+
+        db.TimelineProposals.Add(entity);
+        await db.SaveChangesAsync(ct);
+
+        return Result<TimelineProposalReceipt>.Success(new TimelineProposalReceipt(entity.Id, AlreadyPending: false, Superseded: 0));
+    }
+
+    private async Task<Result<TimelineProposalReceipt>> AddRescheduleProposalAsync(Guid userId, string agentName, TimelineRescheduleProposal proposal, CancellationToken ct)
+    {
+        db.ChangeTracker.Clear();
+
+        var task = await Tasks(userId).FirstOrDefaultAsync(t => t.Id == proposal.TaskId, ct);
+        if (task is null)
+        {
+            return Result<TimelineProposalReceipt>.NotFound($"No task with id {proposal.TaskId} exists.");
+        }
+
+        if (task.Status == TimelineTaskStatus.Done)
+        {
+            return Result<TimelineProposalReceipt>.Invalid("The task is already done.");
+        }
+
+        if (TaskRules.IsAt(task, proposal.Year, proposal.Month, proposal.Date))
+        {
+            return Result<TimelineProposalReceipt>.Invalid("The task is already planned there.");
+        }
+
+        var now = timeProvider.GetUtcNow();
+
+        // The newest suggestion for a task replaces the older ones (they would conflict on accept anyway).
+        var superseded = await TaskRules.SupersedePendingReschedulesAsync(db, task.Id, now, keepProposalId: null, ct);
+
+        if (await PendingLimitReachedAsync(userId, ct))
+        {
+            return TooManyPending<TimelineProposalReceipt>();
+        }
+
+        var entity = new TimelineProposal
+        {
+            Id = Guid.CreateVersion7(),
+            UserId = userId,
+            Kind = TimelineProposalKind.Reschedule,
+            Status = TimelineProposalStatus.Pending,
+            TaskId = task.Id,
+            Title = task.Title,
+            Description = task.Description,
+            Priority = task.Priority,
+            Tags = [.. task.Tags],
+            AssignedAgent = task.AssignedAgent,
+            DueDate = task.DueDate,
+            Year = proposal.Year,
+            Month = proposal.Month,
+            Date = proposal.Date,
+            FromYear = task.Year,
+            FromMonth = task.Month,
+            FromDate = task.Date,
+            Rationale = Blank(proposal.Rationale),
+            ProposedBy = AgentName(agentName),
+            CreatedAt = now
+        };
+
+        db.TimelineProposals.Add(entity);
+        await db.SaveChangesAsync(ct);
+
+        return Result<TimelineProposalReceipt>.Success(new TimelineProposalReceipt(entity.Id, AlreadyPending: false, superseded));
+    }
+
     private IQueryable<TimelineTask> Tasks(Guid userId) => db.TimelineTasks.AsNoTracking().Where(t => t.UserId == userId);
 
     private IQueryable<TimelineProposal> Proposals(Guid userId) => db.TimelineProposals.AsNoTracking().Where(p => p.UserId == userId);
@@ -381,9 +386,12 @@ public sealed class TimelineAgentAccessService(TempusDbContext db, TimeProvider 
     private async Task<bool> PendingLimitReachedAsync(Guid userId, CancellationToken ct)
         => await Proposals(userId).CountAsync(p => p.Status == TimelineProposalStatus.Pending, ct) >= TempusLimits.MaxPendingProposals;
 
-    private static Result<T> TooManyPending<T>() => Result<T>.Conflict(string.Create(
-        CultureInfo.InvariantCulture,
-        $"The user already has {TempusLimits.MaxPendingProposals} suggestions waiting for review; wait until they answer some."));
+    private static Result<T> TooManyPending<T>()
+    {
+        return Result<T>.Conflict(string.Create(
+            CultureInfo.InvariantCulture,
+            $"The user already has {TempusLimits.MaxPendingProposals} suggestions waiting for review; wait until they answer some."));
+    }
 
     private static string Limit(string what, int max) => string.Create(CultureInfo.InvariantCulture, $"{what} can be at most {max} characters.");
 

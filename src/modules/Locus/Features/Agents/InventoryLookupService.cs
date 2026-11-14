@@ -153,22 +153,25 @@ public sealed class InventoryLookupService(LocusDbContext db) : IInventoryLookup
     private static InventoryAssetSummary ToSummary(Asset asset, LocationTree tree)
         => new(asset.Id, asset.DisplayName, asset.Category, asset.Tags, tree.GetPathString(asset.LocationId));
 
-    private static InventoryAssetDetail ToDetail(Asset asset, LocationTree tree) => new(
-        asset.Id,
-        asset.DisplayName,
-        asset.Category,
-        asset.Tags,
-        tree.GetPathString(asset.LocationId),
-        asset.Manufacturer,
-        asset.ModelNumber,
-        asset.SerialNumber,
-        asset.PhysicalDescription,
-        asset.Instructions,
-        asset.PurchaseDate,
-        asset.LastServicedDate,
-        asset.WarrantyInfo,
-        asset.AgentInstructions,
-        [.. asset.Attachments.OrderBy(a => a.CreatedAt).Select(a => new InventoryAttachmentInfo(a.FileName, a.Kind.ToString()))]);
+    private static InventoryAssetDetail ToDetail(Asset asset, LocationTree tree)
+    {
+        return new(
+            asset.Id,
+            asset.DisplayName,
+            asset.Category,
+            asset.Tags,
+            tree.GetPathString(asset.LocationId),
+            asset.Manufacturer,
+            asset.ModelNumber,
+            asset.SerialNumber,
+            asset.PhysicalDescription,
+            asset.Instructions,
+            asset.PurchaseDate,
+            asset.LastServicedDate,
+            asset.WarrantyInfo,
+            asset.AgentInstructions,
+            [.. asset.Attachments.OrderBy(a => a.CreatedAt).Select(a => new InventoryAttachmentInfo(a.FileName, a.Kind.ToString()))]);
+    }
 
     private static InventoryLocationInfo ToInfo(LocationNode node, LocationTree tree)
         => new(node.Id, node.Name, tree.GetPathString(node.Id), tree.ChildrenOf(node.Id).Count);

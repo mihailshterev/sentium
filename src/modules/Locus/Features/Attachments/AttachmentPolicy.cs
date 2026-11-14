@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Unicode;
+using Sentium.Locus.Common;
 
 namespace Sentium.Locus.Features.Attachments;
 

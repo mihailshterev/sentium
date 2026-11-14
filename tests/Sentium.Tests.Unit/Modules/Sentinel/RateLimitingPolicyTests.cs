@@ -15,8 +15,9 @@ public sealed class RateLimitingPolicyTests
         return new RateLimitingPolicy(new InMemoryRateLimitStore(), provider);
     }
 
-    private static PolicyRequest MakeRequest(string agentId = "agent-1") =>
-        new()
+    private static PolicyRequest MakeRequest(string agentId = "agent-1")
+    {
+        return new()
         {
             AgentId = agentId,
             SkillName = "TestSkill",
@@ -26,6 +27,7 @@ public sealed class RateLimitingPolicyTests
             OriginalUserPrompt = "test",
             CorrelationId = Guid.NewGuid().ToString()
         };
+    }
 
     [Fact]
     public async Task EvaluateAsync_ReturnsNull_WhenUnderLimit()

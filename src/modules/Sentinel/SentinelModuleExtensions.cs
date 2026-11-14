@@ -2,9 +2,10 @@ using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Options;
 using Sentium.Infrastructure.Extensions;
 using Sentium.Infrastructure.Inference;
-using Sentium.Sentinel.Features.Audit;
+using Sentium.Infrastructure.Testing;
 using Sentium.Sentinel.Contracts;
 using Sentium.Sentinel.Data;
+using Sentium.Sentinel.Features.Audit;
 using Sentium.Sentinel.Features.Engine;
 using Sentium.Sentinel.Features.Options;
 using Sentium.Sentinel.Features.Policies;
@@ -84,7 +85,7 @@ public static class SentinelModuleExtensions
 
         await app.Services.MigrateModuleDbContextAsync<SentinelDbContext>();
 
-        if (app.Environment.IsEnvironment("Testing"))
+        if (app.Environment.IsTesting())
         {
             await SeedE2EAuditRecordsAsync(app.Services);
         }

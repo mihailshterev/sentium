@@ -148,10 +148,10 @@
       },
       "Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore": {
         "type": "Transitive",
-        "resolved": "10.0.12",
-        "contentHash": "BMG8waDSju79jJGdnOPrFrpqUv9/A+Qbg43WLmqUwMgdN26ozOK5iLXVCdaXgX71TvwEGX3HWCAGy711vGAl2Q==",
+        "resolved": "10.0.14",
+        "contentHash": "2xE9FhV4PmKYFzu4aj3yMPbhJmWu9iwx0QfyDl7vrOKVx49B3GZ82JEHnC1lX1TjVtuZzVZF99ytMb2r6oApng==",
         "dependencies": {
-          "Microsoft.EntityFrameworkCore.Relational": "10.0.12"
+          "Microsoft.EntityFrameworkCore.Relational": "10.0.14"
         }
       },
       "Microsoft.Extensions.Http.Diagnostics": {
@@ -403,7 +403,7 @@
       "sentium.infrastructure": {
         "type": "Project",
         "dependencies": {
-          "Aspire.Npgsql.EntityFrameworkCore.PostgreSQL": "[13.6.4, )",
+          "Aspire.Npgsql.EntityFrameworkCore.PostgreSQL": "[13.6.5, )",
           "FluentValidation": "[12.1.1, )",
           "FluentValidation.DependencyInjectionExtensions": "[12.1.1, )",
           "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "[10.0.14, )",
@@ -429,11 +429,11 @@
       },
       "Aspire.Npgsql.EntityFrameworkCore.PostgreSQL": {
         "type": "CentralTransitive",
-        "requested": "[13.6.4, )",
-        "resolved": "13.6.4",
-        "contentHash": "I1yNkpgXC5Vc2DufGpx5gZubi5cgW7rfR/15VaZNAMieLqO0yTZF4+EmyQoEQ3qsmg0MPc0ALV2zUMF6IcEhLg==",
+        "requested": "[13.6.5, )",
+        "resolved": "13.6.5",
+        "contentHash": "CPXZtc7CaWhEtuXm0+oBWCPF+jKG4dSk1YAWjDqpisW1PmYyjrVmGyf7yv1I0RXCFq2w+6IRgJPhjNmT+FTFFw==",
         "dependencies": {
-          "Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore": "10.0.12",
+          "Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore": "10.0.14",
           "Npgsql.DependencyInjection": "10.0.3",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "10.0.3",
           "Npgsql.OpenTelemetry": "10.0.3",

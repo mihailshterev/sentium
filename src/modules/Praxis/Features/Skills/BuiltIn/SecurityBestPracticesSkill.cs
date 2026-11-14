@@ -1,12 +1,8 @@
 using System.ComponentModel;
 using Microsoft.Agents.AI;
-using Sentium.Praxis.Features.Skills;
 
 namespace Sentium.Praxis.Features.Skills.BuiltIn;
 
-/// <summary>
-/// Built-in skill providing security best-practice guidance.
-/// </summary>
 internal sealed class SecurityBestPracticesSkill() : BuiltInSkill<SecurityBestPracticesSkill>(
     "security-best-practices",
     "Security best practices covering OWASP Top 10, secure coding guidelines, authentication, secrets management, and threat modelling. Use when asked about application security, vulnerabilities, or hardening.",

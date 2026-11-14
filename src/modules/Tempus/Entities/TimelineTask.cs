@@ -16,15 +16,21 @@ public sealed class TimelineTask : IUserOwned
 
     public string? Description { get; set; }
 
-    /// <summary>The month the task belongs to (always set, also for tasks with a day).</summary>
+    /// <summary>
+    /// The month the task belongs to (always set, also for tasks with a day).
+    /// </summary>
     public int Year { get; set; }
 
     public int Month { get; set; }
 
-    /// <summary>The planned day, inside <see cref="Year"/>/<see cref="Month"/>; <see langword="null"/> pins the task to the month.</summary>
+    /// <summary>
+    /// The planned day, inside <see cref="Year"/>/<see cref="Month"/>; <see langword="null"/> pins the task to the month.
+    /// </summary>
     public DateOnly? Date { get; set; }
 
-    /// <summary>The deadline, which may differ from the planned day.</summary>
+    /// <summary>
+    /// The deadline, which may differ from the planned day.
+    /// </summary>
     public DateOnly? DueDate { get; set; }
 
     public TimelineTaskPriority Priority { get; set; }
@@ -33,7 +39,9 @@ public sealed class TimelineTask : IUserOwned
 
     public DateTimeOffset? CompletedAt { get; set; }
 
-    /// <summary>Normalized tags; see <see cref="Sentium.Core.Text.TagNormalizer"/>.</summary>
+    /// <summary>
+    /// Normalized tags; see <see cref="Sentium.Core.Text.TagNormalizer"/>.
+    /// </summary>
     public List<string> Tags { get; set; } = [];
 
     /// <summary>
@@ -42,7 +50,9 @@ public sealed class TimelineTask : IUserOwned
     /// </summary>
     public string? AssignedAgent { get; set; }
 
-    /// <summary>Who created the task: the user, or an agent whose proposal the user accepted.</summary>
+    /// <summary>
+    /// Who created the task: the user, or an agent whose proposal the user accepted.
+    /// </summary>
     public TimelineAuthorKind Origin { get; set; }
 
     public string? CreatedByAgent { get; set; }

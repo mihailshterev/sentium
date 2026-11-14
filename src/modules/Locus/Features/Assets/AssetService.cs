@@ -1,39 +1,16 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using Sentium.Core.Results;
 using Sentium.Core.Text;
 using Sentium.Infrastructure.Extensions;
 using Sentium.Infrastructure.Security;
+using Sentium.Locus.Common;
 using Sentium.Locus.Data;
-using Sentium.Locus.Dtos;
 using Sentium.Locus.Entities;
 using Sentium.Locus.Features.Attachments;
 using Sentium.Locus.Features.Knowledge;
 using Sentium.Locus.Features.Locations;
 
 namespace Sentium.Locus.Features.Assets;
-
-public interface IAssetService
-{
-    Task<PagedResponse<AssetSummaryDto>> SearchAssetsAsync(AssetSearchQuery query, CancellationToken ct = default);
-
-    Task<AssetDto?> GetAssetAsync(Guid id, CancellationToken ct = default);
-
-    Task<Result<AssetDto>> CreateAssetAsync(SaveAssetRequest request, CancellationToken ct = default);
-
-    Task<Result<AssetDto>> UpdateAssetAsync(Guid id, SaveAssetRequest request, CancellationToken ct = default);
-
-    Task<bool> DeleteAssetAsync(Guid id, CancellationToken ct = default);
-
-    /// <summary>
-    /// Re-queues the asset's knowledge-base sync (e.g. after it was marked failed).
-    /// </summary>
-    Task<bool> RequestKnowledgeSyncAsync(Guid id, CancellationToken ct = default);
-
-    Task<IReadOnlyList<TagCountDto>> GetTagsAsync(string? prefix, CancellationToken ct = default);
-
-    Task<IReadOnlyList<string>> GetCategoriesAsync(CancellationToken ct = default);
-}
 
 public sealed class AssetService(
     LocusDbContext db,
@@ -182,34 +159,7 @@ public sealed class AssetService(
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var result = await db.Database.ExecuteInTransactionAsync(async () =>
-        {
-            db.ChangeTracker.Clear();
-
-            if (!await db.Locations.AnyAsync(l => l.Id == request.LocationId, ct))
-            {
-                return Result<Guid>.Invalid($"Location '{request.LocationId}' does not exist.");
-            }
-
-            var now = timeProvider.GetUtcNow();
-            var asset = new Asset
-            {
-                Id = Guid.CreateVersion7(),
-                CreatedAt = now,
-                CreatedBy = currentUser.UserName
-            };
-
-            Apply(asset, request, now);
-            db.Assets.Add(asset);
-            await db.SaveChangesAsync(ct);
-
-            if (asset.IsAgentAccessible)
-            {
-                await outbox.EnqueueAsync([asset.Id], ct);
-            }
-
-            return Result<Guid>.Success(asset.Id);
-        }, ct: ct);
+        var result = await db.Database.ExecuteInTransactionAsync(() => InsertAssetAsync(request, ct), ct: ct);
 
         if (!result.IsSuccess)
         {
@@ -224,34 +174,7 @@ public sealed class AssetService(
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var result = await db.Database.ExecuteInTransactionAsync(async () =>
-        {
-            db.ChangeTracker.Clear();
-
-            var asset = await db.Assets.FirstOrDefaultAsync(a => a.Id == id, ct);
-            if (asset is null)
-            {
-                return Result<bool>.NotFound();
-            }
-
-            if (asset.LocationId != request.LocationId && !await db.Locations.AnyAsync(l => l.Id == request.LocationId, ct))
-            {
-                return Result<bool>.Invalid($"Location '{request.LocationId}' does not exist.");
-            }
-
-            var wasShared = asset.IsAgentAccessible;
-            Apply(asset, request, timeProvider.GetUtcNow());
-            await db.SaveChangesAsync(ct);
-
-            // Shared now (content may have changed) or shared before / still has a copy (must be removed).
-            var queue = asset.IsAgentAccessible || wasShared || asset.KnowledgeContentHash is not null;
-            if (queue)
-            {
-                await outbox.EnqueueAsync([asset.Id], ct);
-            }
-
-            return Result<bool>.Success(queue);
-        }, ct: ct);
+        var result = await db.Database.ExecuteInTransactionAsync(() => SaveAssetChangesAsync(id, request, ct), ct: ct);
 
         if (!result.IsSuccess)
         {
@@ -268,19 +191,7 @@ public sealed class AssetService(
 
     public async Task<bool> DeleteAssetAsync(Guid id, CancellationToken ct = default)
     {
-        var deleted = await db.Database.ExecuteInTransactionAsync(async () =>
-        {
-            // Attachment rows go with the asset (FK cascade); the blobs are purged after the commit.
-            var removed = await db.Assets.Where(a => a.Id == id).ExecuteDeleteAsync(ct);
-            if (removed == 0)
-            {
-                return false;
-            }
-
-            // Removal needs no embedding model and is a no-op when nothing was ever shared.
-            await outbox.EnqueueAsync([id], ct);
-            return true;
-        }, ct: ct);
+        var deleted = await db.Database.ExecuteInTransactionAsync(() => DeleteAssetRowAsync(id, ct), ct: ct);
 
         if (!deleted)
         {
@@ -330,13 +241,90 @@ public sealed class AssetService(
     }
 
     public async Task<IReadOnlyList<string>> GetCategoriesAsync(CancellationToken ct = default)
-        => await db.Assets
+    {
+        return await db.Assets
             .AsNoTracking()
             .Where(a => a.Category != null)
             .Select(a => a.Category!)
             .Distinct()
             .OrderBy(c => c)
             .ToListAsync(ct);
+    }
+
+    private async Task<Result<Guid>> InsertAssetAsync(SaveAssetRequest request, CancellationToken ct)
+    {
+        db.ChangeTracker.Clear();
+
+        if (!await db.Locations.AnyAsync(l => l.Id == request.LocationId, ct))
+        {
+            return Result<Guid>.Invalid($"Location '{request.LocationId}' does not exist.");
+        }
+
+        var now = timeProvider.GetUtcNow();
+        var asset = new Asset
+        {
+            Id = Guid.CreateVersion7(),
+            CreatedAt = now,
+            CreatedBy = currentUser.UserName
+        };
+
+        Apply(asset, request, now);
+        db.Assets.Add(asset);
+        await db.SaveChangesAsync(ct);
+
+        if (asset.IsAgentAccessible)
+        {
+            await outbox.EnqueueAsync([asset.Id], ct);
+        }
+
+        return Result<Guid>.Success(asset.Id);
+    }
+
+    /// <summary>
+    /// Applies the request to the asset; the result value tells whether a knowledge sync was queued.
+    /// </summary>
+    private async Task<Result<bool>> SaveAssetChangesAsync(Guid id, SaveAssetRequest request, CancellationToken ct)
+    {
+        db.ChangeTracker.Clear();
+
+        var asset = await db.Assets.FirstOrDefaultAsync(a => a.Id == id, ct);
+        if (asset is null)
+        {
+            return Result<bool>.NotFound();
+        }
+
+        if (asset.LocationId != request.LocationId && !await db.Locations.AnyAsync(l => l.Id == request.LocationId, ct))
+        {
+            return Result<bool>.Invalid($"Location '{request.LocationId}' does not exist.");
+        }
+
+        var wasShared = asset.IsAgentAccessible;
+        Apply(asset, request, timeProvider.GetUtcNow());
+        await db.SaveChangesAsync(ct);
+
+        // Shared now (content may have changed) or shared before / still has a copy (must be removed).
+        var queue = asset.IsAgentAccessible || wasShared || asset.KnowledgeContentHash is not null;
+        if (queue)
+        {
+            await outbox.EnqueueAsync([asset.Id], ct);
+        }
+
+        return Result<bool>.Success(queue);
+    }
+
+    private async Task<bool> DeleteAssetRowAsync(Guid id, CancellationToken ct)
+    {
+        // Attachment rows go with the asset (FK cascade); the blobs are purged after the commit.
+        var removed = await db.Assets.Where(a => a.Id == id).ExecuteDeleteAsync(ct);
+        if (removed == 0)
+        {
+            return false;
+        }
+
+        // Removal needs no embedding model and is a no-op when nothing was ever shared.
+        await outbox.EnqueueAsync([id], ct);
+        return true;
+    }
 
     private void Apply(Asset asset, SaveAssetRequest request, DateTimeOffset now)
     {

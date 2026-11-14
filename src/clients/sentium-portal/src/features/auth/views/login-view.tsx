@@ -2,6 +2,7 @@ import styles from "./landing.module.css";
 import { AuthForm } from "../components/auth-form/auth-form";
 import { CosmosBackground } from "@/shared/ui/cosmos-background";
 import { OrbitalMap, type OrbitalNode } from "@/shared/ui/orbital";
+import { SentiumMark } from "@/shared/ui/sentium-mark";
 import { SystemReadout } from "@/shared/ui/page-header";
 
 /** The platform's modules, drawn around the orb as a quiet map of what sits behind the sign-in. */
@@ -26,7 +27,7 @@ export function LoginView() {
         <section className={styles.left}>
           <header className={styles.topBar}>
             <span className={styles.brand}>
-              <img src="/sentium-mark.png" alt="" width={28} height={28} />
+              <SentiumMark />
               Sentium
             </span>
           </header>

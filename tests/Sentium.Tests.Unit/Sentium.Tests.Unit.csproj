@@ -33,6 +33,8 @@
     <ProjectReference Include="..\..\src\modules\Locus\Sentium.Locus.csproj" />
     <ProjectReference Include="..\..\src\modules\Tempus\Sentium.Tempus.csproj" />
     <ProjectReference Include="..\..\src\modules\Praxis\Sentium.Praxis.csproj" />
+    <ProjectReference Include="..\..\src\modules\Mcp\Sentium.Mcp.csproj" />
+    <ProjectReference Include="..\..\src\modules\Scheduling\Sentium.Scheduling.csproj" />
     <ProjectReference Include="..\..\src\modules\Vigil\Sentium.Vigil.csproj" />
     <ProjectReference Include="..\..\src\hosts\Sentium.Sandbox\Sentium.Sandbox.csproj" />
   </ItemGroup>

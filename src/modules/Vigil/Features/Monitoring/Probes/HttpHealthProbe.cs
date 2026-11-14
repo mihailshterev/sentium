@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Text.Json;
-using Sentium.Vigil.Features.Monitoring;
 
 namespace Sentium.Vigil.Features.Monitoring.Probes;
 

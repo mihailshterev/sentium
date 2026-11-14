@@ -566,7 +566,7 @@ namespace Sentium.Praxis.Data.Migrations
                         .HasForeignKey("WorkflowId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.OwnsMany("Sentium.Praxis.Dtos.WorkflowLogEntry", "Logs", b1 =>
+                    b.OwnsMany("Sentium.Praxis.Features.Workflows.WorkflowLogEntry", "Logs", b1 =>
                         {
                             b1.Property<Guid>("WorkflowRunId");
 

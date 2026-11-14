@@ -47,7 +47,6 @@ export default defineConfig({
         "src/**/*.module.css",
         "src/shared/ui/cosmos-background/cosmos-background.tsx",
         "src/shared/ui/cosmos-background/cosmos-shader.ts",
-        "src/shared/ui/orbital/nebula-shader.ts",
         "src/shared/ui/shader/shader-runner.ts",
         "src/features/semantic-map/engine/renderer.ts",
         "src/features/semantic-map/semantic-map.tsx",

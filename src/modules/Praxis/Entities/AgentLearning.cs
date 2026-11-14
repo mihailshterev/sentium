@@ -26,7 +26,7 @@ public sealed class AgentLearning
 
     /// <summary>
     /// Set to <c>true</c> once the learning has been embedded and stored in the vector store.
-    /// The <see cref="AgentLearningIngestionWorker"/> flips this flag after successful ingestion.
+    /// The <see cref="Features.Learnings.AgentLearningService"/> flips this flag after successful ingestion.
     /// </summary>
     public bool IsIngested { get; set; }
 }

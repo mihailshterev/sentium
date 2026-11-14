@@ -8,8 +8,9 @@ public sealed class ServiceHealthStateStoreTests
 {
     private readonly ServiceHealthStateStore _sut = new();
 
-    private static ServiceHealthStatus MakeStatus(string name = "gateway", ServiceStatus status = ServiceStatus.Healthy) =>
-        new()
+    private static ServiceHealthStatus MakeStatus(string name = "gateway", ServiceStatus status = ServiceStatus.Healthy)
+    {
+        return new()
         {
             ServiceName = name,
             Status = status,
@@ -17,6 +18,7 @@ public sealed class ServiceHealthStateStoreTests
             CheckedAt = DateTimeOffset.UtcNow,
             Details = null
         };
+    }
 
     [Fact]
     public void GetAll_ReturnsEmpty_WhenNoStatusesAdded()

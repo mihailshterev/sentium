@@ -21,3 +21,11 @@
   flex-direction: column;
   overflow: hidden;
 }
+
+/* Shown while a lazily loaded page's code is fetched. */
+.routeFallback {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  color: var(--text-muted);
+}

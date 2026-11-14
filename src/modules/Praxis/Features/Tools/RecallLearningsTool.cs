@@ -1,9 +1,8 @@
 using System.ComponentModel;
 using System.Text;
 using Microsoft.Extensions.AI;
+using Sentium.Praxis.Contracts;
 using Sentium.Praxis.Features.Learnings;
-using Sentium.Praxis.Features.Sentinel;
-using Sentium.Praxis.Features.Tools.Attributes;
 
 namespace Sentium.Praxis.Features.Tools;
 
@@ -17,12 +16,15 @@ public sealed class RecallLearningsTool(
     IAgentLearningService learningService,
     IPdpContextAccessor pdpContext) : IAgentTool
 {
-    public AIFunction CreateFunction() => AgentToolFunction.Create(
-        this,
-        RecallAsync,
-        ToolNames.RecallLearnings,
-        "Search the shared library of agent learnings - reusable patterns, optimizations, and fixes captured from past runs. " +
-        "Use this before tackling a non-trivial task to reuse a proven approach instead of starting from scratch.");
+    public AIFunction CreateFunction()
+    {
+        return AgentToolFunction.Create(
+            this,
+            RecallAsync,
+            ToolNames.RecallLearnings,
+            "Search the shared library of agent learnings - reusable patterns, optimizations, and fixes captured from past runs. " +
+            "Use this before tackling a non-trivial task to reuse a proven approach instead of starting from scratch.");
+    }
 
     public async Task<string> RecallAsync(
         [Description("A plain-text description of the problem or topic to find prior learnings about.")] string query,

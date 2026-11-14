@@ -1,6 +1,6 @@
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
-using Sentium.Praxis.Features.Tools;
+using Sentium.Praxis.Contracts;
 
 namespace Sentium.Praxis.Features.Sentinel;
 

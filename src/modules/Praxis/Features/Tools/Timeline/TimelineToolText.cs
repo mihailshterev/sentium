@@ -80,38 +80,49 @@ internal static class TimelineToolText
         return false;
     }
 
-    public static TimelineTaskPriority? ParsePriority(string? text) => Compact(text) switch
+    public static TimelineTaskPriority? ParsePriority(string? text)
     {
-        "low" => TimelineTaskPriority.Low,
-        "normal" or "medium" => TimelineTaskPriority.Normal,
-        "high" => TimelineTaskPriority.High,
-        "urgent" or "critical" => TimelineTaskPriority.Urgent,
-        _ => null
-    };
+        return Compact(text) switch
+        {
+            "low" => TimelineTaskPriority.Low,
+            "normal" or "medium" => TimelineTaskPriority.Normal,
+            "high" => TimelineTaskPriority.High,
+            "urgent" or "critical" => TimelineTaskPriority.Urgent,
+            _ => null
+        };
+    }
 
-    public static TimelineTaskStatus? ParseStatus(string? text) => Compact(text) switch
+    public static TimelineTaskStatus? ParseStatus(string? text)
     {
-        "todo" or "open" => TimelineTaskStatus.Todo,
-        "inprogress" or "started" or "doing" => TimelineTaskStatus.InProgress,
-        "done" or "completed" or "complete" => TimelineTaskStatus.Done,
-        _ => null
-    };
+        return Compact(text) switch
+        {
+            "todo" or "open" => TimelineTaskStatus.Todo,
+            "inprogress" or "started" or "doing" => TimelineTaskStatus.InProgress,
+            "done" or "completed" or "complete" => TimelineTaskStatus.Done,
+            _ => null
+        };
+    }
 
-    public static TimelineNoteKind? ParseNoteKind(string? text) => Compact(text) switch
+    public static TimelineNoteKind? ParseNoteKind(string? text)
     {
-        null or "note" => TimelineNoteKind.Note,
-        "status" or "statusupdate" or "update" => TimelineNoteKind.StatusUpdate,
-        "progress" or "progressreport" or "report" => TimelineNoteKind.ProgressReport,
-        _ => null
-    };
+        return Compact(text) switch
+        {
+            null or "note" => TimelineNoteKind.Note,
+            "status" or "statusupdate" or "update" => TimelineNoteKind.StatusUpdate,
+            "progress" or "progressreport" or "report" => TimelineNoteKind.ProgressReport,
+            _ => null
+        };
+    }
 
     /// <summary>
     /// Comma-separated tags.
     /// </summary>
     public static IReadOnlyList<string> SplitTags(string? text)
-        => Normalize(text) is { } value
+    {
+        return Normalize(text) is { } value
             ? [.. value.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)]
             : [];
+    }
 
     public static string DateError(string what, DateOnly today)
         => $"Error: {what} must be a date like {Format(today)} (YYYY-MM-DD). Today is {Format(today)}.";
@@ -123,7 +134,9 @@ internal static class TimelineToolText
     /// Lower-case without spaces, dashes or underscores, so "In progress", "in_progress" and "InProgress" match.
     /// </summary>
     private static string? Compact(string? text)
-        => Normalize(text) is { } value
+    {
+        return Normalize(text) is { } value
             ? new string([.. value.Where(char.IsLetter)]).ToLowerInvariant()
             : null;
+    }
 }

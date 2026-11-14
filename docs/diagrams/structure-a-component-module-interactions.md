@@ -7,7 +7,9 @@ flowchart TB
         REG["Registry<br/>(configuration)"]
         SEN["Sentinel<br/>(Policy Decision Point)"]
         CDX["Codex<br/>(RAG · knowledge base)"]
-        PRX["Praxis<br/>(agents · orchestration · workflows · scheduling)"]
+        PRX["Praxis<br/>(agents · orchestration · workflows)"]
+        MCP["Mcp<br/>(MCP servers · tool catalogue)"]
+        SCH["Scheduling<br/>(Quartz · recurring jobs)"]
         VIG["Vigil<br/>(health monitoring)"]
     end
 
@@ -18,6 +20,9 @@ flowchart TB
     PRX -->|"Contracts: settings"| REG
     PRX -->|"Contracts: policy evaluation"| SEN
     PRX -->|"Contracts: ingest · search"| CDX
+    MCP -->|"Contracts: agent tools"| PRX
+    MCP -->|"Contracts: settings"| REG
+    SCH -->|"Contracts: agent tools · sandbox"| PRX
     SEN -->|"Contracts: settings"| REG
     VIG -->|"Contracts: settings"| REG
 

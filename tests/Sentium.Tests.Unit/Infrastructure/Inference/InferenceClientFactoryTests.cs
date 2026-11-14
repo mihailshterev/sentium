@@ -128,11 +128,11 @@ public sealed class InferenceClientFactoryTests
         static string Chunk(string delta, string? finish = null) =>
             $$"""data: {"id":"c1","object":"chat.completion.chunk","created":1,"model":"m","choices":[{"index":0,"delta":{{delta}},"finish_reason":{{(finish is null ? "null" : $"\"{finish}\"")}}}]}""" + "\n\n";
 
+        // Ends with a trailing usage chunk with no choices, as llama-server sends it.
         var sse = Chunk($$"""{"role":"assistant","content":"","{{field}}":"Think"}""")
                   + Chunk($$"""{"content":"","{{field}}":"ing."}""")
                   + Chunk("""{"content":"Yes"}""")
                   + Chunk("{}", "stop")
-                  // Trailing usage chunk with no choices, as Ollama and llama-server send it.
                   + """data: {"id":"c1","object":"chat.completion.chunk","created":1,"model":"m","choices":[],"usage":{"prompt_tokens":1,"completion_tokens":2,"total_tokens":3}}""" + "\n\n"
                   + "data: [DONE]\n\n";
 

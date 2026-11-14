@@ -1,29 +1,12 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using Sentium.Core.Results;
 using Sentium.Infrastructure.Security;
+using Sentium.Locus.Common;
 using Sentium.Locus.Data;
-using Sentium.Locus.Dtos;
 using Sentium.Locus.Entities;
 using Sentium.Locus.Features.Assets;
 
 namespace Sentium.Locus.Features.Attachments;
-
-public sealed record AttachmentContent(Stream Content, string ContentType, string FileName, bool IsImage);
-
-public interface IAttachmentService
-{
-    Task<IReadOnlyList<AttachmentDto>?> GetAttachmentsAsync(Guid assetId, CancellationToken ct = default);
-
-    /// <summary>
-    /// Stores a file for an asset. <paramref name="content"/> must be seekable (form-file streams are).
-    /// </summary>
-    Task<Result<AttachmentDto>> UploadAsync(Guid assetId, Stream content, string fileName, long length, AttachmentKind kind, CancellationToken ct = default);
-
-    Task<AttachmentContent?> OpenAsync(Guid assetId, Guid attachmentId, CancellationToken ct = default);
-
-    Task<bool> DeleteAsync(Guid assetId, Guid attachmentId, CancellationToken ct = default);
-}
 
 /// <summary>
 /// Attachment lifecycle. Uploads write the blob before the row (a failed insert deletes the blob again);

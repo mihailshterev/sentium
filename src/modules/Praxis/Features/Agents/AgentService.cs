@@ -1,7 +1,7 @@
-using Sentium.Praxis.Features.WorkflowManagement;
-using Sentium.Praxis.Dtos;
-using Sentium.Infrastructure.Caching;
 using Sentium.Core.Results;
+using Sentium.Infrastructure.Caching;
+using Sentium.Praxis.Features.Agents.Runtime;
+using Sentium.Praxis.Features.WorkflowManagement;
 
 namespace Sentium.Praxis.Features.Agents;
 
@@ -32,11 +32,13 @@ public sealed class AgentService(
     }
 
     public async ValueTask<IReadOnlyList<AgentResponse>> GetAgentsAsync(CancellationToken ct = default)
-        => await cache.GetOrCreateAsync(
+    {
+        return await cache.GetOrCreateAsync(
             $"{CacheTag}:all",
             async token => await repository.GetAgentsAsync(token),
             CacheTag,
             ct);
+    }
 
     public async ValueTask<PagedResponse<AgentResponse>> GetAgentsPagedAsync(int page, int pageSize, CancellationToken ct = default)
     {
@@ -44,21 +46,19 @@ public sealed class AgentService(
 
         return await cache.GetOrCreateAsync(
             $"{CacheTag}:page:{page}:{pageSize}",
-            async token =>
-            {
-                var (items, total) = await repository.GetPagedAsync(page, pageSize, token);
-                return PagedResponse<AgentResponse>.Create(items, total, page, pageSize);
-            },
+            token => LoadPageAsync(page, pageSize, token),
             CacheTag,
             ct);
     }
 
     public async ValueTask<AgentResponse?> GetAgentByIdAsync(Guid agentId, CancellationToken ct = default)
-        => await cache.GetOrCreateAsync(
+    {
+        return await cache.GetOrCreateAsync(
             $"{CacheTag}:{agentId}",
             async token => await repository.GetAgentByIdAsync(agentId, token),
             CacheTag,
             ct);
+    }
 
     public async ValueTask<Result<AgentResponse>> UpdateAgentAsync(Guid agentId, UpdateAgentRequest request, CancellationToken ct = default)
     {
@@ -107,5 +107,11 @@ public sealed class AgentService(
 
         var trimmed = name.Trim();
         return registry.GetRegisteredNames().Any(n => string.Equals(n, trimmed, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private async ValueTask<PagedResponse<AgentResponse>> LoadPageAsync(int page, int pageSize, CancellationToken ct)
+    {
+        var (items, total) = await repository.GetPagedAsync(page, pageSize, ct);
+        return PagedResponse<AgentResponse>.Create(items, total, page, pageSize);
     }
 }

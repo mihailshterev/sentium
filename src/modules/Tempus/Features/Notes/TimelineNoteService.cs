@@ -1,22 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 using Sentium.Core.Results;
+using Sentium.Tempus.Common;
 using Sentium.Tempus.Contracts.Models;
 using Sentium.Tempus.Data;
-using Sentium.Tempus.Dtos;
 using Sentium.Tempus.Entities;
 using Sentium.Tempus.Features.Tasks;
 
 namespace Sentium.Tempus.Features.Notes;
-
-public interface ITimelineNoteService
-{
-    Task<Result<TimelineNoteDto>> CreateAsync(CreateTimelineNoteRequest request, CancellationToken ct = default);
-
-    /// <summary>
-    /// Removes a note - the user's own, or one an agent left.
-    /// </summary>
-    Task<bool> DeleteAsync(Guid id, CancellationToken ct = default);
-}
 
 public sealed class TimelineNoteService(TempusDbContext db, TimeProvider timeProvider) : ITimelineNoteService
 {

@@ -4,16 +4,16 @@
     "net10.0": {
       "Aspire.Azure.Storage.Blobs": {
         "type": "Direct",
-        "requested": "[13.6.4, )",
-        "resolved": "13.6.4",
-        "contentHash": "7iKAYHHjbZJhOsjxPSiiy4nk75zV6Qp4UC1GsRbKXF8quAyvQbF7Mg5bSNlahMJMr1Z6KS/guER0kF/qYh1iuA==",
+        "requested": "[13.6.5, )",
+        "resolved": "13.6.5",
+        "contentHash": "HoS07khoWXV3xHl53g/ZdYPSiehqWGedLxiH84iTyGEt/qVRaqBdVeLCjs5GDRZDkjkVuS59cdEjHtR8dDer3Q==",
         "dependencies": {
           "AspNetCore.HealthChecks.Azure.Storage.Blobs": "9.0.0",
           "Azure.Core": "1.62.0",
           "Azure.Storage.Blobs": "12.29.2",
           "Microsoft.Extensions.Azure": "1.14.1",
           "OpenTelemetry.Extensions.Hosting": "1.17.0",
-          "System.IO.Hashing": "10.0.12"
+          "System.IO.Hashing": "10.0.14"
         }
       },
       "Azure.Storage.Blobs": {
@@ -67,33 +67,6 @@
         "dependencies": {
           "Microsoft.Extensions.AI.Abstractions": "10.10.0",
           "System.Numerics.Tensors": "10.0.12"
-        }
-      },
-      "ModelContextProtocol.Core": {
-        "type": "Direct",
-        "requested": "[2.4.0, )",
-        "resolved": "2.4.0",
-        "contentHash": "q98pZMlcxhsh0LpGXcT2ow7sGNveCPhDlJT3zJ7Cz5nNyPmPkm8P57dUIUpzv1w6qWbdSZcR/Z+RbZtNYjEmXQ==",
-        "dependencies": {
-          "Microsoft.Extensions.AI.Abstractions": "10.11.0"
-        }
-      },
-      "Quartz.Extensions.Hosting": {
-        "type": "Direct",
-        "requested": "[3.18.0, )",
-        "resolved": "3.18.0",
-        "contentHash": "DOIgnLibu9sEYqHAKRQYz+0oWZ5q2LP55oNUtosOygEiIxCvTtHAwkZdf6Ea0VCucZ1oO9SeWLoA4q4WFbZspw==",
-        "dependencies": {
-          "Quartz.Extensions.DependencyInjection": "3.18.0"
-        }
-      },
-      "Quartz.Serialization.SystemTextJson": {
-        "type": "Direct",
-        "requested": "[3.18.0, )",
-        "resolved": "3.18.0",
-        "contentHash": "p+qvJAMLoDoj1VecU1rFCsmMfvhfYCXiFK1d2dicLNPapizy3BfPhKapSwexFndOt97mFr2M0qsXYelb3pLM1A==",
-        "dependencies": {
-          "Quartz": "3.18.0"
         }
       },
       "Apache.Arrow": {
@@ -259,8 +232,8 @@
       },
       "Microsoft.Extensions.AI.Abstractions": {
         "type": "Transitive",
-        "resolved": "10.11.0",
-        "contentHash": "h4DX/TdJU4fk1GGaf19n6Kujkj6VXbGeL4UEOsQ8+ZJC5fVApPauokCtvBP684BYbczUYZQNfo1mbmyHG4WVSg=="
+        "resolved": "10.10.1",
+        "contentHash": "Kz6ezQfRb9x2TkIWyaXkVAfpvyoAlEDfC59klPrdr2XD5WM4HNw+PREAZ+Fo43GPldtX+E0i1aYzMFQ/zXYMLg=="
       },
       "Microsoft.Extensions.AI.Evaluation": {
         "type": "Transitive",
@@ -305,10 +278,10 @@
       },
       "Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore": {
         "type": "Transitive",
-        "resolved": "10.0.12",
-        "contentHash": "BMG8waDSju79jJGdnOPrFrpqUv9/A+Qbg43WLmqUwMgdN26ozOK5iLXVCdaXgX71TvwEGX3HWCAGy711vGAl2Q==",
+        "resolved": "10.0.14",
+        "contentHash": "2xE9FhV4PmKYFzu4aj3yMPbhJmWu9iwx0QfyDl7vrOKVx49B3GZ82JEHnC1lX1TjVtuZzVZF99ytMb2r6oApng==",
         "dependencies": {
-          "Microsoft.EntityFrameworkCore.Relational": "10.0.12"
+          "Microsoft.EntityFrameworkCore.Relational": "10.0.14"
         }
       },
       "Microsoft.Extensions.Http.Diagnostics": {
@@ -479,19 +452,6 @@
           "Polly.Core": "8.4.2"
         }
       },
-      "Quartz": {
-        "type": "Transitive",
-        "resolved": "3.18.0",
-        "contentHash": "l+PY20yF32ljFkP/OROYc7Z7Wv3rhGARqxGkDMaCwOJ3aGA/94fPSBYtJpZKciLbc/89xfVlpEZbIzIPE0hHHQ=="
-      },
-      "Quartz.Extensions.DependencyInjection": {
-        "type": "Transitive",
-        "resolved": "3.18.0",
-        "contentHash": "YAtrZ+pYtPPnWKKuHII1x16E6HxyT1eHWQCvAR4zkMT8xmfuz1KCRHCg3+b8z/nGXpWyR6WpSoIh7dsR4jI+iA==",
-        "dependencies": {
-          "Quartz": "3.18.0"
-        }
-      },
       "Serilog": {
         "type": "Transitive",
         "resolved": "4.3.0",
@@ -610,8 +570,8 @@
       },
       "System.IO.Hashing": {
         "type": "Transitive",
-        "resolved": "10.0.12",
-        "contentHash": "jDix4bBMYnpZdSPcnY+KDV6ik3SRMzpMKby/bZl/XUwIiflwRNAFZ0oOl61R/pSaveIJ8t1gs2BUlrGsPs/bcg=="
+        "resolved": "10.0.14",
+        "contentHash": "lVqovhCt3HlZe7ONG5ydaj6BYwYI004gldVfMMkJl/lR5ueeCtWNpW4nejOX75sPmzm8vXCxB69GqwHaYCnyUQ=="
       },
       "System.Memory.Data": {
         "type": "Transitive",
@@ -643,7 +603,7 @@
       "sentium.infrastructure": {
         "type": "Project",
         "dependencies": {
-          "Aspire.Npgsql.EntityFrameworkCore.PostgreSQL": "[13.6.4, )",
+          "Aspire.Npgsql.EntityFrameworkCore.PostgreSQL": "[13.6.5, )",
           "FluentValidation": "[12.1.1, )",
           "FluentValidation.DependencyInjectionExtensions": "[12.1.1, )",
           "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "[10.0.14, )",
@@ -694,11 +654,11 @@
       },
       "Aspire.Npgsql.EntityFrameworkCore.PostgreSQL": {
         "type": "CentralTransitive",
-        "requested": "[13.6.4, )",
-        "resolved": "13.6.4",
-        "contentHash": "I1yNkpgXC5Vc2DufGpx5gZubi5cgW7rfR/15VaZNAMieLqO0yTZF4+EmyQoEQ3qsmg0MPc0ALV2zUMF6IcEhLg==",
+        "requested": "[13.6.5, )",
+        "resolved": "13.6.5",
+        "contentHash": "CPXZtc7CaWhEtuXm0+oBWCPF+jKG4dSk1YAWjDqpisW1PmYyjrVmGyf7yv1I0RXCFq2w+6IRgJPhjNmT+FTFFw==",
         "dependencies": {
-          "Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore": "10.0.12",
+          "Microsoft.Extensions.Diagnostics.HealthChecks.EntityFrameworkCore": "10.0.14",
           "Npgsql.DependencyInjection": "10.0.3",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "10.0.3",
           "Npgsql.OpenTelemetry": "10.0.3",
