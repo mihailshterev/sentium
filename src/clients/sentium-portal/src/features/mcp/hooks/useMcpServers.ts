@@ -4,22 +4,18 @@ import {
   createMcpServer,
   deleteMcpServer,
   fetchMcpServers,
-  fetchMcpSettings,
   syncMcpServer,
   updateMcpServer,
-  updateMcpSettings,
   updateMcpTools,
 } from "../api/mcp.service";
 import type {
   CreateMcpServerPayload,
   McpServer,
-  McpSettings,
   McpToolUpdate,
   UpdateMcpServerPayload,
 } from "../types/mcp";
 
 export const MCP_SERVERS_KEY = ["mcp-servers"] as const;
-const MCP_SETTINGS_KEY = ["settings-mcp"] as const;
 
 export function useMcpServers(enabled = true) {
   const qc = useQueryClient();
@@ -74,25 +70,5 @@ export function useMcpServers(enabled = true) {
     syncingId: sync.isPending ? sync.variables : undefined,
     updateTools: updateTools.mutateAsync,
     updatingToolsId: updateTools.isPending ? updateTools.variables?.id : undefined,
-  };
-}
-
-export function useMcpSettings(enabled = true) {
-  const qc = useQueryClient();
-
-  const query = useQuery({ queryKey: MCP_SETTINGS_KEY, queryFn: fetchMcpSettings, enabled, retry: false });
-
-  const save = useMutation({
-    mutationFn: (settings: McpSettings) => updateMcpSettings(settings),
-    onSuccess: (saved) => qc.setQueryData(MCP_SETTINGS_KEY, saved),
-  });
-
-  return {
-    settings: query.data,
-    isLoading: query.isLoading,
-    save: save.mutateAsync,
-    isSaving: save.isPending,
-    isSaved: save.isSuccess,
-    saveError: save.error,
   };
 }

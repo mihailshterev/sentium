@@ -60,11 +60,3 @@ export interface Incident {
   description?: string | null;
   lastObservedStatus: ServiceStatus;
 }
-
-export interface VigilConfig {
-  pollIntervalSeconds: number;
-  probeTimeoutSeconds: number;
-  degradedLatencyMs: number;
-  consecutiveFailuresToOpenIncident: number;
-  sampleHistorySize: number;
-}

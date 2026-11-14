@@ -4,36 +4,35 @@ import { expect } from "@playwright/test";
 export class SettingsPage {
   constructor(private readonly page: Page) {}
 
-  async goto(): Promise<void> {
-    await this.page.goto("/settings");
+  async goto(section?: string): Promise<void> {
+    await this.page.goto(section ? `/settings/${section}` : "/settings");
   }
 
   async expectLoaded(): Promise<void> {
     await expect(this.page.getByRole("heading", { level: 1, name: "Settings" })).toBeVisible();
+    await expect(this.page.getByRole("heading", { level: 2, name: "Agents" })).toBeVisible();
+  }
+
+  section(name: string) {
+    return this.page.getByRole("region", { name, exact: true });
   }
 
   async toggleBuiltInHarness(): Promise<void> {
-    await this.page
-      .getByText("Enable built-in harness")
-      .locator("..")
-      .locator("..")
-      .locator("input[type=checkbox]")
-      .click();
+    await this.page.getByRole("switch", { name: "Built-in governance harness" }).click();
   }
 
   async togglePromptEnhancement(): Promise<void> {
-    await this.page
-      .getByText("Enable prompt enhancement")
-      .locator("..")
-      .locator("..")
-      .locator("input[type=checkbox]")
-      .click();
+    await this.page.getByRole("switch", { name: "Prompt enhancement" }).click();
   }
 
   async fillUserHarnessPrompt(text: string): Promise<void> {
-    const textarea = this.page.locator("textarea");
+    const textarea = this.page.getByLabel("Global prompt", { exact: true });
     await textarea.clear();
     await textarea.fill(text);
+  }
+
+  async search(text: string): Promise<void> {
+    await this.page.getByRole("searchbox", { name: "Search settings" }).fill(text);
   }
 
   async saveSettings(): Promise<void> {

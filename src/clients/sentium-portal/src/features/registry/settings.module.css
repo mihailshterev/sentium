@@ -4,72 +4,417 @@
   font-size: var(--text-sm);
 }
 
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  max-width: 860px;
+.layout {
+  --settings-nav-w: 200px;
+
+  display: grid;
+  grid-template-columns: var(--settings-nav-w) minmax(0, 1fr);
+  gap: var(--space-7);
+  align-items: start;
+  max-width: calc(var(--settings-nav-w) + var(--space-7) + 880px);
 }
 
-.group {
-  margin: var(--space-3) 0 0;
-  color: var(--text-muted);
-  font-size: var(--text-sm);
-  font-weight: var(--fw-medium);
+/* Sidebar: search + filter + section nav. Sticky offsets count from the scroller's padding, which already clears the
+   floating page header. */
+.sidebar {
+  position: sticky;
+  top: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
 
-  &:first-child {
-    margin-top: 0;
+.filterChip {
+  align-self: flex-start;
+  padding: 3px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-label);
+  text-transform: lowercase;
+  cursor: pointer;
+  transition:
+    color var(--transition-fast),
+    border-color var(--transition-fast),
+    background-color var(--transition-fast);
+
+  &:hover {
+    border-color: var(--border-strong);
+    color: var(--text-primary);
+  }
+
+  &[aria-pressed="true"] {
+    border-color: var(--accent-line);
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
   }
 }
 
-.fields {
+.nav {
   display: flex;
   flex-direction: column;
-  gap: var(--space-5);
+  gap: var(--space-4);
+  margin-top: var(--space-2);
 }
 
-.field {
+.navGroupTitle {
+  margin: 0 0 var(--space-1);
+  padding-left: 10px;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-label);
+  text-transform: lowercase;
+}
+
+.navList {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 1px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-.fieldRow {
+.navItem {
+  position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: var(--space-2);
+  width: 100%;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: var(--text-sm);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    color var(--transition-fast),
+    background-color var(--transition-fast);
+
+  & svg {
+    flex: none;
+    color: var(--text-dim);
+  }
+
+  &:hover:not(:disabled) {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+
+  &[aria-current="true"] {
+    background: var(--accent-soft);
+    color: var(--text-primary);
+
+    & svg {
+      color: var(--accent);
+    }
+
+    &::before {
+      content: "";
+      position: absolute;
+      top: 6px;
+      bottom: 6px;
+      left: 0;
+      width: 2px;
+      border-radius: var(--radius-full);
+      background: var(--accent);
+    }
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+}
+
+.navLabel {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.navDirty {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--accent);
+}
+
+.navCount {
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-7);
+  min-width: 0;
+}
+
+.scope {
+  display: flex;
+  flex-direction: column;
   gap: var(--space-4);
 }
 
-.fieldLabel {
+.scopeLabel {
+  margin: 0;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-label);
+
+  & span {
+    color: var(--text-dim);
+  }
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-5);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.sectionIcon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+}
+
+.sectionText {
+  flex: 1;
+  min-width: 0;
+}
+
+.sectionTitle {
+  margin: 0;
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  font-weight: var(--fw-medium);
+}
+
+.sectionDescription {
+  margin: 2px 0 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+}
+
+.sectionMeta {
+  flex: none;
+  padding-top: 3px;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  white-space: nowrap;
+}
+
+.sectionNote {
+  margin: 0;
+  padding: var(--space-2) var(--space-5);
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--mat-thin-bg);
+  color: var(--text-dim);
+  font-size: var(--text-xs);
+}
+
+.sectionLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--accent);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.sectionMessage {
+  margin: var(--space-3) var(--space-5) 0;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+}
+
+/* One setting. The left bar marks a value that differs from its default (dim) or is unsaved (bright), as in VS Code. */
+.row {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-2) var(--space-6);
+  align-items: center;
+  padding: var(--space-4) var(--space-5);
+
+  & + & {
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  &::before {
+    content: "";
+    position: absolute;
+    top: var(--space-3);
+    bottom: var(--space-3);
+    left: 0;
+    width: 2px;
+    border-radius: var(--radius-full);
+    background: transparent;
+  }
+
+  &[data-modified]::before {
+    background: var(--accent-line);
+  }
+
+  &[data-dirty]::before {
+    background: var(--accent);
+  }
+
+  &[data-layout="stacked"] {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-3);
+  }
+}
+
+.rowText {
+  min-width: 0;
+}
+
+.rowHead {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--space-2);
+  min-height: 26px;
+}
+
+.rowTitle {
   color: var(--text-primary);
   font-size: var(--text-sm);
   font-weight: var(--fw-medium);
 }
 
-.fieldLabelGroup {
+.rowFlag {
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-label);
+
+  .row[data-dirty] & {
+    color: var(--accent);
+  }
+}
+
+/* Shown on hover/focus only, so the list stays calm. */
+.resetButton {
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+
+  .row:hover &,
+  .row:focus-within &,
+  &:focus-visible {
+    opacity: 1;
+  }
+}
+
+.rowDescription {
+  max-width: 68ch;
+  margin: 2px 0 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+}
+
+.rowControl {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  align-items: flex-end;
+  gap: 6px;
+  min-width: 0;
+
+  .row[data-layout="stacked"] & {
+    align-items: stretch;
+  }
 }
 
-.fieldHint {
+.rowError {
+  margin: 0;
+  color: var(--danger);
+  font-size: var(--text-xs);
+}
+
+.compactControl {
+  width: min(260px, 100%);
+}
+
+.numberControl {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+
+  & input {
+    width: 112px;
+  }
+}
+
+.unit {
+  min-width: 8ch;
   color: var(--text-dim);
+  font-family: var(--font-mono);
   font-size: var(--text-2xs);
-  font-weight: var(--fw-regular);
 }
 
-/* A compact control on the right of a label row, like the model chip. */
-.fieldControl {
-  width: min(280px, 100%);
-  flex: none;
+.rangeControl {
+  --range-value-w: 7.5rem;
+
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-width: 560px;
 }
 
-.fieldValue {
+.rangeTrack {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+
+  & input {
+    flex: 1;
+  }
+}
+
+.rangeValue {
+  width: var(--range-value-w);
   color: var(--accent);
   font-family: var(--font-mono);
   font-size: var(--text-xs);
@@ -78,26 +423,50 @@
 .rangeLabels {
   display: flex;
   justify-content: space-between;
+  padding-right: calc(var(--range-value-w) + var(--space-3));
   color: var(--text-dim);
   font-size: var(--text-2xs);
 }
 
-/* Sticky action bar: always reachable at the bottom of a long form. */
+.rangeExplain {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.textareaControl {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.charCount {
+  align-self: flex-end;
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+
+  &[data-over] {
+    color: var(--danger);
+  }
+}
+
+/* Contextual save bar: appears with the first edit and stays reachable at the bottom of the long list. */
 .saveBar {
   position: sticky;
   bottom: var(--space-4);
   z-index: 2;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: var(--space-4);
-  margin-top: var(--space-2);
+  gap: var(--space-3) var(--space-4);
+  margin-top: calc(-1 * var(--space-4));
   padding: var(--space-3) var(--space-3) var(--space-3) var(--space-5);
   border: 1px solid var(--mat-thick-border);
   border-radius: var(--radius-lg);
   background: var(--mat-thick-bg);
   box-shadow: var(--mat-thick-shadow);
-  backdrop-filter: var(--mat-thick-filter);
 
   &[data-dirty] {
     border-color: var(--accent-line);
@@ -110,10 +479,59 @@
 }
 
 .saveHint {
-  color: var(--text-muted);
+  color: var(--accent);
   font-size: var(--text-sm);
 
-  .saveBar[data-dirty] & {
-    color: var(--accent);
+  &[data-invalid] {
+    color: var(--warning);
+  }
+}
+
+.saveActions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+@media (max-width: 960px) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-5);
+  }
+
+  .sidebar {
+    position: static;
+  }
+
+  .nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+
+  .navGroupTitle {
+    display: none;
+  }
+
+  .navList {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .navItem[aria-current="true"]::before {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .rowControl {
+    align-items: stretch;
+  }
+
+  .sectionMeta {
+    display: none;
   }
 }

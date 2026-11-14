@@ -4,7 +4,6 @@ import type {
   ServiceHealthDetail,
   ServiceHealthStatus,
   SystemHealthOverview,
-  VigilConfig,
 } from "@/features/vigil/types/serviceHealth";
 import { client } from "@/shared/api/client";
 
@@ -27,16 +26,3 @@ export const fetchSystemOverview = async (): Promise<SystemHealthOverview> => {
 export const fetchIncidents = async (): Promise<Incident[]> => {
   return client.get<Incident[]>("/vigil/incidents");
 };
-
-interface SettingsEnvelope<T> {
-  key: string;
-  value: T;
-  updatedAt: string;
-  updatedBy: string | null;
-}
-
-export const fetchVigilConfig = async (): Promise<VigilConfig> =>
-  client.get<SettingsEnvelope<VigilConfig>>("/registry/settings/vigil").then((e) => e.value);
-
-export const updateVigilConfig = async (payload: VigilConfig): Promise<VigilConfig> =>
-  client.put<SettingsEnvelope<VigilConfig>>("/registry/settings/vigil", payload).then((e) => e.value);

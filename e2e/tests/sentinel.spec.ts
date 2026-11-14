@@ -32,15 +32,9 @@ test.describe("Sentinel", () => {
     await expect(toggle).not.toBeDisabled();
   });
 
-  test("semantic intent toggle is visible and interactive", { tag: "@regression" }, async ({ sentinelPage }) => {
-    await sentinelPage.expectSemanticIntentToggleVisible();
-    const toggle = await sentinelPage.getSemanticIntentToggle();
-    await expect(toggle).not.toBeDisabled();
-  });
-
-  test("autonomy slider is visible and interactive", { tag: "@regression" }, async ({ sentinelPage }) => {
-    await sentinelPage.expectAutonomySliderVisible();
-    const slider = await sentinelPage.getAutonomySlider();
-    await expect(slider).not.toBeDisabled();
+  test("links to the policy settings", { tag: "@regression" }, async ({ sentinelPage, page }) => {
+    await sentinelPage.expectPolicySettingsLinkVisible();
+    await page.getByRole("link", { name: /configure policy in settings/i }).click();
+    await expect(page).toHaveURL(/\/settings\/security$/);
   });
 });

@@ -43,34 +43,3 @@ describe("fetchAuditStats()", () => {
     expect(client.get).toHaveBeenCalledWith("/sentinel/policy/audit/stats");
   });
 });
-
-describe("pdp settings", () => {
-  it("fetchPdpSettings unwraps the envelope value", async () => {
-    vi.mocked(client.get).mockResolvedValueOnce({
-      key: "pdp",
-      value: { enabled: true },
-      updatedAt: "x",
-      updatedBy: null,
-    } as never);
-
-    const result = await sentinelService.fetchPdpSettings();
-
-    expect(client.get).toHaveBeenCalledWith("/registry/settings/pdp");
-    expect(result).toEqual({ enabled: true });
-  });
-
-  it("updatePdpSettings writes to the registry pdp key and unwraps the value", async () => {
-    const payload = { enabled: false } as never;
-    vi.mocked(client.put).mockResolvedValueOnce({
-      key: "pdp",
-      value: { enabled: false },
-      updatedAt: "x",
-      updatedBy: null,
-    } as never);
-
-    const result = await sentinelService.updatePdpSettings(payload);
-
-    expect(client.put).toHaveBeenCalledWith("/registry/settings/pdp", payload);
-    expect(result).toEqual({ enabled: false });
-  });
-});

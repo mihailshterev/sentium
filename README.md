@@ -1,6 +1,12 @@
+<div align="center">
+
+<img src="docs/assets/sentium-mark.svg" width="120" alt="Sentium mark" />
+
 # Sentium
 
-> A self-hostable, security-first platform for building, orchestrating and governing autonomous AI agents - powered entirely by local LLMs.
+**A self-hostable, security-first platform for building, orchestrating and governing autonomous AI agents - powered entirely by local LLMs.**
+
+</div>
 
 Sentium is a multi-agent platform built on **.NET 10** - a modular monolith orchestrated by **Aspire** - and a **React** front-end. It lets you create AI agents, compose them into multi-agent workflows, give them tools (code execution, knowledge retrieval, scheduling, memory), and run the whole thing **on your own hardware** against **local models served by llama.cpp** (`llama-server`) - no data ever leaves the machine.
 

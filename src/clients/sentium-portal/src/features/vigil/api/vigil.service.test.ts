@@ -5,8 +5,6 @@ import {
   fetchServiceHealthDetail,
   fetchSystemOverview,
   fetchIncidents,
-  fetchVigilConfig,
-  updateVigilConfig,
 } from "./vigil.service";
 import { client } from "@/shared/api/client";
 
@@ -121,32 +119,5 @@ describe("vigil.service remaining reads", () => {
     vi.mocked(client.get).mockResolvedValueOnce([]);
     await fetchIncidents();
     expect(client.get).toHaveBeenCalledWith("/vigil/incidents");
-  });
-});
-
-describe("vigil.service config", () => {
-  it("fetchVigilConfig unwraps the settings envelope", async () => {
-    vi.mocked(client.get).mockResolvedValueOnce({
-      key: "vigil",
-      value: { pollIntervalSeconds: 30 },
-      updatedAt: "x",
-      updatedBy: null,
-    });
-    const result = await fetchVigilConfig();
-    expect(client.get).toHaveBeenCalledWith("/registry/settings/vigil");
-    expect(result).toEqual({ pollIntervalSeconds: 30 });
-  });
-
-  it("updateVigilConfig writes to the registry and unwraps the value", async () => {
-    const payload = { pollIntervalSeconds: 60 } as never;
-    vi.mocked(client.put).mockResolvedValueOnce({
-      key: "vigil",
-      value: { pollIntervalSeconds: 60 },
-      updatedAt: "x",
-      updatedBy: null,
-    });
-    const result = await updateVigilConfig(payload);
-    expect(client.put).toHaveBeenCalledWith("/registry/settings/vigil", payload);
-    expect(result).toEqual({ pollIntervalSeconds: 60 });
   });
 });

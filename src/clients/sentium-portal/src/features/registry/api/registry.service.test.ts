@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import * as registryService from "./registry.service";
+import { fetchSettingsGroup, updateSettingsGroup } from "./registry.service";
 import { client } from "@/shared/api/client";
 
 vi.mock("@/shared/api/client", async (importOriginal) => {
@@ -10,9 +10,9 @@ vi.mock("@/shared/api/client", async (importOriginal) => {
   };
 });
 
-const harnessEnvelope = {
-  key: "harness",
-  value: { foo: "bar" } as never,
+const envelope = {
+  key: "mcp",
+  value: { enabled: true },
   updatedAt: "2025-01-01T00:00:00Z",
   updatedBy: "admin",
 };
@@ -21,48 +21,21 @@ beforeEach(() => {
   vi.clearAllMocks();
 });
 
-describe("fetchSettings()", () => {
-  it("reads the harness settings and maps the envelope to Settings", async () => {
-    vi.mocked(client.get).mockResolvedValueOnce(harnessEnvelope);
-    const result = await registryService.fetchSettings();
+describe("registry settings service", () => {
+  it("reads a settings group by key and returns the envelope", async () => {
+    vi.mocked(client.get).mockResolvedValueOnce(envelope);
 
-    expect(client.get).toHaveBeenCalledWith("/registry/settings/harness");
-    expect(result).toEqual({
-      harness: harnessEnvelope.value,
-      updatedAt: harnessEnvelope.updatedAt,
-      updatedBy: harnessEnvelope.updatedBy,
-    });
-  });
-});
+    const result = await fetchSettingsGroup("mcp");
 
-describe("updateSettings()", () => {
-  it("writes only the harness payload and maps the response", async () => {
-    vi.mocked(client.put).mockResolvedValueOnce(harnessEnvelope);
-    const result = await registryService.updateSettings({ harness: harnessEnvelope.value });
-
-    expect(client.put).toHaveBeenCalledWith("/registry/settings/harness", harnessEnvelope.value);
-    expect(result.updatedBy).toBe("admin");
-  });
-});
-
-describe("inference settings", () => {
-  const inferenceEnvelope = {
-    key: "inference",
-    value: { defaultModel: "gemma", agentTemperature: 0.7 },
-    updatedAt: "2025-01-01T00:00:00Z",
-    updatedBy: null,
-  };
-
-  it("fetchInferenceSettings reads the inference key", async () => {
-    vi.mocked(client.get).mockResolvedValueOnce(inferenceEnvelope);
-    const result = await registryService.fetchInferenceSettings();
-    expect(client.get).toHaveBeenCalledWith("/registry/settings/inference");
-    expect(result.value.defaultModel).toBe("gemma");
+    expect(client.get).toHaveBeenCalledWith("/registry/settings/mcp");
+    expect(result).toEqual(envelope);
   });
 
-  it("updateInferenceSettings writes the inference key", async () => {
-    vi.mocked(client.put).mockResolvedValueOnce(inferenceEnvelope);
-    await registryService.updateInferenceSettings(inferenceEnvelope.value);
-    expect(client.put).toHaveBeenCalledWith("/registry/settings/inference", inferenceEnvelope.value);
+  it("sends only the patch for a group", async () => {
+    vi.mocked(client.put).mockResolvedValueOnce(envelope);
+
+    await updateSettingsGroup("calendar-user", { timeZone: null });
+
+    expect(client.put).toHaveBeenCalledWith("/registry/settings/calendar-user", { timeZone: null });
   });
 });

@@ -66,7 +66,7 @@ export const routes: RouteObject[] = [
       { path: "sandbox", element: <Sandbox /> },
       { path: "sandbox/:jobId", element: <SandboxRunDetail /> },
       { path: "system", element: <System /> },
-      { path: "settings", element: <SettingsPage /> },
+      { path: "settings/:section?", element: <SettingsPage /> },
     ],
   },
 ];
