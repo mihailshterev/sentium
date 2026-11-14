@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace Sentium.Praxis.Features.Workflows;
 
-public sealed class WorkflowTrigger
+internal sealed class WorkflowTrigger
 {
     public string TriggerType { get; init; } = "";
     public string Payload { get; init; } = "";

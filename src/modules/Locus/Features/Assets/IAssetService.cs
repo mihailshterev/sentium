@@ -2,7 +2,7 @@ using Sentium.Core.Results;
 
 namespace Sentium.Locus.Features.Assets;
 
-public interface IAssetService
+internal interface IAssetService
 {
     Task<PagedResponse<AssetSummaryDto>> SearchAssetsAsync(AssetSearchQuery query, CancellationToken ct = default);
 

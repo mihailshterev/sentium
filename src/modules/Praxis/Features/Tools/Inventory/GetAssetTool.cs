@@ -10,7 +10,7 @@ namespace Sentium.Praxis.Features.Tools.Inventory;
 /// Returns everything assistants may know about one household item.
 /// </summary>
 [AgentToolPolicy(RiskLevel = ToolRiskLevel.Low, Resource = ToolResource.Inventory, Action = ToolAction.Read)]
-public sealed class GetAssetTool(IInventoryLookup inventory, ILogger<GetAssetTool> logger) : IAgentTool
+internal sealed class GetAssetTool(IInventoryLookup inventory, ILogger<GetAssetTool> logger) : IAgentTool
 {
     private const int MaxNameMatches = 3;
 

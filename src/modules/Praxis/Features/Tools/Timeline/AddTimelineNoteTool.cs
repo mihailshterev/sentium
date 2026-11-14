@@ -10,7 +10,7 @@ namespace Sentium.Praxis.Features.Tools.Timeline;
 /// Leaves a note, status update or progress report on a task, a day or a month of the user's timeline.
 /// </summary>
 [AgentToolPolicy(RiskLevel = ToolRiskLevel.Low, Resource = ToolResource.Timeline, Action = ToolAction.Write)]
-public sealed class AddTimelineNoteTool(
+internal sealed class AddTimelineNoteTool(
     ITimelineAgentAccess timeline,
     IPdpContextAccessor pdpContext,
     TimeProvider timeProvider,

@@ -1,6 +1,6 @@
 namespace Sentium.Praxis.Entities;
 
-public sealed class AgentLearning
+internal sealed class AgentLearning
 {
     public Guid Id { get; set; }
 

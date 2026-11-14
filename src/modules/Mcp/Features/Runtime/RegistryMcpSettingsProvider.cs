@@ -6,7 +6,7 @@ namespace Sentium.Mcp.Features.Runtime;
 /// <summary>
 /// Reads the MCP settings from the Registry module in-process (Registry caches and evicts the envelope itself).
 /// </summary>
-public sealed class RegistryMcpSettingsProvider(
+internal sealed class RegistryMcpSettingsProvider(
     ISettingsService settingsService,
     ILogger<RegistryMcpSettingsProvider> logger) : IMcpSettingsProvider
 {

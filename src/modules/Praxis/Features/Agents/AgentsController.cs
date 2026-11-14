@@ -9,7 +9,7 @@ namespace Sentium.Praxis.Features.Agents;
 [ApiController]
 [Authorize]
 [Route($"{PraxisRoutes.Prefix}/agents")]
-public sealed class AgentsController(IAgentService agentService) : ControllerBase
+internal sealed class AgentsController(IAgentService agentService) : ControllerBase
 {
     /// <summary>
     /// Returns a page of agents (newest first).

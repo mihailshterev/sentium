@@ -3,7 +3,7 @@ namespace Sentium.Locus.Common;
 /// <summary>
 /// Field limits shared by the EF model, the request validators and the portal's form schemas.
 /// </summary>
-public static class LocusLimits
+internal static class LocusLimits
 {
     public const int LocationNameMax = 100;
     public const int LocationTextMax = 1000;

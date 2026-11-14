@@ -6,7 +6,7 @@ namespace Sentium.Sandbox.Mcp;
 /// <summary>
 /// Hosts stdio MCP servers for Sentium.Web.
 /// </summary>
-public interface IMcpServerHost
+internal interface IMcpServerHost
 {
     bool Enabled { get; }
 

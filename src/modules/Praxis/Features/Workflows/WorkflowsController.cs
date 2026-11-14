@@ -9,7 +9,7 @@ namespace Sentium.Praxis.Features.Workflows;
 [ApiController]
 [Authorize]
 [Route($"{PraxisRoutes.Prefix}/workflows")]
-public sealed class WorkflowsController(IWorkflowService workflowService, IWorkflowRunRepository runRepository) : ControllerBase
+internal sealed class WorkflowsController(IWorkflowService workflowService, IWorkflowRunRepository runRepository) : ControllerBase
 {
     /// <summary>
     /// Returns a page of workflows (newest first).

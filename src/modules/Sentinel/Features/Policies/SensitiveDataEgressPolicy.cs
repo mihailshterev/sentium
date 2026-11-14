@@ -18,7 +18,7 @@ namespace Sentium.Sentinel.Features.Policies;
 /// searches are skipped to keep false positives low. The matched pattern is logged server-side but
 /// never returned to the caller, so the detection rules are not disclosed to the agent.
 /// </summary>
-public sealed class SensitiveDataEgressPolicy : IPdpPolicy
+internal sealed class SensitiveDataEgressPolicy : IPdpPolicy
 {
     private static readonly TimeSpan MatchTimeout = TimeSpan.FromMilliseconds(250);
 

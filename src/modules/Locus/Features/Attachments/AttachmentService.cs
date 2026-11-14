@@ -13,7 +13,7 @@ namespace Sentium.Locus.Features.Attachments;
 /// deletes remove the row before the blob. Either way a crash can only leave an unreachable orphan blob,
 /// never a row pointing at a missing file.
 /// </summary>
-public sealed class AttachmentService(
+internal sealed class AttachmentService(
     LocusDbContext db,
     IAttachmentStore store,
     ICurrentUser currentUser,

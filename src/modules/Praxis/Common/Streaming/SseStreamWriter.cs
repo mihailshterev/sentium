@@ -14,7 +14,7 @@ namespace Sentium.Praxis.Common.Streaming;
 /// most one terminal frame (<see cref="CompleteAsync"/>, <see cref="FailAsync"/> or a terminal relay update in
 /// <see cref="ForwardAsync"/>); anything written after it is dropped. Dispose to stop the heartbeat.
 /// </summary>
-public sealed class SseStreamWriter : IAgentUpdateSink, IAsyncDisposable
+internal sealed class SseStreamWriter : IAgentUpdateSink, IAsyncDisposable
 {
     private const string IdField = "id: ";
     private const string DataField = "data: ";

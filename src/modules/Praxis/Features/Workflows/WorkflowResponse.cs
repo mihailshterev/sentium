@@ -1,6 +1,6 @@
 namespace Sentium.Praxis.Features.Workflows;
 
-public sealed record WorkflowResponse(
+internal sealed record WorkflowResponse(
     Guid Id,
     Guid UserId,
     string Name,

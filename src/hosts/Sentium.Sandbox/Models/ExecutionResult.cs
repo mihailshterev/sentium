@@ -1,6 +1,6 @@
 namespace Sentium.Sandbox.Models;
 
-public sealed record ExecutionResult
+internal sealed record ExecutionResult
 {
     public required bool Succeeded { get; init; }
     public required long ExitCode { get; init; }

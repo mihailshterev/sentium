@@ -13,7 +13,7 @@ namespace Sentium.Sentinel.Features.Policies;
 /// agent actions - exactly the intent of a lockdown. Registered first so it short-circuits
 /// the chain before any other (more expensive) policy runs.
 /// </summary>
-public sealed class LockdownPolicy(IPdpRuntimeSettingsProvider settings) : IPdpPolicy
+internal sealed class LockdownPolicy(IPdpRuntimeSettingsProvider settings) : IPdpPolicy
 {
     public string Name => "Lockdown";
 

@@ -9,7 +9,7 @@ namespace Sentium.Praxis.Features.Tools;
 /// An agent tool that reads and returns the full text content of files from a local workspace directory.
 /// </summary>
 [AgentToolPolicy(RiskLevel = ToolRiskLevel.Medium, Resource = ToolResource.File, Action = ToolAction.Read)]
-public sealed class ReadFileTool : IAgentTool
+internal sealed class ReadFileTool : IAgentTool
 {
     private readonly long maxFileSizeBytes = 1024 * 1024 * 2;
     private readonly string workspaceRoot;

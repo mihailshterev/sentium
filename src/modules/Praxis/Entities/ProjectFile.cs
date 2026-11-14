@@ -8,7 +8,7 @@ namespace Sentium.Praxis.Entities;
 /// Files go through an ingestion pipeline (<see cref="FileProcessingStatus"/>) for RAG vectorization
 /// and semantic search integration.
 /// </summary>
-public sealed class ProjectFile : IUserOwned
+internal sealed class ProjectFile : IUserOwned
 {
     public Guid Id { get; set; }
 

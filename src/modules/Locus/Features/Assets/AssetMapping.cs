@@ -3,7 +3,7 @@ using Sentium.Locus.Features.Attachments;
 
 namespace Sentium.Locus.Features.Assets;
 
-public static class AssetMapping
+internal static class AssetMapping
 {
     /// <summary>
     /// The outbox entry wins (work is queued or failed); otherwise a stored hash means the knowledge base

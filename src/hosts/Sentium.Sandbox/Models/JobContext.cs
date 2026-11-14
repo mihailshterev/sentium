@@ -1,6 +1,6 @@
 namespace Sentium.Sandbox.Models;
 
-public sealed record JobContext
+internal sealed record JobContext
 {
     public required Guid JobId { get; init; }
     public required string JobDirectory { get; init; }

@@ -6,7 +6,7 @@ namespace Sentium.Locus.Features.Assets;
 /// Where an asset's knowledge-base copy stands.
 /// </summary>
 [JsonConverter(typeof(JsonStringEnumConverter<AssetKnowledgeStatus>))]
-public enum AssetKnowledgeStatus
+internal enum AssetKnowledgeStatus
 {
     /// <summary>
     /// The asset is private; assistants cannot see it.

@@ -4,7 +4,7 @@ namespace Sentium.Locus.Entities;
 /// A place in the household's spatial tree (e.g. Home → Garage → Shelf B). Locations are shared by every
 /// member of the household; sibling names are unique case-insensitively (see <see cref="NormalizedName"/>).
 /// </summary>
-public sealed class Location
+internal sealed class Location
 {
     public Guid Id { get; set; }
 

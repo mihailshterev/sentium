@@ -6,7 +6,7 @@ using Sentium.Tempus.Features.Tasks;
 
 namespace Sentium.Tempus.Features.Overview;
 
-public sealed class TimelineOverviewService(TempusDbContext db, TimeProvider timeProvider) : ITimelineOverviewService
+internal sealed class TimelineOverviewService(TempusDbContext db, TimeProvider timeProvider) : ITimelineOverviewService
 {
     /// <summary>
     /// Tasks listed per Up next column; the overdue total is reported separately.

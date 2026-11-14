@@ -1,6 +1,6 @@
 namespace Sentium.Praxis.Entities;
 
-public sealed class WorkflowAgent
+internal sealed class WorkflowAgent
 {
     public Guid WorkflowId { get; set; }
     public Guid AgentId { get; set; }

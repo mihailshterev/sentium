@@ -1,6 +1,6 @@
 namespace Sentium.Sandbox.Options;
 
-public sealed class SandboxOptions
+internal sealed class SandboxOptions
 {
     public const string SectionName = "Sandbox";
     public string PythonImage { get; set; } = "python:3.12-slim";

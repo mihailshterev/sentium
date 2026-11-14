@@ -8,7 +8,7 @@ namespace Sentium.Sentinel.Features.Engine;
 /// <c>POST policy/evaluate</c> request did), so concurrent tool calls never share the audit
 /// <see cref="Data.SentinelDbContext"/>.
 /// </summary>
-public sealed class PolicyDecisionPoint(IServiceScopeFactory scopeFactory) : IPolicyDecisionPoint
+internal sealed class PolicyDecisionPoint(IServiceScopeFactory scopeFactory) : IPolicyDecisionPoint
 {
     public async Task<PolicyEvaluationResponse> EvaluateAsync(PolicyEvaluationRequest request, CancellationToken ct = default)
     {

@@ -2,7 +2,7 @@ using Sentium.Locus.Entities;
 
 namespace Sentium.Locus.Features.Attachments;
 
-public sealed record AttachmentDto(
+internal sealed record AttachmentDto(
     Guid Id,
     string FileName,
     string ContentType,

@@ -1,6 +1,6 @@
 namespace Sentium.Praxis.Features.Workspaces;
 
-public sealed record WorkspaceFileDto(
+internal sealed record WorkspaceFileDto(
     Guid Id,
     string FileName,
     string Extension,

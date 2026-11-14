@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Sentium.Sentinel.Data;
 
-public sealed class SentinelDbContext(DbContextOptions<SentinelDbContext> options) : DbContext(options)
+internal sealed class SentinelDbContext(DbContextOptions<SentinelDbContext> options) : DbContext(options)
 {
     public const string Schema = "sentinel";
 

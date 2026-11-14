@@ -10,7 +10,7 @@ namespace Sentium.Locus.Features.Locations;
 [ApiController]
 [Authorize]
 [Route($"{LocusRoutes.Prefix}/locations")]
-public sealed class LocationsController(ILocationService locationService) : ControllerBase
+internal sealed class LocationsController(ILocationService locationService) : ControllerBase
 {
     /// <summary>
     /// Lists every location as a flat list ordered by path; build the tree from <c>parentLocationId</c>.

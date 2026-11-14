@@ -2,7 +2,7 @@ using System.Collections.Frozen;
 
 namespace Sentium.Praxis.Features.Agents.Runtime;
 
-public sealed class AgentRegistry : IAgentRegistry
+internal sealed class AgentRegistry : IAgentRegistry
 {
     private readonly FrozenSet<string> names;
 

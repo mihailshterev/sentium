@@ -3,7 +3,7 @@ namespace Sentium.Praxis.Features.Agents;
 /// <summary>
 /// Definition of an agent persona: identity, behaviour, and the tools it may use.
 /// </summary>
-public interface IAgent
+internal interface IAgent
 {
     /// <summary>
     /// Unique name; also the key the agent is registered and resolved under.

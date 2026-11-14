@@ -14,7 +14,7 @@ namespace Sentium.Infrastructure.Security;
 /// ASP.NET Core authentication handler for the <c>InternalApiKey</c> scheme.
 /// Authenticates a request when the <c>X-Internal-Token</c> header matches the configured key.
 /// </summary>
-public sealed class InternalApiKeyAuthenticationHandler(
+internal sealed class InternalApiKeyAuthenticationHandler(
     IOptionsMonitor<AuthenticationSchemeOptions> options,
     ILoggerFactory logger,
     UrlEncoder encoder,

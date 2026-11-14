@@ -8,7 +8,7 @@ namespace Sentium.Mcp.Features.Servers;
 /// Protects MCP server secrets (HTTP headers / container environment) at rest with ASP.NET Core Data Protection.
 /// The protected payload is a JSON map; plaintext never leaves the process except to the MCP server it belongs to.
 /// </summary>
-public sealed class McpSecretProtector(IDataProtectionProvider provider)
+internal sealed class McpSecretProtector(IDataProtectionProvider provider)
 {
     // Deliberately still "Sentium.Praxis...": the Data Protection purpose keys the stored secrets, so renaming it after
     // MCP moved out of Praxis would make every existing server secret undecryptable.

@@ -8,7 +8,7 @@ namespace Sentium.Locus.Features.Attachments;
 /// <see cref="IAttachmentStore"/> on the platform's blob storage (Azurite locally), in a private container
 /// owned by this module. No user input ever reaches blob names or metadata.
 /// </summary>
-public sealed class BlobAttachmentStore(BlobServiceClient blobServiceClient) : IAttachmentStore
+internal sealed class BlobAttachmentStore(BlobServiceClient blobServiceClient) : IAttachmentStore
 {
     public const string ContainerName = "locus-attachments";
 

@@ -1,6 +1,6 @@
 namespace Sentium.Registry.Features.Settings;
 
-public enum SettingsScope
+internal enum SettingsScope
 {
     PerUser,
     Global

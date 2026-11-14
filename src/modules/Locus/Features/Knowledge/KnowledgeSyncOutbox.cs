@@ -9,7 +9,7 @@ namespace Sentium.Locus.Features.Knowledge;
 /// after the commit. A single <c>INSERT ... ON CONFLICT</c> keeps concurrent edits of the same asset from
 /// racing on the primary key, re-arms failed entries, and bumps the version the processor guards on.
 /// </summary>
-public sealed class KnowledgeSyncOutbox(LocusDbContext db, TimeProvider timeProvider)
+internal sealed class KnowledgeSyncOutbox(LocusDbContext db, TimeProvider timeProvider)
 {
     public async Task EnqueueAsync(IReadOnlyCollection<Guid> assetIds, CancellationToken ct = default)
     {

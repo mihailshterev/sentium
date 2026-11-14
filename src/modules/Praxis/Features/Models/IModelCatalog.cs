@@ -4,7 +4,7 @@ namespace Sentium.Praxis.Features.Models;
 /// The chat models the inference server can serve. The set is deployment configuration
 /// (<c>infra/llm/models.ini</c>); the catalog only reports it and loads or unloads models in memory.
 /// </summary>
-public interface IModelCatalog
+internal interface IModelCatalog
 {
     /// <summary>
     /// Lists the declared chat models with their runtime status.

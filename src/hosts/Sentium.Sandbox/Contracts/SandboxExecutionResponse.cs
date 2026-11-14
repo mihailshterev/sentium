@@ -1,6 +1,6 @@
 namespace Sentium.Sandbox.Contracts;
 
-public sealed record SandboxExecutionResponse
+internal sealed record SandboxExecutionResponse
 {
     public required bool Succeeded { get; init; }
     public required long ExitCode { get; init; }

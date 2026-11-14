@@ -7,7 +7,7 @@ namespace Sentium.Praxis.Features.Workflows;
 /// <summary>
 /// Dynamic squad: the planner picks the specialists (native ones plus the user's own agents) and their tasks.
 /// </summary>
-public sealed class DynamicDiscoveryWorkflow(
+internal sealed class DynamicDiscoveryWorkflow(
     SquadWorkflowRunner squad,
     IEnumerable<IAgent> nativeAgents,
     IAgentRepository agentRepository,

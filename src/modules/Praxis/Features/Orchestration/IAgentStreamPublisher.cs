@@ -5,7 +5,7 @@ namespace Sentium.Praxis.Features.Orchestration;
 /// <summary>
 /// Write side of the agent stream: workflows push every update for a run here, keyed by its stream id.
 /// </summary>
-public interface IAgentStreamPublisher
+internal interface IAgentStreamPublisher
 {
     /// <summary>
     /// Appends <paramref name="update"/> to the stream's replay buffer and fans it out to live subscribers.

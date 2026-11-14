@@ -1,6 +1,6 @@
 namespace Sentium.Locus.Features.Knowledge;
 
-public enum KnowledgeSyncOutcome
+internal enum KnowledgeSyncOutcome
 {
     /// <summary>
     /// No entry (already handled).

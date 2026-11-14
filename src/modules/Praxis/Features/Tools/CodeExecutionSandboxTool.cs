@@ -10,7 +10,7 @@ namespace Sentium.Praxis.Features.Tools;
 /// Runs agent-written code in the Sandbox. Calls need user approval and pass the Sentinel PDP before they reach it.
 /// </summary>
 [AgentToolPolicy(RiskLevel = ToolRiskLevel.High, RequiresApproval = true, Resource = ToolResource.Code, Action = ToolAction.Execute)]
-public sealed class CodeExecutionSandboxTool(
+internal sealed class CodeExecutionSandboxTool(
     ISandboxClient sandboxClient,
     IPdpContextAccessor pdpContext,
     ILogger<CodeExecutionSandboxTool> logger) : IAgentTool

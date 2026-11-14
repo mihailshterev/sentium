@@ -9,7 +9,7 @@ namespace Sentium.Identity.Features.Users;
 [ApiController]
 [Route($"{IdentityRoutes.Prefix}/users")]
 [Authorize]
-public sealed class UsersController(IUserService userService, IUserClaimsService userClaimsService) : ControllerBase
+internal sealed class UsersController(IUserService userService, IUserClaimsService userClaimsService) : ControllerBase
 {
     /// <summary>
     /// Lists users registered in the system, with pagination.

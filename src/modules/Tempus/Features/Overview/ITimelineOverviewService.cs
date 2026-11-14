@@ -1,6 +1,6 @@
 namespace Sentium.Tempus.Features.Overview;
 
-public interface ITimelineOverviewService
+internal interface ITimelineOverviewService
 {
     /// <param name="clientToday">The caller's local date, used for overdue counts when it is plausible.</param>
     Task<YearOverviewDto> GetYearAsync(int year, DateOnly? clientToday, CancellationToken ct = default);

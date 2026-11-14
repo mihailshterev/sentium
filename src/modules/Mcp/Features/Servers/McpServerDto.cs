@@ -7,7 +7,7 @@ namespace Sentium.Mcp.Features.Servers;
 /// An MCP server as shown in the portal. Secret values are never returned - only their names; non-secret
 /// <paramref name="Variables"/> are returned with their values.
 /// </summary>
-public sealed record McpServerDto(
+internal sealed record McpServerDto(
     Guid Id,
     string Name,
     string DisplayName,

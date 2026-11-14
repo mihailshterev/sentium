@@ -5,7 +5,7 @@ namespace Sentium.Scheduling.Features.Jobs;
 /// The job store runs with <c>UseProperties = true</c>, so every value stored under these keys must be a string.
 /// Ownership is not a data entry: the job's group is the owning user id (see <see cref="SchedulerDefaults.GroupFor"/>).
 /// </summary>
-public static class ScheduledJobData
+internal static class ScheduledJobData
 {
     public const string AgentId = "AgentId";
     public const string JobName = "JobName";

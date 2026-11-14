@@ -3,7 +3,7 @@ namespace Sentium.Praxis.Features.Workflows;
 /// <summary>
 /// An executable agent workflow keyed by its <see cref="WorkflowType"/>.
 /// </summary>
-public interface IAgentWorkflow
+internal interface IAgentWorkflow
 {
     WorkflowType Type { get; }
 

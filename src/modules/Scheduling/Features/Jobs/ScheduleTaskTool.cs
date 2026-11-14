@@ -16,7 +16,7 @@ namespace Sentium.Scheduling.Features.Jobs;
 /// Sentinel. The owning user and the agent come from the run context, never from the model's arguments.
 /// </remarks>
 [AgentToolPolicy(RiskLevel = ToolRiskLevel.High, RequiresApproval = true, Resource = ToolResource.Code, Action = ToolAction.Execute)]
-public sealed class ScheduleTaskTool(
+internal sealed class ScheduleTaskTool(
     ISchedulerFactory schedulerFactory,
     IPdpContextAccessor pdpContext,
     ILogger<ScheduleTaskTool> logger) : IAgentTool

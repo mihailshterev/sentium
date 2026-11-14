@@ -7,7 +7,7 @@ namespace Sentium.Sandbox.Execution;
 /// Implementations are responsible for container lifecycle, resource limits,
 /// volume mapping, and post-execution cleanup.
 /// </summary>
-public interface ISandboxRunner
+internal interface ISandboxRunner
 {
     /// <summary>
     /// Runs the requested code inside an isolated container and returns the execution result.

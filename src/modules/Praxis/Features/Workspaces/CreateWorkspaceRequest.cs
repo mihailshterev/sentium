@@ -1,5 +1,5 @@
 namespace Sentium.Praxis.Features.Workspaces;
 
-public sealed record CreateWorkspaceRequest(
+internal sealed record CreateWorkspaceRequest(
     string Name,
     string? Description);

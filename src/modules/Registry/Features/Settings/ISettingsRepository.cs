@@ -5,7 +5,7 @@ namespace Sentium.Registry.Features.Settings;
 /// <summary>
 /// Persistence contract for <see cref="SystemSettings"/> rows.
 /// </summary>
-public interface ISettingsRepository
+internal interface ISettingsRepository
 {
     /// <summary>
     /// Returns the settings row for <paramref name="userId"/> (or the global row when

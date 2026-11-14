@@ -9,7 +9,7 @@ namespace Sentium.Praxis.Features.Agents.ToolOverrides;
 /// Strips tools that an external source no longer offers from every agent's tool list and built-in override (across all
 /// owners, so query filters are ignored), in one SaveChanges, then evicts the affected agent caches.
 /// </summary>
-public sealed class AgentToolReferenceCleaner(PraxisDbContext db, HybridCache cache) : IAgentToolReferenceCleaner
+internal sealed class AgentToolReferenceCleaner(PraxisDbContext db, HybridCache cache) : IAgentToolReferenceCleaner
 {
     public async Task<int> RemoveToolsByPrefixAsync(string prefix, CancellationToken ct)
     {

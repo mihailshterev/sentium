@@ -1,6 +1,6 @@
 namespace Sentium.Sentinel.Features.Sources;
 
-public static class EventSources
+internal static class EventSources
 {
     public const string Host = "host";
     public const string Docker = "docker";

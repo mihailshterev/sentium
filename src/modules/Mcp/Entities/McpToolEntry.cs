@@ -5,7 +5,7 @@ namespace Sentium.Mcp.Entities;
 /// while <see cref="Enabled"/>, present on the server, and its current <see cref="DefinitionHash"/> equals
 /// <see cref="ApprovedHash"/>.
 /// </summary>
-public sealed class McpToolEntry
+internal sealed class McpToolEntry
 {
     /// <summary>
     /// The tool's name on the MCP server.

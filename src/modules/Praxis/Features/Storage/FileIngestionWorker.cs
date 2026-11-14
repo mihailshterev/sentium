@@ -26,7 +26,7 @@ namespace Sentium.Praxis.Features.Storage;
 /// re-queued on startup, so a restart never strands a file.
 /// </para>
 /// </remarks>
-public sealed class FileIngestionWorker(IServiceScopeFactory scopeFactory, FileIngestionQueue queue, ILogger<FileIngestionWorker> logger) : BackgroundService
+internal sealed class FileIngestionWorker(IServiceScopeFactory scopeFactory, FileIngestionQueue queue, ILogger<FileIngestionWorker> logger) : BackgroundService
 {
     /// <summary>
     /// Re-queues unfinished files, then processes queued files one at a time until shutdown.

@@ -7,7 +7,7 @@ namespace Sentium.Locus.Features.Knowledge;
 /// reconciles once at startup, then processes due entries whenever <see cref="KnowledgeSyncSignal"/> rings
 /// or a retry becomes due (checking at least every minute).
 /// </summary>
-public sealed class KnowledgeSyncWorker(
+internal sealed class KnowledgeSyncWorker(
     IServiceScopeFactory scopeFactory,
     KnowledgeSyncSignal signal,
     TimeProvider timeProvider,

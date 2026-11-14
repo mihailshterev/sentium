@@ -1,6 +1,6 @@
 namespace Sentium.Praxis.Features.Agents.Approvals;
 
-public interface IPendingApprovalStore
+internal interface IPendingApprovalStore
 {
     void Add(string requestId, PendingApproval approval);
 

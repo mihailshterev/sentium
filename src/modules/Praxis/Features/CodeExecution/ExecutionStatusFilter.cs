@@ -1,6 +1,6 @@
 namespace Sentium.Praxis.Features.CodeExecution;
 
-public enum ExecutionStatusFilter
+internal enum ExecutionStatusFilter
 {
     Succeeded,
     Failed,

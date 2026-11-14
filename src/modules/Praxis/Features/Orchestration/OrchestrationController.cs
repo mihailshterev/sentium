@@ -14,7 +14,7 @@ namespace Sentium.Praxis.Features.Orchestration;
 [ApiController]
 [Authorize]
 [Route($"{PraxisRoutes.Prefix}/orchestration")]
-public sealed class OrchestrationController(
+internal sealed class OrchestrationController(
     IWorkflowRunQueue runQueue,
     IWorkflowExecutionRegistry executionRegistry,
     IStreamRelay streamRelay,

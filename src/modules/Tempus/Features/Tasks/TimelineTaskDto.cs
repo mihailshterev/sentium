@@ -2,7 +2,7 @@ using Sentium.Tempus.Contracts.Models;
 
 namespace Sentium.Tempus.Features.Tasks;
 
-public sealed record TimelineTaskDto(
+internal sealed record TimelineTaskDto(
     Guid Id,
     string Title,
     string? Description,

@@ -1,6 +1,6 @@
 namespace Sentium.Praxis.Features.Sentinel;
 
-public sealed record PdpRequest
+internal sealed record PdpRequest
 {
     public required string AgentId { get; init; }
     public required string SkillName { get; init; }

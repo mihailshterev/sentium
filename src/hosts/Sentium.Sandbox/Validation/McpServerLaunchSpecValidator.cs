@@ -3,7 +3,7 @@ using Sentium.Sandbox.Contracts;
 
 namespace Sentium.Sandbox.Validation;
 
-public sealed class McpServerLaunchSpecValidator : AbstractValidator<McpServerLaunchSpec>
+internal sealed class McpServerLaunchSpecValidator : AbstractValidator<McpServerLaunchSpec>
 {
     public McpServerLaunchSpecValidator()
     {

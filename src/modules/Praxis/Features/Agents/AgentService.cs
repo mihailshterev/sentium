@@ -5,7 +5,7 @@ using Sentium.Praxis.Features.WorkflowManagement;
 
 namespace Sentium.Praxis.Features.Agents;
 
-public sealed class AgentService(
+internal sealed class AgentService(
     IAgentRepository repository,
     IScopedCache cache,
     IAgentRegistry registry) : IAgentService

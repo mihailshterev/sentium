@@ -1,6 +1,6 @@
 namespace Sentium.Vigil.Features.Monitoring;
 
-public sealed record Incident
+internal sealed record Incident
 {
     public required Guid Id { get; init; }
     public required string Target { get; init; }

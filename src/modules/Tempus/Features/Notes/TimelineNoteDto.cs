@@ -2,7 +2,7 @@ using Sentium.Tempus.Contracts.Models;
 
 namespace Sentium.Tempus.Features.Notes;
 
-public sealed record TimelineNoteDto(
+internal sealed record TimelineNoteDto(
     Guid Id,
     int Year,
     int Month,

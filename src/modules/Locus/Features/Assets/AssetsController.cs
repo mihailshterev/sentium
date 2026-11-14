@@ -11,7 +11,7 @@ namespace Sentium.Locus.Features.Assets;
 [ApiController]
 [Authorize]
 [Route($"{LocusRoutes.Prefix}/assets")]
-public sealed class AssetsController(IAssetService assetService) : ControllerBase
+internal sealed class AssetsController(IAssetService assetService) : ControllerBase
 {
     /// <summary>
     /// Searches assets. Filters combine with AND; repeat <c>tag</c> to require several tags.

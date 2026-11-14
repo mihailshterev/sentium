@@ -6,7 +6,7 @@ namespace Sentium.Mcp.Features.Runtime;
 /// What the client manager needs to reach one MCP server. <see cref="Version"/> changes whenever the server is edited,
 /// which makes the manager drop the old connection and reconnect with the new configuration.
 /// </summary>
-public sealed record McpServerConnectionInfo(
+internal sealed record McpServerConnectionInfo(
     Guid Id,
     string Name,
     McpTransport Transport,

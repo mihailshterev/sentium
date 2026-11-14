@@ -6,7 +6,7 @@ namespace Sentium.Locus.Features.Assets;
 /// <summary>
 /// Full asset detail.
 /// </summary>
-public sealed record AssetDto(
+internal sealed record AssetDto(
     Guid Id,
     string DisplayName,
     string? Category,

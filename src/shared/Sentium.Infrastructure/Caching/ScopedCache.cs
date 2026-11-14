@@ -4,7 +4,7 @@ using Sentium.Infrastructure.Security;
 
 namespace Sentium.Infrastructure.Caching;
 
-public sealed class ScopedCache(HybridCache cache, ICurrentUser currentUser, ILogger<ScopedCache> logger) : IScopedCache
+internal sealed class ScopedCache(HybridCache cache, ICurrentUser currentUser, ILogger<ScopedCache> logger) : IScopedCache
 {
     private string Scope => currentUser.IsSovereign ? "sovereign" : currentUser.UserId?.ToString() ?? "anon";
 

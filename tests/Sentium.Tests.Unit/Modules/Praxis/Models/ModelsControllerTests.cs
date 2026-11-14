@@ -78,13 +78,13 @@ public sealed class ModelsControllerTests
     }
 
     [Theory]
-    [InlineData(ModelActionResult.Accepted, StatusCodes.Status202Accepted)]
-    [InlineData(ModelActionResult.NotFound, StatusCodes.Status404NotFound)]
-    [InlineData(ModelActionResult.Conflict, StatusCodes.Status409Conflict)]
-    [InlineData(ModelActionResult.Failed, StatusCodes.Status503ServiceUnavailable)]
-    public async Task LoadModel_MapsTheCatalogResult(ModelActionResult outcome, int expectedStatus)
+    [InlineData(nameof(ModelActionResult.Accepted), StatusCodes.Status202Accepted)]
+    [InlineData(nameof(ModelActionResult.NotFound), StatusCodes.Status404NotFound)]
+    [InlineData(nameof(ModelActionResult.Conflict), StatusCodes.Status409Conflict)]
+    [InlineData(nameof(ModelActionResult.Failed), StatusCodes.Status503ServiceUnavailable)]
+    public async Task LoadModel_MapsTheCatalogResult(string outcome, int expectedStatus)
     {
-        _catalog.LoadAsync("gemma-4-e4b", Arg.Any<CancellationToken>()).Returns(outcome);
+        _catalog.LoadAsync("gemma-4-e4b", Arg.Any<CancellationToken>()).Returns(Enum.Parse<ModelActionResult>(outcome));
 
         var result = await Controller().LoadModel(new ModelActionRequest("gemma-4-e4b"), Ct);
 

@@ -7,7 +7,7 @@ namespace Sentium.Praxis.Features.Learnings;
 /// triggering of the RAG ingestion pipeline so learnings feed back into the
 /// knowledge base for future recall.
 /// </summary>
-public interface IAgentLearningService
+internal interface IAgentLearningService
 {
     /// <summary>
     /// Returns a page of learnings, optionally filtered by agent name.

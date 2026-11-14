@@ -9,7 +9,7 @@ namespace Sentium.Praxis.Features.Storage;
 /// Files are stored in the <see cref="Sentium.Core.Constants.ResourceNames.WorkspaceBlobs"/> container, one blob per
 /// file named by a GUID, with the filename and workspace as blob metadata.
 /// </summary>
-public sealed class LocalFileService(BlobServiceClient blobServiceClient) : ILocalFileService
+internal sealed class LocalFileService(BlobServiceClient blobServiceClient) : ILocalFileService
 {
     /// <inheritdoc/>
     public async Task<Guid> UploadToWorkspaceAsync(Stream fileStream, string fileName, Guid? workspaceId, CancellationToken ct = default)

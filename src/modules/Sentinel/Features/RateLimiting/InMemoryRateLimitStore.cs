@@ -5,7 +5,7 @@ namespace Sentium.Sentinel.Features.RateLimiting;
 /// <summary>
 /// Thread-safe sliding-window rate limiter backed by in-memory timestamp queues.
 /// </summary>
-public sealed class InMemoryRateLimitStore : IRateLimitStore
+internal sealed class InMemoryRateLimitStore : IRateLimitStore
 {
     private readonly ConcurrentDictionary<string, Queue<long>> _windows = new(StringComparer.OrdinalIgnoreCase);
 

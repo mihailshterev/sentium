@@ -9,7 +9,7 @@ namespace Sentium.Locus.Features.Assets;
 [ApiController]
 [Authorize]
 [Route(LocusRoutes.Prefix)]
-public sealed class TaxonomyController(IAssetService assetService) : ControllerBase
+internal sealed class TaxonomyController(IAssetService assetService) : ControllerBase
 {
     /// <summary>
     /// Most used tags (top 50), optionally only those starting with <paramref name="prefix"/>.

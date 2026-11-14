@@ -7,7 +7,7 @@ namespace Sentium.Praxis.Features.Skills;
 /// Agent Framework skill source for the acting user's own skills (custom and uploaded markdown), loaded from the
 /// database. Returns nothing when no user is associated with the run (fail closed).
 /// </summary>
-public sealed class UserSkillsSource(IAgentSkillRepository repository, IPdpContextAccessor runContext) : AgentSkillsSource
+internal sealed class UserSkillsSource(IAgentSkillRepository repository, IPdpContextAccessor runContext) : AgentSkillsSource
 {
     public override async Task<IList<AgentSkill>> GetSkillsAsync(AgentSkillsSourceContext context, CancellationToken cancellationToken = default)
     {

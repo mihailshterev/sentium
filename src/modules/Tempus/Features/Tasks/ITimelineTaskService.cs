@@ -3,7 +3,7 @@ using Sentium.Tempus.Contracts.Models;
 
 namespace Sentium.Tempus.Features.Tasks;
 
-public interface ITimelineTaskService
+internal interface ITimelineTaskService
 {
     Task<TimelineTaskDto?> GetAsync(Guid id, CancellationToken ct = default);
 

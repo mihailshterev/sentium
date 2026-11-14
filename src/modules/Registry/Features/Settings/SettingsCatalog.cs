@@ -2,7 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Sentium.Registry.Features.Settings;
 
-public sealed class SettingsCatalog : ISettingsCatalog
+internal sealed class SettingsCatalog : ISettingsCatalog
 {
     private readonly Dictionary<string, ISettingsDescriptor> _byKey;
 

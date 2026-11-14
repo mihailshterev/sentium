@@ -10,7 +10,7 @@ namespace Sentium.Praxis.Features.Skills;
 [ApiController]
 [Authorize]
 [Route($"{PraxisRoutes.Prefix}/skills")]
-public sealed class SkillsController(
+internal sealed class SkillsController(
     IAgentSkillService skillService,
     IBuiltInSkillCatalog builtInSkillCatalog) : ControllerBase
 {

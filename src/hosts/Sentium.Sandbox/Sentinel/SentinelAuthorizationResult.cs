@@ -1,6 +1,6 @@
 namespace Sentium.Sandbox.Sentinel;
 
-public sealed record SentinelAuthorizationResult
+internal sealed record SentinelAuthorizationResult
 {
     public required bool IsAllowed { get; init; }
     public required string Reason { get; init; }

@@ -8,7 +8,7 @@ namespace Sentium.Praxis.Features.Orchestration;
 /// Accumulates streaming log entries, merging consecutive tokens of the same
 /// author + type into a single entry before persisting.
 /// </summary>
-public sealed class StreamLogAccumulator
+internal sealed class StreamLogAccumulator
 {
     private readonly List<WorkflowLogEntry> _entries = [];
 

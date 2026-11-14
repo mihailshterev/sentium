@@ -7,7 +7,7 @@ namespace Sentium.Praxis.Features.Orchestration;
 /// The timeline of one workflow run: every entry goes live to the run's relay stream and into the log persisted with
 /// the run's result.
 /// </summary>
-public sealed class WorkflowTimeline(IAgentStreamPublisher stream, string streamId)
+internal sealed class WorkflowTimeline(IAgentStreamPublisher stream, string streamId)
 {
     public const string SystemAuthor = "System";
 

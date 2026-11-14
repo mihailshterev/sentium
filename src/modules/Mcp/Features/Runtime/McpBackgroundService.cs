@@ -4,7 +4,7 @@ namespace Sentium.Mcp.Features.Runtime;
 /// Loads the MCP tool catalog once the host is up (retrying while the database is not ready yet) and then closes MCP
 /// connections that sat idle - or all of them while the MCP kill switch is off.
 /// </summary>
-public sealed class McpBackgroundService(
+internal sealed class McpBackgroundService(
     IMcpToolCatalog catalog,
     McpClientManager clients,
     IMcpSettingsProvider settings,

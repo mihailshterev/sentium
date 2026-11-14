@@ -5,7 +5,7 @@ namespace Sentium.Praxis.Entities;
 /// <summary>
 /// A user's replacement for a built-in agent's code-defined tool list. No row means the built-in default applies.
 /// </summary>
-public sealed class AgentToolOverride : IUserOwned
+internal sealed class AgentToolOverride : IUserOwned
 {
     public Guid Id { get; set; }
     public Guid UserId { get; set; }

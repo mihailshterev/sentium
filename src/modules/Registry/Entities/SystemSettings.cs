@@ -2,7 +2,7 @@ using Sentium.Registry.Features.Settings;
 
 namespace Sentium.Registry.Entities;
 
-public sealed class SystemSettings
+internal sealed class SystemSettings
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public Guid? UserId { get; set; }

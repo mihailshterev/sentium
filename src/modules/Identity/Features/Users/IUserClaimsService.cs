@@ -6,7 +6,7 @@ namespace Sentium.Identity.Features.Users;
 /// Provides identity and security claims for users.
 /// Centralizes the mapping between domain entities and <see cref="Claim"/> objects.
 /// </summary>
-public interface IUserClaimsService
+internal interface IUserClaimsService
 {
     /// <summary>
     /// Retrieves claims for a specific user based on requested scopes.

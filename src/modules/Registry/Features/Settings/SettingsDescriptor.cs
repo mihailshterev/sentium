@@ -3,7 +3,7 @@ using FluentValidation;
 
 namespace Sentium.Registry.Features.Settings;
 
-public sealed class SettingsDescriptor<T>(
+internal sealed class SettingsDescriptor<T>(
     string key,
     SettingsScope scope,
     Func<SettingsContainer, T> read,

@@ -7,7 +7,7 @@ namespace Sentium.Tempus.Entities;
 /// A note, status update or progress report on a task, a day or a month. The month (and day) of a task note follow
 /// the task when it moves, so every note can be found by month.
 /// </summary>
-public sealed class TimelineNote : IUserOwned
+internal sealed class TimelineNote : IUserOwned
 {
     public Guid Id { get; set; }
 

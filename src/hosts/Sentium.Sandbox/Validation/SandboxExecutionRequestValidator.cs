@@ -6,7 +6,7 @@ using Sentium.Sandbox.Models;
 
 namespace Sentium.Sandbox.Validation;
 
-public sealed class SandboxExecutionRequestValidator : AbstractValidator<SandboxExecutionRequest>
+internal sealed class SandboxExecutionRequestValidator : AbstractValidator<SandboxExecutionRequest>
 {
     public SandboxExecutionRequestValidator(IOptions<SandboxOptions> options)
     {

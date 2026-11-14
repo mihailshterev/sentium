@@ -6,7 +6,7 @@ namespace Sentium.Identity.Features.Account;
 /// <summary>
 /// Orchestrates core identity flows including user registration and authentication.
 /// </summary>
-public interface IIdentityService
+internal interface IIdentityService
 {
     /// <summary>
     /// Creates a new user account, assigns default roles, and initiates the first session.

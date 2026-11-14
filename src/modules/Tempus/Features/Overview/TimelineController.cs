@@ -10,7 +10,7 @@ namespace Sentium.Tempus.Features.Overview;
 [ApiController]
 [Authorize]
 [Route(TempusRoutes.Prefix)]
-public sealed class TimelineController(ITimelineOverviewService overviewService) : ControllerBase
+internal sealed class TimelineController(ITimelineOverviewService overviewService) : ControllerBase
 {
     /// <summary>
     /// Summarises every month of a year (task counts, overdue tasks, notes and pending agent proposals) and every

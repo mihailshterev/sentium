@@ -20,7 +20,7 @@ namespace Sentium.Praxis.Features.Agents.Runtime;
 /// message), skills / learnings via <see cref="ChatClientAgentOptions.AIContextProviders"/>, and the Sentinel tool guard
 /// as function-calling middleware.
 /// </summary>
-public sealed class CompositeAgentFactory(
+internal sealed class CompositeAgentFactory(
     [FromKeyedServices(PraxisModuleExtensions.AgentChatClientKey)] IChatClient baseChatClient,
     IOptions<InferenceOptions> inferenceOptions,
     IModelContextWindowProvider contextWindows,

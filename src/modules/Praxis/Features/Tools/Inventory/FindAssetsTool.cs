@@ -10,7 +10,7 @@ namespace Sentium.Praxis.Features.Tools.Inventory;
 /// Searches the household inventory (assets shared with assistants) and answers "where is X?".
 /// </summary>
 [AgentToolPolicy(RiskLevel = ToolRiskLevel.Low, Resource = ToolResource.Inventory, Action = ToolAction.Search)]
-public sealed class FindAssetsTool(IInventoryLookup inventory, ILogger<FindAssetsTool> logger) : IAgentTool
+internal sealed class FindAssetsTool(IInventoryLookup inventory, ILogger<FindAssetsTool> logger) : IAgentTool
 {
     private const int DefaultLimit = 10;
     private const int MaxLimit = 25;

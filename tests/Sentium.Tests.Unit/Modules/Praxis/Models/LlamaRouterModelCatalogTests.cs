@@ -86,17 +86,17 @@ public sealed class LlamaRouterModelCatalogTests : IDisposable
     }
 
     [Theory]
-    [InlineData(HttpStatusCode.OK, ModelActionResult.Accepted)]
-    [InlineData(HttpStatusCode.NotFound, ModelActionResult.NotFound)]
-    [InlineData(HttpStatusCode.BadRequest, ModelActionResult.Conflict)]
-    [InlineData(HttpStatusCode.InternalServerError, ModelActionResult.Failed)]
-    public async Task LoadAsync_MapsTheRoutersAnswer(HttpStatusCode status, ModelActionResult expected)
+    [InlineData(HttpStatusCode.OK, nameof(ModelActionResult.Accepted))]
+    [InlineData(HttpStatusCode.NotFound, nameof(ModelActionResult.NotFound))]
+    [InlineData(HttpStatusCode.BadRequest, nameof(ModelActionResult.Conflict))]
+    [InlineData(HttpStatusCode.InternalServerError, nameof(ModelActionResult.Failed))]
+    public async Task LoadAsync_MapsTheRoutersAnswer(HttpStatusCode status, string expected)
     {
         _handler.Respond(status, status == HttpStatusCode.OK ? """{"success":true}""" : """{"error":{"code":400}}""");
 
         var result = await _sut.LoadAsync("gemma-4-e4b", Ct);
 
-        result.Should().Be(expected);
+        result.Should().Be(Enum.Parse<ModelActionResult>(expected));
         var request = _handler.Requests.Single();
         request.Method.Should().Be(HttpMethod.Post);
         request.Uri.Should().Be(new Uri("http://llm.test/models/load"));

@@ -2,7 +2,7 @@ using FluentValidation;
 
 namespace Sentium.Praxis.Features.Conversations;
 
-public sealed class CreateConversationRequestValidator : AbstractValidator<CreateConversationRequest>
+internal sealed class CreateConversationRequestValidator : AbstractValidator<CreateConversationRequest>
 {
     public CreateConversationRequestValidator()
     {

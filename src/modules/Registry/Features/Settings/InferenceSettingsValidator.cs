@@ -2,7 +2,7 @@ using FluentValidation;
 
 namespace Sentium.Registry.Features.Settings;
 
-public sealed class InferenceSettingsValidator : AbstractValidator<InferenceSettings>
+internal sealed class InferenceSettingsValidator : AbstractValidator<InferenceSettings>
 {
     public InferenceSettingsValidator()
     {

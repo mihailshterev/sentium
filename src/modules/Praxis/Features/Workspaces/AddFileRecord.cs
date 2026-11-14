@@ -1,6 +1,6 @@
 namespace Sentium.Praxis.Features.Workspaces;
 
-public sealed record AddFileRecord(
+internal sealed record AddFileRecord(
     string FileName,
     Guid BlobName,
     string Extension,

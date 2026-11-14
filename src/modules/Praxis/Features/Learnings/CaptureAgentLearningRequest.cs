@@ -1,6 +1,6 @@
 namespace Sentium.Praxis.Features.Learnings;
 
-public sealed record CaptureAgentLearningRequest(
+internal sealed record CaptureAgentLearningRequest(
     string AgentName,
     string Content,
     string Tags = "",

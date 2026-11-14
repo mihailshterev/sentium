@@ -4,7 +4,7 @@ namespace Sentium.Praxis.Features.Agents;
 /// <summary>
 /// Persistence-layer access to user-defined agents.
 /// </summary>
-public interface IAgentRepository
+internal interface IAgentRepository
 {
     /// <param name="request">The agent's name, description, and optional model.</param>
     Task<AgentResponse> CreateAgentAsync(CreateAgentRequest request, CancellationToken ct = default);

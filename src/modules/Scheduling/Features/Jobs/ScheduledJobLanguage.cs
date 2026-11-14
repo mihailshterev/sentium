@@ -1,6 +1,6 @@
 namespace Sentium.Scheduling.Features.Jobs;
 
-public enum ScheduledJobLanguage
+internal enum ScheduledJobLanguage
 {
     Python,
     NodeJs

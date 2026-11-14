@@ -8,7 +8,7 @@ namespace Sentium.Identity.Features.RoleManagement;
 [ApiController]
 [Route($"{IdentityRoutes.Prefix}/roles")]
 [Authorize(Roles = Roles.Sovereign)]
-public sealed class RolesController(IRoleService roleService) : ControllerBase
+internal sealed class RolesController(IRoleService roleService) : ControllerBase
 {
     private static readonly IReadOnlyList<RoleResponse> CachedRoles =
         Roles.Hierarchy

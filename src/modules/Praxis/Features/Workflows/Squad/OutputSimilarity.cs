@@ -9,7 +9,7 @@ namespace Sentium.Praxis.Features.Workflows.Squad;
 /// when a local model ignores the reviewer's critique and emits the same (or near-identical) output on
 /// consecutive turns. Detecting this lets the loop abort early and conserve local compute/VRAM.
 /// </summary>
-public static partial class OutputSimilarity
+internal static partial class OutputSimilarity
 {
     [GeneratedRegex(@"\s+")]
     private static partial Regex WhitespaceRegex();

@@ -8,7 +8,7 @@ using Sentium.Infrastructure.Extensions;
 
 namespace Sentium.Identity.Features.RoleManagement;
 
-public sealed class RoleService(
+internal sealed class RoleService(
     UserManager<ApplicationUser> userManager,
     RoleManager<ApplicationRole> roleManager,
     IdentityDbContext dbContext,

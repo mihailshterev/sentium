@@ -13,7 +13,7 @@ namespace Sentium.Praxis.Features.Sentinel;
 /// Runs after human approval (inside function invocation), so approved calls are still policy-checked. Functions that are
 /// not Sentium tools - the framework's skill functions - carry no Sentinel classification and pass straight through.
 /// </remarks>
-public sealed class SentinelFunctionMiddleware(SentinelClient sentinel, IPdpContextAccessor runContext, ILogger<SentinelFunctionMiddleware> logger)
+internal sealed class SentinelFunctionMiddleware(SentinelClient sentinel, IPdpContextAccessor runContext, ILogger<SentinelFunctionMiddleware> logger)
 {
     private const int MaxPayloadChars = 8 * 1024;
     private const int MaxResourceIdChars = 200;

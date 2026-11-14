@@ -8,7 +8,7 @@ namespace Sentium.Sandbox.Contracts;
 /// <param name="Args">Arguments for the image's entrypoint (empty = the image's default command).</param>
 /// <param name="Env">Environment variables, typically the server's credentials.</param>
 /// <param name="Network">Docker network to join (must be allowed by <c>Sandbox:Mcp:AllowedNetworks</c>); null = none.</param>
-public sealed record McpServerLaunchSpec(
+internal sealed record McpServerLaunchSpec(
     string Image,
     IReadOnlyList<string>? Args,
     IReadOnlyDictionary<string, string>? Env,

@@ -3,7 +3,7 @@ namespace Sentium.Identity.Features.RoleManagement;
 /// <summary>
 /// Manages user roles and enforces hierarchical security constraints.
 /// </summary>
-public interface IRoleService
+internal interface IRoleService
 {
     /// <summary>
     /// Assigns a role to a user, strictly enforcing hierarchy permissions.

@@ -8,7 +8,7 @@ namespace Sentium.Locus.Data;
 /// Household inventory store (schema <c>locus</c>). The inventory is shared by every member of the
 /// household, so - unlike Praxis - there are no per-user query filters here.
 /// </summary>
-public sealed class LocusDbContext(DbContextOptions<LocusDbContext> options) : DbContext(options)
+internal sealed class LocusDbContext(DbContextOptions<LocusDbContext> options) : DbContext(options)
 {
     public const string Schema = "locus";
 

@@ -3,7 +3,7 @@ using Sentium.Locus.Common;
 
 namespace Sentium.Locus.Features.Locations;
 
-public sealed class SaveLocationRequestValidator : AbstractValidator<SaveLocationRequest>
+internal sealed class SaveLocationRequestValidator : AbstractValidator<SaveLocationRequest>
 {
     public SaveLocationRequestValidator()
     {

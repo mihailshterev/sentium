@@ -5,7 +5,7 @@ namespace Sentium.Praxis.Features.Registry;
 /// properties of Registry's <c>HarnessSettings</c> and <c>InferenceSettings</c>, since
 /// <c>ISettingsService.GetValueAsync</c> deserializes the stored JSON into these records.
 /// </summary>
-public sealed record SettingsSnapshot(HarnessSettingsSnapshot Harness, InferenceSettingsSnapshot? Inference = null)
+internal sealed record SettingsSnapshot(HarnessSettingsSnapshot Harness, InferenceSettingsSnapshot? Inference = null)
 {
     /// <summary>
     /// Fallback used when the settings cannot be read from Registry.

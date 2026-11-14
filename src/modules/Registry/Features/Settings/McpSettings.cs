@@ -4,7 +4,7 @@ namespace Sentium.Registry.Features.Settings;
 /// Global settings for the MCP (Model Context Protocol) client, managed by Sovereign users and consumed by Praxis.
 /// The servers themselves are Praxis data (registered and approved in the portal); these are the runtime knobs.
 /// </summary>
-public sealed class McpSettings
+internal sealed class McpSettings
 {
     /// <summary>
     /// Kill switch. When false no agent is offered an MCP tool and open MCP connections are closed.

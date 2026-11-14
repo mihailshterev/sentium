@@ -12,7 +12,7 @@ using Sentium.Locus.Features.Locations;
 
 namespace Sentium.Locus.Features.Assets;
 
-public sealed class AssetService(
+internal sealed class AssetService(
     LocusDbContext db,
     ICurrentUser currentUser,
     TimeProvider timeProvider,

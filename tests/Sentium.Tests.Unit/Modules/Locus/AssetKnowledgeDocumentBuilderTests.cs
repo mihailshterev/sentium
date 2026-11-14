@@ -101,13 +101,15 @@ public sealed class AssetKnowledgeDocumentBuilderTests
     }
 
     [Theory]
-    [InlineData(true, null, null, AssetKnowledgeStatus.Pending)]
-    [InlineData(true, "hash", null, AssetKnowledgeStatus.Synced)]
-    [InlineData(false, null, null, AssetKnowledgeStatus.NotShared)]
-    [InlineData(false, "hash", KnowledgeSyncStatus.Pending, AssetKnowledgeStatus.Pending)]
-    [InlineData(true, "hash", KnowledgeSyncStatus.Failed, AssetKnowledgeStatus.Failed)]
-    public void ResolveKnowledgeStatus_PrefersTheOutboxEntry(bool accessible, string? hash, KnowledgeSyncStatus? entry, AssetKnowledgeStatus expected)
+    [InlineData(true, null, null, nameof(AssetKnowledgeStatus.Pending))]
+    [InlineData(true, "hash", null, nameof(AssetKnowledgeStatus.Synced))]
+    [InlineData(false, null, null, nameof(AssetKnowledgeStatus.NotShared))]
+    [InlineData(false, "hash", nameof(KnowledgeSyncStatus.Pending), nameof(AssetKnowledgeStatus.Pending))]
+    [InlineData(true, "hash", nameof(KnowledgeSyncStatus.Failed), nameof(AssetKnowledgeStatus.Failed))]
+    public void ResolveKnowledgeStatus_PrefersTheOutboxEntry(bool accessible, string? hash, string? entry, string expected)
     {
-        AssetMapping.ResolveKnowledgeStatus(accessible, hash, entry).Should().Be(expected);
+        var entryStatus = entry is null ? (KnowledgeSyncStatus?)null : Enum.Parse<KnowledgeSyncStatus>(entry);
+
+        AssetMapping.ResolveKnowledgeStatus(accessible, hash, entryStatus).Should().Be(Enum.Parse<AssetKnowledgeStatus>(expected));
     }
 }

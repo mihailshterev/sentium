@@ -11,7 +11,7 @@ namespace Sentium.Praxis.Features.Tools.Timeline;
 /// Suggests a new task. It appears as a pending suggestion the user accepts or rejects - nothing is added until then.
 /// </summary>
 [AgentToolPolicy(RiskLevel = ToolRiskLevel.Low, Resource = ToolResource.Timeline, Action = ToolAction.Write)]
-public sealed class ProposeTimelineTaskTool(
+internal sealed class ProposeTimelineTaskTool(
     ITimelineAgentAccess timeline,
     IAgentRoster agentRoster,
     IPdpContextAccessor pdpContext,

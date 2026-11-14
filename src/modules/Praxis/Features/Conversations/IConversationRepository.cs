@@ -4,7 +4,7 @@ namespace Sentium.Praxis.Features.Conversations;
 /// <summary>
 /// Persistence-layer operations for conversations and their messages.
 /// </summary>
-public interface IConversationRepository
+internal interface IConversationRepository
 {
     /// <summary>
     /// Returns a page of conversation summaries (newest first) plus the total count, optionally only those whose title

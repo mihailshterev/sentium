@@ -14,7 +14,7 @@ namespace Sentium.Scheduling.Features.Jobs;
 [ApiController]
 [Authorize]
 [Route($"{SchedulingRoutes.Prefix}/scheduler")]
-public sealed class SchedulerController(ISchedulerFactory schedulerFactory, ICurrentUser currentUser) : ControllerBase
+internal sealed class SchedulerController(ISchedulerFactory schedulerFactory, ICurrentUser currentUser) : ControllerBase
 {
     private const string TimestampFormat = "yyyy-MM-dd HH:mm:ss 'UTC'";
 

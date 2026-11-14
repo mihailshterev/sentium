@@ -1,6 +1,6 @@
 namespace Sentium.Praxis.Features.Models;
 
-public enum ModelActionResult
+internal enum ModelActionResult
 {
     /// <summary>
     /// The server accepted the request.

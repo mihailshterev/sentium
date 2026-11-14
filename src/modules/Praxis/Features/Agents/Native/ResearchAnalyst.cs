@@ -8,7 +8,7 @@ namespace Sentium.Praxis.Features.Agents.Native;
 /// with explicit source citations. Designed to be the first link in an Orchestrator pipeline,
 /// handing a sourced brief to downstream agents.
 /// </summary>
-public sealed class ResearchAnalyst : IAgent
+internal sealed class ResearchAnalyst : IAgent
 {
     public string Name => AgentRole.ResearchAnalyst;
 

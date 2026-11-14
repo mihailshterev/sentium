@@ -11,4 +11,4 @@ namespace Sentium.Praxis.Features.Learnings;
 /// <param name="DuplicateOfId">
 /// When set, an equivalent global learning already exists; no new global record should be created.
 /// </param>
-public sealed record LearningPromotionVerdict(bool Approved, string Reason, string SanitizedContent, Guid? DuplicateOfId = null);
+internal sealed record LearningPromotionVerdict(bool Approved, string Reason, string SanitizedContent, Guid? DuplicateOfId = null);

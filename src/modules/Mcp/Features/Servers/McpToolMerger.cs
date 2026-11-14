@@ -3,7 +3,7 @@ using Sentium.Mcp.Entities;
 
 namespace Sentium.Mcp.Features.Servers;
 
-public static class McpToolMerger
+internal static class McpToolMerger
 {
     /// <summary>
     /// Folds a fresh tool listing into the server's entries. Qualified names, approval and enablement survive a sync; a

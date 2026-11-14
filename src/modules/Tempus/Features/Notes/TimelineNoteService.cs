@@ -8,7 +8,7 @@ using Sentium.Tempus.Features.Tasks;
 
 namespace Sentium.Tempus.Features.Notes;
 
-public sealed class TimelineNoteService(TempusDbContext db, TimeProvider timeProvider) : ITimelineNoteService
+internal sealed class TimelineNoteService(TempusDbContext db, TimeProvider timeProvider) : ITimelineNoteService
 {
     public async Task<Result<TimelineNoteDto>> CreateAsync(CreateTimelineNoteRequest request, CancellationToken ct = default)
     {

@@ -1,6 +1,6 @@
 namespace Sentium.Sentinel.Features.Audit;
 
-public sealed record AuditStatsDto
+internal sealed record AuditStatsDto
 {
     public int Total { get; init; }
     public int Allowed { get; init; }

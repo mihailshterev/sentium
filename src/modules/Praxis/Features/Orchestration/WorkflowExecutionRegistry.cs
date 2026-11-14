@@ -2,7 +2,7 @@ using System.Collections.Concurrent;
 
 namespace Sentium.Praxis.Features.Orchestration;
 
-public sealed class WorkflowExecutionRegistry : IWorkflowExecutionRegistry
+internal sealed class WorkflowExecutionRegistry : IWorkflowExecutionRegistry
 {
     private readonly ConcurrentDictionary<string, CancellationTokenSource> _running = new(StringComparer.Ordinal);
 

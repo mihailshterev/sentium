@@ -7,7 +7,7 @@ namespace Sentium.Praxis.Features.Models;
 /// rarely costs a round-trip. The server reports it only for a loaded model; until then, or while the server is
 /// unreachable, <see cref="DefaultContextWindow"/> is assumed.
 /// </summary>
-public sealed class CatalogModelContextWindowProvider(
+internal sealed class CatalogModelContextWindowProvider(
     IModelCatalog catalog,
     IMemoryCache cache,
     ILogger<CatalogModelContextWindowProvider> logger) : IModelContextWindowProvider

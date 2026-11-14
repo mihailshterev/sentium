@@ -27,7 +27,7 @@ namespace Sentium.Praxis.Features.Assistant;
 [ApiController]
 [Authorize]
 [Route($"{PraxisRoutes.Prefix}/assistant")]
-public sealed class AssistantController(
+internal sealed class AssistantController(
     IAgentFactory agentFactory,
     IPendingApprovalStore approvalStore,
     IPdpContextAccessor runContext,

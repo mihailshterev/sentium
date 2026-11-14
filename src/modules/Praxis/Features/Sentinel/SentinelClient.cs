@@ -6,7 +6,7 @@ namespace Sentium.Praxis.Features.Sentinel;
 /// Submits authorization requests to the Sentinel PDP (in-process, through <see cref="IPolicyDecisionPoint"/>).
 /// All agent tool invocations that touch protected resources must go through this client.
 /// </summary>
-public sealed class SentinelClient(IPolicyDecisionPoint policyDecisionPoint, ILogger<SentinelClient> logger)
+internal sealed class SentinelClient(IPolicyDecisionPoint policyDecisionPoint, ILogger<SentinelClient> logger)
 {
     /// <summary>
     /// Submits a full policy evaluation request and returns the PDP decision.

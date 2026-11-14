@@ -3,7 +3,7 @@ namespace Sentium.Sandbox.Mcp;
 /// <summary>
 /// A launch request the operator's limits do not allow (image or network not allow-listed, too many servers, ...).
 /// </summary>
-public sealed class McpHostRejectedException : Exception
+internal sealed class McpHostRejectedException : Exception
 {
     public McpHostRejectedException()
     {

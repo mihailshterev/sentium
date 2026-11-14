@@ -11,7 +11,7 @@ namespace Sentium.Sentinel.Features.Policies;
 /// This policy detects prompt injections and semantic intent mismatches, preventing
 /// a compromised or hallucinating agent from executing actions unrelated to the user's request.
 /// </summary>
-public sealed class SemanticIntentPolicy(
+internal sealed class SemanticIntentPolicy(
     [FromKeyedServices(SentinelModuleExtensions.ChatClientKey)] IChatClient chatClient,
     IPdpRuntimeSettingsProvider settings,
     IOptions<PdpOptions> opts,

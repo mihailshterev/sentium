@@ -1,6 +1,6 @@
 namespace Sentium.Vigil.Features.Metrics;
 
-public sealed record ProcessInfo
+internal sealed record ProcessInfo
 {
     public int Id { get; init; }
     public required string Name { get; init; }

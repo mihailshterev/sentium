@@ -9,7 +9,7 @@ namespace Sentium.Praxis.Features.Tools.Timeline;
 /// it). Titles are collapsed to one short line; descriptions and notes are fenced and labelled as the user's data so
 /// they cannot pose as instructions.
 /// </summary>
-public static class TimelineToolFormatter
+internal static class TimelineToolFormatter
 {
     private const int MaxTitleLength = 120;
     private const int MaxFieldLength = 1000;

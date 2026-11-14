@@ -7,7 +7,7 @@ namespace Sentium.Praxis.Features.Agents.Native;
 /// it in the sandbox before reporting, persisting any artifacts to the workspace so other agents
 /// can build on them. The high-risk code-execution tool remains approval-gated by policy.
 /// </summary>
-public sealed class SoftwareEngineer : IAgent
+internal sealed class SoftwareEngineer : IAgent
 {
     public string Name => AgentRole.SoftwareEngineer;
 

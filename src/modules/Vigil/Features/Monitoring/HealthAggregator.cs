@@ -4,7 +4,7 @@ namespace Sentium.Vigil.Features.Monitoring;
 /// <summary>
 /// Rolls a set of per-target statuses up into a single <see cref="SystemHealthOverview"/>.
 /// </summary>
-public static class HealthAggregator
+internal static class HealthAggregator
 {
     public static SystemHealthOverview BuildOverview(IReadOnlyList<ServiceHealthStatus> statuses, int openIncidents)
     {

@@ -1,6 +1,6 @@
 namespace Sentium.Scheduling.Features.Jobs;
 
-public sealed record ScheduledJobResponse(
+internal sealed record ScheduledJobResponse(
     string JobId,
     string AgentId,
     string JobName,

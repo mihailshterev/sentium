@@ -11,7 +11,7 @@ namespace Sentium.Praxis.Features.Conversations;
 /// <param name="Status">Tool outcome: <c>ok</c>, <c>error</c>, <c>denied</c> (by policy), <c>rejected</c> (by the user), <c>running</c>, or <c>awaiting_approval</c>.</param>
 /// <param name="Result">A capped preview of the tool's result (tool steps).</param>
 /// <param name="DurationMs">How long the tool ran, when measured.</param>
-public sealed record MessageStep(
+internal sealed record MessageStep(
     string Kind,
     string? Text = null,
     string? CallId = null,

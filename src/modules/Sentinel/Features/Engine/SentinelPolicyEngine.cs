@@ -9,7 +9,7 @@ namespace Sentium.Sentinel.Features.Engine;
 /// Orchestrates the Defence-in-Depth policy stack, writes forensic audit records,
 /// and enforces a fail-closed posture: any unhandled exception results in a deny.
 /// </summary>
-public sealed class SentinelPolicyEngine(
+internal sealed class SentinelPolicyEngine(
     IEnumerable<IPdpPolicy> policies,
     IAuditLog auditLog,
     ILogger<SentinelPolicyEngine> logger)

@@ -5,7 +5,7 @@ namespace Sentium.Praxis.Features.Agents;
 /// <summary>
 /// Built-in (non-control) agents and the signed-in user's tool overrides of them.
 /// </summary>
-public interface IBuiltInAgentService
+internal interface IBuiltInAgentService
 {
     /// <summary>
     /// The built-in agents with their default and effective tools for <paramref name="userId"/>.

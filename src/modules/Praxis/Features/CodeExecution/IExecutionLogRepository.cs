@@ -5,7 +5,7 @@ namespace Sentium.Praxis.Features.CodeExecution;
 /// Stores and retrieves <see cref="ExecutionLogEntry"/> records so that operators can
 /// inspect what the AI agents executed inside the sandbox.
 /// </summary>
-public interface IExecutionLogRepository
+internal interface IExecutionLogRepository
 {
     /// <summary>
     /// Appends a completed execution to the store.

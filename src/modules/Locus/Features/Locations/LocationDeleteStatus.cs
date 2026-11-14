@@ -1,6 +1,6 @@
 namespace Sentium.Locus.Features.Locations;
 
-public enum LocationDeleteStatus
+internal enum LocationDeleteStatus
 {
     Deleted,
     NotFound,

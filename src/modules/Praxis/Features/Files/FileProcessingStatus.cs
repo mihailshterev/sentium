@@ -7,7 +7,7 @@ namespace Sentium.Praxis.Features.Files;
 /// Files flow through this state machine starting at Pending, transitioning through Processing,
 /// and concluding at either Completed or Failed depending on the ingestion outcome.
 /// </remarks>
-public enum FileProcessingStatus
+internal enum FileProcessingStatus
 {
     /// <summary>
     /// File has been uploaded but ingestion has not yet begun.

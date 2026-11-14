@@ -8,7 +8,7 @@ namespace Sentium.Codex.Features.KnowledgeBase;
 [ApiController]
 [Authorize]
 [Route($"{CodexRoutes.Prefix}/knowledge-base")]
-public sealed class KnowledgeBaseController(IVectorRepository vectorRepository) : ControllerBase
+internal sealed class KnowledgeBaseController(IVectorRepository vectorRepository) : ControllerBase
 {
     /// <summary>
     /// Returns knowledge-base collection statistics from the vector store.

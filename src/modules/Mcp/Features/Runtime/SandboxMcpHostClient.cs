@@ -5,7 +5,7 @@ using ModelContextProtocol.Protocol;
 
 namespace Sentium.Mcp.Features.Runtime;
 
-public sealed class SandboxMcpHostClient(HttpClient httpClient) : ISandboxMcpHostClient
+internal sealed class SandboxMcpHostClient(HttpClient httpClient) : ISandboxMcpHostClient
 {
     private static readonly JsonSerializerOptions WebOptions = new(JsonSerializerDefaults.Web);
 

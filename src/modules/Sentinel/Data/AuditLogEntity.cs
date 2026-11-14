@@ -1,6 +1,6 @@
 namespace Sentium.Sentinel.Data;
 
-public sealed class AuditLogEntity
+internal sealed class AuditLogEntity
 {
     public Guid Id { get; set; }
     public DateTimeOffset Timestamp { get; set; }

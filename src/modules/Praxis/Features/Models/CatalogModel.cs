@@ -5,4 +5,4 @@ namespace Sentium.Praxis.Features.Models;
 /// (<c>loaded</c>, <c>loading</c>, <c>unloaded</c>, <c>sleeping</c>, ...).
 /// </summary>
 /// <param name="ContextLength">Context window per parallel request, in tokens, once the server has reported it.</param>
-public sealed record CatalogModel(string Id, string Status, int? ContextLength = null);
+internal sealed record CatalogModel(string Id, string Status, int? ContextLength = null);

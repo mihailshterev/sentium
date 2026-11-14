@@ -3,7 +3,7 @@ namespace Sentium.Registry.Features.Settings;
 /// <summary>
 /// Controls the global system-prompt harness prepended to every agent inference call.
 /// </summary>
-public sealed class HarnessSettings
+internal sealed class HarnessSettings
 {
     /// <summary>
     /// User-authored text injected into every agent alongside the built-in policy.

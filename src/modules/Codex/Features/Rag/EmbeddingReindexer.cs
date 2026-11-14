@@ -12,7 +12,7 @@ namespace Sentium.Codex.Features.Rag;
 /// <c>Rag:EmbeddingModelName</c>, from their stored <c>Content</c> (no re-ingest). Driven by
 /// <see cref="EmbeddingReindexService"/> one batch at a time; idempotent and resumable.
 /// </summary>
-public sealed class EmbeddingReindexer(
+internal sealed class EmbeddingReindexer(
     CodexDbContext db,
     IEmbeddingGenerator<string, Embedding<float>> embeddingGenerator,
     IOptions<RagOptions> ragOptions,

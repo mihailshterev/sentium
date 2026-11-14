@@ -1,6 +1,6 @@
 namespace Sentium.Codex.Features.SemanticMap;
 
-public sealed record KnowledgeMapSearchResult
+internal sealed record KnowledgeMapSearchResult
 {
     public required string Id { get; init; }
     public float Score { get; init; }

@@ -5,7 +5,7 @@ namespace Sentium.Praxis.Features.Sentinel;
 /// <summary>
 /// AsyncLocal-based implementation - safe across async continuations within the same logical call context.
 /// </summary>
-public sealed class PdpContextAccessor : IPdpContextAccessor
+internal sealed class PdpContextAccessor : IPdpContextAccessor
 {
     private static readonly AsyncLocal<string> _prompt = new();
     private static readonly AsyncLocal<string> _correlationId = new();

@@ -2,7 +2,7 @@ using Sentium.Core.Common;
 
 namespace Sentium.Praxis.Entities;
 
-public sealed class Agent : IUserOwned
+internal sealed class Agent : IUserOwned
 {
     public Guid Id { get; set; }
     public Guid UserId { get; set; }

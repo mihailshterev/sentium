@@ -2,7 +2,7 @@ using System.Text.RegularExpressions;
 
 namespace Sentium.Locus.Features.Locations;
 
-public static partial class LocationNames
+internal static partial class LocationNames
 {
     /// <summary>
     /// Trims and collapses internal whitespace so "Shelf  B " and "Shelf B" are the same name.

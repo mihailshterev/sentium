@@ -15,7 +15,7 @@ namespace Sentium.Sandbox.Controllers;
 [ApiController]
 [AuthorizeSystem]
 [Route("mcp/servers/{name}")]
-public sealed class McpController(IMcpServerHost host) : ControllerBase
+internal sealed class McpController(IMcpServerHost host) : ControllerBase
 {
     /// <summary>
     /// Starts the server, or keeps it running when the spec is unchanged (a changed spec replaces its container).

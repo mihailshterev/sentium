@@ -8,7 +8,7 @@ namespace Sentium.Praxis.Features.Tools.Inventory;
 /// Compact, model-friendly text for inventory tool results. Household-written assistant notes are fenced
 /// and labelled as data so they cannot pose as instructions.
 /// </summary>
-public static class InventoryToolFormatter
+internal static class InventoryToolFormatter
 {
     private const int MaxFieldLength = 1000;
 

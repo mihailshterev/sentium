@@ -2,7 +2,7 @@ using System.Collections.Concurrent;
 
 namespace Sentium.Vigil.Features.Monitoring;
 
-public sealed class ServiceHealthStateStore : IServiceHealthStateStore
+internal sealed class ServiceHealthStateStore : IServiceHealthStateStore
 {
     private const int MaxSamples = 200;
 

@@ -5,7 +5,7 @@ namespace Sentium.Praxis.Features.Workspaces;
 /// <summary>
 /// Orchestration layer for workspace management, adding business rules and validation on top of the data access layer.
 /// </summary>
-public interface IWorkspaceService
+internal interface IWorkspaceService
 {
     Task<IReadOnlyList<WorkspaceDto>> GetWorkspacesAsync(CancellationToken ct = default);
 

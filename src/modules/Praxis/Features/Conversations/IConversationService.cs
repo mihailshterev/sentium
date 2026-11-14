@@ -5,7 +5,7 @@ namespace Sentium.Praxis.Features.Conversations;
 /// <summary>
 /// Application-layer operations for conversations and their messages.
 /// </summary>
-public interface IConversationService
+internal interface IConversationService
 {
     /// <summary>
     /// Returns a page of conversation summaries (newest first), optionally only those whose title contains

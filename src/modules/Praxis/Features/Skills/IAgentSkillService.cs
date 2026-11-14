@@ -5,7 +5,7 @@ namespace Sentium.Praxis.Features.Skills;
 /// <summary>
 /// Business-logic contract for managing agent skills.
 /// </summary>
-public interface IAgentSkillService
+internal interface IAgentSkillService
 {
     /// <summary>
     /// Returns all user-defined skills.

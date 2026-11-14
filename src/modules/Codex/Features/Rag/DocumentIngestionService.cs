@@ -15,7 +15,7 @@ namespace Sentium.Codex.Features.Rag;
 /// </list>
 /// </para>
 /// </summary>
-public sealed class DocumentIngestionService(
+internal sealed class DocumentIngestionService(
     IEmbeddingService embeddingService,
     IVectorRepository vectorRepository,
     IOptions<RagOptions> options,

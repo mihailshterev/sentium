@@ -6,7 +6,7 @@ namespace Sentium.Vigil.Features.Monitoring;
 /// In-memory fan-out with a small bounded queue per subscriber; a slow client drops its oldest updates
 /// rather than slowing the monitoring loop. Updates published while nobody is connected are discarded.
 /// </summary>
-public sealed class VigilFeed : IVigilFeed
+internal sealed class VigilFeed : IVigilFeed
 {
     private const int SubscriberCapacity = 256;
 

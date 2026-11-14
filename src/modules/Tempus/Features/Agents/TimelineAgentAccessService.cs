@@ -17,7 +17,7 @@ namespace Sentium.Tempus.Features.Agents;
 /// <see cref="ScopedTimelineAgentAccess"/>), which bypasses the DbContext's per-user filter - so EVERY query here
 /// filters on the explicit <c>userId</c>, and every insert sets it.
 /// </summary>
-public sealed class TimelineAgentAccessService(TempusDbContext db, TimeProvider timeProvider) : ITimelineAgentAccess
+internal sealed class TimelineAgentAccessService(TempusDbContext db, TimeProvider timeProvider) : ITimelineAgentAccess
 {
     public async Task<TimelineAgentOverview> GetOverviewAsync(Guid userId, int? year = null, int upcomingDays = 14, CancellationToken ct = default)
     {

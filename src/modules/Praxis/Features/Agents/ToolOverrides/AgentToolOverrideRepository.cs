@@ -4,7 +4,7 @@ using Sentium.Praxis.Entities;
 
 namespace Sentium.Praxis.Features.Agents.ToolOverrides;
 
-public sealed class AgentToolOverrideRepository(PraxisDbContext context) : IAgentToolOverrideRepository
+internal sealed class AgentToolOverrideRepository(PraxisDbContext context) : IAgentToolOverrideRepository
 {
     public async Task<AgentToolOverrideRecord?> GetAsync(string agentName, Guid userId, CancellationToken ct = default)
     {

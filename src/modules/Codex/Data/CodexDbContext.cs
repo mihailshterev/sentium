@@ -8,7 +8,7 @@ namespace Sentium.Codex.Data;
 /// <summary>
 /// Codex's vector store: knowledge-base, learning and memory embeddings in PostgreSQL via pgvector.
 /// </summary>
-public sealed class CodexDbContext(DbContextOptions<CodexDbContext> options) : DbContext(options)
+internal sealed class CodexDbContext(DbContextOptions<CodexDbContext> options) : DbContext(options)
 {
     public const string Schema = "codex";
 

@@ -5,7 +5,7 @@ namespace Sentium.Registry.Features.Settings;
 /// <summary>
 /// Describes a single typed settings key: its scope and how to read, write, deserialize, and validate its value.
 /// </summary>
-public interface ISettingsDescriptor
+internal interface ISettingsDescriptor
 {
     string Key { get; }
     SettingsScope Scope { get; }

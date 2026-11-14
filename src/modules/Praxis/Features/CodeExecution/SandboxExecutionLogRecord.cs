@@ -2,7 +2,7 @@ using Sentium.Praxis.Contracts;
 
 namespace Sentium.Praxis.Features.CodeExecution;
 
-public sealed record SandboxExecutionLogRecord
+internal sealed record SandboxExecutionLogRecord
 {
     public required Guid JobId { get; init; }
     public required DateTimeOffset ExecutedAt { get; init; }

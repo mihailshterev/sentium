@@ -6,7 +6,7 @@ namespace Sentium.Vigil.Features.Monitoring;
 [ApiController]
 [Authorize]
 [Route($"{VigilRoutes.Prefix}/incidents")]
-public sealed class IncidentsController(IIncidentStore incidentStore) : ControllerBase
+internal sealed class IncidentsController(IIncidentStore incidentStore) : ControllerBase
 {
     /// <summary>
     /// Returns open incidents followed by recently resolved ones, newest first.

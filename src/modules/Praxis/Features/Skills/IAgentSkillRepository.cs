@@ -5,7 +5,7 @@ namespace Sentium.Praxis.Features.Skills;
 /// <summary>
 /// Data-access contract for persisted agent skills.
 /// </summary>
-public interface IAgentSkillRepository
+internal interface IAgentSkillRepository
 {
     /// <summary>
     /// Returns all stored skills ordered by creation date (bounded by a safety cap). Used by

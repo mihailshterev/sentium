@@ -13,7 +13,7 @@ namespace Sentium.Codex.Features.Rag;
 /// Persists and retrieves document vectors in PostgreSQL (pgvector). Every <see cref="DocumentChunk"/> is one
 /// <see cref="KnowledgeChunk"/> row; a logical collection is the <see cref="KnowledgeChunk.Collection"/> column.
 /// </summary>
-public sealed class PgVectorRepository(CodexDbContext db, IOptions<RagOptions> ragOptions, ILogger<PgVectorRepository> logger) : IVectorRepository
+internal sealed class PgVectorRepository(CodexDbContext db, IOptions<RagOptions> ragOptions, ILogger<PgVectorRepository> logger) : IVectorRepository
 {
     private const int MaxPageLimit = 1000;
 

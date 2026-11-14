@@ -4,7 +4,7 @@ using Sentium.Praxis.Features.Agents.ToolOverrides;
 
 namespace Sentium.Praxis.Features.Agents;
 
-public sealed class BuiltInAgentService(IEnumerable<IAgent> nativeAgents, IAgentToolOverrideRepository overrides) : IBuiltInAgentService
+internal sealed class BuiltInAgentService(IEnumerable<IAgent> nativeAgents, IAgentToolOverrideRepository overrides) : IBuiltInAgentService
 {
     public async Task<IReadOnlyList<BuiltInAgentResponse>> GetAsync(Guid userId, CancellationToken ct = default)
     {

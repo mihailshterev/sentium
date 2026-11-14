@@ -3,7 +3,7 @@ namespace Sentium.Locus.Entities;
 /// <summary>
 /// A physical item the household owns, kept at exactly one <see cref="Location"/>.
 /// </summary>
-public sealed class Asset
+internal sealed class Asset
 {
     public Guid Id { get; set; }
 

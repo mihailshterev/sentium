@@ -5,7 +5,7 @@ using Sentium.Sentinel.Data;
 
 namespace Sentium.Sentinel.Features.Audit;
 
-public sealed class EfCoreAuditLog(SentinelDbContext dbContext) : IAuditLog
+internal sealed class EfCoreAuditLog(SentinelDbContext dbContext) : IAuditLog
 {
     private static readonly JsonSerializerOptions JsonOpts = new(JsonSerializerDefaults.Web);
 

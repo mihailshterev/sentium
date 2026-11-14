@@ -4,4 +4,4 @@ namespace Sentium.Tempus.Features.Notes;
 /// A note by the user on a task (<paramref name="TaskId"/>), a day (<paramref name="Date"/>) or a month. A task
 /// note is placed where the task is.
 /// </summary>
-public sealed record CreateTimelineNoteRequest(int Year, int Month, DateOnly? Date, Guid? TaskId, string Content);
+internal sealed record CreateTimelineNoteRequest(int Year, int Month, DateOnly? Date, Guid? TaskId, string Content);

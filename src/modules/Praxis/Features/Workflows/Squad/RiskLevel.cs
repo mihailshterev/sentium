@@ -6,7 +6,7 @@ namespace Sentium.Praxis.Features.Workflows.Squad;
 /// Risk of acting on a squad's answer.
 /// </summary>
 [JsonConverter(typeof(JsonStringEnumConverter<RiskLevel>))]
-public enum RiskLevel
+internal enum RiskLevel
 {
     Low,
     Medium,

@@ -1,6 +1,6 @@
 namespace Sentium.Praxis.Features.Learnings;
 
-public sealed record AgentLearningStats(
+internal sealed record AgentLearningStats(
     int TotalLearnings,
     int PendingIngestion,
     int GlobalLearnings,

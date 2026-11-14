@@ -1,6 +1,6 @@
 namespace Sentium.Vigil.Features.Settings;
 
-public sealed record VigilRuntimeSettings
+internal sealed record VigilRuntimeSettings
 {
     public int PollIntervalSeconds { get; init; } = 15;
     public int ProbeTimeoutSeconds { get; init; } = 5;

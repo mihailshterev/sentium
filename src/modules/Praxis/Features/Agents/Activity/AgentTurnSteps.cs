@@ -9,7 +9,7 @@ namespace Sentium.Praxis.Features.Agents.Activity;
 /// Builds the ordered activity timeline and the answer of one assistant turn from its raw messages, so a reloaded
 /// conversation shows what the live stream showed.
 /// </summary>
-public static class AgentTurnSteps
+internal static class AgentTurnSteps
 {
     /// <summary>
     /// Walks <paramref name="messages"/> in order: reasoning becomes thought steps (adjacent ones merged), each tool call a

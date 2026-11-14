@@ -13,7 +13,7 @@ namespace Sentium.Sentinel.Features.Engine;
 /// </summary>
 [ApiController]
 [Route($"{SentinelRoutes.Prefix}/policy")]
-public sealed class PolicyController(IPolicyDecisionPoint policyDecisionPoint, IAuditLog auditLog) : ControllerBase
+internal sealed class PolicyController(IPolicyDecisionPoint policyDecisionPoint, IAuditLog auditLog) : ControllerBase
 {
     /// <summary>
     /// Evaluates a policy request and returns an authorization decision.

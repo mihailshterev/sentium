@@ -1,6 +1,6 @@
 namespace Sentium.Praxis.Features.Skills;
 
-public sealed record AgentSkillDto(
+internal sealed record AgentSkillDto(
     Guid Id,
     string Name,
     string Description,

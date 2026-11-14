@@ -5,7 +5,7 @@ using Sentium.Praxis.Common.Streaming;
 
 namespace Sentium.Praxis.Features.Orchestration;
 
-public sealed class StreamRelay(IConfiguration configuration, ILogger<StreamRelay> logger) : BackgroundService, IStreamRelay, IAgentStreamPublisher
+internal sealed class StreamRelay(IConfiguration configuration, ILogger<StreamRelay> logger) : BackgroundService, IStreamRelay, IAgentStreamPublisher
 {
     private const int MaxBufferedEntries = 5000;
     private const int MaxBufferedChars = 1_000_000;

@@ -2,7 +2,7 @@ using FluentValidation;
 
 namespace Sentium.Praxis.Features.Workspaces;
 
-public sealed class CreateWorkspaceRequestValidator : AbstractValidator<CreateWorkspaceRequest>
+internal sealed class CreateWorkspaceRequestValidator : AbstractValidator<CreateWorkspaceRequest>
 {
     public CreateWorkspaceRequestValidator()
     {

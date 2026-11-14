@@ -6,7 +6,7 @@ namespace Sentium.Registry.Features.Settings;
 /// Global agent inference settings. Server endpoints and per-model context sizes are deployment
 /// configuration (the <c>Inference</c> section and the server's model presets), not runtime settings.
 /// </summary>
-public sealed class InferenceSettings
+internal sealed class InferenceSettings
 {
     public string DefaultModel { get; set; } = AIModels.Gemma4_E4B;
 

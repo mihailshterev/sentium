@@ -6,7 +6,7 @@ using Sentium.Praxis.Features.Files;
 
 namespace Sentium.Praxis.Features.Workspaces;
 
-public sealed class WorkspaceRepository(PraxisDbContext context) : IWorkspaceRepository
+internal sealed class WorkspaceRepository(PraxisDbContext context) : IWorkspaceRepository
 {
     public async Task<IReadOnlyList<WorkspaceDto>> GetWorkspacesAsync(CancellationToken ct = default)
     {

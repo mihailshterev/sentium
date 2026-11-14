@@ -11,7 +11,7 @@ namespace Sentium.Praxis.Features.Agents.Runtime;
 /// tool results) and then its answer text. Keeps what callers need after the run, or after it was cancelled: the full
 /// answer and the raw contents. One instance per run, because <see cref="Activity"/> times tools across updates.
 /// </summary>
-public sealed class AgentRunStream(IAgentUpdateSink sink)
+internal sealed class AgentRunStream(IAgentUpdateSink sink)
 {
     private readonly StringBuilder text = new();
     private readonly List<AIContent> contents = [];

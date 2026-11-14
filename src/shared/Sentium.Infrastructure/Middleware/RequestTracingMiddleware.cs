@@ -4,7 +4,7 @@ using Serilog.Context;
 
 namespace Sentium.Infrastructure.Middleware;
 
-public class RequestTracingMiddleware(RequestDelegate next)
+internal class RequestTracingMiddleware(RequestDelegate next)
 {
     public async Task InvokeAsync(HttpContext context)
     {

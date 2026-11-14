@@ -13,7 +13,7 @@ namespace Sentium.Locus.Features.Knowledge;
 /// codes), attachments, and audit fields.
 /// </para>
 /// </summary>
-public static class AssetKnowledgeDocumentBuilder
+internal static class AssetKnowledgeDocumentBuilder
 {
     /// <summary>
     /// Bump when the produced text changes shape: the content hash changes with it, so the startup

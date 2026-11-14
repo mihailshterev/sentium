@@ -3,7 +3,7 @@ namespace Sentium.Praxis.Features.Storage;
 /// <summary>
 /// Abstraction over the cloud blob storage that holds workspace file content.
 /// </summary>
-public interface ILocalFileService
+internal interface ILocalFileService
 {
     /// <summary>
     /// Uploads a file stream to workspace blob storage with associated metadata.

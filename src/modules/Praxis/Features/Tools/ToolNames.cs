@@ -3,7 +3,7 @@ namespace Sentium.Praxis.Features.Tools;
 /// <summary>
 /// The model-facing names of the Sentium tools - shared by the tools themselves and the agents' curated tool sets.
 /// </summary>
-public static class ToolNames
+internal static class ToolNames
 {
     public const string KnowledgeBaseSearch = "knowledge_base_search";
     public const string RecallMemory = "recall_memory";

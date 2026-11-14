@@ -4,7 +4,7 @@ namespace Sentium.Mcp.Entities;
 /// An MCP (Model Context Protocol) server registered by a Sovereign. Global - not user-owned: every user can assign its
 /// approved tools to their agents.
 /// </summary>
-public sealed class McpServer
+internal sealed class McpServer
 {
     public Guid Id { get; set; }
 

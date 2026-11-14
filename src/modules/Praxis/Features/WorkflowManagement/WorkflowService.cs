@@ -4,7 +4,7 @@ using Sentium.Praxis.Features.Workflows;
 
 namespace Sentium.Praxis.Features.WorkflowManagement;
 
-public sealed class WorkflowService(
+internal sealed class WorkflowService(
     IWorkflowRepository repository,
     IScopedCache cache) : IWorkflowService
 {

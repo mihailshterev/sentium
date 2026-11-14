@@ -2,7 +2,7 @@ using Sentium.Core.Results;
 
 namespace Sentium.Mcp.Features.Servers;
 
-public interface IMcpServerService
+internal interface IMcpServerService
 {
     Task<IReadOnlyList<McpServerDto>> GetAllAsync(CancellationToken ct);
 

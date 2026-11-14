@@ -4,7 +4,7 @@ using Sentium.Identity.Features.Security;
 
 namespace Sentium.Identity.Features.Account;
 
-public sealed class IdentityService(
+internal sealed class IdentityService(
     UserManager<ApplicationUser> userManager,
     SignInManager<ApplicationUser> signInManager,
     ILogger<IdentityService> logger) : IIdentityService

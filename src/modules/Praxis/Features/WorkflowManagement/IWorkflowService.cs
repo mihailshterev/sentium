@@ -6,7 +6,7 @@ namespace Sentium.Praxis.Features.WorkflowManagement;
 /// <summary>
 /// Application-layer operations for agent workflows.
 /// </summary>
-public interface IWorkflowService
+internal interface IWorkflowService
 {
     Task<IReadOnlyList<WorkflowResponse>> GetWorkflowsAsync(CancellationToken ct = default);
     Task<PagedResponse<WorkflowResponse>> GetWorkflowsPagedAsync(int page, int pageSize, CancellationToken ct = default);

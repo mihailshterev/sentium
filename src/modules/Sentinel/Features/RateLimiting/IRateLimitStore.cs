@@ -4,7 +4,7 @@ namespace Sentium.Sentinel.Features.RateLimiting;
 /// Sliding-window rate limit store for per-agent throttling.
 /// Thread-safe implementations required.
 /// </summary>
-public interface IRateLimitStore
+internal interface IRateLimitStore
 {
     /// <summary>
     /// Records a new request attempt for the given <paramref name="agentId"/> and

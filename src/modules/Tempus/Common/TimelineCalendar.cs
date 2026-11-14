@@ -5,7 +5,7 @@ namespace Sentium.Tempus.Common;
 /// <summary>
 /// Calendar arithmetic shared by the services and the agent facade.
 /// </summary>
-public static class TimelineCalendar
+internal static class TimelineCalendar
 {
     public static DateOnly FirstDay(int year, int month) => new(year, month, 1);
 

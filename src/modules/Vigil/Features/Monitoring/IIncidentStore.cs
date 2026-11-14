@@ -4,7 +4,7 @@ namespace Sentium.Vigil.Features.Monitoring;
 /// In-memory store of incidents: the currently-open incident per target plus a bounded ring buffer
 /// of recently resolved ones.
 /// </summary>
-public interface IIncidentStore
+internal interface IIncidentStore
 {
     /// <summary>
     /// Returns the open incident for a target, or null if none is open.

@@ -7,7 +7,7 @@ namespace Sentium.Vigil.Features.Monitoring.Probes;
 /// Probes a module hosted in this process by running the health checks the module tagged with its
 /// name (its DbContext and so on), instead of calling a remote <c>/health</c> endpoint.
 /// </summary>
-public sealed class ModuleHealthProbe(HealthCheckService healthChecks, string target, string tag) : IHealthProbe
+internal sealed class ModuleHealthProbe(HealthCheckService healthChecks, string target, string tag) : IHealthProbe
 {
     public string Target => target;
     public ComponentKind Kind => ComponentKind.Service;

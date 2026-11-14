@@ -3,7 +3,7 @@ namespace Sentium.Registry.Features.Settings;
 /// <summary>
 /// Root JSON payload stored in the SystemSettings.Settings column.
 /// </summary>
-public sealed class SettingsContainer
+internal sealed class SettingsContainer
 {
     /// <summary>
     /// Per-user agent harness settings.

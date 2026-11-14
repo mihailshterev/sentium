@@ -20,7 +20,7 @@ namespace Sentium.Praxis.Features.Files;
 /// </list>
 /// </para>
 /// </remarks>
-public static class AllowedFileTypes
+internal static class AllowedFileTypes
 {
     /// <summary>
     /// Case-insensitive; each extension includes the leading dot (e.g., ".txt", ".json").

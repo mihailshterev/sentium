@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Sentium.Infrastructure.Diagnostics;
 
-public sealed class GlobalExceptionHandler(
+internal sealed class GlobalExceptionHandler(
     IProblemDetailsService problemDetailsService,
     ILogger<GlobalExceptionHandler> logger) : IExceptionHandler
 {

@@ -2,7 +2,7 @@ using FluentValidation;
 
 namespace Sentium.Praxis.Features.Assistant;
 
-public sealed class ChatRequestValidator : AbstractValidator<ChatRequest>
+internal sealed class ChatRequestValidator : AbstractValidator<ChatRequest>
 {
     public ChatRequestValidator()
     {

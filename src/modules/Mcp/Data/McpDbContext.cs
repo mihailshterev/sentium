@@ -8,7 +8,7 @@ namespace Sentium.Mcp.Data;
 /// <summary>
 /// MCP server registry (schema <c>mcp</c>). Servers are global and Sovereign-managed, so there is no per-user filter.
 /// </summary>
-public sealed class McpDbContext(DbContextOptions<McpDbContext> options) : DbContext(options)
+internal sealed class McpDbContext(DbContextOptions<McpDbContext> options) : DbContext(options)
 {
     public const string Schema = "mcp";
 

@@ -3,7 +3,7 @@ using Sentium.Praxis.Features.Workflows;
 
 namespace Sentium.Praxis.Entities;
 
-public sealed class WorkflowRun
+internal sealed class WorkflowRun
 {
     public Guid Id { get; set; }
     public Guid? UserId { get; set; }

@@ -4,7 +4,7 @@ namespace Sentium.Sentinel.Features.Policies;
 /// A single layer in the Defense-in-Depth PDP stack.
 /// Policies are evaluated in registration order; the first deny short-circuits the chain.
 /// </summary>
-public interface IPdpPolicy
+internal interface IPdpPolicy
 {
     /// <summary>
     /// Human-readable policy name used in audit records and telemetry.

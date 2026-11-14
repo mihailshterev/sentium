@@ -6,7 +6,7 @@ using Sentium.Registry.Entities;
 
 namespace Sentium.Registry.Features.Settings;
 
-public sealed class SettingsService(
+internal sealed class SettingsService(
     ISettingsRepository repository,
     ISettingsCatalog catalog,
     HybridCache cache,

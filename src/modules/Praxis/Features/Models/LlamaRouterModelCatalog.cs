@@ -11,7 +11,7 @@ namespace Sentium.Praxis.Features.Models;
 /// <c>POST /models/load</c>, <c>POST /models/unload</c>). Uses Praxis' chat-model HttpClient, so the base
 /// address and API key are the ones inference uses.
 /// </summary>
-public sealed class LlamaRouterModelCatalog(HttpClient httpClient, ILogger<LlamaRouterModelCatalog> logger) : IModelCatalog
+internal sealed class LlamaRouterModelCatalog(HttpClient httpClient, ILogger<LlamaRouterModelCatalog> logger) : IModelCatalog
 {
     public async Task<IReadOnlyList<CatalogModel>?> ListAsync(CancellationToken ct = default)
     {

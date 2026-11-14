@@ -6,7 +6,7 @@ namespace Sentium.Sandbox.Options;
 /// cannot exceed it. Which image runs is the Sovereign's call (trusted-household model); only digest pinning is
 /// enforced.
 /// </summary>
-public sealed class McpHostOptions
+internal sealed class McpHostOptions
 {
     public const string SectionName = "Sandbox:Mcp";
 

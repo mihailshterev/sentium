@@ -2,7 +2,7 @@ using Sentium.Core.Constants;
 
 namespace Sentium.Praxis.Features.Registry;
 
-public sealed record InferenceSettingsSnapshot(
+internal sealed record InferenceSettingsSnapshot(
     string DefaultModel,
     float AgentTemperature)
 {

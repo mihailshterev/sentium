@@ -11,7 +11,7 @@ namespace Sentium.Mcp.Features.Servers;
 /// Sovereign-only management of MCP servers and their tool approvals. Every change rebuilds the in-memory
 /// <see cref="IMcpToolCatalog"/> and drops the server's live connection, so agents pick up the change on their next run.
 /// </summary>
-public sealed class McpServerService(
+internal sealed class McpServerService(
     IMcpServerRepository repository,
     IMcpToolCatalog catalog,
     McpClientManager clients,

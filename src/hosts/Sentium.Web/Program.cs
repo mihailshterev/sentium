@@ -3,6 +3,7 @@ using Microsoft.Extensions.Caching.Hybrid;
 using Scalar.AspNetCore;
 using Sentium.Core.Constants;
 using Sentium.Infrastructure.Extensions;
+using Sentium.Infrastructure.Mvc;
 using Sentium.Infrastructure.Testing;
 using Sentium.Infrastructure.Validation;
 using Sentium.Web;
@@ -36,8 +37,9 @@ builder.AddSentiumModules();
 
 builder.Services.AddOpenApi();
 builder.Services.AddControllers(options => options.Filters.Add<FluentValidationFilter>())
-    .AddSentiumModuleControllers();
-builder.Services.AddValidatorsFromAssemblies(SentiumModules.Assemblies);
+    .AddSentiumModuleControllers()
+    .AddInternalControllers();
+builder.Services.AddValidatorsFromAssemblies(SentiumModules.Assemblies, includeInternalTypes: true);
 
 var app = builder.Build();
 

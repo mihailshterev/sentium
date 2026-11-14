@@ -2,7 +2,7 @@ using FluentValidation;
 
 namespace Sentium.Registry.Features.Settings;
 
-public sealed class VigilSettingsValidator : AbstractValidator<VigilSettings>
+internal sealed class VigilSettingsValidator : AbstractValidator<VigilSettings>
 {
     public VigilSettingsValidator()
     {

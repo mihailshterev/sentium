@@ -8,7 +8,7 @@ using Sentium.Praxis.Contracts;
 
 namespace Sentium.Mcp.Features.Runtime;
 
-public sealed class McpToolCatalog(
+internal sealed class McpToolCatalog(
     IServiceScopeFactory scopeFactory,
     McpClientManager clients,
     IMcpSettingsProvider settings,

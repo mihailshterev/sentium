@@ -3,7 +3,7 @@ namespace Sentium.Vigil.Features.Monitoring;
 /// <summary>
 /// A single health check against one monitored target (service or infrastructure component).
 /// </summary>
-public interface IHealthProbe
+internal interface IHealthProbe
 {
     string Target { get; }
 

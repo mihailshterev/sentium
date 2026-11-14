@@ -2,7 +2,7 @@ using FluentValidation;
 
 namespace Sentium.Praxis.Features.Learnings;
 
-public sealed class UpdateAgentLearningRequestValidator : AbstractValidator<UpdateAgentLearningRequest>
+internal sealed class UpdateAgentLearningRequestValidator : AbstractValidator<UpdateAgentLearningRequest>
 {
     public UpdateAgentLearningRequestValidator()
     {

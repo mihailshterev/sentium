@@ -4,7 +4,7 @@ using Sentium.Praxis.Data;
 
 namespace Sentium.Praxis.Features.Learnings;
 
-public sealed class AgentLearningRepository(PraxisDbContext context) : IAgentLearningRepository
+internal sealed class AgentLearningRepository(PraxisDbContext context) : IAgentLearningRepository
 {
     public async Task<(IReadOnlyList<AgentLearningResponse> Items, int TotalCount)> GetAllAsync(string? agentName, int page, int pageSize, CancellationToken ct = default)
     {

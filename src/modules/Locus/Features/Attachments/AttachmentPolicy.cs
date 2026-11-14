@@ -9,7 +9,7 @@ namespace Sentium.Locus.Features.Attachments;
 /// from the client, and only formats that are inert when served (images, PDF, plain text) are accepted -
 /// SVG and HTML in particular are rejected because they can carry script.
 /// </summary>
-public static class AttachmentPolicy
+internal static class AttachmentPolicy
 {
     /// <summary>
     /// How many leading bytes <see cref="DetectContentType"/> needs.

@@ -7,7 +7,7 @@ namespace Sentium.Mcp.Features.Servers;
 /// (an endpoint vs. an image, header vs. environment-variable secret names) are checked by the service against the
 /// stored server (<see cref="McpRequestRules.ValidateForTransport"/>); this validator checks the shapes.
 /// </remarks>
-public sealed class UpdateMcpServerRequestValidator : AbstractValidator<UpdateMcpServerRequest>
+internal sealed class UpdateMcpServerRequestValidator : AbstractValidator<UpdateMcpServerRequest>
 {
     public UpdateMcpServerRequestValidator()
     {

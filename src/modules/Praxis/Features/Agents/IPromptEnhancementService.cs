@@ -4,7 +4,7 @@ namespace Sentium.Praxis.Features.Agents;
 /// Runs a pre-execution pass that rewrites a raw user prompt into a clearer, more specific optimized
 /// prompt, before the main agent executes.
 /// </summary>
-public interface IPromptEnhancementService
+internal interface IPromptEnhancementService
 {
     /// <summary>
     /// Rewrites <paramref name="prompt"/> for best results. Returns the original prompt unchanged on

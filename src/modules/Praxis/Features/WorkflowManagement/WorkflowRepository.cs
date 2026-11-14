@@ -6,7 +6,7 @@ using Sentium.Praxis.Features.Workflows;
 
 namespace Sentium.Praxis.Features.WorkflowManagement;
 
-public sealed class WorkflowRepository(PraxisDbContext context) : IWorkflowRepository
+internal sealed class WorkflowRepository(PraxisDbContext context) : IWorkflowRepository
 {
     public async Task<IReadOnlyList<WorkflowResponse>> GetWorkflowsAsync(CancellationToken ct = default)
     {

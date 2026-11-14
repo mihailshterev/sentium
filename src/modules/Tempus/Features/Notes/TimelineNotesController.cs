@@ -10,7 +10,7 @@ namespace Sentium.Tempus.Features.Notes;
 [ApiController]
 [Authorize]
 [Route($"{TempusRoutes.Prefix}/notes")]
-public sealed class TimelineNotesController(ITimelineNoteService noteService) : ControllerBase
+internal sealed class TimelineNotesController(ITimelineNoteService noteService) : ControllerBase
 {
     [HttpPost]
     [ProducesResponseType(typeof(TimelineNoteDto), StatusCodes.Status200OK)]

@@ -10,7 +10,7 @@ namespace Sentium.Sandbox.Controllers;
 
 [ApiController]
 [AuthorizeSystem]
-public sealed class SandboxController(SandboxOrchestrator orchestrator) : ControllerBase
+internal sealed class SandboxController(SandboxOrchestrator orchestrator) : ControllerBase
 {
     /// <summary>
     /// Submits Python or Node.js code for isolated execution inside a Docker container.

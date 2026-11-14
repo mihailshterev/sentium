@@ -5,7 +5,7 @@ namespace Sentium.Praxis.Features.Agents.Native;
 /// Acts as the fallback or primary point of contact for general inquiries
 /// and coordinates tool usage for multi-step tasks.
 /// </summary>
-public sealed class GeneralAssistant : IAgent
+internal sealed class GeneralAssistant : IAgent
 {
     /// <inheritdoc />
     /// <value>"GeneralAssistant"</value>

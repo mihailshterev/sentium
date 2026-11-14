@@ -1,6 +1,6 @@
 namespace Sentium.Sandbox.Contracts;
 
-public sealed record SandboxExecutionRequest
+internal sealed record SandboxExecutionRequest
 {
     public required string Language { get; init; }
     public required string Code { get; init; }

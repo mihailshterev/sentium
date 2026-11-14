@@ -13,7 +13,7 @@ namespace Sentium.Praxis.Features.Tools.Workspace;
 /// An agent tool that saves a new text file to one of the acting user's workspaces.
 /// </summary>
 [AgentToolPolicy(RiskLevel = ToolRiskLevel.Medium, Resource = ToolResource.File, Action = ToolAction.Write)]
-public sealed class WriteWorkspaceFileTool(
+internal sealed class WriteWorkspaceFileTool(
     PraxisDbContext dbContext,
     ILocalFileService fileService,
     IFileIngestionQueue ingestionQueue,

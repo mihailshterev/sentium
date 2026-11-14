@@ -15,7 +15,7 @@ namespace Sentium.Praxis.Features.Learnings;
 /// </list>
 /// Any unexpected failure results in <c>Approved = false</c> so a learning is never wrongly globalized.
 /// </summary>
-public sealed partial class LearningSanitizationPipeline(
+internal sealed partial class LearningSanitizationPipeline(
     IChatClient chatClient,
     IEmbeddingService embeddingService,
     IVectorRepository vectorRepository,

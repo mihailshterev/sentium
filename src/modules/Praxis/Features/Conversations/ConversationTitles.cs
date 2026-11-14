@@ -1,6 +1,6 @@
 namespace Sentium.Praxis.Features.Conversations;
 
-public static class ConversationTitles
+internal static class ConversationTitles
 {
     /// <summary>
     /// Title of a conversation that has not been titled yet.

@@ -4,7 +4,7 @@ using Sentium.Infrastructure.Extensions;
 
 namespace Sentium.Sentinel.Data;
 
-public sealed class SentinelDbContextFactory : IDesignTimeDbContextFactory<SentinelDbContext>
+internal sealed class SentinelDbContextFactory : IDesignTimeDbContextFactory<SentinelDbContext>
 {
     public SentinelDbContext CreateDbContext(string[] args)
     {

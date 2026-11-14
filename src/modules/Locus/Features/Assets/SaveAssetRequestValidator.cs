@@ -3,7 +3,7 @@ using Sentium.Locus.Common;
 
 namespace Sentium.Locus.Features.Assets;
 
-public sealed class SaveAssetRequestValidator : AbstractValidator<SaveAssetRequest>
+internal sealed class SaveAssetRequestValidator : AbstractValidator<SaveAssetRequest>
 {
     public SaveAssetRequestValidator()
     {

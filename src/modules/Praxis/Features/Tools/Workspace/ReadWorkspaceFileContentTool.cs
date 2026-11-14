@@ -11,7 +11,7 @@ namespace Sentium.Praxis.Features.Tools.Workspace;
 /// An agent tool that reads and returns the full text content of one of the acting user's workspace files.
 /// </summary>
 [AgentToolPolicy(RiskLevel = ToolRiskLevel.Medium, Resource = ToolResource.File, Action = ToolAction.Read)]
-public sealed class ReadWorkspaceFileContentTool(PraxisDbContext dbContext, ILocalFileService fileService, IPdpContextAccessor runContext) : IAgentTool
+internal sealed class ReadWorkspaceFileContentTool(PraxisDbContext dbContext, ILocalFileService fileService, IPdpContextAccessor runContext) : IAgentTool
 {
     public AIFunction CreateFunction()
     {

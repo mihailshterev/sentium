@@ -3,7 +3,7 @@ using Sentium.Tempus.Common;
 
 namespace Sentium.Tempus.Features.Tasks;
 
-public sealed class SaveTimelineTaskRequestValidator : AbstractValidator<SaveTimelineTaskRequest>
+internal sealed class SaveTimelineTaskRequestValidator : AbstractValidator<SaveTimelineTaskRequest>
 {
     public SaveTimelineTaskRequestValidator()
     {

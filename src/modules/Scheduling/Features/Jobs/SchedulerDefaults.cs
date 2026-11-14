@@ -3,7 +3,7 @@ namespace Sentium.Scheduling.Features.Jobs;
 /// <summary>
 /// Scheduler-wide constants. Changing <see cref="SchedulerName"/> or <see cref="TablePrefix"/> orphans every persisted job.
 /// </summary>
-public static class SchedulerDefaults
+internal static class SchedulerDefaults
 {
     /// <summary>
     /// Stored in every Quartz row (<c>sched_name</c>); must stay stable across releases.

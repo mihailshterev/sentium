@@ -9,7 +9,7 @@ namespace Sentium.Praxis.Features.Orchestration;
 /// and receive the full backlog (filtered by <c>Last-Event-ID</c>) followed by live updates, which also makes
 /// EventSource reconnects replay cleanly without duplicates.
 /// </summary>
-public interface IStreamRelay
+internal interface IStreamRelay
 {
     /// <summary>
     /// Replays buffered frames with <c>Seq &gt; <paramref name="fromSeqExclusive"/></c> then yields live frames,

@@ -14,7 +14,7 @@ namespace Sentium.Locus.Features.Attachments;
 [ApiController]
 [Authorize]
 [Route($"{LocusRoutes.Prefix}/assets/{{assetId:guid}}/attachments")]
-public sealed class AssetAttachmentsController(IAttachmentService attachmentService) : ControllerBase
+internal sealed class AssetAttachmentsController(IAttachmentService attachmentService) : ControllerBase
 {
     /// <summary>
     /// Room for the multipart envelope around a maximum-size file.

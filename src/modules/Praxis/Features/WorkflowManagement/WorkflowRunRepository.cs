@@ -7,7 +7,7 @@ using Sentium.Praxis.Features.Workflows;
 
 namespace Sentium.Praxis.Features.WorkflowManagement;
 
-public sealed class WorkflowRunRepository(PraxisDbContext context) : IWorkflowRunRepository
+internal sealed class WorkflowRunRepository(PraxisDbContext context) : IWorkflowRunRepository
 {
     public async Task AddAsync(WorkflowRun run, CancellationToken ct = default)
     {

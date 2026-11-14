@@ -8,7 +8,7 @@ namespace Sentium.Identity.Features.Security;
 /// <see cref="StartingAsync"/> so roles exist before Kestrel accepts the first login. The schema
 /// itself is created by the module migrations, which the host applies before starting.
 /// </summary>
-public sealed class IdentitySeeder(IServiceProvider serviceProvider, IConfiguration configuration) : IHostedLifecycleService
+internal sealed class IdentitySeeder(IServiceProvider serviceProvider, IConfiguration configuration) : IHostedLifecycleService
 {
     public async Task StartingAsync(CancellationToken cancellationToken)
     {

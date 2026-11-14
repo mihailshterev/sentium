@@ -4,7 +4,7 @@ namespace Sentium.Locus.Features.Locations;
 /// A location with its position in the tree and aggregate counts. The API returns locations as a flat
 /// list ordered by path; clients build the tree from <see cref="ParentLocationId"/>.
 /// </summary>
-public sealed record LocationDto(
+internal sealed record LocationDto(
     Guid Id,
     string Name,
     string? Description,

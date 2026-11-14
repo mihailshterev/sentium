@@ -10,7 +10,7 @@ namespace Sentium.Praxis.Features.Tools;
 /// interactions can build upon it. The learning is stored in the database and immediately embedded into the vector store.
 /// </summary>
 [AgentToolPolicy(RiskLevel = ToolRiskLevel.Low, Resource = ToolResource.Memory, Action = ToolAction.Write)]
-public sealed class CaptureAgentLearningTool(
+internal sealed class CaptureAgentLearningTool(
     IAgentLearningService learningService,
     IPdpContextAccessor pdpContext,
     ILogger<CaptureAgentLearningTool> logger) : IAgentTool

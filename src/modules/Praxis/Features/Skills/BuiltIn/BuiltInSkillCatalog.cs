@@ -6,7 +6,7 @@ namespace Sentium.Praxis.Features.Skills.BuiltIn;
 /// Central registry for all class-based (built-in) skills. Holds one shared, stateless instance of each skill for the
 /// <see cref="AgentSkillsProvider"/> and derives the REST API descriptors from those same instances.
 /// </summary>
-public sealed class BuiltInSkillCatalog : IBuiltInSkillCatalog
+internal sealed class BuiltInSkillCatalog : IBuiltInSkillCatalog
 {
     private static readonly IReadOnlyList<AgentSkill> SkillInstances =
     [
