@@ -57,13 +57,25 @@
   );
 }
 
-/* 4000px square layers centred on the chart centre. */
+/* 4000px square layer centred on the chart centre. */
 .center {
   position: absolute;
   left: calc(var(--cx) - 2000px);
   top: calc(var(--cy) - 2000px);
   width: 4000px;
   height: 4000px;
+}
+
+/*
+ * The orrery rotates, so it is its own compositor layer and its box is GPU texture memory. It is sized to
+ * its artwork (radius 1080px) instead of the chart's 4000px square: about a third of the pixels.
+ */
+.orreryCenter {
+  position: absolute;
+  left: calc(var(--cx) - 1100px);
+  top: calc(var(--cy) - 1100px);
+  width: 2200px;
+  height: 2200px;
 }
 
 .chart,
@@ -76,7 +88,6 @@
 
 .orrery {
   animation: orbit 900s linear infinite;
-  will-change: transform;
 }
 
 .root[data-paused] .orrery {
@@ -103,7 +114,7 @@
   font-family: var(--font-mono);
   font-size: 11px;
   letter-spacing: 0.06em;
-  opacity: 0.7;
+  opacity: 0.45;
 }
 
 /* Settle the edges so chrome sits on calm ground. */

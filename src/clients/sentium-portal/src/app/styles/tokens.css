@@ -127,23 +127,29 @@
   /* Text */
   --text-primary: #e9ecf2;
   --text-secondary: #a4abbb;
-  --text-muted: #7f889b;
-  --text-dim: #4e5567;
+  /* Every step clears WCAG AA (4.5:1) on the panel surfaces; --text-dim is the floor for readable text. */
+  --text-muted: #8f97a9;
+  --text-dim: #737b8f;
 
-  /* Materials (see materials.css) - flat, near-opaque panels with hairline frames */
+  /*
+   * Materials (see materials.css) - flat, near-opaque panels with hairline frames.
+   * The filters are deliberately `none`: the background field animates continuously, and a backdrop blur
+   * has to be recomputed for every panel each time the pixels behind it change. At these opacities the
+   * blur was barely visible, but it was the single largest rendering cost in the app.
+   */
   --mat-thin-bg: rgba(200, 212, 235, 0.035);
   --mat-thin-bg-hover: rgba(200, 212, 235, 0.07);
   --mat-thin-border: rgba(200, 212, 235, 0.1);
 
-  --mat-regular-bg: rgba(8, 11, 19, 0.82);
+  --mat-regular-bg: rgba(8, 11, 19, 0.9);
   --mat-regular-border: rgba(200, 212, 235, 0.12);
-  --mat-regular-filter: blur(6px);
+  --mat-regular-filter: none;
   --mat-regular-shadow: 0 1px 0 rgba(255, 255, 255, 0.02) inset, 0 18px 40px -24px rgba(0, 0, 0, 0.8);
   --mat-regular-opaque: #090c15;
 
-  --mat-thick-bg: rgba(6, 8, 14, 0.9);
+  --mat-thick-bg: rgba(6, 8, 14, 0.95);
   --mat-thick-border: rgba(200, 212, 235, 0.14);
-  --mat-thick-filter: blur(12px);
+  --mat-thick-filter: none;
   --mat-thick-shadow: 0 24px 60px -30px rgba(0, 0, 0, 0.9);
   --mat-thick-opaque: #070a11;
 
@@ -204,19 +210,19 @@
 
   --text-primary: #10141f;
   --text-secondary: #454c5c;
-  --text-muted: #5d6577;
-  --text-dim: #959cab;
+  --text-muted: #535a6b;
+  --text-dim: #687082;
 
   --mat-thin-bg: rgba(16, 24, 40, 0.025);
   --mat-thin-bg-hover: rgba(16, 24, 40, 0.05);
   --mat-thin-border: rgba(16, 24, 40, 0.09);
 
-  --mat-regular-bg: rgba(250, 251, 253, 0.86);
+  --mat-regular-bg: rgba(250, 251, 253, 0.92);
   --mat-regular-border: rgba(16, 24, 40, 0.12);
   --mat-regular-shadow: 0 18px 40px -28px rgba(16, 24, 40, 0.25);
   --mat-regular-opaque: #f9fafc;
 
-  --mat-thick-bg: rgba(252, 253, 254, 0.92);
+  --mat-thick-bg: rgba(252, 253, 254, 0.96);
   --mat-thick-border: rgba(16, 24, 40, 0.14);
   --mat-thick-shadow: 0 24px 60px -32px rgba(16, 24, 40, 0.3);
   --mat-thick-opaque: #fcfdfe;

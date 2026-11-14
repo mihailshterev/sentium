@@ -219,9 +219,6 @@ importers:
       framer-motion:
         specifier: 12.38.0
         version: 12.38.0(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
-      gsap:
-        specifier: 3.15.0
-        version: 3.15.0
       lucide-react:
         specifier: 1.7.0
         version: 1.7.0(react@19.3.0)
@@ -1534,9 +1531,6 @@ packages:
   globals@17.4.0:
     resolution: {integrity: sha512-hjrNztw/VajQwOLsMNT1cbJiH2muO3OROCHnbehc8eY5JyD2gqz4AcMHPqgaOR59DjgUjYAYLeH699g/eWi2jw==}
     engines: {node: '>=18'}
-
-  gsap@3.15.0:
-    resolution: {integrity: sha512-dMW4CWBTUK1AEEDeZc1g4xpPGIrSf9fJF960qbTZmN/QwZIWY5wgliS6JWl9/25fpTGJrMRtSjGtOmPnfjZB+A==}
 
   has-flag@4.0.0:
     resolution: {integrity: sha512-EykJT/Q1KjTWctppgIAgfSO0tKVuZUjhgMr17kqTumMl6Afv3EISleU7qZUzoXDFTAHTDC4NOoG/ZxU3EvlMPQ==}
@@ -3493,8 +3487,6 @@ snapshots:
       is-glob: 4.0.3
 
   globals@17.4.0: {}
-
-  gsap@3.15.0: {}
 
   has-flag@4.0.0:
     optional: true

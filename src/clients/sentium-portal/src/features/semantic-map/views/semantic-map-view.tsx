@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import gsap from "gsap";
 import styles from "../semantic-map.module.css";
 import { useThemeStore, resolveTheme } from "@/shared/ui/state/theme-store";
 import { fetchKnowledgeMapNodes, searchKnowledgeMap } from "@/features/semantic-map/api/semantic-map.service";
@@ -12,7 +11,7 @@ import {
   spawnSearchWaves,
   DEMO_NODES,
 } from "../engine";
-import type { GraphNode, GraphLink, Particle, CameraState, VisualizationMode } from "../engine";
+import type { GraphNode, GraphLink, VisualizationMode } from "../engine";
 import {
   LoadingOverlay,
   Toolbar,
@@ -22,8 +21,25 @@ import {
   DetailPanel,
   ErrorToast,
 } from "../components/hud";
-import type * as d3Type from "d3";
 import type { KnowledgeMapNode, KnowledgeMapSearchResult } from "@/features/semantic-map/types/knowledge-map";
+
+const NODE_LIMIT = 300;
+const SEARCH_TOP_K = 20;
+const SEARCH_FOCUS_ZOOM = 1.5;
+const ZOOM_STEP = 1.4;
+/** Zoom factor per wheel pixel; a mouse-wheel notch (~100px) zooms by about 13%. */
+const WHEEL_ZOOM_RATE = 0.0012;
+const WHEEL_LINE_PX = 33;
+const MAX_WHEEL_DELTA = 240;
+/** Pointer travel below this still counts as a click, not a pan. */
+const DRAG_THRESHOLD_PX = 4;
+
+interface Graph {
+  /** The API nodes this graph was built from; a new array means a new graph. */
+  source: KnowledgeMapNode[];
+  nodes: GraphNode[];
+  links: GraphLink[];
+}
 
 function useResizeObserver(ref: React.RefObject<HTMLElement | null>) {
   const [size, setSize] = useState({ width: 0, height: 0 });
@@ -33,7 +49,7 @@ function useResizeObserver(ref: React.RefObject<HTMLElement | null>) {
     }
     const ro = new ResizeObserver(([entry]) => {
       const { width, height } = entry.contentRect;
-      setSize({ width, height });
+      setSize({ width: Math.round(width), height: Math.round(height) });
     });
     ro.observe(ref.current);
     return () => ro.disconnect();
@@ -43,8 +59,9 @@ function useResizeObserver(ref: React.RefObject<HTMLElement | null>) {
 
 export function SemanticMapView() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasHostRef = useRef<HTMLDivElement>(null);
   const { width, height } = useResizeObserver(containerRef);
+  const hasSize = width > 0 && height > 0;
 
   const preference = useThemeStore((s) => s.preference);
   const isLight = resolveTheme(preference) === "light";
@@ -63,24 +80,9 @@ export function SemanticMapView() {
   const [showLegend, setShowLegend] = useState(true);
 
   const rendererRef = useRef<UniverseRenderer | null>(null);
-  const simRef = useRef<d3Type.Simulation<GraphNode, GraphLink> | null>(null);
-  const graphNodesRef = useRef<GraphNode[]>([]);
-  const graphLinksRef = useRef<GraphLink[]>([]);
-  const particlesRef = useRef<Particle[]>([]);
-  const cameraRef = useRef<CameraState>({
-    x: 0,
-    y: 0,
-    zoom: 0.9,
-    targetX: 0,
-    targetY: 0,
-    targetZoom: 0.9,
-  });
-
-  const dragRef = useRef<{
-    dragging: boolean;
-    lastX: number;
-    lastY: number;
-  }>({ dragging: false, lastX: 0, lastY: 0 });
+  const graphRef = useRef<Graph | null>(null);
+  /** Viewport size the layout was built for. Later resizes only resize the canvas, never the layout. */
+  const worldSizeRef = useRef<{ width: number; height: number } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -88,7 +90,7 @@ export function SemanticMapView() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const res = await fetchKnowledgeMapNodes(300);
+        const res = await fetchKnowledgeMapNodes(NODE_LIMIT);
 
         if (cancelled) {
           return;
@@ -123,35 +125,32 @@ export function SemanticMapView() {
   }, []);
 
   useEffect(() => {
-    if (!canvasRef.current || !width || !height) {
+    const host = canvasHostRef.current;
+    const container = containerRef.current;
+    if (!host || !container || !hasSize) {
       return;
     }
 
+    const world = worldSizeRef.current ?? { width: container.clientWidth, height: container.clientHeight };
+    worldSizeRef.current = world;
+
     const renderer = new UniverseRenderer();
     rendererRef.current = renderer;
+    if (graphRef.current) {
+      renderer.setGraph(graphRef.current.nodes, graphRef.current.links);
+    }
 
-    renderer.onNodeHover = () => {};
-    renderer.onNodeClick = (node) => {
-      setSelectedNode(node);
-      if (node) {
-        spawnClickParticles(node, particlesRef.current);
-        renderer.setParticles(particlesRef.current);
-      }
-    };
-
-    renderer.init(canvasRef.current, width, height, isLight).then(() => {
-      if (graphNodesRef.current.length > 0) {
-        renderer.setGraph(graphNodesRef.current, graphLinksRef.current);
-        renderer.setCamera(cameraRef.current);
-      }
+    const startsLight = resolveTheme(useThemeStore.getState().preference) === "light";
+    void renderer.init(host, world.width, world.height, startsLight).then(() => {
+      // The container may have been resized while the renderer was still starting up.
+      renderer.resize(container.clientWidth, container.clientHeight);
     });
 
     return () => {
       renderer.destroy();
       rendererRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/refs
-  }, [canvasRef.current]);
+  }, [hasSize]);
 
   useEffect(() => {
     rendererRef.current?.resize(width, height);
@@ -162,218 +161,223 @@ export function SemanticMapView() {
   }, [isLight]);
 
   useEffect(() => {
-    if (!width || !height || rawNodes.length === 0) {
+    const world = worldSizeRef.current;
+    if (!hasSize || !world || rawNodes.length === 0) {
       return;
     }
 
-    const { nodes, links } = buildGraphData(rawNodes);
-    graphNodesRef.current = nodes;
-    graphLinksRef.current = links;
-
-    cameraRef.current.targetX = width / 2;
-    cameraRef.current.targetY = height / 2;
-    cameraRef.current.x = width / 2;
-    cameraRef.current.y = height / 2;
-
-    if (simRef.current) {
-      simRef.current.stop();
+    // Switching the layout mode keeps the same graph (positions, selection, search highlights) and only
+    // re-runs the forces; the graph itself is rebuilt when new data arrives.
+    let graph = graphRef.current;
+    if (graph?.source !== rawNodes) {
+      graph = { source: rawNodes, ...buildGraphData(rawNodes) };
+      graphRef.current = graph;
+      rendererRef.current?.setGraph(graph.nodes, graph.links);
     }
 
-    const sim = createSimulation(nodes, links, width, height, mode);
-
-    sim.on("tick", () => {
-      const renderer = rendererRef.current;
-      if (!renderer) {
-        return;
-      }
-      renderer.setGraph(nodes, links);
-      renderer.setParticles(particlesRef.current);
-      renderer.setCamera(cameraRef.current);
-    });
-
-    simRef.current = sim;
-
-    rendererRef.current?.setGraph(nodes, links);
-    rendererRef.current?.setCamera(cameraRef.current);
+    const sim = createSimulation(graph.nodes, graph.links, world.width, world.height, mode);
+    sim.on("tick", () => rendererRef.current?.markLayoutDirty());
 
     return () => {
       sim.stop();
     };
-  }, [rawNodes, width, height, mode]);
+  }, [rawNodes, hasSize, mode]);
+
+  const selectNode = useCallback((node: GraphNode | null) => {
+    setSelectedNode(node);
+    const renderer = rendererRef.current;
+    if (node && renderer) {
+      spawnClickParticles(node, renderer.particles);
+    }
+  }, []);
 
   useEffect(() => {
-    if (!canvasRef.current) {
+    const canvas = canvasHostRef.current;
+    if (!canvas) {
       return;
     }
-    const canvas = canvasRef.current;
+
+    const pointer = { down: false, dragging: false, startX: 0, startY: 0, lastX: 0, lastY: 0 };
+
+    const nodeUnder = (e: PointerEvent): GraphNode | null => {
+      const rect = canvas.getBoundingClientRect();
+      return rendererRef.current?.nodeAt(e.clientX - rect.left, e.clientY - rect.top) ?? null;
+    };
 
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
-      const cam = cameraRef.current;
-      const factor = e.deltaY > 0 ? 0.9 : 1.1;
-      cam.targetZoom = Math.max(0.15, Math.min(6, cam.targetZoom * factor));
+      const rect = canvas.getBoundingClientRect();
+      const pixels = e.deltaMode === WheelEvent.DOM_DELTA_LINE ? e.deltaY * WHEEL_LINE_PX : e.deltaY;
+      const delta = Math.max(-MAX_WHEEL_DELTA, Math.min(MAX_WHEEL_DELTA, pixels));
+      rendererRef.current?.zoomBy(Math.exp(-delta * WHEEL_ZOOM_RATE), e.clientX - rect.left, e.clientY - rect.top);
     };
 
-    canvas.addEventListener("wheel", onWheel, { passive: false });
-    return () => canvas.removeEventListener("wheel", onWheel);
-    // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/refs
-  }, [canvasRef.current]);
-
-  useEffect(() => {
-    if (!canvasRef.current) {
-      return;
-    }
-    const canvas = canvasRef.current;
-
     const onDown = (e: PointerEvent) => {
-      dragRef.current = { dragging: true, lastX: e.clientX, lastY: e.clientY };
+      if (e.button !== 0) {
+        return;
+      }
+      pointer.down = true;
+      pointer.dragging = false;
+      pointer.startX = pointer.lastX = e.clientX;
+      pointer.startY = pointer.lastY = e.clientY;
       canvas.setPointerCapture(e.pointerId);
     };
 
     const onMove = (e: PointerEvent) => {
-      const d = dragRef.current;
-      if (!d.dragging) {
+      const renderer = rendererRef.current;
+      if (!renderer) {
         return;
       }
-      const cam = cameraRef.current;
-      const dx = e.clientX - d.lastX;
-      const dy = e.clientY - d.lastY;
-      cam.targetX -= dx / cam.zoom;
-      cam.targetY -= dy / cam.zoom;
-      d.lastX = e.clientX;
-      d.lastY = e.clientY;
+      if (!pointer.down) {
+        const node = nodeUnder(e);
+        renderer.setHoveredId(node?.id ?? null);
+        canvas.style.cursor = node ? "pointer" : "";
+        return;
+      }
+      const travel = Math.hypot(e.clientX - pointer.startX, e.clientY - pointer.startY);
+      if (!pointer.dragging && travel < DRAG_THRESHOLD_PX) {
+        return;
+      }
+      if (!pointer.dragging) {
+        pointer.dragging = true;
+        renderer.setHoveredId(null);
+        canvas.style.cursor = "grabbing";
+      }
+      renderer.panBy(e.clientX - pointer.lastX, e.clientY - pointer.lastY);
+      pointer.lastX = e.clientX;
+      pointer.lastY = e.clientY;
     };
 
-    const onUp = () => {
-      dragRef.current.dragging = false;
+    const onUp = (e: PointerEvent) => {
+      if (!pointer.down) {
+        return;
+      }
+      pointer.down = false;
+      canvas.style.cursor = "";
+      // A press that never turned into a drag is a click: select the node under it, or clear the selection.
+      if (!pointer.dragging) {
+        selectNode(nodeUnder(e));
+      }
+      pointer.dragging = false;
     };
 
+    const onCancel = () => {
+      pointer.down = false;
+      pointer.dragging = false;
+      canvas.style.cursor = "";
+    };
+
+    const onLeave = () => {
+      if (!pointer.down) {
+        rendererRef.current?.setHoveredId(null);
+      }
+    };
+
+    canvas.addEventListener("wheel", onWheel, { passive: false });
     canvas.addEventListener("pointerdown", onDown);
     canvas.addEventListener("pointermove", onMove);
     canvas.addEventListener("pointerup", onUp);
-    canvas.addEventListener("pointerleave", onUp);
+    canvas.addEventListener("pointercancel", onCancel);
+    canvas.addEventListener("pointerleave", onLeave);
 
     return () => {
+      canvas.removeEventListener("wheel", onWheel);
       canvas.removeEventListener("pointerdown", onDown);
       canvas.removeEventListener("pointermove", onMove);
       canvas.removeEventListener("pointerup", onUp);
-      canvas.removeEventListener("pointerleave", onUp);
+      canvas.removeEventListener("pointercancel", onCancel);
+      canvas.removeEventListener("pointerleave", onLeave);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps, react-hooks/refs
-  }, [canvasRef.current]);
+  }, [selectNode]);
 
-  const handleSearch = useCallback(async (q: string) => {
-    if (!q.trim()) {
-      setSearchResults(null);
-      for (const n of graphNodesRef.current) {
-        // eslint-disable-next-line react-hooks/immutability
-        n.highlighted = false;
-        n.queryScore = undefined;
-      }
-      rendererRef.current?.setHasSearchResults(false);
-      return;
+  const applyHighlights = useCallback((scoreById: Map<string, number>) => {
+    for (const n of graphRef.current?.nodes ?? []) {
+      // eslint-disable-next-line react-hooks/immutability
+      n.highlighted = scoreById.has(n.id);
+      n.queryScore = scoreById.get(n.id);
     }
+    rendererRef.current?.setHasSearchResults(scoreById.size > 0);
+  }, []);
 
-    setIsSearching(true);
-    try {
-      const res = await searchKnowledgeMap(q, 20);
-      setSearchResults(res.results);
-
-      const hitIds = new Set(res.results.map((r) => r.id));
-      const scoreMap = new Map(res.results.map((r) => [r.id, r.score]));
-
-      for (const n of graphNodesRef.current) {
-        n.highlighted = hitIds.has(n.id);
-        n.queryScore = scoreMap.get(n.id);
+  const handleSearch = useCallback(
+    async (q: string) => {
+      if (!q.trim()) {
+        setSearchResults(null);
+        applyHighlights(new Map());
+        return;
       }
 
-      rendererRef.current?.setHasSearchResults(true);
+      setIsSearching(true);
+      try {
+        const res = await searchKnowledgeMap(q, SEARCH_TOP_K);
+        setSearchResults(res.results);
+        applyHighlights(new Map(res.results.map((r) => [r.id, r.score])));
 
-      const top = graphNodesRef.current.find((n) => n.id === res.results[0]?.id);
-      if (top && top.x && top.y) {
-        spawnSearchParticles(top, particlesRef.current);
         const renderer = rendererRef.current;
-        if (renderer) {
+        const top = graphRef.current?.nodes.find((n) => n.id === res.results[0]?.id);
+        if (renderer && top && top.x != null && top.y != null) {
+          spawnSearchParticles(top, renderer.particles);
           for (const wave of spawnSearchWaves(top)) {
             renderer.addWave(wave);
           }
-          renderer.setParticles(particlesRef.current);
+          renderer.flyTo(top.x, top.y, SEARCH_FOCUS_ZOOM);
         }
-
-        gsap.to(cameraRef.current, {
-          targetX: top.x,
-          targetY: top.y,
-          targetZoom: 1.5,
-          duration: 1.2,
-          ease: "power3.inOut",
-        });
+      } catch {
+        setError("Search failed — please try again.");
+      } finally {
+        setIsSearching(false);
       }
-    } catch {
-      // fail silently — demo mode
-    } finally {
-      setIsSearching(false);
-    }
-  }, []);
+    },
+    [applyHighlights],
+  );
 
   const clearSearch = useCallback(() => {
     setSearchQuery("");
     setSearchResults(null);
-    for (const n of graphNodesRef.current) {
-      // eslint-disable-next-line react-hooks/immutability
-      n.highlighted = false;
-      n.queryScore = undefined;
-    }
-    rendererRef.current?.setHasSearchResults(false);
-  }, []);
+    applyHighlights(new Map());
+  }, [applyHighlights]);
 
-  const onSelectResult = useCallback((id: string) => {
-    const gn = graphNodesRef.current.find((n) => n.id === id);
-    if (gn) {
-      setSelectedNode(gn);
-      spawnClickParticles(gn, particlesRef.current);
-      rendererRef.current?.setParticles(particlesRef.current);
-      rendererRef.current?.setSelectedId(gn.id);
-
-      if (gn.x != null && gn.y != null) {
-        gsap.to(cameraRef.current, {
-          targetX: gn.x,
-          targetY: gn.y,
-          duration: 0.8,
-          ease: "power2.out",
-        });
+  const onSelectResult = useCallback(
+    (id: string) => {
+      const node = graphRef.current?.nodes.find((n) => n.id === id);
+      if (!node) {
+        return;
       }
-    }
-  }, []);
+      selectNode(node);
+      if (node.x != null && node.y != null) {
+        rendererRef.current?.flyTo(node.x, node.y);
+      }
+    },
+    [selectNode],
+  );
 
   useEffect(() => {
     rendererRef.current?.setSelectedId(selectedNode?.id ?? null);
   }, [selectedNode]);
 
-  const zoomIn = useCallback(() => {
-    gsap.to(cameraRef.current, {
-      targetZoom: Math.min(6, cameraRef.current.targetZoom * 1.4),
-      duration: 0.4,
-      ease: "power2.out",
-    });
-  }, []);
+  const hasSelection = selectedNode !== null;
+  const hasSearch = searchResults !== null;
+  useEffect(() => {
+    if (!hasSelection && !hasSearch) {
+      return;
+    }
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") {
+        return;
+      }
+      if (hasSelection) {
+        setSelectedNode(null);
+      } else {
+        clearSearch();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [hasSelection, hasSearch, clearSearch]);
 
-  const zoomOut = useCallback(() => {
-    gsap.to(cameraRef.current, {
-      targetZoom: Math.max(0.15, cameraRef.current.targetZoom / 1.4),
-      duration: 0.4,
-      ease: "power2.out",
-    });
-  }, []);
-
-  const resetZoom = useCallback(() => {
-    gsap.to(cameraRef.current, {
-      targetX: width / 2,
-      targetY: height / 2,
-      targetZoom: 0.9,
-      duration: 0.8,
-      ease: "power3.inOut",
-    });
-  }, [width, height]);
+  const zoomIn = useCallback(() => rendererRef.current?.zoomBy(ZOOM_STEP), []);
+  const zoomOut = useCallback(() => rendererRef.current?.zoomBy(1 / ZOOM_STEP), []);
+  const resetZoom = useCallback(() => rendererRef.current?.resetCamera(), []);
 
   const stats = useMemo(
     () => ({
@@ -387,7 +391,7 @@ export function SemanticMapView() {
 
   return (
     <div className={styles.root} ref={containerRef}>
-      <canvas ref={canvasRef} className={styles.canvas} />
+      <div ref={canvasHostRef} className={styles.canvas} role="img" aria-label="Knowledge map" />
 
       <div className={styles.fogTop} />
       <div className={styles.fogBottom} />
@@ -408,6 +412,7 @@ export function SemanticMapView() {
       />
 
       <ZoomControls
+        legendVisible={showLegend}
         onZoomIn={zoomIn}
         onZoomOut={zoomOut}
         onReset={resetZoom}

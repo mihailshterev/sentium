@@ -40,7 +40,7 @@ function Orrery() {
   const ticks = Array.from({ length: 120 }, (_, i) => i * 3);
   return (
     <div className={styles.orrery} aria-hidden="true">
-      <svg viewBox="-2000 -2000 4000 4000">
+      <svg viewBox="-1100 -1100 2200 2200">
         <g className={styles.lines}>
           {[230, 480, 760].map((rx) => (
             <ellipse key={rx} rx={rx} ry="1080" />
@@ -116,7 +116,7 @@ export function CosmosBackground({ paused = false }: CosmosBackgroundProps) {
       <div className={styles.center}>
         <Chart />
       </div>
-      <div className={styles.center}>
+      <div className={styles.orreryCenter}>
         <Orrery />
       </div>
       <div className={styles.vignette} />

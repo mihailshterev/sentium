@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useState } from "react";
 import Markdown from "react-markdown";
 import { Check, ChevronDown, Copy, ShieldAlert, Sparkles } from "lucide-react";
 import styles from "../assistant.module.css";
@@ -21,7 +21,10 @@ interface MessageBubbleProps {
   senderName?: string;
 }
 
-export function MessageBubble({
+/**
+ * Memoised: while an answer streams the list re-renders on every chunk, and only the last bubble's props change.
+ */
+export const MessageBubble = memo(function MessageBubble({
   msg,
   isTyping,
   live,
@@ -189,4 +192,4 @@ export function MessageBubble({
       </div>
     </div>
   );
-}
+});

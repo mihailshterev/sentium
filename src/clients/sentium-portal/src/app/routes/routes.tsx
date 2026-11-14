@@ -23,9 +23,9 @@ import { McpServersView as McpServers } from "../../features/mcp";
 import { SentinelView as Sentinel } from "../../features/sentinel";
 import { SandboxView as Sandbox } from "../../features/sandbox";
 import { SandboxRunDetailView as SandboxRunDetail } from "../../features/sandbox/views/sandbox-run-detail-view";
-import { SemanticMapView as SemanticMap } from "../../features/semantic-map";
 import { SchedulerView as Scheduler } from "../../features/scheduler";
 import { LoginView as Login } from "../../features/auth";
+import { SemanticMapPage as SemanticMap } from "./semantic-map-page";
 
 export const routes: RouteObject[] = [
   { path: "/login", element: <Login /> },

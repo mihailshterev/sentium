@@ -67,17 +67,9 @@
 }
 
 /*
- * No backdrop-filter support, or the user asked for less transparency: swap the translucent fills for
- * opaque ones. Every material-backed surface reads these tokens, so this single override covers them all.
+ * The user asked for less transparency: swap the translucent fills for opaque ones. Every material-backed
+ * surface reads these tokens, so this single override covers them all.
  */
-@supports not (backdrop-filter: blur(1px)) {
-  :root,
-  :root[data-theme="light"] {
-    --mat-regular-bg: var(--mat-regular-opaque);
-    --mat-thick-bg: var(--mat-thick-opaque);
-  }
-}
-
 @media (prefers-reduced-transparency: reduce) {
   :root,
   :root[data-theme="light"] {
