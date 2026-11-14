@@ -1,6 +1,6 @@
 /**
  * Geometry of the timeline rail: a line chart of workload, laid out left to right in CSS pixels so the rail can
- * scroll across years. Months sit on a straight baseline and rise with how many tasks they hold; each node marks
+ * scroll across years. Months sit on a straight baseline and rise with how many tasks and events they hold; each node marks
  * where its month starts and the month runs along the line to the next node, so on the 8th the lived path has just
  * passed its month's node. Day ticks run in a lane under the baseline, month labels under that. Pure functions (no
  * DOM measuring), so jsdom tests cover them.
@@ -63,10 +63,10 @@ export const railWidth = (count: number, m: RailMetrics) => m.pad * 2 + count * 
 /** The x where month `index` starts (its node), on a rail whose first month is `start`. */
 export const boundaryX = (index: number, start: number, m: RailMetrics) => m.pad + (index - start) * m.step;
 
-/** The chart's top is at least this many tasks, so a single task is a small step rather than a peak. */
+/** The chart's top is at least this load, so a single item is a small step rather than a peak. */
 export const SCALE_FLOOR = 4;
 
-/** The task count the full rise stands for: the busiest month given, at least {@link SCALE_FLOOR}. */
+/** The load the full rise stands for: the busiest month given, at least {@link SCALE_FLOOR}. */
 export const scaleMax = (counts: number[]) => counts.reduce((max, count) => Math.max(max, count), SCALE_FLOOR);
 
 /** The y of a month's node: on the baseline when empty, up to the full rise for the busiest month. */

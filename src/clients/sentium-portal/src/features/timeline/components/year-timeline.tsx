@@ -57,6 +57,8 @@ const GROW_MARGIN_MONTHS = 4;
 const isBusy = (s: MonthSummary | undefined) =>
   !!s && (s.taskCount > 0 || s.eventCount > 0 || s.noteCount > 0 || s.pendingProposalCount > 0);
 
+const monthLoad = (s: MonthSummary | undefined) => (s ? s.taskCount + s.eventCount : 0);
+
 const dotRadius = (day: DaySummary) => {
   const count = day.open + day.done;
   return count >= 3 ? 4.5 : count === 2 ? 3.5 : 2.5;
@@ -76,7 +78,7 @@ function scrollRail(el: HTMLElement, left: number, smooth: boolean) {
 
 /**
  * The timeline as a glowing line chart of workload you scroll along across years: months sit on a straight baseline
- * and rise with their task count, each node where its month starts; day ticks run in a lane below, month labels
+ * and rise with their tasks and events, each node where its month starts; day ticks run in a lane below, month labels
  * under that, and months with something in them get a card in the lane on top. The stretch already lived glows (to
  * today for the current month); the rest is a faint dashed track. The rendered window of months grows as the viewer
  * nears either end. Paths are SVG; nodes, cards and labels are HTML laid over it, so they stay crisp and focusable.
@@ -192,14 +194,14 @@ export function YearTimeline({
   );
 
   const nodes = useMemo(() => {
-    const countAt = (index: number) => {
+    const loadAt = (index: number) => {
       const { year, month } = monthAt(index);
-      return overviews.get(year)?.months[month - 1]?.taskCount ?? 0;
+      return monthLoad(overviews.get(year)?.months[month - 1]);
     };
-    const max = scaleMax(months.map((month) => month.summary?.taskCount ?? 0));
+    const max = scaleMax(months.map((month) => monthLoad(month.summary)));
     return Array.from({ length: win.count + 1 }, (_, i) => ({
       x: boundaryX(win.start + i, win.start, m),
-      y: nodeY(countAt(win.start + i), max, m),
+      y: nodeY(loadAt(win.start + i), max, m),
     }));
   }, [months, overviews, win, m]);
 
