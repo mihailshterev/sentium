@@ -10,7 +10,7 @@ namespace Sentium.Praxis.Features.Tools.Inventory;
 /// Lists what is kept at a household location, or the top-level locations.
 /// </summary>
 [AgentToolPolicy(RiskLevel = ToolRiskLevel.Low, Resource = ToolResource.Inventory, Action = ToolAction.Read)]
-public sealed class ListLocationContentsTool(IInventoryLookup inventory, ILogger<ListLocationContentsTool> logger) : IAgentTool
+internal sealed class ListLocationContentsTool(IInventoryLookup inventory, ILogger<ListLocationContentsTool> logger) : IAgentTool
 {
     public AIFunction CreateFunction()
     {

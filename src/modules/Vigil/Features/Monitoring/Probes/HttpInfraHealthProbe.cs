@@ -2,7 +2,7 @@ using System.Diagnostics;
 
 namespace Sentium.Vigil.Features.Monitoring.Probes;
 
-public sealed class HttpInfraHealthProbe(IHttpClientFactory httpClientFactory, string clientName, string target, string healthPath) : IHealthProbe
+internal sealed class HttpInfraHealthProbe(IHttpClientFactory httpClientFactory, string clientName, string target, string healthPath) : IHealthProbe
 {
     public string Target => target;
     public ComponentKind Kind => ComponentKind.Infrastructure;

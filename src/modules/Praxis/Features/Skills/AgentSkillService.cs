@@ -4,7 +4,7 @@ using Sentium.Core.Results;
 
 namespace Sentium.Praxis.Features.Skills;
 
-public sealed class AgentSkillService(
+internal sealed class AgentSkillService(
     IAgentSkillRepository repository,
     IScopedCache cache) : IAgentSkillService
 {

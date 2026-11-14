@@ -14,7 +14,7 @@ namespace Sentium.Praxis.Features.Learnings;
 /// message, so small local models are not handed back-to-back user turns. Recall is best-effort: failures are handled
 /// inside <see cref="IAgentLearningService.RecallRelevantAsync"/> and simply yield no context.
 /// </remarks>
-public sealed class LearningsContextProvider(IAgentLearningService learningService, IPdpContextAccessor runContext) : AIContextProvider(null, null, null)
+internal sealed class LearningsContextProvider(IAgentLearningService learningService, IPdpContextAccessor runContext) : AIContextProvider(null, null, null)
 {
     private const int MaxLearnings = 4;
 

@@ -4,7 +4,7 @@ using Sentium.Registry.Data;
 
 namespace Sentium.Registry.Features.Settings;
 
-public sealed class SettingsRepository(RegistryDbContext db) : ISettingsRepository
+internal sealed class SettingsRepository(RegistryDbContext db) : ISettingsRepository
 {
     public Task<SystemSettings?> FindAsync(Guid? userId, CancellationToken ct = default)
         => db.SystemSettings.FirstOrDefaultAsync(s => s.UserId == userId, ct);

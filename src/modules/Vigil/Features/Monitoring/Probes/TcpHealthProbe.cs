@@ -3,7 +3,7 @@ using System.Net.Sockets;
 
 namespace Sentium.Vigil.Features.Monitoring.Probes;
 
-public sealed class TcpHealthProbe(string target, string host, int port) : IHealthProbe
+internal sealed class TcpHealthProbe(string target, string host, int port) : IHealthProbe
 {
     public string Target => target;
     public ComponentKind Kind => ComponentKind.Infrastructure;

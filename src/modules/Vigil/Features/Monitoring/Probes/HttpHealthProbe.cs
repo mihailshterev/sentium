@@ -3,7 +3,7 @@ using System.Text.Json;
 
 namespace Sentium.Vigil.Features.Monitoring.Probes;
 
-public sealed class HttpHealthProbe(IHttpClientFactory httpClientFactory, string target, string clientName) : IHealthProbe
+internal sealed class HttpHealthProbe(IHttpClientFactory httpClientFactory, string target, string clientName) : IHealthProbe
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 

@@ -12,7 +12,7 @@ namespace Sentium.E2ESeed;
 /// Baseline inventory for the Playwright suite (Testing environment only). The seeded asset is private so
 /// the knowledge-sync worker never tries to embed it (the e2e stack runs without inference models).
 /// </summary>
-public sealed class LocusE2EDataSeeder : IE2ESeeder
+internal sealed class LocusE2EDataSeeder : IE2ESeeder
 {
     public const string HomeName = "e2e-baseline-home";
     public const string GarageName = "e2e-baseline-garage";

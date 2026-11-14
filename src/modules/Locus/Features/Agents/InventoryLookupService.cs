@@ -13,7 +13,7 @@ namespace Sentium.Locus.Features.Agents;
 /// Scoped implementation behind <see cref="IInventoryLookup"/>. Every query starts from
 /// <see cref="SharedAssets"/>, so a private asset can never leak through any method.
 /// </summary>
-public sealed class InventoryLookupService(LocusDbContext db) : IInventoryLookup
+internal sealed class InventoryLookupService(LocusDbContext db) : IInventoryLookup
 {
     public const int MaxLimit = 25;
 

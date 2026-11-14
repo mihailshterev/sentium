@@ -6,7 +6,7 @@ namespace Sentium.Praxis.Features.Agents;
 /// Enhances prompts using the base (non-harnessed) chat client, so the
 /// optimization pass stays lightweight and independent of the agent governance pipeline.
 /// </summary>
-public sealed class PromptEnhancementService(IChatClient chatClient, ILogger<PromptEnhancementService> logger) : IPromptEnhancementService
+internal sealed class PromptEnhancementService(IChatClient chatClient, ILogger<PromptEnhancementService> logger) : IPromptEnhancementService
 {
     private const string SystemPrompt = """
         You are a prompt optimizer for a smaller local language model. Rewrite the user's request into a single, clear, specific, well-structured prompt that will produce the best result.

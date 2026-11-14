@@ -3,7 +3,7 @@ namespace Sentium.Praxis.Features.Tools;
 /// <summary>
 /// Visibility requested for a captured learning.
 /// </summary>
-public enum LearningScope
+internal enum LearningScope
 {
     /// <summary>
     /// Private to the acting user (default).

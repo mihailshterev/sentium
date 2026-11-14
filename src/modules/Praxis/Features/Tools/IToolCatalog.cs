@@ -6,7 +6,7 @@ namespace Sentium.Praxis.Features.Tools;
 /// <summary>
 /// The registered tools, described for assignment to agents.
 /// </summary>
-public interface IToolCatalog
+internal interface IToolCatalog
 {
     /// <summary>
     /// Every registered tool, ordered by resource then name.

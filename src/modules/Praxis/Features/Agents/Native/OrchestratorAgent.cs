@@ -6,7 +6,7 @@ namespace Sentium.Praxis.Features.Agents.Native;
 /// The squad planner: a control agent that splits a request into a short, ordered plan of specialist steps. It answers
 /// with a JSON plan constrained to the run's roster (see <see cref="SquadPrompts.PlanFormat"/>), so it cannot invent agents.
 /// </summary>
-public sealed class OrchestratorAgent : IAgent
+internal sealed class OrchestratorAgent : IAgent
 {
     /// <remarks>
     /// Must equal the key this agent is registered under (<see cref="AgentRole.Orchestrator"/>).

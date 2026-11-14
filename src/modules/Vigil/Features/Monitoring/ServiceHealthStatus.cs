@@ -1,6 +1,6 @@
 namespace Sentium.Vigil.Features.Monitoring;
 
-public sealed record ServiceHealthStatus
+internal sealed record ServiceHealthStatus
 {
     public required string ServiceName { get; init; }
     public ComponentKind Kind { get; init; } = ComponentKind.Service;

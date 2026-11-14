@@ -5,7 +5,7 @@ using Sentium.Praxis.Entities;
 
 namespace Sentium.E2ESeed;
 
-public sealed class PraxisE2EDataSeeder : IE2ESeeder
+internal sealed class PraxisE2EDataSeeder : IE2ESeeder
 {
     public Task SeedAsync(IServiceProvider services, E2ESeedContext context, CancellationToken ct = default)
     {

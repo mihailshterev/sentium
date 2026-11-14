@@ -2,7 +2,7 @@ using System.Collections.Concurrent;
 
 namespace Sentium.Vigil.Features.Monitoring;
 
-public sealed class IncidentStore : IIncidentStore
+internal sealed class IncidentStore : IIncidentStore
 {
     private const int MaxResolvedHistory = 100;
 

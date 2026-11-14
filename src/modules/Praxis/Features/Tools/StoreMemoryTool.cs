@@ -11,7 +11,7 @@ namespace Sentium.Praxis.Features.Tools;
 /// ingestion service so it is properly chunked, embedded, and scoped to that user.
 /// </summary>
 [AgentToolPolicy(RiskLevel = ToolRiskLevel.Low, Resource = ToolResource.Memory, Action = ToolAction.Write)]
-public sealed class StoreMemoryTool(
+internal sealed class StoreMemoryTool(
     IDocumentIngestionService ingestionService,
     IPdpContextAccessor pdpContext,
     ILogger<StoreMemoryTool> logger) : IAgentTool

@@ -13,7 +13,7 @@ namespace Sentium.E2ESeed;
 /// agent note. Proposals are not seeded - every browser project shares the seeded user, so tests that accept or
 /// reject proposals mock them instead.
 /// </summary>
-public sealed class TempusE2EDataSeeder : IE2ESeeder
+internal sealed class TempusE2EDataSeeder : IE2ESeeder
 {
     public const string TodayTaskTitle = "e2e-baseline-today";
     public const string PinnedTaskTitle = "e2e-baseline-pinned";

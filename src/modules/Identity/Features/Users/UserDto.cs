@@ -1,6 +1,6 @@
 namespace Sentium.Identity.Features.Users;
 
-public sealed record UserDto(
+internal sealed record UserDto(
     Guid Id,
     string? UserName,
     string FirstName,

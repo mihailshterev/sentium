@@ -4,7 +4,7 @@ namespace Sentium.Praxis.Features.Learnings;
 /// System prompt for the LLM stage of the learning sanitization &amp; validation pipeline.
 /// The model acts as a strict reviewer that only approves learnings safe to share across all users.
 /// </summary>
-public static class LearningSanitizationPrompt
+internal static class LearningSanitizationPrompt
 {
     public const string SystemRole = """
         ### Role

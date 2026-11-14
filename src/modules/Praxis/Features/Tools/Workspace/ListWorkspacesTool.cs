@@ -10,7 +10,7 @@ namespace Sentium.Praxis.Features.Tools.Workspace;
 /// An agent tool that lists the acting user's workspaces with their metadata and file counts.
 /// </summary>
 [AgentToolPolicy(RiskLevel = ToolRiskLevel.Low, Resource = ToolResource.File, Action = ToolAction.Read)]
-public sealed class ListWorkspacesTool(PraxisDbContext dbContext, IPdpContextAccessor runContext) : IAgentTool
+internal sealed class ListWorkspacesTool(PraxisDbContext dbContext, IPdpContextAccessor runContext) : IAgentTool
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 

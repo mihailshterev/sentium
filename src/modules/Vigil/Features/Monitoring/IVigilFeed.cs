@@ -3,7 +3,7 @@ namespace Sentium.Vigil.Features.Monitoring;
 /// <summary>
 /// Broadcasts health and incident changes from <see cref="MonitoringWorker"/> to every connected SSE client.
 /// </summary>
-public interface IVigilFeed
+internal interface IVigilFeed
 {
     void Publish(VigilFeedEvent evt);
 

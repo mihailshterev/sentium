@@ -6,7 +6,7 @@ using Sentium.Praxis.Features.Projections;
 
 namespace Sentium.Praxis.Features.Agents;
 
-public sealed class AgentRepository(PraxisDbContext context) : IAgentRepository
+internal sealed class AgentRepository(PraxisDbContext context) : IAgentRepository
 {
     public async Task<AgentResponse> CreateAgentAsync(CreateAgentRequest request, CancellationToken ct = default)
     {

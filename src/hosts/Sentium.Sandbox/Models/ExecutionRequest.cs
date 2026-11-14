@@ -1,6 +1,6 @@
 namespace Sentium.Sandbox.Models;
 
-public sealed record ExecutionRequest
+internal sealed record ExecutionRequest
 {
     public required ExecutionLanguage Language { get; init; }
     public required string Code { get; init; }

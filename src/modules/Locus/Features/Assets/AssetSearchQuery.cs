@@ -7,7 +7,7 @@ namespace Sentium.Locus.Features.Assets;
 /// Query string of <c>GET api/locus/assets</c>. Every filter is optional and they combine with AND;
 /// <see cref="Tags"/> (repeat <c>tag=</c>) requires every listed tag.
 /// </summary>
-public sealed record AssetSearchQuery : PaginationQuery
+internal sealed record AssetSearchQuery : PaginationQuery
 {
     /// <summary>
     /// Free text; every word must match a field, a tag or the name of a containing location.

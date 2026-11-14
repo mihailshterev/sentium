@@ -1,6 +1,6 @@
 namespace Sentium.Praxis.Features.Harness;
 
-public static class UniversalSystemHarness
+internal static class UniversalSystemHarness
 {
     public const string Policy = """
         ### OPERATING PROTOCOL

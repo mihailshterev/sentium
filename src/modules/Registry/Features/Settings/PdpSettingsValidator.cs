@@ -2,7 +2,7 @@ using FluentValidation;
 
 namespace Sentium.Registry.Features.Settings;
 
-public sealed class PdpSettingsValidator : AbstractValidator<PdpSettings>
+internal sealed class PdpSettingsValidator : AbstractValidator<PdpSettings>
 {
     public PdpSettingsValidator()
     {

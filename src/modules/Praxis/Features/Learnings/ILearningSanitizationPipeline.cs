@@ -7,7 +7,7 @@ namespace Sentium.Praxis.Features.Learnings;
 /// architectural or execution pattern - not a personal fact - and is not a near-duplicate of existing
 /// global knowledge.
 /// </summary>
-public interface ILearningSanitizationPipeline
+internal interface ILearningSanitizationPipeline
 {
     /// <summary>
     /// Evaluates a candidate learning for global promotion. Implementations are <strong>fail-closed</strong>:

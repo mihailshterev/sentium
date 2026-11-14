@@ -3,7 +3,7 @@ using Sentium.Locus.Data;
 
 namespace Sentium.Locus.Features.Locations;
 
-public static class LocationTreeLoader
+internal static class LocationTreeLoader
 {
     public static async Task<LocationTree> LoadLocationTreeAsync(this LocusDbContext db, CancellationToken ct = default)
     {

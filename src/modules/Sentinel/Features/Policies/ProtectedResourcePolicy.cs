@@ -22,7 +22,7 @@ namespace Sentium.Sentinel.Features.Policies;
 /// Matching for protected paths intentionally stays substring-based: reading anything that merely
 /// looks like a secret is treated as a leak, so this list errs aggressively toward denial.
 /// </summary>
-public sealed class ProtectedResourcePolicy : IPdpPolicy
+internal sealed class ProtectedResourcePolicy : IPdpPolicy
 {
     private readonly (string Original, string Normalized)[] _protectedPrefixes;
     private readonly Regex? _forbiddenVerbs;

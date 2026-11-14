@@ -3,7 +3,7 @@ namespace Sentium.Sandbox.Contracts;
 /// <summary>
 /// Runtime state of a hosted MCP server.
 /// </summary>
-public sealed record McpServerStatus(
+internal sealed record McpServerStatus(
     string Name,
     bool Running,
     string? ContainerId,

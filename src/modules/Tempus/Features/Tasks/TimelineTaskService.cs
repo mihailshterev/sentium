@@ -9,7 +9,7 @@ using Sentium.Tempus.Entities;
 
 namespace Sentium.Tempus.Features.Tasks;
 
-public sealed class TimelineTaskService(TempusDbContext db, TimeProvider timeProvider) : ITimelineTaskService
+internal sealed class TimelineTaskService(TempusDbContext db, TimeProvider timeProvider) : ITimelineTaskService
 {
     public async Task<TimelineTaskDto?> GetAsync(Guid id, CancellationToken ct = default)
     {

@@ -3,7 +3,7 @@ namespace Sentium.Sentinel.Features.Settings;
 /// <summary>
 /// The runtime-configurable Policy Decision Point settings.
 /// </summary>
-public sealed record PdpRuntimeSettings
+internal sealed record PdpRuntimeSettings
 {
     public bool LockdownMode { get; init; }
     public int AutonomyLevel { get; init; } = 5;

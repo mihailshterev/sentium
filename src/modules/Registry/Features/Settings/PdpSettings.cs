@@ -5,7 +5,7 @@ namespace Sentium.Registry.Features.Settings;
 /// by the Sentinel module. Static policy lists (forbidden actions, protected prefixes) remain in
 /// the <c>Pdp</c> configuration section (Sentinel's <c>PdpOptions</c>).
 /// </summary>
-public sealed class PdpSettings
+internal sealed class PdpSettings
 {
     public bool LockdownMode { get; set; } = false;
     public int AutonomyLevel { get; set; } = 5;

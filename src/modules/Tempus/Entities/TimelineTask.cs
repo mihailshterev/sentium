@@ -6,7 +6,7 @@ namespace Sentium.Tempus.Entities;
 /// <summary>
 /// A task on the user's year timeline: planned on a day, or pinned to a month until it gets one.
 /// </summary>
-public sealed class TimelineTask : IUserOwned
+internal sealed class TimelineTask : IUserOwned
 {
     public Guid Id { get; set; }
 

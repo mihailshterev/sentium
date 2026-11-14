@@ -5,7 +5,7 @@ namespace Sentium.Sandbox.Execution;
 /// <summary>
 /// Manages the ephemeral on-host job directory that is bind-mounted into the sandbox container.
 /// </summary>
-public interface IJobDirectoryService
+internal interface IJobDirectoryService
 {
     /// <summary>
     /// Creates a uniquely named, isolated job directory for the given execution request.

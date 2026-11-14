@@ -10,7 +10,7 @@ namespace Sentium.Praxis.Features.Learnings;
 [ApiController]
 [Authorize]
 [Route($"{PraxisRoutes.Prefix}/agent-learnings")]
-public sealed class AgentLearningsController(IAgentLearningService learningService) : ControllerBase
+internal sealed class AgentLearningsController(IAgentLearningService learningService) : ControllerBase
 {
     /// <summary>
     /// Returns a page of captured learnings (newest first). Optionally filter by agent name.

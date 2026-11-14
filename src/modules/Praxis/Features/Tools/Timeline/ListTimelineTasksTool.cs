@@ -10,7 +10,7 @@ namespace Sentium.Praxis.Features.Tools.Timeline;
 /// The tasks planned in a date range, grouped by day, plus the tasks pinned to the months it covers.
 /// </summary>
 [AgentToolPolicy(RiskLevel = ToolRiskLevel.Low, Resource = ToolResource.Timeline, Action = ToolAction.Search)]
-public sealed class ListTimelineTasksTool(
+internal sealed class ListTimelineTasksTool(
     ITimelineAgentAccess timeline,
     IPdpContextAccessor pdpContext,
     TimeProvider timeProvider,

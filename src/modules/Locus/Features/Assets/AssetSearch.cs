@@ -13,7 +13,7 @@ namespace Sentium.Locus.Features.Assets;
 /// and model numbers such as "wh-1000". A word also matches when it names a containing location, so
 /// "garage drill" finds the drill on the garage shelf.
 /// </summary>
-public static class AssetSearch
+internal static class AssetSearch
 {
     public const char EscapeCharacter = '\\';
 

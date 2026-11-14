@@ -11,7 +11,7 @@ namespace Sentium.Praxis.Features.Tools;
 /// Tool that allows the agent to specifically search its long-term personal memories.
 /// </summary>
 [AgentToolPolicy(RiskLevel = ToolRiskLevel.Low, Resource = ToolResource.VectorDb, Action = ToolAction.Search)]
-public sealed class RecallMemoryTool(
+internal sealed class RecallMemoryTool(
     IEmbeddingService embeddingService,
     IVectorRepository vectorRepository,
     IPdpContextAccessor pdpContext) : IAgentTool

@@ -16,7 +16,7 @@ namespace Sentium.Praxis.Features.Models;
 [ApiController]
 [Authorize]
 [Route($"{PraxisRoutes.Prefix}/models")]
-public sealed class ModelsController(
+internal sealed class ModelsController(
     IModelCatalog catalog,
     IRegistrySettingsService registrySettings,
     IOptions<InferenceOptions> inferenceOptions) : ControllerBase

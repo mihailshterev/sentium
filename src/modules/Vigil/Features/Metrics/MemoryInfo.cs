@@ -1,6 +1,6 @@
 namespace Sentium.Vigil.Features.Metrics;
 
-public sealed record MemoryInfo
+internal sealed record MemoryInfo
 {
     public double TotalMb { get; init; }
     public double UsedMb { get; init; }

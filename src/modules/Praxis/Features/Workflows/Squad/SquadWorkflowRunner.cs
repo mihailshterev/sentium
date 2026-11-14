@@ -15,7 +15,7 @@ namespace Sentium.Praxis.Features.Workflows.Squad;
 /// typed message instead of a shared chat transcript; each step is reviewed on its own (a narrow question small models
 /// answer reliably) and retried at most once.
 /// </summary>
-public sealed class SquadWorkflowRunner(IAgentFactory factory)
+internal sealed class SquadWorkflowRunner(IAgentFactory factory)
 {
     /// <summary>
     /// First attempt plus one revision.

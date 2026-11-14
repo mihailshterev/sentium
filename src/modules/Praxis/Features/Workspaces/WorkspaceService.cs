@@ -4,7 +4,7 @@ using Sentium.Praxis.Features.Storage;
 
 namespace Sentium.Praxis.Features.Workspaces;
 
-public sealed class WorkspaceService(
+internal sealed class WorkspaceService(
     IWorkspaceRepository repository,
     ILocalFileService fileService,
     IFileIngestionQueue ingestionQueue,

@@ -3,7 +3,7 @@ namespace Sentium.Vigil.Features.Monitoring;
 /// <summary>
 /// In-memory store of the latest health status and rolling sample history per target.
 /// </summary>
-public interface IServiceHealthStateStore
+internal interface IServiceHealthStateStore
 {
     /// <summary>
     /// Records the latest probe result and returns the enriched status (with uptime, last state

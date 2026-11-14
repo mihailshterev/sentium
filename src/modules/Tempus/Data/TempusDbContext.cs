@@ -13,7 +13,7 @@ namespace Sentium.Tempus.Data;
 /// fill up with every member's tasks. Only system scopes (migrations, seeders, the agent facade - which then filters
 /// on an explicit user id) see all rows.
 /// </summary>
-public sealed class TempusDbContext : DbContext
+internal sealed class TempusDbContext : DbContext
 {
     public const string Schema = "tempus";
 

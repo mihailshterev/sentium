@@ -1,6 +1,6 @@
 namespace Sentium.Praxis.Features.CodeExecution;
 
-public sealed record SandboxExecutionStatsResponse
+internal sealed record SandboxExecutionStatsResponse
 {
     public required int Total { get; init; }
     public required int Succeeded { get; init; }

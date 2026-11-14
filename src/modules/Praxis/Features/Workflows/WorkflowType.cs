@@ -1,6 +1,6 @@
 namespace Sentium.Praxis.Features.Workflows;
 
-public enum WorkflowType
+internal enum WorkflowType
 {
     Predefined,
     Dynamic,

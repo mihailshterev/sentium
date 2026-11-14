@@ -1,6 +1,6 @@
 namespace Sentium.Praxis.Features.Conversations;
 
-public sealed record ConversationResponse(
+internal sealed record ConversationResponse(
     Guid Id,
     string Title,
     string Model,

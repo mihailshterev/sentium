@@ -11,7 +11,7 @@ namespace Sentium.Mcp.Features.Servers;
 [ApiController]
 [AuthorizeSovereign]
 [Route($"{McpRoutes.Prefix}/mcp/servers")]
-public sealed class McpServersController(IMcpServerService servers) : ControllerBase
+internal sealed class McpServersController(IMcpServerService servers) : ControllerBase
 {
     /// <summary>
     /// Every registered MCP server with its tools and connection state.

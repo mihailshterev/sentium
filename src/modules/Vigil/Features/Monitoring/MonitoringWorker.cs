@@ -7,7 +7,7 @@ namespace Sentium.Vigil.Features.Monitoring;
 /// evaluates incidents, and broadcasts changes through <see cref="IVigilFeed"/> for the live SSE stream. Cadence and
 /// thresholds are read from the Registry-backed settings on every cycle so changes apply live.
 /// </summary>
-public sealed class MonitoringWorker(
+internal sealed class MonitoringWorker(
     IEnumerable<IHealthProbe> probes,
     IServiceHealthStateStore stateStore,
     IIncidentStore incidentStore,

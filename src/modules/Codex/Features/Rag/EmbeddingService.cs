@@ -9,7 +9,7 @@ namespace Sentium.Codex.Features.Rag;
 /// Uses <see cref="IEmbeddingGenerator{TInput,TEmbedding}"/> from Microsoft.Extensions.AI, wrapped
 /// with OpenTelemetry so embedding calls are traced consistently.
 /// </summary>
-public sealed class EmbeddingService(
+internal sealed class EmbeddingService(
     IEmbeddingGenerator<string, Embedding<float>> embeddingGenerator,
     ILogger<EmbeddingService> logger) : IEmbeddingService
 {

@@ -1,6 +1,6 @@
 namespace Sentium.Praxis.Features.Agents;
 
-public static class AgentRole
+internal static class AgentRole
 {
     public const string GeneralAssistant = "GeneralAssistant";
     public const string Orchestrator = "Orchestrator";

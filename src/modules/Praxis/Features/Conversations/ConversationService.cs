@@ -7,7 +7,7 @@ using Sentium.Praxis.Features.Agents.Runtime;
 
 namespace Sentium.Praxis.Features.Conversations;
 
-public sealed class ConversationService(
+internal sealed class ConversationService(
     IConversationRepository repository,
     IScopedCache cache,
     IAgentRoster agentRoster,

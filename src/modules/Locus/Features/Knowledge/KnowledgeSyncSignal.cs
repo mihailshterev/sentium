@@ -7,7 +7,7 @@ namespace Sentium.Locus.Features.Knowledge;
 /// no data - the outbox table is the source of truth - so a single pending ring is enough and extra rings
 /// are dropped.
 /// </summary>
-public sealed class KnowledgeSyncSignal
+internal sealed class KnowledgeSyncSignal
 {
     private readonly Channel<bool> _channel = Channel.CreateBounded<bool>(new BoundedChannelOptions(1)
     {

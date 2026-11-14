@@ -6,7 +6,7 @@ using Sentium.Praxis.Entities;
 
 namespace Sentium.Praxis.Features.Conversations;
 
-public sealed class ConversationRepository(PraxisDbContext context) : IConversationRepository
+internal sealed class ConversationRepository(PraxisDbContext context) : IConversationRepository
 {
     private static readonly JsonSerializerOptions StepJson = new(JsonSerializerDefaults.Web)
     {

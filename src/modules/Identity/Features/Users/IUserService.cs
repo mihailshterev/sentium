@@ -3,7 +3,7 @@ namespace Sentium.Identity.Features.Users;
 /// <summary>
 /// Provides administrative and self-service user management operations.
 /// </summary>
-public interface IUserService
+internal interface IUserService
 {
     /// <summary>
     /// Retrieves a paginated list of users in the system.

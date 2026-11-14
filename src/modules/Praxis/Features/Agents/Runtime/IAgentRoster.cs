@@ -5,7 +5,7 @@ namespace Sentium.Praxis.Features.Agents.Runtime;
 /// The agents a user can work with directly: the built-in specialists (not the control roles that steer squads)
 /// and the user's own custom agents.
 /// </summary>
-public interface IAgentRoster
+internal interface IAgentRoster
 {
     Task<IReadOnlyList<AgentRosterEntry>> GetAsync(Guid? userId, CancellationToken ct = default);
 

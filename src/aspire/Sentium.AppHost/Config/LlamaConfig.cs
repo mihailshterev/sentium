@@ -4,7 +4,7 @@ namespace Sentium.AppHost.Config;
 /// llama.cpp server containers: the <c>llm</c> router (chat models from <c>infra/llm/models.ini</c>) and the
 /// <c>embeddings</c> server, plus the one-shot model fetcher. Mirrors <c>docker-compose.yml</c>.
 /// </summary>
-public static class LlamaConfig
+internal static class LlamaConfig
 {
     public const string Registry = "ghcr.io";
     public const string Image = "ggml-org/llama.cpp";

@@ -9,7 +9,7 @@ namespace Sentium.Mcp.Features.Servers;
 /// persisted in agents' tool lists and must survive a paused approval being resumed, so they are deterministic and,
 /// once assigned to a tool, never change.
 /// </summary>
-public static partial class McpNames
+internal static partial class McpNames
 {
     /// <summary>
     /// Separator between the server slug and the tool name. Built-in tool names never contain it.

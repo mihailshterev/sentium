@@ -5,7 +5,7 @@ namespace Sentium.Praxis.Features.Learnings;
 /// <summary>
 /// Defines the contract for managing and retrieving agent learning records.
 /// </summary>
-public interface IAgentLearningRepository
+internal interface IAgentLearningRepository
 {
     /// <summary>
     /// Retrieves a page of learning responses (newest first) plus the total count,

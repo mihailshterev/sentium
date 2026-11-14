@@ -1,6 +1,6 @@
 namespace Sentium.Praxis.Common.Streaming;
 
-public static class AgentUpdateTypes
+internal static class AgentUpdateTypes
 {
     public const string Message = "message";
     public const string Tool = "tool";

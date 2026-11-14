@@ -13,7 +13,7 @@ namespace Sentium.Vigil.Features.Streaming;
 [ApiController]
 [Authorize]
 [Route($"{VigilRoutes.Prefix}/stream")]
-public sealed class VigilStreamController(IVigilFeed feed, ILogger<VigilStreamController> logger) : ControllerBase
+internal sealed class VigilStreamController(IVigilFeed feed, ILogger<VigilStreamController> logger) : ControllerBase
 {
     private static readonly TimeSpan HeartbeatInterval = TimeSpan.FromSeconds(20);
 

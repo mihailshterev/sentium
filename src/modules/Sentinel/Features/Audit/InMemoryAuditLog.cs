@@ -7,7 +7,7 @@ namespace Sentium.Sentinel.Features.Audit;
 /// <summary>
 /// Thread-safe, bounded in-memory audit log (circular buffer).
 /// </summary>
-public sealed class InMemoryAuditLog : IAuditLog
+internal sealed class InMemoryAuditLog : IAuditLog
 {
     private const int MaxCapacity = 1_000;
 

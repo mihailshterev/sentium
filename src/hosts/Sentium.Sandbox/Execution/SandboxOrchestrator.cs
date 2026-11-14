@@ -11,7 +11,7 @@ namespace Sentium.Sandbox.Execution;
 /// </list>
 /// The sandbox is stateless: the caller (Praxis) records the outcome in its execution history.
 /// </summary>
-public sealed class SandboxOrchestrator(
+internal sealed class SandboxOrchestrator(
     ISandboxRunner runner,
     ISentinelGateway sentinelGateway,
     ILogger<SandboxOrchestrator> logger)

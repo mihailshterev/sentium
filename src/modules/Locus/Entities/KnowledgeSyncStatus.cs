@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 namespace Sentium.Locus.Entities;
 
 [JsonConverter(typeof(JsonStringEnumConverter<KnowledgeSyncStatus>))]
-public enum KnowledgeSyncStatus
+internal enum KnowledgeSyncStatus
 {
     Pending,
     Failed

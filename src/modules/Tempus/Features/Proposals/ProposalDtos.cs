@@ -2,7 +2,7 @@ using Sentium.Tempus.Contracts.Models;
 
 namespace Sentium.Tempus.Features.Proposals;
 
-public sealed record TimelineProposalDto(
+internal sealed record TimelineProposalDto(
     Guid Id,
     TimelineProposalKind Kind,
     TimelineProposalStatus Status,

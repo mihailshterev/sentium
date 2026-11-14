@@ -7,7 +7,7 @@ namespace Sentium.Praxis.Features.Agents.Native;
 /// and leaves progress reports. The default agent behind the timeline's chat drawer, and a squad specialist for
 /// planning requests.
 /// </summary>
-public sealed class TimelinePlanner : IAgent
+internal sealed class TimelinePlanner : IAgent
 {
     public string Name => AgentRole.TimelinePlanner;
 

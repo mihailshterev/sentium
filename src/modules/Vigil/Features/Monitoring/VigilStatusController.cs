@@ -7,7 +7,7 @@ namespace Sentium.Vigil.Features.Monitoring;
 [ApiController]
 [Authorize]
 [Route($"{VigilRoutes.Prefix}/status")]
-public sealed class VigilStatusController(
+internal sealed class VigilStatusController(
     IServiceHealthStateStore stateStore,
     IIncidentStore incidentStore,
     IVigilSettingsProvider settingsProvider) : ControllerBase

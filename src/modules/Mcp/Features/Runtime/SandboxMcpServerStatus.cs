@@ -3,7 +3,7 @@ namespace Sentium.Mcp.Features.Runtime;
 /// <summary>
 /// Runtime state of a Sandbox-hosted MCP server container.
 /// </summary>
-public sealed record SandboxMcpServerStatus(
+internal sealed record SandboxMcpServerStatus(
     string Name,
     bool Running,
     string? ContainerId,

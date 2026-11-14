@@ -9,7 +9,7 @@ namespace Sentium.Praxis.Features.Tools.Timeline;
 /// One task in full: description, deadline and the notes left on it.
 /// </summary>
 [AgentToolPolicy(RiskLevel = ToolRiskLevel.Low, Resource = ToolResource.Timeline, Action = ToolAction.Read)]
-public sealed class GetTimelineTaskTool(
+internal sealed class GetTimelineTaskTool(
     ITimelineAgentAccess timeline,
     IPdpContextAccessor pdpContext,
     TimeProvider timeProvider,

@@ -6,7 +6,7 @@ using Sentium.Registry.Features.Settings;
 
 namespace Sentium.Registry.Data;
 
-public sealed class RegistryDbContext(DbContextOptions<RegistryDbContext> options) : DbContext(options)
+internal sealed class RegistryDbContext(DbContextOptions<RegistryDbContext> options) : DbContext(options)
 {
     public const string Schema = "registry";
 

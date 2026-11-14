@@ -1,7 +1,7 @@
 
 namespace Sentium.Praxis.Features.Workflows;
 
-public sealed class WorkflowResult
+internal sealed class WorkflowResult
 {
     public string Explanation { get; init; } = "";
     public object Risk { get; init; } = default!;

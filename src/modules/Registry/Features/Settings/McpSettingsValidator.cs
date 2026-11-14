@@ -2,7 +2,7 @@ using FluentValidation;
 
 namespace Sentium.Registry.Features.Settings;
 
-public sealed class McpSettingsValidator : AbstractValidator<McpSettings>
+internal sealed class McpSettingsValidator : AbstractValidator<McpSettings>
 {
     public McpSettingsValidator()
     {

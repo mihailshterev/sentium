@@ -3,7 +3,7 @@ using Sentium.Locus.Entities;
 
 namespace Sentium.Locus.Features.Attachments;
 
-public interface IAttachmentService
+internal interface IAttachmentService
 {
     Task<IReadOnlyList<AttachmentDto>?> GetAttachmentsAsync(Guid assetId, CancellationToken ct = default);
 

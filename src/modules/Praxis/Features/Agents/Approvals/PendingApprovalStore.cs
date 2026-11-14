@@ -5,7 +5,7 @@ namespace Sentium.Praxis.Features.Agents.Approvals;
 /// <summary>
 /// In-memory store for tool-approval continuations.
 /// </summary>
-public sealed class PendingApprovalStore : IPendingApprovalStore
+internal sealed class PendingApprovalStore : IPendingApprovalStore
 {
     private static readonly TimeSpan Ttl = TimeSpan.FromMinutes(30);
     private const int MaxEntries = 1000;

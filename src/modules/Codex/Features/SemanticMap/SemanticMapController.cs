@@ -15,7 +15,7 @@ namespace Sentium.Codex.Features.SemanticMap;
 [ApiController]
 [Authorize]
 [Route($"{CodexRoutes.Prefix}/knowledge-map")]
-public sealed class SemanticMapController(
+internal sealed class SemanticMapController(
     IVectorRepository vectorRepository,
     IEmbeddingService embeddingService,
     IOptions<RagOptions> ragOptions,

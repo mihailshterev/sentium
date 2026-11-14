@@ -6,7 +6,7 @@ namespace Sentium.Praxis.Features.Agents.Runtime;
 /// Builds runnable <see cref="AIAgent"/> instances by name. Resolves native built-in agents first and falls back
 /// to the current user's database agents.
 /// </summary>
-public interface IAgentFactory
+internal interface IAgentFactory
 {
     /// <summary>
     /// Resolves an agent by name and constructs a fully equipped instance: harness, curated tools, skills, learnings.

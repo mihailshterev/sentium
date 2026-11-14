@@ -6,7 +6,7 @@ namespace Sentium.Sandbox.Sentinel;
 /// Abstracts calls to the Sentinel Policy Decision Point (hosted in Sentium.Web) so the execution
 /// pipeline stays independent of the HTTP transport and can be tested without it.
 /// </summary>
-public interface ISentinelGateway
+internal interface ISentinelGateway
 {
     /// <summary>
     /// Asks the Sentinel PDP whether the given agent is permitted to execute code.

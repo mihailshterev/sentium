@@ -1,6 +1,6 @@
 namespace Sentium.Vigil.Features.Metrics;
 
-public sealed record CpuInfo
+internal sealed record CpuInfo
 {
     public int ProcessorCount { get; init; }
     public double ProcessCpuPercent { get; init; }

@@ -9,7 +9,7 @@ namespace Sentium.Scheduling.Features.Jobs;
 /// re-run non-idempotent code. For the same reason the job does not request recovery after a crash.
 /// </summary>
 [DisallowConcurrentExecution]
-public sealed class ExecuteJob(ISandboxClient sandboxClient, ILogger<ExecuteJob> logger) : IJob
+internal sealed class ExecuteJob(ISandboxClient sandboxClient, ILogger<ExecuteJob> logger) : IJob
 {
     public async Task Execute(IJobExecutionContext context)
     {

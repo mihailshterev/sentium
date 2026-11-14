@@ -8,7 +8,7 @@ namespace Sentium.Sentinel.Features.Policies;
 /// Prevents a single agent from overwhelming the platform or the PDP itself,
 /// and limits the blast-radius of a compromised or prompt-injected agent.
 /// </summary>
-public sealed class RateLimitingPolicy(IRateLimitStore store, IPdpRuntimeSettingsProvider settings) : IPdpPolicy
+internal sealed class RateLimitingPolicy(IRateLimitStore store, IPdpRuntimeSettingsProvider settings) : IPdpPolicy
 {
     public string Name => "RateLimiting";
 

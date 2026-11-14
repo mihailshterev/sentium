@@ -9,7 +9,7 @@ namespace Sentium.Praxis.Features.Workspaces;
 [ApiController]
 [Authorize]
 [Route($"{PraxisRoutes.Prefix}/workspaces")]
-public sealed class WorkspacesController(IWorkspaceService workspaceService) : ControllerBase
+internal sealed class WorkspacesController(IWorkspaceService workspaceService) : ControllerBase
 {
     private const long MaxFileSizeBytes = 100 * 1024 * 1024;
 

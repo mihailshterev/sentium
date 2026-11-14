@@ -13,4 +13,16 @@
     <Using Include="Microsoft.Extensions.Hosting" />
     <Using Include="Microsoft.Extensions.Logging" />
   </ItemGroup>
+
+  <!--
+    A module's public surface is its Contracts namespace plus its *ModuleExtensions; everything else is internal.
+    E2ESeed writes seed data straight into module DbContexts, and DynamicProxyGenAssembly2 lets NSubstitute mock
+    internal interfaces.
+  -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="Sentium.Tests.Unit" />
+    <InternalsVisibleTo Include="Sentium.Tests.Integration" />
+    <InternalsVisibleTo Include="Sentium.E2ESeed" />
+    <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
+  </ItemGroup>
 </Project>

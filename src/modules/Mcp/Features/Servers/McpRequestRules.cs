@@ -6,7 +6,7 @@ using Sentium.Mcp.Entities;
 
 namespace Sentium.Mcp.Features.Servers;
 
-public static partial class McpRequestRules
+internal static partial class McpRequestRules
 {
     private const int MaxSecrets = 32;
     private const int MaxSecretValueLength = 8_192;

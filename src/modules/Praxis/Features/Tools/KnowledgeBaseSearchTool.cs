@@ -13,7 +13,7 @@ namespace Sentium.Praxis.Features.Tools;
 /// and returns formatted snippets with source citations.
 /// </summary>
 [AgentToolPolicy(RiskLevel = ToolRiskLevel.Low, Resource = ToolResource.VectorDb, Action = ToolAction.Search)]
-public sealed class KnowledgeBaseSearchTool(
+internal sealed class KnowledgeBaseSearchTool(
     IEmbeddingService embeddingService,
     IVectorRepository vectorRepository,
     IOptions<RagOptions> options,

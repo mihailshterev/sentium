@@ -7,7 +7,7 @@ namespace Sentium.Sentinel.Features.Settings;
 /// Reads the runtime PDP settings from the Registry module in-process. Registry caches the settings
 /// envelope itself (HybridCache L1 + L2) and evicts it on change, so Sentinel keeps no copy of its own.
 /// </summary>
-public sealed class RegistryPdpSettingsProvider(
+internal sealed class RegistryPdpSettingsProvider(
     ISettingsService settingsService,
     ILogger<RegistryPdpSettingsProvider> logger) : IPdpRuntimeSettingsProvider
 {

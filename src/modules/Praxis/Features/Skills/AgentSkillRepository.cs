@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Sentium.Praxis.Features.Skills;
 
-public sealed class AgentSkillRepository(PraxisDbContext context) : IAgentSkillRepository
+internal sealed class AgentSkillRepository(PraxisDbContext context) : IAgentSkillRepository
 {
     public async Task<IReadOnlyList<AgentSkill>> GetAllAsync(CancellationToken ct = default)
     {

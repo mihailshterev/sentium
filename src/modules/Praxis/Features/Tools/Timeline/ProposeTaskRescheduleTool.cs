@@ -10,7 +10,7 @@ namespace Sentium.Praxis.Features.Tools.Timeline;
 /// Suggests a new day or month for an existing task; the user accepts or rejects the move.
 /// </summary>
 [AgentToolPolicy(RiskLevel = ToolRiskLevel.Low, Resource = ToolResource.Timeline, Action = ToolAction.Write)]
-public sealed class ProposeTaskRescheduleTool(
+internal sealed class ProposeTaskRescheduleTool(
     ITimelineAgentAccess timeline,
     IPdpContextAccessor pdpContext,
     TimeProvider timeProvider,

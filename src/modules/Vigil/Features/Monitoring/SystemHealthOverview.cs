@@ -1,6 +1,6 @@
 namespace Sentium.Vigil.Features.Monitoring;
 
-public sealed record SystemHealthOverview
+internal sealed record SystemHealthOverview
 {
     public required int Total { get; init; }
     public required int Healthy { get; init; }

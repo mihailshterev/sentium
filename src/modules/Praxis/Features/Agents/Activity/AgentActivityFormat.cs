@@ -6,7 +6,7 @@ namespace Sentium.Praxis.Features.Agents.Activity;
 /// <summary>
 /// Shared formatting for tool calls and results, so the live stream and the persisted timeline agree.
 /// </summary>
-public static class AgentActivityFormat
+internal static class AgentActivityFormat
 {
     /// <summary>
     /// Cap for argument JSON and result previews sent to the UI.

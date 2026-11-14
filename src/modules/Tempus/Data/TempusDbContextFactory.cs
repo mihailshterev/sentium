@@ -5,7 +5,7 @@ using Sentium.Infrastructure.Security;
 
 namespace Sentium.Tempus.Data;
 
-public sealed class TempusDbContextFactory : IDesignTimeDbContextFactory<TempusDbContext>
+internal sealed class TempusDbContextFactory : IDesignTimeDbContextFactory<TempusDbContext>
 {
     public TempusDbContext CreateDbContext(string[] args)
     {

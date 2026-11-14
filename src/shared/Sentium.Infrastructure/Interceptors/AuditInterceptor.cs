@@ -5,7 +5,7 @@ using Sentium.Core.Common;
 
 namespace Sentium.Infrastructure.Interceptors;
 
-public class AuditInterceptor(ILogger<AuditInterceptor> logger) : SaveChangesInterceptor
+internal class AuditInterceptor(ILogger<AuditInterceptor> logger) : SaveChangesInterceptor
 {
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
     {

@@ -1,3 +1,3 @@
 namespace Sentium.Vigil.Features.Streaming;
 
-public sealed record VigilConnectedFrame(string Type = "connected");
+internal sealed record VigilConnectedFrame(string Type = "connected");

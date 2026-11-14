@@ -6,7 +6,7 @@ namespace Sentium.Praxis.Features.WorkflowManagement;
 /// <summary>
 /// Persists and queries workflow run records for the current user scope.
 /// </summary>
-public interface IWorkflowRunRepository
+internal interface IWorkflowRunRepository
 {
     /// <summary>
     /// Persists a completed workflow run.

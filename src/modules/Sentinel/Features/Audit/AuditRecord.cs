@@ -2,7 +2,7 @@ using Sentium.Sentinel.Features.Policies;
 
 namespace Sentium.Sentinel.Features.Audit;
 
-public sealed record AuditRecord
+internal sealed record AuditRecord
 {
     public required Guid Id { get; init; }
     public required DateTimeOffset Timestamp { get; init; }

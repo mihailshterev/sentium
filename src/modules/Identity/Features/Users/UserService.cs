@@ -9,7 +9,7 @@ using Sentium.Infrastructure.Extensions;
 
 namespace Sentium.Identity.Features.Users;
 
-public sealed class UserService(
+internal sealed class UserService(
     UserManager<ApplicationUser> userManager,
     IdentityDbContext dbContext,
     HybridCache cache,

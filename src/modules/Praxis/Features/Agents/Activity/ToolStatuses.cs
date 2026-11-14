@@ -3,7 +3,7 @@ namespace Sentium.Praxis.Features.Agents.Activity;
 /// <summary>
 /// Outcomes of a tool step.
 /// </summary>
-public static class ToolStatuses
+internal static class ToolStatuses
 {
     public const string Running = "running";
     public const string AwaitingApproval = "awaiting_approval";

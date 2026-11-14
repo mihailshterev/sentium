@@ -63,7 +63,7 @@ public sealed class ControllerAuthorizationTests
 
     private static bool IsController(Type type)
     {
-        return type is { IsClass: true, IsAbstract: false, IsPublic: true }
+        return type is { IsClass: true, IsAbstract: false, IsNested: false }
         && typeof(ControllerBase).IsAssignableFrom(type)
         && !type.IsDefined(typeof(NonControllerAttribute), inherit: true);
     }

@@ -6,7 +6,7 @@ namespace Sentium.Praxis.Features.Orchestration;
 /// Hands accepted workflow runs to <see cref="WorkflowRunProcessor"/>, decoupling the HTTP request that
 /// triggers a run from its (long) execution.
 /// </summary>
-public interface IWorkflowRunQueue
+internal interface IWorkflowRunQueue
 {
     ValueTask EnqueueAsync(WorkflowTrigger trigger, CancellationToken ct = default);
 }

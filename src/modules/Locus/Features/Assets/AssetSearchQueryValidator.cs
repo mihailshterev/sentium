@@ -4,7 +4,7 @@ using Sentium.Locus.Common;
 
 namespace Sentium.Locus.Features.Assets;
 
-public sealed class AssetSearchQueryValidator : AbstractValidator<AssetSearchQuery>
+internal sealed class AssetSearchQueryValidator : AbstractValidator<AssetSearchQuery>
 {
     public AssetSearchQueryValidator()
     {

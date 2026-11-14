@@ -7,7 +7,7 @@ namespace Sentium.Mcp.Features.Servers;
 /// <param name="Changed">The tool was approved before, but its definition has changed since (needs re-approval).</param>
 /// <param name="Missing">The server no longer lists the tool.</param>
 /// <param name="Usable">Agents can currently be given the tool.</param>
-public sealed record McpToolDto(
+internal sealed record McpToolDto(
     string Name,
     string QualifiedName,
     string? Title,

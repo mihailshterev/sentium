@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Sentium.Identity.Data;
 
-public sealed class IdentityDbContext(DbContextOptions<IdentityDbContext> options) : IdentityDbContext<ApplicationUser,
+internal sealed class IdentityDbContext(DbContextOptions<IdentityDbContext> options) : IdentityDbContext<ApplicationUser,
                                                                                     ApplicationRole, Guid, IdentityUserClaim<Guid>,
                                                                                     IdentityUserRole<Guid>, IdentityUserLogin<Guid>,
                                                                                     IdentityRoleClaim<Guid>, IdentityUserToken<Guid>>(options)

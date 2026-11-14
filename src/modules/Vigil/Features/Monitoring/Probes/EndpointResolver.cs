@@ -2,7 +2,7 @@ using System.Text.RegularExpressions;
 
 namespace Sentium.Vigil.Features.Monitoring.Probes;
 
-public static partial class EndpointResolver
+internal static partial class EndpointResolver
 {
     public static (string Host, int Port)? ResolveHostPort(string? connectionString, int defaultPort)
     {

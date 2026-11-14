@@ -3,7 +3,7 @@ using Sentium.Praxis.Features.Skills;
 
 namespace Sentium.Praxis.Entities;
 
-public sealed class AgentSkill : IUserOwned
+internal sealed class AgentSkill : IUserOwned
 {
     public Guid Id { get; set; }
     public Guid UserId { get; set; }

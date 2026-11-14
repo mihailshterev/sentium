@@ -3,7 +3,7 @@ namespace Sentium.Locus.Entities;
 /// <summary>
 /// A file (photo, manual, receipt, ...) stored in blob storage for an asset.
 /// </summary>
-public sealed class AssetAttachment
+internal sealed class AssetAttachment
 {
     public Guid Id { get; set; }
 

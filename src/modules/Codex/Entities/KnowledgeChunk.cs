@@ -8,7 +8,7 @@ namespace Sentium.Codex.Entities;
 /// <see cref="Collection"/> column partitions the rows into the logical vector collections
 /// (<see cref="KnowledgeCollections"/>).
 /// </summary>
-public sealed class KnowledgeChunk
+internal sealed class KnowledgeChunk
 {
     public Guid Id { get; set; }
 

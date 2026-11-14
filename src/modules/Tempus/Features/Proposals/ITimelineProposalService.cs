@@ -4,7 +4,7 @@ using Sentium.Tempus.Features.Tasks;
 
 namespace Sentium.Tempus.Features.Proposals;
 
-public interface ITimelineProposalService
+internal interface ITimelineProposalService
 {
     /// <param name="status">Which proposals to list; pending ones when <see langword="null"/>.</param>
     Task<IReadOnlyList<TimelineProposalDto>> ListAsync(TimelineProposalStatus? status, CancellationToken ct = default);

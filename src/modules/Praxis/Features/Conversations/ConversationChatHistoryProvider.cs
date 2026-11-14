@@ -21,7 +21,7 @@ namespace Sentium.Praxis.Features.Conversations;
 /// tool calls with results and approval decisions - see <see cref="AgentTurnSteps"/>). Trailing unanswered user turns are skipped when loading, so a retry or a resume never
 /// hands the model two consecutive user messages. Ownership is checked against the acting user on every load and store.</para>
 /// </remarks>
-public sealed class ConversationChatHistoryProvider : ChatHistoryProvider
+internal sealed class ConversationChatHistoryProvider : ChatHistoryProvider
 {
     /// <summary>
     /// <see cref="ChatMessage.AdditionalProperties"/> key carrying the user's original text when the prompt sent to the

@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 namespace Sentium.Vigil.Features.Monitoring;
 
 [JsonConverter(typeof(JsonStringEnumConverter<ComponentKind>))]
-public enum ComponentKind
+internal enum ComponentKind
 {
     Service,
     Infrastructure

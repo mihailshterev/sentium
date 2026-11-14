@@ -2,7 +2,7 @@ using FluentValidation;
 
 namespace Sentium.Registry.Features.Settings;
 
-public sealed class HarnessSettingsValidator : AbstractValidator<HarnessSettings>
+internal sealed class HarnessSettingsValidator : AbstractValidator<HarnessSettings>
 {
     public HarnessSettingsValidator()
     {

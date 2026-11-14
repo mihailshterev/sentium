@@ -1,6 +1,6 @@
 namespace Sentium.Praxis.Features.CodeExecution;
 
-public sealed record ExecutionLogEntry
+internal sealed record ExecutionLogEntry
 {
     public required Guid JobId { get; init; }
     public required DateTimeOffset ExecutedAt { get; init; }

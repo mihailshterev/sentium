@@ -8,7 +8,7 @@ namespace Sentium.Praxis.Features.CodeExecution;
 /// history lives here: each completed call is written as an <see cref="ExecutionLogEntry"/>.
 /// The write uses its own DI scope so it never shares a DbContext with the agent loop that triggered it.
 /// </summary>
-public sealed class SandboxClient(
+internal sealed class SandboxClient(
     HttpClient httpClient,
     IServiceScopeFactory scopeFactory,
     ILogger<SandboxClient> logger) : ISandboxClient

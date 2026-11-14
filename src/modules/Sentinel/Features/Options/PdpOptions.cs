@@ -6,7 +6,7 @@ namespace Sentium.Sentinel.Features.Options;
 /// and are managed via Sovereign controls. Only static policy lists and infrastructure
 /// timeouts belong here.
 /// </summary>
-public sealed class PdpOptions
+internal sealed class PdpOptions
 {
     public const string SectionName = "Pdp";
 

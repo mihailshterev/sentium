@@ -3,7 +3,7 @@ namespace Sentium.Sandbox.Mcp;
 /// <summary>
 /// The server container could not be started or did not complete the MCP handshake.
 /// </summary>
-public sealed class McpServerStartException : Exception
+internal sealed class McpServerStartException : Exception
 {
     public McpServerStartException()
     {

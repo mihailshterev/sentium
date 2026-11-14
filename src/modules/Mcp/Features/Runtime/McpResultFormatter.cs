@@ -6,7 +6,7 @@ namespace Sentium.Mcp.Features.Runtime;
 /// <summary>
 /// Renders a <see cref="CallToolResult"/> as plain text for the model.
 /// </summary>
-public static class McpResultFormatter
+internal static class McpResultFormatter
 {
     public static string Format(CallToolResult result, int maxChars)
     {

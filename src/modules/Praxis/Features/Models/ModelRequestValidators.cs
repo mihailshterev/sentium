@@ -2,7 +2,7 @@ using FluentValidation;
 
 namespace Sentium.Praxis.Features.Models;
 
-public sealed class ModelActionRequestValidator : AbstractValidator<ModelActionRequest>
+internal sealed class ModelActionRequestValidator : AbstractValidator<ModelActionRequest>
 {
     public ModelActionRequestValidator()
     {

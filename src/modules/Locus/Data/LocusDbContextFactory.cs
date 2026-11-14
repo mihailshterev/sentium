@@ -4,7 +4,7 @@ using Sentium.Infrastructure.Extensions;
 
 namespace Sentium.Locus.Data;
 
-public sealed class LocusDbContextFactory : IDesignTimeDbContextFactory<LocusDbContext>
+internal sealed class LocusDbContextFactory : IDesignTimeDbContextFactory<LocusDbContext>
 {
     public LocusDbContext CreateDbContext(string[] args)
     {

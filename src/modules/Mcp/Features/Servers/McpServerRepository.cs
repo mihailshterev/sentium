@@ -4,7 +4,7 @@ using Sentium.Mcp.Entities;
 
 namespace Sentium.Mcp.Features.Servers;
 
-public sealed class McpServerRepository(McpDbContext db) : IMcpServerRepository
+internal sealed class McpServerRepository(McpDbContext db) : IMcpServerRepository
 {
     public async Task<IReadOnlyList<McpServer>> GetAllAsync(CancellationToken ct) =>
         await db.McpServers.AsNoTracking().OrderBy(s => s.Name).ToListAsync(ct);

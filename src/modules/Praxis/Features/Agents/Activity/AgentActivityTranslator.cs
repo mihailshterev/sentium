@@ -13,7 +13,7 @@ namespace Sentium.Praxis.Features.Agents.Activity;
 /// <see cref="FunctionResultContent"/>, so the gap is the tool's execution time. Answer text is not translated here
 /// (read <c>update.Text</c>).
 /// </remarks>
-public sealed class AgentActivityTranslator(TimeProvider? timeProvider = null)
+internal sealed class AgentActivityTranslator(TimeProvider? timeProvider = null)
 {
     private readonly TimeProvider time = timeProvider ?? TimeProvider.System;
     private readonly Dictionary<string, long> started = new(StringComparer.Ordinal);

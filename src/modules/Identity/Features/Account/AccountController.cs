@@ -12,7 +12,7 @@ namespace Sentium.Identity.Features.Account;
 /// </summary>
 [ApiController]
 [Route($"{IdentityRoutes.Prefix}/account")]
-public sealed class AccountController(
+internal sealed class AccountController(
     IIdentityService identityService,
     IUserService userService) : ControllerBase
 {

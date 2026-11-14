@@ -3,7 +3,7 @@ namespace Sentium.Locus.Features.Attachments;
 /// <summary>
 /// Binary storage for asset attachments. Blob names are always <c>{assetId}/{attachmentId}</c>.
 /// </summary>
-public interface IAttachmentStore
+internal interface IAttachmentStore
 {
     Task UploadAsync(string blobName, Stream content, string contentType, CancellationToken ct = default);
 

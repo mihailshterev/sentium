@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 namespace Sentium.Mcp.Entities;
 
 [JsonConverter(typeof(JsonStringEnumConverter<McpTransport>))]
-public enum McpTransport
+internal enum McpTransport
 {
     /// <summary>
     /// A Streamable HTTP MCP server on the local network.

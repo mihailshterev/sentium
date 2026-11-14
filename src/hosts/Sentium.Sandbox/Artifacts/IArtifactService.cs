@@ -6,7 +6,7 @@ namespace Sentium.Sandbox.Artifacts;
 /// Scans a completed job directory for files created or modified during execution,
 /// uploads them to blob storage, and returns a record for each artifact.
 /// </summary>
-public interface IArtifactService
+internal interface IArtifactService
 {
     /// <param name="jobDirectory">Absolute path to the completed job directory.</param>
     /// <param name="inputFileNames">

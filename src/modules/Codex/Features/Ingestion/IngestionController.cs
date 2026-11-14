@@ -14,7 +14,7 @@ namespace Sentium.Codex.Features.Ingestion;
 [ApiController]
 [AuthorizeSovereign]
 [Route($"{CodexRoutes.Prefix}/ingestion")]
-public sealed class IngestionController(
+internal sealed class IngestionController(
     IDocumentIngestionService ingestionService,
     IEnumerable<IIngestionSource> sources) : ControllerBase
 {

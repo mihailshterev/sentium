@@ -14,7 +14,7 @@ namespace Sentium.Locus.Features.Locations;
 /// transaction-scoped advisory lock, so two concurrent moves can never combine into a cycle; the tree is
 /// only read after the lock is held.
 /// </summary>
-public sealed class LocationService(
+internal sealed class LocationService(
     LocusDbContext db,
     ICurrentUser currentUser,
     TimeProvider timeProvider,

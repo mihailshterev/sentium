@@ -5,7 +5,7 @@ namespace Sentium.Praxis.Features.Agents.Native;
 /// answers with a structured verdict. Judging a single step is a narrow yes/no question - the kind small models answer
 /// reliably - instead of a holistic review of a combined multi-agent transcript.
 /// </summary>
-public sealed class ValidationAgent : IAgent
+internal sealed class ValidationAgent : IAgent
 {
     /// <remarks>
     /// Must equal the key this agent is registered under (<see cref="AgentRole.Validator"/>).

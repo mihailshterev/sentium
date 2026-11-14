@@ -7,7 +7,7 @@ namespace Sentium.Vigil.Features.Settings;
 /// Reads the Vigil monitoring settings from the Registry module in-process. Registry caches the settings
 /// envelope itself (HybridCache L1 + L2) and evicts it on change, so Vigil keeps no copy of its own.
 /// </summary>
-public sealed class RegistryVigilSettingsProvider(
+internal sealed class RegistryVigilSettingsProvider(
     ISettingsService settingsService,
     ILogger<RegistryVigilSettingsProvider> logger) : IVigilSettingsProvider
 {

@@ -1,6 +1,6 @@
 namespace Sentium.Sentinel.Features.Policies;
 
-public sealed record PolicyDecision
+internal sealed record PolicyDecision
 {
     public required bool Allowed { get; init; }
     public required PolicyEffect Effect { get; init; }

@@ -3,7 +3,7 @@ namespace Sentium.Locus.Features.Assets;
 /// <summary>
 /// One row of the asset list.
 /// </summary>
-public sealed record AssetSummaryDto(
+internal sealed record AssetSummaryDto(
     Guid Id,
     string DisplayName,
     string? Category,

@@ -10,7 +10,7 @@ namespace Sentium.Tempus.Features.Tasks;
 [ApiController]
 [Authorize]
 [Route($"{TempusRoutes.Prefix}/tasks")]
-public sealed class TimelineTasksController(ITimelineTaskService taskService) : ControllerBase
+internal sealed class TimelineTasksController(ITimelineTaskService taskService) : ControllerBase
 {
     [HttpGet("{id:guid}")]
     [ProducesResponseType(typeof(TimelineTaskDto), StatusCodes.Status200OK)]

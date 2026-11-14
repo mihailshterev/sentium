@@ -1,6 +1,6 @@
 namespace Sentium.Sandbox.Contracts;
 
-public sealed record ArtifactDto
+internal sealed record ArtifactDto
 {
     public required string FileName { get; init; }
     public required string MimeType { get; init; }

@@ -1,6 +1,6 @@
 namespace Sentium.Praxis.Features.Learnings;
 
-public sealed record AgentLearningResponse(
+internal sealed record AgentLearningResponse(
     Guid Id,
     string AgentName,
     string Content,

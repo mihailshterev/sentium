@@ -2,7 +2,7 @@ using Sentium.Core.Results;
 
 namespace Sentium.Locus.Features.Locations;
 
-public interface ILocationService
+internal interface ILocationService
 {
     Task<IReadOnlyList<LocationDto>> GetLocationsAsync(CancellationToken ct = default);
 

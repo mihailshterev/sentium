@@ -7,7 +7,7 @@ namespace Sentium.Tempus.Entities;
 /// A change an agent suggests - a new task, or a new place for an existing one - waiting for the user to accept or
 /// reject it. Agents never change tasks directly.
 /// </summary>
-public sealed class TimelineProposal : IUserOwned
+internal sealed class TimelineProposal : IUserOwned
 {
     public Guid Id { get; set; }
 

@@ -2,7 +2,7 @@ using FluentValidation;
 
 namespace Sentium.Mcp.Features.Servers;
 
-public sealed class UpdateMcpToolsRequestValidator : AbstractValidator<UpdateMcpToolsRequest>
+internal sealed class UpdateMcpToolsRequestValidator : AbstractValidator<UpdateMcpToolsRequest>
 {
     public UpdateMcpToolsRequestValidator()
     {

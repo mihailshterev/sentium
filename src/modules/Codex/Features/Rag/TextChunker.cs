@@ -7,7 +7,7 @@ namespace Sentium.Codex.Features.Rag;
 /// A sentence-boundary heuristic is applied at each cut point to avoid
 /// truncating mid-sentence wherever possible.
 /// </summary>
-public static class TextChunker
+internal static class TextChunker
 {
     private static readonly SearchValues<char> BoundaryChars = SearchValues.Create(['.', '!', '?', '\n']);
 

@@ -5,7 +5,7 @@ using Sentium.Infrastructure.Security;
 
 namespace Sentium.Praxis.Data;
 
-public sealed class PraxisDbContextFactory : IDesignTimeDbContextFactory<PraxisDbContext>
+internal sealed class PraxisDbContextFactory : IDesignTimeDbContextFactory<PraxisDbContext>
 {
     public PraxisDbContext CreateDbContext(string[] args)
     {

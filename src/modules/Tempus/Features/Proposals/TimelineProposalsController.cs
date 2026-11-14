@@ -12,7 +12,7 @@ namespace Sentium.Tempus.Features.Proposals;
 [ApiController]
 [Authorize]
 [Route($"{TempusRoutes.Prefix}/proposals")]
-public sealed class TimelineProposalsController(ITimelineProposalService proposalService) : ControllerBase
+internal sealed class TimelineProposalsController(ITimelineProposalService proposalService) : ControllerBase
 {
     /// <param name="status">Which proposals to list (default <c>Pending</c>).</param>
     [HttpGet]

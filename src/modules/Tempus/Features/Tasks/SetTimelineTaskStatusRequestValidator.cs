@@ -2,7 +2,7 @@ using FluentValidation;
 
 namespace Sentium.Tempus.Features.Tasks;
 
-public sealed class SetTimelineTaskStatusRequestValidator : AbstractValidator<SetTimelineTaskStatusRequest>
+internal sealed class SetTimelineTaskStatusRequestValidator : AbstractValidator<SetTimelineTaskStatusRequest>
 {
     public SetTimelineTaskStatusRequestValidator()
     {

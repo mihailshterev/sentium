@@ -7,7 +7,7 @@ namespace Sentium.Mcp.Features.Runtime;
 /// REST client for the Sandbox's MCP host (<c>/mcp/servers/{name}</c>, internal-token authenticated). Tool payloads are
 /// the MCP SDK's own protocol types, serialized with <see cref="McpJsonUtilities.DefaultOptions"/>.
 /// </summary>
-public interface ISandboxMcpHostClient
+internal interface ISandboxMcpHostClient
 {
     Task<SandboxMcpServerStatus> EnsureAsync(string name, SandboxMcpLaunchSpec spec, CancellationToken ct);
 

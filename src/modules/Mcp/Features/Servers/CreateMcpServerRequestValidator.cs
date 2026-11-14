@@ -3,7 +3,7 @@ using Sentium.Mcp.Entities;
 
 namespace Sentium.Mcp.Features.Servers;
 
-public sealed class CreateMcpServerRequestValidator : AbstractValidator<CreateMcpServerRequest>
+internal sealed class CreateMcpServerRequestValidator : AbstractValidator<CreateMcpServerRequest>
 {
     public CreateMcpServerRequestValidator()
     {

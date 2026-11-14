@@ -6,7 +6,7 @@ namespace Sentium.Praxis.Features.Storage;
 /// In-memory FIFO. Nothing is lost on restart: the file's <c>ProcessingStatus</c> in the database is the
 /// source of truth, and the worker re-queues every unfinished file when it starts.
 /// </summary>
-public sealed class FileIngestionQueue : IFileIngestionQueue
+internal sealed class FileIngestionQueue : IFileIngestionQueue
 {
     private readonly Channel<FileIngestionRequest> _channel = Channel.CreateUnbounded<FileIngestionRequest>(
         new UnboundedChannelOptions { SingleReader = true, SingleWriter = false });

@@ -4,7 +4,7 @@ namespace Sentium.Sentinel.Features.Audit;
 /// Forensic audit log for PDP decisions.
 /// Implementations must be thread-safe.
 /// </summary>
-public interface IAuditLog
+internal interface IAuditLog
 {
     ValueTask RecordAsync(AuditRecord record, CancellationToken ct = default);
 

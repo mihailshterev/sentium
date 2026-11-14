@@ -1,6 +1,6 @@
 namespace Sentium.Codex.Features.SemanticMap;
 
-public sealed record KnowledgeMapResponse
+internal sealed record KnowledgeMapResponse
 {
     public required IReadOnlyList<KnowledgeMapNode> Nodes { get; init; }
     public int TotalNodes { get; init; }

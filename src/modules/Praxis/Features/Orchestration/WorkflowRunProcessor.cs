@@ -16,7 +16,7 @@ namespace Sentium.Praxis.Features.Orchestration;
 /// <see cref="AgentUpdateTypes.Cancelled"/>) to its stream so the UI can never hang waiting for an outcome -
 /// including runs interrupted, or never started, because the application shut down.
 /// </summary>
-public sealed class WorkflowRunProcessor(
+internal sealed class WorkflowRunProcessor(
     WorkflowRunQueue queue,
     IAgentStreamPublisher stream,
     IServiceScopeFactory scopeFactory,

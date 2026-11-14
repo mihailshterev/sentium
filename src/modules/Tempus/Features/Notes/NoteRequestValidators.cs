@@ -3,7 +3,7 @@ using Sentium.Tempus.Common;
 
 namespace Sentium.Tempus.Features.Notes;
 
-public sealed class CreateTimelineNoteRequestValidator : AbstractValidator<CreateTimelineNoteRequest>
+internal sealed class CreateTimelineNoteRequestValidator : AbstractValidator<CreateTimelineNoteRequest>
 {
     public CreateTimelineNoteRequestValidator()
     {

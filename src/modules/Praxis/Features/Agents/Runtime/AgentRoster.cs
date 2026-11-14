@@ -5,7 +5,7 @@ namespace Sentium.Praxis.Features.Agents.Runtime;
 /// Custom agents are looked up for the explicit user, never through the ambient query filter: a Sovereign (and a
 /// system-scoped agent run) bypasses that filter and would otherwise see every member's agents.
 /// </summary>
-public sealed class AgentRoster(IEnumerable<IAgent> nativeAgents, IAgentRepository agentRepository) : IAgentRoster
+internal sealed class AgentRoster(IEnumerable<IAgent> nativeAgents, IAgentRepository agentRepository) : IAgentRoster
 {
     public async Task<IReadOnlyList<AgentRosterEntry>> GetAsync(Guid? userId, CancellationToken ct = default)
     {

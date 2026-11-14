@@ -1,6 +1,6 @@
 namespace Sentium.Praxis.Features.Sentinel;
 
-public sealed record PdpDecision
+internal sealed record PdpDecision
 {
     public required bool Allowed { get; init; }
     public required string Effect { get; init; }

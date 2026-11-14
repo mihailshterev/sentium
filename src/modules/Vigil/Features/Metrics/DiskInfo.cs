@@ -1,6 +1,6 @@
 namespace Sentium.Vigil.Features.Metrics;
 
-public sealed record DiskInfo
+internal sealed record DiskInfo
 {
     public required string Name { get; init; }
     public required string Label { get; init; }

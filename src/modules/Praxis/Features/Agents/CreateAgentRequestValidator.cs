@@ -3,7 +3,7 @@ using Sentium.Praxis.Features.Tools;
 
 namespace Sentium.Praxis.Features.Agents;
 
-public sealed class CreateAgentRequestValidator : AbstractValidator<CreateAgentRequest>
+internal sealed class CreateAgentRequestValidator : AbstractValidator<CreateAgentRequest>
 {
     public CreateAgentRequestValidator(IToolCatalog catalog)
     {

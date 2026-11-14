@@ -2,7 +2,7 @@ using Sentium.Core.Common;
 
 namespace Sentium.Praxis.Entities;
 
-public sealed class Message : INonAudited
+internal sealed class Message : INonAudited
 {
     public Guid Id { get; set; }
     public Guid ConversationId { get; set; }

@@ -3,7 +3,7 @@ using Sentium.Praxis.Data;
 
 namespace Sentium.Praxis.Features.CodeExecution;
 
-public sealed class EfCoreExecutionLogRepository(PraxisDbContext dbContext) : IExecutionLogRepository
+internal sealed class EfCoreExecutionLogRepository(PraxisDbContext dbContext) : IExecutionLogRepository
 {
     public async Task AddAsync(ExecutionLogEntry entry, CancellationToken ct = default)
     {

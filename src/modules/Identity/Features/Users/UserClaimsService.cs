@@ -7,7 +7,7 @@ using Sentium.Identity.Features.Security;
 
 namespace Sentium.Identity.Features.Users;
 
-public sealed class UserClaimsService(
+internal sealed class UserClaimsService(
     UserManager<ApplicationUser> userManager,
     HybridCache cache,
     ILogger<UserClaimsService> logger) : IUserClaimsService

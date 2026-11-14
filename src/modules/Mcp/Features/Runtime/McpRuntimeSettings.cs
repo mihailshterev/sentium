@@ -3,7 +3,7 @@ namespace Sentium.Mcp.Features.Runtime;
 /// <summary>
 /// Runtime MCP client settings (Registry key <c>mcp</c>).
 /// </summary>
-public sealed record McpRuntimeSettings(
+internal sealed record McpRuntimeSettings(
     bool Enabled = true,
     int ConnectTimeoutSeconds = 30,
     int CallTimeoutSeconds = 60,

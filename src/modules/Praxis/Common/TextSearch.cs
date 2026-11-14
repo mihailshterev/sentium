@@ -5,7 +5,7 @@ namespace Sentium.Praxis.Common;
 /// <summary>
 /// Helpers for the case-insensitive "contains" filters behind list search boxes (<c>EF.Functions.ILike</c>).
 /// </summary>
-public static class TextSearch
+internal static class TextSearch
 {
     /// <summary>
     /// Escape character passed to <c>ILike</c> together with <see cref="ToContainsPattern"/>.

@@ -3,7 +3,7 @@ namespace Sentium.Locus.Features.Assets;
 /// <summary>
 /// Create or update payload for an asset.
 /// </summary>
-public sealed record SaveAssetRequest(
+internal sealed record SaveAssetRequest(
     string DisplayName,
     Guid LocationId,
     string? Category = null,

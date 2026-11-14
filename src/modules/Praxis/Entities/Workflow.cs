@@ -2,7 +2,7 @@ using Sentium.Core.Common;
 
 namespace Sentium.Praxis.Entities;
 
-public sealed class Workflow : IUserOwned
+internal sealed class Workflow : IUserOwned
 {
     public Guid Id { get; set; }
     public Guid UserId { get; set; }

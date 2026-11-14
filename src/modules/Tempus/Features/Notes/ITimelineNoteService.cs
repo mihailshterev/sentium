@@ -2,7 +2,7 @@ using Sentium.Core.Results;
 
 namespace Sentium.Tempus.Features.Notes;
 
-public interface ITimelineNoteService
+internal interface ITimelineNoteService
 {
     Task<Result<TimelineNoteDto>> CreateAsync(CreateTimelineNoteRequest request, CancellationToken ct = default);
 

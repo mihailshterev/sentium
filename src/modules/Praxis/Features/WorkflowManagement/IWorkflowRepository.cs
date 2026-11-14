@@ -6,7 +6,7 @@ namespace Sentium.Praxis.Features.WorkflowManagement;
 /// <summary>
 /// Persistence-layer CRUD operations for agent workflows.
 /// </summary>
-public interface IWorkflowRepository
+internal interface IWorkflowRepository
 {
     Task<IReadOnlyList<WorkflowResponse>> GetWorkflowsAsync(CancellationToken ct = default);
     Task<(IReadOnlyList<WorkflowResponse> Items, int TotalCount)> GetPagedAsync(int page, int pageSize, CancellationToken ct = default);

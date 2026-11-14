@@ -5,7 +5,7 @@ namespace Sentium.Praxis.Entities;
 /// <summary>
 /// A user's grouping of <see cref="ProjectFile"/>s that the agent can access, ingested for RAG.
 /// </summary>
-public sealed class Workspace : IUserOwned
+internal sealed class Workspace : IUserOwned
 {
     public Guid Id { get; set; }
 

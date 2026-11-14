@@ -1,6 +1,6 @@
 namespace Sentium.Praxis.Features.Skills;
 
-public sealed record CreateAgentSkillRequest(
+internal sealed record CreateAgentSkillRequest(
     string Name,
     string Description,
     string Instructions,

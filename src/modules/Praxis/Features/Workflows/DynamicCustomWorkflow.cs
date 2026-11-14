@@ -11,7 +11,7 @@ namespace Sentium.Praxis.Features.Workflows;
 /// <summary>
 /// User-defined squad: a fixed plan - the workflow's agents, in their configured order - each contributing its role.
 /// </summary>
-public sealed class DynamicCustomWorkflow(
+internal sealed class DynamicCustomWorkflow(
     SquadWorkflowRunner squad,
     IAgentRepository agentRepository,
     IWorkflowService workflowService,

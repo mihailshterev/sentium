@@ -12,7 +12,7 @@ namespace Sentium.Praxis.Features.Tools;
 /// <see cref="LearningsContextProvider"/>), but this tool allows on-demand, deeper lookups.
 /// </summary>
 [AgentToolPolicy(RiskLevel = ToolRiskLevel.Low, Resource = ToolResource.VectorDb, Action = ToolAction.Search)]
-public sealed class RecallLearningsTool(
+internal sealed class RecallLearningsTool(
     IAgentLearningService learningService,
     IPdpContextAccessor pdpContext) : IAgentTool
 {

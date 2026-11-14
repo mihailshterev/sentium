@@ -8,7 +8,7 @@ namespace Sentium.Praxis.Features.Registry;
 /// Registry caches every settings envelope itself (HybridCache L1 + L2) and evicts it on change,
 /// so Praxis keeps no copy of its own.
 /// </summary>
-public sealed class RegistrySettingsService(
+internal sealed class RegistrySettingsService(
     ISettingsService settingsService,
     ILogger<RegistrySettingsService> logger) : IRegistrySettingsService
 {

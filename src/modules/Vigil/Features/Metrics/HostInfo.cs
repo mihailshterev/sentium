@@ -1,6 +1,6 @@
 namespace Sentium.Vigil.Features.Metrics;
 
-public sealed record HostInfo
+internal sealed record HostInfo
 {
     public required string MachineName { get; init; }
     public required string OsDescription { get; init; }

@@ -6,7 +6,7 @@ using Sentium.Core.Results;
 
 namespace Sentium.Praxis.Features.Learnings;
 
-public sealed class AgentLearningService(
+internal sealed class AgentLearningService(
     IAgentLearningRepository repository,
     IDocumentIngestionService ingestionService,
     IVectorRepository vectorRepository,

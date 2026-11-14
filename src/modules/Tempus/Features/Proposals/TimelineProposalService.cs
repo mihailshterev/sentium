@@ -9,7 +9,7 @@ using Sentium.Tempus.Features.Tasks;
 
 namespace Sentium.Tempus.Features.Proposals;
 
-public sealed class TimelineProposalService(
+internal sealed class TimelineProposalService(
     TempusDbContext db,
     ITimelineTaskService taskService,
     TimeProvider timeProvider) : ITimelineProposalService

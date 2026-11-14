@@ -1,6 +1,6 @@
 namespace Sentium.Praxis.Features.Skills;
 
-public enum AgentSkillType
+internal enum AgentSkillType
 {
     Custom = 0,
     Uploaded = 1,

@@ -7,7 +7,7 @@ namespace Sentium.Locus.Entities;
 /// transaction as the change that caused it, so no sync is lost on a crash. Deliberately has no foreign key
 /// to <see cref="Asset"/>: a removal request must outlive the asset's hard delete.
 /// </summary>
-public sealed class KnowledgeSyncEntry : INonAudited
+internal sealed class KnowledgeSyncEntry : INonAudited
 {
     public Guid AssetId { get; set; }
 

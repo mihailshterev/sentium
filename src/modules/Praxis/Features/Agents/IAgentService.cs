@@ -5,7 +5,7 @@ namespace Sentium.Praxis.Features.Agents;
 /// <summary>
 /// Application-level operations for managing user-defined agents.
 /// </summary>
-public interface IAgentService
+internal interface IAgentService
 {
     /// <summary>
     /// Creates a new agent for the current user.

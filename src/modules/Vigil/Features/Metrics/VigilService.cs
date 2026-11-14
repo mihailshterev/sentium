@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 
 namespace Sentium.Vigil.Features.Metrics;
 
-public sealed class VigilService : IVigil
+internal sealed class VigilService : IVigil
 {
     public SystemMetrics GetMetrics()
     {

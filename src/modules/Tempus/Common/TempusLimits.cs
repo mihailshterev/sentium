@@ -3,7 +3,7 @@ namespace Sentium.Tempus.Common;
 /// <summary>
 /// Field limits shared by the EF model, the request validators, the agent facade and the portal's form schemas.
 /// </summary>
-public static class TempusLimits
+internal static class TempusLimits
 {
     public const int MinYear = 2000;
     public const int MaxYear = 2100;

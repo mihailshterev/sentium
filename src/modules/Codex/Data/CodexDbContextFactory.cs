@@ -4,7 +4,7 @@ using Sentium.Infrastructure.Extensions;
 
 namespace Sentium.Codex.Data;
 
-public sealed class CodexDbContextFactory : IDesignTimeDbContextFactory<CodexDbContext>
+internal sealed class CodexDbContextFactory : IDesignTimeDbContextFactory<CodexDbContext>
 {
     public CodexDbContext CreateDbContext(string[] args)
     {

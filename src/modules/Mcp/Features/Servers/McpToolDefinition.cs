@@ -1,6 +1,6 @@
 namespace Sentium.Mcp.Features.Servers;
 
-public sealed record McpToolDefinition(
+internal sealed record McpToolDefinition(
     string Name,
     string? Title,
     string? Description,

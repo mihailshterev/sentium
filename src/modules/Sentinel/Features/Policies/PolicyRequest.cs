@@ -1,6 +1,6 @@
 namespace Sentium.Sentinel.Features.Policies;
 
-public sealed record PolicyRequest
+internal sealed record PolicyRequest
 {
     public required string AgentId { get; init; }
     public required string SkillName { get; init; }

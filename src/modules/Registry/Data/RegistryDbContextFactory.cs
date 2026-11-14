@@ -4,7 +4,7 @@ using Sentium.Infrastructure.Extensions;
 
 namespace Sentium.Registry.Data;
 
-public sealed class RegistryDbContextFactory : IDesignTimeDbContextFactory<RegistryDbContext>
+internal sealed class RegistryDbContextFactory : IDesignTimeDbContextFactory<RegistryDbContext>
 {
     public RegistryDbContext CreateDbContext(string[] args)
     {

@@ -1,6 +1,6 @@
 namespace Sentium.Praxis.Features.Workspaces;
 
-public sealed record ProjectFileResponse(
+internal sealed record ProjectFileResponse(
     Guid Id,
     string FileName,
     long SizeBytes,

@@ -4,7 +4,7 @@ namespace Sentium.Praxis.Features.Agents.ToolOverrides;
 /// Persistence for per-user overrides of built-in agents' tool lists. Every lookup takes the owning user explicitly:
 /// a Sovereign (or a system-scoped run) bypasses the query filter and must still get its own overrides only.
 /// </summary>
-public interface IAgentToolOverrideRepository
+internal interface IAgentToolOverrideRepository
 {
     /// <summary>
     /// The override of <paramref name="agentName"/> (the canonical built-in name) owned by <paramref name="userId"/>, or <see langword="null"/>.

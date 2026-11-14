@@ -1,3 +1,3 @@
 namespace Sentium.Identity.Features.RoleManagement;
 
-public sealed record RoleResponse(string Name);
+internal sealed record RoleResponse(string Name);

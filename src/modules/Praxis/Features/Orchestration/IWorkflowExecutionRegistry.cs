@@ -4,7 +4,7 @@ namespace Sentium.Praxis.Features.Orchestration;
 /// Tracks the in-flight workflow executions so a user's stop request (<c>POST orchestration/cancel/{streamId}</c>)
 /// can reach the run's <see cref="CancellationTokenSource"/>. Cancelling a stream that is not running is a no-op.
 /// </summary>
-public interface IWorkflowExecutionRegistry
+internal interface IWorkflowExecutionRegistry
 {
     /// <summary>
     /// Registers the token source driving the run identified by <paramref name="streamId"/>.

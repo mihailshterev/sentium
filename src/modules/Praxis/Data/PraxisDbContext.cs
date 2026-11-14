@@ -8,7 +8,7 @@ using Sentium.Praxis.Features.Conversations;
 
 namespace Sentium.Praxis.Data;
 
-public sealed class PraxisDbContext : DbContext
+internal sealed class PraxisDbContext : DbContext
 {
     public const string Schema = "praxis";
 

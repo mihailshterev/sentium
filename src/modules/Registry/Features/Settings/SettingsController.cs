@@ -15,7 +15,7 @@ namespace Sentium.Registry.Features.Settings;
 [ApiController]
 [Authorize]
 [Route($"{RegistryRoutes.Prefix}/settings")]
-public sealed class SettingsController(ISettingsService settingsService, ISettingsCatalog catalog) : ControllerBase
+internal sealed class SettingsController(ISettingsService settingsService, ISettingsCatalog catalog) : ControllerBase
 {
     private bool IsSovereign => RoleClaims.IsInRole(User, SecurityRoles.Sovereign);
 

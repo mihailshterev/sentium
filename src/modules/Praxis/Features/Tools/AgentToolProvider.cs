@@ -10,7 +10,7 @@ namespace Sentium.Praxis.Features.Tools;
 /// the registered <see cref="IAgentToolSource"/>s, which change at runtime); <see cref="GetToolsForAgent"/> stays built-in only, because MCP
 /// tools are opt-in and selected by name (see <c>CompositeAgentFactory</c>).
 /// </summary>
-public sealed class AgentToolProvider : IAgentToolProvider, IToolCatalog
+internal sealed class AgentToolProvider : IAgentToolProvider, IToolCatalog
 {
     private const string AllAgents = "*";
 

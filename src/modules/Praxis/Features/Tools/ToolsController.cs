@@ -10,7 +10,7 @@ namespace Sentium.Praxis.Features.Tools;
 [ApiController]
 [Authorize]
 [Route($"{PraxisRoutes.Prefix}/tools")]
-public sealed class ToolsController(IToolCatalog catalog) : ControllerBase
+internal sealed class ToolsController(IToolCatalog catalog) : ControllerBase
 {
     /// <summary>
     /// Every registered tool with its policy (resource, action, risk, approval), ordered by resource then name.

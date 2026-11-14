@@ -3,7 +3,7 @@ namespace Sentium.Praxis.Features.Agents.Native;
 /// <summary>
 /// The squad synthesizer: a control agent that combines the specialists' step results into the single final answer.
 /// </summary>
-public sealed class SummaryAgent : IAgent
+internal sealed class SummaryAgent : IAgent
 {
     /// <remarks>
     /// Must equal the key this agent is registered under (<see cref="AgentRole.Summarizer"/>).

@@ -5,6 +5,7 @@ using Scalar.AspNetCore;
 using Sentium.Core.Constants;
 using Sentium.Infrastructure.Diagnostics;
 using Sentium.Infrastructure.Extensions;
+using Sentium.Infrastructure.Mvc;
 using Sentium.Infrastructure.Security;
 using Sentium.Infrastructure.Validation;
 using Sentium.Sandbox.Artifacts;
@@ -22,8 +23,9 @@ builder.AddInternalApiSecurity();
 
 builder.Services.AddSentiumProblemDetails();
 builder.Services.AddOpenApi();
-builder.Services.AddControllers(options => options.Filters.Add<FluentValidationFilter>());
-builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+builder.Services.AddControllers(options => options.Filters.Add<FluentValidationFilter>())
+    .AddInternalControllers();
+builder.Services.AddValidatorsFromAssemblyContaining<Program>(includeInternalTypes: true);
 
 builder.Services.Configure<SandboxOptions>(builder.Configuration.GetSection(SandboxOptions.SectionName));
 builder.Services.Configure<McpHostOptions>(builder.Configuration.GetSection(McpHostOptions.SectionName));

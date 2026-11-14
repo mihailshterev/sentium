@@ -12,7 +12,7 @@ namespace Sentium.Locus.Features.Knowledge;
 /// Brings one asset's knowledge-base copy in line with the database. Resolve it from a fresh,
 /// system-activated scope per asset (the knowledge base's own context must not carry state across items).
 /// </summary>
-public sealed class KnowledgeSyncProcessor(
+internal sealed class KnowledgeSyncProcessor(
     LocusDbContext db,
     IDocumentIngestionService ingestion,
     KnowledgeSyncOutbox outbox,

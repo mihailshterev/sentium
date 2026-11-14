@@ -15,7 +15,7 @@ namespace Sentium.Praxis.Features.CodeExecution;
 [ApiController]
 [Authorize]
 [Route(SandboxRoutePrefix)]
-public sealed class SandboxController(
+internal sealed class SandboxController(
     IExecutionLogRepository executionLog,
     BlobServiceClient blobServiceClient,
     IOptions<SandboxArtifactOptions> options) : ControllerBase

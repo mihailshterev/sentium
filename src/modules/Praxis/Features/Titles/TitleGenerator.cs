@@ -7,7 +7,7 @@ namespace Sentium.Praxis.Features.Titles;
 /// Generates titles with the base (non-harnessed) chat client - a single short completion, independent of the agent
 /// governance pipeline, like prompt enhancement.
 /// </summary>
-public sealed partial class TitleGenerator(IChatClient chatClient, ILogger<TitleGenerator> logger) : ITitleGenerator
+internal sealed partial class TitleGenerator(IChatClient chatClient, ILogger<TitleGenerator> logger) : ITitleGenerator
 {
     /// <summary>
     /// Longest generated title, in characters.

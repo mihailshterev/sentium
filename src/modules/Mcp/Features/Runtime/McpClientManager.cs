@@ -12,7 +12,7 @@ namespace Sentium.Mcp.Features.Runtime;
 /// ended or the server's configuration changed, and closes idle connections - which also stops a Sandbox-hosted server's
 /// container. Tool calls are never retried on a live connection (they may not be idempotent); only discovery is.
 /// </summary>
-public sealed class McpClientManager(
+internal sealed class McpClientManager(
     IHttpClientFactory httpClientFactory,
     ISandboxMcpHostClient sandbox,
     McpSecretProtector secrets,

@@ -1,6 +1,6 @@
 namespace Sentium.Vigil.Features.Monitoring;
 
-public sealed record ServiceHealthPayload(
+internal sealed record ServiceHealthPayload(
     string ServiceName,
     string Kind,
     string Status,

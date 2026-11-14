@@ -1,6 +1,6 @@
 namespace Sentium.Locus.Features.Knowledge;
 
-public static class KnowledgeSyncBackoff
+internal static class KnowledgeSyncBackoff
 {
     /// <summary>
     /// After this many failed attempts an entry is marked failed and waits for an edit or a manual retry.

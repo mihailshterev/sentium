@@ -10,7 +10,7 @@ namespace Sentium.Praxis.Features.Tools.Timeline;
 /// The user's workload at a glance: the year by month and the coming days by day.
 /// </summary>
 [AgentToolPolicy(RiskLevel = ToolRiskLevel.Low, Resource = ToolResource.Timeline, Action = ToolAction.Read)]
-public sealed class GetTimelineOverviewTool(
+internal sealed class GetTimelineOverviewTool(
     ITimelineAgentAccess timeline,
     IPdpContextAccessor pdpContext,
     TimeProvider timeProvider,

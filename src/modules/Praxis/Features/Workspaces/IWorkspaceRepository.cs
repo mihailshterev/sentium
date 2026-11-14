@@ -4,7 +4,7 @@ namespace Sentium.Praxis.Features.Workspaces;
 /// <summary>
 /// Data access and persistence for workspaces and their associated files.
 /// </summary>
-public interface IWorkspaceRepository
+internal interface IWorkspaceRepository
 {
     /// <returns>All workspace DTOs, ordered by most recent first.</returns>
     Task<IReadOnlyList<WorkspaceDto>> GetWorkspacesAsync(CancellationToken ct = default);

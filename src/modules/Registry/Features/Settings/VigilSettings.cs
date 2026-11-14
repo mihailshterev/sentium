@@ -5,7 +5,7 @@ namespace Sentium.Registry.Features.Settings;
 /// the Vigil module. Controls poll cadence, probe timeouts, the degraded-latency threshold, and
 /// when a sustained degradation escalates into an incident.
 /// </summary>
-public sealed class VigilSettings
+internal sealed class VigilSettings
 {
     /// <summary>
     /// How often every target is probed, in seconds.

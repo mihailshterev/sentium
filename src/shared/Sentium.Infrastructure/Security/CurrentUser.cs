@@ -14,7 +14,7 @@ namespace Sentium.Infrastructure.Security;
 /// any other scoped services so that every dependency in that scope sees <c>IsSystem = true</c>.
 /// </para>
 /// </summary>
-public sealed class CurrentUser(IHttpContextAccessor httpContextAccessor, SystemScopeContext systemScopeContext) : ICurrentUser
+internal sealed class CurrentUser(IHttpContextAccessor httpContextAccessor, SystemScopeContext systemScopeContext) : ICurrentUser
 {
     private ClaimsPrincipal? Principal => httpContextAccessor.HttpContext?.User;
 

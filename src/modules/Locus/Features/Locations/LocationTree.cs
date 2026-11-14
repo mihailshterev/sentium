@@ -5,7 +5,7 @@ namespace Sentium.Locus.Features.Locations;
 /// loading them all is cheaper and far simpler than recursive SQL, and every traversal here is guarded
 /// against cyclic data so corrupt rows can never loop forever.
 /// </summary>
-public sealed class LocationTree
+internal sealed class LocationTree
 {
     public const string PathSeparator = " › ";
 

@@ -6,7 +6,7 @@ namespace Sentium.Vigil.Features.Metrics;
 [ApiController]
 [Authorize]
 [Route($"{VigilRoutes.Prefix}/system")]
-public sealed class SystemMetricsController(IVigil vigil) : ControllerBase
+internal sealed class SystemMetricsController(IVigil vigil) : ControllerBase
 {
     /// <summary>
     /// Returns a current snapshot of host system metrics.

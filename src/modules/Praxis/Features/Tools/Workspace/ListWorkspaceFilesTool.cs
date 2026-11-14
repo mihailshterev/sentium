@@ -11,7 +11,7 @@ namespace Sentium.Praxis.Features.Tools.Workspace;
 /// An agent tool that lists the files within one of the acting user's workspaces.
 /// </summary>
 [AgentToolPolicy(RiskLevel = ToolRiskLevel.Low, Resource = ToolResource.File, Action = ToolAction.Read)]
-public sealed class ListWorkspaceFilesTool(PraxisDbContext dbContext, IPdpContextAccessor runContext) : IAgentTool
+internal sealed class ListWorkspaceFilesTool(PraxisDbContext dbContext, IPdpContextAccessor runContext) : IAgentTool
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 

@@ -8,7 +8,7 @@ namespace Sentium.Praxis.Features.Conversations;
 [ApiController]
 [Authorize]
 [Route($"{PraxisRoutes.Prefix}/conversations")]
-public sealed class ConversationsController(IConversationService conversationService) : ControllerBase
+internal sealed class ConversationsController(IConversationService conversationService) : ControllerBase
 {
     /// <summary>
     /// Returns a page of conversations (newest first).

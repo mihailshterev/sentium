@@ -5,7 +5,7 @@ namespace Sentium.Praxis.Features.Orchestration;
 /// <summary>
 /// Dispatches a trigger to the registered <see cref="IAgentWorkflow"/> for its workflow type.
 /// </summary>
-public sealed class WorkflowOrchestrator(IEnumerable<IAgentWorkflow> workflows) : IOrchestrator
+internal sealed class WorkflowOrchestrator(IEnumerable<IAgentWorkflow> workflows) : IOrchestrator
 {
     public async Task<WorkflowResult> RunAsync(WorkflowTrigger trigger, CancellationToken ct = default)
     {

@@ -13,7 +13,7 @@ namespace Sentium.Praxis.Features.Skills;
 /// user skills are instructions-only, so approval is disabled - otherwise every <c>load_skill</c> would surface an
 /// approval prompt in chat and stall background workflows that have no one to answer it.
 /// </remarks>
-public sealed class AgentSkillsProviderFactory(
+internal sealed class AgentSkillsProviderFactory(
     IBuiltInSkillCatalog builtInCatalog,
     IAgentSkillRepository skillRepository,
     IPdpContextAccessor runContext,

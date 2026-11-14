@@ -16,7 +16,7 @@ namespace Sentium.Mcp.Features.Runtime;
 /// request and must not wait for (or fail on) a server connection unless the tool is actually called, and the SDK tool's
 /// result is the raw <c>CallToolResult</c> JSON, which small local models handle worse than plain text.
 /// </remarks>
-public sealed class McpToolFunction : AIFunction
+internal sealed class McpToolFunction : AIFunction
 {
     private readonly McpServerConnectionInfo server;
     private readonly string toolName;

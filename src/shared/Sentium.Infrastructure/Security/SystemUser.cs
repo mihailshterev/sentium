@@ -1,6 +1,6 @@
 namespace Sentium.Infrastructure.Security;
 
-public sealed class SystemUser : ICurrentUser
+internal sealed class SystemUser : ICurrentUser
 {
     public static readonly SystemUser Instance = new();
 

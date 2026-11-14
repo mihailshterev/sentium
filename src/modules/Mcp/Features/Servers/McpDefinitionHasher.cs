@@ -12,7 +12,7 @@ namespace Sentium.Mcp.Features.Servers;
 /// annotations) over canonical JSON (recursively sorted keys), so a server reordering keys is not a "change" but a
 /// rewritten description or a flipped read-only hint is - and forces re-approval.
 /// </summary>
-public static class McpDefinitionHasher
+internal static class McpDefinitionHasher
 {
     /// <summary>
     /// Descriptions longer than this are cut: the full text goes into the tool schema the model sees on every turn.
