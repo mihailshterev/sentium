@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
 using Sentium.Core.Results;
-using Sentium.Praxis.Entities;
 using Sentium.Praxis.Features.Skills;
 using Xunit;
 
@@ -20,9 +19,11 @@ public sealed class SkillsControllerTests
         _controller = new SkillsController(_skillService, _builtInCatalog);
     }
 
-    private static AgentSkillDto MakeDto(Guid? id = null, string name = "Test Skill") =>
-        new(id ?? Guid.NewGuid(), name, "A test skill", "Instructions", AgentSkillType.Custom, null,
+    private static AgentSkillDto MakeDto(Guid? id = null, string name = "Test Skill")
+    {
+        return new(id ?? Guid.NewGuid(), name, "A test skill", "Instructions", AgentSkillType.Custom, null,
             DateTimeOffset.UtcNow, DateTimeOffset.UtcNow);
+    }
 
     [Fact]
     public void GetBuiltInSkills_ReturnsOk_WithCatalogList()

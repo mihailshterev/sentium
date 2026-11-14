@@ -10,17 +10,17 @@ public interface IRoleService
     /// </summary>
     /// <param name="requesterId">The ID of the user attempting the assignment.</param>
     /// <param name="targetUserId">The ID of the user receiving the role.</param>
-    /// <param name="roleName">The name of the role to assign (must exist in <see cref="Roles"/>).</param>
+    /// <param name="roleName">The name of the role to assign (must exist in <see cref="Security.Roles"/>).</param>
     /// <remarks>
     /// Security Policy:
-    /// 1. Only users with the <see cref="Roles.Sovereign"/> role can assign roles.
+    /// 1. Only users with the <see cref="Security.Roles.Sovereign"/> role can assign roles.
     /// 2. Only a Sovereign can promote another user to Sovereign.
     /// </remarks>
     Task<(bool Succeeded, string? Error)> AssignRoleAsync(Guid requesterId, Guid targetUserId, string roleName, CancellationToken ct);
 
     /// <summary>
     /// Safety Logic:
-    /// Prevents the removal of the final <see cref="Roles.Sovereign"/> to ensure the system remains administrable.
+    /// Prevents the removal of the final <see cref="Security.Roles.Sovereign"/> to ensure the system remains administrable.
     /// </summary>
     Task<(bool Succeeded, string? Error)> RemoveRoleAsync(Guid requesterId, Guid targetUserId, string roleName, CancellationToken ct);
 

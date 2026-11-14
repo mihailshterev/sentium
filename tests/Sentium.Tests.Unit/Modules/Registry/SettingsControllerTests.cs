@@ -21,14 +21,16 @@ public sealed class SettingsControllerTests
         new SettingsDescriptor<PdpSettings>(SettingsKeys.Pdp, SettingsScope.Global, c => c.Pdp, (c, v) => c.Pdp = v),
     });
 
-    private SettingsController NewController(params Claim[] claims) =>
-        new(_service, _catalog)
+    private SettingsController NewController(params Claim[] claims)
+    {
+        return new(_service, _catalog)
         {
             ControllerContext = new ControllerContext
             {
                 HttpContext = new DefaultHttpContext { User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test")) }
             }
         };
+    }
 
     private static readonly JsonSerializerOptions WebOptions = new(JsonSerializerDefaults.Web);
 

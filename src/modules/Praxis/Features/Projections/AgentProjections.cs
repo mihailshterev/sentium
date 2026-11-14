@@ -7,7 +7,8 @@ namespace Sentium.Praxis.Features.Projections;
 internal static class AgentProjections
 {
     internal static Expression<Func<Agent, AgentResponse>> ToResponse()
-        => a => new AgentResponse(
+    {
+        return a => new AgentResponse(
             a.Id,
             a.Name,
             a.Description,
@@ -15,4 +16,5 @@ internal static class AgentProjections
             a.CreatedAt,
             a.UpdatedAt,
             a.Tools);
+    }
 }

@@ -4,7 +4,6 @@ using Microsoft.Extensions.Options;
 using Sentium.Core.Constants;
 using Sentium.Infrastructure.Inference;
 using Sentium.Infrastructure.Security;
-using Sentium.Praxis.Features.Models;
 using Sentium.Praxis.Features.Registry;
 
 namespace Sentium.Praxis.Features.Models;

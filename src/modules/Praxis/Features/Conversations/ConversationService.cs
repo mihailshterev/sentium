@@ -26,21 +26,19 @@ public sealed class ConversationService(
 
         return await cache.GetOrCreateAsync(
             key,
-            async token =>
-            {
-                var (items, total) = await repository.GetConversationsAsync(page, pageSize, term, token);
-                return PagedResponse<ConversationSummary>.Create(items, total, page, pageSize);
-            },
+            token => LoadPageAsync(page, pageSize, term, token),
             CacheTag,
             ct);
     }
 
     public async Task<ConversationResponse?> GetConversationAsync(Guid conversationId, CancellationToken ct = default)
-        => await cache.GetOrCreateAsync(
+    {
+        return await cache.GetOrCreateAsync(
             $"{CacheTag}:{conversationId}",
             async token => await repository.GetConversationAsync(conversationId, token),
             CacheTag,
             ct);
+    }
 
     public async Task<Result<ConversationSummary>> CreateConversationAsync(CreateConversationRequest request, CancellationToken ct = default)
     {
@@ -124,5 +122,11 @@ public sealed class ConversationService(
     {
         await repository.AddMessageAsync(conversationId, role, content, enhancedPrompt, steps, ct);
         await cache.RemoveAsync($"{CacheTag}:{conversationId}", ct);
+    }
+
+    private async ValueTask<PagedResponse<ConversationSummary>> LoadPageAsync(int page, int pageSize, string? term, CancellationToken ct)
+    {
+        var (items, total) = await repository.GetConversationsAsync(page, pageSize, term, ct);
+        return PagedResponse<ConversationSummary>.Create(items, total, page, pageSize);
     }
 }

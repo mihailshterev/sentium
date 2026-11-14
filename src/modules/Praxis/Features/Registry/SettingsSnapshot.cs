@@ -1,5 +1,3 @@
-using Sentium.Core.Constants;
-
 namespace Sentium.Praxis.Features.Registry;
 
 /// <summary>
@@ -19,21 +17,4 @@ public sealed record SettingsSnapshot(HarnessSettingsSnapshot Harness, Inference
             IsPromptEnhancementEnabled: false),
         Inference: InferenceSettingsSnapshot.Default
     );
-}
-
-public sealed record HarnessSettingsSnapshot(
-    string UserHarnessPrompt,
-    bool IsBuiltInHarnessEnabled,
-    bool IsPromptEnhancementEnabled = false);
-
-public sealed record InferenceSettingsSnapshot(
-    string DefaultModel,
-    float AgentTemperature)
-{
-    /// <summary>
-    /// Mirrors the defaults of Registry's <c>InferenceSettings</c>.
-    /// </summary>
-    public static readonly InferenceSettingsSnapshot Default = new(
-        DefaultModel: AIModels.Gemma4_E4B,
-        AgentTemperature: 0.3f);
 }

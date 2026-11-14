@@ -1,6 +1,5 @@
 using System.ComponentModel;
 using Microsoft.Agents.AI;
-using Sentium.Praxis.Features.Skills;
 
 namespace Sentium.Praxis.Features.Skills.BuiltIn;
 

@@ -5,8 +5,3 @@ public sealed record ChatRequest(
     string Model,
     IReadOnlyList<ChatMessage> Messages,
     bool Stream = true);
-
-public sealed record ChatMessage(
-    string Role,
-    string Content,
-    IReadOnlyList<string>? Images = null);

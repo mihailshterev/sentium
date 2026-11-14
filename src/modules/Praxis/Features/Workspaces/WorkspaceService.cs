@@ -1,7 +1,6 @@
 using Sentium.Core.Results;
 using Sentium.Infrastructure.Caching;
 using Sentium.Praxis.Features.Storage;
-using Sentium.Praxis.Features.Workspaces;
 
 namespace Sentium.Praxis.Features.Workspaces;
 
@@ -14,11 +13,13 @@ public sealed class WorkspaceService(
     private const string CacheTag = "workspaces";
 
     public async Task<IReadOnlyList<WorkspaceDto>> GetWorkspacesAsync(CancellationToken ct = default)
-        => await cache.GetOrCreateAsync(
+    {
+        return await cache.GetOrCreateAsync(
             $"{CacheTag}:all",
             async token => await repository.GetWorkspacesAsync(token),
             CacheTag,
             ct);
+    }
 
     public async Task<PagedResponse<WorkspaceDto>> GetWorkspacesPagedAsync(int page, int pageSize, CancellationToken ct = default)
     {
@@ -26,21 +27,19 @@ public sealed class WorkspaceService(
 
         return await cache.GetOrCreateAsync(
             $"{CacheTag}:page:{page}:{pageSize}",
-            async token =>
-            {
-                var (items, total) = await repository.GetPagedAsync(page, pageSize, token);
-                return PagedResponse<WorkspaceDto>.Create(items, total, page, pageSize);
-            },
+            token => LoadPageAsync(page, pageSize, token),
             CacheTag,
             ct);
     }
 
     public async Task<WorkspaceDto?> GetWorkspaceAsync(Guid id, CancellationToken ct = default)
-        => await cache.GetOrCreateAsync(
+    {
+        return await cache.GetOrCreateAsync(
             $"{CacheTag}:{id}",
             async token => await repository.GetWorkspaceAsync(id, token),
             CacheTag,
             ct);
+    }
 
     public async Task<Result<WorkspaceDto>> CreateWorkspaceAsync(CreateWorkspaceRequest request, CancellationToken ct = default)
     {
@@ -107,11 +106,13 @@ public sealed class WorkspaceService(
     }
 
     public async Task<IReadOnlyList<WorkspaceFileDto>> GetFilesAsync(Guid? workspaceId, CancellationToken ct = default)
-        => await cache.GetOrCreateAsync(
+    {
+        return await cache.GetOrCreateAsync(
             $"{CacheTag}:files:{workspaceId?.ToString() ?? "all"}",
             async token => await repository.GetFilesAsync(workspaceId, token),
             CacheTag,
             ct);
+    }
 
     public async Task<WorkspaceFileDto?> UploadFileAsync(Stream content, string fileName, Guid? workspaceId, CancellationToken ct = default)
     {
@@ -145,5 +146,11 @@ public sealed class WorkspaceService(
         await repository.DeleteFileRecordAsync(fileId, ct);
         await cache.InvalidateTagAsync(CacheTag, ct);
         return true;
+    }
+
+    private async ValueTask<PagedResponse<WorkspaceDto>> LoadPageAsync(int page, int pageSize, CancellationToken ct)
+    {
+        var (items, total) = await repository.GetPagedAsync(page, pageSize, ct);
+        return PagedResponse<WorkspaceDto>.Create(items, total, page, pageSize);
     }
 }

@@ -1,4 +1,3 @@
-using System.Linq;
 using FluentAssertions;
 using Sentium.Praxis.Features.Workflows.Squad;
 using Xunit;

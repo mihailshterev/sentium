@@ -8,19 +8,23 @@ namespace Sentium.Praxis.Features.Skills;
 public sealed class AgentSkillRepository(PraxisDbContext context) : IAgentSkillRepository
 {
     public async Task<IReadOnlyList<AgentSkill>> GetAllAsync(CancellationToken ct = default)
-        => await context.AgentSkills
+    {
+        return await context.AgentSkills
             .AsNoTracking()
             .OrderByDescending(s => s.CreatedAt)
             .Take(PaginationQuery.MaxListCap)
             .ToListAsync(ct);
+    }
 
     public async Task<IReadOnlyList<AgentSkill>> GetForUserAsync(Guid userId, CancellationToken ct = default)
-        => await context.AgentSkills
+    {
+        return await context.AgentSkills
             .AsNoTracking()
             .Where(s => s.UserId == userId)
             .OrderByDescending(s => s.CreatedAt)
             .Take(PaginationQuery.MaxListCap)
             .ToListAsync(ct);
+    }
 
     public async Task<(IReadOnlyList<AgentSkill> Items, int TotalCount)> GetPagedAsync(AgentSkillType? skillType, int page, int pageSize, CancellationToken ct = default)
     {
@@ -46,9 +50,11 @@ public sealed class AgentSkillRepository(PraxisDbContext context) : IAgentSkillR
         => await context.AgentSkills.FindAsync([id], ct);
 
     public async Task<AgentSkill?> GetByNameAsync(string name, CancellationToken ct = default)
-        => await context.AgentSkills
+    {
+        return await context.AgentSkills
             .AsNoTracking()
             .FirstOrDefaultAsync(s => s.Name == name, ct);
+    }
 
     public async Task AddAsync(AgentSkill skill, CancellationToken ct = default)
     {

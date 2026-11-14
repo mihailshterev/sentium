@@ -5,7 +5,7 @@ using Sentium.Praxis.Contracts;
 namespace Sentium.Praxis.Features.Tools;
 
 /// <summary>
-/// Groups the registered tools by the agents allowed to use them (<see cref="Attributes.AgentToolPolicyAttribute.AllowedAgents"/>)
+/// Groups the registered tools by the agents allowed to use them (<see cref="AgentToolPolicyAttribute.AllowedAgents"/>)
 /// and describes them for the tool picker. The catalogue also lists the approved tools of external sources such as MCP (read live from
 /// the registered <see cref="IAgentToolSource"/>s, which change at runtime); <see cref="GetToolsForAgent"/> stays built-in only, because MCP
 /// tools are opt-in and selected by name (see <c>CompositeAgentFactory</c>).

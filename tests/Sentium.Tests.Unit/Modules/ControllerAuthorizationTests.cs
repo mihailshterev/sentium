@@ -61,10 +61,12 @@ public sealed class ControllerAuthorizationTests
             "anonymous access must be opted into with [AllowAnonymous]; these actions declare no rule");
     }
 
-    private static bool IsController(Type type) =>
-        type is { IsClass: true, IsAbstract: false, IsPublic: true }
+    private static bool IsController(Type type)
+    {
+        return type is { IsClass: true, IsAbstract: false, IsPublic: true }
         && typeof(ControllerBase).IsAssignableFrom(type)
         && !type.IsDefined(typeof(NonControllerAttribute), inherit: true);
+    }
 
     private static bool HasAuthorizationRule(MemberInfo member) =>
         member.GetCustomAttributes(inherit: true).Any(a => a is IAuthorizeData or IAllowAnonymous);

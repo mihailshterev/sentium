@@ -3,7 +3,6 @@ using System.Text.Json;
 using FluentAssertions;
 using Microsoft.Extensions.AI;
 using Sentium.Praxis.Contracts;
-using Sentium.Praxis.Features.Tools;
 using Xunit;
 
 namespace Sentium.Tests.Unit.Modules.Praxis.Tools;

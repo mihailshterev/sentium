@@ -11,7 +11,6 @@ public sealed class SentinelClient(IPolicyDecisionPoint policyDecisionPoint, ILo
     /// <summary>
     /// Submits a full policy evaluation request and returns the PDP decision.
     /// </summary>
-    /// <param name="request">The full evaluation context.</param>
     /// <returns>The <see cref="PdpDecision"/> from Sentinel; a deny if the evaluation itself fails.</returns>
     public async Task<PdpDecision> EvaluateAsync(PdpRequest request, CancellationToken ct)
     {
@@ -59,38 +58,4 @@ public sealed class SentinelClient(IPolicyDecisionPoint policyDecisionPoint, ILo
         var decision = await EvaluateAsync(request, ct);
         return decision.Allowed;
     }
-}
-
-public sealed record PdpRequest
-{
-    public required string AgentId { get; init; }
-    public required string SkillName { get; init; }
-    public required string ResourceType { get; init; }
-    public required string ResourceId { get; init; }
-    public required string Action { get; init; }
-    public required string OriginalUserPrompt { get; init; }
-    public required string CorrelationId { get; init; }
-
-    public IReadOnlyDictionary<string, string> Metadata { get; init; } = new Dictionary<string, string>();
-}
-
-public sealed record PdpDecision
-{
-    public required bool Allowed { get; init; }
-    public required string Effect { get; init; }
-    public required string Reason { get; init; }
-    public required string Risk { get; init; }
-    public required Guid AuditId { get; init; }
-    public DateTimeOffset Timestamp { get; init; } = DateTimeOffset.UtcNow;
-    public IReadOnlyList<string> TriggeredPolicies { get; init; } = [];
-
-    public static PdpDecision DenyFallback(string reason) => new()
-    {
-        Allowed = false,
-        Effect = "Deny",
-        Reason = reason,
-        Risk = "Critical",
-        AuditId = Guid.Empty,
-        TriggeredPolicies = ["FailClosed"]
-    };
 }

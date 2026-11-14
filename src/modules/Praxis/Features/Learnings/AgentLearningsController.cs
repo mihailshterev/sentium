@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sentium.Core.Results;
-using Sentium.Praxis.Features.Learnings;
 
 namespace Sentium.Praxis.Features.Learnings;
 
@@ -45,7 +44,6 @@ public sealed class AgentLearningsController(IAgentLearningService learningServi
     /// <summary>
     /// Deletes a learning and removes its vectors from the knowledge base.
     /// </summary>
-    /// <param name="id">The ID of the learning to delete.</param>
     [HttpDelete("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -59,8 +57,6 @@ public sealed class AgentLearningsController(IAgentLearningService learningServi
     /// Updates the content and tags of an existing learning.
     /// Old vectors are removed and the learning is re-ingested with the new content.
     /// </summary>
-    /// <param name="id">The ID of the learning to update.</param>
-    /// <param name="request">The update request containing new content and tags.</param>
     [HttpPut("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

@@ -45,11 +45,14 @@ public sealed class BuiltInAgentService(IEnumerable<IAgent> nativeAgents, IAgent
         return await overrides.GetAsync(agent.Name, uid, ct) is { } custom ? new ConfiguredAgent(agent, custom.Tools) : agent;
     }
 
-    private IEnumerable<IAgent> BuiltIn() => nativeAgents
-        .Where(a => !AgentRole.IsControl(a.Name))
-        .DistinctBy(a => a.Name, StringComparer.OrdinalIgnoreCase)
-        .OrderBy(a => a.Name == AgentRole.GeneralAssistant ? 0 : 1)
-        .ThenBy(a => a.Name, StringComparer.Ordinal);
+    private IEnumerable<IAgent> BuiltIn()
+    {
+        return nativeAgents
+            .Where(a => !AgentRole.IsControl(a.Name))
+            .DistinctBy(a => a.Name, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(a => a.Name == AgentRole.GeneralAssistant ? 0 : 1)
+            .ThenBy(a => a.Name, StringComparer.Ordinal);
+    }
 
     private IAgent? Find(string name) =>
         BuiltIn().FirstOrDefault(a => string.Equals(a.Name, name?.Trim(), StringComparison.OrdinalIgnoreCase));

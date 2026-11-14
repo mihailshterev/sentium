@@ -10,7 +10,6 @@ using Sentium.Mcp.Entities;
 using Sentium.Mcp.Features.Runtime;
 using Sentium.Mcp.Features.Servers;
 using Sentium.Praxis.Contracts;
-using Sentium.Praxis.Entities;
 using Sentium.Praxis.Features.Agents;
 using Sentium.Praxis.Features.Sentinel;
 using Sentium.Praxis.Features.Tools;

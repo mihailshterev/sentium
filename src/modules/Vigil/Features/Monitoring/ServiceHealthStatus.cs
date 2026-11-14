@@ -1,33 +1,4 @@
-using System.Text.Json.Serialization;
-
 namespace Sentium.Vigil.Features.Monitoring;
-
-[JsonConverter(typeof(JsonStringEnumConverter<ServiceStatus>))]
-public enum ServiceStatus
-{
-    Unknown,
-    Healthy,
-    Degraded,
-    Unhealthy
-}
-
-[JsonConverter(typeof(JsonStringEnumConverter<ComponentKind>))]
-public enum ComponentKind
-{
-    Service,
-    Infrastructure
-}
-
-public sealed record HealthCheckEntry(
-    string Name,
-    string Status,
-    string? Description,
-    double DurationMs);
-
-public sealed record HealthSample(
-    DateTimeOffset At,
-    ServiceStatus Status,
-    double LatencyMs);
 
 public sealed record ServiceHealthStatus
 {
@@ -43,12 +14,3 @@ public sealed record ServiceHealthStatus
     public DateTimeOffset LastStateChange { get; init; }
     public int ConsecutiveFailures { get; init; }
 }
-
-public sealed record ServiceHealthPayload(
-    string ServiceName,
-    string Kind,
-    string Status,
-    double LatencyMs,
-    double UptimePercent,
-    string Timestamp,
-    string? Details);

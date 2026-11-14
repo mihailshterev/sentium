@@ -1,6 +1,3 @@
-using FluentValidation;
-using Sentium.Tempus.Features;
-
 namespace Sentium.Tempus.Common;
 
 internal static class TempusRules

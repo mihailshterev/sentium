@@ -18,9 +18,11 @@ public sealed class AgentServiceTests
         _service = new AgentService(_repository, new PassThroughScopedCache(), _registry);
     }
 
-    private static AgentResponse MakeResponse(Guid? id = null, string name = "TestAgent") =>
-        new(id ?? Guid.NewGuid(), name, "A test agent", "gemma3:1b",
+    private static AgentResponse MakeResponse(Guid? id = null, string name = "TestAgent")
+    {
+        return new(id ?? Guid.NewGuid(), name, "A test agent", "gemma3:1b",
             DateTime.UtcNow, DateTime.UtcNow);
+    }
 
     [Fact]
     public async Task GetAgentsAsync_ReturnsAgentList_WhenCalled()

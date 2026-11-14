@@ -2,7 +2,6 @@ using System.Diagnostics;
 using System.Text;
 using Docker.DotNet;
 using Docker.DotNet.Models;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Sentium.Sandbox.Artifacts;
 using Sentium.Sandbox.Options;

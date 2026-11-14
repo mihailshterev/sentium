@@ -28,7 +28,6 @@ public interface IAgentRepository
     /// <summary>
     /// Returns the agent with the given name (case-insensitive), or <see langword="null"/> if none matches.
     /// </summary>
-    /// <param name="name">The agent name to look up.</param>
     Task<AgentResponse?> GetAgentByNameAsync(string name, CancellationToken ct = default);
 
     /// <summary>
@@ -45,7 +44,6 @@ public interface IAgentRepository
     /// <see langword="null"/>. Use from background/system callers so name resolution is unambiguous per
     /// user even when the per-user query filter is bypassed.
     /// </summary>
-    /// <param name="name">The agent name to look up.</param>
     /// <param name="userId">The owning user; a <see langword="null"/> id matches no agents.</param>
     Task<AgentResponse?> GetAgentByNameForUserAsync(string name, Guid? userId, CancellationToken ct = default);
 
@@ -53,7 +51,6 @@ public interface IAgentRepository
     /// Determines whether the current user already has an agent with the given name (case-insensitive),
     /// used to enforce name uniqueness before a create or update.
     /// </summary>
-    /// <param name="name">The candidate agent name.</param>
     /// <param name="excludeId">An agent id to exclude from the check - pass the agent being updated so a rename to its own name is allowed.</param>
     /// <returns><see langword="true"/> if a different agent already uses the name.</returns>
     Task<bool> NameExistsAsync(string name, Guid? excludeId = null, CancellationToken ct = default);

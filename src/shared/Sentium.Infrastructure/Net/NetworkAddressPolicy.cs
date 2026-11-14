@@ -1,26 +1,7 @@
 using System.Net;
-using System.Net.Http;
 using System.Net.Sockets;
 
 namespace Sentium.Infrastructure.Net;
-
-/// <summary>
-/// Which destination addresses an outbound HTTP client may connect to.
-/// </summary>
-public enum NetworkAddressScope
-{
-    /// <summary>
-    /// Loopback and private-network addresses only (RFC 1918, RFC 6598 shared space, IPv6 ULA) - e.g. MCP servers,
-    /// which Sentium only ever reaches on the local network.
-    /// </summary>
-    PrivateOnly,
-
-    /// <summary>
-    /// Public internet addresses only - for tools that fetch untrusted URLs, so a prompt-injected request cannot reach
-    /// Sentium's own infrastructure or the local network.
-    /// </summary>
-    PublicOnly
-}
 
 /// <summary>
 /// Enforces a <see cref="NetworkAddressScope"/> at socket-connect time. The check runs on the addresses the connection
@@ -102,47 +83,7 @@ public static class NetworkAddressPolicy
         HostResolver? resolver = null)
     {
         var resolve = resolver ?? DnsResolver;
-
-        return async (context, cancellationToken) =>
-        {
-            ArgumentNullException.ThrowIfNull(context);
-
-            var host = context.DnsEndPoint.Host;
-            var port = context.DnsEndPoint.Port;
-
-            var candidates = IPAddress.TryParse(host.Trim('[', ']'), out var literal)
-                ? [literal]
-                : await resolve(host, cancellationToken).ConfigureAwait(false);
-
-            var allowed = candidates.Where(a => IsAllowed(a, scope)).ToArray();
-            if (allowed.Length == 0)
-            {
-                throw new NetworkAddressBlockedException(host, scope);
-            }
-
-            SocketException? lastError = null;
-            foreach (var address in allowed)
-            {
-                var socket = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
-                try
-                {
-                    await socket.ConnectAsync(new IPEndPoint(address, port), cancellationToken).ConfigureAwait(false);
-                    return new NetworkStream(socket, ownsSocket: true);
-                }
-                catch (SocketException ex)
-                {
-                    socket.Dispose();
-                    lastError = ex;
-                }
-                catch
-                {
-                    socket.Dispose();
-                    throw;
-                }
-            }
-
-            throw new HttpRequestException($"Could not connect to '{host}:{port}'.", lastError);
-        };
+        return (context, cancellationToken) => ConnectAsync(context, scope, resolve, cancellationToken);
     }
 
     /// <summary>
@@ -150,13 +91,62 @@ public static class NetworkAddressPolicy
     /// connect-time check meaningless) and no automatic redirects (a redirect must not escape the scope via a
     /// different host).
     /// </summary>
-    public static SocketsHttpHandler CreateHandler(NetworkAddressScope scope, HostResolver? resolver = null) => new()
+    public static SocketsHttpHandler CreateHandler(NetworkAddressScope scope, HostResolver? resolver = null)
     {
-        ConnectCallback = CreateConnectCallback(scope, resolver),
-        UseProxy = false,
-        AllowAutoRedirect = false,
-        PooledConnectionLifetime = TimeSpan.FromMinutes(5),
-    };
+        return new()
+        {
+            ConnectCallback = CreateConnectCallback(scope, resolver),
+            UseProxy = false,
+            AllowAutoRedirect = false,
+            PooledConnectionLifetime = TimeSpan.FromMinutes(5),
+        };
+    }
+
+    private static async ValueTask<Stream> ConnectAsync(
+        SocketsHttpConnectionContext context,
+        NetworkAddressScope scope,
+        HostResolver resolve,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+
+        var host = context.DnsEndPoint.Host;
+        var port = context.DnsEndPoint.Port;
+
+        var candidates = IPAddress.TryParse(host.Trim('[', ']'), out var literal)
+            ? [literal]
+            : await resolve(host, cancellationToken).ConfigureAwait(false);
+
+        var allowed = candidates.Where(a => IsAllowed(a, scope)).ToArray();
+        if (allowed.Length == 0)
+        {
+            throw new NetworkAddressBlockedException(host, scope);
+        }
+
+        SocketException? lastError = null;
+        foreach (var address in allowed)
+        {
+            Socket? socket = new Socket(address.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+            try
+            {
+                socket.NoDelay = true;
+                await socket.ConnectAsync(new IPEndPoint(address, port), cancellationToken).ConfigureAwait(false);
+                var stream = new NetworkStream(socket, ownsSocket: true);
+                socket = null;
+                return stream;
+            }
+            catch (SocketException ex)
+            {
+                lastError = ex;
+            }
+            finally
+            {
+                socket?.Dispose();
+            }
+        }
+
+        throw new HttpRequestException($"Could not connect to '{host}:{port}'.", lastError);
+    }
 
     private static IPAddress Normalize(IPAddress address) => address.IsIPv4MappedToIPv6 ? address.MapToIPv4() : address;
 
@@ -188,35 +178,4 @@ public static class NetworkAddressPolicy
 
         return false;
     }
-}
-
-/// <summary>
-/// Thrown when an outbound connection targets an address outside the client's <see cref="NetworkAddressScope"/>.
-/// </summary>
-public sealed class NetworkAddressBlockedException : HttpRequestException
-{
-    public NetworkAddressBlockedException()
-    {
-    }
-
-    public NetworkAddressBlockedException(string message) : base(message)
-    {
-    }
-
-    public NetworkAddressBlockedException(string message, Exception innerException) : base(message, innerException)
-    {
-    }
-
-    public NetworkAddressBlockedException(string host, NetworkAddressScope scope)
-        : base(scope == NetworkAddressScope.PrivateOnly
-            ? $"Connection to '{host}' was blocked: only local-network addresses (loopback, 10/8, 172.16/12, 192.168/16, 100.64/10, fc00::/7) are allowed."
-            : $"Connection to '{host}' was blocked: local-network and link-local addresses are not allowed.")
-    {
-        Host = host;
-        Scope = scope;
-    }
-
-    public string? Host { get; }
-
-    public NetworkAddressScope? Scope { get; }
 }

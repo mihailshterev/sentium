@@ -1,11 +1,6 @@
 namespace Sentium.Praxis.Features.Agents;
 
 /// <summary>
-/// A user's tool list for a built-in agent. <paramref name="Tools"/> <see langword="null"/> = every tool.
-/// </summary>
-public sealed record AgentToolOverrideRecord(string AgentName, IReadOnlyList<string>? Tools);
-
-/// <summary>
 /// Persistence for per-user overrides of built-in agents' tool lists. Every lookup takes the owning user explicitly:
 /// a Sovereign (or a system-scoped run) bypasses the query filter and must still get its own overrides only.
 /// </summary>

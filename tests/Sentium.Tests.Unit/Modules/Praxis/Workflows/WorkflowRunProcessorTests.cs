@@ -180,12 +180,14 @@ public sealed class WorkflowRunProcessorTests : IAsyncDisposable
     }
 
     private void HangUntilCancelled()
-        => _orchestrator.RunAsync(Arg.Any<WorkflowTrigger>(), Arg.Any<CancellationToken>())
+    {
+        _orchestrator.RunAsync(Arg.Any<WorkflowTrigger>(), Arg.Any<CancellationToken>())
             .Returns(async call =>
             {
                 await Task.Delay(Timeout.Infinite, call.ArgAt<CancellationToken>(1));
                 return new WorkflowResult();
             });
+    }
 
     private async Task StartAsync(CancellationToken ct, params (string Key, string Value)[] settings)
     {

@@ -16,9 +16,11 @@ public sealed class WorkflowServiceTests
         _service = new WorkflowService(_repository, new PassThroughScopedCache());
     }
 
-    private static WorkflowResponse MakeResponse(Guid? id = null) =>
-        new(id ?? Guid.NewGuid(), Guid.NewGuid(), "WF-1", "Test workflow",
+    private static WorkflowResponse MakeResponse(Guid? id = null)
+    {
+        return new(id ?? Guid.NewGuid(), Guid.NewGuid(), "WF-1", "Test workflow",
             DateTime.UtcNow, DateTime.UtcNow, []);
+    }
 
     [Fact]
     public async Task GetWorkflowsAsync_DelegatesToManager()

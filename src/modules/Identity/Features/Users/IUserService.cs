@@ -1,5 +1,3 @@
-using Sentium.Identity.Features.Users;
-
 namespace Sentium.Identity.Features.Users;
 
 /// <summary>

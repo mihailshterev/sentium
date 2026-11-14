@@ -1,5 +1,4 @@
 using System.Security.Claims;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -38,7 +37,6 @@ public sealed class AccountController(
     /// <summary>
     /// Authenticates a user and initiates a session.
     /// </summary>
-    /// <param name="request">Login credentials.</param>
     /// <param name="returnUrl">Optional URL to redirect to after successful login.</param>
     /// <response code="200">Login successful. Returns redirect info or 2FA requirement.</response>
     /// <response code="401">Invalid credentials provided.</response>

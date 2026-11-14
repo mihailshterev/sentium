@@ -53,7 +53,8 @@ internal sealed class AgentTestHost
         AllowAllTools();
     }
 
-    public void AllowAllTools(bool allowed = true, string reason = "ok") =>
+    public void AllowAllTools(bool allowed = true, string reason = "ok")
+    {
         Pdp.EvaluateAsync(Arg.Any<PolicyEvaluationRequest>(), Arg.Any<CancellationToken>()).Returns(new PolicyEvaluationResponse
         {
             Allowed = allowed,
@@ -63,6 +64,7 @@ internal sealed class AgentTestHost
             AuditId = Guid.NewGuid(),
             Timestamp = DateTimeOffset.UtcNow,
         });
+    }
 
     /// <summary>
     /// A fresh factory - as a new request's DI scope would build one - sharing this host's model and data services.
@@ -102,37 +104,3 @@ internal sealed class AgentTestHost
             NullLoggerFactory.Instance);
     }
 }
-
-/// <summary>
-/// A model stand-in: records every request and replies with queued responses, then "ok".
-/// </summary>
-internal sealed class RecordingChatClient : IChatClient
-{
-    private readonly Queue<ChatResponse> _scripted = new();
-
-    public List<(List<ChatMessage> Messages, ChatOptions? Options)> Requests { get; } = [];
-
-    public void Script(ChatResponse response) => _scripted.Enqueue(response);
-
-    public Task<ChatResponse> GetResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
-    {
-        Requests.Add(([.. messages], options?.Clone()));
-        return Task.FromResult(_scripted.TryDequeue(out var next) ? next : new ChatResponse(new ChatMessage(ChatRole.Assistant, "ok")));
-    }
-
-    public async IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
-    {
-        var response = await GetResponseAsync(messages, options, cancellationToken);
-        foreach (var update in response.ToChatResponseUpdates())
-        {
-            yield return update;
-        }
-    }
-
-    public object? GetService(Type serviceType, object? serviceKey = null) => serviceType.IsInstanceOfType(this) ? this : null;
-
-    public void Dispose()
-    {
-    }
-}
-

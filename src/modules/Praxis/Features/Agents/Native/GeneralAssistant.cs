@@ -1,5 +1,3 @@
-using Sentium.Praxis.Features.Agents;
-
 namespace Sentium.Praxis.Features.Agents.Native;
 
 /// <summary>
@@ -16,7 +14,7 @@ public sealed class GeneralAssistant : IAgent
     /// <inheritdoc />
     /// <remarks>
     /// This agent is configured with a broad persona, allowing it to adapt to various
-    /// topics while maintaining the capability to invoke registered <see cref="IAgentTool"/>
+    /// topics while maintaining the capability to invoke registered <see cref="Contracts.IAgentTool"/>
     /// implementations when domain-specific data is required.
     /// </remarks>
     public string Instructions => "You are a helpful assistant. Use tools when necessary to answer user queries.";

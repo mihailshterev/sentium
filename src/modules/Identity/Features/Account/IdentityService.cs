@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Identity;
-using Microsoft.Extensions.Logging;
 using Sentium.Identity.Entities;
 using Sentium.Identity.Features.Security;
 

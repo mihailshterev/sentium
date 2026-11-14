@@ -14,9 +14,12 @@ public sealed class AgentRosterTests
 
     private readonly IAgentRepository _repository = Substitute.For<IAgentRepository>();
 
-    private AgentRoster CreateRoster() => new(
-        [new FakeAgent(AgentRole.Orchestrator), new FakeAgent(AgentRole.Validator), new FakeAgent(AgentRole.Summarizer), new FakeAgent(AgentRole.ResearchAnalyst), new GeneralAssistant(), new TimelinePlanner(), new TimelinePlanner()],
-        _repository);
+    private AgentRoster CreateRoster()
+    {
+        return new(
+            [new FakeAgent(AgentRole.Orchestrator), new FakeAgent(AgentRole.Validator), new FakeAgent(AgentRole.Summarizer), new FakeAgent(AgentRole.ResearchAnalyst), new GeneralAssistant(), new TimelinePlanner(), new TimelinePlanner()],
+            _repository);
+    }
 
     private static AgentResponse Custom(string name, string model = "") => new(Guid.NewGuid(), name, "Mine", model, DateTime.UtcNow, DateTime.UtcNow);
 

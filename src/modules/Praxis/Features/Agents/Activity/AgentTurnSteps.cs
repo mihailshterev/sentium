@@ -1,6 +1,5 @@
 using System.Text;
 using Microsoft.Extensions.AI;
-using Sentium.Praxis.Features.Assistant;
 using Sentium.Praxis.Features.Conversations;
 using ChatMessage = Microsoft.Extensions.AI.ChatMessage;
 

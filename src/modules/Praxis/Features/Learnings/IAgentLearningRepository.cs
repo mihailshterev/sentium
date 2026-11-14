@@ -12,7 +12,6 @@ public interface IAgentLearningRepository
     /// optionally filtered by agent name.
     /// </summary>
     /// <param name="page">1-based page number.</param>
-    /// <param name="pageSize">Number of records per page.</param>
     Task<(IReadOnlyList<AgentLearningResponse> Items, int TotalCount)> GetAllAsync(string? agentName, int page, int pageSize, CancellationToken ct = default);
 
     /// <summary>
@@ -23,13 +22,11 @@ public interface IAgentLearningRepository
     /// <summary>
     /// Finds a specific learning record by its unique identifier.
     /// </summary>
-    /// <param name="id">The unique identifier of the learning record.</param>
     Task<AgentLearning?> FindAsync(Guid id, CancellationToken ct = default);
 
     /// <summary>
     /// Adds a new learning record to the repository and persists the change.
     /// </summary>
-    /// <param name="entity">The learning entity to add.</param>
     Task AddAsync(AgentLearning entity, CancellationToken ct = default);
 
     /// <summary>
@@ -40,6 +37,5 @@ public interface IAgentLearningRepository
     /// <summary>
     /// Removes a specific learning record and persists the change.
     /// </summary>
-    /// <param name="entity">The learning entity to remove.</param>
     Task RemoveAsync(AgentLearning entity, CancellationToken ct = default);
 }

@@ -1,7 +1,6 @@
 // Compaction is experimental in Agent Framework 1.27 (MAAI001); its use is confined to this file.
 #pragma warning disable MAAI001
 
-using Microsoft.Agents.AI;
 using Microsoft.Agents.AI.Compaction;
 using Microsoft.Extensions.AI;
 
@@ -35,8 +34,9 @@ internal static class AgentChatPipeline
     /// <param name="baseClient">The shared agent base client (keyed <see cref="PraxisModuleExtensions.AgentChatClientKey"/>).</param>
     /// <param name="contextWindow">Tokens one request to the agent's model may use (see <see cref="Models.IModelContextWindowProvider"/>); compaction budgets are fractions of it.</param>
     /// <param name="services">Request services - flows to tools as <see cref="AIFunctionArguments.Services"/>.</param>
-    public static IChatClient Build(IChatClient baseClient, int contextWindow, ILoggerFactory loggerFactory, IServiceProvider services) =>
-        new ChatClientBuilder(baseClient)
+    public static IChatClient Build(IChatClient baseClient, int contextWindow, ILoggerFactory loggerFactory, IServiceProvider services)
+    {
+        return new ChatClientBuilder(baseClient)
             .UseFunctionInvocation(loggerFactory, ficc =>
             {
                 ficc.MaximumIterationsPerRequest = MaxToolIterationsPerRequest;
@@ -47,6 +47,7 @@ internal static class AgentChatPipeline
             })
             .UseAIContextProviders(CreateCompaction(contextWindow, loggerFactory))
             .Build(services);
+    }
 
     /// <summary>
     /// Keeps the in-flight request inside the model's context window during long tool loops - essential for small local

@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sentium.Core.Results;
 using Sentium.Infrastructure.Results;
-using Sentium.Praxis.Features.Conversations;
 
 namespace Sentium.Praxis.Features.Conversations;
 
@@ -38,7 +37,6 @@ public sealed class ConversationsController(IConversationService conversationSer
         return conversation is null ? NotFound() : Ok(conversation);
     }
 
-    /// <param name="request">The request containing conversation details.</param>
     [HttpPost]
     [ProducesResponseType(typeof(ConversationSummary), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

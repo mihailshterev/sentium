@@ -4,7 +4,7 @@ namespace Sentium.Registry.Contracts;
 
 /// <summary>
 /// Centralized, key-based settings operations. New settings types are added by registering an
-/// <see cref="Settings.ISettingsDescriptor"/>.
+/// <see cref="Features.Settings.ISettingsDescriptor"/>.
 /// </summary>
 public interface ISettingsService
 {
@@ -21,7 +21,3 @@ public interface ISettingsService
     /// </summary>
     Task<SettingsEnvelope> UpdateAsync(string key, Guid? userId, JsonElement payload, string? updatedBy = null, CancellationToken ct = default);
 }
-
-
-public sealed record SettingsEnvelope(string Key, JsonElement Value, DateTimeOffset UpdatedAt, string? UpdatedBy);
-

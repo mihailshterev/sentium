@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sentium.Infrastructure.Results;
-using Sentium.Tempus.Features.Notes;
 
 namespace Sentium.Tempus.Features.Notes;
 

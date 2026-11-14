@@ -5,7 +5,6 @@ using Microsoft.Net.Http.Headers;
 using Sentium.Infrastructure.Results;
 using Sentium.Locus.Common;
 using Sentium.Locus.Entities;
-using Sentium.Locus.Features.Attachments;
 
 namespace Sentium.Locus.Features.Attachments;
 

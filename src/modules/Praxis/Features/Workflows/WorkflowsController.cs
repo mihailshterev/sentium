@@ -51,7 +51,6 @@ public sealed class WorkflowsController(IWorkflowService workflowService, IWorkf
     /// <summary>
     /// Returns a single workflow run by its ID, including its full log history.
     /// </summary>
-    /// <param name="runId">The ID of the workflow run to retrieve.</param>
     /// <returns>The workflow run if found; otherwise, a 404 Not Found response.</returns>
     [HttpGet("runs/{runId:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -62,7 +61,6 @@ public sealed class WorkflowsController(IWorkflowService workflowService, IWorkf
         return run is null ? NotFound() : Ok(run);
     }
 
-    /// <param name="runId">The ID of the workflow run to rename.</param>
     /// <returns>No content, or 404 Not Found when the run does not exist.</returns>
     [HttpPut("runs/{runId:guid}/title")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -89,7 +87,6 @@ public sealed class WorkflowsController(IWorkflowService workflowService, IWorkf
     /// <summary>
     /// Creates a new workflow based on the provided configuration and returns the created workflow details.
     /// </summary>
-    /// <param name="request">The workflow creation request.</param>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     public async Task<ActionResult<WorkflowResponse>> CreateWorkflow([FromBody] CreateWorkflowRequest request, CancellationToken ct)
@@ -101,7 +98,6 @@ public sealed class WorkflowsController(IWorkflowService workflowService, IWorkf
     /// <summary>
     /// Updates an existing workflow with the provided configuration.
     /// </summary>
-    /// <param name="request">The workflow update request.</param>
     [HttpPut("{workflowId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

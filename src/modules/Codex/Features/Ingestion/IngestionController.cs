@@ -22,7 +22,6 @@ public sealed class IngestionController(
     /// Ingest a single document into the knowledge base.
     /// The service will chunk, embed, and store it in the vector store.
     /// </summary>
-    /// <param name="request">The request containing the document to ingest.</param>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     public async Task<IActionResult> IngestDocument([FromBody] IngestionRequest request, CancellationToken ct)
@@ -35,7 +34,6 @@ public sealed class IngestionController(
     /// Ingest multiple documents in a single call.
     /// Each document is processed independently; a failure on one does not abort the rest.
     /// </summary>
-    /// <param name="requests">The requests containing the documents to ingest.</param>
     [HttpPost("batch")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     public async Task<IActionResult> IngestBatch([FromBody] IEnumerable<IngestionRequest> requests, CancellationToken ct)
@@ -49,8 +47,6 @@ public sealed class IngestionController(
     /// Useful for on-demand back-fills or scheduled refresh jobs.
     /// Returns 404 if no source with that name is registered.
     /// </summary>
-    /// <param name="sourceName">The name of the ingestion source to trigger.</param>
-    /// <param name="sources">Injected enumeration of all registered ingestion sources.</param>
     /// <returns>Accepted if the source was found and ingestion started; 404 otherwise.</returns>
     [HttpPost("sources/{sourceName}")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
@@ -83,7 +79,6 @@ public sealed class IngestionController(
     /// <summary>
     /// Removes all vector chunks associated with the given source identifier.
     /// </summary>
-    /// <param name="source">The source identifier whose vectors should be removed.</param>
     [HttpDelete]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

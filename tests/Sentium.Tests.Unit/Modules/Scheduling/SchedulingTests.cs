@@ -10,8 +10,6 @@ using Quartz.Impl;
 using Quartz.Impl.Matchers;
 using Sentium.Infrastructure.Security;
 using Sentium.Praxis.Contracts;
-using Sentium.Praxis.Features.Sentinel;
-using Sentium.Scheduling;
 using Sentium.Scheduling.Features.Jobs;
 using Sentium.Tests.Unit.Modules.Praxis.Support;
 using Xunit;

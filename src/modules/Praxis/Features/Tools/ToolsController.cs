@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sentium.Praxis.Contracts;
-using Sentium.Praxis.Features.Tools;
 
 namespace Sentium.Praxis.Features.Tools;
 

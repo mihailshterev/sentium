@@ -5,7 +5,6 @@ using NSubstitute;
 using Sentium.Praxis.Contracts;
 using Sentium.Praxis.Features.Agents;
 using Sentium.Praxis.Features.Learnings;
-using Sentium.Praxis.Features.Tools;
 using Sentium.Sentinel.Contracts;
 using Sentium.Tests.Unit.Modules.Praxis.Support;
 using Xunit;

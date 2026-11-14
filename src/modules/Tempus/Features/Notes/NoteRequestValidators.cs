@@ -1,6 +1,5 @@
 using FluentValidation;
 using Sentium.Tempus.Common;
-using Sentium.Tempus.Features;
 
 namespace Sentium.Tempus.Features.Notes;
 

@@ -4,7 +4,6 @@ using NSubstitute;
 using Sentium.Codex.Contracts;
 using Sentium.Codex.Contracts.Models;
 using Sentium.Praxis.Contracts;
-using Sentium.Praxis.Features.Sentinel;
 using Sentium.Praxis.Features.Tools;
 using Xunit;
 

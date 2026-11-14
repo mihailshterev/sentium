@@ -30,11 +30,14 @@ public sealed class ReadFileTool : IAgentTool
         }
     }
 
-    public AIFunction CreateFunction() => AgentToolFunction.Create(
-        this,
-        ReadAsync,
-        ToolNames.ReadFile,
-        "Reads and returns the full text content of a file within the allowed workspace.");
+    public AIFunction CreateFunction()
+    {
+        return AgentToolFunction.Create(
+            this,
+            ReadAsync,
+            ToolNames.ReadFile,
+            "Reads and returns the full text content of a file within the allowed workspace.");
+    }
 
     public async Task<string> ReadAsync(
         [Description("Relative path to the file within the workspace, e.g. 'logs/error.log'.")] string path,

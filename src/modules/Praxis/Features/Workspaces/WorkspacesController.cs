@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using Sentium.Core.Results;
 using Sentium.Infrastructure.Results;
 using Sentium.Praxis.Features.Files;
-using Sentium.Praxis.Features.Workspaces;
 
 namespace Sentium.Praxis.Features.Workspaces;
 
@@ -51,7 +50,6 @@ public sealed class WorkspacesController(IWorkspaceService workspaceService) : C
         return Ok(workspace);
     }
 
-    /// <param name="request">The creation request containing workspace name and optional description.</param>
     /// <returns>
     /// An HTTP 201 Created response with the new workspace DTO;
     /// an HTTP 400 Bad Request if the name is empty;
@@ -75,8 +73,6 @@ public sealed class WorkspacesController(IWorkspaceService workspaceService) : C
     /// <summary>
     /// Updates an existing workspace's metadata.
     /// </summary>
-    /// <param name="id">The identifier of the workspace to update.</param>
-    /// <param name="request">The update request containing new name and optional description.</param>
     /// <returns>
     /// An HTTP 200 OK response with the updated workspace DTO;
     /// an HTTP 400 Bad Request if the name is empty;
@@ -94,7 +90,6 @@ public sealed class WorkspacesController(IWorkspaceService workspaceService) : C
         return result.ToActionResult(this);
     }
 
-    /// <param name="id">The identifier of the workspace to delete.</param>
     /// <returns>
     /// An HTTP 204 No Content response if the workspace was successfully deleted;
     /// or an HTTP 404 Not Found response if the workspace does not exist.
@@ -138,7 +133,7 @@ public sealed class WorkspacesController(IWorkspaceService workspaceService) : C
     /// </para>
     /// <para>
     /// Upon successful upload, the file is stored in blob storage and its metadata is recorded in the database
-    /// with an initial <see cref="Core.Files.FileProcessingStatus.Pending"/> status.
+    /// with an initial <see cref="FileProcessingStatus.Pending"/> status.
     /// The background ingestion worker will process the file asynchronously for RAG indexing.
     /// </para>
     /// </summary>
@@ -199,7 +194,6 @@ public sealed class WorkspacesController(IWorkspaceService workspaceService) : C
     /// <summary>
     /// Deletes a file from its workspace and blob storage.
     /// </summary>
-    /// <param name="id">The unique identifier of the file to delete.</param>
     /// <returns>
     /// An HTTP 204 No Content response if the file was successfully deleted;
     /// or an HTTP 404 Not Found response if the file does not exist.

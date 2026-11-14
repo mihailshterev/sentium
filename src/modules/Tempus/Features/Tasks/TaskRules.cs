@@ -33,9 +33,11 @@ internal static class TaskRules
     }
 
     public static string? ValidateDueDate(DateOnly? dueDate)
-        => dueDate is { } due && !TempusLimits.IsValidYear(due.Year)
+    {
+        return dueDate is { } due && !TempusLimits.IsValidYear(due.Year)
             ? string.Create(CultureInfo.InvariantCulture, $"The due date must be between {TempusLimits.MinYear} and {TempusLimits.MaxYear}.")
             : null;
+    }
 
     public static bool IsAt(TimelineTask task, int year, int month, DateOnly? date)
         => task.Year == year && task.Month == month && task.Date == date;
@@ -57,7 +59,8 @@ internal static class TaskRules
     }
 
     public static Task<int> SupersedePendingReschedulesAsync(TempusDbContext db, Guid taskId, DateTimeOffset now, Guid? keepProposalId, CancellationToken ct)
-        => db.TimelineProposals
+    {
+        return db.TimelineProposals
             .Where(p => p.TaskId == taskId
                 && p.Kind == TimelineProposalKind.Reschedule
                 && p.Status == TimelineProposalStatus.Pending
@@ -65,15 +68,18 @@ internal static class TaskRules
             .ExecuteUpdateAsync(s => s
                 .SetProperty(p => p.Status, TimelineProposalStatus.Superseded)
                 .SetProperty(p => p.ResolvedAt, now), ct);
+    }
 
     /// <summary>
     /// Open tasks first, then by priority (most urgent first), deadline and age. Done in memory: priorities are
     /// stored by name, so SQL would sort them alphabetically.
     /// </summary>
     public static IOrderedEnumerable<T> OrderForDisplay<T>(IEnumerable<T> items, Func<T, TimelineTask> task)
-        => items
+    {
+        return items
             .OrderBy(i => task(i).Status == TimelineTaskStatus.Done)
             .ThenByDescending(i => task(i).Priority)
             .ThenBy(i => task(i).DueDate ?? DateOnly.MaxValue)
             .ThenBy(i => task(i).CreatedAt);
+    }
 }

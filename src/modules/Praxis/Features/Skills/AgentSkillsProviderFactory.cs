@@ -1,6 +1,5 @@
 using Microsoft.Agents.AI;
 using Sentium.Praxis.Contracts;
-using Sentium.Praxis.Features.Sentinel;
 
 namespace Sentium.Praxis.Features.Skills;
 
@@ -20,8 +19,9 @@ public sealed class AgentSkillsProviderFactory(
     IPdpContextAccessor runContext,
     ILoggerFactory loggerFactory)
 {
-    public AgentSkillsProvider Create() =>
-        new AgentSkillsProviderBuilder()
+    public AgentSkillsProvider Create()
+    {
+        return new AgentSkillsProviderBuilder()
             .UseLoggerFactory(loggerFactory)
             .UseSkills(builtInCatalog.Skills)
             .UseSource(_ => new UserSkillsSource(skillRepository, runContext))
@@ -32,4 +32,5 @@ public sealed class AgentSkillsProviderFactory(
                 options.DisableRunSkillScriptApproval = true;
             })
             .Build();
+    }
 }

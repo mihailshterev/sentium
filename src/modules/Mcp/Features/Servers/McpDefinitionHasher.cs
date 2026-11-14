@@ -1,6 +1,5 @@
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
 using System.Text.Json.Nodes;
 using ModelContextProtocol.Protocol;
 using Sentium.Mcp.Entities;
@@ -90,33 +89,16 @@ public static class McpDefinitionHasher
         return sb.ToString().Trim();
     }
 
-    private static JsonNode? Canonicalize(JsonNode? node) => node switch
+    private static JsonNode? Canonicalize(JsonNode? node)
     {
-        JsonObject obj => new JsonObject(obj
-            .OrderBy(p => p.Key, StringComparer.Ordinal)
-            .Select(p => KeyValuePair.Create(p.Key, Canonicalize(p.Value)))),
-        JsonArray array => new JsonArray([.. array.Select(Canonicalize)]),
-        null => null,
-        _ => JsonNode.Parse(node.ToJsonString()),
-    };
-}
-
-public sealed record McpToolDefinition(
-    string Name,
-    string? Title,
-    string? Description,
-    string InputSchema,
-    bool? ReadOnlyHint,
-    bool? DestructiveHint,
-    bool? IdempotentHint,
-    bool? OpenWorldHint,
-    string Hash);
-
-internal static class McpJson
-{
-    public static JsonElement ParseSchema(string schema)
-    {
-        using var document = JsonDocument.Parse(schema);
-        return document.RootElement.Clone();
+        return node switch
+        {
+            JsonObject obj => new JsonObject(obj
+                .OrderBy(p => p.Key, StringComparer.Ordinal)
+                .Select(p => KeyValuePair.Create(p.Key, Canonicalize(p.Value)))),
+            JsonArray array => new JsonArray([.. array.Select(Canonicalize)]),
+            null => null,
+            _ => JsonNode.Parse(node.ToJsonString()),
+        };
     }
 }

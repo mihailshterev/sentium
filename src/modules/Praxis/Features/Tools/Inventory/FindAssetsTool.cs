@@ -15,13 +15,16 @@ public sealed class FindAssetsTool(IInventoryLookup inventory, ILogger<FindAsset
     private const int DefaultLimit = 10;
     private const int MaxLimit = 25;
 
-    public AIFunction CreateFunction() => AgentToolFunction.Create(
-        this,
-        FindAsync,
-        ToolNames.FindAssets,
-        "Search the household inventory for physical items and where they are kept. Use it for questions like " +
-        "'where is the drill?' or 'which chargers do we have?'. Returns each item's location path and id; " +
-        $"call {ToolNames.GetAsset} with an id for full details.");
+    public AIFunction CreateFunction()
+    {
+        return AgentToolFunction.Create(
+            this,
+            FindAsync,
+            ToolNames.FindAssets,
+            "Search the household inventory for physical items and where they are kept. Use it for questions like " +
+            "'where is the drill?' or 'which chargers do we have?'. Returns each item's location path and id; " +
+            $"call {ToolNames.GetAsset} with an id for full details.");
+    }
 
     public async Task<string> FindAsync(
         [Description("Words describing the item (name, brand, model, tag or room), e.g. 'cordless drill'. May be empty when filtering by location, tag or category.")] string query,

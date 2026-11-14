@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Mvc;
 using Sentium.Core.Constants;
 using Sentium.Infrastructure.Security;
 using Sentium.Registry.Contracts;
-using Sentium.Registry.Features.Settings;
 
 namespace Sentium.Registry.Features.Settings;
 

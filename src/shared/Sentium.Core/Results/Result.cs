@@ -1,13 +1,5 @@
 namespace Sentium.Core.Results;
 
-public enum ResultStatus
-{
-    Success,
-    NotFound,
-    Conflict,
-    Invalid
-}
-
 public readonly record struct Result<T>(ResultStatus Status, T? Value, string? Error)
 {
     public bool IsSuccess => Status == ResultStatus.Success;

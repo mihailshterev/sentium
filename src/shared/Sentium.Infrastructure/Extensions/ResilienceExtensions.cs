@@ -11,7 +11,7 @@ public static class ResilienceExtensions
     /// (LLM token generation, sandboxed code execution) whose duration far exceeds the 30s default
     /// <c>TotalRequestTimeout</c>.
     /// <para>
-    /// When <paramref name="retries"/> is 0, <see cref="AddStandardResilienceHandler"/> cannot be used
+    /// When <paramref name="retries"/> is 0, <see cref="ResilienceHttpClientBuilderExtensions.AddStandardResilienceHandler(IHttpClientBuilder)"/> cannot be used
     /// because it enforces <c>MaxRetryAttempts >= 1</c> at startup validation. A custom pipeline is
     /// built instead: total-timeout → circuit-breaker → attempt-timeout, with no retry stage.
     /// This is correct for non-idempotent operations (LLM streaming, code execution).

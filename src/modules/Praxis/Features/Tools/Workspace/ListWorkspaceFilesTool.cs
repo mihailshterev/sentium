@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.AI;
 using Sentium.Praxis.Contracts;
 using Sentium.Praxis.Data;
-using Sentium.Praxis.Features.Sentinel;
 
 namespace Sentium.Praxis.Features.Tools.Workspace;
 
@@ -16,11 +15,14 @@ public sealed class ListWorkspaceFilesTool(PraxisDbContext dbContext, IPdpContex
 {
     private static readonly JsonSerializerOptions JsonOptions = new() { WriteIndented = true };
 
-    public AIFunction CreateFunction() => AgentToolFunction.Create(
-        this,
-        ListAsync,
-        ToolNames.ListWorkspaceFiles,
-        "Lists all files available in a workspace, identified by its ID (GUID) or name.");
+    public AIFunction CreateFunction()
+    {
+        return AgentToolFunction.Create(
+            this,
+            ListAsync,
+            ToolNames.ListWorkspaceFiles,
+            "Lists all files available in a workspace, identified by its ID (GUID) or name.");
+    }
 
     public async Task<string> ListAsync(
         [Description("The workspace ID (GUID) or workspace name to list files from.")] string workspace,

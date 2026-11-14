@@ -134,16 +134,19 @@ internal static class SquadPrompts
         return sb.ToString();
     }
 
-    public static string CheckInput(SquadStep step, string output) => $"""
-        ## Task
-        {step.Task.Trim()}
+    public static string CheckInput(SquadStep step, string output)
+    {
+        return $"""
+            ## Task
+            {step.Task.Trim()}
 
-        ## Expected output
-        {step.ExpectedOutput.Trim()}
+            ## Expected output
+            {step.ExpectedOutput.Trim()}
 
-        ## Output to review
-        {Truncate(output, ReviewedOutputBudget)}
-        """;
+            ## Output to review
+            {Truncate(output, ReviewedOutputBudget)}
+            """;
+    }
 
     public static string SynthesisInput(string request, IReadOnlyList<StepResult> results)
     {
@@ -159,13 +162,16 @@ internal static class SquadPrompts
         return sb.ToString();
     }
 
-    public static string AssessmentInput(string request, string answer) => $"""
-        ## Request
-        {request.Trim()}
+    public static string AssessmentInput(string request, string answer)
+    {
+        return $"""
+            ## Request
+            {request.Trim()}
 
-        ## Final answer
-        {Truncate(answer, ReviewedOutputBudget)}
-        """;
+            ## Final answer
+            {Truncate(answer, ReviewedOutputBudget)}
+            """;
+    }
 
     public static string DescribePlan(SquadPlan plan) =>
         string.Join(" → ", plan.Steps.Select((s, i) => $"{i + 1}. {s.Agent}: {OneLine(s.Task, 120)}"));

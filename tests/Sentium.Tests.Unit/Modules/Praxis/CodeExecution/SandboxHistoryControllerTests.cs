@@ -32,8 +32,9 @@ public sealed class SandboxHistoryControllerTests
         };
     }
 
-    private static ExecutionLogEntry MakeLogEntry() =>
-        new()
+    private static ExecutionLogEntry MakeLogEntry()
+    {
+        return new()
         {
             JobId = Guid.NewGuid(),
             ExecutedAt = DateTimeOffset.UtcNow,
@@ -50,6 +51,7 @@ public sealed class SandboxHistoryControllerTests
             SentinelAuditId = Guid.NewGuid(),
             DurationMs = 50
         };
+    }
 
     [Fact]
     public async Task GetExecutions_ReturnsOk_WithPagedResponse()

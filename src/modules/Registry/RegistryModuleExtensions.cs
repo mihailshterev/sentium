@@ -1,6 +1,3 @@
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Sentium.Core.Constants;
 using Sentium.Infrastructure.Extensions;
 using Sentium.Registry.Contracts;

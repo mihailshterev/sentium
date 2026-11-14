@@ -3,7 +3,6 @@ using System.Text;
 using Microsoft.Extensions.AI;
 using Sentium.Praxis.Contracts;
 using Sentium.Praxis.Features.CodeExecution;
-using Sentium.Praxis.Features.Sentinel;
 
 namespace Sentium.Praxis.Features.Tools;
 
@@ -18,11 +17,14 @@ public sealed class CodeExecutionSandboxTool(
 {
     private const string NoExternalLibraries = "USE NO EXTERNAL LIBRARIES. ONLY NATIVE LANGUAGE ONES.";
 
-    public AIFunction CreateFunction() => AgentToolFunction.Create(
-        this,
-        ExecuteAsync,
-        ToolNames.ExecuteCode,
-        $"Executes code (Python or Node.js) safely within an isolated, ephemeral sandbox environment. {NoExternalLibraries}");
+    public AIFunction CreateFunction()
+    {
+        return AgentToolFunction.Create(
+            this,
+            ExecuteAsync,
+            ToolNames.ExecuteCode,
+            $"Executes code (Python or Node.js) safely within an isolated, ephemeral sandbox environment. {NoExternalLibraries}");
+    }
 
     public async Task<string> ExecuteAsync(
         [Description($"The source code to execute. {NoExternalLibraries}")] string code,

@@ -19,10 +19,13 @@ public sealed class InventoryToolsTests
 
     private static readonly InventoryAssetSummary Drill = new(Guid.NewGuid(), "Cordless drill", "Tools", ["power"], "Home › Garage › Shelf B");
 
-    private static InventoryAssetDetail DrillDetail(string? notes = null) => new(
-        Drill.Id, Drill.Name, Drill.Category, Drill.Tags, Drill.LocationPath,
-        "Bosch", "GSR 12V", "SN-1", null, "Charge before storing", new DateOnly(2024, 3, 1), null, null, notes,
-        [new InventoryAttachmentInfo("manual.pdf", "Manual")]);
+    private static InventoryAssetDetail DrillDetail(string? notes = null)
+    {
+        return new(
+            Drill.Id, Drill.Name, Drill.Category, Drill.Tags, Drill.LocationPath,
+            "Bosch", "GSR 12V", "SN-1", null, "Charge before storing", new DateOnly(2024, 3, 1), null, null, notes,
+            [new InventoryAttachmentInfo("manual.pdf", "Manual")]);
+    }
 
     [Fact]
     public async Task FindAssets_BindsModelArguments_AndListsLocations()

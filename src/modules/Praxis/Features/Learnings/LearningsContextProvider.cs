@@ -2,7 +2,6 @@ using System.Text;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Sentium.Praxis.Contracts;
-using Sentium.Praxis.Features.Sentinel;
 
 namespace Sentium.Praxis.Features.Learnings;
 

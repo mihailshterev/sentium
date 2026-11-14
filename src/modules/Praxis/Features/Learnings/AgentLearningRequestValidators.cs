@@ -1,6 +1,4 @@
 using FluentValidation;
-using Sentium.Praxis.Features.Agents;
-using Sentium.Praxis.Features.Learnings;
 
 namespace Sentium.Praxis.Features.Learnings;
 

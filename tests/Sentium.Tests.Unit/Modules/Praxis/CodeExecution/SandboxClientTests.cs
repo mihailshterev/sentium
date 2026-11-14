@@ -38,27 +38,33 @@ public sealed class SandboxClientTests : IDisposable
         _services.Dispose();
     }
 
-    private static SandboxExecutionRequest MakeRequest() => new()
+    private static SandboxExecutionRequest MakeRequest()
     {
-        Language = "Python",
-        Code = "print('hi')",
-        AgentId = "agent-1",
-        OriginalUserPrompt = "say hi"
-    };
+        return new()
+        {
+            Language = "Python",
+            Code = "print('hi')",
+            AgentId = "agent-1",
+            OriginalUserPrompt = "say hi"
+        };
+    }
 
-    private static SandboxExecutionResponse MakeResponse(bool policyDenied = false) => new()
+    private static SandboxExecutionResponse MakeResponse(bool policyDenied = false)
     {
-        Succeeded = !policyDenied,
-        ExitCode = policyDenied ? -1 : 0,
-        Output = policyDenied ? string.Empty : "hi\n",
-        Error = string.Empty,
-        TimedOut = false,
-        PolicyDenied = policyDenied,
-        PolicyDenialReason = policyDenied ? "blocked" : null,
-        JobId = Guid.NewGuid(),
-        SentinelAuditId = Guid.NewGuid(),
-        DurationMs = 42
-    };
+        return new()
+        {
+            Succeeded = !policyDenied,
+            ExitCode = policyDenied ? -1 : 0,
+            Output = policyDenied ? string.Empty : "hi\n",
+            Error = string.Empty,
+            TimedOut = false,
+            PolicyDenied = policyDenied,
+            PolicyDenialReason = policyDenied ? "blocked" : null,
+            JobId = Guid.NewGuid(),
+            SentinelAuditId = Guid.NewGuid(),
+            DurationMs = 42
+        };
+    }
 
     [Fact]
     public async Task ExecuteAsync_RecordsSuccessfulRun()

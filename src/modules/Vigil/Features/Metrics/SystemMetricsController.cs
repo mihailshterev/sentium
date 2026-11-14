@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Sentium.Vigil.Features.Metrics;
 
 namespace Sentium.Vigil.Features.Metrics;
 

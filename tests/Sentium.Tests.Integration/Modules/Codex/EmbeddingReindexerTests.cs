@@ -109,14 +109,17 @@ public sealed class EmbeddingReindexerTests(MonolithWebApplicationFactory factor
 
     private static string NewCollection() => $"test_{Guid.NewGuid():N}";
 
-    private static DocumentChunk Chunk(string content) => new()
+    private static DocumentChunk Chunk(string content)
     {
-        Content = content,
-        Source = "test-source",
-        SourceType = IngestionSourceType.Custom,
-        Scope = KnowledgeScope.Shared,
-        CreatedAt = DateTimeOffset.UtcNow
-    };
+        return new()
+        {
+            Content = content,
+            Source = "test-source",
+            SourceType = IngestionSourceType.Custom,
+            Scope = KnowledgeScope.Shared,
+            CreatedAt = DateTimeOffset.UtcNow
+        };
+    }
 
     private static float[] Basis(int i)
     {

@@ -1,6 +1,5 @@
 using System.Text.Json;
 using FluentValidation;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace Sentium.Registry.Features.Settings;
 

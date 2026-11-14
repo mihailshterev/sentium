@@ -1,14 +1,8 @@
 using System.Net;
 using System.Net.Http.Json;
-using Azure.Storage.Blobs;
 using FluentAssertions;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
-using NSubstitute;
 using Sentium.Core.Results;
-using Sentium.Praxis.Features.Storage;
 using Sentium.Praxis.Features.Workspaces;
-using Sentium.Tests.Integration.Common;
 using Xunit;
 
 namespace Sentium.Tests.Integration.Modules.Praxis;
@@ -98,20 +92,5 @@ public sealed class WorkspaceApiTests(WorkspaceApiFactory factory) : IClassFixtu
     {
         var response = await _client.GetAsync($"/api/praxis/workspaces/{Guid.NewGuid()}/files", Ct);
         response.StatusCode.Should().Be(HttpStatusCode.NotFound);
-    }
-}
-
-public sealed class WorkspaceApiFactory : MonolithWebApplicationFactory
-{
-    protected override void ConfigureWebHost(Microsoft.AspNetCore.Hosting.IWebHostBuilder builder)
-    {
-        base.ConfigureWebHost(builder);
-        builder.ConfigureServices(services =>
-        {
-            services.RemoveAll<ILocalFileService>();
-            services.RemoveAll<BlobServiceClient>();
-            services.AddSingleton(Substitute.For<ILocalFileService>());
-            services.AddSingleton(Substitute.For<BlobServiceClient>());
-        });
     }
 }

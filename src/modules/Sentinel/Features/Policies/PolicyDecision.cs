@@ -11,8 +11,9 @@ public sealed record PolicyDecision
     public IReadOnlyList<string> TriggeredPolicies { get; init; } = [];
     public string? AlignmentVerdict { get; init; }
 
-    public static PolicyDecision Allow(Guid auditId, IReadOnlyList<string> policies) =>
-        new()
+    public static PolicyDecision Allow(Guid auditId, IReadOnlyList<string> policies)
+    {
+        return new()
         {
             Allowed = true,
             Effect = PolicyEffect.Allow,
@@ -21,6 +22,7 @@ public sealed record PolicyDecision
             AuditId = auditId,
             TriggeredPolicies = policies
         };
+    }
 
     public static PolicyDecision Deny(
         string reason,

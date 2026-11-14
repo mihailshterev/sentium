@@ -1,5 +1,4 @@
 using System.Net;
-using System.Net.Http;
 using FluentAssertions;
 using Sentium.Infrastructure.Net;
 using Xunit;

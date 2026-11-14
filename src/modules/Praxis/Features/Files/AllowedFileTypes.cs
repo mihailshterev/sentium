@@ -59,7 +59,6 @@ public static class AllowedFileTypes
     /// Checks whether the specified file extension is allowed for upload and ingestion.
     /// </summary>
     /// <param name="extension">The file extension to validate (e.g., ".txt", ".json").</param>
-    /// <returns><c>true</c> if the extension is in the allowed list; otherwise <c>false</c>.</returns>
     /// <remarks>
     /// The comparison is case-insensitive.
     /// </remarks>

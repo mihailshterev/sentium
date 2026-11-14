@@ -14,12 +14,15 @@ public sealed class GetAssetTool(IInventoryLookup inventory, ILogger<GetAssetToo
 {
     private const int MaxNameMatches = 3;
 
-    public AIFunction CreateFunction() => AgentToolFunction.Create(
-        this,
-        GetAsync,
-        ToolNames.GetAsset,
-        "Get the full details of one household inventory item: location, maker, model, serial number, " +
-        "purchase and service dates, warranty, care instructions and attached files.");
+    public AIFunction CreateFunction()
+    {
+        return AgentToolFunction.Create(
+            this,
+            GetAsync,
+            ToolNames.GetAsset,
+            "Get the full details of one household inventory item: location, maker, model, serial number, " +
+            "purchase and service dates, warranty, care instructions and attached files.");
+    }
 
     public async Task<string> GetAsync(
         [Description($"The item's id (from {ToolNames.FindAssets}) or its exact name.")] string asset,

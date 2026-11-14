@@ -81,9 +81,12 @@ public sealed class PraxisModelIdMigrationTests(MonolithWebApplicationFactory fa
         (await ModelOfAsync(db, "Conversations", conversations["qwen3:4b"])).Should().Be("gemma-4-e4b", "a resumed conversation must name a served model");
     }
 
-    private static Task<string> ModelOfAsync(PraxisDbContext db, string table, Guid id) => table switch
+    private static Task<string> ModelOfAsync(PraxisDbContext db, string table, Guid id)
     {
-        "Agents" => db.Database.SqlQuery<string>($"""SELECT "Model" AS "Value" FROM praxis."Agents" WHERE "Id" = {id}""").SingleAsync(Ct),
-        _ => db.Database.SqlQuery<string>($"""SELECT "Model" AS "Value" FROM praxis."Conversations" WHERE "Id" = {id}""").SingleAsync(Ct),
-    };
+        return table switch
+        {
+            "Agents" => db.Database.SqlQuery<string>($"""SELECT "Model" AS "Value" FROM praxis."Agents" WHERE "Id" = {id}""").SingleAsync(Ct),
+            _ => db.Database.SqlQuery<string>($"""SELECT "Model" AS "Value" FROM praxis."Conversations" WHERE "Id" = {id}""").SingleAsync(Ct),
+        };
+    }
 }

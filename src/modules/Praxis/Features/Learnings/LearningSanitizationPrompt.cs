@@ -34,13 +34,16 @@ public static class LearningSanitizationPrompt
     /// Builds the user-turn payload describing the candidate learning to review.
     /// Pair this with <see cref="SystemRole"/> as the system message.
     /// </summary>
-    public static string BuildCandidate(string agentName, string tags, string content) => $"""
-        ### Candidate Learning
-        Captured by agent: {agentName}
-        Tags: {tags}
+    public static string BuildCandidate(string agentName, string tags, string content)
+    {
+        return $"""
+            ### Candidate Learning
+            Captured by agent: {agentName}
+            Tags: {tags}
 
-        ---
-        {content}
-        ---
-        """;
+            ---
+            {content}
+            ---
+            """;
+    }
 }

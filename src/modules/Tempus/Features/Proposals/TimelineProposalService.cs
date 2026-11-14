@@ -9,20 +9,6 @@ using Sentium.Tempus.Features.Tasks;
 
 namespace Sentium.Tempus.Features.Proposals;
 
-public interface ITimelineProposalService
-{
-    /// <param name="status">Which proposals to list; pending ones when <see langword="null"/>.</param>
-    Task<IReadOnlyList<TimelineProposalDto>> ListAsync(TimelineProposalStatus? status, CancellationToken ct = default);
-
-    /// <summary>
-    /// Applies an agent's proposal: adds the suggested task, or moves the task. A proposal whose task changed since
-    /// (moved, completed or deleted) is marked superseded and reported as a conflict.
-    /// </summary>
-    Task<Result<TimelineTaskDto>> AcceptAsync(Guid id, CancellationToken ct = default);
-
-    Task<Result<TimelineProposalDto>> RejectAsync(Guid id, CancellationToken ct = default);
-}
-
 public sealed class TimelineProposalService(
     TempusDbContext db,
     ITimelineTaskService taskService,
@@ -46,27 +32,7 @@ public sealed class TimelineProposalService(
 
     public async Task<Result<TimelineTaskDto>> AcceptAsync(Guid id, CancellationToken ct = default)
     {
-        var result = await db.Database.ExecuteInTransactionAsync(async () =>
-        {
-            db.ChangeTracker.Clear();
-
-            var proposal = await db.TimelineProposals.AsNoTracking().FirstOrDefaultAsync(p => p.Id == id, ct);
-            if (proposal is null)
-            {
-                return Result<Guid>.NotFound();
-            }
-
-            if (proposal.Status != TimelineProposalStatus.Pending)
-            {
-                return Result<Guid>.Conflict(AlreadyResolved(proposal.Status));
-            }
-
-            var now = timeProvider.GetUtcNow();
-
-            return proposal.Kind == TimelineProposalKind.CreateTask
-                ? await AcceptCreateAsync(proposal, now, ct)
-                : await AcceptRescheduleAsync(proposal, now, ct);
-        }, ct: ct);
+        var result = await db.Database.ExecuteInTransactionAsync(() => AcceptPendingAsync(id, ct), ct: ct);
 
         return result.IsSuccess
             ? Result<TimelineTaskDto>.Success((await taskService.GetAsync(result.Value, ct))!)
@@ -85,6 +51,28 @@ public sealed class TimelineProposalService(
 
         var proposal = await db.TimelineProposals.AsNoTracking().FirstAsync(p => p.Id == id, ct);
         return Result<TimelineProposalDto>.Success(TimelineMapping.ToDto(proposal));
+    }
+
+    private async Task<Result<Guid>> AcceptPendingAsync(Guid id, CancellationToken ct)
+    {
+        db.ChangeTracker.Clear();
+
+        var proposal = await db.TimelineProposals.AsNoTracking().FirstOrDefaultAsync(p => p.Id == id, ct);
+        if (proposal is null)
+        {
+            return Result<Guid>.NotFound();
+        }
+
+        if (proposal.Status != TimelineProposalStatus.Pending)
+        {
+            return Result<Guid>.Conflict(AlreadyResolved(proposal.Status));
+        }
+
+        var now = timeProvider.GetUtcNow();
+
+        return proposal.Kind == TimelineProposalKind.CreateTask
+            ? await AcceptCreateAsync(proposal, now, ct)
+            : await AcceptRescheduleAsync(proposal, now, ct);
     }
 
     private async Task<Result<Guid>> AcceptCreateAsync(TimelineProposal proposal, DateTimeOffset now, CancellationToken ct)
@@ -157,11 +145,13 @@ public sealed class TimelineProposalService(
     /// Pending → <paramref name="status"/> as one guarded update, so two concurrent answers cannot both win.
     /// </summary>
     private async Task<bool> TryResolveAsync(Guid id, TimelineProposalStatus status, DateTimeOffset now, CancellationToken ct)
-        => await db.TimelineProposals
+    {
+        return await db.TimelineProposals
             .Where(p => p.Id == id && p.Status == TimelineProposalStatus.Pending)
             .ExecuteUpdateAsync(s => s
                 .SetProperty(p => p.Status, status)
                 .SetProperty(p => p.ResolvedAt, now), ct) == 1;
+    }
 
     private static string AlreadyResolved(TimelineProposalStatus status)
         => $"This proposal is no longer pending ({status.ToString().ToLowerInvariant()}).";

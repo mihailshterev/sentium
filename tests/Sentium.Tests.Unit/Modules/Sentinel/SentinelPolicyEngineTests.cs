@@ -16,8 +16,9 @@ public sealed class SentinelPolicyEngineTests
     private readonly IAuditLog _auditLog = Substitute.For<IAuditLog>();
     private readonly ILogger<SentinelPolicyEngine> _logger = NullLogger<SentinelPolicyEngine>.Instance;
 
-    private static PolicyRequest MakeRequest(string action = "read", string resourceId = "docs/1") =>
-        new()
+    private static PolicyRequest MakeRequest(string action = "read", string resourceId = "docs/1")
+    {
+        return new()
         {
             AgentId = "agent-test",
             SkillName = "TestSkill",
@@ -27,6 +28,7 @@ public sealed class SentinelPolicyEngineTests
             OriginalUserPrompt = "test prompt",
             CorrelationId = Guid.NewGuid().ToString()
         };
+    }
 
     private SentinelPolicyEngine MakeEngine(params IPdpPolicy[] policies) =>
         new(policies, _auditLog, _logger);

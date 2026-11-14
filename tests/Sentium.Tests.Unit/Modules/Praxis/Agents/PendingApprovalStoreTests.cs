@@ -12,8 +12,9 @@ public sealed class PendingApprovalStoreTests
 
     private readonly PendingApprovalStore _store = new();
 
-    private static PendingApproval CreateApproval(string requestId = "req") =>
-        new(
+    private static PendingApproval CreateApproval(string requestId = "req")
+    {
+        return new(
             Session: JsonDocument.Parse("""{"stateBag":{"ConversationChatHistoryProvider":{"conversationId":"c1"}}}""").RootElement.Clone(),
             ApprovalRequest: new ToolApprovalRequestContent(requestId, new FunctionCallContent("call-1", "execute_code_sandbox")),
             ConversationId: Guid.NewGuid(),
@@ -21,6 +22,7 @@ public sealed class PendingApprovalStoreTests
             UserId: OwnerId,
             CorrelationId: "corr-1",
             OriginalUserPrompt: "prompt");
+    }
 
     [Fact]
     public void TryTake_ReturnsStoredApproval_WhenRequestIdExists()

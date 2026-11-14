@@ -182,12 +182,14 @@ public sealed class SquadWorkflowRunnerTests
         }
 
 #pragma warning disable CA2000 // The agent owns its scripted client for the lifetime of the test.
-        private AIAgent Build(string name, string? instructions, Func<IReadOnlyList<ChatMessage>, ChatOptions?, string> reply) =>
-            new ChatClientAgent(new ScriptedClient(name, this, reply), new ChatClientAgentOptions
+        private AIAgent Build(string name, string? instructions, Func<IReadOnlyList<ChatMessage>, ChatOptions?, string> reply)
+        {
+            return new ChatClientAgent(new ScriptedClient(name, this, reply), new ChatClientAgentOptions
             {
                 Name = name,
                 ChatOptions = new ChatOptions { Instructions = instructions },
             });
+        }
 #pragma warning restore CA2000
 
         private sealed class ScriptedClient(string agent, ScriptedAgentFactory owner, Func<IReadOnlyList<ChatMessage>, ChatOptions?, string> reply) : IChatClient

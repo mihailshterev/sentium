@@ -3,9 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Sentium.Core.Results;
-using Sentium.Infrastructure.Security;
 using Sentium.Praxis.Contracts;
-using Sentium.Praxis.Features.CodeExecution;
 
 namespace Sentium.Praxis.Features.CodeExecution;
 
@@ -96,38 +94,41 @@ public sealed class SandboxController(
         });
     }
 
-    private static SandboxExecutionLogRecord ToRecord(ExecutionLogEntry e) => new()
+    private static SandboxExecutionLogRecord ToRecord(ExecutionLogEntry e)
     {
-        JobId = e.JobId,
-        ExecutedAt = e.ExecutedAt,
-        AgentId = e.AgentId,
-        CorrelationId = e.CorrelationId,
-        Language = e.Language.ToString(),
-        Code = e.Code,
-        OriginalUserPrompt = e.OriginalUserPrompt,
-        FileContext = e.FileContext
-            .Select(f => new SandboxFileContextDto { FileName = f.FileName, Content = f.Content })
-            .ToList(),
-        Succeeded = e.Succeeded,
-        ExitCode = e.ExitCode,
-        Output = e.Output,
-        Error = e.Error,
-        TimedOut = e.TimedOut,
-        PolicyDenied = e.PolicyDenied,
-        PolicyDenialReason = e.PolicyDenialReason,
-        SentinelAuditId = e.SentinelAuditId,
-        DurationMs = e.DurationMs,
-        Artifacts = e.Artifacts
-            .Select(a => new ArtifactDto
-            {
-                FileName = a.FileName,
-                MimeType = a.MimeType,
-                BlobUri = a.BlobUri.ToString(),
-                DownloadPath = new BlobUriBuilder(a.BlobUri).BlobName,
-                SizeBytes = a.SizeBytes
-            })
-            .ToList()
-    };
+        return new()
+        {
+            JobId = e.JobId,
+            ExecutedAt = e.ExecutedAt,
+            AgentId = e.AgentId,
+            CorrelationId = e.CorrelationId,
+            Language = e.Language.ToString(),
+            Code = e.Code,
+            OriginalUserPrompt = e.OriginalUserPrompt,
+            FileContext = e.FileContext
+                .Select(f => new SandboxFileContextDto { FileName = f.FileName, Content = f.Content })
+                .ToList(),
+            Succeeded = e.Succeeded,
+            ExitCode = e.ExitCode,
+            Output = e.Output,
+            Error = e.Error,
+            TimedOut = e.TimedOut,
+            PolicyDenied = e.PolicyDenied,
+            PolicyDenialReason = e.PolicyDenialReason,
+            SentinelAuditId = e.SentinelAuditId,
+            DurationMs = e.DurationMs,
+            Artifacts = e.Artifacts
+                .Select(a => new ArtifactDto
+                {
+                    FileName = a.FileName,
+                    MimeType = a.MimeType,
+                    BlobUri = a.BlobUri.ToString(),
+                    DownloadPath = new BlobUriBuilder(a.BlobUri).BlobName,
+                    SizeBytes = a.SizeBytes
+                })
+                .ToList()
+        };
+    }
 
     /// <summary>
     /// Streams the requested artifact blob through the backend, avoiding direct blob storage credential requirements.

@@ -74,7 +74,6 @@ public sealed class SemanticMapController(
     /// Performs a semantic search across all tracked collections and returns
     /// ranked results for query-traversal visualization.
     /// </summary>
-    /// <param name="request">The search request containing the query and top-K parameter.</param>
     [HttpPost("search")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

@@ -1,5 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using Sentium.Codex.Contracts;
 using Sentium.Codex.Contracts.Models;
 using Sentium.Locus.Common;
@@ -8,34 +7,6 @@ using Sentium.Locus.Entities;
 using Sentium.Locus.Features.Locations;
 
 namespace Sentium.Locus.Features.Knowledge;
-
-public enum KnowledgeSyncOutcome
-{
-    /// <summary>
-    /// No entry (already handled).
-    /// </summary>
-    Skipped,
-
-    /// <summary>
-    /// The knowledge base already held this exact content.
-    /// </summary>
-    Unchanged,
-
-    /// <summary>
-    /// The asset's knowledge-base copy was (re)written.
-    /// </summary>
-    Synced,
-
-    /// <summary>
-    /// The asset is gone or private; its knowledge-base copy was removed.
-    /// </summary>
-    Removed,
-
-    /// <summary>
-    /// The attempt failed and was rescheduled (or marked failed).
-    /// </summary>
-    Failed
-}
 
 /// <summary>
 /// Brings one asset's knowledge-base copy in line with the database. Resolve it from a fresh,
@@ -64,12 +35,14 @@ public sealed class KnowledgeSyncProcessor(
     }
 
     public async Task<DateTimeOffset?> GetNextDueAtAsync(CancellationToken ct = default)
-        => await db.KnowledgeSyncEntries
+    {
+        return await db.KnowledgeSyncEntries
             .AsNoTracking()
             .Where(e => e.Status == KnowledgeSyncStatus.Pending)
             .OrderBy(e => e.NextAttemptAt)
             .Select(e => (DateTimeOffset?)e.NextAttemptAt)
             .FirstOrDefaultAsync(ct);
+    }
 
     public async Task<KnowledgeSyncOutcome> ProcessAsync(Guid assetId, CancellationToken ct = default)
     {

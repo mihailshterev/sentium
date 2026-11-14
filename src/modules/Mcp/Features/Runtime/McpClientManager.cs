@@ -8,50 +8,6 @@ using Sentium.Mcp.Features.Servers;
 namespace Sentium.Mcp.Features.Runtime;
 
 /// <summary>
-/// What the client manager needs to reach one MCP server. <see cref="Version"/> changes whenever the server is edited,
-/// which makes the manager drop the old connection and reconnect with the new configuration.
-/// </summary>
-public sealed record McpServerConnectionInfo(
-    Guid Id,
-    string Name,
-    McpTransport Transport,
-    string? Endpoint,
-    string? Image,
-    IReadOnlyList<string> Args,
-    string? Network,
-    int? MemoryMb,
-    double? CpuLimit,
-    string? ProtectedSecrets,
-    IReadOnlyDictionary<string, string> Variables,
-    DateTime Version)
-{
-    public static McpServerConnectionInfo From(McpServer server)
-    {
-        ArgumentNullException.ThrowIfNull(server);
-
-        return new(server.Id, server.Name, server.Transport, server.Endpoint, server.Image, [.. server.Args], server.Network,
-            server.MemoryMb, server.CpuLimit, server.ProtectedSecrets, new Dictionary<string, string>(server.Variables, StringComparer.Ordinal), server.UpdatedAt);
-    }
-}
-
-/// <summary>
-/// Live connection state of one MCP server, for the portal.
-/// </summary>
-public sealed record McpConnectionState(bool Connected, DateTimeOffset? ConnectedAt, DateTimeOffset? LastUsedAt, string? LastError);
-
-/// <summary>
-/// Calls a tool on an MCP server (implemented by <see cref="McpClientManager"/>).
-/// </summary>
-public interface IMcpToolInvoker
-{
-    Task<CallToolResult> CallToolAsync(
-        McpServerConnectionInfo server,
-        string toolName,
-        IReadOnlyDictionary<string, object?> arguments,
-        CancellationToken ct);
-}
-
-/// <summary>
 /// Owns the long-lived MCP connections (one per server): connects lazily on first use, reconnects when the session has
 /// ended or the server's configuration changed, and closes idle connections - which also stops a Sandbox-hosted server's
 /// container. Tool calls are never retried on a live connection (they may not be idempotent); only discovery is.
@@ -83,10 +39,12 @@ public sealed class McpClientManager(
         CancellationToken ct) =>
         UseAsync(server, (connection, token) => connection.CallToolAsync(toolName, arguments, token), retryOnFailure: false, ct);
 
-    public McpConnectionState GetState(Guid serverId) =>
-        slots.TryGetValue(serverId, out var slot)
+    public McpConnectionState GetState(Guid serverId)
+    {
+        return slots.TryGetValue(serverId, out var slot)
             ? new McpConnectionState(slot.Connection is { IsAlive: true }, slot.ConnectedAt, slot.LastUsedAt, slot.LastError)
             : new McpConnectionState(false, null, null, null);
+    }
 
     /// <summary>
     /// Closes the server's connection (e.g. after it was edited, disabled or deleted).

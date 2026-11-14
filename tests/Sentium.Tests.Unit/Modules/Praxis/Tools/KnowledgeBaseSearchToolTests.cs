@@ -5,7 +5,6 @@ using NSubstitute;
 using Sentium.Codex.Contracts;
 using Sentium.Codex.Contracts.Models;
 using Sentium.Praxis.Contracts;
-using Sentium.Praxis.Features.Sentinel;
 using Sentium.Praxis.Features.Tools;
 using Xunit;
 
@@ -33,12 +32,14 @@ public sealed class KnowledgeBaseSearchToolTests
         return new KnowledgeBaseSearchTool(_embedding, _repo, options, _pdp, Substitute.For<ILogger<KnowledgeBaseSearchTool>>());
     }
 
-    private void MockStore(string collection, string content, float score) =>
+    private void MockStore(string collection, string content, float score)
+    {
         _repo.SearchAsync(collection, Arg.Any<float[]>(), Arg.Any<int>(), Arg.Any<float>(), Arg.Any<KnowledgeScopeFilter?>(), Arg.Any<CancellationToken>())
             .Returns(new VectorSearchResult[]
             {
                 new() { Score = score, Chunk = new DocumentChunk { Content = content, Source = collection } }
             });
+    }
 
     [Fact]
     public async Task SearchesAllStores_MergesSortsByScore_AndLabelsBySource()
@@ -102,11 +103,4 @@ public sealed class KnowledgeBaseSearchToolTests
         result.Should().Contain("learning snippet");
         result.Should().NotContain("memory snippet");
     }
-}
-
-public sealed class RagOptionsTests
-{
-    [Fact]
-    public void SearchCollections_DefaultsToAllThreeStores()
-        => new RagOptions().SearchCollections.Should().BeEquivalentTo(new[] { "knowledge_base", "agent_learnings", "user_memories" });
 }

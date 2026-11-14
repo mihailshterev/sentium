@@ -2,8 +2,6 @@ using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Sentium.Praxis.Contracts;
 using Sentium.Praxis.Features.Agents.Activity;
-using Sentium.Praxis.Features.Assistant;
-using Sentium.Praxis.Features.Sentinel;
 using ChatMessage = Microsoft.Extensions.AI.ChatMessage;
 
 namespace Sentium.Praxis.Features.Conversations;

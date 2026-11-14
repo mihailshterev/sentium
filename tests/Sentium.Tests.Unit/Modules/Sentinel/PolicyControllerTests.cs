@@ -33,8 +33,9 @@ public sealed class PolicyControllerTests : IDisposable
 
     public void Dispose() => _services.Dispose();
 
-    private static AuditRecord MakeAuditRecord(bool allowed = true) =>
-        new()
+    private static AuditRecord MakeAuditRecord(bool allowed = true)
+    {
+        return new()
         {
             Id = Guid.NewGuid(),
             Timestamp = DateTimeOffset.UtcNow,
@@ -52,6 +53,7 @@ public sealed class PolicyControllerTests : IDisposable
             Risk = PolicyRiskLevel.Low,
             TriggeredPolicies = []
         };
+    }
 
     [Fact]
     public async Task GetAudit_ReturnsOk_WithRecords()

@@ -8,20 +8,23 @@ namespace Sentium.Tests.Unit.Modules.Locus;
 
 public sealed class AssetKnowledgeDocumentBuilderTests
 {
-    private static Asset CreateAsset() => new()
+    private static Asset CreateAsset()
     {
-        Id = Guid.NewGuid(),
-        LocationId = Guid.NewGuid(),
-        DisplayName = "Cordless drill",
-        Category = "Tools",
-        Manufacturer = "Bosch",
-        ModelNumber = "GSR 12V",
-        Tags = ["power", "diy"],
-        PurchaseDate = new DateOnly(2024, 3, 1),
-        Instructions = "Charge the battery fully before storing.",
-        AgentInstructions = "Remind people to wear goggles.",
-        Location = new Location { Name = "Garage", AccessNotes = "Alarm code 1234", Description = "Spare key under the mat" }
-    };
+        return new()
+        {
+            Id = Guid.NewGuid(),
+            LocationId = Guid.NewGuid(),
+            DisplayName = "Cordless drill",
+            Category = "Tools",
+            Manufacturer = "Bosch",
+            ModelNumber = "GSR 12V",
+            Tags = ["power", "diy"],
+            PurchaseDate = new DateOnly(2024, 3, 1),
+            Instructions = "Charge the battery fully before storing.",
+            AgentInstructions = "Remind people to wear goggles.",
+            Location = new Location { Name = "Garage", AccessNotes = "Alarm code 1234", Description = "Spare key under the mat" }
+        };
+    }
 
     [Fact]
     public void Build_StartsEverySectionWithNameAndLocation()

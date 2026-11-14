@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sentium.Infrastructure.Results;
 using Sentium.Tempus.Contracts.Models;
-using Sentium.Tempus.Features.Proposals;
 using Sentium.Tempus.Features.Tasks;
 
 namespace Sentium.Tempus.Features.Proposals;

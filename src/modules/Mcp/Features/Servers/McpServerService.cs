@@ -7,29 +7,6 @@ using Sentium.Praxis.Contracts;
 
 namespace Sentium.Mcp.Features.Servers;
 
-public interface IMcpServerService
-{
-    Task<IReadOnlyList<McpServerDto>> GetAllAsync(CancellationToken ct);
-
-    Task<McpServerDto?> GetAsync(Guid id, CancellationToken ct);
-
-    Task<Result<McpServerDto>> CreateAsync(CreateMcpServerRequest request, CancellationToken ct);
-
-    Task<Result<McpServerDto>> UpdateAsync(Guid id, UpdateMcpServerRequest request, CancellationToken ct);
-
-    Task<bool> DeleteAsync(Guid id, CancellationToken ct);
-
-    /// <summary>
-    /// Connects to the server and refreshes its tool list. New tools start disabled and unapproved; tools whose
-    /// definition changed lose their approval until re-approved.
-    /// </summary>
-    Task<Result<McpServerDto>> SyncAsync(Guid id, CancellationToken ct);
-
-    Task<Result<McpServerDto>> UpdateToolsAsync(Guid id, UpdateMcpToolsRequest request, CancellationToken ct);
-
-    Task<McpServerStatusDto?> GetStatusAsync(Guid id, CancellationToken ct);
-}
-
 /// <summary>
 /// Sovereign-only management of MCP servers and their tool approvals. Every change rebuilds the in-memory
 /// <see cref="IMcpToolCatalog"/> and drops the server's live connection, so agents pick up the change on their next run.
@@ -288,45 +265,51 @@ public sealed class McpServerService(
         return new McpServerStatusDto(clients.GetState(id), sandboxStatus, sandboxError);
     }
 
-    private McpServerDto ToDto(McpServer server) => new(
-        server.Id,
-        server.Name,
-        server.DisplayName,
-        server.Description,
-        server.Transport,
-        server.Endpoint,
-        server.Image,
-        server.Args,
-        server.Network,
-        server.MemoryMb,
-        server.CpuLimit,
-        secrets.GetNames(server.ProtectedSecrets),
-        new SortedDictionary<string, string>(server.Variables, StringComparer.Ordinal),
-        server.Enabled,
-        [.. server.Tools.OrderBy(t => t.Name, StringComparer.Ordinal).Select(t => ToDto(server, t))],
-        server.LastSyncedAt,
-        server.LastError,
-        clients.GetState(server.Id),
-        server.CreatedAt,
-        server.UpdatedAt);
+    private McpServerDto ToDto(McpServer server)
+    {
+        return new(
+            server.Id,
+            server.Name,
+            server.DisplayName,
+            server.Description,
+            server.Transport,
+            server.Endpoint,
+            server.Image,
+            server.Args,
+            server.Network,
+            server.MemoryMb,
+            server.CpuLimit,
+            secrets.GetNames(server.ProtectedSecrets),
+            new SortedDictionary<string, string>(server.Variables, StringComparer.Ordinal),
+            server.Enabled,
+            [.. server.Tools.OrderBy(t => t.Name, StringComparer.Ordinal).Select(t => ToDto(server, t))],
+            server.LastSyncedAt,
+            server.LastError,
+            clients.GetState(server.Id),
+            server.CreatedAt,
+            server.UpdatedAt);
+    }
 
-    private static McpToolDto ToDto(McpServer server, McpToolEntry tool) => new(
-        tool.Name,
-        tool.QualifiedName,
-        tool.Title,
-        tool.Description,
-        tool.ApprovedDescription,
-        tool.InputSchema,
-        tool.ReadOnlyHint,
-        tool.DestructiveHint,
-        tool.IdempotentHint,
-        tool.OpenWorldHint,
-        tool.Enabled,
-        tool.RequiresApproval,
-        Approved: tool.ApprovedHash is not null && tool.ApprovedHash == tool.DefinitionHash,
-        Changed: tool.ApprovedHash is not null && tool.ApprovedHash != tool.DefinitionHash,
-        tool.Missing,
-        Usable: McpToolCatalog.IsUsable(server, tool));
+    private static McpToolDto ToDto(McpServer server, McpToolEntry tool)
+    {
+        return new(
+            tool.Name,
+            tool.QualifiedName,
+            tool.Title,
+            tool.Description,
+            tool.ApprovedDescription,
+            tool.InputSchema,
+            tool.ReadOnlyHint,
+            tool.DestructiveHint,
+            tool.IdempotentHint,
+            tool.OpenWorldHint,
+            tool.Enabled,
+            tool.RequiresApproval,
+            Approved: tool.ApprovedHash is not null && tool.ApprovedHash == tool.DefinitionHash,
+            Changed: tool.ApprovedHash is not null && tool.ApprovedHash != tool.DefinitionHash,
+            tool.Missing,
+            Usable: McpToolCatalog.IsUsable(server, tool));
+    }
 
     private static string Describe(Exception ex)
     {

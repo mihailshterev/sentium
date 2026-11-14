@@ -75,45 +75,51 @@ public sealed class EfCoreAuditLog(SentinelDbContext dbContext) : IAuditLog
         return (entities.Select(MapToRecord).ToList(), total);
     }
 
-    private static AuditLogEntity MapToEntity(AuditRecord record) => new()
+    private static AuditLogEntity MapToEntity(AuditRecord record)
     {
-        Id = record.Id,
-        Timestamp = record.Timestamp,
-        AgentId = record.AgentId,
-        SkillName = record.SkillName,
-        ResourceType = record.ResourceType.ToString(),
-        ResourceId = record.ResourceId,
-        Action = record.Action,
-        UserPromptHash = record.UserPromptHash,
-        CorrelationId = record.CorrelationId,
-        MetadataJson = JsonSerializer.Serialize(record.Metadata, JsonOpts),
-        Allowed = record.Allowed,
-        Effect = record.Effect.ToString(),
-        Reason = record.Reason,
-        Risk = record.Risk.ToString(),
-        TriggeredPoliciesJson = JsonSerializer.Serialize(record.TriggeredPolicies, JsonOpts),
-        EvaluationDurationMs = record.EvaluationDurationMs,
-        AlignmentVerdict = record.AlignmentVerdict,
-    };
+        return new()
+        {
+            Id = record.Id,
+            Timestamp = record.Timestamp,
+            AgentId = record.AgentId,
+            SkillName = record.SkillName,
+            ResourceType = record.ResourceType.ToString(),
+            ResourceId = record.ResourceId,
+            Action = record.Action,
+            UserPromptHash = record.UserPromptHash,
+            CorrelationId = record.CorrelationId,
+            MetadataJson = JsonSerializer.Serialize(record.Metadata, JsonOpts),
+            Allowed = record.Allowed,
+            Effect = record.Effect.ToString(),
+            Reason = record.Reason,
+            Risk = record.Risk.ToString(),
+            TriggeredPoliciesJson = JsonSerializer.Serialize(record.TriggeredPolicies, JsonOpts),
+            EvaluationDurationMs = record.EvaluationDurationMs,
+            AlignmentVerdict = record.AlignmentVerdict,
+        };
+    }
 
-    private static AuditRecord MapToRecord(AuditLogEntity e) => new()
+    private static AuditRecord MapToRecord(AuditLogEntity e)
     {
-        Id = e.Id,
-        Timestamp = e.Timestamp,
-        AgentId = e.AgentId,
-        SkillName = e.SkillName,
-        ResourceType = Enum.TryParse<ResourceType>(e.ResourceType, out var rt) ? rt : ResourceType.File,
-        ResourceId = e.ResourceId,
-        Action = e.Action,
-        UserPromptHash = e.UserPromptHash,
-        CorrelationId = e.CorrelationId,
-        Metadata = JsonSerializer.Deserialize<Dictionary<string, string>>(e.MetadataJson, JsonOpts) ?? [],
-        Allowed = e.Allowed,
-        Effect = Enum.Parse<PolicyEffect>(e.Effect),
-        Reason = e.Reason,
-        Risk = Enum.Parse<PolicyRiskLevel>(e.Risk),
-        TriggeredPolicies = JsonSerializer.Deserialize<List<string>>(e.TriggeredPoliciesJson, JsonOpts) ?? [],
-        EvaluationDurationMs = e.EvaluationDurationMs,
-        AlignmentVerdict = e.AlignmentVerdict,
-    };
+        return new()
+        {
+            Id = e.Id,
+            Timestamp = e.Timestamp,
+            AgentId = e.AgentId,
+            SkillName = e.SkillName,
+            ResourceType = Enum.TryParse<ResourceType>(e.ResourceType, out var rt) ? rt : ResourceType.File,
+            ResourceId = e.ResourceId,
+            Action = e.Action,
+            UserPromptHash = e.UserPromptHash,
+            CorrelationId = e.CorrelationId,
+            Metadata = JsonSerializer.Deserialize<Dictionary<string, string>>(e.MetadataJson, JsonOpts) ?? [],
+            Allowed = e.Allowed,
+            Effect = Enum.Parse<PolicyEffect>(e.Effect),
+            Reason = e.Reason,
+            Risk = Enum.Parse<PolicyRiskLevel>(e.Risk),
+            TriggeredPolicies = JsonSerializer.Deserialize<List<string>>(e.TriggeredPoliciesJson, JsonOpts) ?? [],
+            EvaluationDurationMs = e.EvaluationDurationMs,
+            AlignmentVerdict = e.AlignmentVerdict,
+        };
+    }
 }

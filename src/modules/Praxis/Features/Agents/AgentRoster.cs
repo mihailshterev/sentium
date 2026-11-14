@@ -2,21 +2,6 @@
 namespace Sentium.Praxis.Features.Agents;
 
 /// <summary>
-/// The agents a user can work with directly: the built-in specialists (not the control roles that steer squads)
-/// and the user's own custom agents.
-/// </summary>
-public interface IAgentRoster
-{
-    Task<IReadOnlyList<AgentRosterEntry>> GetAsync(Guid? userId, CancellationToken ct = default);
-
-    /// <summary>
-    /// The roster entry named <paramref name="name"/> (case-insensitive), with its canonical spelling, or
-    /// <see langword="null"/> when the user has no such agent.
-    /// </summary>
-    Task<AgentRosterEntry?> FindAsync(string name, Guid? userId, CancellationToken ct = default);
-}
-
-/// <summary>
 /// Custom agents are looked up for the explicit user, never through the ambient query filter: a Sovereign (and a
 /// system-scoped agent run) bypasses that filter and would otherwise see every member's agents.
 /// </summary>
@@ -57,10 +42,13 @@ public sealed class AgentRoster(IEnumerable<IAgent> nativeAgents, IAgentReposito
             : new AgentRosterEntry(custom.Name, custom.Description, AgentKind.Custom, string.IsNullOrWhiteSpace(custom.Model) ? null : custom.Model);
     }
 
-    private IEnumerable<AgentRosterEntry> BuiltIn() => nativeAgents
-        .Where(a => !AgentRole.IsControl(a.Name))
-        .DistinctBy(a => a.Name, StringComparer.OrdinalIgnoreCase)
-        .OrderBy(a => a.Name == AgentRole.GeneralAssistant ? 0 : 1)
-        .ThenBy(a => a.Name, StringComparer.Ordinal)
-        .Select(a => new AgentRosterEntry(a.Name, a.Description, AgentKind.BuiltIn, Model: null));
+    private IEnumerable<AgentRosterEntry> BuiltIn()
+    {
+        return nativeAgents
+            .Where(a => !AgentRole.IsControl(a.Name))
+            .DistinctBy(a => a.Name, StringComparer.OrdinalIgnoreCase)
+            .OrderBy(a => a.Name == AgentRole.GeneralAssistant ? 0 : 1)
+            .ThenBy(a => a.Name, StringComparer.Ordinal)
+            .Select(a => new AgentRosterEntry(a.Name, a.Description, AgentKind.BuiltIn, Model: null));
+    }
 }

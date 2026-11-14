@@ -168,12 +168,15 @@ public static class TimelineToolFormatter
         builder.Append(" | id: ").Append(task.Id).AppendLine();
     }
 
-    private static string StatusText(TimelineTaskStatus status) => status switch
+    private static string StatusText(TimelineTaskStatus status)
     {
-        TimelineTaskStatus.InProgress => "in progress",
-        TimelineTaskStatus.Done => "done",
-        _ => "to do"
-    };
+        return status switch
+        {
+            TimelineTaskStatus.InProgress => "in progress",
+            TimelineTaskStatus.Done => "done",
+            _ => "to do"
+        };
+    }
 
     private static void Line(StringBuilder builder, string label, string? value)
     {

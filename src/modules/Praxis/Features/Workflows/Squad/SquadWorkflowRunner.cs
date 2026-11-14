@@ -66,12 +66,14 @@ public sealed class SquadWorkflowRunner(IAgentFactory factory)
         return await ExecuteAsync(fixedWorkflow, new StepRequest(state, 0, 1, [], null), ct);
     }
 
-    private static WorkflowBuilder WireLoop(WorkflowBuilder builder, StepExecutor step, StepCheckExecutor check, SynthesisExecutor synthesis) =>
-        builder
+    private static WorkflowBuilder WireLoop(WorkflowBuilder builder, StepExecutor step, StepCheckExecutor check, SynthesisExecutor synthesis)
+    {
+        return builder
             .AddEdge(step, check)
             .AddEdge<object?>(check, step, m => m is StepRequest)
             .AddEdge<object?>(check, synthesis, m => m is SquadOutcome)
             .WithOutputFrom(synthesis);
+    }
 
     private static async Task<SquadResult> ExecuteAsync<TInput>(Workflow workflow, TInput input, CancellationToken ct)
         where TInput : notnull

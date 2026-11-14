@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Sentium.Tempus.Features.Overview;
 
 namespace Sentium.Tempus.Features.Overview;
 

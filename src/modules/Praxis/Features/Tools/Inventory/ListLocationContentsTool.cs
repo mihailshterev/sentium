@@ -12,12 +12,15 @@ namespace Sentium.Praxis.Features.Tools.Inventory;
 [AgentToolPolicy(RiskLevel = ToolRiskLevel.Low, Resource = ToolResource.Inventory, Action = ToolAction.Read)]
 public sealed class ListLocationContentsTool(IInventoryLookup inventory, ILogger<ListLocationContentsTool> logger) : IAgentTool
 {
-    public AIFunction CreateFunction() => AgentToolFunction.Create(
-        this,
-        ListAsync,
-        ToolNames.ListLocationContents,
-        "List the sub-locations and items kept at a place in the household (e.g. 'Garage' or 'Home/Kitchen'). " +
-        "Call it without a location to see the top-level locations.");
+    public AIFunction CreateFunction()
+    {
+        return AgentToolFunction.Create(
+            this,
+            ListAsync,
+            ToolNames.ListLocationContents,
+            "List the sub-locations and items kept at a place in the household (e.g. 'Garage' or 'Home/Kitchen'). " +
+            "Call it without a location to see the top-level locations.");
+    }
 
     public async Task<string> ListAsync(
         [Description("A location name or path such as 'Garage' or 'Home/Garage'. Leave empty for the top-level locations.")] string? location = null,

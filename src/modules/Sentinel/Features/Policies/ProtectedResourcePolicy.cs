@@ -97,9 +97,11 @@ public sealed class ProtectedResourcePolicy : IPdpPolicy
         return true;
     }
 
-    private Task<PolicyDecision?> Deny(string reason) =>
-        Task.FromResult<PolicyDecision?>(
+    private Task<PolicyDecision?> Deny(string reason)
+    {
+        return Task.FromResult<PolicyDecision?>(
             PolicyDecision.Deny(reason, Guid.Empty, [Name], PolicyRiskLevel.High));
+    }
 
     private static string NormalizeSeparators(string value) => value.Replace('\\', '/');
 

@@ -9,8 +9,9 @@ public sealed class InMemoryAuditLogTests
 {
     private readonly InMemoryAuditLog _sut = new();
 
-    private static AuditRecord MakeRecord(string agentId = "agent-1", bool allowed = true) =>
-        new()
+    private static AuditRecord MakeRecord(string agentId = "agent-1", bool allowed = true)
+    {
+        return new()
         {
             Id = Guid.NewGuid(),
             Timestamp = DateTimeOffset.UtcNow,
@@ -28,6 +29,7 @@ public sealed class InMemoryAuditLogTests
             Risk = PolicyRiskLevel.Low,
             TriggeredPolicies = []
         };
+    }
 
     [Fact]
     public async Task RecordAsync_AddsRecord_GetRecentReturnsMostRecentFirst()

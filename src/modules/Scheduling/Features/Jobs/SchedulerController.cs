@@ -64,7 +64,6 @@ public sealed class SchedulerController(ISchedulerFactory schedulerFactory, ICur
     /// Cancels and permanently deletes a scheduled job. Jobs the caller may not see return 404, so their existence is not disclosed.
     /// </summary>
     /// <param name="agentId">The agent that created the job (as returned by the list endpoint).</param>
-    /// <param name="jobId">The job's unique identifier (JobId).</param>
     [HttpDelete("agents/{agentId}/jobs/{jobId}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

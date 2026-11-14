@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Sentium.Vigil.Features.Monitoring;
 using Sentium.Vigil.Features.Settings;
 
 namespace Sentium.Vigil.Features.Monitoring;
@@ -46,5 +45,3 @@ public sealed class VigilStatusController(
         return Ok(new ServiceHealthDetail(status, samples));
     }
 }
-
-public sealed record ServiceHealthDetail(ServiceHealthStatus Status, IReadOnlyList<HealthSample> Samples);

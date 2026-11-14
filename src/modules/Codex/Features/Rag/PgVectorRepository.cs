@@ -180,15 +180,18 @@ public sealed class PgVectorRepository(CodexDbContext db, IOptions<RagOptions> r
         return query.Where(e => e.Scope == KnowledgeScope.Shared);
     }
 
-    private static DocumentChunk ToDocumentChunk(KnowledgeChunk entity) => new()
+    private static DocumentChunk ToDocumentChunk(KnowledgeChunk entity)
     {
-        Id = entity.Id,
-        Content = entity.Content,
-        Source = entity.Source,
-        SourceType = entity.SourceType,
-        CreatedAt = entity.CreatedAt,
-        Metadata = entity.Metadata,
-        Scope = entity.Scope,
-        UserId = entity.UserId
-    };
+        return new()
+        {
+            Id = entity.Id,
+            Content = entity.Content,
+            Source = entity.Source,
+            SourceType = entity.SourceType,
+            CreatedAt = entity.CreatedAt,
+            Metadata = entity.Metadata,
+            Scope = entity.Scope,
+            UserId = entity.UserId
+        };
+    }
 }

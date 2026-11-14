@@ -142,15 +142,19 @@ public sealed class ModuleLayeringTests
 
     private static Assembly Module(string name) => Modules.Single(m => m.GetName().Name == name);
 
-    private static string[] TypeNames(Assembly module, Func<Type, bool> predicate) =>
-        module.GetTypes()
+    private static string[] TypeNames(Assembly module, Func<Type, bool> predicate)
+    {
+        return module.GetTypes()
             .Where(t => t.FullName is not null && !t.FullName.Contains('<', StringComparison.Ordinal))
             .Where(predicate)
             .Select(t => t.FullName!)
             .ToArray();
+    }
 
-    private static bool InLayer(Type type, string layer) =>
-        type.Namespace is not null
+    private static bool InLayer(Type type, string layer)
+    {
+        return type.Namespace is not null
         && (type.Namespace.EndsWith(layer, StringComparison.Ordinal)
             || type.Namespace.Contains(layer + ".", StringComparison.Ordinal));
+    }
 }

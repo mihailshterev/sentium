@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Sentium.Locus.Features.Assets;
 
 namespace Sentium.Locus.Features.Assets;
 

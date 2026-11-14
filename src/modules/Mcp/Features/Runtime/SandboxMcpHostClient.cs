@@ -2,67 +2,8 @@ using System.Net;
 using System.Text.Json;
 using ModelContextProtocol;
 using ModelContextProtocol.Protocol;
-using Sentium.Mcp.Features.Servers;
 
 namespace Sentium.Mcp.Features.Runtime;
-
-/// <summary>
-/// How Sentium.Sandbox should run a stdio MCP server container. Mirrors the Sandbox's <c>McpServerLaunchSpec</c>.
-/// </summary>
-public sealed record SandboxMcpLaunchSpec(
-    string Image,
-    IReadOnlyList<string> Args,
-    IReadOnlyDictionary<string, string> Env,
-    string? Network,
-    int? MemoryMb,
-    double? CpuLimit);
-
-/// <summary>
-/// Runtime state of a Sandbox-hosted MCP server container.
-/// </summary>
-public sealed record SandboxMcpServerStatus(
-    string Name,
-    bool Running,
-    string? ContainerId,
-    DateTimeOffset? StartedAt,
-    DateTimeOffset? LastUsedAt,
-    string? LastError,
-    IReadOnlyList<string> StderrTail);
-
-/// <summary>
-/// The Sandbox does not know the server (never ensured, or the Sandbox restarted) - ensure it and retry.
-/// </summary>
-public sealed class SandboxMcpServerUnknownException : Exception
-{
-    public SandboxMcpServerUnknownException()
-    {
-    }
-
-    public SandboxMcpServerUnknownException(string message) : base(message)
-    {
-    }
-
-    public SandboxMcpServerUnknownException(string message, Exception innerException) : base(message, innerException)
-    {
-    }
-}
-
-/// <summary>
-/// REST client for the Sandbox's MCP host (<c>/mcp/servers/{name}</c>, internal-token authenticated). Tool payloads are
-/// the MCP SDK's own protocol types, serialized with <see cref="McpJsonUtilities.DefaultOptions"/>.
-/// </summary>
-public interface ISandboxMcpHostClient
-{
-    Task<SandboxMcpServerStatus> EnsureAsync(string name, SandboxMcpLaunchSpec spec, CancellationToken ct);
-
-    Task StopAsync(string name, CancellationToken ct);
-
-    Task<SandboxMcpServerStatus?> GetStatusAsync(string name, CancellationToken ct);
-
-    Task<ListToolsResult> ListToolsAsync(string name, CancellationToken ct);
-
-    Task<CallToolResult> CallToolAsync(string name, CallToolRequestParams request, CancellationToken ct);
-}
 
 public sealed class SandboxMcpHostClient(HttpClient httpClient) : ISandboxMcpHostClient
 {

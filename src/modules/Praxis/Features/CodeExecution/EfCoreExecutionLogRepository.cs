@@ -33,9 +33,11 @@ public sealed class EfCoreExecutionLogRepository(PraxisDbContext dbContext) : IE
     }
 
     public async Task<ExecutionLogEntry?> GetByIdAsync(Guid jobId, CancellationToken ct = default)
-        => await dbContext.ExecutionLogs
+    {
+        return await dbContext.ExecutionLogs
             .AsNoTracking()
             .FirstOrDefaultAsync(e => e.JobId == jobId, ct);
+    }
 
     public async Task<ExecutionLogStats> GetStatsAsync(CancellationToken ct = default)
     {

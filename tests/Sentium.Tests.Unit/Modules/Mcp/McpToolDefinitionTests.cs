@@ -5,7 +5,6 @@ using ModelContextProtocol.Protocol;
 using Sentium.Mcp.Entities;
 using Sentium.Mcp.Features.Runtime;
 using Sentium.Mcp.Features.Servers;
-using Sentium.Praxis.Entities;
 using Sentium.Praxis.Features.Tools;
 using Xunit;
 
@@ -138,11 +137,14 @@ public sealed class McpToolDefinitionTests
         McpToolCatalog.IsUsable(server, entry).Should().BeFalse();
     }
 
-    private static Tool Tool(string name, string description, string schema, bool? readOnly = null) => new()
+    private static Tool Tool(string name, string description, string schema, bool? readOnly = null)
     {
-        Name = name,
-        Description = description,
-        InputSchema = JsonDocument.Parse(schema).RootElement.Clone(),
-        Annotations = readOnly is null ? null : new ToolAnnotations { ReadOnlyHint = readOnly },
-    };
+        return new()
+        {
+            Name = name,
+            Description = description,
+            InputSchema = JsonDocument.Parse(schema).RootElement.Clone(),
+            Annotations = readOnly is null ? null : new ToolAnnotations { ReadOnlyHint = readOnly },
+        };
+    }
 }

@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using Sentium.Infrastructure.Security;
 
 namespace Sentium.Locus.Features.Knowledge;

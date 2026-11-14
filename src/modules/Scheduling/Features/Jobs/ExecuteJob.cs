@@ -1,4 +1,3 @@
-using Microsoft.Extensions.Logging;
 using Quartz;
 using Sentium.Praxis.Contracts;
 

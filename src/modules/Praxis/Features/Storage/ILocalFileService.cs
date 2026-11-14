@@ -8,7 +8,7 @@ public interface ILocalFileService
     /// <summary>
     /// Uploads a file stream to workspace blob storage with associated metadata.
     /// </summary>
-    /// <returns>A new GUID identifying the blob, to be stored as the file's <see cref="Core.Entities.ProjectFile.BlobName"/>.</returns>
+    /// <returns>A new GUID identifying the blob, to be stored as the file's <see cref="Entities.ProjectFile.BlobName"/>.</returns>
     Task<Guid> UploadToWorkspaceAsync(Stream fileStream, string fileName, Guid? workspaceId, CancellationToken ct = default);
 
     /// <summary>

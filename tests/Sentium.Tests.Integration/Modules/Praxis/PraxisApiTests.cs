@@ -8,7 +8,6 @@ using Sentium.Praxis.Data;
 using Sentium.Praxis.Entities;
 using Sentium.Praxis.Features.Agents;
 using Sentium.Praxis.Features.Conversations;
-using Sentium.Praxis.Features.Tools;
 using Sentium.Praxis.Features.Workflows;
 using Sentium.Tests.Integration.Common;
 using Xunit;
@@ -315,19 +314,22 @@ public class PraxisApiTests(MonolithWebApplicationFactory factory)
         paged.Items.Should().NotContain(r => r.Title == $"Something else {marker}");
     }
 
-    private static WorkflowRun NewRun(Guid id, string? title, string payload) => new()
+    private static WorkflowRun NewRun(Guid id, string? title, string payload)
     {
-        Id = id,
-        UserId = Guid.Parse(TestAuthHandler.TestUserId),
-        Title = title,
-        TriggerType = "workflow.dynamic",
-        TriggerPayload = payload,
-        Explanation = "ok",
-        Risk = string.Empty,
-        Recommendation = string.Empty,
-        StartedAt = DateTime.UtcNow,
-        CompletedAt = DateTime.UtcNow,
-    };
+        return new()
+        {
+            Id = id,
+            UserId = Guid.Parse(TestAuthHandler.TestUserId),
+            Title = title,
+            TriggerType = "workflow.dynamic",
+            TriggerPayload = payload,
+            Explanation = "ok",
+            Risk = string.Empty,
+            Recommendation = string.Empty,
+            StartedAt = DateTime.UtcNow,
+            CompletedAt = DateTime.UtcNow,
+        };
+    }
 
     [Fact]
     public async Task CreateWorkflow_ValidDefinition_ReturnsCreated()

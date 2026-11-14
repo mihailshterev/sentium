@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.AI;
 using Sentium.Praxis.Contracts;
 using Sentium.Praxis.Data;
-using Sentium.Praxis.Features.Sentinel;
 using Sentium.Praxis.Features.Storage;
 
 namespace Sentium.Praxis.Features.Tools.Workspace;
@@ -14,11 +13,14 @@ namespace Sentium.Praxis.Features.Tools.Workspace;
 [AgentToolPolicy(RiskLevel = ToolRiskLevel.Medium, Resource = ToolResource.File, Action = ToolAction.Read)]
 public sealed class ReadWorkspaceFileContentTool(PraxisDbContext dbContext, ILocalFileService fileService, IPdpContextAccessor runContext) : IAgentTool
 {
-    public AIFunction CreateFunction() => AgentToolFunction.Create(
-        this,
-        ReadAsync,
-        ToolNames.ReadWorkspaceFileContent,
-        "Reads the text content of a specific file from the workspace, identified by its GUID.");
+    public AIFunction CreateFunction()
+    {
+        return AgentToolFunction.Create(
+            this,
+            ReadAsync,
+            ToolNames.ReadWorkspaceFileContent,
+            "Reads the text content of a specific file from the workspace, identified by its GUID.");
+    }
 
     public async Task<string> ReadAsync(
         [Description("The GUID of the file to read (from list_workspace_files).")] string fileId,

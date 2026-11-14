@@ -17,8 +17,9 @@ public sealed class AgentSkillServiceTests
         _sut = new AgentSkillService(_repository, new PassThroughScopedCache());
     }
 
-    private static AgentSkill MakeSkill(Guid? id = null, string name = "Test Skill") =>
-        new()
+    private static AgentSkill MakeSkill(Guid? id = null, string name = "Test Skill")
+    {
+        return new()
         {
             Id = id ?? Guid.NewGuid(),
             Name = name,
@@ -29,6 +30,7 @@ public sealed class AgentSkillServiceTests
             CreatedAt = DateTimeOffset.UtcNow,
             UpdatedAt = DateTimeOffset.UtcNow
         };
+    }
 
     [Fact]
     public async Task GetAllAsync_ReturnsAllSkills_WhenCalled()

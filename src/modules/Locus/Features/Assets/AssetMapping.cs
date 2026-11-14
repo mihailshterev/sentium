@@ -9,13 +9,16 @@ public static class AssetMapping
     /// The outbox entry wins (work is queued or failed); otherwise a stored hash means the knowledge base
     /// is current. A shared asset with neither is reported pending - startup reconciliation will queue it.
     /// </summary>
-    public static AssetKnowledgeStatus ResolveKnowledgeStatus(bool isAgentAccessible, string? contentHash, KnowledgeSyncStatus? entryStatus) => entryStatus switch
+    public static AssetKnowledgeStatus ResolveKnowledgeStatus(bool isAgentAccessible, string? contentHash, KnowledgeSyncStatus? entryStatus)
     {
-        KnowledgeSyncStatus.Failed => AssetKnowledgeStatus.Failed,
-        KnowledgeSyncStatus.Pending => AssetKnowledgeStatus.Pending,
-        _ when !isAgentAccessible => AssetKnowledgeStatus.NotShared,
-        _ => contentHash is null ? AssetKnowledgeStatus.Pending : AssetKnowledgeStatus.Synced
-    };
+        return entryStatus switch
+        {
+            KnowledgeSyncStatus.Failed => AssetKnowledgeStatus.Failed,
+            KnowledgeSyncStatus.Pending => AssetKnowledgeStatus.Pending,
+            _ when !isAgentAccessible => AssetKnowledgeStatus.NotShared,
+            _ => contentHash is null ? AssetKnowledgeStatus.Pending : AssetKnowledgeStatus.Synced
+        };
+    }
 
     public static string ContentUrl(Guid assetId, Guid attachmentId)
         => $"/{LocusRoutes.Prefix}/assets/{assetId}/attachments/{attachmentId}/content";

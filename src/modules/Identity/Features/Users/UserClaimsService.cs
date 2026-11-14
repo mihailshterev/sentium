@@ -2,7 +2,6 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Hybrid;
-using Microsoft.Extensions.Logging;
 using Sentium.Identity.Entities;
 using Sentium.Identity.Features.Security;
 
@@ -26,12 +25,7 @@ public sealed class UserClaimsService(
         var scopeKey = string.Join(",", scopes.Order());
         var dtos = await cache.GetOrCreateAsync(
             IdentityCacheKeys.ClaimsFor(userId, scopeKey),
-            async token =>
-            {
-                var user = await userManager.FindByIdAsync(userId.ToString()) ?? throw new InvalidOperationException($"User '{userId}' not found.");
-                var claims = await BuildUserClaimsAsync(user, scopes);
-                return claims.Select(c => new ClaimDto(c.Type, c.Value)).ToArray();
-            },
+            _ => LoadClaimsAsync(userId, scopes),
             CacheOptions,
             tags: [IdentityCacheKeys.UserTag(userId)],
             cancellationToken: ct);
@@ -58,11 +52,7 @@ public sealed class UserClaimsService(
                 var scopeKey = string.Join(",", scopeList.Order());
                 var dtos = await cache.GetOrCreateAsync(
                     IdentityCacheKeys.ClaimsFor(user.Id, scopeKey),
-                    async token =>
-                    {
-                        var claims = await BuildUserClaimsAsync(user, scopeList);
-                        return claims.Select(c => new ClaimDto(c.Type, c.Value)).ToArray();
-                    },
+                    _ => LoadClaimsAsync(user, scopeList),
                     CacheOptions,
                     tags: [IdentityCacheKeys.UserTag(user.Id)],
                     cancellationToken: ct);
@@ -76,6 +66,18 @@ public sealed class UserClaimsService(
         }
 
         return results;
+    }
+
+    private async ValueTask<ClaimDto[]> LoadClaimsAsync(Guid userId, IEnumerable<string> scopes)
+    {
+        var user = await userManager.FindByIdAsync(userId.ToString()) ?? throw new InvalidOperationException($"User '{userId}' not found.");
+        return await LoadClaimsAsync(user, scopes);
+    }
+
+    private async ValueTask<ClaimDto[]> LoadClaimsAsync(ApplicationUser user, IEnumerable<string> scopes)
+    {
+        var claims = await BuildUserClaimsAsync(user, scopes);
+        return claims.Select(c => new ClaimDto(c.Type, c.Value)).ToArray();
     }
 
     private async Task<IReadOnlyCollection<Claim>> BuildUserClaimsAsync(ApplicationUser user, IEnumerable<string> scopes)
@@ -95,7 +97,6 @@ public sealed class UserClaimsService(
             var roles = await userManager.GetRolesAsync(user);
             foreach (var role in roles)
             {
-
                 claims.Add(new Claim(ClaimTypes.Role, role));
                 claims.Add(new Claim(ClaimNames.Role, role));
             }

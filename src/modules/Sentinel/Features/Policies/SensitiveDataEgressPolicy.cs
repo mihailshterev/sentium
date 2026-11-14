@@ -1,5 +1,4 @@
 using System.Text.RegularExpressions;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Sentium.Sentinel.Features.Options;
 
@@ -172,19 +171,23 @@ public sealed class SensitiveDataEgressPolicy : IPdpPolicy
         return digits is >= 13 and <= 19 && sum % 10 == 0;
     }
 
-    private Task<PolicyDecision?> Deny(string detail) =>
-        Task.FromResult<PolicyDecision?>(
+    private Task<PolicyDecision?> Deny(string detail)
+    {
+        return Task.FromResult<PolicyDecision?>(
             PolicyDecision.Deny(
                 $"Sensitive-data egress blocked: {detail}. Storing or transmitting secrets through agents is not permitted.",
                 Guid.Empty,
                 [Name],
                 PolicyRiskLevel.High,
                 alert: true));
+    }
 
-    private static bool IsEgressAction(string? action) =>
-        action is not null
+    private static bool IsEgressAction(string? action)
+    {
+        return action is not null
         && (action.Equals("write", StringComparison.OrdinalIgnoreCase)
             || action.Equals("execute", StringComparison.OrdinalIgnoreCase));
+    }
 
     private static IEnumerable<string> EnumerateContent(PolicyRequest request)
     {

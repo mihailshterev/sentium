@@ -32,7 +32,6 @@ public sealed class KnowledgeBaseController(IVectorRepository vectorRepository) 
     /// <summary>
     /// Deletes an entire collection from the vector store.
     /// </summary>
-    /// <param name="collection">The name of the collection to delete.</param>
     [HttpDelete("collections/{collection}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

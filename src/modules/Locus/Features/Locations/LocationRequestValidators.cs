@@ -1,5 +1,4 @@
 using FluentValidation;
-using Sentium.Core.Results;
 using Sentium.Locus.Common;
 
 namespace Sentium.Locus.Features.Locations;

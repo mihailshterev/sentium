@@ -4,9 +4,6 @@ using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging.Abstractions;
 using Sentium.Praxis.Common.Streaming;
-using Sentium.Praxis.Features.Agents;
-using Sentium.Praxis.Features.Orchestration;
-using Sentium.Praxis.Features.Workflows;
 using Xunit;
 
 namespace Sentium.Tests.Unit.Modules.Praxis.Streaming;
@@ -147,11 +144,13 @@ public sealed class SseStreamWriterTests
 
     private string Output() => Encoding.UTF8.GetString(_body.ToArray());
 
-    private List<JsonElement> DataFrames() =>
-        [.. Output()
+    private List<JsonElement> DataFrames()
+    {
+        return [.. Output()
             .Split('\n')
             .Where(line => line.StartsWith("data: ", StringComparison.Ordinal))
             .Select(line => JsonDocument.Parse(line["data: ".Length..]).RootElement.Clone())];
+    }
 
     private static async IAsyncEnumerable<StreamFrame> Frames(params StreamFrame[] frames)
     {

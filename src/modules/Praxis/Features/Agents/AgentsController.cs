@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sentium.Core.Results;
 using Sentium.Infrastructure.Security;
-using Sentium.Praxis.Features.Agents;
 
 namespace Sentium.Praxis.Features.Agents;
 
@@ -127,7 +126,6 @@ public sealed class AgentsController(IAgentService agentService) : ControllerBas
     /// <summary>
     /// Creates a new agent based on the provided configuration
     /// </summary>
-    /// <param name="request">Agent creation request</param>
     /// <returns>Created agent details, or HTTP 409 Conflict if an agent with the same name already exists.</returns>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
@@ -146,7 +144,6 @@ public sealed class AgentsController(IAgentService agentService) : ControllerBas
     /// <summary>
     /// Updates an existing agent based on the provided configuration
     /// </summary>
-    /// <param name="request">Agent update request</param>
     /// <returns>No content, HTTP 404 if the agent does not exist, or HTTP 409 Conflict if the new name is taken by another agent.</returns>
     [HttpPut("{agentId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

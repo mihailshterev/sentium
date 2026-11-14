@@ -8,21 +8,3 @@ public sealed record CreateConversationRequest(
     string? Title,
     string Model,
     string? AgentName = null);
-
-/// <summary>
-/// Renames a conversation or a workflow run.
-/// </summary>
-public sealed record UpdateTitleRequest(string Title);
-
-public static class ConversationTitles
-{
-    /// <summary>
-    /// Title of a conversation that has not been titled yet.
-    /// </summary>
-    public const string Placeholder = "New chat";
-
-    /// <summary>
-    /// Longest stored title (conversations and workflow runs).
-    /// </summary>
-    public const int MaxLength = 255;
-}

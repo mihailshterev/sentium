@@ -4,14 +4,17 @@ namespace Sentium.Praxis.Features.Workflows.Squad;
 
 internal static class SquadResultMapper
 {
-    public static WorkflowResult ToWorkflowResult(SquadResult result, WorkflowTimeline timeline, string emptyExplanation, Guid? workflowId, Guid? userId) => new()
+    public static WorkflowResult ToWorkflowResult(SquadResult result, WorkflowTimeline timeline, string emptyExplanation, Guid? workflowId, Guid? userId)
     {
-        Explanation = string.IsNullOrWhiteSpace(result.Answer) ? emptyExplanation : result.Answer,
-        Risk = result.Risk.ToString(),
-        Recommendation = result.Recommendation,
-        History = [.. result.Steps.Select(s => ($"{s.Step.Agent}{(s.Verified ? string.Empty : " (unverified)")}", s.Step.Task))],
-        StreamLog = timeline.Entries,
-        WorkflowId = workflowId,
-        UserId = userId,
-    };
+        return new()
+        {
+            Explanation = string.IsNullOrWhiteSpace(result.Answer) ? emptyExplanation : result.Answer,
+            Risk = result.Risk.ToString(),
+            Recommendation = result.Recommendation,
+            History = [.. result.Steps.Select(s => ($"{s.Step.Agent}{(s.Verified ? string.Empty : " (unverified)")}", s.Step.Task))],
+            StreamLog = timeline.Entries,
+            WorkflowId = workflowId,
+            UserId = userId,
+        };
+    }
 }

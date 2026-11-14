@@ -1,8 +1,6 @@
 using FluentAssertions;
 using Sentium.Mcp.Entities;
 using Sentium.Mcp.Features.Servers;
-using Sentium.Praxis.Entities;
-using Sentium.Praxis.Features.Agents;
 using Xunit;
 
 namespace Sentium.Tests.Unit.Modules.Mcp;
@@ -46,9 +44,11 @@ public sealed class McpServerRequestValidatorTests
     [InlineData("X-Internal-Token", false)]
     [InlineData("Mcp-Session-Id", false)]
     [InlineData("Bad Header", false)]
-    public void HttpSecrets_AreHeaders_NotReservedTransportHeaders(string header, bool valid) =>
+    public void HttpSecrets_AreHeaders_NotReservedTransportHeaders(string header, bool valid)
+    {
         _validator.Validate(Http("http://192.168.1.10/mcp") with { Secrets = new Dictionary<string, string> { [header] = "value" } })
             .IsValid.Should().Be(valid);
+    }
 
     [Fact]
     public void Secrets_RejectMultiLineValues_AndStdioSecretsMustBeEnvironmentNames()

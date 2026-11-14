@@ -25,13 +25,16 @@ public sealed class ScheduleTaskTool(
 
     private const int IntervalSamples = 50;
 
-    public AIFunction CreateFunction() => AgentToolFunction.Create(
-        this,
-        ScheduleAsync,
-        ToolName,
-        "Schedules a Python or Node.js script to run autonomously on a recurring background timeline. " +
-        "The cron expression MUST use 6-field Quartz syntax (e.g. '0 0 * * * ?' to run every hour) - never the 5-field Linux crontab format. " +
-        $"Times are UTC, and runs must be at least {SchedulerDefaults.MinimumInterval.TotalMinutes:0} minute(s) apart.");
+    public AIFunction CreateFunction()
+    {
+        return AgentToolFunction.Create(
+            this,
+            ScheduleAsync,
+            ToolName,
+            "Schedules a Python or Node.js script to run autonomously on a recurring background timeline. " +
+            "The cron expression MUST use 6-field Quartz syntax (e.g. '0 0 * * * ?' to run every hour) - never the 5-field Linux crontab format. " +
+            $"Times are UTC, and runs must be at least {SchedulerDefaults.MinimumInterval.TotalMinutes:0} minute(s) apart.");
+    }
 
     public async Task<string> ScheduleAsync(
         [Description("A descriptive identifier for the scheduled job.")] string jobName,

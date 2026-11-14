@@ -1,5 +1,3 @@
-using Sentium.Mcp.Features.Servers;
-
 namespace Sentium.Mcp.Features.Runtime;
 
 /// <summary>

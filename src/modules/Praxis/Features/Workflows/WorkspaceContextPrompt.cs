@@ -22,7 +22,9 @@ internal static class WorkspaceContextPrompt
     }
 
     public static string Augment(string baseText, string? workspaceId)
-        => string.IsNullOrEmpty(workspaceId)
+    {
+        return string.IsNullOrEmpty(workspaceId)
             ? baseText
             : $"{baseText}\n\n[Workspace context: ID = {workspaceId}. Use list_workspaces and list_workspace_files tools to discover and read files in this workspace before answering.]";
+    }
 }

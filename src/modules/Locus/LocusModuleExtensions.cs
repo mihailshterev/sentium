@@ -1,9 +1,5 @@
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
-using Microsoft.Extensions.Hosting;
 using Sentium.Infrastructure.Extensions;
-using Sentium.Infrastructure.Security;
 using Sentium.Locus.Contracts;
 using Sentium.Locus.Data;
 using Sentium.Locus.Features.Agents;

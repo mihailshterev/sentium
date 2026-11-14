@@ -51,8 +51,10 @@ public sealed class McpServerMigrationTests(MonolithWebApplicationFactory factor
         }
     }
 
-    private static async Task<List<string>> TableSchemasAsync(McpDbContext db) =>
-        await db.Database.SqlQuery<string>(
+    private static async Task<List<string>> TableSchemasAsync(McpDbContext db)
+    {
+        return await db.Database.SqlQuery<string>(
             $"""SELECT table_schema AS "Value" FROM information_schema.tables WHERE table_name = 'McpServers'""")
             .ToListAsync(Ct);
+    }
 }

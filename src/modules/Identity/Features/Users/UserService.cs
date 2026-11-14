@@ -2,11 +2,9 @@ using System.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Hybrid;
-using Microsoft.Extensions.Logging;
 using Sentium.Identity.Data;
 using Sentium.Identity.Entities;
 using Sentium.Identity.Features.Security;
-using Sentium.Identity.Features.Users;
 using Sentium.Infrastructure.Extensions;
 
 namespace Sentium.Identity.Features.Users;
@@ -21,13 +19,7 @@ public sealed class UserService(
     {
         var all = await cache.GetOrCreateAsync<IReadOnlyList<UserDto>>(
             IdentityCacheKeys.AllUsers,
-            async token =>
-            {
-                var users = await userManager.Users.ToListAsync(token);
-                return users
-                    .Select(u => new UserDto(u.Id, u.UserName, u.FirstName, u.LastName, u.LockoutEnd))
-                    .ToList();
-            },
+            LoadAllUsersAsync,
             options: IdentityCacheKeys.EntryOptions,
             tags: [IdentityCacheKeys.UsersTag],
             cancellationToken: ct);
@@ -37,16 +29,14 @@ public sealed class UserService(
     }
 
     public ValueTask<UserDto?> GetUserByIdAsync(Guid userId, CancellationToken ct)
-        => cache.GetOrCreateAsync(
+    {
+        return cache.GetOrCreateAsync(
             IdentityCacheKeys.UserById(userId),
-            async token =>
-            {
-                var user = await userManager.FindByIdAsync(userId.ToString());
-                return user is null ? null : new UserDto(user.Id, user.UserName, user.FirstName, user.LastName, user.LockoutEnd);
-            },
+            _ => LoadUserByIdAsync(userId),
             options: IdentityCacheKeys.EntryOptions,
             tags: [IdentityCacheKeys.UsersTag, IdentityCacheKeys.UserTag(userId)],
             cancellationToken: ct);
+    }
 
     public async Task<(bool Succeeded, string[] Errors)> UpdateProfileAsync(Guid userId, string firstName, string? lastName, string userName, CancellationToken ct)
     {
@@ -104,32 +94,10 @@ public sealed class UserService(
             return (false, ["You cannot delete your own account."]);
         }
 
-        var (deleteOk, deleteErrors) = await dbContext.Database.ExecuteInTransactionAsync(async () =>
-        {
-            var target = await userManager.FindByIdAsync(targetUserId.ToString());
-            if (target is null)
-            {
-                return (false, (string[])["User not found."]);
-            }
-
-            var targetRoles = await userManager.GetRolesAsync(target);
-            if (targetRoles.Contains(Roles.Sovereign))
-            {
-                var sovereigns = await userManager.GetUsersInRoleAsync(Roles.Sovereign);
-                if (sovereigns.Count <= 1)
-                {
-                    return (false, (string[])["Cannot delete the last Sovereign user."]);
-                }
-            }
-
-            var result = await userManager.DeleteAsync(target);
-            if (!result.Succeeded)
-            {
-                return (false, result.Errors.Select(e => e.Description).ToArray());
-            }
-
-            return (true, (string[])[]);
-        }, IsolationLevel.Serializable, ct);
+        var (deleteOk, deleteErrors) = await dbContext.Database.ExecuteInTransactionAsync(
+            () => DeleteUnlessLastSovereignAsync(targetUserId),
+            IsolationLevel.Serializable,
+            ct);
 
         if (!deleteOk)
         {
@@ -146,4 +114,46 @@ public sealed class UserService(
 
         return (true, []);
     }
+
+    private async Task<(bool Succeeded, string[] Errors)> DeleteUnlessLastSovereignAsync(Guid targetUserId)
+    {
+        var target = await userManager.FindByIdAsync(targetUserId.ToString());
+        if (target is null)
+        {
+            return (false, ["User not found."]);
+        }
+
+        var targetRoles = await userManager.GetRolesAsync(target);
+        if (targetRoles.Contains(Roles.Sovereign))
+        {
+            var sovereigns = await userManager.GetUsersInRoleAsync(Roles.Sovereign);
+            if (sovereigns.Count <= 1)
+            {
+                return (false, ["Cannot delete the last Sovereign user."]);
+            }
+        }
+
+        var result = await userManager.DeleteAsync(target);
+        if (!result.Succeeded)
+        {
+            return (false, result.Errors.Select(e => e.Description).ToArray());
+        }
+
+        return (true, []);
+    }
+
+    private async ValueTask<IReadOnlyList<UserDto>> LoadAllUsersAsync(CancellationToken ct)
+    {
+        var users = await userManager.Users.ToListAsync(ct);
+        return users.Select(ToDto).ToList();
+    }
+
+    private async ValueTask<UserDto?> LoadUserByIdAsync(Guid userId)
+    {
+        var user = await userManager.FindByIdAsync(userId.ToString());
+        return user is null ? null : ToDto(user);
+    }
+
+    private static UserDto ToDto(ApplicationUser user) =>
+        new(user.Id, user.UserName, user.FirstName, user.LastName, user.LockoutEnd);
 }

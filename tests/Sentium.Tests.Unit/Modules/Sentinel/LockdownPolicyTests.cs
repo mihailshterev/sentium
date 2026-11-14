@@ -10,8 +10,9 @@ public sealed class LockdownPolicyTests
     private static LockdownPolicy MakePolicy(bool lockdown) =>
         new(new FakePdpRuntimeSettingsProvider(new PdpRuntimeSettings { LockdownMode = lockdown }));
 
-    private static PolicyRequest MakeRequest() =>
-        new()
+    private static PolicyRequest MakeRequest()
+    {
+        return new()
         {
             AgentId = "agent-1",
             SkillName = "knowledge_base_search",
@@ -21,6 +22,7 @@ public sealed class LockdownPolicyTests
             OriginalUserPrompt = "find docs",
             CorrelationId = Guid.NewGuid().ToString()
         };
+    }
 
     [Fact]
     public async Task EvaluateAsync_ReturnsNull_WhenLockdownDisabled()

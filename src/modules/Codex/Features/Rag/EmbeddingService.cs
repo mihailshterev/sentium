@@ -1,6 +1,5 @@
 using Sentium.Codex.Contracts;
 using Microsoft.Extensions.AI;
-using Microsoft.Extensions.Logging;
 
 namespace Sentium.Codex.Features.Rag;
 

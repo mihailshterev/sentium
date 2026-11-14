@@ -9,7 +9,7 @@ namespace Sentium.Praxis.Contracts;
 /// </summary>
 /// <remarks>
 /// Usage policy (allowed agents, approval, Sentinel classification) is declared with
-/// <see cref="Attributes.AgentToolPolicyAttribute"/> on the implementing class.
+/// <see cref="AgentToolPolicyAttribute"/> on the implementing class.
 /// </remarks>
 public interface IAgentTool
 {

@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sentium.Infrastructure.Results;
-using Sentium.Locus.Features.Locations;
 
 namespace Sentium.Locus.Features.Locations;
 

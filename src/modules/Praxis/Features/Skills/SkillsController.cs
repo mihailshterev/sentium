@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sentium.Core.Results;
-using Sentium.Praxis.Features.Skills;
 
 namespace Sentium.Praxis.Features.Skills;
 
@@ -60,7 +59,6 @@ public sealed class SkillsController(
     /// <summary>
     /// Creates a new custom agent skill.
     /// </summary>
-    /// <param name="request">The data required to create the skill.</param>
     /// <response code="201">Returns the newly created skill.</response>
     /// <response code="400">If the request is invalid.</response>
     /// <response code="409">If a skill with the same name already exists.</response>
@@ -132,7 +130,6 @@ public sealed class SkillsController(
     /// <summary>
     /// Updates the details of an existing agent skill.
     /// </summary>
-    /// <param name="request">The updated skill details.</param>
     /// <response code="400">If the request is null or invalid.</response>
     [HttpPut("{skillId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]

@@ -63,15 +63,18 @@ public sealed class LocusE2EDataSeeder : IE2ESeeder
         await db.SaveChangesAsync(ct);
     }
 
-    private static Location NewLocation(string name, Guid? parentId, DateTimeOffset now) => new()
+    private static Location NewLocation(string name, Guid? parentId, DateTimeOffset now)
     {
-        Id = Guid.CreateVersion7(),
-        Name = name,
-        NormalizedName = LocationNames.Normalize(name),
-        ParentLocationId = parentId,
-        CreatedAt = now,
-        UpdatedAt = now,
-        CreatedBy = "e2e-seeder",
-        UpdatedBy = "e2e-seeder"
-    };
+        return new()
+        {
+            Id = Guid.CreateVersion7(),
+            Name = name,
+            NormalizedName = LocationNames.Normalize(name),
+            ParentLocationId = parentId,
+            CreatedAt = now,
+            UpdatedAt = now,
+            CreatedBy = "e2e-seeder",
+            UpdatedBy = "e2e-seeder"
+        };
+    }
 }

@@ -206,15 +206,18 @@ public sealed class McpHostTests
     private static ContainerConfigBuilder CreateBuilder(McpHostOptions mcp) =>
         new(Options.Create(new SandboxOptions()), Options.Create(mcp));
 
-    private static McpContainerManager CreateManager(IDockerClient docker, McpHostOptions mcp) => new(
-        docker,
-        new DockerStdioAttach(Options.Create(new SandboxOptions())),
-        new DockerImageService(docker, NullLogger<DockerImageService>.Instance),
-        CreateBuilder(mcp),
-        Options.Create(mcp),
-        TimeProvider.System,
-        NullLoggerFactory.Instance,
-        NullLogger<McpContainerManager>.Instance);
+    private static McpContainerManager CreateManager(IDockerClient docker, McpHostOptions mcp)
+    {
+        return new(
+            docker,
+            new DockerStdioAttach(Options.Create(new SandboxOptions())),
+            new DockerImageService(docker, NullLogger<DockerImageService>.Instance),
+            CreateBuilder(mcp),
+            Options.Create(mcp),
+            TimeProvider.System,
+            NullLoggerFactory.Instance,
+            NullLogger<McpContainerManager>.Instance);
+    }
 
     private sealed class FakeContainerStdio : IContainerStdio
     {

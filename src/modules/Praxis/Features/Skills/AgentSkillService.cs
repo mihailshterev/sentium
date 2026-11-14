@@ -10,42 +10,34 @@ public sealed class AgentSkillService(
 {
     private const string CacheTag = "skills";
 
-    public Task<IReadOnlyList<AgentSkillDto>> GetAllAsync(CancellationToken ct = default)
-        => cache.GetOrCreateAsync(
+    public async Task<IReadOnlyList<AgentSkillDto>> GetAllAsync(CancellationToken ct = default)
+    {
+        return await cache.GetOrCreateAsync(
             $"{CacheTag}:all",
-            async token =>
-            {
-                var skills = await repository.GetAllAsync(token);
-                return (IReadOnlyList<AgentSkillDto>)skills.Select(ToDto).ToList();
-            },
+            LoadAllAsync,
             CacheTag,
-            ct).AsTask();
+            ct);
+    }
 
-    public Task<PagedResponse<AgentSkillDto>> GetPagedAsync(AgentSkillType? skillType, int page, int pageSize, CancellationToken ct = default)
+    public async Task<PagedResponse<AgentSkillDto>> GetPagedAsync(AgentSkillType? skillType, int page, int pageSize, CancellationToken ct = default)
     {
         (page, pageSize) = new PaginationQuery { Page = page, PageSize = pageSize }.Normalize();
 
-        return cache.GetOrCreateAsync(
+        return await cache.GetOrCreateAsync(
             $"{CacheTag}:page:{skillType?.ToString() ?? "all"}:{page}:{pageSize}",
-            async token =>
-            {
-                var (skills, total) = await repository.GetPagedAsync(skillType, page, pageSize, token);
-                return PagedResponse<AgentSkillDto>.Create([.. skills.Select(ToDto)], total, page, pageSize);
-            },
+            token => LoadPageAsync(skillType, page, pageSize, token),
             CacheTag,
-            ct).AsTask();
+            ct);
     }
 
     public async Task<AgentSkillDto?> GetByIdAsync(Guid id, CancellationToken ct = default)
-        => await cache.GetOrCreateAsync(
+    {
+        return await cache.GetOrCreateAsync(
             $"{CacheTag}:{id}",
-            async token =>
-            {
-                var skill = await repository.GetByIdAsync(id, token);
-                return skill is null ? null : ToDto(skill);
-            },
+            token => LoadByIdAsync(id, token),
             CacheTag,
             ct);
+    }
 
     public async Task<Result<AgentSkillDto>> CreateAsync(CreateAgentSkillRequest request, CancellationToken ct = default)
     {
@@ -105,13 +97,34 @@ public sealed class AgentSkillService(
         return deleted;
     }
 
-    private static AgentSkillDto ToDto(AgentSkill s) => new(
-        s.Id,
-        s.Name,
-        s.Description,
-        s.Instructions,
-        s.SkillType,
-        s.FileName,
-        s.CreatedAt,
-        s.UpdatedAt);
+    private async ValueTask<IReadOnlyList<AgentSkillDto>> LoadAllAsync(CancellationToken ct)
+    {
+        var skills = await repository.GetAllAsync(ct);
+        return skills.Select(ToDto).ToList();
+    }
+
+    private async ValueTask<PagedResponse<AgentSkillDto>> LoadPageAsync(AgentSkillType? skillType, int page, int pageSize, CancellationToken ct)
+    {
+        var (skills, total) = await repository.GetPagedAsync(skillType, page, pageSize, ct);
+        return PagedResponse<AgentSkillDto>.Create([.. skills.Select(ToDto)], total, page, pageSize);
+    }
+
+    private async ValueTask<AgentSkillDto?> LoadByIdAsync(Guid id, CancellationToken ct)
+    {
+        var skill = await repository.GetByIdAsync(id, ct);
+        return skill is null ? null : ToDto(skill);
+    }
+
+    private static AgentSkillDto ToDto(AgentSkill s)
+    {
+        return new(
+            s.Id,
+            s.Name,
+            s.Description,
+            s.Instructions,
+            s.SkillType,
+            s.FileName,
+            s.CreatedAt,
+            s.UpdatedAt);
+    }
 }
