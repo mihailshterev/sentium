@@ -400,6 +400,13 @@
       "sentium.core": {
         "type": "Project"
       },
+      "sentium.identity": {
+        "type": "Project",
+        "dependencies": {
+          "Sentium.Core": "[1.0.0, )",
+          "Sentium.Infrastructure": "[1.0.0, )"
+        }
+      },
       "sentium.infrastructure": {
         "type": "Project",
         "dependencies": {
@@ -418,6 +425,14 @@
           "Serilog.AspNetCore": "[10.0.0, )",
           "Serilog.Sinks.Console": "[6.1.1, )",
           "Serilog.Sinks.OpenTelemetry": "[4.2.0, )"
+        }
+      },
+      "sentium.nuntius": {
+        "type": "Project",
+        "dependencies": {
+          "Sentium.Core": "[1.0.0, )",
+          "Sentium.Identity": "[1.0.0, )",
+          "Sentium.Infrastructure": "[1.0.0, )"
         }
       },
       "sentium.registry": {

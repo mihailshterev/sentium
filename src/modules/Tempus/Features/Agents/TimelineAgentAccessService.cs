@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Sentium.Core.Results;
 using Sentium.Core.Text;
 using Sentium.Infrastructure.Extensions;
+using Sentium.Nuntius.Contracts;
 using Sentium.Tempus.Common;
 using Sentium.Tempus.Contracts;
 using Sentium.Tempus.Contracts.Models;
@@ -17,8 +18,14 @@ namespace Sentium.Tempus.Features.Agents;
 /// <see cref="ScopedTimelineAgentAccess"/>), which bypasses the DbContext's per-user filter - so EVERY query here
 /// filters on the explicit <c>userId</c>, and every insert sets it.
 /// </summary>
-internal sealed class TimelineAgentAccessService(TempusDbContext db, TimeProvider timeProvider) : ITimelineAgentAccess
+internal sealed class TimelineAgentAccessService(TempusDbContext db, TimeProvider timeProvider, INotifier notifier) : ITimelineAgentAccess
 {
+    /// <summary>
+    /// One unread suggestions Notification per user: an agent proposing many tasks in one run updates it instead of
+    /// flooding the Inbox.
+    /// </summary>
+    private const string ProposalDedupeKey = NotificationCategories.TimelineProposal;
+
     public async Task<TimelineAgentOverview> GetOverviewAsync(Guid userId, int? year = null, int upcomingDays = 14, CancellationToken ct = default)
     {
         var today = TimelineCalendar.UtcToday(timeProvider);
@@ -162,7 +169,9 @@ internal sealed class TimelineAgentAccessService(TempusDbContext db, TimeProvide
             return Result<TimelineProposalReceipt>.Invalid(error);
         }
 
-        return await db.Database.ExecuteInTransactionAsync(() => AddTaskProposalAsync(userId, agentName, proposal, title, tags, ct), ct: ct);
+        var result = await db.Database.ExecuteInTransactionAsync(() => AddTaskProposalAsync(userId, agentName, proposal, title, tags, ct), ct: ct);
+        await NotifyNewProposalAsync(userId, agentName, result, ct);
+        return result;
     }
 
     public async Task<Result<TimelineProposalReceipt>> ProposeRescheduleAsync(Guid userId, string agentName, TimelineRescheduleProposal proposal, CancellationToken ct = default)
@@ -183,7 +192,9 @@ internal sealed class TimelineAgentAccessService(TempusDbContext db, TimeProvide
             return Result<TimelineProposalReceipt>.Invalid(error);
         }
 
-        return await db.Database.ExecuteInTransactionAsync(() => AddRescheduleProposalAsync(userId, agentName, proposal, ct), ct: ct);
+        var result = await db.Database.ExecuteInTransactionAsync(() => AddRescheduleProposalAsync(userId, agentName, proposal, ct), ct: ct);
+        await NotifyNewProposalAsync(userId, agentName, result, ct);
+        return result;
     }
 
     public async Task<Result<TimelineNoteReceipt>> AddNoteAsync(Guid userId, string agentName, TimelineNoteInput note, CancellationToken ct = default)
@@ -377,6 +388,38 @@ internal sealed class TimelineAgentAccessService(TempusDbContext db, TimeProvide
         await db.SaveChangesAsync(ct);
 
         return Result<TimelineProposalReceipt>.Success(new TimelineProposalReceipt(entity.Id, AlreadyPending: false, superseded));
+    }
+
+    /// <summary>
+    /// Runs after the proposal's transaction committed, so a retried transaction never notifies twice.
+    /// </summary>
+    private async Task NotifyNewProposalAsync(Guid userId, string agentName, Result<TimelineProposalReceipt> result, CancellationToken ct)
+    {
+        if (result is not { IsSuccess: true, Value: { AlreadyPending: false } receipt })
+        {
+            return;
+        }
+
+        var proposal = await Proposals(userId)
+            .Where(p => p.Id == receipt.ProposalId)
+            .Select(p => new { p.Kind, p.Title, p.Year, p.Month, p.Rationale })
+            .FirstOrDefaultAsync(ct);
+
+        if (proposal is null)
+        {
+            return;
+        }
+
+        var verb = proposal.Kind == TimelineProposalKind.Reschedule ? "moving" : "adding";
+        var message = new NotificationMessage(
+            NotificationCategories.TimelineProposal,
+            NotificationSeverity.Info,
+            $"{AgentName(agentName)} suggests {verb} “{proposal.Title}”",
+            proposal.Rationale,
+            string.Create(CultureInfo.InvariantCulture, $"/timeline?year={proposal.Year}&month={proposal.Month}"),
+            ProposalDedupeKey);
+
+        await notifier.NotifyAsync(NotificationRecipient.User(userId), message, ct);
     }
 
     private IQueryable<TimelineTask> Tasks(Guid userId) => db.TimelineTasks.AsNoTracking().Where(t => t.UserId == userId);

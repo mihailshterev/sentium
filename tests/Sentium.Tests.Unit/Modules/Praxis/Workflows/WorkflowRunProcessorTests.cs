@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Sentium.Infrastructure.Security;
+using Sentium.Nuntius.Contracts;
 using Sentium.Praxis.Common.Streaming;
 using Sentium.Praxis.Entities;
 using Sentium.Praxis.Features.Orchestration;
@@ -26,6 +27,7 @@ public sealed class WorkflowRunProcessorTests : IAsyncDisposable
     private readonly IOrchestrator _orchestrator = Substitute.For<IOrchestrator>();
     private readonly IWorkflowRunRepository _runs = Substitute.For<IWorkflowRunRepository>();
     private readonly ITitleGenerator _titles = Substitute.For<ITitleGenerator>();
+    private readonly INotifier _notifier = Substitute.For<INotifier>();
     private ServiceProvider? _services;
     private WorkflowRunProcessor? _processor;
 
@@ -163,6 +165,61 @@ public sealed class WorkflowRunProcessorTests : IAsyncDisposable
         await _runs.Received(1).AddAsync(Arg.Is<WorkflowRun>(r => r.Explanation.StartsWith("[CANCELLED] Not started")), Arg.Any<CancellationToken>());
     }
 
+    [Fact]
+    public async Task CompletedRun_NotifiesItsUser_WithALinkToTheRecordedRun()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var userId = Guid.NewGuid();
+        Guid? recordedRunId = null;
+        _orchestrator.RunAsync(Arg.Any<WorkflowTrigger>(), Arg.Any<CancellationToken>()).Returns(new WorkflowResult { Explanation = "ok" });
+        _runs.AddAsync(Arg.Do<WorkflowRun>(r => recordedRunId = r.Id), Arg.Any<CancellationToken>()).Returns(Task.CompletedTask);
+        await StartAsync(ct);
+
+        var trigger = await EnqueueAsync(ct, userId);
+        await ReadUntilTerminalAsync(trigger.StreamId, ct);
+        await WaitUntilAsync(() => _notifier.ReceivedCalls().Any(), ct);
+
+        await _notifier.Received(1).NotifyAsync(
+            NotificationRecipient.User(userId),
+            Arg.Is<NotificationMessage>(m => m.Category == NotificationCategories.WorkflowRun
+                && m.Severity == NotificationSeverity.Info
+                && m.Link == $"/orchestration/runs/{recordedRunId}"),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task TimedOutRun_NotifiesItsUser_AsAWarning()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var userId = Guid.NewGuid();
+        HangUntilCancelled();
+        await StartAsync(ct, ("Orchestration:WorkflowTimeout", "00:00:00.2"));
+
+        var trigger = await EnqueueAsync(ct, userId);
+        await ReadUntilTerminalAsync(trigger.StreamId, ct);
+        await WaitUntilAsync(() => _notifier.ReceivedCalls().Any(), ct);
+
+        await _notifier.Received(1).NotifyAsync(
+            NotificationRecipient.User(userId),
+            Arg.Is<NotificationMessage>(m => m.Severity == NotificationSeverity.Warning && m.Body!.StartsWith("[TIMEOUT]")),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task RunStoppedByItsUser_DoesNotNotify()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        HangUntilCancelled();
+        await StartAsync(ct);
+
+        var trigger = await EnqueueAsync(ct, Guid.NewGuid());
+        await WaitUntilAsync(() => _registry.Cancel(trigger.StreamId), ct);
+        await ReadUntilTerminalAsync(trigger.StreamId, ct);
+        await _processor!.StopAsync(ct);
+
+        await _notifier.DidNotReceive().NotifyAsync(Arg.Any<NotificationRecipient>(), Arg.Any<NotificationMessage>(), Arg.Any<CancellationToken>());
+    }
+
     public async ValueTask DisposeAsync()
     {
         if (_processor is not null)
@@ -208,6 +265,7 @@ public sealed class WorkflowRunProcessorTests : IAsyncDisposable
             _services.GetRequiredService<IServiceScopeFactory>(),
             _registry,
             _runContext,
+            new WorkflowRunNotifier(_notifier),
             configuration,
             NullLogger<WorkflowRunProcessor>.Instance);
 

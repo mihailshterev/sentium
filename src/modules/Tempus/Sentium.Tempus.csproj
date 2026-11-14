@@ -13,6 +13,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\shared\Sentium.Core\Sentium.Core.csproj" />
     <ProjectReference Include="..\..\shared\Sentium.Infrastructure\Sentium.Infrastructure.csproj" />
+    <ProjectReference Include="..\Nuntius\Sentium.Nuntius.csproj" />
   </ItemGroup>
 
 </Project>

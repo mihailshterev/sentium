@@ -1766,6 +1766,14 @@
           "Sentium.Registry": "[1.0.0, )"
         }
       },
+      "sentium.nuntius": {
+        "type": "Project",
+        "dependencies": {
+          "Sentium.Core": "[1.0.0, )",
+          "Sentium.Identity": "[1.0.0, )",
+          "Sentium.Infrastructure": "[1.0.0, )"
+        }
+      },
       "sentium.praxis": {
         "type": "Project",
         "dependencies": {
@@ -1778,6 +1786,7 @@
           "Sentium.Core": "[1.0.0, )",
           "Sentium.Infrastructure": "[1.0.0, )",
           "Sentium.Locus": "[1.0.0, )",
+          "Sentium.Nuntius": "[1.0.0, )",
           "Sentium.Registry": "[1.0.0, )",
           "Sentium.Sentinel": "[1.0.0, )",
           "Sentium.Tempus": "[1.0.0, )"
@@ -1826,7 +1835,8 @@
         "type": "Project",
         "dependencies": {
           "Sentium.Core": "[1.0.0, )",
-          "Sentium.Infrastructure": "[1.0.0, )"
+          "Sentium.Infrastructure": "[1.0.0, )",
+          "Sentium.Nuntius": "[1.0.0, )"
         }
       },
       "sentium.vigil": {
@@ -1834,6 +1844,7 @@
         "dependencies": {
           "Sentium.Core": "[1.0.0, )",
           "Sentium.Infrastructure": "[1.0.0, )",
+          "Sentium.Nuntius": "[1.0.0, )",
           "Sentium.Registry": "[1.0.0, )"
         }
       },
@@ -1850,6 +1861,7 @@
           "Sentium.Infrastructure": "[1.0.0, )",
           "Sentium.Locus": "[1.0.0, )",
           "Sentium.Mcp": "[1.0.0, )",
+          "Sentium.Nuntius": "[1.0.0, )",
           "Sentium.Praxis": "[1.0.0, )",
           "Sentium.Registry": "[1.0.0, )",
           "Sentium.Scheduling": "[1.0.0, )",

@@ -2,6 +2,7 @@ using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 using Sentium.Core.Constants;
+using Sentium.Identity.Contracts;
 using Sentium.Identity.Data;
 using Sentium.Identity.Entities;
 using Sentium.Identity.Features.Account;
@@ -86,6 +87,7 @@ public static class IdentityModuleExtensions
         services.AddScoped<IIdentityService, IdentityService>();
         services.AddScoped<IRoleService, RoleService>();
         services.AddScoped<IUserService, UserService>();
+        services.AddSingleton<IUserDirectory, ScopedUserDirectory>();
 
         services.AddHostedService<IdentitySeeder>();
 

@@ -145,6 +145,7 @@ public static class PraxisModuleExtensions
         services.AddSingleton<IWorkflowExecutionRegistry, WorkflowExecutionRegistry>();
         services.AddSingleton<WorkflowRunQueue>();
         services.AddSingleton<IWorkflowRunQueue>(sp => sp.GetRequiredService<WorkflowRunQueue>());
+        services.AddSingleton<WorkflowRunNotifier>();
         services.AddHostedService<WorkflowRunProcessor>();
 
         services.AddSingleton<StreamRelay>();
