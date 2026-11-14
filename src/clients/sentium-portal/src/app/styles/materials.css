@@ -50,7 +50,6 @@
     linear-gradient(var(--c) 0 0) right bottom / 1px var(--t) no-repeat;
 }
 
-/* Small technical label: mono, muted, spaced. */
 .mono-label {
   color: var(--text-muted);
   font-family: var(--font-mono);
@@ -59,17 +58,12 @@
   letter-spacing: var(--tracking-label);
 }
 
-/* Legacy alias, removed once pages migrate. */
 .glass {
   background: var(--mat-regular-bg);
   border: 1px solid var(--mat-regular-border);
   backdrop-filter: var(--mat-regular-filter);
 }
 
-/*
- * The user asked for less transparency: swap the translucent fills for opaque ones. Every material-backed
- * surface reads these tokens, so this single override covers them all.
- */
 @media (prefers-reduced-transparency: reduce) {
   :root,
   :root[data-theme="light"] {
