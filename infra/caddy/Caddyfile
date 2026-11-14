@@ -1,0 +1,28 @@
+# TLS front door for the Compose deployment. Caddy issues the portal's certificate from its own per-installation
+# certificate authority (`tls internal`) and renews it; the CA's private key stays in the caddy-data volume.
+# Devices trust the CA's root certificate, exported as described in docs/installation.md.
+{
+	# Inside the container there is no trust store worth installing the root into; devices install it by hand.
+	skip_install_trust
+
+	pki {
+		ca local {
+			name "Sentium Local CA"
+		}
+	}
+
+	servers {
+		# Only TCP 443 is published, so don't advertise HTTP/3 (UDP) to browsers.
+		protocols h1 h2
+	}
+}
+
+{$SENTIUM_HOSTNAME} {
+	tls internal
+
+	reverse_proxy sentium-web:8080 {
+		# Server-sent event streams (assistant, orchestration, Vigil, notifications) must reach the browser
+		# chunk by chunk, never buffered.
+		flush_interval -1
+	}
+}

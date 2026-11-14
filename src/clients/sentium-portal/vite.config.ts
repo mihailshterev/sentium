@@ -35,6 +35,8 @@ export default defineConfig({
     outDir: path.resolve(import.meta.dirname, "../../hosts/Sentium.Web/wwwroot"),
     emptyOutDir: true,
     chunkSizeWarningLimit: 1600,
+    // Fonts stay separate files: the Content-Security-Policy's font-src allows the portal's origin, not data: URIs.
+    assetsInlineLimit: (file) => (/\.woff2?$/.test(file) ? false : undefined),
     rollupOptions: {
       output: {
         // Pixi and d3 are only used by the lazily loaded semantic map. Leaving them out of the shared vendor

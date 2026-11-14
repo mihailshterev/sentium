@@ -1,4 +1,4 @@
-import { test as base } from "@playwright/test";
+import { test as base, expect } from "@playwright/test";
 import {
   LoginPage,
   NavbarComponent,
@@ -25,6 +25,7 @@ import {
 } from "../pages/index";
 
 export type AppFixtures = {
+  ownOriginOnly: void;
   loginPage: LoginPage;
   navbar: NavbarComponent;
   dashboardPage: DashboardPage;
@@ -50,6 +51,45 @@ export type AppFixtures = {
 };
 
 export const test = base.extend<AppFixtures>({
+  // Runs for every test: the portal must make no request beyond its own origin, and nothing it does may trip the
+  // Content-Security-Policy (a violation means a feature silently broke under the policy).
+  ownOriginOnly: [
+    async ({ page, baseURL, browserName }, use) => {
+      const origin = new URL(baseURL!).origin;
+      const problems: string[] = [];
+
+      page.on("request", (request) => {
+        const url = new URL(request.url());
+        if (url.protocol.startsWith("http") && url.origin !== origin) {
+          problems.push(`request to another origin: ${request.url()}`);
+        }
+      });
+
+      await page.exposeFunction("__reportCspViolation", (directive: string, blocked: string, source: string) => {
+        problems.push(`CSP violation: ${directive} blocked ${blocked || "inline content"} (${source})`);
+      });
+      // WebKit reports engine artifacts that are not portal code: its own user-agent shadow DOM (a <select>'s
+      // internals, sometimes reported after the element is gone) and the "body {}" style Playwright's
+      // web-inspector bootstrap injects. Chromium and Firefox stay fully strict and run the same portal code.
+      await page.addInitScript((isWebKit) => {
+        document.addEventListener("securitypolicyviolation", (event) => {
+          if (isWebKit && (event.violatedDirective === "style-src-attr" || event.sourceFile === "")) {
+            return;
+          }
+
+          const report = (window as unknown as { __reportCspViolation: (...args: string[]) => void })
+            .__reportCspViolation;
+          void report(event.violatedDirective, event.blockedURI, event.sourceFile);
+        });
+      }, browserName === "webkit");
+
+      await use();
+
+      expect(problems, "the portal must stay on its own origin and within its CSP").toEqual([]);
+    },
+    { auto: true },
+  ],
+
   loginPage: async ({ page }, use) => {
     await use(new LoginPage(page));
   },

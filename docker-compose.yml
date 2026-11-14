@@ -146,9 +146,25 @@ services:
       start_period: 20s
     restart: unless-stopped
 
+  caddy:
+    image: caddy:2.10.2-alpine
+    environment:
+      SENTIUM_HOSTNAME: ${SENTIUM_HOSTNAME:-sentium.home.arpa}
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      sentium-web:
+        condition: service_started
+    restart: unless-stopped
+
   # The modular monolith: every module (Identity, Registry, Sentinel, Codex, Praxis, Vigil) in one
-  # process. It serves the portal and the API from one HTTPS origin (the auth
-  # cookie is Secure).
+  # process. It serves the portal and the API from one origin, over plain HTTP on the internal network only;
+  # caddy is its sole public entry. Forwarded headers make requests read as HTTPS from the client's address.
   sentium-web:
     build:
       context: .
@@ -165,13 +181,9 @@ services:
       Inference__ApiKey: ${LLM_API_KEY}
       Inference__DefaultModel: ${SENTIUM_MODEL:-gemma-4-e4b}
       Rag__EmbeddingModelName: ${SENTIUM_EMBEDDING_MODEL:-embeddinggemma-2}
-      ASPNETCORE_Kestrel__Certificates__Default__Path: /https/sentium.pfx
-      ASPNETCORE_Kestrel__Certificates__Default__Password: ${CERT_PASSWORD}
+      ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
       DataProtection__KeysPath: /keys
-    ports:
-      - "${WEB_HTTPS_PORT:-8443}:8443"
     volumes:
-      - ./certs:/https:ro
       - web-dataprotection:/keys
     depends_on:
       postgres:
@@ -224,6 +236,10 @@ volumes:
   redis-data:
   azurite-data:
   web-dataprotection:
+  # Caddy's CA (root and intermediate keys) and issued certificates. Deleting it creates a new CA, which every
+  # device then has to trust again.
+  caddy-data:
+  caddy-config:
   # Verified model files, shared with the Aspire AppHost so they download once.
   llm-models:
     name: sentium-llm-models
