@@ -242,10 +242,10 @@ impl Api {
             while let Some(end) = pending.iter().position(|&b| b == b'\n') {
                 let line: Vec<u8> = pending.drain(..=end).collect();
                 let line = String::from_utf8_lossy(&line);
-                if let Some(data) = line.trim_end().strip_prefix("data:") {
-                    if let Ok(frame) = serde_json::from_str::<Frame>(data.trim()) {
-                        on_frame(frame).await?;
-                    }
+                if let Some(data) = line.trim_end().strip_prefix("data:")
+                    && let Ok(frame) = serde_json::from_str::<Frame>(data.trim())
+                {
+                    on_frame(frame).await?;
                 }
             }
         }

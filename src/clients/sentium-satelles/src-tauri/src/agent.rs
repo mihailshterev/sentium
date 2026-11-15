@@ -309,10 +309,10 @@ impl Agent {
                 let notification = frame
                     .data
                     .and_then(|data| serde_json::from_value::<Notification>(data).ok());
-                if let Some(notification) = notification.filter(|n| n.read_at.is_none()) {
-                    if self.is_current(generation) {
-                        self.observer.notification(&paired.server, notification);
-                    }
+                if let Some(notification) = notification.filter(|n| n.read_at.is_none())
+                    && self.is_current(generation)
+                {
+                    self.observer.notification(&paired.server, notification);
                 }
                 self.refresh_unread(paired, generation).await
             }
