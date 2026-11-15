@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -65,6 +66,39 @@ var embeddings = AddLlamaServer(ResourceNames.Embeddings, LlamaConfig.Embeddings
         "--ubatch-size", "2048",
         "--parallel", "4");
 
+// Speech for the Companion: whisper.cpp (speech-to-text, model from the same verified volume) and Kokoro
+// (text-to-speech, model baked into the image). Optional: Sentium.Web starts without waiting for them.
+var useSpeech = builder.Configuration.GetValue(SpeechConfig.EnabledKey, defaultValue: true);
+
+var whisper = useSpeech
+    ? builder.AddContainer(ResourceNames.Whisper, SpeechConfig.WhisperImage, SpeechConfig.WhisperTag)
+        .WithImageRegistry(SpeechConfig.WhisperRegistry)
+        .WithImageSHA256(SpeechConfig.WhisperDigest)
+        .WithHttpEndpoint(port: SpeechConfig.WhisperHostPort, targetPort: SpeechConfig.WhisperContainerPort, name: "http")
+        .WithVolume(LlamaConfig.ModelsVolume, LlamaConfig.ModelsPath, isReadOnly: true)
+        .WithEntrypoint(SpeechConfig.WhisperServerPath)
+        .WithArgs(
+            "--host", "0.0.0.0",
+            "--port", SpeechConfig.WhisperContainerPort.ToString(CultureInfo.InvariantCulture),
+            "--model", $"{LlamaConfig.ModelsPath}/{SpeechConfig.WhisperModelFile}",
+            "--inference-path", SpeechConfig.WhisperInferencePath,
+            "--convert",
+            "--tmp-dir", "/tmp",
+            "--no-timestamps",
+            "--vad",
+            "--vad-model", $"{LlamaConfig.ModelsPath}/{SpeechConfig.WhisperVadModelFile}")
+        .WithHttpHealthCheck("/health")
+        .WaitForCompletion(modelsInit)
+    : null;
+
+var tts = useSpeech
+    ? builder.AddContainer(ResourceNames.Tts, SpeechConfig.TtsImage, SpeechConfig.TtsTag)
+        .WithImageRegistry(SpeechConfig.TtsRegistry)
+        .WithImageSHA256(SpeechConfig.TtsDigest)
+        .WithHttpEndpoint(port: SpeechConfig.TtsHostPort, targetPort: SpeechConfig.TtsContainerPort, name: "http")
+        .WithHttpHealthCheck("/health")
+    : null;
+
 var dockerHost = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
     ? EnvConfig.Values.DockerSockets.Windows
     : EnvConfig.Values.DockerSockets.LinuxMac;
@@ -88,6 +122,12 @@ var web = builder.AddProject<Projects.Sentium_Web>(ServiceNames.Web)
         url.DisplayText = "Scalar API (Docs)";
         url.Url = "/scalar/v1";
     });
+
+if (whisper is not null && tts is not null)
+{
+    web.WithEnvironment(EnvConfig.Keys.Speech.TranscriptionEndpoint, whisper.GetEndpoint("http"))
+        .WithEnvironment(EnvConfig.Keys.Speech.SynthesisEndpoint, tts.GetEndpoint("http"));
+}
 
 var egressNetwork = builder.Configuration[SearxngConfig.EgressNetworkKey] ?? SearxngConfig.EgressNetwork;
 

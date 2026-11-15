@@ -1,0 +1,129 @@
+.dock {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 6px 10px 8px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.companion {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  padding: 6px 0 20px;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  cursor: pointer;
+  transition: background-color var(--transition-fast);
+
+  &:hover {
+    background: var(--bg-hover);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+
+  /*
+   * The state caption is generated content on purpose: it stays out of the DOM text, so it never collides with
+   * page text that tests and screen readers look up (the button's accessible name already carries the state).
+   */
+  &::after {
+    content: attr(data-label);
+    position: absolute;
+    bottom: 5px;
+    left: 0;
+    right: 0;
+    color: var(--text-dim);
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    letter-spacing: var(--tracking-label);
+    text-align: center;
+    white-space: nowrap;
+  }
+}
+
+.rig {
+  width: 84px;
+  height: 92px;
+}
+
+/* ---------- Collapsed sidebar: just the head ---------- */
+
+.dock[data-collapsed] {
+  padding: 6px 8px;
+}
+
+.dock[data-collapsed] .companion {
+  padding: 4px 0;
+
+  &::after {
+    content: none;
+  }
+}
+
+.dock[data-collapsed] .rig {
+  width: 40px;
+  height: 41px;
+}
+
+/* ---------- Phone width: a floating bubble above the bottom edge ---------- */
+
+.dock[data-placement="floating"] {
+  position: fixed;
+  right: var(--space-3);
+  bottom: calc(var(--space-4) + env(safe-area-inset-bottom, 0px));
+  z-index: var(--z-nav);
+  padding: 0;
+  border: 0;
+}
+
+.dock[data-placement="floating"] .companion {
+  width: 58px;
+  height: 58px;
+  padding: 0;
+  justify-content: center;
+  border: 1px solid var(--mat-thick-border);
+  border-radius: var(--radius-full);
+  background: var(--mat-thick-opaque);
+  box-shadow: var(--shadow-md);
+
+  &::after {
+    content: none;
+  }
+}
+
+.dock[data-placement="floating"] .rig {
+  width: 44px;
+  height: 45px;
+}
+
+.dismiss {
+  position: absolute;
+  top: -6px;
+  right: -4px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-full);
+  background: var(--mat-thick-opaque);
+  color: var(--text-secondary);
+  cursor: pointer;
+
+  &:hover {
+    color: var(--text-primary);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+}

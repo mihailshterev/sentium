@@ -11,6 +11,14 @@ import type { SettingsKey } from "../types/settings";
 const VALUES: Record<SettingsKey, Record<string, unknown>> = {
   harness: { userHarnessPrompt: "Be concise.", isBuiltInHarnessEnabled: true, isPromptEnhancementEnabled: false },
   "calendar-user": { timeZone: null, dayStart: null },
+  companion: {
+    isCompanionEnabled: true,
+    isVoiceEnabled: true,
+    voice: null,
+    speakingRate: 1,
+    isReviewBeforeSendingEnabled: false,
+    isSpeakTypedRepliesEnabled: false,
+  },
   inference: { defaultModel: "gemma-4-e4b", agentTemperature: 0.3 },
   calendar: { timeZone: "Europe/Sofia", dayStart: "08:00:00" },
   pdp: {
@@ -92,7 +100,7 @@ describe("Settings layout", () => {
 
     expect(screen.getByRole("heading", { level: 2, name: "Calendar" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { level: 2, name: "Security" })).not.toBeInTheDocument();
-    expect(fetchGroup.mock.calls.map(([key]) => key).sort()).toEqual(["calendar-user", "harness"]);
+    expect(fetchGroup.mock.calls.map(([key]) => key).sort()).toEqual(["calendar-user", "companion", "harness"]);
   });
 
   it("adds the household sections for a Sovereign, including settings that used to live on feature pages", async () => {

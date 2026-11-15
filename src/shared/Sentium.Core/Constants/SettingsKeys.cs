@@ -17,4 +17,9 @@ public static class SettingsKeys
     /// A user's own time zone and day-start, overriding <see cref="Calendar"/> where set.
     /// </summary>
     public const string UserCalendar = "calendar-user";
+
+    /// <summary>
+    /// A user's own Companion and voice preferences.
+    /// </summary>
+    public const string Companion = "companion";
 }

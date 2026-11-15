@@ -19,6 +19,8 @@ interface ChatInputBarProps {
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
   placeholder?: string;
   hint?: string | null;
+  /** Extra control next to the send button, e.g. push-to-talk. */
+  voiceSlot?: React.ReactNode;
 }
 
 export function ChatInputBar({
@@ -36,6 +38,7 @@ export function ChatInputBar({
   textareaRef,
   placeholder = "Ask Sentium Assistant...",
   hint = "Enter: Send · Shift+Enter: New line · Ctrl+K: New chat",
+  voiceSlot,
 }: ChatInputBarProps) {
   return (
     <div className={styles.composerWrap}>
@@ -79,6 +82,8 @@ export function ChatInputBar({
             onChange={onSetModel}
             placeholder="model name..."
           />
+
+          {voiceSlot && <span className={styles.voiceSlot}>{voiceSlot}</span>}
 
           {isTyping ? (
             <button

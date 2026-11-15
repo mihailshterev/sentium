@@ -17,6 +17,16 @@ public static class ResourceNames
     /// </summary>
     public const string ModelsInit = "models-init";
 
+    /// <summary>
+    /// whisper.cpp server: speech-to-text for push-to-talk.
+    /// </summary>
+    public const string Whisper = "whisper";
+
+    /// <summary>
+    /// Kokoro server: text-to-speech for spoken replies.
+    /// </summary>
+    public const string Tts = "tts";
+
     public const string Searxng = "searxng";
     public const string Postgres = "postgres";
     public const string SentiumDb = "sentiumdb";

@@ -84,6 +84,9 @@ async function snapshotMonths(qc: QueryClient, keys: QueryKey[]): Promise<Snapsh
 const restore = (qc: QueryClient, snapshot: Snapshot | undefined) =>
   snapshot?.forEach(([key, data]) => qc.setQueryData(key, data));
 
+/** Names the "tick a task" mutation so other features (the Companion) can react to it. */
+export const TASK_STATUS_MUTATION_KEY = ["timeline-task-status"] as const;
+
 function useInvalidateTimeline() {
   const qc = useQueryClient();
   return () => qc.invalidateQueries({ queryKey: timelineKeys.all });
@@ -127,6 +130,7 @@ export function useTaskMutations() {
   });
 
   const setStatus = useMutation({
+    mutationKey: TASK_STATUS_MUTATION_KEY,
     mutationFn: ({ task, status }: { task: TimelineTask; status: TaskStatus }) => api.setTaskStatus(task.id, status),
     onMutate: async ({ task, status }) => {
       const key = timelineKeys.month(task.year, task.month);

@@ -5,6 +5,7 @@ using Sentium.Core.Constants;
 using Sentium.Infrastructure.Extensions;
 using Sentium.Infrastructure.Inference;
 using Sentium.Infrastructure.Security;
+using Sentium.Infrastructure.Speech;
 using Sentium.Praxis.Contracts;
 using Sentium.Praxis.Data;
 using Sentium.Praxis.Features.Agents;
@@ -21,6 +22,7 @@ using Sentium.Praxis.Features.Registry;
 using Sentium.Praxis.Features.Sentinel;
 using Sentium.Praxis.Features.Skills;
 using Sentium.Praxis.Features.Skills.BuiltIn;
+using Sentium.Praxis.Features.Speech;
 using Sentium.Praxis.Features.Storage;
 using Sentium.Praxis.Features.Titles;
 using Sentium.Praxis.Features.Tools;
@@ -128,6 +130,7 @@ public static class PraxisModuleExtensions
         services.AddSingleton<IPdpContextAccessor, PdpContextAccessor>();
 
         AddCodeExecution(services, configuration);
+        AddSpeech(services, configuration);
 
         services.AddHealthChecks().AddDbContextCheck<PraxisDbContext>("praxis-db", tags: [ModuleName]);
 
@@ -201,6 +204,30 @@ public static class PraxisModuleExtensions
         var defaultModel = sp.GetRequiredService<IOptions<InferenceOptions>>().Value.DefaultModel;
 
         return sp.GetRequiredService<IInferenceClientFactory>().CreateChatClient(LlmHttpClientName, defaultModel);
+    }
+
+    /// <summary>
+    /// Speech is optional: with no <c>Speech</c> endpoints configured the service reports itself unavailable and
+    /// nothing below ever makes a request.
+    /// </summary>
+    private static void AddSpeech(IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddOptions<SpeechOptions>()
+            .Bind(configuration.GetSection(SpeechOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        // The resilience pipeline is built at registration time, so its timeout is read eagerly here.
+        var timeout = configuration.GetSection(SpeechOptions.SectionName).Get<SpeechOptions>()?.Timeout ?? new SpeechOptions().Timeout;
+
+        foreach (var clientName in new[] { SpeechService.TranscriptionHttpClientName, SpeechService.SynthesisHttpClientName })
+        {
+            services.AddHttpClient(clientName, client => client.Timeout = timeout)
+                .AddLongRunningResilienceHandler(totalTimeout: timeout, attemptTimeout: timeout, retries: 0);
+        }
+
+        services.AddSingleton<SpeechRateLimiter>();
+        services.AddScoped<ISpeechService, SpeechService>();
     }
 
     /// <summary>

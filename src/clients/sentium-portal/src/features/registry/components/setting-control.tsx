@@ -1,3 +1,4 @@
+import { useSpeechStatus } from "@/features/companion/hooks/useCompanionSettings";
 import { useModels } from "@/features/models/hooks/useModels";
 import { Input, Range, Select, Switch, Textarea } from "@/shared/ui/form-controls";
 import type { SettingDefinition, SettingValue } from "../types/settings";
@@ -128,9 +129,42 @@ export function SettingControl({
         </Select>
       );
 
+    case "voice":
+      return <VoiceControl {...common} value={String(value)} onChange={onChange} />;
+
     case "model":
       return <ModelControl {...common} value={String(value)} onChange={onChange} emptyLabel={control.emptyLabel} />;
   }
+}
+
+interface VoiceControlProps {
+  id: string;
+  "aria-describedby": string;
+  disabled: boolean;
+  value: string;
+  onChange: (value: string) => void;
+}
+
+/**
+ * Lists the Voices the speech server offers plus the stored one (it may no longer be offered), so the select never
+ * silently shows a different Voice than the saved value.
+ */
+function VoiceControl({ value, onChange, ...rest }: VoiceControlProps) {
+  const { voices, defaultVoice } = useSpeechStatus();
+  const ids = [...new Set(value ? [value, ...voices.map((v) => v.id)] : voices.map((v) => v.id))].sort((a, b) =>
+    a.localeCompare(b),
+  );
+
+  return (
+    <Select {...rest} wrapperClassName={styles.compactControl} value={value} onChange={(e) => onChange(e.target.value)}>
+      <option value="">{defaultVoice ? `Default (${defaultVoice})` : "Default"}</option>
+      {ids.map((id) => (
+        <option key={id} value={id}>
+          {id}
+        </option>
+      ))}
+    </Select>
+  );
 }
 
 interface ModelControlProps {

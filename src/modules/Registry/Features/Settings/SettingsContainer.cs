@@ -39,4 +39,9 @@ internal sealed class SettingsContainer
     /// Per-user calendar overrides.
     /// </summary>
     public UserCalendarSettings UserCalendar { get; set; } = new();
+
+    /// <summary>
+    /// Per-user Companion and voice preferences.
+    /// </summary>
+    public CompanionSettings Companion { get; set; } = new();
 }

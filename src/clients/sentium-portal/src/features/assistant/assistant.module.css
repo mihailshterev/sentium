@@ -1126,3 +1126,9 @@
     transform: scale(1);
   }
 }
+
+/* Push-to-talk sits beside the send button; it renders nothing when voice is unavailable. */
+.voiceSlot {
+  display: inline-flex;
+  margin-left: auto;
+}

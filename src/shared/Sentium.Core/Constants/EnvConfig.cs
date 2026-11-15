@@ -26,6 +26,15 @@ public static class EnvConfig
             public const string ServerApiKey = "LLAMA_API_KEY";
         }
 
+        /// <summary>
+        /// The <c>Speech</c> configuration section (Sentium.Infrastructure's <c>SpeechOptions</c>).
+        /// </summary>
+        public static class Speech
+        {
+            public const string TranscriptionEndpoint = "Speech__TranscriptionEndpoint";
+            public const string SynthesisEndpoint = "Speech__SynthesisEndpoint";
+        }
+
         public static class Frontend
         {
             public const string ApiProxyTarget = "API_PROXY_TARGET";
