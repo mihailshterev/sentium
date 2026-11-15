@@ -1,0 +1,112 @@
+.selectWrap {
+  position: relative;
+  display: inline-flex;
+  width: 100%;
+  min-width: 0;
+}
+
+.select {
+  padding-right: 34px;
+  appearance: none;
+  cursor: pointer;
+
+  /* The native picker still shows on touch devices. */
+  & option {
+    background: var(--mat-thick-opaque);
+    color: var(--text-primary);
+  }
+}
+
+.selectOpen,
+.selectOpen:hover:not(:disabled) {
+  border-color: var(--accent-line);
+}
+
+.chevron {
+  position: absolute;
+  top: 50%;
+  right: 11px;
+  color: var(--text-muted);
+  pointer-events: none;
+  translate: 0 -50%;
+  transition: rotate var(--transition-fast);
+}
+
+.chevronOpen {
+  rotate: 180deg;
+}
+
+/* Matches the ModelSelector chip menu. */
+.menu {
+  position: fixed;
+  z-index: calc(var(--z-overlay) + 1);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-width: calc(100vw - 16px);
+  padding: 4px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--mat-thick-border);
+  border-radius: var(--radius-md);
+  background: var(--mat-thick-opaque);
+  box-shadow: var(--shadow-lg);
+  font-size: var(--text-sm);
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+  animation: menuIn var(--dur-fast) var(--ease-out);
+}
+
+.menuSm {
+  font-size: var(--text-xs);
+}
+
+.option {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  min-height: 30px;
+  padding: 0 10px 0 8px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+
+.optionActive {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.optionSelected {
+  color: var(--text-primary);
+}
+
+.optionDisabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.optionLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.check {
+  flex-shrink: 0;
+  color: var(--accent);
+}
+
+.checkHidden {
+  flex-shrink: 0;
+  visibility: hidden;
+}
+
+@keyframes menuIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
