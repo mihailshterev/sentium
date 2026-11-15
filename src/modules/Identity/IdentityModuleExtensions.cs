@@ -1,11 +1,14 @@
 using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Sentium.Core.Constants;
 using Sentium.Identity.Contracts;
 using Sentium.Identity.Data;
 using Sentium.Identity.Entities;
 using Sentium.Identity.Features.Account;
+using Sentium.Identity.Features.Devices;
 using Sentium.Identity.Features.RoleManagement;
 using Sentium.Identity.Features.Security;
 using Sentium.Identity.Features.Users;
@@ -64,10 +67,19 @@ public static class IdentityModuleExtensions
             };
         });
 
+        // Added next to the cookie, never as a default: only endpoints that name the Device scheme accept a Device token.
+        services.AddAuthentication()
+            .AddScheme<AuthenticationSchemeOptions, DeviceAuthenticationHandler>(
+                DeviceAuthenticationDefaults.AuthenticationScheme, _ => { });
+
         services.AddAuthorizationBuilder()
             .AddPolicy(Policies.Sovereign, policy =>
                 policy.RequireAuthenticatedUser()
-                      .RequireAssertion(ctx => RoleClaims.IsInRole(ctx.User, SecurityRoles.Sovereign)));
+                      .RequireAssertion(ctx => RoleClaims.IsInRole(ctx.User, SecurityRoles.Sovereign)))
+            .AddPolicy(Policies.Device, policy =>
+                policy.AddAuthenticationSchemes(DeviceAuthenticationDefaults.AuthenticationScheme)
+                      .RequireAuthenticatedUser()
+                      .RequireClaim(DeviceAuthenticationDefaults.DeviceIdClaimType));
 
         var authPermitLimit = builder.Configuration.GetValue("Identity:AuthRateLimit:PermitLimit", 10);
 
@@ -88,6 +100,13 @@ public static class IdentityModuleExtensions
         services.AddScoped<IRoleService, RoleService>();
         services.AddScoped<IUserService, UserService>();
         services.AddSingleton<IUserDirectory, ScopedUserDirectory>();
+
+        services.TryAddSingleton(TimeProvider.System);
+        services.AddMemoryCache();
+        services.AddSingleton<DeviceTokenCache>();
+        services.AddScoped<IDeviceAuthenticator, DeviceAuthenticator>();
+        services.AddScoped<IDeviceService, DeviceService>();
+        services.AddSingleton<IDeviceDirectory, ScopedDeviceDirectory>();
 
         services.AddHostedService<IdentitySeeder>();
 

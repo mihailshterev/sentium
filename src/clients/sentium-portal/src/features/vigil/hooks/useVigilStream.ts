@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { DEVICE_STATUSES_KEY, type DeviceStatus, type DeviceUpdate } from "@/features/devices";
 import { BASE_URL } from "@/shared/api/client";
 import { SERVICE_HEALTH_KEY } from "./useServiceHealth";
 import { SYSTEM_OVERVIEW_KEY } from "./useSystemOverview";
@@ -18,7 +19,7 @@ interface StatusPayload {
 
 interface Envelope {
   type: string;
-  data?: StatusPayload;
+  data?: unknown;
 }
 
 export function useVigilStream() {
@@ -46,7 +47,7 @@ export function useVigilStream() {
       }
 
       if (envelope.type === "status" && envelope.data) {
-        const update = envelope.data;
+        const update = envelope.data as StatusPayload;
         queryClient.setQueryData<ServiceHealthStatus[]>(SERVICE_HEALTH_KEY, (prev) => {
           if (!prev) {
             return prev;
@@ -68,6 +69,24 @@ export function useVigilStream() {
       } else if (envelope.type === "incident.opened" || envelope.type === "incident.resolved") {
         queryClient.invalidateQueries({ queryKey: INCIDENTS_KEY });
         queryClient.invalidateQueries({ queryKey: SYSTEM_OVERVIEW_KEY });
+      } else if (envelope.type === "device.updated" && envelope.data) {
+        const update = envelope.data as DeviceUpdate;
+        const known = queryClient.getQueryData<DeviceStatus[]>(DEVICE_STATUSES_KEY)?.some((d) => d.id === update.id);
+        if (!known) {
+          // A Device paired since the list was loaded: the frame has no name or owner, so fetch the list.
+          queryClient.invalidateQueries({ queryKey: DEVICE_STATUSES_KEY });
+          return;
+        }
+        queryClient.setQueryData<DeviceStatus[]>(DEVICE_STATUSES_KEY, (prev) =>
+          prev?.map((d) =>
+            d.id === update.id
+              ? { ...d, isOnline: update.isOnline, lastSeenAt: update.lastSeenAt, report: update.report }
+              : d,
+          ),
+        );
+      } else if (envelope.type === "device.removed" && envelope.data) {
+        const removedId = (envelope.data as { id: string }).id;
+        queryClient.setQueryData<DeviceStatus[]>(DEVICE_STATUSES_KEY, (prev) => prev?.filter((d) => d.id !== removedId));
       }
     };
 

@@ -6,4 +6,5 @@ public static class NotificationCategories
     public const string TimelineProposal = "timeline.proposal";
     public const string TimelineReminder = "timeline.reminder";
     public const string WorkflowRun = "workflow.run";
+    public const string DeviceDisk = "device.disk";
 }

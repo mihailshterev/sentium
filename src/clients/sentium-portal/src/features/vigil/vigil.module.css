@@ -407,3 +407,62 @@
     white-space: nowrap;
   }
 }
+
+/* ---------- Devices ---------- */
+
+.deviceHead,
+.deviceRow {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1.2fr) 90px 90px minmax(0, 1fr) 100px;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.deviceHead {
+  composes: tableHead;
+}
+
+.deviceRow {
+  --state: var(--text-muted);
+
+  min-height: 56px;
+  padding: var(--space-2) var(--space-5);
+
+  & + & {
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  &[data-online] {
+    --state: var(--success);
+  }
+
+  &:not([data-online]) :is(.latencyCell, .deviceDisks) {
+    opacity: 0.45;
+  }
+}
+
+.deviceDot {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--state);
+}
+
+.deviceState {
+  color: var(--state);
+  font-size: var(--text-xs);
+  font-weight: var(--fw-medium);
+}
+
+.deviceDisks {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+  gap: var(--space-2) var(--space-3);
+}
+
+.deviceNoReport {
+  grid-column: 3 / 6;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}

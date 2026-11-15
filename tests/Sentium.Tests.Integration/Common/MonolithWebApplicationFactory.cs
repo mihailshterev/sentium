@@ -35,6 +35,12 @@ public class MonolithWebApplicationFactory : WebApplicationFactory<Sentium.Web.P
     /// </summary>
     public string RedisConnectionString => _redisContainer.GetConnectionString();
 
+    /// <summary>
+    /// <see langword="true"/> replaces the default authentication with <see cref="TestAuthHandler"/>, which signs
+    /// every request in. Factories that test the real schemes (who gets a 401) turn it off.
+    /// </summary>
+    protected virtual bool AuthenticateEveryRequest => true;
+
     public async ValueTask InitializeAsync()
     {
         await Task.WhenAll(_dbContainer.StartAsync(), _redisContainer.StartAsync());
@@ -52,6 +58,9 @@ public class MonolithWebApplicationFactory : WebApplicationFactory<Sentium.Web.P
         builder.UseSetting($"ConnectionStrings:{ResourceNames.WorkspaceBlobs}", "UseDevelopmentStorage=true");
         builder.UseSetting("InternalApi:ApiKey", InternalApiKey);
 
+        // The login and pairing endpoints share one fixed window; the production limit would throttle the tests.
+        builder.UseSetting("Identity:AuthRateLimit:PermitLimit", "10000");
+
         builder.ConfigureTestServices(services =>
         {
             var workersToRemove = services
@@ -61,6 +70,11 @@ public class MonolithWebApplicationFactory : WebApplicationFactory<Sentium.Web.P
             foreach (var descriptor in workersToRemove)
             {
                 services.Remove(descriptor);
+            }
+
+            if (!AuthenticateEveryRequest)
+            {
+                return;
             }
 
             services.AddAuthentication(options =>

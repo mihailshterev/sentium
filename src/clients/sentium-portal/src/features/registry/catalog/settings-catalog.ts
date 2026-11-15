@@ -323,6 +323,14 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
         control: { kind: "number", min: 10, max: 200, unit: "samples" },
         defaultValue: 60,
       }),
+      setting("vigil", "deviceReportIntervalSeconds", {
+        title: "Device report interval",
+        description:
+          "How often a paired PC reports its health. A device shows Offline after three missed reports.",
+        keywords: ["vigil", "device", "tray", "pc", "report", "offline"],
+        control: { kind: "number", min: 10, max: 3600, unit: "s" },
+        defaultValue: 30,
+      }),
     ],
   },
 ];

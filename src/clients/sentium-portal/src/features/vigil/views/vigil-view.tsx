@@ -1,17 +1,19 @@
 import { Link } from "react-router";
-import { Activity, Database, RefreshCw, Server, Settings2, ShieldAlert } from "lucide-react";
+import { Activity, Database, MonitorSmartphone, RefreshCw, Server, Settings2, ShieldAlert } from "lucide-react";
 import styles from "../vigil.module.css";
 import { useServiceHealth } from "@/features/vigil/hooks/useServiceHealth";
 import { useSystemMetrics } from "@/features/vigil/hooks/useSystemMetrics";
 import { useSystemOverview } from "@/features/vigil/hooks/useSystemOverview";
 import { useIncidents } from "@/features/vigil/hooks/useIncidents";
 import { useVigilStream } from "@/features/vigil/hooks/useVigilStream";
+import { useDeviceStatuses, type DeviceStatus } from "@/features/devices";
 import { useRole } from "@/shared/auth/hooks/useRole";
 import { Badge } from "@/shared/ui/badge";
 import { Button, buttonClass } from "@/shared/ui/button";
 import { Card, CardHeader } from "@/shared/ui/card";
 import { Page } from "@/shared/ui/page";
 import { Skeleton } from "@/shared/ui/skeleton";
+import { DeviceRow } from "../components/device-row";
 import { ServiceRow } from "../components/service-row";
 import { SummaryStats } from "../components/summary-stats";
 import { IncidentTimeline } from "../components/incident-timeline";
@@ -77,6 +79,32 @@ const HealthTable = ({
   </Card>
 );
 
+/** Paired PCs: the caller's own, or the whole household's for a Sovereign. Hidden while there are none. */
+const DevicesTable = ({ devices, showOwner }: { devices: DeviceStatus[]; showOwner: boolean }) => (
+  <Card padding="none" as="section" data-testid="vigil-devices">
+    <CardHeader
+      icon={<MonitorSmartphone />}
+      title="Devices"
+      actions={<Badge tone="neutral">{devices.filter((d) => d.isOnline).length} online</Badge>}
+    />
+
+    <div className={styles.deviceHead} aria-hidden="true">
+      <span>State</span>
+      <span>Device</span>
+      <span>CPU</span>
+      <span>Memory</span>
+      <span>Disks</span>
+      <span>Last seen</span>
+    </div>
+
+    <div className={styles.tableBody}>
+      {devices.map((d) => (
+        <DeviceRow key={d.id} device={d} showOwner={showOwner} />
+      ))}
+    </div>
+  </Card>
+);
+
 export function VigilView() {
   const { services, isLoading: healthLoading, refetch } = useServiceHealth();
   const { metrics, isLoading: metricsLoading, isRefetching } = useSystemMetrics();
@@ -84,6 +112,7 @@ export function VigilView() {
   const { incidents } = useIncidents();
   const { isLive } = useVigilStream();
   const { isSovereign } = useRole();
+  const { devices } = useDeviceStatuses();
 
   const serviceTargets = services.filter((s) => s.kind === "Service");
   const infraTargets = services.filter((s) => s.kind === "Infrastructure");
@@ -165,6 +194,7 @@ export function VigilView() {
             loading={healthLoading}
             isLive={isLive}
           />
+          {devices.length > 0 && <DevicesTable devices={devices} showOwner={isSovereign} />}
           <Card padding="none" as="section">
             <CardHeader icon={<ShieldAlert />} title="Incidents" />
             <IncidentTimeline incidents={incidents} />

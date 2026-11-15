@@ -1,0 +1,98 @@
+.loading {
+  padding: var(--space-5);
+}
+
+.message {
+  margin: var(--space-3) var(--space-5);
+}
+
+.list {
+  margin: 0;
+  padding: 0 0 var(--space-2);
+  border-top: 1px solid var(--border-subtle);
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 56px;
+  padding: var(--space-2) var(--space-5);
+
+  & + & {
+    border-top: 1px solid var(--border-subtle);
+  }
+}
+
+.itemIcon {
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.itemText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.itemName {
+  overflow: hidden;
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-medium);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.itemMeta {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+/* ---------- Pairing dialog ---------- */
+
+.pairing {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: 0;
+
+  & dt {
+    margin-bottom: var(--space-1);
+    color: var(--text-muted);
+    font-size: var(--text-xs);
+  }
+
+  & dd {
+    margin: 0;
+    font-family: var(--font-mono);
+    user-select: all;
+  }
+}
+
+.server {
+  overflow-wrap: anywhere;
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+}
+
+.code {
+  color: var(--accent);
+  font-size: var(--text-2xl);
+  font-weight: var(--fw-semibold);
+  letter-spacing: 0.12em;
+
+  &[data-expired] {
+    color: var(--text-muted);
+    text-decoration: line-through;
+  }
+}
+
+.expiry {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}

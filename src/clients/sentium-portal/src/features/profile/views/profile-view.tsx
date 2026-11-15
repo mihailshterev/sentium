@@ -1,5 +1,6 @@
 import styles from "../profile.module.css";
 import { useRole } from "@/shared/auth/hooks/useRole";
+import { MyDevicesCard } from "@/features/devices";
 import { useProfile } from "@/features/profile/hooks/useProfile";
 import { Badge } from "@/shared/ui/badge";
 import { Card } from "@/shared/ui/card";
@@ -59,6 +60,8 @@ export function ProfileView() {
           </>
         )}
       </Card>
+
+      <MyDevicesCard className={styles.card} />
     </Page>
   );
 }

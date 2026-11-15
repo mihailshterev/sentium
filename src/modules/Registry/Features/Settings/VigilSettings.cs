@@ -29,4 +29,10 @@ internal sealed class VigilSettings
     /// Maximum number of recent samples returned per target for sparklines.
     /// </summary>
     public int SampleHistorySize { get; set; } = 60;
+
+    /// <summary>
+    /// How often a paired Device sends a Report, in seconds. Devices learn it from the response to each Report, so
+    /// a change reaches them within one interval; a Device shows Offline after three missed Reports.
+    /// </summary>
+    public int DeviceReportIntervalSeconds { get; set; } = 30;
 }

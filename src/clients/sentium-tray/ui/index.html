@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sentium Tray</title>
+    <link rel="stylesheet" href="style.css" />
+    <script type="module" src="main.js"></script>
+  </head>
+  <body>
+    <main>
+      <h1>Sentium Tray</h1>
+      <p class="muted">
+        Reports this PC's health to Vigil and shows your notifications. The server can never control this PC.
+      </p>
+
+      <section class="panel" id="pair-panel" hidden>
+        <form id="pair-form" novalidate>
+          <label for="server">Sentium server</label>
+          <input
+            id="server"
+            name="server"
+            type="text"
+            placeholder="https://sentium.home.arpa"
+            autocomplete="off"
+            spellcheck="false"
+          />
+
+          <label for="code">Pairing code <span class="muted">(Profile → My devices in the portal)</span></label>
+          <input
+            id="code"
+            name="code"
+            type="text"
+            placeholder="ABCD-EFGH"
+            autocomplete="off"
+            spellcheck="false"
+            class="code"
+          />
+
+          <label for="name">Name of this device</label>
+          <input id="name" name="name" type="text" maxlength="64" autocomplete="off" />
+
+          <button id="pair" type="submit">Pair</button>
+          <p id="error" class="error" role="alert"></p>
+        </form>
+      </section>
+
+      <section class="panel" id="paired-panel" hidden>
+        <p id="status" class="status"></p>
+        <p class="muted">
+          Sentium Tray keeps running in the notification area. Use its icon to open Sentium, start it at sign-in, or
+          unpair.
+        </p>
+        <button id="close" type="button" class="secondary">Close window</button>
+      </section>
+    </main>
+  </body>
+</html>

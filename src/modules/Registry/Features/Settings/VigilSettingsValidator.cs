@@ -29,5 +29,9 @@ internal sealed class VigilSettingsValidator : AbstractValidator<VigilSettings>
         RuleFor(x => x.SampleHistorySize)
             .InclusiveBetween(10, 200)
             .WithMessage("SampleHistorySize must be between 10 and 200.");
+
+        RuleFor(x => x.DeviceReportIntervalSeconds)
+            .InclusiveBetween(10, 3_600)
+            .WithMessage("DeviceReportIntervalSeconds must be between 10 and 3600.");
     }
 }

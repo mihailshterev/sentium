@@ -50,6 +50,49 @@ jobs:
       - name: Run Tests
         run: dotnet test --no-build --configuration ${{ env.BUILD_CONFIGURATION }} --verbosity normal
 
+  tray-build:
+    name: Sentium Tray (${{ matrix.os }})
+    # The Tauri tray app builds on every desktop platform it supports, so platform-specific code cannot rot unseen.
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    defaults:
+      run:
+        working-directory: ./src/clients/sentium-tray
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev libssl-dev patchelf
+
+      - name: Install Rust
+        run: rustup toolchain install stable --profile minimal --component clippy && rustup default stable
+
+      - name: Cache cargo
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            src/clients/sentium-tray/src-tauri/target
+          key: tray-${{ runner.os }}-${{ hashFiles('src/clients/sentium-tray/src-tauri/Cargo.lock') }}
+
+      - name: Clippy
+        working-directory: ./src/clients/sentium-tray/src-tauri
+        run: cargo clippy --locked -- -D warnings
+
+      - name: Test
+        working-directory: ./src/clients/sentium-tray/src-tauri
+        run: cargo test --locked
+
   react-build-test:
     name: React Build & Test
     runs-on: ubuntu-latest

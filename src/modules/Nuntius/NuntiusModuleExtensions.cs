@@ -1,7 +1,9 @@
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Sentium.Identity.Contracts;
 using Sentium.Infrastructure.Extensions;
 using Sentium.Nuntius.Contracts;
 using Sentium.Nuntius.Data;
+using Sentium.Nuntius.Features.Devices;
 using Sentium.Nuntius.Features.Inbox;
 using Sentium.Nuntius.Features.Publishing;
 using Sentium.Nuntius.Features.Retention;
@@ -33,6 +35,9 @@ public static class NuntiusModuleExtensions
         services.AddSingleton<INotifier, Notifier>();
 
         services.AddScoped<IInboxService, InboxService>();
+
+        services.AddSingleton<DeviceStreamRegistry>();
+        services.AddSingleton<IDeviceRemovalObserver>(sp => sp.GetRequiredService<DeviceStreamRegistry>());
 
         services.AddScoped<NotificationRetention>();
         services.AddHostedService<NotificationRetentionWorker>();
