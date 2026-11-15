@@ -21,6 +21,33 @@ x-llama-server: &llama-server
       condition: service_completed_successfully
   restart: unless-stopped
 
+# The backup sidecar (see "Backups" in docs/installation.md). Shared by the nightly service and the one-shot restore.
+x-backup: &backup
+  image: sentium-backup:local
+  build:
+    context: .
+    dockerfile: src/hosts/Sentium.Backup/Dockerfile
+  environment: &backup-env
+    <<: *service-env
+    PGHOST: postgres
+    PGUSER: postgres
+    PGPASSWORD: ${POSTGRES_PASSWORD}
+    PGDATABASE: sentiumdb
+    ConnectionStrings__workspace-storage: ${AZURITE_CONNECTION}
+    Backup__TimeOfDay: ${BACKUP_TIME:-03:00}
+    Backup__KeepDaily: ${BACKUP_KEEP_DAILY:-7}
+    Backup__KeepWeekly: ${BACKUP_KEEP_WEEKLY:-4}
+    Backup__RecipientPublicKey: ${BACKUP_AGE_RECIPIENT:-}
+    TZ: ${BACKUP_TIMEZONE:-UTC}
+  cap_drop:
+    - ALL
+  cap_add:
+    - CHOWN
+    - DAC_OVERRIDE
+    - FOWNER
+  security_opt:
+    - no-new-privileges:true
+
 services:
   postgres:
     image: pgvector/pgvector:pg18-trixie
@@ -236,6 +263,8 @@ services:
       Speech__SynthesisEndpoint: ${SPEECH_SYNTHESIS_ENDPOINT-http://tts:8880}
       ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
       DataProtection__KeysPath: /keys
+      # "-" (not ":-"): an empty value in .env turns the Backups panel and the Vigil backup probe off.
+      Backup__Endpoint: ${BACKUP_ENDPOINT-http://backup:8080}
     volumes:
       - web-dataprotection:/keys
     depends_on:
@@ -275,6 +304,35 @@ services:
       sentium-web:
         condition: service_started
     restart: unless-stopped
+
+  # Nightly backups of the database, blobs and data-protection keys to BACKUP_DESTINATION. It holds the database
+  # superuser tooling so sentium-web does not; Vigil reads its status and "back up now" calls it, both with the
+  # internal API key. It keeps running while sentium-web is down.
+  backup:
+    <<: *backup
+    volumes:
+      - ${BACKUP_DESTINATION:-./backups}:/backups
+      - web-dataprotection:/keys:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      azurite:
+        condition: service_started
+    restart: unless-stopped
+
+  # One-shot restore, run only by infra/backup/restore.sh while the application containers are stopped.
+  backup-restore:
+    <<: *backup
+    profiles: ["restore"]
+    volumes:
+      - ${BACKUP_DESTINATION:-./backups}:/backups:ro
+      - web-dataprotection:/keys
+    depends_on:
+      postgres:
+        condition: service_healthy
+      azurite:
+        condition: service_started
+    restart: "no"
 
 networks:
   # Sandbox MCP containers may join this network (SANDBOX_MCP_ALLOWED_NETWORK). `internal: true` means no route to the

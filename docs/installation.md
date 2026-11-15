@@ -28,6 +28,7 @@ in [Aspire vs. Compose parity](#aspire-vs-compose-parity).
 - [GPU acceleration](#gpu-acceleration)
 - [Managing models](#managing-models)
 - [Day-two operations (Compose)](#day-two-operations-compose)
+- [Backups](#backups)
 - [Troubleshooting](#troubleshooting)
 - [Aspire vs. Compose parity](#aspire-vs-compose-parity)
 
@@ -117,6 +118,9 @@ Sentium.Web (all six modules), the Sandbox, the portal (`sentium-portal`), and t
   http://localhost:8093) give the Companion its voice. Both run on the CPU. They are optional:
   Sentium.Web does not wait for them, and `Speech:Enabled=false` leaves them out (the `tts` image is
   about 5 GB). See [Voice](#voice).
+- `backup` is the backup sidecar, built from its Dockerfile, writing to `backups/` at the repository root
+  (`Backup:Destination` overrides it, `Backup:Enabled=false` leaves it out). Sentium.Web keeps its
+  data-protection keys in your user profile under Aspire, so dev backups carry no keys. See [Backups](#backups).
 
 Aspire **blocks** Sentium.Web until the default chat model is loaded and the embedding server is
 healthy. Both servers reject every request except `/health` without the `llm-api-key`.
@@ -246,6 +250,7 @@ trust the installation's root certificate on each device.
 | `caddy`       | `caddy:2.10.2-alpine`                  | **443** (HTTPS), 80 (redirect only) | TLS for `SENTIUM_HOSTNAME` from a per-installation CA (`infra/caddy/Caddyfile`); proxies to `sentium-web` |
 | `sentium-web` | `src/hosts/Sentium.Web/Dockerfile`     | internal (HTTP 8080)                | The modular monolith: every module, the API, the login session and the built portal                       |
 | `sandbox`     | `src/hosts/Sentium.Sandbox/Dockerfile` | internal                            | Stateless, hardened Docker code execution; reachable only from `sentium-web`                              |
+| `backup`      | `src/hosts/Sentium.Backup/Dockerfile`  | internal                            | Nightly verified backups to `BACKUP_DESTINATION`; see [Backups](#backups)                                 |
 
 #### Endpoints once healthy
 
@@ -296,6 +301,13 @@ runtime.
 | `SPEECH_SYNTHESIS_ENDPOINT`     | `http://tts:8880`      | Text-to-speech server. Set it to empty to switch spoken replies off.                    |
 | `SANDBOX_JOBS_DIR`              | `/tmp/sentium-sandbox` | Per-job sandbox working directory - identical on host and inside the Sandbox container. |
 | `AZURITE_CONNECTION`            | _(well-known dev key)_ | Azurite blob connection string. Safe to leave as-is.                                    |
+| `BACKUP_DESTINATION`            | `./backups`            | Host directory for backup archives, typically a NAS mount. See [Backups](#backups).     |
+| `BACKUP_TIME`                   | `03:00`                | Local time of the nightly backup, in `BACKUP_TIMEZONE`.                                 |
+| `BACKUP_TIMEZONE`               | `UTC`                  | IANA time zone for `BACKUP_TIME` (for example `Europe/Sofia`).                          |
+| `BACKUP_KEEP_DAILY`             | `7`                    | Days for which the newest backup is kept.                                               |
+| `BACKUP_KEEP_WEEKLY`            | `4`                    | ISO weeks for which the newest backup is kept.                                          |
+| `BACKUP_AGE_RECIPIENT`          | _(empty)_              | age public key to encrypt archives to. Empty leaves them unencrypted.                   |
+| `BACKUP_ENDPOINT`               | `http://backup:8080`   | Where `sentium-web` finds the backup service. Empty turns backup monitoring off.        |
 
 > **Changing the port?** With `HTTPS_PORT` other than 443, include it in the URL
 > (`https://sentium.home.arpa:8443`); the port-80 redirect then points at the wrong port, so use the
@@ -613,7 +625,8 @@ docker compose up --build -d
 # Stop containers, keep data
 docker compose down
 
-# Full reset - delete ALL persisted data (databases, vectors, blobs, downloaded models, the CA)
+# Full reset - delete ALL persisted data (databases, vectors, blobs, downloaded models, the CA).
+# Archives in BACKUP_DESTINATION are a host directory and survive it.
 docker compose down -v
 
 # Fetch newly added models without a full reset (see Managing models)
@@ -625,6 +638,129 @@ Persisted state lives in named volumes: `postgres-data`, `redis-data`, `azurite-
 (the verified model files, shared with the Aspire AppHost). They survive `docker compose down` and are
 only removed by `down -v`, which also deletes the downloaded models and creates a **new CA** on the next
 start - every device then has to trust the new root certificate.
+
+---
+
+## Backups
+
+The `backup` service writes one verified archive of everything needed to rebuild the installation on a new
+machine every night, prunes old archives, and reports to Vigil. It is a separate container so that
+`sentium-web` never holds the database superuser tools, and it keeps running while `sentium-web` is down.
+The Aspire AppHost runs it too (see [What gets started](#what-gets-started)); everything below describes the
+Compose installation.
+
+### What a backup contains
+
+| Part                 | Source                                                           | Why                                                      |
+| -------------------- | ---------------------------------------------------------------- | -------------------------------------------------------- |
+| Database             | `pg_dump -Fc` of `sentiumdb`: every module schema, Quartz tables | All application state and schedules                      |
+| Blobs                | Every Azurite container, copied through the blob API             | Inventory photos, workspace files, sandbox artifacts     |
+| Data-protection keys | The `web-dataprotection` volume                                  | Sign-in cookies and MCP server secrets encrypted at rest |
+| Manifest             | Generated                                                        | Sentium version, time, and the size and SHA-256 per part |
+
+Not included: the model files (`models-init` downloads and verifies them again), Redis (a cache), your `.env`
+file, and the `caddy-data` volume with the installation's certificate authority. **Keep a copy of `.env`
+somewhere safe**: the restored database needs the `POSTGRES_PASSWORD` and the other secrets you started with.
+Without the old CA, a restored installation creates a new one and every device must trust the new root
+certificate ([LAN access](#lan-access-https-on-every-device)).
+
+The database dump is consistent while Sentium is in use. A file uploaded during the run may be missing from
+that night's archive; the next one picks it up.
+
+### Choosing the destination
+
+Point `BACKUP_DESTINATION` in `.env` at a directory on another disk, ideally a NAS share the host mounts at
+boot (`/etc/fstab`). Then create the marker file once:
+
+```bash
+sudo mkdir -p /mnt/nas/sentium-backups
+sudo touch /mnt/nas/sentium-backups/.sentium-backups
+docker compose up -d backup
+```
+
+The service refuses to write to a destination without `.sentium-backups`. When the share is not mounted, the
+empty mount point has no marker, so the run fails and Vigil raises an incident, instead of backups silently
+filling the local disk.
+
+Plan for about `BACKUP_KEEP_DAILY + BACKUP_KEEP_WEEKLY` archives (11 by default), each roughly the size of
+the database dump plus all blobs.
+
+Archives are named `sentium-<UTC time>.tar` (`.tar.age` when encrypted). A run writes a hidden
+`.sentium-….partial` file, verifies it (every checksum against the manifest, and a clean `pg_restore --list`),
+and only then renames it. A file with the final name is therefore always a complete, verified backup.
+Retention keeps the newest backup of each of the last 7 days and of each of the last 4 ISO weeks, and never
+deletes the newest backup. `status.json` next to the archives records the last run.
+
+### Encrypting archives
+
+Encryption is off by default. To turn it on, create an [age](https://age-encryption.org) key pair **on
+another machine** and give the backup service only the public key:
+
+```bash
+age-keygen -o sentium-backup.key        # prints "Public key: age1..."
+# then in .env on the Sentium host:
+#   BACKUP_AGE_RECIPIENT=age1...
+docker compose up -d backup
+```
+
+Keep `sentium-backup.key` off the Sentium host, for example in a password manager. Losing it makes every
+encrypted archive unreadable. Archives are verified before they are encrypted.
+
+### Checking on backups
+
+- **System → Backups** (Sovereigns only) lists the archives with their sizes, the last result and the next
+  run, and has **Back up now**.
+- **Vigil** has a `Backup` target. It turns unhealthy when the newest verified backup is older than 36 hours
+  (`Backup__MaxAgeHours` on `sentium-web`), when the last run failed, or when the destination is not mounted.
+  The incident notifies every Sovereign as `system.backup`.
+- `docker compose logs backup` shows each run.
+
+### Restoring
+
+A restore is all or nothing. The archive is decrypted and every part checked against the manifest before
+anything is written, and an archive made by a newer Sentium version is refused (update the installation
+first). It restores into an empty installation; `--replace` discards the current data instead.
+
+1. Put the code and your `.env` on the machine, and stop the application if it is running:
+   ```bash
+   docker compose stop sentium-web sandbox backup caddy
+   ```
+2. On a new machine or after a disk failure the volumes are already empty. To restore over an existing
+   installation, either wipe it with `docker compose down -v` (this also deletes the downloaded models and
+   the CA) or pass `--replace` in the next step.
+3. Run the restore from a Linux, macOS or WSL shell:
+   ```bash
+   infra/backup/restore.sh /mnt/nas/sentium-backups/sentium-20261115T030000Z.tar
+   # encrypted archives need the identity file:
+   infra/backup/restore.sh /mnt/nas/sentium-backups/sentium-20261115T030000Z.tar.age --identity ~/sentium-backup.key
+   ```
+   It starts `postgres` and `azurite`, restores the database in a single transaction, then the blobs and the
+   keys. If the files fail after the database succeeded, run it again with `--replace`.
+4. Start the stack with `docker compose up -d`. Sentium.Web applies any newer database migrations on startup.
+
+To check an archive without restoring it:
+
+```bash
+docker compose --profile restore run --rm -v /mnt/nas/sentium-backups:/a:ro backup-restore verify /a/sentium-20261115T030000Z.tar
+```
+
+**Without the data-protection keys** everything else still restores, but everyone has to sign in again, and
+the headers and environment values of MCP servers can no longer be decrypted: re-enter them under
+AI & automation → MCP servers. Paired Devices keep working, because their tokens are stored hashed in the
+database.
+
+### Restore drill
+
+A backup is only as good as the last restore that worked. Run this drill after installing and after major
+upgrades, on a spare machine or in a separate copy of the installation directory with its own `.env` and
+`BACKUP_DESTINATION`:
+
+1. Sign in, add an inventory item with a photo, a timeline entry and a schedule.
+2. Open **System → Backups**, select **Back up now**, and wait for the new archive to appear.
+3. Run `docker compose down -v`. The destination is kept.
+4. Run `infra/backup/restore.sh <the new archive>`, then `docker compose up -d`.
+5. Sign in with the same password. Open the item and download its photo, then check the timeline entry, the
+   schedule and the MCP server configuration.
 
 ---
 
@@ -705,6 +841,7 @@ Both full-stack methods are functionally equivalent. The intentional differences
 | Inference API key | Generated by Aspire (`llm-api-key` user secret)        | `LLM_API_KEY` in `.env`                                                                                     |
 | Observability     | Aspire dashboard                                       | `docker compose logs`                                                                                       |
 | Runtime user      | Apps run as the host developer (`dotnet run`)          | Both .NET images run as root (the Sandbox drives the host Docker socket)                                    |
+| Backups           | Sidecar to `backups/` in the repo; no key ring in it   | The `backup` service to `BACKUP_DESTINATION`; see [Backups](#backups)                                       |
 
 Everything else - Sentium.Web and its six modules, the separate Sandbox, the single PostgreSQL
 database (with pgvector), Redis, Azurite, the `X-Internal-Token` security model, per-user data isolation, the Sentinel PDP, the

@@ -39,6 +39,7 @@ public sealed class ControllerAuthorizationTests
         typeof(McpModuleExtensions).Assembly,
         typeof(VigilModuleExtensions).Assembly,
         typeof(Sentium.Sandbox.Controllers.SandboxController).Assembly,
+        typeof(Sentium.Backup.Controllers.BackupController).Assembly,
     ];
 
     [Fact]

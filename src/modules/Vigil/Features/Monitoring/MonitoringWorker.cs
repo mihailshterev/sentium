@@ -102,6 +102,7 @@ internal sealed class MonitoringWorker(
     private async Task EvaluateIncidentAsync(IHealthProbe probe, ServiceHealthStatus current, VigilRuntimeSettings settings, CancellationToken ct)
     {
         var open = incidentStore.GetOpen(probe.Target);
+        var category = probe is IIncidentCategoryProbe categorized ? categorized.NotificationCategory : NotificationCategories.SystemIncident;
 
         switch (current.Status)
         {
@@ -109,6 +110,7 @@ internal sealed class MonitoringWorker(
                 await PublishIncidentAsync(
                     incidentStore.Open(probe.Target, probe.Kind, IncidentSeverity.Critical, current.Status, current.Details),
                     VigilFeedEventTypes.IncidentOpened,
+                    category,
                     ct);
                 break;
 
@@ -116,11 +118,12 @@ internal sealed class MonitoringWorker(
                 await PublishIncidentAsync(
                     incidentStore.Open(probe.Target, probe.Kind, IncidentSeverity.Warning, current.Status, current.Details),
                     VigilFeedEventTypes.IncidentOpened,
+                    category,
                     ct);
                 break;
 
             case ServiceStatus.Healthy when open is not null:
-                await PublishIncidentAsync(incidentStore.Resolve(probe.Target), VigilFeedEventTypes.IncidentResolved, ct);
+                await PublishIncidentAsync(incidentStore.Resolve(probe.Target), VigilFeedEventTypes.IncidentResolved, category, ct);
                 break;
         }
     }
@@ -155,7 +158,7 @@ internal sealed class MonitoringWorker(
         feed.Publish(new VigilFeedEvent(VigilFeedEventTypes.Status, payload));
     }
 
-    private async Task PublishIncidentAsync(Incident? incident, string type, CancellationToken ct)
+    private async Task PublishIncidentAsync(Incident? incident, string type, string category, CancellationToken ct)
     {
         if (incident is null)
         {
@@ -169,43 +172,43 @@ internal sealed class MonitoringWorker(
 
         feed.Publish(new VigilFeedEvent(type, incident));
 
-        await notifier.NotifyAsync(NotificationRecipient.Sovereigns, resolved ? ResolvedMessage(incident) : OpenedMessage(incident), ct);
+        await notifier.NotifyAsync(NotificationRecipient.Sovereigns, resolved ? ResolvedMessage(incident, category) : OpenedMessage(incident, category), ct);
     }
 
     /// <summary>
     /// The dedupe key is per target AND state: a flapping probe folds into at most one unread outage and one unread
     /// recovery per target, while a recovery never overwrites the outage the Sovereign has not seen yet.
     /// </summary>
-    private static NotificationMessage OpenedMessage(Incident incident)
+    private static NotificationMessage OpenedMessage(Incident incident, string category)
     {
         var critical = incident.Severity == IncidentSeverity.Critical;
 
         return new NotificationMessage(
-            NotificationCategories.SystemIncident,
+            category,
             critical ? NotificationSeverity.Critical : NotificationSeverity.Warning,
             critical ? $"{incident.Target} is down" : $"{incident.Target} is degraded",
             incident.Description,
             IncidentLink,
-            IncidentDedupeKey(incident, OpenedState));
+            IncidentDedupeKey(incident, category, OpenedState));
     }
 
-    private static NotificationMessage ResolvedMessage(Incident incident)
+    private static NotificationMessage ResolvedMessage(Incident incident, string category)
     {
         var duration = incident.DurationMs is { } ms
             ? string.Create(CultureInfo.InvariantCulture, $"Recovered after {TimeSpan.FromMilliseconds(ms):g}.")
             : null;
 
         return new NotificationMessage(
-            NotificationCategories.SystemIncident,
+            category,
             NotificationSeverity.Info,
             $"{incident.Target} recovered",
             duration,
             IncidentLink,
-            IncidentDedupeKey(incident, ResolvedState));
+            IncidentDedupeKey(incident, category, ResolvedState));
     }
 
-    private static string IncidentDedupeKey(Incident incident, string state)
-        => $"{NotificationCategories.SystemIncident}:{incident.Target}:{state}";
+    private static string IncidentDedupeKey(Incident incident, string category, string state)
+        => $"{category}:{incident.Target}:{state}";
 
     private static ServiceHealthStatus ProbeFault(IHealthProbe probe, string message)
     {

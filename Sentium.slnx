@@ -14,6 +14,7 @@
     <Project Path="src/shared/Sentium.Infrastructure/Sentium.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/src/hosts/">
+    <Project Path="src/hosts/Sentium.Backup/Sentium.Backup.csproj" />
     <Project Path="src/hosts/Sentium.E2ESeed/Sentium.E2ESeed.csproj" />
     <Project Path="src/hosts/Sentium.Sandbox/Sentium.Sandbox.csproj" />
     <Project Path="src/hosts/Sentium.Web/Sentium.Web.csproj" />

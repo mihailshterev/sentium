@@ -121,4 +121,29 @@ public sealed class AppHostTests
         env.Should().Contain(EnvConfig.Keys.Inference.DefaultModel, AIModels.Gemma4_E4B);
         env.Should().Contain(EnvConfig.Keys.Inference.EmbeddingModelName, AIModels.EmbeddingGemma2);
     }
+
+    [Fact]
+    public async Task Backup_ShouldReachTheDatabaseAndBlobs_AndBeKnownToWeb()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        var appHost = await DistributedApplicationTestingBuilder.CreateAsync<Projects.Sentium_AppHost>(ct);
+        var context = new DistributedApplicationExecutionContext(DistributedApplicationOperation.Publish);
+        var resources = appHost.Resources.OfType<IResourceWithEnvironment>().ToList();
+
+        // Act
+        var backupEnv = (await ExecutionConfigurationBuilder.Create(resources.Single(r => r.Name == ResourceNames.Backup))
+            .WithEnvironmentVariablesConfig()
+            .BuildAsync(context, NullLogger.Instance, ct)).EnvironmentVariables;
+        var webEnv = (await ExecutionConfigurationBuilder.Create(resources.Single(r => r.Name == ServiceNames.Web))
+            .WithEnvironmentVariablesConfig()
+            .BuildAsync(context, NullLogger.Instance, ct)).EnvironmentVariables;
+
+        // Assert - the sidecar dumps sentiumdb and copies the blobs; Sentium.Web probes it and offers "back up now".
+        backupEnv.Should().ContainKey($"ConnectionStrings__{ResourceNames.SentiumDb}");
+        backupEnv.Should().ContainKey($"ConnectionStrings__{ResourceNames.WorkspaceBlobs}");
+        backupEnv.Should().ContainKey(EnvConfig.Keys.InternalApiKey);
+        webEnv.Should().ContainKey(EnvConfig.Keys.Backup.Endpoint)
+            .WhoseValue.Should().Contain($"{{{ResourceNames.Backup}.bindings.http.url}}");
+    }
 }

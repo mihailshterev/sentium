@@ -99,6 +99,10 @@ var tts = useSpeech
         .WithHttpHealthCheck("/health")
     : null;
 
+var useBackup = builder.Configuration.GetValue(BackupConfig.EnabledKey, defaultValue: true);
+
+var backup = useBackup ? AddBackup() : null;
+
 var dockerHost = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
     ? EnvConfig.Values.DockerSockets.Windows
     : EnvConfig.Values.DockerSockets.LinuxMac;
@@ -122,6 +126,12 @@ var web = builder.AddProject<Projects.Sentium_Web>(ServiceNames.Web)
         url.DisplayText = "Scalar API (Docs)";
         url.Url = "/scalar/v1";
     });
+
+if (backup is not null)
+{
+    web.WithEnvironment(EnvConfig.Keys.Backup.Endpoint, backup.GetEndpoint("http"));
+    backup.WithParentRelationship(web);
+}
 
 if (whisper is not null && tts is not null)
 {
@@ -169,6 +179,30 @@ builder.AddViteApp(ServiceNames.Frontend, "../../clients/sentium-portal")
     .WithEndpoint("http", e => e.Port = 5173);
 
 builder.Build().Run();
+
+IResourceBuilder<ContainerResource> AddBackup()
+{
+    var destination = Path.GetFullPath(
+        builder.Configuration[BackupConfig.DestinationKey] ?? BackupConfig.DefaultDestination,
+        builder.AppHostDirectory);
+
+    // The marker tells the sidecar the destination is the real one; a local dev directory always is.
+    if (builder.ExecutionContext.IsRunMode)
+    {
+        Directory.CreateDirectory(destination);
+        File.WriteAllText(Path.Combine(destination, BackupConfig.MarkerFileName), string.Empty);
+    }
+
+    return builder.AddDockerfile(ResourceNames.Backup, BackupConfig.ContextPath, BackupConfig.DockerfilePath)
+        .WithHttpEndpoint(targetPort: BackupConfig.ContainerPort, name: "http")
+        .WithReference(sentiumDb).WaitFor(sentiumDb)
+        .WithReference(blobs).WaitFor(blobs)
+        .WithEnvironment(EnvConfig.Keys.InternalApiKey, internalApiKey)
+        .WithBindMount(destination, BackupConfig.DestinationPath)
+        .WithVolume(BackupConfig.KeysVolume, BackupConfig.KeysPath, isReadOnly: true)
+        .WithOtlpExporter()
+        .WithHttpHealthCheck("/health");
+}
 
 IResourceBuilder<ContainerResource> AddLlamaServer(string name, int hostPort)
 {

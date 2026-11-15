@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Activity, AlertCircle, Clock, Cpu, HardDrive, MemoryStick, Monitor, RefreshCw, Server } from "lucide-react";
 import styles from "../system.module.css";
 import { useSystemMetrics } from "@/features/vigil/hooks/useSystemMetrics";
+import { useRole } from "@/shared/auth/hooks/useRole";
 import { formatMb, formatUptime, usageTone } from "../system-utils";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
@@ -10,12 +11,14 @@ import { EmptyState } from "@/shared/ui/empty-state";
 import { Page } from "@/shared/ui/page";
 import { Skeleton } from "@/shared/ui/skeleton";
 import { StatCard, StatGrid } from "@/shared/ui/stat-card";
+import { BackupsCard } from "../components/backups-card";
 import { DiskCard } from "../components/disk-card";
 import { GcBadges } from "../components/gc-badges";
 import { ProgressGroup } from "../components/progress-group";
 
 export function SystemView() {
   const { metrics, isLoading, isRefetching, error, refetch } = useSystemMetrics();
+  const { isSovereign } = useRole();
   const [isManualRefetching, setIsManualRefetching] = useState(false);
 
   const handleManualRefresh = async () => {
@@ -190,6 +193,8 @@ export function SystemView() {
           </Card>
         </div>
       )}
+
+      {isSovereign && <BackupsCard />}
     </Page>
   );
 }
