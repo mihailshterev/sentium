@@ -8,9 +8,9 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-const KEYRING_SERVICE: &str = "dev.sentium.tray";
+const KEYRING_SERVICE: &str = "dev.sentium.satelles";
 const KEYRING_ACCOUNT: &str = "device-token";
-const SETTINGS_FILE: &str = "tray.json";
+const SETTINGS_FILE: &str = "satelles.json";
 
 #[derive(Clone)]
 pub struct Paired {
@@ -92,7 +92,7 @@ impl Store {
             fs::rename(temp, path)
         };
 
-        write().map_err(|e| format!("Could not save the tray settings: {e}"))
+        write().map_err(|e| format!("Could not save the app settings: {e}"))
     }
 }
 

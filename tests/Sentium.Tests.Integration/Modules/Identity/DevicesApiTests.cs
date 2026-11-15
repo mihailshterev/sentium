@@ -38,7 +38,7 @@ public sealed class DevicesApiTests(MonolithWebApplicationFactory factory) : ICl
         listed.Id.Should().Be(paired.DeviceId);
         listed.Name.Should().Be("DESKTOP-PAIR");
         listed.OwnerUserId.Should().Be(owner);
-        listed.AppVersion.Should().Be("1.2.3", "the tray app's User-Agent carries its version");
+        listed.AppVersion.Should().Be("1.2.3", "the Satelles app's User-Agent carries its version");
     }
 
     [Fact]
@@ -155,7 +155,7 @@ public sealed class DevicesApiTests(MonolithWebApplicationFactory factory) : ICl
     }
 
     [Fact]
-    public async Task PairResponse_HasTheShapeTheTrayAppReads()
+    public async Task PairResponse_HasTheShapeTheSatellesAppReads()
     {
         var owner = await factory.CreateUserAsync();
         using var portal = factory.CreateClientFor(owner);

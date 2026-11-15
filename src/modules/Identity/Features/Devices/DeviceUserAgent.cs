@@ -1,12 +1,12 @@
 namespace Sentium.Identity.Features.Devices;
 
 /// <summary>
-/// The tray app identifies itself as <c>SentiumTray/&lt;version&gt;</c> in its User-Agent, which is where a
+/// The Satelles app identifies itself as <c>SentiumSatelles/&lt;version&gt;</c> in its User-Agent, which is where a
 /// Device's app version comes from.
 /// </summary>
 internal static class DeviceUserAgent
 {
-    public const string ProductName = "SentiumTray";
+    public const string ProductName = "SentiumSatelles";
 
     private const string ProductPrefix = ProductName + "/";
 

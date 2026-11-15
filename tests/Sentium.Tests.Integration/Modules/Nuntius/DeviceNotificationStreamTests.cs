@@ -11,7 +11,7 @@ using Xunit;
 namespace Sentium.Tests.Integration.Modules.Nuntius;
 
 /// <summary>
-/// The tray app's view of its owner's Inbox: the live stream and the unread count.
+/// The Satelles app's view of its owner's Inbox: the live stream and the unread count.
 /// </summary>
 public sealed class DeviceNotificationStreamTests(MonolithWebApplicationFactory factory) : IClassFixture<MonolithWebApplicationFactory>
 {
@@ -46,7 +46,7 @@ public sealed class DeviceNotificationStreamTests(MonolithWebApplicationFactory 
         data.GetProperty("title").GetString().Should().Be("For Alice");
         data.GetProperty("body").GetString().Should().Be("Body");
         data.GetProperty("link").GetString().Should().Be("/vigil");
-        data.GetProperty("readAt").ValueKind.Should().Be(JsonValueKind.Null, "the tray app toasts only unread Notifications");
+        data.GetProperty("readAt").ValueKind.Should().Be(JsonValueKind.Null, "the Satelles app toasts only unread Notifications");
     }
 
     [Fact]

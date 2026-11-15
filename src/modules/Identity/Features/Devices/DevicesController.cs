@@ -10,7 +10,7 @@ namespace Sentium.Identity.Features.Devices;
 
 /// <summary>
 /// Pairing and managing Devices. Everything here is for the signed-in portal user except <see cref="Pair"/>, which
-/// the tray app calls before it has a credential, and <see cref="UnpairCurrent"/>, which it calls with one.
+/// the Satelles app calls before it has a credential, and <see cref="UnpairCurrent"/>, which it calls with one.
 /// </summary>
 [ApiController]
 [Route($"{IdentityRoutes.Prefix}/devices")]
@@ -96,7 +96,7 @@ internal sealed class DevicesController(IDeviceService devices, ICurrentUser cur
     }
 
     /// <summary>
-    /// The tray app unpairs itself.
+    /// The Satelles app unpairs itself.
     /// </summary>
     [HttpDelete("current")]
     [AuthorizeDevice]

@@ -20,7 +20,7 @@ export interface DeviceDisk {
   availableBytes: number;
 }
 
-/** One health snapshot sent by the tray app. */
+/** One health snapshot sent by the Satelles app. */
 export interface DeviceReport {
   machineName: string;
   osDescription: string;

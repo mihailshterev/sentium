@@ -1,12 +1,12 @@
 [package]
-name = "sentium-tray"
+name = "sentium-satelles"
 version = "0.1.0"
-description = "Sentium Tray: reports this PC's health to Vigil and shows Sentium notifications"
+description = "Sentium Satelles: reports this PC's health to Vigil and shows Sentium notifications"
 edition = "2021"
 publish = false
 
 [lib]
-name = "sentium_tray_lib"
+name = "sentium_satelles_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [profile.release]

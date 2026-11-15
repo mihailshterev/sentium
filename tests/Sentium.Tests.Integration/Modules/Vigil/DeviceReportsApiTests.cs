@@ -11,14 +11,14 @@ using Xunit;
 namespace Sentium.Tests.Integration.Modules.Vigil;
 
 /// <summary>
-/// Device Reports end to end. Reports are posted as raw JSON in exactly the shape the tray app sends, so a rename on
+/// Device Reports end to end. Reports are posted as raw JSON in exactly the shape the Satelles app sends, so a rename on
 /// the server side fails here instead of silently breaking paired PCs.
 /// </summary>
 public sealed class DeviceReportsApiTests(MonolithWebApplicationFactory factory) : IClassFixture<MonolithWebApplicationFactory>
 {
     private const string Devices = "/api/vigil/devices";
 
-    private const string TrayReportJson = """
+    private const string SatellesReportJson = """
         {
           "machineName": "DESKTOP-REPORT",
           "osDescription": "Windows 11 Pro",
@@ -41,11 +41,11 @@ public sealed class DeviceReportsApiTests(MonolithWebApplicationFactory factory)
         var (owner, device) = await PairAsync("DESKTOP-REPORT");
         using var portal = factory.CreateClientFor(owner);
 
-        using var response = await PostReportAsync(device, TrayReportJson);
+        using var response = await PostReportAsync(device, SatellesReportJson);
 
         response.StatusCode.Should().Be(HttpStatusCode.OK);
         var body = await response.Content.ReadFromJsonAsync<Dictionary<string, JsonElement>>(Ct);
-        body!.Keys.Should().BeEquivalentTo(["nextReportSeconds"], "the tray app reads exactly this field");
+        body!.Keys.Should().BeEquivalentTo(["nextReportSeconds"], "the Satelles app reads exactly this field");
         body["nextReportSeconds"].GetInt32().Should().Be(30);
 
         var status = (await portal.GetFromJsonAsync<List<DeviceStatusDto>>(Devices, WebJson, Ct))!.Should().ContainSingle().Subject;
@@ -73,7 +73,7 @@ public sealed class DeviceReportsApiTests(MonolithWebApplicationFactory factory)
     {
         var (_, device) = await PairAsync("DESKTOP-BAD");
 
-        using var response = await PostReportAsync(device, TrayReportJson.Replace("12.5", "250", StringComparison.Ordinal));
+        using var response = await PostReportAsync(device, SatellesReportJson.Replace("12.5", "250", StringComparison.Ordinal));
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
@@ -83,8 +83,8 @@ public sealed class DeviceReportsApiTests(MonolithWebApplicationFactory factory)
     {
         var (alice, aliceDevice) = await PairAsync("ALICE-DESKTOP");
         var (bob, bobDevice) = await PairAsync("BOB-DESKTOP");
-        (await PostReportAsync(aliceDevice, TrayReportJson)).EnsureSuccessStatusCode();
-        (await PostReportAsync(bobDevice, TrayReportJson)).EnsureSuccessStatusCode();
+        (await PostReportAsync(aliceDevice, SatellesReportJson)).EnsureSuccessStatusCode();
+        (await PostReportAsync(bobDevice, SatellesReportJson)).EnsureSuccessStatusCode();
 
         using var bobPortal = factory.CreateClientFor(bob);
         var bobSees = (await bobPortal.GetFromJsonAsync<List<DeviceStatusDto>>(Devices, WebJson, Ct))!;
@@ -104,14 +104,14 @@ public sealed class DeviceReportsApiTests(MonolithWebApplicationFactory factory)
     public async Task RemovingTheDevice_DropsItsState_AndItsNextReportGets401()
     {
         var (owner, device) = await PairAsync("DESKTOP-REMOVED");
-        (await PostReportAsync(device, TrayReportJson)).EnsureSuccessStatusCode();
+        (await PostReportAsync(device, SatellesReportJson)).EnsureSuccessStatusCode();
         using var portal = factory.CreateClientFor(owner);
         var id = (await portal.GetFromJsonAsync<List<DeviceStatusDto>>(Devices, WebJson, Ct))!.Single().Id;
 
         (await portal.DeleteAsync($"/api/identity/devices/{id}", Ct)).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         (await portal.GetFromJsonAsync<List<DeviceStatusDto>>(Devices, WebJson, Ct)).Should().BeEmpty();
-        (await PostReportAsync(device, TrayReportJson)).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        (await PostReportAsync(device, SatellesReportJson)).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
     }
 
     private async Task<(Guid Owner, HttpClient Device)> PairAsync(string name)

@@ -15,7 +15,7 @@ namespace Sentium.Tests.Integration.Modules.Identity;
 /// </summary>
 internal static class DeviceTestSupport
 {
-    public const string TrayUserAgent = "SentiumTray/1.2.3";
+    public const string SatellesUserAgent = "SentiumSatelles/1.2.3";
 
     public static async Task<Guid> CreateUserAsync(this MonolithWebApplicationFactory factory)
     {
@@ -52,7 +52,7 @@ internal static class DeviceTestSupport
     {
         var client = factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-        client.DefaultRequestHeaders.UserAgent.ParseAdd(TrayUserAgent);
+        client.DefaultRequestHeaders.UserAgent.ParseAdd(SatellesUserAgent);
         return client;
     }
 
@@ -70,7 +70,7 @@ internal static class DeviceTestSupport
         var code = (await codeResponse.Content.ReadFromJsonAsync<PairingCodeResponse>(ct))!;
 
         using var app = factory.CreateClient();
-        app.DefaultRequestHeaders.UserAgent.ParseAdd(TrayUserAgent);
+        app.DefaultRequestHeaders.UserAgent.ParseAdd(SatellesUserAgent);
 
         var pairResponse = await app.PostAsJsonAsync("/api/identity/devices/pair", new PairDeviceRequest(code.Code, name), ct);
         pairResponse.EnsureSuccessStatusCode();

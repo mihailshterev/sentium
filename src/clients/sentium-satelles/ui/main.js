@@ -36,6 +36,6 @@ async function pair(event) {
 $("pair-form").addEventListener("submit", pair);
 $("close").addEventListener("click", () => invoke("hide_window"));
 
-await listen("tray-state", (event) => render(event.payload));
+await listen("satelles-state", (event) => render(event.payload));
 render(await invoke("get_state"));
 $("name").value = await invoke("default_device_name");

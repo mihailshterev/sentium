@@ -23,7 +23,7 @@ in [Aspire vs. Compose parity](#aspire-vs-compose-parity).
 - [Method A - .NET Aspire](#method-a--net-aspire-recommended-for-development)
 - [Method B - Docker Compose](#method-b--docker-compose-self-hosted-deployment)
 - [LAN access: HTTPS on every device](#lan-access-https-on-every-device)
-- [Sentium Tray: household PCs](#sentium-tray-household-pcs)
+- [Sentium Satelles: household PCs](#sentium-satelles-household-pcs)
 - [Method C - Front-end only](#method-c--front-end-only)
 - [GPU acceleration](#gpu-acceleration)
 - [Managing models](#managing-models)
@@ -425,21 +425,21 @@ is installed on devices.
 
 ---
 
-## Sentium Tray: household PCs
+## Sentium Satelles: household PCs
 
-Sentium Tray is a small desktop app (Windows, macOS, Linux) that lives in the notification area or menu bar.
+Sentium Satelles is a small desktop app (Windows, macOS, Linux) that lives in the notification area or menu bar.
 Paired with your account, it reports the PC's health (CPU, memory, disks, uptime) to Vigil and shows your
 Notifications as system notifications, even with the portal closed. The server can never make the PC do anything
 else.
 
 ### Build the app
 
-It is a [Tauri 2](https://tauri.app) app in `src/clients/sentium-tray`. Build it on the platform you want it for,
+It is a [Tauri 2](https://tauri.app) app in `src/clients/sentium-satelles`. Build it on the platform you want it for,
 with [Rust](https://rustup.rs) and pnpm installed (on Linux also the
 [Tauri system packages](https://tauri.app/start/prerequisites/#linux)):
 
 ```bash
-cd src/clients/sentium-tray
+cd src/clients/sentium-satelles
 pnpm install
 pnpm tauri build
 ```
@@ -448,8 +448,8 @@ The output is in `src-tauri/target/release/bundle/`:
 
 | Platform | Output                                      | Notes                                                                            |
 | -------- | ------------------------------------------- | -------------------------------------------------------------------------------- |
-| Windows  | `nsis/Sentium Tray_<version>_x64-setup.exe` | Per-user install, no admin rights.                                               |
-| macOS    | `macos/Sentium Tray.app`, `dmg/…`           | Lives in the menu bar, no Dock icon.                                             |
+| Windows  | `nsis/Sentium Satelles_<version>_x64-setup.exe` | Per-user install, no admin rights.                                               |
+| macOS    | `macos/Sentium Satelles.app`, `dmg/…`           | Lives in the menu bar, no Dock icon.                                             |
 | Linux    | `deb/…`, `appimage/…`                       | The tray icon needs an AppIndicator host (on GNOME, the AppIndicator extension). |
 
 On Windows, use the installer rather than the bare `.exe`: Windows only shows notifications for apps registered
@@ -467,12 +467,12 @@ The builds are not code-signed.
 ### Pair the PC
 
 1. The PC must trust the server's certificate first (see
-   [Trust the root certificate](#3-trust-the-root-certificate)). Sentium Tray uses the operating system's own trust
+   [Trust the root certificate](#3-trust-the-root-certificate)). Sentium Satelles uses the operating system's own trust
    store and has no switch to ignore certificate errors. Against a server on the same PC, `http://localhost:<port>`
    also works.
 2. In the portal, open **Profile → My devices → Pair a device**. It shows the server address and a code that
    is valid for 10 minutes and works once.
-3. In Sentium Tray's window, enter the server address and the code, then **Pair**. Within one report interval
+3. In Sentium Satelles's window, enter the server address and the code, then **Pair**. Within one report interval
    the PC shows **Online** in the **Devices** group on the Vigil page.
 
 Each OS account on a PC is its own device, paired by its own user. A user can pair up to 10 devices.
@@ -493,7 +493,7 @@ Each OS account on a PC is its own device, paired by its own user. A user can pa
 ### Unpairing
 
 Unpair from the tray menu, or remove the device under **My devices** in the portal (a Sovereign can remove
-anyone's). Either way the token stops working at once and the tray returns to "not paired" within one report
+anyone's). Either way the token stops working at once and Satelles returns to "not paired" within one report
 interval.
 
 ---

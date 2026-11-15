@@ -47,10 +47,10 @@ public sealed class DeviceSecretsTests
     }
 
     [Theory]
-    [InlineData("SentiumTray/1.2.0", "1.2.0")]
-    [InlineData("SentiumTray/1.2.0-beta+7 (Windows 11)", "1.2.0-beta+7")]
-    [InlineData("Mozilla/5.0 sentiumtray/0.1", "0.1")]
-    public void ParseAppVersion_ReadsTheTrayProduct(string userAgent, string expected)
+    [InlineData("SentiumSatelles/1.2.0", "1.2.0")]
+    [InlineData("SentiumSatelles/1.2.0-beta+7 (Windows 11)", "1.2.0-beta+7")]
+    [InlineData("Mozilla/5.0 sentiumsatelles/0.1", "0.1")]
+    public void ParseAppVersion_ReadsTheSatellesProduct(string userAgent, string expected)
     {
         DeviceUserAgent.ParseAppVersion(userAgent).Should().Be(expected);
     }
@@ -59,9 +59,9 @@ public sealed class DeviceSecretsTests
     [InlineData(null)]
     [InlineData("")]
     [InlineData("Mozilla/5.0")]
-    [InlineData("SentiumTray/")]
-    [InlineData("SentiumTray/<script>")]
-    [InlineData("SentiumTray/123456789012345678901234567890123")]
+    [InlineData("SentiumSatelles/")]
+    [InlineData("SentiumSatelles/<script>")]
+    [InlineData("SentiumSatelles/123456789012345678901234567890123")]
     public void ParseAppVersion_ReturnsNull_ForAnythingElse(string? userAgent)
     {
         DeviceUserAgent.ParseAppVersion(userAgent).Should().BeNull();

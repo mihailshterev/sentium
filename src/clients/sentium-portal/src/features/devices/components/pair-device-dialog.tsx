@@ -36,7 +36,7 @@ function useRemaining(expiresAt: string | undefined) {
   return expiresAt ? new Date(expiresAt).getTime() - now : 0;
 }
 
-/** Shows the one-time code and the server address to type into Sentium Tray on the PC being paired. */
+/** Shows the one-time code and the server address to type into Sentium Satelles on the PC being paired. */
 export function PairDeviceDialog({ open, pairingCode, isCreating, error, onNewCode, onClose }: PairDeviceDialogProps) {
   const remaining = useRemaining(open ? pairingCode?.expiresAt : undefined);
   const expired = pairingCode !== null && remaining <= 0;
@@ -46,7 +46,7 @@ export function PairDeviceDialog({ open, pairingCode, isCreating, error, onNewCo
       open={open}
       onClose={onClose}
       title="Pair a device"
-      description="Open Sentium Tray on the PC and type these two values. The code works once."
+      description="Open Sentium Satelles on the PC and type these two values. The code works once."
       icon={<MonitorSmartphone />}
       size="sm"
       footer={

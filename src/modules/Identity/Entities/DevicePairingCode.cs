@@ -1,7 +1,7 @@
 namespace Sentium.Identity.Entities;
 
 /// <summary>
-/// A short-lived, single-use code a user creates in the portal and types into the tray app. The row is deleted when
+/// A short-lived, single-use code a user creates in the portal and types into the Satelles app. The row is deleted when
 /// the code is used.
 /// </summary>
 internal sealed class DevicePairingCode

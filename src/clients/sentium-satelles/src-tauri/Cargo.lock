@@ -3720,7 +3720,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "sentium-tray"
+name = "sentium-satelles"
 version = "0.1.0"
 dependencies = [
  "fastrand",

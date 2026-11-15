@@ -1,8 +1,8 @@
 namespace Sentium.Vigil.Features.Devices;
 
 /// <summary>
-/// One periodic snapshot of a Device's health, sent by the tray app. This is everything a Device ever tells the
-/// server about its PC: nothing here describes what the person is doing. The tray app keeps its own copy of this
+/// One periodic snapshot of a Device's health, sent by the Satelles app. This is everything a Device ever tells the
+/// server about its PC: nothing here describes what the person is doing. The Satelles app keeps its own copy of this
 /// shape, so a rename is a breaking change for paired Devices.
 /// </summary>
 /// <param name="CpuPercent">System-wide CPU use since the previous Report, 0 to 100.</param>

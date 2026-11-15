@@ -77,7 +77,7 @@ pub struct Frame {
     pub data: Option<serde_json::Value>,
 }
 
-/// The fields of a server Notification the tray uses.
+/// The fields of a server Notification the app uses.
 #[derive(Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct Notification {
@@ -143,7 +143,7 @@ pub struct Api {
 impl Api {
     pub fn new(app_version: &str) -> Self {
         let http = Client::builder()
-            .user_agent(format!("SentiumTray/{app_version}"))
+            .user_agent(format!("SentiumSatelles/{app_version}"))
             .connect_timeout(Duration::from_secs(15))
             .pool_idle_timeout(Duration::from_secs(90))
             .build()

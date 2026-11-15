@@ -1,8 +1,8 @@
 import { test, expect } from "../fixtures";
 
-const TRAY_USER_AGENT = "SentiumTray/9.9.9-e2e";
+const SATELLES_USER_AGENT = "SentiumSatelles/9.9.9-e2e";
 
-/** The JSON body exactly as Sentium Tray sends it. */
+/** The JSON body exactly as Sentium Satelles sends it. */
 const report = (machineName: string) => ({
   machineName,
   osDescription: "Windows 11 Pro",
@@ -29,16 +29,16 @@ test.describe("Devices", () => {
     await expect(page.getByTestId("pairing-server")).toHaveText(new URL(baseURL!).origin);
     await profilePage.closePairingDialog();
 
-    // The tray app is played by a separate, cookie-less request context.
-    const tray = await playwright.request.newContext({ baseURL, extraHTTPHeaders: { "User-Agent": TRAY_USER_AGENT } });
+    // Satelles is played by a separate, cookie-less request context.
+    const satelles = await playwright.request.newContext({ baseURL, extraHTTPHeaders: { "User-Agent": SATELLES_USER_AGENT } });
     let deviceId: string | undefined;
     try {
-      const paired = await tray.post("/api/identity/devices/pair", { data: { code, name } });
+      const paired = await satelles.post("/api/identity/devices/pair", { data: { code, name } });
       expect(paired.status()).toBe(200);
       const { deviceId: id, token } = await paired.json();
       deviceId = id;
 
-      const reported = await tray.post("/api/vigil/devices/report", {
+      const reported = await satelles.post("/api/vigil/devices/report", {
         data: report(name),
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -60,7 +60,7 @@ test.describe("Devices", () => {
       await expect(profilePage.deviceItem(name)).toHaveCount(0);
       deviceId = undefined;
 
-      const afterRemoval = await tray.post("/api/vigil/devices/report", {
+      const afterRemoval = await satelles.post("/api/vigil/devices/report", {
         data: report(name),
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -70,7 +70,7 @@ test.describe("Devices", () => {
       if (deviceId) {
         await page.request.delete(`/api/identity/devices/${deviceId}`);
       }
-      await tray.dispose();
+      await satelles.dispose();
     }
   });
 });

@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Sentium Tray",
+  "productName": "Sentium Satelles",
   "version": "0.1.0",
-  "identifier": "dev.sentium.tray",
+  "identifier": "dev.sentium.satelles",
   "build": {
     "frontendDist": "../ui"
   },
@@ -11,7 +11,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "Sentium Tray",
+        "title": "Sentium Satelles",
         "width": 460,
         "height": 600,
         "resizable": false,

@@ -41,7 +41,7 @@ export function MyDevicesCard({ className }: { className?: string }) {
       <CardHeader
         icon={<MonitorSmartphone />}
         title="My devices"
-        description="PCs running Sentium Tray. They report their health to Vigil and show your notifications."
+        description="PCs running Sentium Satelles. They report their health to Vigil and show your notifications."
         actions={
           <Button size="sm" icon={<Plus />} onClick={startPairing} data-testid="pair-device">
             Pair a device
@@ -62,7 +62,7 @@ export function MyDevicesCard({ className }: { className?: string }) {
           compact
           icon={<Monitor />}
           title="No devices paired"
-          hint="Install Sentium Tray on a PC, then pair it with a code from here."
+          hint="Install Sentium Satelles on a PC, then pair it with a code from here."
         />
       ) : (
         <ul className={styles.list}>
