@@ -25,3 +25,6 @@ certs/
 .env
 .env.*
 !.env.example
+
+# Backup archives (the Compose default destination)
+backups/

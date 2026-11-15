@@ -27,6 +27,11 @@ public static class ResourceNames
     /// </summary>
     public const string Tts = "tts";
 
+    /// <summary>
+    /// The backup sidecar: nightly verified backups, status and "back up now".
+    /// </summary>
+    public const string Backup = "backup";
+
     public const string Searxng = "searxng";
     public const string Postgres = "postgres";
     public const string SentiumDb = "sentiumdb";

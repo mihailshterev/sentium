@@ -439,3 +439,10 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+
+# Default backup destination of the Compose backup service (BACKUP_DESTINATION)
+/backups/
+# infra/backup holds the restore script, not Visual Studio backup files (the Backup*/ rule above)
+!/infra/backup/
+!/src/modules/Vigil/Features/Backups/
+!/tests/Sentium.Tests.Unit/Modules/Backup/

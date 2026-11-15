@@ -3,7 +3,9 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Sentium.Core.Constants;
 using Sentium.Identity.Contracts;
 using Sentium.Infrastructure.Inference;
+using Sentium.Infrastructure.Security;
 using Sentium.Infrastructure.Speech;
+using Sentium.Vigil.Features.Backups;
 using Sentium.Vigil.Features.Devices;
 using Sentium.Vigil.Features.Metrics;
 using Sentium.Vigil.Features.Monitoring;
@@ -55,9 +57,11 @@ public static class VigilModuleExtensions
         RegisterServiceProbes(services);
         RegisterInfrastructureProbes(services, builder.Configuration);
 
+        services.TryAddSingleton(TimeProvider.System);
+        RegisterBackupMonitoring(services, builder.Configuration);
+
         services.AddHostedService<MonitoringWorker>();
 
-        services.TryAddSingleton(TimeProvider.System);
         services.AddSingleton<IDeviceStateStore, DeviceStateStore>();
         services.AddSingleton<IDeviceReportProcessor, DeviceReportProcessor>();
         services.AddSingleton<IDeviceRemovalObserver, DeviceStateRemover>();
@@ -107,6 +111,39 @@ public static class VigilModuleExtensions
         var speech = configuration.GetSection(SpeechOptions.SectionName).Get<SpeechOptions>() ?? new SpeechOptions();
         AddSpeechProbe(services, "Speech-to-text", ResourceNames.Whisper, speech.TranscriptionEndpoint);
         AddSpeechProbe(services, "Text-to-speech", ResourceNames.Tts, speech.SynthesisEndpoint);
+    }
+
+    /// <summary>
+    /// The backup sidecar runs only under Compose. Its client is always registered so the Backups panel can say
+    /// backups are not set up; the probe only exists when an endpoint is configured.
+    /// </summary>
+    private static void RegisterBackupMonitoring(IServiceCollection services, IConfiguration configuration)
+    {
+        var section = configuration.GetSection(BackupMonitorOptions.SectionName);
+        services.AddOptions<BackupMonitorOptions>().Bind(section).ValidateDataAnnotations().ValidateOnStart();
+        var backup = section.Get<BackupMonitorOptions>() ?? new BackupMonitorOptions();
+
+        services.TryAddTransient<InternalApiKeyDelegatingHandler>();
+
+#pragma warning disable EXTEXP0001
+        services.AddHttpClient<IBackupClient, BackupClient>(client =>
+        {
+            if (backup.IsConfigured)
+            {
+                client.BaseAddress = backup.Endpoint;
+            }
+
+            client.Timeout = TimeSpan.FromSeconds(10);
+        })
+        .AddHttpMessageHandler<InternalApiKeyDelegatingHandler>()
+        .RemoveAllResilienceHandlers()
+        .RemoveAllLoggers();
+#pragma warning restore EXTEXP0001
+
+        if (backup.IsConfigured)
+        {
+            services.AddSingleton<IHealthProbe, BackupHealthProbe>();
+        }
     }
 
     private static void AddSpeechProbe(IServiceCollection services, string target, string resourceName, Uri? endpoint)

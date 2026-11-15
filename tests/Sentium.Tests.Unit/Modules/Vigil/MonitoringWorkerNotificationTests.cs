@@ -80,6 +80,33 @@ public sealed class MonitoringWorkerNotificationTests
         resolved.DedupeKey.Should().NotBe(opened.DedupeKey, "a recovery must not overwrite the unread outage");
     }
 
+    [Fact]
+    public async Task ProbeWithItsOwnCategory_NotifiesUnderThatCategory()
+    {
+        var probe = Substitute.For<IIncidentCategoryProbe>();
+        probe.Target.Returns(Target);
+        probe.Kind.Returns(ComponentKind.Infrastructure);
+        probe.NotificationCategory.Returns(NotificationCategories.SystemBackup);
+        probe.ProbeAsync(Arg.Any<CancellationToken>()).Returns(Status(ServiceStatus.Unhealthy), Status(ServiceStatus.Healthy));
+
+        var settings = Substitute.For<IVigilSettingsProvider>();
+        settings.GetAsync(Arg.Any<CancellationToken>()).Returns(new VigilRuntimeSettings { PollIntervalSeconds = 0 });
+
+        using var worker = new MonitoringWorker(
+            [probe], new ServiceHealthStateStore(), new IncidentStore(), settings, new VigilFeed(), _notifier, NullLogger<MonitoringWorker>.Instance);
+
+        await worker.StartAsync(Ct);
+        await WaitUntilAsync(() => SentCount >= 2);
+        await worker.StopAsync(Ct);
+
+        lock (_sent)
+        {
+            _sent.Should().HaveCount(2);
+            _sent.Should().OnlyContain(s => s.Message.Category == NotificationCategories.SystemBackup
+                && s.Message.DedupeKey!.StartsWith(NotificationCategories.SystemBackup + ":", StringComparison.Ordinal));
+        }
+    }
+
     private static ServiceHealthStatus Status(ServiceStatus status)
         => new() { ServiceName = Target, Status = status, LatencyMs = 1, CheckedAt = DateTimeOffset.UtcNow, Details = "probe result" };
 

@@ -35,6 +35,14 @@ public static class EnvConfig
             public const string SynthesisEndpoint = "Speech__SynthesisEndpoint";
         }
 
+        /// <summary>
+        /// Where Sentium.Web finds the backup sidecar (Vigil's <c>BackupMonitorOptions</c>).
+        /// </summary>
+        public static class Backup
+        {
+            public const string Endpoint = "Backup__Endpoint";
+        }
+
         public static class Frontend
         {
             public const string ApiProxyTarget = "API_PROXY_TARGET";
