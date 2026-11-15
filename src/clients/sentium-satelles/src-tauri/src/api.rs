@@ -152,7 +152,12 @@ impl Api {
         Self { http }
     }
 
-    pub async fn pair(&self, server: &Url, code: &str, name: &str) -> Result<PairResponse, ApiError> {
+    pub async fn pair(
+        &self,
+        server: &Url,
+        code: &str,
+        name: &str,
+    ) -> Result<PairResponse, ApiError> {
         let response = self
             .http
             .post(join(server, "api/identity/devices/pair"))
@@ -169,14 +174,22 @@ impl Api {
     }
 
     pub async fn unpair(&self, paired: &Paired) -> Result<(), ApiError> {
-        self.send(self.request(paired, Method::DELETE, "api/identity/devices/current")).await?;
+        self.send(self.request(paired, Method::DELETE, "api/identity/devices/current"))
+            .await?;
         Ok(())
     }
 
     /// Returns how long to wait before the next Report.
-    pub async fn report(&self, paired: &Paired, report: &DeviceReport) -> Result<Duration, ApiError> {
+    pub async fn report(
+        &self,
+        paired: &Paired,
+        report: &DeviceReport,
+    ) -> Result<Duration, ApiError> {
         let response = self
-            .send(self.request(paired, Method::POST, "api/vigil/devices/report").json(report))
+            .send(
+                self.request(paired, Method::POST, "api/vigil/devices/report")
+                    .json(report),
+            )
             .await?;
         let body: ReportResponse = response.json().await?;
         Ok(Duration::from_secs(body.next_report_seconds))
@@ -191,14 +204,21 @@ impl Api {
 
     /// Opens the notification stream and hands every frame to `on_frame` until the server closes it or the
     /// connection goes quiet.
-    pub async fn read_notifications<F, Fut>(&self, paired: &Paired, mut on_frame: F) -> Result<(), ApiError>
+    pub async fn read_notifications<F, Fut>(
+        &self,
+        paired: &Paired,
+        mut on_frame: F,
+    ) -> Result<(), ApiError>
     where
         F: FnMut(Frame) -> Fut,
         Fut: std::future::Future<Output = Result<(), ApiError>>,
     {
         let request = self
             .http
-            .request(Method::GET, join(&paired.server, "api/nuntius/devices/stream"))
+            .request(
+                Method::GET,
+                join(&paired.server, "api/nuntius/devices/stream"),
+            )
             .bearer_auth(&paired.token);
         let response = tokio::time::timeout(REQUEST_TIMEOUT, self.send(request))
             .await
@@ -209,7 +229,11 @@ impl Api {
 
         loop {
             let chunk = match tokio::time::timeout(STREAM_IDLE_TIMEOUT, body.next()).await {
-                Err(_) => return Err(ApiError::Failed("The notification stream went quiet.".into())),
+                Err(_) => {
+                    return Err(ApiError::Failed(
+                        "The notification stream went quiet.".into(),
+                    ));
+                }
                 Ok(None) => return Ok(()),
                 Ok(Some(chunk)) => chunk?,
             };
@@ -238,14 +262,18 @@ impl Api {
         let response = request.send().await?;
         match response.status() {
             StatusCode::UNAUTHORIZED => Err(ApiError::Unpaired),
-            status if !status.is_success() => Err(ApiError::Failed(format!("The server answered {status}."))),
+            status if !status.is_success() => {
+                Err(ApiError::Failed(format!("The server answered {status}.")))
+            }
             _ => Ok(response),
         }
     }
 }
 
 fn join(server: &Url, path: &str) -> Url {
-    server.join(path).expect("API paths are static and relative")
+    server
+        .join(path)
+        .expect("API paths are static and relative")
 }
 
 async fn rejection_message(response: Response) -> String {
@@ -255,7 +283,9 @@ async fn rejection_message(response: Response) -> String {
     }
 
     match response.json::<Problem>().await {
-        Ok(Problem { detail: Some(detail) }) if !detail.is_empty() => detail,
+        Ok(Problem {
+            detail: Some(detail),
+        }) if !detail.is_empty() => detail,
         _ => format!("The server refused the pairing ({}).", status.as_u16()),
     }
 }

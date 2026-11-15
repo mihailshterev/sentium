@@ -30,7 +30,11 @@ mod platform {
     /// Windows shows toasts only for a registered app id. The installer registers the bundle identifier on the Start
     /// menu shortcut; a development build borrows PowerShell's.
     pub fn show(app: &AppHandle, title: &str, body: &str, target: Option<Url>) {
-        let app_id = if cfg!(debug_assertions) { Toast::POWERSHELL_APP_ID.to_string() } else { app.config().identifier.clone() };
+        let app_id = if cfg!(debug_assertions) {
+            Toast::POWERSHELL_APP_ID.to_string()
+        } else {
+            app.config().identifier.clone()
+        };
         let handle = app.clone();
 
         let result = Toast::new(&app_id)
@@ -69,7 +73,12 @@ mod platform {
 
         let (handle, title, body) = (app.clone(), title.to_string(), body.to_string());
         tauri::async_runtime::spawn_blocking(move || {
-            match Notification::new().title(&title).message(&body).wait_for_click(true).send() {
+            match Notification::new()
+                .title(&title)
+                .message(&body)
+                .wait_for_click(true)
+                .send()
+            {
                 Ok(NotificationResponse::Click) => super::open(&handle, target.as_ref()),
                 Ok(_) => {}
                 Err(error) => log::warn!("could not show a notification: {error}"),

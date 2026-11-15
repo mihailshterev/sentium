@@ -18,7 +18,9 @@ pub struct Metrics {
 impl Metrics {
     /// Takes the first CPU sample, so the first Report measures from app start.
     pub fn new() -> Self {
-        let mut system = System::new().inspect_err(|e| log::warn!("system information unavailable: {e}")).ok();
+        let mut system = System::new()
+            .inspect_err(|e| log::warn!("system information unavailable: {e}"))
+            .ok();
         if let Some(system) = system.as_mut() {
             system.refresh_cpu_usage();
         }
@@ -31,14 +33,24 @@ impl Metrics {
             Some(system) => {
                 system.refresh_cpu_usage();
                 system.refresh_memory();
-                (f64::from(system.global_cpu_usage()), system.total_memory(), system.available_memory())
+                (
+                    f64::from(system.global_cpu_usage()),
+                    system.total_memory(),
+                    system.available_memory(),
+                )
             }
             None => (0.0, 0, 0),
         };
 
         DeviceReport {
-            machine_name: trim(System::host_name().unwrap_or_else(|_| "unknown".into()), MACHINE_NAME_MAX),
-            os_description: trim(System::long_os_version().unwrap_or_else(|_| std::env::consts::OS.into()), OS_DESCRIPTION_MAX),
+            machine_name: trim(
+                System::host_name().unwrap_or_else(|_| "unknown".into()),
+                MACHINE_NAME_MAX,
+            ),
+            os_description: trim(
+                System::long_os_version().unwrap_or_else(|_| std::env::consts::OS.into()),
+                OS_DESCRIPTION_MAX,
+            ),
             uptime_seconds: System::uptime().unwrap_or_default(),
             app_version: app_version.into(),
             cpu_percent: cpu.clamp(0.0, 100.0),
@@ -55,10 +67,20 @@ fn fixed_disks() -> Vec<DiskReport> {
     };
 
     let mut reports: Vec<DiskReport> = Vec::new();
-    for disk in disks.iter().filter(|d| !d.is_removable() && d.total_space() > 0) {
+    for disk in disks
+        .iter()
+        .filter(|d| !d.is_removable() && d.total_space() > 0)
+    {
         let mount = disk.mount_point().to_string_lossy();
-        let name = trim(mount.trim_end_matches(['\\', '/']).to_string(), DISK_NAME_MAX);
-        let name = if name.is_empty() { "/".to_string() } else { name };
+        let name = trim(
+            mount.trim_end_matches(['\\', '/']).to_string(),
+            DISK_NAME_MAX,
+        );
+        let name = if name.is_empty() {
+            "/".to_string()
+        } else {
+            name
+        };
 
         if reports.len() < MAX_DISKS && !reports.iter().any(|r| r.name == name) {
             reports.push(DiskReport {

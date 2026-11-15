@@ -65,12 +65,23 @@ pub struct Agent {
 }
 
 impl Agent {
-    pub fn new(api: Api, store: Store, app_version: String, observer: Arc<dyn Observer>) -> Arc<Self> {
+    pub fn new(
+        api: Api,
+        store: Store,
+        app_version: String,
+        observer: Arc<dyn Observer>,
+    ) -> Arc<Self> {
         Arc::new(Self {
             api,
             store,
             metrics: Mutex::new(Metrics::new()),
-            inner: Mutex::new(Inner { status: Status::NotPaired, paired: None, unread: 0, generation: 0, cancel: None }),
+            inner: Mutex::new(Inner {
+                status: Status::NotPaired,
+                paired: None,
+                unread: 0,
+                generation: 0,
+                cancel: None,
+            }),
             observer,
             app_version,
         })
@@ -109,15 +120,26 @@ impl Agent {
             status: inner.status,
             status_text,
             paired: server.is_some(),
-            last_server: server.clone().or_else(|| self.store.last_server()).map(|u| u.as_str().trim_end_matches('/').to_string()),
+            last_server: server
+                .clone()
+                .or_else(|| self.store.last_server())
+                .map(|u| u.as_str().trim_end_matches('/').to_string()),
             server: server.map(|u| u.to_string()),
             unread: inner.unread,
         }
     }
 
     pub async fn pair(self: &Arc<Self>, server: Url, code: &str, name: &str) -> Result<(), String> {
-        let response = self.api.pair(&server, code, name).await.map_err(|e| e.to_string())?;
-        let paired = Paired { server, device_id: response.device_id, token: response.token };
+        let response = self
+            .api
+            .pair(&server, code, name)
+            .await
+            .map_err(|e| e.to_string())?;
+        let paired = Paired {
+            server,
+            device_id: response.device_id,
+            token: response.token,
+        };
 
         self.store.save(&paired)?;
         self.start_loops(paired);
@@ -130,7 +152,10 @@ impl Agent {
         let paired = self.stop_loops();
 
         let removed_on_server = match &paired {
-            Some(paired) => matches!(self.api.unpair(paired).await, Ok(()) | Err(ApiError::Unpaired)),
+            Some(paired) => matches!(
+                self.api.unpair(paired).await,
+                Ok(()) | Err(ApiError::Unpaired)
+            ),
             None => true,
         };
 
@@ -157,7 +182,11 @@ impl Agent {
         };
         self.publish();
 
-        tauri::async_runtime::spawn(Arc::clone(self).report_loop(paired.clone(), generation, cancel.clone()));
+        tauri::async_runtime::spawn(Arc::clone(self).report_loop(
+            paired.clone(),
+            generation,
+            cancel.clone(),
+        ));
         tauri::async_runtime::spawn(Arc::clone(self).stream_loop(paired, generation, cancel));
     }
 
@@ -170,11 +199,20 @@ impl Agent {
         inner.paired.clone()
     }
 
-    async fn report_loop(self: Arc<Self>, paired: Paired, generation: u64, cancel: CancellationToken) {
+    async fn report_loop(
+        self: Arc<Self>,
+        paired: Paired,
+        generation: u64,
+        cancel: CancellationToken,
+    ) {
         let mut backoff = Backoff::default();
 
         loop {
-            let report = self.metrics.lock().expect("metrics lock").collect(&self.app_version);
+            let report = self
+                .metrics
+                .lock()
+                .expect("metrics lock")
+                .collect(&self.app_version);
 
             let result = tokio::select! {
                 _ = cancel.cancelled() => return,
@@ -205,7 +243,12 @@ impl Agent {
         }
     }
 
-    async fn stream_loop(self: Arc<Self>, paired: Paired, generation: u64, cancel: CancellationToken) {
+    async fn stream_loop(
+        self: Arc<Self>,
+        paired: Paired,
+        generation: u64,
+        cancel: CancellationToken,
+    ) {
         let mut backoff = Backoff::default();
 
         loop {
@@ -214,7 +257,10 @@ impl Agent {
                 let this = Arc::clone(&self);
                 let paired = paired.clone();
                 let connected = Arc::clone(&connected);
-                async move { this.handle_frame(&paired, generation, frame, &connected).await }
+                async move {
+                    this.handle_frame(&paired, generation, frame, &connected)
+                        .await
+                }
             });
 
             let result = tokio::select! {
@@ -245,7 +291,13 @@ impl Agent {
         }
     }
 
-    async fn handle_frame(&self, paired: &Paired, generation: u64, frame: Frame, connected: &AtomicBool) -> Result<(), ApiError> {
+    async fn handle_frame(
+        &self,
+        paired: &Paired,
+        generation: u64,
+        frame: Frame,
+        connected: &AtomicBool,
+    ) -> Result<(), ApiError> {
         match frame.kind.as_str() {
             // Missed toasts are not replayed after a reconnect; the unread count stands in for them.
             "connected" => {
@@ -254,7 +306,9 @@ impl Agent {
                 self.refresh_unread(paired, generation).await
             }
             "notification" => {
-                let notification = frame.data.and_then(|data| serde_json::from_value::<Notification>(data).ok());
+                let notification = frame
+                    .data
+                    .and_then(|data| serde_json::from_value::<Notification>(data).ok());
                 if let Some(notification) = notification.filter(|n| n.read_at.is_none()) {
                     if self.is_current(generation) {
                         self.observer.notification(&paired.server, notification);
@@ -360,7 +414,9 @@ impl Backoff {
     fn next(&mut self) -> Duration {
         let exponential = Self::INITIAL.saturating_mul(1 << self.attempt.min(10));
         self.attempt = self.attempt.saturating_add(1);
-        exponential.min(Self::CAP).mul_f64(0.5 + fastrand::f64() / 2.0)
+        exponential
+            .min(Self::CAP)
+            .mul_f64(0.5 + fastrand::f64() / 2.0)
     }
 
     fn reset(&mut self) {

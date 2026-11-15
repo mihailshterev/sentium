@@ -2,7 +2,8 @@
 name = "sentium-satelles"
 version = "0.1.0"
 description = "Sentium Satelles: reports this PC's health to Vigil and shows Sentium notifications"
-edition = "2021"
+edition = "2024"
+rust-version = "1.85"
 publish = false
 
 [lib]

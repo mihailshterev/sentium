@@ -41,7 +41,11 @@ impl Store {
         let (server, device_id) = (settings.server_url?, settings.device_id?);
 
         match token_entry().and_then(|entry| entry.get_password()) {
-            Ok(token) => Some(Paired { server, device_id, token }),
+            Ok(token) => Some(Paired {
+                server,
+                device_id,
+                token,
+            }),
             Err(keyring::Error::NoEntry) => None,
             Err(error) => {
                 log::warn!("the stored device token could not be read: {error}");
@@ -60,7 +64,10 @@ impl Store {
             .and_then(|entry| entry.set_password(&paired.token))
             .map_err(|e| format!("Could not store the device credential: {e}"))?;
 
-        self.write_settings(&Settings { server_url: Some(paired.server.clone()), device_id: Some(paired.device_id.clone()) })
+        self.write_settings(&Settings {
+            server_url: Some(paired.server.clone()),
+            device_id: Some(paired.device_id.clone()),
+        })
     }
 
     /// Forgets the credential, keeping the server address.
@@ -70,7 +77,10 @@ impl Store {
             Err(error) => log::warn!("could not delete the device token: {error}"),
         }
 
-        let settings = Settings { device_id: None, ..self.read_settings() };
+        let settings = Settings {
+            device_id: None,
+            ..self.read_settings()
+        };
         if let Err(error) = self.write_settings(&settings) {
             log::warn!("{error}");
         }

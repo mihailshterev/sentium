@@ -47,7 +47,12 @@ impl Observer for AppObserver {
 
     fn notification(&self, server: &Url, notification: Notification) {
         let target = links::resolve_notification_link(server, notification.link.as_deref());
-        toast::show(&self.app, &notification.title, notification.body.as_deref(), Some(target));
+        toast::show(
+            &self.app,
+            &notification.title,
+            notification.body.as_deref(),
+            Some(target),
+        );
     }
 }
 
@@ -77,7 +82,9 @@ impl Commands for TrayCommands {
                 toast::show(
                     &app,
                     "Unpaired on this PC only",
-                    Some("The server could not be reached. Remove this device under My devices in the portal."),
+                    Some(
+                        "The server could not be reached. Remove this device under My devices in the portal.",
+                    ),
                     None,
                 );
             }
@@ -99,13 +106,24 @@ fn get_state(state: State<'_, AppState>) -> Snapshot {
 #[tauri::command]
 fn default_device_name() -> String {
     let host = sysinfo::System::host_name().unwrap_or_else(|_| "This PC".into());
-    let user = std::env::var("USERNAME").or_else(|_| std::env::var("USER")).unwrap_or_default();
-    let name = if user.is_empty() { host } else { format!("{host} ({user})") };
+    let user = std::env::var("USERNAME")
+        .or_else(|_| std::env::var("USER"))
+        .unwrap_or_default();
+    let name = if user.is_empty() {
+        host
+    } else {
+        format!("{host} ({user})")
+    };
     name.chars().take(DEVICE_NAME_MAX).collect()
 }
 
 #[tauri::command]
-async fn pair(state: State<'_, AppState>, server: String, code: String, name: String) -> Result<(), String> {
+async fn pair(
+    state: State<'_, AppState>,
+    server: String,
+    code: String,
+    name: String,
+) -> Result<(), String> {
     let server = links::parse_server(&server)?;
     let code = code.trim();
     let name: String = name.trim().chars().take(DEVICE_NAME_MAX).collect();
@@ -134,10 +152,20 @@ fn show_window(app: &AppHandle) {
 pub fn run() {
     let app = tauri::Builder::default()
         // Must be the first plugin: a second launch hands over to the running app and exits.
-        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| show_window(app)))
-        .plugin(tauri_plugin_autostart::init(MacosLauncher::LaunchAgent, None))
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+            show_window(app)
+        }))
+        .plugin(tauri_plugin_autostart::init(
+            MacosLauncher::LaunchAgent,
+            None,
+        ))
         .plugin(tauri_plugin_opener::init())
-        .invoke_handler(tauri::generate_handler![get_state, default_device_name, pair, hide_window])
+        .invoke_handler(tauri::generate_handler![
+            get_state,
+            default_device_name,
+            pair,
+            hide_window
+        ])
         .setup(|app| {
             // Lives in the menu bar: no Dock icon on macOS.
             #[cfg(target_os = "macos")]
@@ -145,16 +173,26 @@ pub fn run() {
 
             let handle = app.handle().clone();
             let tray_cell = Arc::new(OnceLock::new());
-            let observer = Arc::new(AppObserver { app: handle.clone(), tray: Arc::clone(&tray_cell) });
+            let observer = Arc::new(AppObserver {
+                app: handle.clone(),
+                tray: Arc::clone(&tray_cell),
+            });
 
             let version = app.package_info().version.to_string();
-            let agent = Agent::new(Api::new(&version), Store::new(app.path().app_local_data_dir()?), version, observer);
+            let agent = Agent::new(
+                Api::new(&version),
+                Store::new(app.path().app_local_data_dir()?),
+                version,
+                observer,
+            );
 
             let tray = Tray::build(&handle, TrayCommands)?;
             tray.update(&agent.snapshot());
             let _ = tray_cell.set(tray);
 
-            app.manage(AppState { agent: Arc::clone(&agent) });
+            app.manage(AppState {
+                agent: Arc::clone(&agent),
+            });
             agent.start();
 
             if !agent.is_paired() {

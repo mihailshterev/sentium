@@ -61,7 +61,9 @@ fn blend(under: Option<(u8, u8, u8, u8)>, color: Rgb, alpha: f32) -> Option<(u8,
     let a = (alpha * 255.0).round() as u8;
     match under {
         Some((r, g, b, ua)) if alpha < 1.0 => {
-            let mix = |over: u8, base: u8| (f32::from(over) * alpha + f32::from(base) * (1.0 - alpha)).round() as u8;
+            let mix = |over: u8, base: u8| {
+                (f32::from(over) * alpha + f32::from(base) * (1.0 - alpha)).round() as u8
+            };
             Some((mix(color.0, r), mix(color.1, g), mix(color.2, b), ua.max(a)))
         }
         _ => Some((color.0, color.1, color.2, a)),

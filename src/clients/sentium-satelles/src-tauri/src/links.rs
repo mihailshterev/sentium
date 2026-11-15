@@ -14,9 +14,15 @@ pub fn parse_server(input: &str) -> Result<Url, String> {
         return Err("Enter the address of your Sentium server.".into());
     }
 
-    let text = if text.contains("://") { text.to_owned() } else { format!("https://{text}") };
+    let text = if text.contains("://") {
+        text.to_owned()
+    } else {
+        format!("https://{text}")
+    };
     let parsed = Url::parse(&text).map_err(|_| "That is not a valid address.".to_string())?;
-    let host = parsed.host_str().ok_or_else(|| "That is not a valid address.".to_string())?;
+    let host = parsed
+        .host_str()
+        .ok_or_else(|| "That is not a valid address.".to_string())?;
 
     let is_https = parsed.scheme() == "https";
     let is_local_http = parsed.scheme() == "http" && is_loopback(host);
@@ -24,7 +30,8 @@ pub fn parse_server(input: &str) -> Result<Url, String> {
         return Err("The address must start with https://.".into());
     }
 
-    Url::parse(&format!("{}/", parsed.origin().ascii_serialization())).map_err(|_| "That is not a valid address.".into())
+    Url::parse(&format!("{}/", parsed.origin().ascii_serialization()))
+        .map_err(|_| "That is not a valid address.".into())
 }
 
 /// Only a path on the paired server is followed; anything else (another host or scheme, a protocol-relative or
@@ -52,7 +59,10 @@ pub fn resolve_notification_link(server: &Url, link: Option<&str>) -> Url {
 
 fn is_loopback(host: &str) -> bool {
     host.eq_ignore_ascii_case("localhost")
-        || host.trim_matches(['[', ']']).parse::<IpAddr>().is_ok_and(|ip| ip.is_loopback())
+        || host
+            .trim_matches(['[', ']'])
+            .parse::<IpAddr>()
+            .is_ok_and(|ip| ip.is_loopback())
 }
 
 #[cfg(test)]
@@ -65,7 +75,10 @@ mod tests {
 
     #[test]
     fn follows_paths_on_the_paired_server() {
-        assert_eq!(resolve_notification_link(&server(), Some("/vigil")).as_str(), "https://sentium.home.arpa/vigil");
+        assert_eq!(
+            resolve_notification_link(&server(), Some("/vigil")).as_str(),
+            "https://sentium.home.arpa/vigil"
+        );
         assert_eq!(
             resolve_notification_link(&server(), Some("/orchestration/runs/42?tab=log")).as_str(),
             "https://sentium.home.arpa/orchestration/runs/42?tab=log"
@@ -87,21 +100,41 @@ mod tests {
             Some("vigil"),
             Some("/vigil\nSet-Cookie: x"),
         ] {
-            assert_eq!(resolve_notification_link(&server(), link).as_str(), inbox, "link {link:?}");
+            assert_eq!(
+                resolve_notification_link(&server(), link).as_str(),
+                inbox,
+                "link {link:?}"
+            );
         }
     }
 
     #[test]
     fn keeps_the_port_of_the_server() {
         let server = Url::parse("https://localhost:7001/").unwrap();
-        assert_eq!(resolve_notification_link(&server, Some("/inbox")).as_str(), "https://localhost:7001/inbox");
+        assert_eq!(
+            resolve_notification_link(&server, Some("/inbox")).as_str(),
+            "https://localhost:7001/inbox"
+        );
     }
 
     #[test]
     fn server_address_defaults_to_https_and_keeps_only_the_origin() {
-        assert_eq!(parse_server("sentium.home.arpa").unwrap().as_str(), "https://sentium.home.arpa/");
-        assert_eq!(parse_server(" https://sentium.home.arpa/vigil?x=1 ").unwrap().as_str(), "https://sentium.home.arpa/");
-        assert_eq!(parse_server("https://sentium.home.arpa:8443").unwrap().as_str(), "https://sentium.home.arpa:8443/");
+        assert_eq!(
+            parse_server("sentium.home.arpa").unwrap().as_str(),
+            "https://sentium.home.arpa/"
+        );
+        assert_eq!(
+            parse_server(" https://sentium.home.arpa/vigil?x=1 ")
+                .unwrap()
+                .as_str(),
+            "https://sentium.home.arpa/"
+        );
+        assert_eq!(
+            parse_server("https://sentium.home.arpa:8443")
+                .unwrap()
+                .as_str(),
+            "https://sentium.home.arpa:8443/"
+        );
     }
 
     #[test]
