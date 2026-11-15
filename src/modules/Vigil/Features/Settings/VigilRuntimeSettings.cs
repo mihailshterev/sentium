@@ -7,4 +7,5 @@ internal sealed record VigilRuntimeSettings
     public int DegradedLatencyMs { get; init; } = 1_000;
     public int ConsecutiveFailuresToOpenIncident { get; init; } = 3;
     public int SampleHistorySize { get; init; } = 60;
+    public int DeviceReportIntervalSeconds { get; init; } = 30;
 }

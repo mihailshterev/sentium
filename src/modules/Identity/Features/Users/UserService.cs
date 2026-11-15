@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Hybrid;
 using Sentium.Identity.Data;
 using Sentium.Identity.Entities;
+using Sentium.Identity.Features.Devices;
 using Sentium.Identity.Features.Security;
 using Sentium.Infrastructure.Extensions;
 
@@ -12,6 +13,7 @@ namespace Sentium.Identity.Features.Users;
 internal sealed class UserService(
     UserManager<ApplicationUser> userManager,
     IdentityDbContext dbContext,
+    IDeviceService deviceService,
     HybridCache cache,
     ILogger<UserService> logger) : IUserService
 {
@@ -94,6 +96,9 @@ internal sealed class UserService(
             return (false, ["You cannot delete your own account."]);
         }
 
+        // The user's Devices are deleted by cascade; their ids are needed afterwards to drop what is cached about them.
+        var ownedDevices = await deviceService.GetOwnedAsync(targetUserId, ct);
+
         var (deleteOk, deleteErrors) = await dbContext.Database.ExecuteInTransactionAsync(
             () => DeleteUnlessLastSovereignAsync(targetUserId),
             IsolationLevel.Serializable,
@@ -103,6 +108,8 @@ internal sealed class UserService(
         {
             return (deleteOk, deleteErrors);
         }
+
+        deviceService.Forget(ownedDevices);
 
         await cache.RemoveByTagAsync(IdentityCacheKeys.UserTag(targetUserId), ct);
         await cache.RemoveAsync(IdentityCacheKeys.AllUsers, ct);

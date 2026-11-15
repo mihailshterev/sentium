@@ -1,0 +1,42 @@
+# cargo-deny supply-chain checks, run in CI by the satelles-deny job.
+# No `targets` list: the graph covers every platform, so one Linux run also checks the Windows and macOS crates.
+
+[advisories]
+yanked = "deny"
+# Vulnerabilities always fail. Unmaintained notices fail only for our direct dependencies: Tauri's Linux
+# GTK3 bindings are flagged unmaintained upstream and cannot be swapped out from here.
+unmaintained = "workspace"
+unsound = "all"
+ignore = [
+    # Tauri 2's Linux stack is pinned to gtk-rs 0.18 (GTK3); the fix only exists in glib >= 0.20 and was never
+    # backported. No crate in our graph calls the affected VariantStrIter. Remove when Tauri moves off GTK3.
+    # Mirrored as GHSA-wrw7-89jp-8q8g in the dependency-review allow list in .github/workflows/security.yml.
+    { id = "RUSTSEC-2024-0429", reason = "glib 0.18 VariantStrIter unsound; unreachable, no 0.18 fix, pinned by Tauri" },
+]
+
+[licenses]
+allow = [
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-3-Clause",
+    "ISC",
+    "MIT",
+    "MPL-2.0",
+    "Unicode-3.0",
+    "Zlib",
+]
+confidence-threshold = 0.8
+
+[licenses.private]
+ignore = true
+
+[bans]
+# Tauri's tree legitimately carries duplicate versions (e.g. windows-sys); flagging them is noise.
+multiple-versions = "allow"
+wildcards = "deny"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = []

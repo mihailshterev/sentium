@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sentium.Core.Constants;
+using Sentium.Infrastructure.Security;
 using Sentium.Vigil.Features.Monitoring;
 
 namespace Sentium.Vigil.Features.Streaming;
@@ -13,7 +14,10 @@ namespace Sentium.Vigil.Features.Streaming;
 [ApiController]
 [Authorize]
 [Route($"{VigilRoutes.Prefix}/stream")]
-internal sealed class VigilStreamController(IVigilFeed feed, ILogger<VigilStreamController> logger) : ControllerBase
+internal sealed class VigilStreamController(
+    IVigilFeed feed,
+    ICurrentUser currentUser,
+    ILogger<VigilStreamController> logger) : ControllerBase
 {
     private static readonly TimeSpan HeartbeatInterval = TimeSpan.FromSeconds(20);
 
@@ -61,6 +65,11 @@ internal sealed class VigilStreamController(IVigilFeed feed, ILogger<VigilStream
 
                 while (subscription.Reader.TryRead(out var update))
                 {
+                    if (!IsVisibleToCaller(update))
+                    {
+                        continue;
+                    }
+
                     await WriteFrameAsync(new VigilStreamFrame<object>(update.Type, update.Data), ct);
                 }
             }
@@ -70,6 +79,9 @@ internal sealed class VigilStreamController(IVigilFeed feed, ILogger<VigilStream
             logger.LogInformation("Client disconnected from Vigil stream");
         }
     }
+
+    private bool IsVisibleToCaller(VigilFeedEvent update)
+        => update.AudienceUserId is not { } audience || currentUser.IsSovereign || currentUser.UserId == audience;
 
     private async Task WriteFrameAsync(object payload, CancellationToken ct)
     {

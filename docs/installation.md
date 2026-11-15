@@ -23,6 +23,7 @@ in [Aspire vs. Compose parity](#aspire-vs-compose-parity).
 - [Method A - .NET Aspire](#method-a--net-aspire-recommended-for-development)
 - [Method B - Docker Compose](#method-b--docker-compose-self-hosted-deployment)
 - [LAN access: HTTPS on every device](#lan-access-https-on-every-device)
+- [Sentium Satelles: household PCs](#sentium-satelles-household-pcs)
 - [Method C - Front-end only](#method-c--front-end-only)
 - [GPU acceleration](#gpu-acceleration)
 - [Managing models](#managing-models)
@@ -421,6 +422,79 @@ is installed on devices.
 - **New CA** (for example if the host was compromised): `docker compose down`, delete the `caddy-data`
   volume (`docker volume rm sentium_caddy-data`), start again, then re-export the root and replace it on
   every device (remove the old "Sentium Local CA" entry first).
+
+---
+
+## Sentium Satelles: household PCs
+
+Sentium Satelles is a small desktop app (Windows, macOS, Linux) that lives in the notification area or menu bar.
+Paired with your account, it reports the PC's health (CPU, memory, disks, uptime) to Vigil and shows your
+Notifications as system notifications, even with the portal closed. The server can never make the PC do anything
+else.
+
+### Build the app
+
+It is a [Tauri 2](https://tauri.app) app in `src/clients/sentium-satelles`. Build it on the platform you want it for,
+with [Rust](https://rustup.rs) and pnpm installed (on Linux also the
+[Tauri system packages](https://tauri.app/start/prerequisites/#linux)):
+
+```bash
+cd src/clients/sentium-satelles
+pnpm install
+pnpm tauri build
+```
+
+The output is in `src-tauri/target/release/bundle/`:
+
+| Platform | Output                                      | Notes                                                                            |
+| -------- | ------------------------------------------- | -------------------------------------------------------------------------------- |
+| Windows  | `nsis/Sentium Satelles_<version>_x64-setup.exe` | Per-user install, no admin rights.                                               |
+| macOS    | `macos/Sentium Satelles.app`, `dmg/…`           | Lives in the menu bar, no Dock icon.                                             |
+| Linux    | `deb/…`, `appimage/…`                       | The tray icon needs an AppIndicator host (on GNOME, the AppIndicator extension). |
+
+On Windows, use the installer rather than the bare `.exe`: Windows only shows notifications for apps registered
+through a Start menu shortcut, which the installer creates.
+
+### First run: unsigned app warnings
+
+The builds are not code-signed.
+
+- **Windows:** SmartScreen shows **"Windows protected your PC"**. Click **More info**, check the name, then
+  **Run anyway**.
+- **macOS:** Gatekeeper refuses the app on first open. Right-click it, choose **Open**, then **Open** again (or allow it
+  under **System Settings → Privacy & Security**).
+
+### Pair the PC
+
+1. The PC must trust the server's certificate first (see
+   [Trust the root certificate](#3-trust-the-root-certificate)). Sentium Satelles uses the operating system's own trust
+   store and has no switch to ignore certificate errors. Against a server on the same PC, `http://localhost:<port>`
+   also works.
+2. In the portal, open **Profile → My devices → Pair a device**. It shows the server address and a code that
+   is valid for 10 minutes and works once.
+3. In Sentium Satelles's window, enter the server address and the code, then **Pair**. Within one report interval
+   the PC shows **Online** in the **Devices** group on the Vigil page.
+
+Each OS account on a PC is its own device, paired by its own user. A user can pair up to 10 devices.
+
+### Using it
+
+- The tray menu shows the connection state and unread count, and has **Open Sentium**, **Start at sign-in**,
+  **Unpair** and **Exit**. Closing the window only hides it.
+- Clicking a notification opens its page in the default browser. Links that do not point at the paired server
+  open the Inbox instead.
+- A PC that was asleep or switched off shows **Offline** with its last-seen time. Notifications it missed are not
+  replayed; the unread dot on the icon catches up instead.
+- A disk above 90% for three reports in a row sends its owner one `device.disk` notification.
+- The report interval is the **Device report interval** setting under **Settings → Monitoring**.
+- The device token is kept in the OS credential store (Windows Credential Manager, macOS Keychain, the Secret
+  Service on Linux); the server address is in the app's local data folder.
+
+### Unpairing
+
+Unpair from the tray menu, or remove the device under **My devices** in the portal (a Sovereign can remove
+anyone's). Either way the token stops working at once and Satelles returns to "not paired" within one report
+interval.
 
 ---
 

@@ -1,4 +1,5 @@
 {
   "editor.formatOnSave": true,
-  "files.eol": "\n"
+  "files.eol": "\n",
+  "rust-analyzer.linkedProjects": ["src/clients/sentium-satelles/src-tauri/Cargo.toml"]
 }

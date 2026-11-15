@@ -21,6 +21,9 @@ jobs:
       - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
         with:
           fail-on-severity: moderate
+          # glib 0.18 VariantStrIter unsoundness (RUSTSEC-2024-0429), pinned by Tauri's GTK3 stack and unreachable from our
+          # graph; see the matching ignore in src/clients/sentium-satelles/src-tauri/deny.toml.
+          allow-ghsas: GHSA-wrw7-89jp-8q8g
 
   workflow-lint:
     name: Workflow Lint (zizmor)

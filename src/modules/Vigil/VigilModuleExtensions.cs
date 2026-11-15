@@ -1,6 +1,9 @@
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Sentium.Core.Constants;
+using Sentium.Identity.Contracts;
 using Sentium.Infrastructure.Inference;
+using Sentium.Vigil.Features.Devices;
 using Sentium.Vigil.Features.Metrics;
 using Sentium.Vigil.Features.Monitoring;
 using Sentium.Vigil.Features.Monitoring.Probes;
@@ -52,6 +55,12 @@ public static class VigilModuleExtensions
         RegisterInfrastructureProbes(services, builder.Configuration);
 
         services.AddHostedService<MonitoringWorker>();
+
+        services.TryAddSingleton(TimeProvider.System);
+        services.AddSingleton<IDeviceStateStore, DeviceStateStore>();
+        services.AddSingleton<IDeviceReportProcessor, DeviceReportProcessor>();
+        services.AddSingleton<IDeviceRemovalObserver, DeviceStateRemover>();
+        services.AddHostedService<DeviceOfflineWatcher>();
 
         return builder;
     }

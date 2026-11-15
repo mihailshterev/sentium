@@ -35,7 +35,8 @@ internal sealed class RegistryVigilSettingsProvider(
             ProbeTimeoutSeconds = dto.ProbeTimeoutSeconds,
             DegradedLatencyMs = dto.DegradedLatencyMs,
             ConsecutiveFailuresToOpenIncident = dto.ConsecutiveFailuresToOpenIncident,
-            SampleHistorySize = dto.SampleHistorySize
+            SampleHistorySize = dto.SampleHistorySize,
+            DeviceReportIntervalSeconds = dto.DeviceReportIntervalSeconds
         };
     }
 
@@ -44,5 +45,6 @@ internal sealed class RegistryVigilSettingsProvider(
         int ProbeTimeoutSeconds,
         int DegradedLatencyMs,
         int ConsecutiveFailuresToOpenIncident,
-        int SampleHistorySize);
+        int SampleHistorySize,
+        int DeviceReportIntervalSeconds = 30);
 }

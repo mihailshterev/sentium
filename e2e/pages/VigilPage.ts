@@ -28,6 +28,10 @@ export class VigilPage {
     await expect(this.page.getByText(/host metrics/i)).toBeVisible();
   }
 
+  deviceRow(name: string) {
+    return this.page.getByTestId("vigil-devices").getByTestId("device-row").filter({ hasText: name });
+  }
+
   async clickRefresh(): Promise<void> {
     await this.page.getByRole("button", { name: /refresh/i }).click();
   }

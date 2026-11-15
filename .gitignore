@@ -16,6 +16,7 @@ src/hosts/Sentium.Web/wwwroot/
 
 # Docker Compose local artifacts
 /certs
+/sentium-root-ca.crt
 /.sandbox-jobs
 
 /src/aspire/Sentium.AppHost/data
