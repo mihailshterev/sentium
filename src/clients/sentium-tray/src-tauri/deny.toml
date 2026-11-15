@@ -1,0 +1,37 @@
+# cargo-deny supply-chain checks, run in CI by the tray-deny job.
+# No `targets` list: the graph covers every platform, so one Linux run also checks the Windows and macOS crates.
+
+[advisories]
+yanked = "deny"
+# Vulnerabilities always fail. Unmaintained notices fail only for our direct dependencies: Tauri's Linux
+# GTK3 bindings are flagged unmaintained upstream and cannot be swapped out from here.
+unmaintained = "workspace"
+unsound = "all"
+ignore = []
+
+[licenses]
+allow = [
+    "Apache-2.0",
+    "Apache-2.0 WITH LLVM-exception",
+    "BSD-3-Clause",
+    "ISC",
+    "MIT",
+    "MPL-2.0",
+    "Unicode-3.0",
+    "Zlib",
+]
+confidence-threshold = 0.8
+
+[licenses.private]
+ignore = true
+
+[bans]
+# Tauri's tree legitimately carries duplicate versions (e.g. windows-sys); flagging them is noise.
+multiple-versions = "allow"
+wildcards = "deny"
+
+[sources]
+unknown-registry = "deny"
+unknown-git = "deny"
+allow-registry = ["https://github.com/rust-lang/crates.io-index"]
+allow-git = []

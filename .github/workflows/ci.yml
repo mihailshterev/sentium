@@ -74,7 +74,9 @@ jobs:
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev libssl-dev patchelf
 
       - name: Install Rust
-        run: rustup toolchain install stable --profile minimal --component clippy && rustup default stable
+        # Installs the toolchain pinned in src-tauri/rust-toolchain.toml.
+        working-directory: ./src/clients/sentium-tray/src-tauri
+        run: rustup toolchain install
 
       - name: Cache cargo
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
@@ -83,7 +85,7 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             src/clients/sentium-tray/src-tauri/target
-          key: tray-${{ runner.os }}-${{ hashFiles('src/clients/sentium-tray/src-tauri/Cargo.lock') }}
+          key: tray-${{ runner.os }}-${{ hashFiles('src/clients/sentium-tray/src-tauri/Cargo.lock', 'src/clients/sentium-tray/src-tauri/rust-toolchain.toml') }}
 
       - name: Clippy
         working-directory: ./src/clients/sentium-tray/src-tauri
@@ -92,6 +94,23 @@ jobs:
       - name: Test
         working-directory: ./src/clients/sentium-tray/src-tauri
         run: cargo test --locked
+
+  tray-deny:
+    name: Sentium Tray Supply Chain
+    # cargo-deny checks the crate graph (all platforms) against RustSec advisories, licenses and allowed sources.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - name: cargo-deny
+        uses: EmbarkStudios/cargo-deny-action@3c6349835b2b7b196a839186cb8b78e02f7b5f25 # v2.1.1
+        with:
+          manifest-path: ./src/clients/sentium-tray/src-tauri/Cargo.toml
+          command: check
+          arguments: --locked
 
   react-build-test:
     name: React Build & Test
