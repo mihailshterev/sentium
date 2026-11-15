@@ -1,13 +1,14 @@
 import { useId } from "react";
-import { ChevronDown, Search } from "lucide-react";
+import { Search } from "lucide-react";
 import styles from "./form-controls.module.css";
+
+export { Select } from "./select";
 
 const cx = (...classes: (string | false | null | undefined)[]) => classes.filter(Boolean).join(" ");
 
 type ControlSize = "sm" | "md";
 
 interface ControlProps {
-  /** Shows the error state and sets aria-invalid. */
   invalid?: boolean;
   controlSize?: ControlSize;
 }
@@ -37,25 +38,6 @@ export function Textarea({ invalid, mono = false, className, ...rest }: Textarea
   );
 }
 
-type SelectProps = React.SelectHTMLAttributes<HTMLSelectElement> &
-  ControlProps & { ref?: React.Ref<HTMLSelectElement>; wrapperClassName?: string };
-
-/** Native select, styled. Keeps native keyboard and mobile behaviour. */
-export function Select({ invalid, controlSize = "md", className, wrapperClassName, children, ...rest }: SelectProps) {
-  return (
-    <span className={cx(styles.selectWrap, wrapperClassName)}>
-      <select
-        className={cx(styles.control, styles[controlSize], styles.select, invalid && styles.invalid, className)}
-        aria-invalid={invalid || undefined}
-        {...rest}
-      >
-        {children}
-      </select>
-      <ChevronDown size={15} className={styles.chevron} aria-hidden="true" />
-    </span>
-  );
-}
-
 type SearchInputProps = Omit<InputProps, "type"> & { wrapperClassName?: string };
 
 export function SearchInput({ controlSize = "md", className, wrapperClassName, ...rest }: SearchInputProps) {
@@ -69,7 +51,6 @@ export function SearchInput({ controlSize = "md", className, wrapperClassName, .
 
 type RangeProps = Omit<React.InputHTMLAttributes<HTMLInputElement>, "type"> & {
   ref?: React.Ref<HTMLInputElement>;
-  /** Filled portion (0-100). Defaults to the position of `value`; pass it for uncontrolled inputs. */
   fillPercent?: number;
 };
 

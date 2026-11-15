@@ -76,35 +76,6 @@
   font-size: var(--text-xs);
 }
 
-/* ---------- Select ---------- */
-
-.selectWrap {
-  position: relative;
-  display: inline-flex;
-  width: 100%;
-  min-width: 0;
-}
-
-.select {
-  padding-right: 34px;
-  appearance: none;
-  cursor: pointer;
-
-  & option {
-    background: var(--mat-thick-opaque);
-    color: var(--text-primary);
-  }
-}
-
-.chevron {
-  position: absolute;
-  top: 50%;
-  right: 11px;
-  color: var(--text-muted);
-  pointer-events: none;
-  transform: translateY(-50%);
-}
-
 /* ---------- Search ---------- */
 
 .searchWrap {
