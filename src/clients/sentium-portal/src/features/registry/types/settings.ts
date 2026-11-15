@@ -1,7 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 
 /** A Registry settings group: one `/registry/settings/{key}` endpoint. */
-export type SettingsKey = "harness" | "calendar-user" | "inference" | "calendar" | "pdp" | "mcp" | "vigil";
+export type SettingsKey = "harness" | "calendar-user" | "companion" | "inference" | "calendar" | "pdp" | "mcp" | "vigil";
 
 export interface SettingsEnvelope<T> {
   key: string;
@@ -35,6 +35,8 @@ export type SettingControl =
   | { kind: "time"; required: boolean }
   /** `inherit`: an empty option that falls back to the household zone. */
   | { kind: "timezone"; inherit: boolean }
+  /** A Voice the speech server offers; the empty choice is the server's default Voice. */
+  | { kind: "voice" }
   /** `emptyLabel`: offer an empty choice with this label, e.g. "Default model". */
   | { kind: "model"; emptyLabel?: string };
 

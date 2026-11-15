@@ -46,6 +46,10 @@ public static class RegistryModuleExtensions
             SettingsKeys.UserCalendar, SettingsScope.PerUser, c => c.UserCalendar, (c, v) => c.UserCalendar = v)
         );
 
+        services.AddSingleton<ISettingsDescriptor>(new SettingsDescriptor<CompanionSettings>(
+            SettingsKeys.Companion, SettingsScope.PerUser, c => c.Companion, (c, v) => c.Companion = v)
+        );
+
         services.AddSingleton<ISettingsCatalog, SettingsCatalog>();
         services.AddScoped<SettingsService>();
         services.AddSingleton<ISettingsService, ScopedSettingsService>();

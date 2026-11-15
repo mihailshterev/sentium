@@ -1,4 +1,4 @@
-import { Activity, Bot, CalendarClock, Cpu, Home, Plug, ShieldCheck } from "lucide-react";
+import { Activity, AudioLines, Bot, CalendarClock, Cpu, Home, Plug, ShieldCheck } from "lucide-react";
 import type { SettingDefinition, SettingScope, SettingsSection, SettingValue } from "../types/settings";
 
 export const PROMPT_LIMIT = 16000;
@@ -103,6 +103,73 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
         defaultValue: "",
         fromServer: toTimeInput,
         toServer: fromTimeInput,
+      }),
+    ],
+  },
+  {
+    id: "companion",
+    scope: "personal",
+    group: "companion",
+    title: "Companion & voice",
+    description:
+      "The animated Companion in the sidebar, push-to-talk and spoken replies. Speech runs on the home server; voice controls only appear while its speech services are up.",
+    icon: AudioLines,
+    settings: [
+      setting("companion", "isCompanionEnabled", {
+        title: "Show the Companion",
+        description: "The animated character that shows what the assistant is doing and opens a quick chat.",
+        keywords: ["character", "mascot", "avatar", "sidebar"],
+        control: { kind: "switch" },
+        defaultValue: true,
+        testId: "companion-enabled-toggle",
+      }),
+      setting("companion", "isVoiceEnabled", {
+        title: "Voice",
+        description:
+          "Hold the microphone button to talk, and hear the reply spoken. The microphone is open only while you hold it.",
+        keywords: ["speech", "microphone", "push to talk", "tts", "stt", "audio"],
+        control: { kind: "switch" },
+        defaultValue: true,
+      }),
+      setting("companion", "voice", {
+        title: "Voice to speak with",
+        description: "Which synthesised voice reads replies.",
+        keywords: ["speech", "tts", "kokoro", "speaker"],
+        control: { kind: "voice" },
+        defaultValue: "",
+        fromServer: nullToEmpty,
+        toServer: emptyToNull,
+      }),
+      setting("companion", "speakingRate", {
+        title: "Speaking rate",
+        description: "How fast replies are spoken.",
+        keywords: ["speech", "speed", "tempo", "tts"],
+        control: {
+          kind: "range",
+          min: 0.5,
+          max: 2,
+          step: 0.1,
+          minLabel: "Slow (0.5×)",
+          maxLabel: "Fast (2×)",
+          format: (v) => `${v.toFixed(1)}×`,
+        },
+        defaultValue: 1,
+        fromServer: roundTo(0.1),
+        toServer: (v) => Math.round(Number(v) * 10) / 10,
+      }),
+      setting("companion", "isReviewBeforeSendingEnabled", {
+        title: "Review before sending",
+        description: "Put what you said in the message box to check, instead of sending it when you release the button.",
+        keywords: ["speech", "transcript", "push to talk", "confirm"],
+        control: { kind: "switch" },
+        defaultValue: false,
+      }),
+      setting("companion", "isSpeakTypedRepliesEnabled", {
+        title: "Speak replies to typed messages",
+        description: "When off, only replies to messages you spoke are read aloud.",
+        keywords: ["speech", "tts", "read aloud"],
+        control: { kind: "switch" },
+        defaultValue: false,
       }),
     ],
   },

@@ -113,6 +113,10 @@ Sentium.Web (all six modules), the Sandbox, the portal (`sentium-portal`), and t
   [`infra/llm/models.ini`](../infra/llm/models.ini) (default `gemma-4-e4b`), on http://localhost:8090.
 - `embeddings` runs a second `llama-server` for the embedding model (`embeddinggemma-2`), on
   http://localhost:8091.
+- `whisper` (whisper.cpp, speech-to-text, http://localhost:8092) and `tts` (Kokoro, text-to-speech,
+  http://localhost:8093) give the Companion its voice. Both run on the CPU. They are optional:
+  Sentium.Web does not wait for them, and `Speech:Enabled=false` leaves them out (the `tts` image is
+  about 5 GB). See [Voice](#voice).
 
 Aspire **blocks** Sentium.Web until the default chat model is loaded and the embedding server is
 healthy. Both servers reject every request except `/health` without the `llm-api-key`.
@@ -224,14 +228,16 @@ trust the installation's root certificate on each device.
 
 #### Infrastructure
 
-| Service       | Image                                                      | Host port(s)   | Purpose                                                                                                                                                                                                                         |
-| ------------- | ---------------------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `postgres`    | `pgvector/pgvector:pg18-trixie`                            | 5432           | Relational data + RAG vectors (pgvector) - one `sentiumdb` database, one schema per module (`identity`, `registry`, `sentinel`, `codex`, `locus`, `tempus`, `praxis`, `mcp`; the Quartz scheduler keeps its tables in `praxis`) |
-| `redis`       | `redis:7-alpine`                                           | 6379           | HybridCache L2                                                                                                                                                                                                                  |
-| `azurite`     | `mcr.microsoft.com/azure-storage/azurite`                  | 10000          | Azure Blob Storage emulator (workspace files, sandbox artifacts & inventory attachments)                                                                                                                                        |
-| `models-init` | `curlimages/curl:8.22.0` (pinned digest)                   | -              | One-shot: downloads and checksum-verifies the model files from `infra/llm/models.lock`                                                                                                                                          |
-| `llm`         | `ghcr.io/ggml-org/llama.cpp:server-b11804` (pinned digest) | 127.0.0.1:8090 | Chat models: `llama-server` in router mode, presets from `infra/llm/models.ini`                                                                                                                                                 |
-| `embeddings`  | `ghcr.io/ggml-org/llama.cpp:server-b11804` (pinned digest) | 127.0.0.1:8091 | The RAG embedding model (768 dimensions)                                                                                                                                                                                        |
+| Service       | Image                                                       | Host port(s)   | Purpose                                                                                                                                                                                                                         |
+| ------------- | ----------------------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `postgres`    | `pgvector/pgvector:pg18-trixie`                             | 5432           | Relational data + RAG vectors (pgvector) - one `sentiumdb` database, one schema per module (`identity`, `registry`, `sentinel`, `codex`, `locus`, `tempus`, `praxis`, `mcp`; the Quartz scheduler keeps its tables in `praxis`) |
+| `redis`       | `redis:7-alpine`                                            | 6379           | HybridCache L2                                                                                                                                                                                                                  |
+| `azurite`     | `mcr.microsoft.com/azure-storage/azurite`                   | 10000          | Azure Blob Storage emulator (workspace files, sandbox artifacts & inventory attachments)                                                                                                                                        |
+| `models-init` | `curlimages/curl:8.22.0` (pinned digest)                    | -              | One-shot: downloads and checksum-verifies the model files from `infra/llm/models.lock`                                                                                                                                          |
+| `llm`         | `ghcr.io/ggml-org/llama.cpp:server-b11804` (pinned digest)  | 127.0.0.1:8090 | Chat models: `llama-server` in router mode, presets from `infra/llm/models.ini`                                                                                                                                                 |
+| `embeddings`  | `ghcr.io/ggml-org/llama.cpp:server-b11804` (pinned digest)  | 127.0.0.1:8091 | The RAG embedding model (768 dimensions)                                                                                                                                                                                        |
+| `whisper`     | `ghcr.io/ggml-org/whisper.cpp` (pinned digest)              | -              | Speech-to-text for push-to-talk (CPU); Whisper `base.en` from `infra/llm/models.lock`. Optional, see [Voice](#voice)                                                                                                            |
+| `tts`         | `ghcr.io/remsky/kokoro-fastapi-cpu:v0.10.0` (pinned digest) | -              | Text-to-speech for spoken replies (CPU); the Kokoro model is part of the image. Optional, see [Voice](#voice)                                                                                                                   |
 
 #### Application services
 
@@ -275,19 +281,21 @@ All configuration lives in `.env` (see [`.env.example`](../.env.example)). Compo
 values plus the connection strings and service-discovery keys that mirror what Aspire provides at
 runtime.
 
-| Variable                  | Default                | Description                                                                             |
-| ------------------------- | ---------------------- | --------------------------------------------------------------------------------------- |
-| `POSTGRES_PASSWORD`       | `change-me-…`          | PostgreSQL `postgres` superuser password.                                               |
-| `INTERNAL_API_KEY`        | `change-me-…`          | Pre-shared `X-Internal-Token` between `sentium-web` and `sandbox`.                      |
-| `SENTIUM_HOSTNAME`        | `sentium.home.arpa`    | LAN hostname the certificate is issued for; comma-separate several names.               |
-| `HTTPS_PORT`              | `443`                  | Host HTTPS port of `caddy` (the portal and the API).                                    |
-| `HTTP_PORT`               | `80`                   | Host HTTP port of `caddy`; it only redirects to HTTPS.                                  |
-| `LLM_API_KEY`             | `change-me-…`          | Bearer token the `llm` and `embeddings` servers require from `sentium-web`.             |
-| `SENTIUM_MODEL`           | `gemma-4-e4b`          | Default chat model: a section name in `infra/llm/models.ini`.                           |
-| `SENTIUM_EMBEDDING_MODEL` | `embeddinggemma-2`     | Names the embedding model; change it with the model so stored knowledge is re-embedded. |
-| `HF_TOKEN`                | _(empty)_              | Hugging Face token, only for models from gated repositories.                            |
-| `SANDBOX_JOBS_DIR`        | `/tmp/sentium-sandbox` | Per-job sandbox working directory - identical on host and inside the Sandbox container. |
-| `AZURITE_CONNECTION`      | _(well-known dev key)_ | Azurite blob connection string. Safe to leave as-is.                                    |
+| Variable                        | Default                | Description                                                                             |
+| ------------------------------- | ---------------------- | --------------------------------------------------------------------------------------- |
+| `POSTGRES_PASSWORD`             | `change-me-…`          | PostgreSQL `postgres` superuser password.                                               |
+| `INTERNAL_API_KEY`              | `change-me-…`          | Pre-shared `X-Internal-Token` between `sentium-web` and `sandbox`.                      |
+| `SENTIUM_HOSTNAME`              | `sentium.home.arpa`    | LAN hostname the certificate is issued for; comma-separate several names.               |
+| `HTTPS_PORT`                    | `443`                  | Host HTTPS port of `caddy` (the portal and the API).                                    |
+| `HTTP_PORT`                     | `80`                   | Host HTTP port of `caddy`; it only redirects to HTTPS.                                  |
+| `LLM_API_KEY`                   | `change-me-…`          | Bearer token the `llm` and `embeddings` servers require from `sentium-web`.             |
+| `SENTIUM_MODEL`                 | `gemma-4-e4b`          | Default chat model: a section name in `infra/llm/models.ini`.                           |
+| `SENTIUM_EMBEDDING_MODEL`       | `embeddinggemma-2`     | Names the embedding model; change it with the model so stored knowledge is re-embedded. |
+| `HF_TOKEN`                      | _(empty)_              | Hugging Face token, only for models from gated repositories.                            |
+| `SPEECH_TRANSCRIPTION_ENDPOINT` | `http://whisper:8080`  | Speech-to-text server. Set it to empty to switch push-to-talk off.                      |
+| `SPEECH_SYNTHESIS_ENDPOINT`     | `http://tts:8880`      | Text-to-speech server. Set it to empty to switch spoken replies off.                    |
+| `SANDBOX_JOBS_DIR`              | `/tmp/sentium-sandbox` | Per-job sandbox working directory - identical on host and inside the Sandbox container. |
+| `AZURITE_CONNECTION`            | _(well-known dev key)_ | Azurite blob connection string. Safe to leave as-is.                                    |
 
 > **Changing the port?** With `HTTPS_PORT` other than 443, include it in the URL
 > (`https://sentium.home.arpa:8443`); the port-80 redirect then points at the wrong port, so use the
@@ -312,6 +320,25 @@ expect slower responses; for Aspire, set `Llm:UseGpu=false`.
 
 Both .NET images run as **root**. The **Sandbox** needs it to drive the host Docker socket; Sentium.Web
 no longer reads a mounted certificate, but its image does not switch to the non-root `app` user yet.
+
+### Voice
+
+The Companion (the animated character in the sidebar) can listen and speak. Hold the microphone button in
+the assistant or in the Companion's quick chat to talk; the reply to a spoken message is read aloud. Each
+user turns this on or off, and picks a voice and speaking rate, under **Settings → Companion & voice**.
+
+- Audio never leaves the home server. The browser sends a recording to Sentium.Web, which passes it to the
+  `whisper` container and returns only the transcript; the recording is not stored or logged. Replies are
+  synthesised by the `tts` container.
+- Both containers run on the CPU, so they never take GPU memory from the chat model. Neither is published
+  on the host in Compose.
+- The microphone needs a secure context: `https://` (see [LAN access](#lan-access-https-on-every-device)) or `localhost`.
+- Speech is optional. While a speech container is down the portal hides the matching voice controls and
+  the Companion keeps animating silently. To run without speech at all:
+  - **Compose**: set `SPEECH_TRANSCRIPTION_ENDPOINT=` and `SPEECH_SYNTHESIS_ENDPOINT=` (empty) in `.env`
+    and start with `docker compose up -d --scale whisper=0 --scale tts=0`.
+  - **Aspire**: `dotnet user-secrets set "Speech:Enabled" "false"` in the AppHost project.
+- The first version targets English (Whisper `base.en`); other languages are untested.
 
 ---
 
@@ -446,11 +473,11 @@ pnpm tauri build
 
 The output is in `src-tauri/target/release/bundle/`:
 
-| Platform | Output                                      | Notes                                                                            |
-| -------- | ------------------------------------------- | -------------------------------------------------------------------------------- |
+| Platform | Output                                          | Notes                                                                            |
+| -------- | ----------------------------------------------- | -------------------------------------------------------------------------------- |
 | Windows  | `nsis/Sentium Satelles_<version>_x64-setup.exe` | Per-user install, no admin rights.                                               |
 | macOS    | `macos/Sentium Satelles.app`, `dmg/…`           | Lives in the menu bar, no Dock icon.                                             |
-| Linux    | `deb/…`, `appimage/…`                       | The tray icon needs an AppIndicator host (on GNOME, the AppIndicator extension). |
+| Linux    | `deb/…`, `appimage/…`                           | The tray icon needs an AppIndicator host (on GNOME, the AppIndicator extension). |
 
 On Windows, use the installer rather than the bare `.exe`: Windows only shows notifications for apps registered
 through a Start menu shortcut, which the installer creates.

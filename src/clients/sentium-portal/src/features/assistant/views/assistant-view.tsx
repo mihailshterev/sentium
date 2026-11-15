@@ -10,6 +10,9 @@ import { useModels } from "@/features/models/hooks/useModels";
 import type { ConversationMessage, ConversationSummary } from "@/features/assistant/types/assistant";
 import type { Workspace } from "@/features/workspaces/types/workspace";
 import { useConversationStore } from "@/features/assistant/state/assistant-conversation-store";
+import { markSpokenTurn } from "@/features/companion/audio/reply-speaker";
+import { PushToTalkButton } from "@/features/companion/components/push-to-talk-button";
+import { useCompanionStore, useVoiceHint } from "@/features/companion/state/companion-store";
 import { SUGGESTIONS_POOL } from "@/shared/utils/constants";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/shared/ui/button";
@@ -274,8 +277,13 @@ export function AssistantView() {
     void respondToApproval({ aiMsgId, requestId, approved, conversationId: conversationId ?? activeConversationId });
   };
 
-  const submitMessage = async () => {
-    const hasContent = input.trim() || contextPills.length > 0;
+  const reviewTranscripts = useCompanionStore((s) => s.voice.reviewBeforeSending);
+  const voiceHint = useVoiceHint();
+
+  /** `spoken`: a push-to-talk transcript, sent as it is instead of the typed input. */
+  const submitMessage = async (spoken?: string) => {
+    const text = spoken ?? input;
+    const hasContent = text.trim() || contextPills.length > 0;
     if (!hasContent || isTyping) {
       return;
     }
@@ -295,7 +303,11 @@ export function AssistantView() {
         p.type === "workspace" ? `[Workspace: ${p.label} | ID: ${p.id}]` : `[File: ${p.label} | ID: ${p.id}]`,
       )
       .join(" ");
-    const userContent = pillPrefix ? (input.trim() ? `${pillPrefix} ${input.trim()}` : pillPrefix) : input.trim();
+    const userContent = pillPrefix ? (text.trim() ? `${pillPrefix} ${text.trim()}` : pillPrefix) : text.trim();
+
+    if (spoken) {
+      markSpokenTurn(useConversationStore);
+    }
 
     setInput("");
     setContextPills([]);
@@ -305,6 +317,15 @@ export function AssistantView() {
     resetStatus();
 
     void sendMessage({ conversationId, model, userContent });
+  };
+
+  const handleTranscript = (transcript: string) => {
+    if (reviewTranscripts) {
+      resizeTextareaOnInput(input.trim() ? `${input.trim()} ${transcript}` : transcript);
+      textareaRef.current?.focus();
+      return;
+    }
+    void submitMessage(transcript);
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -420,6 +441,8 @@ export function AssistantView() {
               onRemoveContextPill={removeContextPill}
               onSetModel={setModel}
               textareaRef={textareaRef}
+              voiceSlot={<PushToTalkButton onTranscript={handleTranscript} disabled={isTyping} />}
+              hint={voiceHint ?? undefined}
             />
           </div>
         </section>

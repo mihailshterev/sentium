@@ -120,6 +120,56 @@ services:
       retries: 30
       start_period: 15s
 
+  # Speech-to-text for push-to-talk: whisper.cpp's server on the CPU, pinned by digest. It reads the Whisper
+  # model from the verified models volume and converts browser recordings (WebM/Opus, MP4/AAC) with ffmpeg.
+  # No published port: only sentium-web talks to it. Optional - see SPEECH_TRANSCRIPTION_ENDPOINT in .env.example.
+  whisper:
+    image: ghcr.io/ggml-org/whisper.cpp:main-1fe009caeda75f69bc864d6370b10674e45a92bd@sha256:77926a46acc8aafab4af8fa932daf8a2df22151954257e18b6a38911ed9f02fc
+    entrypoint: ["/app/build/bin/whisper-server"]
+    # whisper-server only accepts "--flag value" (not "--flag=value"), so every value is its own argument.
+    command: [
+        "--host",
+        "0.0.0.0",
+        "--port",
+        "8080",
+        "--model",
+        "/models/ggml-base.en.bin",
+        "--inference-path",
+        "/v1/audio/transcriptions",
+        "--convert",
+        "--tmp-dir",
+        "/tmp",
+        "--no-timestamps",
+        # Voice activity detection: a recording without speech transcribes to nothing instead of an invented word.
+        "--vad",
+        "--vad-model",
+        "/models/ggml-silero-v6.2.0.bin",
+      ]
+    volumes:
+      - llm-models:/models:ro
+    depends_on:
+      models-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    restart: unless-stopped
+
+  # Text-to-speech for spoken replies: Kokoro on the CPU. The model and voices are part of the image, so the
+  # digest pins them and nothing is downloaded at run time. No published port.
+  tts:
+    image: ghcr.io/remsky/kokoro-fastapi-cpu:v0.10.0@sha256:f54c5960c2b9387f6349080a9944f8bc7e8cdb98a4ef9238cb0b0f9ff9795f44
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8880/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 20s
+    restart: unless-stopped
+
   searxng:
     image: searxng/searxng@sha256:7add5ffe7933e6b46aa3a26bed8a0c342c9a45ec331d9a8cf145e46b04b24f36
     environment:
@@ -181,6 +231,9 @@ services:
       Inference__ApiKey: ${LLM_API_KEY}
       Inference__DefaultModel: ${SENTIUM_MODEL:-gemma-4-e4b}
       Rag__EmbeddingModelName: ${SENTIUM_EMBEDDING_MODEL:-embeddinggemma-2}
+      # "-" (not ":-"): an empty value in .env switches that half of speech off.
+      Speech__TranscriptionEndpoint: ${SPEECH_TRANSCRIPTION_ENDPOINT-http://whisper:8080}
+      Speech__SynthesisEndpoint: ${SPEECH_SYNTHESIS_ENDPOINT-http://tts:8880}
       ASPNETCORE_FORWARDEDHEADERS_ENABLED: "true"
       DataProtection__KeysPath: /keys
     volumes:

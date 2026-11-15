@@ -32,6 +32,7 @@ import { useAuthStore } from "@/shared/auth/state/auth-store";
 import { useConversationStore } from "@/features/assistant/state/assistant-conversation-store";
 import { useOrchestrationRunStore } from "@/features/orchestration/state/orchestration-run-store";
 import { useTimelineChatStore } from "@/features/timeline/state/timeline-chat-store";
+import { Companion, PHONE_QUERY } from "@/features/companion";
 import { NotificationBell } from "@/features/notifications";
 import { useRole } from "@/shared/auth/hooks/useRole";
 import { useProfile } from "@/features/profile/hooks/useProfile";
@@ -171,6 +172,8 @@ export function Navbar() {
   const toggleSidebar = useUiStore((s) => s.toggleSidebar);
   const isNarrow = useMediaQuery("(max-width: 1099px)");
   const collapsed = isNarrow || storedCollapsed;
+  // At phone width the layout shows the Companion as a floating bubble instead.
+  const isPhone = useMediaQuery(PHONE_QUERY);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -231,6 +234,8 @@ export function Navbar() {
             );
           })}
         </div>
+
+        {!isPhone && <Companion placement="sidebar" collapsed={collapsed} />}
 
         <div className={styles.footer}>
           <Tooltip content={displayName || "Profile"} side="right" disabled={!collapsed}>

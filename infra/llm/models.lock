@@ -9,3 +9,10 @@ a555b900214b477d8880e7832e0b8925e139b0159640036b09fe472b6f2097f2  gemma-4-E4B-it
 
 # Embeddings: EmbeddingGemma 2, text only, Q8_0. 768 dimensions = CodexDbContext.EmbeddingDimensions.
 2188ac1deca4b77dffefd603c2776a9d76d9d74ec01841392982ebb840b09135  embeddinggemma-2-Q8_0.gguf  https://huggingface.co/ggml-org/embeddinggemma-2-GGUF/resolve/6ea3e3a309d12a4779cfda98b8c19800d2d5da71/embeddinggemma-2-Q8_0.gguf
+
+# Speech-to-text: Whisper base.en in whisper.cpp's GGML format, served by the whisper container for push-to-talk.
+a03779c86df3323075f5e796cb2ce5029f00ec8869eee3fdfb897afe36c6d002  ggml-base.en.bin  https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-base.en.bin
+
+# Voice activity detection for the whisper container (Silero VAD, GGML). Without it Whisper invents a word
+# ("you") for a recording that contains no speech.
+2aa269b785eeb53a82983a20501ddf7c1d9c48e33ab63a41391ac6c9f7fb6987  ggml-silero-v6.2.0.bin  https://huggingface.co/ggml-org/whisper-vad/resolve/9ffd54a1e1ee413ddf265af9913beaf518d1639b/ggml-silero-v6.2.0.bin

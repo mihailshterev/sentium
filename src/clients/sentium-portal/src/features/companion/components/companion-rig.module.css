@@ -1,0 +1,367 @@
+/*
+ * The Companion rig. Every part is posed from the root's data-state; poses are plain transforms with a transition,
+ * so a state change blends instead of cutting. Continuous motion (float, blink, orbit) is layered on with
+ * keyframes and switched off entirely under reduced motion, where the states still differ by pose and colour.
+ */
+.rig {
+  --level: 0;
+  --look-x: 0px;
+  --look-y: 0px;
+  --signal: var(--accent);
+  --blend: 420ms var(--ease-out);
+
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+/* Head-only view: the body below the crop must not spill out of the box. */
+.rig[data-compact] {
+  overflow: hidden;
+}
+
+.rig * {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.figure,
+.head,
+.body,
+.eyes,
+.eye,
+.antenna,
+.arm,
+.smile,
+.mouth,
+.orb,
+.orbHalo {
+  transition:
+    transform var(--blend),
+    opacity var(--blend),
+    fill var(--blend),
+    stroke var(--blend);
+}
+
+/* ---------- Parts ---------- */
+
+.shadow {
+  fill: var(--text-primary);
+  opacity: 0.1;
+  transition:
+    transform var(--blend),
+    opacity var(--blend);
+}
+
+.shell,
+.torso {
+  fill: var(--bg-elevated);
+  stroke: var(--border-strong);
+  stroke-width: 1.4;
+}
+
+.ear {
+  fill: var(--bg-elevated);
+  stroke: var(--border-strong);
+  stroke-width: 1.2;
+}
+
+.visor {
+  fill: var(--bg-dark);
+  stroke: var(--border-color);
+  stroke-width: 1;
+}
+
+.eye {
+  fill: var(--signal);
+}
+
+.smile {
+  fill: none;
+  stroke: var(--signal);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+
+.mouth {
+  fill: var(--signal);
+  opacity: 0;
+}
+
+.arm {
+  fill: none;
+  stroke: var(--border-strong);
+  stroke-width: 4;
+  stroke-linecap: round;
+}
+
+.armLeft {
+  transform-origin: 100% 0%;
+}
+
+.armRight {
+  transform-origin: 0% 0%;
+}
+
+.core {
+  fill: var(--signal);
+  opacity: 0.85;
+}
+
+.stalk {
+  fill: none;
+  stroke: var(--border-strong);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+
+.antenna {
+  transform-origin: 50% 100%;
+}
+
+.orb {
+  fill: var(--signal);
+}
+
+.orbHalo {
+  fill: var(--signal);
+  opacity: 0.18;
+}
+
+.orbit {
+  /* Rotates around the orb's centre (60, 12): the satellite sits 8.5 above it. */
+  transform-box: view-box;
+  transform-origin: 60px 12px;
+  opacity: 0;
+  transition: opacity var(--blend);
+}
+
+.satellite {
+  fill: var(--accent-cyan);
+}
+
+.eyes {
+  transform: translate(var(--look-x), var(--look-y));
+}
+
+/* ---------- Idle ---------- */
+
+.rig[data-state="idle"] .figure {
+  animation: float 5.5s var(--ease-in-out) infinite;
+}
+
+.rig[data-state="idle"] .eye {
+  animation: blink 6s linear infinite;
+}
+
+/* ---------- Listening: leans in, antenna pulses with the microphone level ---------- */
+
+.rig[data-state="listening"] {
+  --signal: var(--accent-cyan);
+}
+
+.rig[data-state="listening"] .head {
+  transform: translateY(3px) rotate(-5deg);
+}
+
+.rig[data-state="listening"] .eye {
+  transform: scale(1.12);
+}
+
+.rig[data-state="listening"] .antenna {
+  transform: rotate(7deg);
+}
+
+.rig[data-state="listening"] .orbHalo {
+  opacity: 0.3;
+  transform: scale(calc(1.2 + var(--level) * 1.6));
+  transition: none;
+}
+
+.rig[data-state="listening"] .armLeft {
+  transform: rotate(14deg);
+}
+
+/* ---------- Thinking: eyes up, a satellite orbits the antenna ---------- */
+
+.rig[data-state="thinking"] {
+  --signal: var(--accent-purple);
+}
+
+.rig[data-state="thinking"] .eyes {
+  transform: translate(2px, -4px);
+}
+
+.rig[data-state="thinking"] .eye {
+  transform: scaleY(0.82);
+}
+
+.rig[data-state="thinking"] .head {
+  transform: rotate(3deg);
+}
+
+.rig[data-state="thinking"] .orbit {
+  opacity: 1;
+  animation: orbit 1.6s linear infinite;
+}
+
+/* ---------- Speaking: the mouth follows the audio level ---------- */
+
+.rig[data-state="speaking"] .smile {
+  opacity: 0;
+}
+
+.rig[data-state="speaking"] .mouth {
+  opacity: 1;
+  transform: scale(calc(0.9 + var(--level) * 0.5), calc(0.35 + var(--level) * 1.5));
+  transition: opacity var(--blend);
+}
+
+.rig[data-state="speaking"] .armRight {
+  transform: rotate(-16deg);
+}
+
+.rig[data-state="speaking"] .figure {
+  animation: float 3.2s var(--ease-in-out) infinite;
+}
+
+/* ---------- Alert: perks up, antenna changes colour ---------- */
+
+.rig[data-state="alert"] {
+  --signal: var(--accent-amber);
+}
+
+.rig[data-state="alert"] .head {
+  transform: translateY(-3px);
+}
+
+.rig[data-state="alert"] .eye {
+  transform: scale(1.18);
+}
+
+.rig[data-state="alert"] .antenna {
+  transform: scaleY(1.15);
+}
+
+.rig[data-state="alert"] .orb {
+  fill: var(--accent-red);
+}
+
+.rig[data-state="alert"] .orbHalo {
+  fill: var(--accent-red);
+  opacity: 0.35;
+  animation: halo 1.4s var(--ease-in-out) infinite;
+}
+
+.rig[data-state="alert"] .smile {
+  transform: scaleX(0.6);
+}
+
+/* ---------- Pleased: a brief bounce ---------- */
+
+.rig[data-state="pleased"] {
+  --signal: var(--accent-green);
+}
+
+.rig[data-state="pleased"] .figure {
+  animation: bounce 0.8s var(--ease-out) 2;
+}
+
+.rig[data-state="pleased"] .eye {
+  transform: scaleY(0.5) translateY(-2px);
+}
+
+.rig[data-state="pleased"] .smile {
+  transform: scale(1.35, 1.5);
+}
+
+.rig[data-state="pleased"] .armLeft {
+  transform: rotate(38deg);
+}
+
+.rig[data-state="pleased"] .armRight {
+  transform: rotate(-38deg);
+}
+
+/* ---------- Sleeping: eyes closed, slow breathing ---------- */
+
+.rig[data-state="sleeping"] {
+  --signal: var(--text-dim);
+}
+
+.rig[data-state="sleeping"] .eye {
+  transform: scaleY(0.12);
+}
+
+.rig[data-state="sleeping"] .head {
+  transform: translateY(4px) rotate(4deg);
+}
+
+.rig[data-state="sleeping"] .antenna {
+  transform: rotate(16deg);
+}
+
+.rig[data-state="sleeping"] .smile {
+  transform: scaleX(0.5);
+}
+
+.rig[data-state="sleeping"] .body {
+  transform-origin: 50% 100%;
+  animation: breathe 5s var(--ease-in-out) infinite;
+}
+
+/* ---------- Keyframes (module-scoped) ---------- */
+
+@keyframes float {
+  50% {
+    transform: translateY(-2.5px);
+  }
+}
+
+@keyframes blink {
+  0%,
+  94%,
+  100% {
+    transform: scaleY(1);
+  }
+  97% {
+    transform: scaleY(0.1);
+  }
+}
+
+@keyframes orbit {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes halo {
+  50% {
+    transform: scale(1.7);
+    opacity: 0.12;
+  }
+}
+
+@keyframes bounce {
+  40% {
+    transform: translateY(-7px);
+  }
+  70% {
+    transform: translateY(1px);
+  }
+}
+
+@keyframes breathe {
+  50% {
+    transform: scale(1.03, 1.05);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rig *,
+  .rig[data-state] * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

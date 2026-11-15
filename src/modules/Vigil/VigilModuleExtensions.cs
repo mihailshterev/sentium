@@ -3,6 +3,7 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Sentium.Core.Constants;
 using Sentium.Identity.Contracts;
 using Sentium.Infrastructure.Inference;
+using Sentium.Infrastructure.Speech;
 using Sentium.Vigil.Features.Devices;
 using Sentium.Vigil.Features.Metrics;
 using Sentium.Vigil.Features.Monitoring;
@@ -101,6 +102,19 @@ public static class VigilModuleExtensions
         var inference = configuration.GetSection(InferenceOptions.SectionName).Get<InferenceOptions>() ?? new InferenceOptions();
         AddHttpInfraProbe(services, "LLM", $"{ResourceNames.Llm}-probe", inference.ChatEndpoint);
         AddHttpInfraProbe(services, "Embeddings", $"{ResourceNames.Embeddings}-probe", inference.EmbeddingEndpoint);
+
+        // Speech is optional, so a half that is not configured gets no probe (and never opens an incident).
+        var speech = configuration.GetSection(SpeechOptions.SectionName).Get<SpeechOptions>() ?? new SpeechOptions();
+        AddSpeechProbe(services, "Speech-to-text", ResourceNames.Whisper, speech.TranscriptionEndpoint);
+        AddSpeechProbe(services, "Text-to-speech", ResourceNames.Tts, speech.SynthesisEndpoint);
+    }
+
+    private static void AddSpeechProbe(IServiceCollection services, string target, string resourceName, Uri? endpoint)
+    {
+        if (SpeechOptions.IsConfigured(endpoint))
+        {
+            AddHttpInfraProbe(services, target, $"{resourceName}-probe", endpoint!);
+        }
     }
 
     private static void AddHttpInfraProbe(IServiceCollection services, string target, string clientName, Uri baseAddress)
