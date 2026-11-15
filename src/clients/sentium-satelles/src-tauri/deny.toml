@@ -7,7 +7,12 @@ yanked = "deny"
 # GTK3 bindings are flagged unmaintained upstream and cannot be swapped out from here.
 unmaintained = "workspace"
 unsound = "all"
-ignore = []
+ignore = [
+    # Tauri 2's Linux stack is pinned to gtk-rs 0.18 (GTK3); the fix only exists in glib >= 0.20 and was never
+    # backported. No crate in our graph calls the affected VariantStrIter. Remove when Tauri moves off GTK3.
+    # Mirrored as GHSA-wrw7-89jp-8q8g in the dependency-review allow list in .github/workflows/security.yml.
+    { id = "RUSTSEC-2024-0429", reason = "glib 0.18 VariantStrIter unsound; unreachable, no 0.18 fix, pinned by Tauri" },
+]
 
 [licenses]
 allow = [
