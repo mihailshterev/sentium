@@ -4,18 +4,23 @@ using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 using Sentium.Praxis.Contracts;
 using Sentium.Praxis.Features.CodeExecution;
+using Sentium.Praxis.Features.Sentinel;
+using Sentium.Sentinel.Contracts;
 using Xunit;
 
 namespace Sentium.Tests.Unit.Modules.Praxis.CodeExecution;
 
 /// <summary>
-/// The Sandbox service is stateless; Praxis' client records the execution history.
+/// Praxis authorizes every run with Sentinel before it reaches the Sandbox, and records the execution history
+/// (the Sandbox is stateless).
 /// </summary>
 public sealed class SandboxClientTests : IDisposable
 {
     private readonly IExecutionLogRepository _executionLog = Substitute.For<IExecutionLogRepository>();
+    private readonly IPolicyDecisionPoint _pdp = Substitute.For<IPolicyDecisionPoint>();
     private readonly ServiceProvider _services;
     private readonly StubHandler _handler = new();
     private readonly HttpClient _httpClient;
@@ -28,7 +33,11 @@ public sealed class SandboxClientTests : IDisposable
             .BuildServiceProvider();
 
         _httpClient = new HttpClient(_handler) { BaseAddress = new Uri("http://sandbox/") };
-        _sut = new SandboxClient(_httpClient, _services.GetRequiredService<IServiceScopeFactory>(), NullLogger<SandboxClient>.Instance);
+        _sut = new SandboxClient(
+            _httpClient,
+            new SentinelClient(_pdp, NullLogger<SentinelClient>.Instance),
+            _services.GetRequiredService<IServiceScopeFactory>(),
+            NullLogger<SandboxClient>.Instance);
     }
 
     public void Dispose()
@@ -38,70 +47,149 @@ public sealed class SandboxClientTests : IDisposable
         _services.Dispose();
     }
 
-    private static SandboxExecutionRequest MakeRequest()
+    private static SandboxExecutionRequest MakeRequest(string code = "print('hi')", string language = "Python")
     {
         return new()
         {
-            Language = "Python",
-            Code = "print('hi')",
+            Language = language,
+            Code = code,
             AgentId = "agent-1",
             OriginalUserPrompt = "say hi"
         };
     }
 
-    private static SandboxExecutionResponse MakeResponse(bool policyDenied = false)
+    private static SandboxRunResponse MakeRun()
     {
         return new()
         {
-            Succeeded = !policyDenied,
-            ExitCode = policyDenied ? -1 : 0,
-            Output = policyDenied ? string.Empty : "hi\n",
+            Succeeded = true,
+            ExitCode = 0,
+            Output = "hi\n",
             Error = string.Empty,
             TimedOut = false,
-            PolicyDenied = policyDenied,
-            PolicyDenialReason = policyDenied ? "blocked" : null,
             JobId = Guid.NewGuid(),
-            SentinelAuditId = Guid.NewGuid(),
             DurationMs = 42
         };
     }
 
+    private void PdpReturns(bool allowed, Guid auditId, string reason = "")
+    {
+        _pdp.EvaluateAsync(Arg.Any<PolicyEvaluationRequest>(), Arg.Any<CancellationToken>())
+            .Returns(new PolicyEvaluationResponse
+            {
+                Allowed = allowed,
+                Effect = allowed ? "Allow" : "Deny",
+                Reason = reason,
+                Risk = "Low",
+                AuditId = auditId,
+                Timestamp = DateTimeOffset.UtcNow
+            });
+    }
+
     [Fact]
-    public async Task ExecuteAsync_RecordsSuccessfulRun()
+    public async Task ExecuteAsync_RecordsSuccessfulRun_WithTheSentinelAuditId()
     {
         var ct = TestContext.Current.CancellationToken;
-        var response = MakeResponse();
-        _handler.Respond(HttpStatusCode.OK, response);
+        var auditId = Guid.NewGuid();
+        PdpReturns(allowed: true, auditId);
+        var run = MakeRun();
+        _handler.Respond(HttpStatusCode.OK, run);
 
         var result = await _sut.ExecuteAsync(MakeRequest(), "corr-1", ct);
 
-        result.JobId.Should().Be(response.JobId);
+        result.JobId.Should().Be(run.JobId);
+        result.SentinelAuditId.Should().Be(auditId);
+        result.PolicyDenied.Should().BeFalse();
         await _executionLog.Received(1).AddAsync(
-            Arg.Is<ExecutionLogEntry>(e => e.JobId == response.JobId && e.Succeeded && e.AgentId == "agent-1" && e.CorrelationId == "corr-1" && e.Language == ExecutionLanguage.Python),
+            Arg.Is<ExecutionLogEntry>(e => e.JobId == run.JobId && e.Succeeded && e.AgentId == "agent-1" && e.CorrelationId == "corr-1"
+                && e.Language == ExecutionLanguage.Python && e.SentinelAuditId == auditId),
             Arg.Any<CancellationToken>());
     }
 
     [Fact]
-    public async Task ExecuteAsync_RecordsPolicyDeniedRun()
+    public async Task ExecuteAsync_EvaluatesTheSandboxSkill_WithTheCodeAsPayload()
     {
         var ct = TestContext.Current.CancellationToken;
-        _handler.Respond(HttpStatusCode.OK, MakeResponse(policyDenied: true));
+        PdpReturns(allowed: true, Guid.NewGuid());
+        _handler.Respond(HttpStatusCode.OK, MakeRun());
 
-        var result = await _sut.ExecuteAsync(MakeRequest(), "corr-2", ct);
+        await _sut.ExecuteAsync(MakeRequest(language: "node", code: "console.log(1)"), "corr-2", ct);
+
+        await _pdp.Received(1).EvaluateAsync(
+            Arg.Is<PolicyEvaluationRequest>(r => r.SkillName == "sandbox.execute" && r.ResourceType == "Code" && r.ResourceId == "Node"
+                && r.Action == "execute" && r.AgentId == "agent-1" && r.CorrelationId == "corr-2" && r.OriginalUserPrompt == "say hi"
+                && r.Metadata["payload"] == "console.log(1)" && r.Metadata["language"] == "Node"),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_CapsThePayloadSentToSentinel()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        PdpReturns(allowed: true, Guid.NewGuid());
+        _handler.Respond(HttpStatusCode.OK, MakeRun());
+
+        await _sut.ExecuteAsync(MakeRequest(code: new string('x', 10_000)), "corr-3", ct);
+
+        await _pdp.Received(1).EvaluateAsync(
+            Arg.Is<PolicyEvaluationRequest>(r => r.Metadata["payload"].Length == 8 * 1024 && r.Metadata["codeLength"] == "10000"),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_DoesNotCallTheSandbox_AndRecordsTheDenial_WhenSentinelDenies()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var auditId = Guid.NewGuid();
+        PdpReturns(allowed: false, auditId, reason: "blocked");
+
+        var result = await _sut.ExecuteAsync(MakeRequest(), "corr-4", ct);
 
         result.PolicyDenied.Should().BeTrue();
+        result.Succeeded.Should().BeFalse();
+        result.PolicyDenialReason.Should().Be("blocked");
+        result.SentinelAuditId.Should().Be(auditId);
+        _handler.LastRequest.Should().BeNull();
         await _executionLog.Received(1).AddAsync(
-            Arg.Is<ExecutionLogEntry>(e => e.PolicyDenied && e.PolicyDenialReason == "blocked"),
+            Arg.Is<ExecutionLogEntry>(e => e.PolicyDenied && e.PolicyDenialReason == "blocked" && e.SentinelAuditId == auditId),
             Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_FailsClosed_WhenSentinelThrows()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        _pdp.EvaluateAsync(Arg.Any<PolicyEvaluationRequest>(), Arg.Any<CancellationToken>())
+            .ThrowsAsync(new InvalidOperationException("boom"));
+
+        var result = await _sut.ExecuteAsync(MakeRequest(), "corr-5", ct);
+
+        result.PolicyDenied.Should().BeTrue();
+        result.SentinelAuditId.Should().NotBe(Guid.Empty);
+        _handler.LastRequest.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_RejectsAnUnknownLanguage_BeforeAskingSentinel()
+    {
+        var ct = TestContext.Current.CancellationToken;
+
+        var act = async () => await _sut.ExecuteAsync(MakeRequest(language: "ruby"), "corr-6", ct);
+
+        (await act.Should().ThrowAsync<SandboxRejectedException>())
+            .Which.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        await _pdp.DidNotReceive().EvaluateAsync(Arg.Any<PolicyEvaluationRequest>(), Arg.Any<CancellationToken>());
+        await _executionLog.DidNotReceive().AddAsync(Arg.Any<ExecutionLogEntry>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task ExecuteAsync_Throws_AndRecordsNothing_WhenSandboxRejects()
     {
         var ct = TestContext.Current.CancellationToken;
+        PdpReturns(allowed: true, Guid.NewGuid());
         _handler.Respond(HttpStatusCode.BadRequest, new { title = "One or more validation errors occurred." });
 
-        var act = async () => await _sut.ExecuteAsync(MakeRequest(), "corr-3", ct);
+        var act = async () => await _sut.ExecuteAsync(MakeRequest(), "corr-7", ct);
 
         (await act.Should().ThrowAsync<SandboxRejectedException>())
             .Which.StatusCode.Should().Be(HttpStatusCode.BadRequest);
@@ -112,11 +200,12 @@ public sealed class SandboxClientTests : IDisposable
     public async Task ExecuteAsync_SendsCorrelationIdHeader()
     {
         var ct = TestContext.Current.CancellationToken;
-        _handler.Respond(HttpStatusCode.OK, MakeResponse());
+        PdpReturns(allowed: true, Guid.NewGuid());
+        _handler.Respond(HttpStatusCode.OK, MakeRun());
 
-        await _sut.ExecuteAsync(MakeRequest(), "corr-4", ct);
+        await _sut.ExecuteAsync(MakeRequest(), "corr-8", ct);
 
-        _handler.LastRequest!.Headers.GetValues("X-Correlation-ID").Should().ContainSingle().Which.Should().Be("corr-4");
+        _handler.LastRequest!.Headers.GetValues("X-Correlation-ID").Should().ContainSingle().Which.Should().Be("corr-8");
         _handler.LastRequest.RequestUri!.AbsolutePath.Should().Be("/execute");
     }
 

@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
+using Microsoft.Extensions.DependencyInjection;
 using Sentium.Core.Constants;
 using Sentium.Sentinel.Contracts;
 using Sentium.Sentinel.Features.Audit;
@@ -12,17 +13,12 @@ namespace Sentium.Tests.Integration.Modules.Sentinel;
 public sealed class SentinelApiTests(MonolithWebApplicationFactory factory) : IClassFixture<MonolithWebApplicationFactory>
 {
     private readonly HttpClient _client = factory.CreateClient();
-    private readonly HttpClient _sandboxClient = CreateSandboxClient(factory);
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
-    /// <summary>
-    /// The evaluate endpoint exists only for the out-of-process Sandbox, which authenticates with X-Internal-Token.
-    /// </summary>
-    private static HttpClient CreateSandboxClient(MonolithWebApplicationFactory factory)
+    private async Task<PolicyEvaluationResponse> EvaluateAsync(PolicyEvaluationRequest request)
     {
-        var client = factory.CreateClient();
-        client.DefaultRequestHeaders.Add(CommonHeaderNames.InternalToken, MonolithWebApplicationFactory.InternalApiKey);
-        return client;
+        await using var scope = factory.Services.CreateAsyncScope();
+        return await scope.ServiceProvider.GetRequiredService<IPolicyDecisionPoint>().EvaluateAsync(request, Ct);
     }
 
     [Fact]
@@ -51,7 +47,7 @@ public sealed class SentinelApiTests(MonolithWebApplicationFactory factory) : IC
     }
 
     [Fact]
-    public async Task EvaluateAsync_ReturnsOk_ForInternalCaller()
+    public async Task EvaluateAsync_ReturnsADecision()
     {
         var body = new PolicyEvaluationRequest
         {
@@ -64,11 +60,9 @@ public sealed class SentinelApiTests(MonolithWebApplicationFactory factory) : IC
             CorrelationId = Guid.NewGuid().ToString()
         };
 
-        var response = await _sandboxClient.PostAsJsonAsync("/api/sentinel/policy/evaluate", body, Ct);
+        var result = await EvaluateAsync(body);
 
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        var result = await response.Content.ReadFromJsonAsync<PolicyEvaluationResponse>(Ct);
-        result.Should().NotBeNull();
+        result.AuditId.Should().NotBe(Guid.Empty);
     }
 
     [Fact]
@@ -85,8 +79,7 @@ public sealed class SentinelApiTests(MonolithWebApplicationFactory factory) : IC
             CorrelationId = Guid.NewGuid().ToString()
         };
 
-        var response = await _sandboxClient.PostAsJsonAsync("/api/sentinel/policy/evaluate", body, Ct);
-        var result = await response.Content.ReadFromJsonAsync<PolicyEvaluationResponse>(Ct);
+        var result = await EvaluateAsync(body);
 
         result!.Allowed.Should().BeTrue();
     }
@@ -105,8 +98,7 @@ public sealed class SentinelApiTests(MonolithWebApplicationFactory factory) : IC
             CorrelationId = Guid.NewGuid().ToString()
         };
 
-        var response = await _sandboxClient.PostAsJsonAsync("/api/sentinel/policy/evaluate", body, Ct);
-        var result = await response.Content.ReadFromJsonAsync<PolicyEvaluationResponse>(Ct);
+        var result = await EvaluateAsync(body);
 
         result!.Allowed.Should().BeTrue(result.Reason);
     }
@@ -125,14 +117,13 @@ public sealed class SentinelApiTests(MonolithWebApplicationFactory factory) : IC
             CorrelationId = Guid.NewGuid().ToString()
         };
 
-        var response = await _sandboxClient.PostAsJsonAsync("/api/sentinel/policy/evaluate", body, Ct);
-        var result = await response.Content.ReadFromJsonAsync<PolicyEvaluationResponse>(Ct);
+        var result = await EvaluateAsync(body);
 
         result!.Allowed.Should().BeTrue(result.Reason);
     }
 
     [Fact]
-    public async Task EvaluateAsync_ReturnsUnauthorized_WithoutInternalToken()
+    public async Task EvaluateEndpoint_IsNotExposed_EvenWithTheInternalToken()
     {
         var body = new PolicyEvaluationRequest
         {
@@ -145,9 +136,15 @@ public sealed class SentinelApiTests(MonolithWebApplicationFactory factory) : IC
             CorrelationId = Guid.NewGuid().ToString()
         };
 
-        // A signed-in user is not enough: only the Sandbox (internal token) may call the PDP over HTTP.
-        var response = await _client.PostAsJsonAsync("/api/sentinel/policy/evaluate", body, Ct);
+        // Every PDP caller is in-process; Sentium.Web accepts no X-Internal-Token calls at all.
+        using var request = new HttpRequestMessage(HttpMethod.Post, "/api/sentinel/policy/evaluate")
+        {
+            Content = JsonContent.Create(body)
+        };
+        request.Headers.Add(CommonHeaderNames.InternalToken, MonolithWebApplicationFactory.InternalApiKey);
 
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        var response = await _client.SendAsync(request, Ct);
+
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 }

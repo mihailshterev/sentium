@@ -31,7 +31,6 @@ flowchart TB
     NUN -->|"Contracts: user directory"| ID
 
     PRX -->|"POST /execute<br/>(X-Internal-Token)"| SBX
-    SBX -->|"POST /api/sentinel/policy/evaluate<br/>(X-Internal-Token)"| SEN
 
     VIG -.->|"in-process health checks"| ID
     VIG -.->|"in-process health checks"| SEN

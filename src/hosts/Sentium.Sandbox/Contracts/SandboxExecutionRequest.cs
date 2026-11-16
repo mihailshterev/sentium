@@ -6,5 +6,4 @@ internal sealed record SandboxExecutionRequest
     public required string Code { get; init; }
     public IReadOnlyList<SandboxFileContextDto>? FileContext { get; init; }
     public required string AgentId { get; init; }
-    public string? OriginalUserPrompt { get; init; }
 }

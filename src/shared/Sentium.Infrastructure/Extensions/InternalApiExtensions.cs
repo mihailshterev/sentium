@@ -16,8 +16,7 @@ public static class InternalApiExtensions
     {
         ArgumentNullException.ThrowIfNull(builder);
 
-        builder.Services.Configure<InternalApiOptions>(
-            builder.Configuration.GetSection(InternalApiOptions.SectionName));
+        builder.AddInternalApiClient();
 
         builder.Services.AddAuthentication()
             .AddScheme<AuthenticationSchemeOptions, InternalApiKeyAuthenticationHandler>(
@@ -27,6 +26,20 @@ public static class InternalApiExtensions
             .AddPolicy(Policies.SystemCaller, policy =>
                 policy.AddAuthenticationSchemes(InternalApiKeyDefaults.AuthenticationScheme)
                       .RequireAuthenticatedUser());
+
+        return builder;
+    }
+
+    /// <summary>
+    /// Binds the internal API key for <see cref="InternalApiKeyDelegatingHandler"/> on a host that only calls
+    /// internal services and accepts no <c>X-Internal-Token</c> calls itself.
+    /// </summary>
+    public static IHostApplicationBuilder AddInternalApiClient(this IHostApplicationBuilder builder)
+    {
+        ArgumentNullException.ThrowIfNull(builder);
+
+        builder.Services.Configure<InternalApiOptions>(
+            builder.Configuration.GetSection(InternalApiOptions.SectionName));
 
         return builder;
     }

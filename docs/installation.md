@@ -212,10 +212,9 @@ docker compose up --build          # foreground, streams all logs
 docker compose up --build -d       # detached / background
 ```
 
-On first start Sentium.Web applies every module's EF Core migrations automatically (it runs in the
-`Development` environment for exactly this reason), and the one-shot `models-init` container downloads
-the model files pinned in `infra/llm/models.lock`, verifying each SHA-256 and resuming interrupted
-downloads. A checksum mismatch makes it exit non-zero, which keeps the inference servers down.
+On every start Sentium.Web applies any pending EF Core migrations of every module, and the one-shot
+`models-init` container downloads the model files pinned in `infra/llm/models.lock`, verifying each
+SHA-256 and resuming interrupted downloads. A checksum mismatch makes it exit non-zero, which keeps the inference servers down.
 
 To stop:
 
@@ -232,16 +231,16 @@ trust the installation's root certificate on each device.
 
 #### Infrastructure
 
-| Service       | Image                                                       | Host port(s)   | Purpose                                                                                                                                                                                                                         |
-| ------------- | ----------------------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `postgres`    | `pgvector/pgvector:pg18-trixie`                             | 5432           | Relational data + RAG vectors (pgvector) - one `sentiumdb` database, one schema per module (`identity`, `registry`, `sentinel`, `codex`, `locus`, `tempus`, `praxis`, `mcp`; the Quartz scheduler keeps its tables in `praxis`) |
-| `redis`       | `redis:7-alpine`                                            | 6379           | HybridCache L2                                                                                                                                                                                                                  |
-| `azurite`     | `mcr.microsoft.com/azure-storage/azurite`                   | 10000          | Azure Blob Storage emulator (workspace files, sandbox artifacts & inventory attachments)                                                                                                                                        |
-| `models-init` | `curlimages/curl:8.22.0` (pinned digest)                    | -              | One-shot: downloads and checksum-verifies the model files from `infra/llm/models.lock`                                                                                                                                          |
-| `llm`         | `ghcr.io/ggml-org/llama.cpp:server-b11804` (pinned digest)  | 127.0.0.1:8090 | Chat models: `llama-server` in router mode, presets from `infra/llm/models.ini`                                                                                                                                                 |
-| `embeddings`  | `ghcr.io/ggml-org/llama.cpp:server-b11804` (pinned digest)  | 127.0.0.1:8091 | The RAG embedding model (768 dimensions)                                                                                                                                                                                        |
-| `whisper`     | `ghcr.io/ggml-org/whisper.cpp` (pinned digest)              | -              | Speech-to-text for push-to-talk (CPU); Whisper `base.en` from `infra/llm/models.lock`. Optional, see [Voice](#voice)                                                                                                            |
-| `tts`         | `ghcr.io/remsky/kokoro-fastapi-cpu:v0.10.0` (pinned digest) | -              | Text-to-speech for spoken replies (CPU); the Kokoro model is part of the image. Optional, see [Voice](#voice)                                                                                                                   |
+| Service       | Image                                                       | Host port(s)    | Purpose                                                                                                                                                                                                                         |
+| ------------- | ----------------------------------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `postgres`    | `pgvector/pgvector:pg18-trixie`                             | 127.0.0.1:5432  | Relational data + RAG vectors (pgvector) - one `sentiumdb` database, one schema per module (`identity`, `registry`, `sentinel`, `codex`, `locus`, `tempus`, `praxis`, `mcp`; the Quartz scheduler keeps its tables in `praxis`) |
+| `redis`       | `redis:7-alpine`                                            | 127.0.0.1:6379  | HybridCache L2                                                                                                                                                                                                                  |
+| `azurite`     | `mcr.microsoft.com/azure-storage/azurite`                   | 127.0.0.1:10000 | Azure Blob Storage emulator (workspace files, sandbox artifacts & inventory attachments)                                                                                                                                        |
+| `models-init` | `curlimages/curl:8.22.0` (pinned digest)                    | -               | One-shot: downloads and checksum-verifies the model files from `infra/llm/models.lock`                                                                                                                                          |
+| `llm`         | `ghcr.io/ggml-org/llama.cpp:server-b11804` (pinned digest)  | 127.0.0.1:8090  | Chat models: `llama-server` in router mode, presets from `infra/llm/models.ini`                                                                                                                                                 |
+| `embeddings`  | `ghcr.io/ggml-org/llama.cpp:server-b11804` (pinned digest)  | 127.0.0.1:8091  | The RAG embedding model (768 dimensions)                                                                                                                                                                                        |
+| `whisper`     | `ghcr.io/ggml-org/whisper.cpp` (pinned digest)              | -               | Speech-to-text for push-to-talk (CPU); Whisper `base.en` from `infra/llm/models.lock`. Optional, see [Voice](#voice)                                                                                                            |
+| `tts`         | `ghcr.io/remsky/kokoro-fastapi-cpu:v0.10.0` (pinned digest) | -               | Text-to-speech for spoken replies (CPU); the Kokoro model is part of the image. Optional, see [Voice](#voice)                                                                                                                   |
 
 #### Application services
 
@@ -289,7 +288,7 @@ runtime.
 | Variable                        | Default                | Description                                                                             |
 | ------------------------------- | ---------------------- | --------------------------------------------------------------------------------------- |
 | `POSTGRES_PASSWORD`             | `change-me-…`          | PostgreSQL `postgres` superuser password.                                               |
-| `INTERNAL_API_KEY`              | `change-me-…`          | Pre-shared `X-Internal-Token` between `sentium-web` and `sandbox`.                      |
+| `INTERNAL_API_KEY`              | `change-me-…`          | Pre-shared `X-Internal-Token` from `sentium-web` to `sandbox` and `backup`.             |
 | `SENTIUM_HOSTNAME`              | `sentium.home.arpa`    | LAN hostname the certificate is issued for; comma-separate several names.               |
 | `HTTPS_PORT`                    | `443`                  | Host HTTPS port of `caddy` (the portal and the API).                                    |
 | `HTTP_PORT`                     | `80`                   | Host HTTP port of `caddy`; it only redirects to HTTPS.                                  |
@@ -332,6 +331,10 @@ expect slower responses; for Aspire, set `Llm:UseGpu=false`.
 
 Both .NET images run as **root**. The **Sandbox** needs it to drive the host Docker socket; Sentium.Web
 no longer reads a mounted certificate, but its image does not switch to the non-root `app` user yet.
+
+The two privileged sidecars sit on their own internal networks (no internet route): `sandbox` on
+`sentium-sandbox` with only `sentium-web` and `azurite`, `backup` on `sentium-backup` with only `sentium-web`,
+`postgres` and `azurite`. No other container (the inference servers, speech, SearXNG, Caddy) can reach them.
 
 ### Voice
 
@@ -820,9 +823,9 @@ The model id is not declared in `infra/llm/models.ini`. Check `SENTIUM_MODEL` an
 
 **Sandbox code execution fails.**
 Verify the host Docker socket is mounted and `SANDBOX_JOBS_DIR` resolves to the same absolute path on
-host and container. On Windows, that path must live inside your WSL2 distro. Every run is also
-authorized by Sentinel inside `sentium-web`: if `INTERNAL_API_KEY` is empty or the two containers
-disagree, runs are denied.
+host and container. On Windows, that path must live inside your WSL2 distro. `sentium-web` calls the
+Sandbox with `INTERNAL_API_KEY`: if it is empty or the two containers disagree, the Sandbox answers 401.
+A run Sentinel denies is not an error: it shows as **Denied** in the execution history.
 
 **Port already in use.**
 Change the offending `*_PORT` value in `.env`.

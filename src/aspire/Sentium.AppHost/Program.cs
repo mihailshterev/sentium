@@ -143,7 +143,6 @@ var egressNetwork = builder.Configuration[SearxngConfig.EgressNetworkKey] ?? Sea
 
 var sandbox = builder.AddProject<Projects.Sentium_Sandbox>(ServiceNames.Sandbox)
     .WithReference(blobs).WaitFor(blobs)
-    .WithReference(web)
     .WithEnvironment(EnvConfig.Keys.DockerHost, dockerHost)
     .WithEnvironment(EnvConfig.Keys.InternalApiKey, internalApiKey)
     .WithEnvironment(EnvConfig.Keys.SandboxMcp.Enabled, builder.Configuration["Mcp:SandboxEnabled"] ?? "true")

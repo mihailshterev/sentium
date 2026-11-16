@@ -1,13 +1,11 @@
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Sentium.Sandbox.Contracts;
 using Sentium.Sandbox.Controllers;
 using Sentium.Sandbox.Execution;
 using Sentium.Sandbox.Models;
-using Sentium.Sandbox.Sentinel;
 using Xunit;
 
 namespace Sentium.Tests.Unit.Modules.Sandbox;
@@ -15,14 +13,11 @@ namespace Sentium.Tests.Unit.Modules.Sandbox;
 public sealed class SandboxControllerTests
 {
     private readonly ISandboxRunner _runner = Substitute.For<ISandboxRunner>();
-    private readonly ISentinelGateway _sentinel = Substitute.For<ISentinelGateway>();
     private readonly SandboxController _controller;
 
     public SandboxControllerTests()
     {
-        var orchestrator = new SandboxOrchestrator(_runner, _sentinel, NullLogger<SandboxOrchestrator>.Instance);
-
-        _controller = new SandboxController(orchestrator)
+        _controller = new SandboxController(_runner)
         {
             ControllerContext = new ControllerContext
             {
@@ -32,55 +27,25 @@ public sealed class SandboxControllerTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_ReturnsDeniedResult_WhenPolicyDenied()
+    public async Task ExecuteAsync_ReturnsTheRunnerResult()
     {
         // Arrange
         var ct = TestContext.Current.CancellationToken;
-        _sentinel.AuthorizeExecutionAsync(Arg.Any<ExecutionRequest>(), ct)
-            .Returns(SentinelAuthorizationResult.Deny("blocked", Guid.NewGuid()));
-
-        var body = new SandboxExecutionRequest
-        {
-            Language = "Python",
-            Code = "print('hi')",
-            AgentId = "agent-1"
-        };
-
-        // Act
-        var result = await _controller.ExecuteAsync(body, ct);
-
-        // Assert - a denial is a result (200 + PolicyDenied), so Praxis can record it.
-        var response = result.Result.Should().BeOfType<OkObjectResult>()
-            .Which.Value.Should().BeOfType<SandboxExecutionResponse>().Subject;
-        response.PolicyDenied.Should().BeTrue();
-        response.PolicyDenialReason.Should().Be("blocked");
-    }
-
-    [Fact]
-    public async Task ExecuteAsync_ReturnsOk_WhenExecutionSucceeds()
-    {
-        // Arrange
-        var ct = TestContext.Current.CancellationToken;
-        var auditId = Guid.NewGuid();
-        var successResult = new ExecutionResult
+        var jobId = Guid.NewGuid();
+        _runner.RunAsync(Arg.Any<ExecutionRequest>(), ct).Returns(new ExecutionResult
         {
             Succeeded = true,
             ExitCode = 0,
             Output = "hello\n",
             Error = string.Empty,
             TimedOut = false,
-            PolicyDenied = false,
-            JobId = Guid.NewGuid(),
+            JobId = jobId,
             DurationMs = 150
-        };
-
-        _sentinel.AuthorizeExecutionAsync(Arg.Any<ExecutionRequest>(), ct)
-            .Returns(SentinelAuthorizationResult.Allow(auditId));
-        _runner.RunAsync(Arg.Any<ExecutionRequest>(), ct).Returns(successResult);
+        });
 
         var body = new SandboxExecutionRequest
         {
-            Language = "Python",
+            Language = "python",
             Code = "print('hello')",
             AgentId = "agent-1"
         };
@@ -89,6 +54,37 @@ public sealed class SandboxControllerTests
         var result = await _controller.ExecuteAsync(body, ct);
 
         // Assert
-        result.Result.Should().BeOfType<OkObjectResult>();
+        var response = result.Result.Should().BeOfType<OkObjectResult>()
+            .Which.Value.Should().BeOfType<SandboxExecutionResponse>().Subject;
+        response.Succeeded.Should().BeTrue();
+        response.Output.Should().Be("hello\n");
+        response.JobId.Should().Be(jobId);
+        await _runner.Received(1).RunAsync(
+            Arg.Is<ExecutionRequest>(r => r.Language == ExecutionLanguage.Python && r.AgentId == "agent-1"),
+            ct);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_UsesTheCallersCorrelationId()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        _controller.HttpContext.Request.Headers["X-Correlation-ID"] = "corr-1";
+        _runner.RunAsync(Arg.Any<ExecutionRequest>(), ct).Returns(new ExecutionResult
+        {
+            Succeeded = true,
+            ExitCode = 0,
+            Output = string.Empty,
+            Error = string.Empty,
+            TimedOut = false,
+            JobId = Guid.NewGuid(),
+            DurationMs = 1
+        });
+
+        // Act
+        await _controller.ExecuteAsync(new SandboxExecutionRequest { Language = "Node", Code = "1", AgentId = "agent-1" }, ct);
+
+        // Assert
+        await _runner.Received(1).RunAsync(Arg.Is<ExecutionRequest>(r => r.CorrelationId == "corr-1"), ct);
     }
 }

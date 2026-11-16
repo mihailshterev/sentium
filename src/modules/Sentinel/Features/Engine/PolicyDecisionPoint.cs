@@ -4,9 +4,8 @@ using Sentium.Sentinel.Features.Policies;
 namespace Sentium.Sentinel.Features.Engine;
 
 /// <summary>
-/// In-process <see cref="IPolicyDecisionPoint"/>. Each evaluation runs in its own DI scope (as the old
-/// <c>POST policy/evaluate</c> request did), so concurrent tool calls never share the audit
-/// <see cref="Data.SentinelDbContext"/>.
+/// In-process <see cref="IPolicyDecisionPoint"/>. Each evaluation runs in its own DI scope, so concurrent tool calls
+/// never share the audit <see cref="Data.SentinelDbContext"/>.
 /// </summary>
 internal sealed class PolicyDecisionPoint(IServiceScopeFactory scopeFactory) : IPolicyDecisionPoint
 {

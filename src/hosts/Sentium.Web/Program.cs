@@ -4,7 +4,6 @@ using Scalar.AspNetCore;
 using Sentium.Core.Constants;
 using Sentium.Infrastructure.Extensions;
 using Sentium.Infrastructure.Mvc;
-using Sentium.Infrastructure.Testing;
 using Sentium.Infrastructure.Validation;
 using Sentium.Web;
 
@@ -29,8 +28,8 @@ builder.AddSentiumPlatform();
 
 builder.AddSentiumDataProtection();
 
-// X-Internal-Token scheme for the out-of-process Sandbox service (Sentinel's evaluate endpoint, Praxis' sandbox client).
-builder.AddInternalApiSecurity();
+// Sentium.Web only sends the X-Internal-Token (to the Sandbox and the Backup service); no endpoint here accepts it.
+builder.AddInternalApiClient();
 
 // Module registration order mirrors the dependency graph (dependencies first).
 builder.AddSentiumModules();
@@ -47,10 +46,7 @@ app.UseSentiumTracing();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 
-if (app.Environment.IsDevelopment() || app.Environment.IsTesting())
-{
-    await app.InitializeSentiumModulesAsync();
-}
+await app.InitializeSentiumModulesAsync();
 
 if (app.Environment.IsDevelopment())
 {
