@@ -1,32 +1,21 @@
 using Microsoft.AspNetCore.Identity;
 using Sentium.Identity.Entities;
+using Sentium.Infrastructure.Testing;
 
 namespace Sentium.Identity.Features.Security;
 
 /// <summary>
-/// Seeds the system roles and, when <c>E2E:SeedTestUser</c> is enabled, the e2e test user. Runs in
-/// <see cref="StartingAsync"/> so roles exist before Kestrel accepts the first login. The schema
-/// itself is created by the module migrations, which the host applies before starting.
+/// Seeds the system roles and, in the Testing environment with <c>E2E:SeedTestUser</c> enabled, the e2e test user.
+/// Runs during module initialization, right after the migrations and before Kestrel accepts the first request: the
+/// roles are data every registration and login depends on.
 /// </summary>
-internal sealed class IdentitySeeder(IServiceProvider serviceProvider, IConfiguration configuration) : IHostedLifecycleService
+internal sealed class IdentitySeeder(IConfiguration configuration, IHostEnvironment environment)
 {
-    public async Task StartingAsync(CancellationToken cancellationToken)
+    public async Task SeedAsync(IServiceProvider services)
     {
-        await using var scope = serviceProvider.CreateAsyncScope();
-
-        await SeedRolesAsync(scope.ServiceProvider);
-        await SeedTestUserAsync(scope.ServiceProvider);
+        await SeedRolesAsync(services);
+        await SeedTestUserAsync(services);
     }
-
-    public Task StartAsync(CancellationToken cancellationToken) => Task.CompletedTask;
-
-    public Task StartedAsync(CancellationToken cancellationToken) => Task.CompletedTask;
-
-    public Task StoppingAsync(CancellationToken cancellationToken) => Task.CompletedTask;
-
-    public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
-
-    public Task StoppedAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
     private static async Task SeedRolesAsync(IServiceProvider services)
     {
@@ -43,7 +32,8 @@ internal sealed class IdentitySeeder(IServiceProvider serviceProvider, IConfigur
 
     private async Task SeedTestUserAsync(IServiceProvider services)
     {
-        var shouldSeed = configuration.GetValue<bool>("E2E:SeedTestUser");
+        // Only ever in the Testing environment: the e2e user is a Sovereign with a password from configuration.
+        var shouldSeed = environment.IsTesting() && configuration.GetValue<bool>("E2E:SeedTestUser");
         if (!shouldSeed)
         {
             return;

@@ -1,15 +1,15 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sentium.Core.Results;
 using Sentium.Identity.Features.Security;
+using Sentium.Infrastructure.Security;
 
 namespace Sentium.Identity.Features.Users;
 
 [ApiController]
 [Route($"{IdentityRoutes.Prefix}/users")]
 [Authorize]
-internal sealed class UsersController(IUserService userService, IUserClaimsService userClaimsService) : ControllerBase
+internal sealed class UsersController(IUserService userService, ICurrentUser currentUser) : ControllerBase
 {
     /// <summary>
     /// Lists users registered in the system, with pagination.
@@ -28,28 +28,7 @@ internal sealed class UsersController(IUserService userService, IUserClaimsServi
         (page, pageSize) = new PaginationQuery { Page = page, PageSize = pageSize }.Normalize();
 
         var (users, totalCount) = await userService.GetPagedUsersAsync(page, pageSize, ct);
-
-        var userIds = users.Select(u => u.Id);
-        var claimsMap = await userClaimsService.GetBatchClaimsAsync(userIds, [Scopes.Roles], ct);
-
-        var items = users.Select(u =>
-        {
-            List<string> roleList = [];
-            if (claimsMap.TryGetValue(u.Id, out var claims))
-            {
-                roleList = [.. claims
-                    .Where(c => c.Type == ClaimTypes.Role)
-                    .Select(c => c.Value)];
-            }
-
-            return new UserResponse(
-                u.Id,
-                u.UserName!,
-                u.FirstName,
-                u.LastName,
-                roleList,
-                u.IsLockedOut);
-        }).ToList();
+        var items = users.Select(ToResponse).ToList();
 
         return Ok(PagedResponse<UserResponse>.Create(items, totalCount, page, pageSize));
     }
@@ -69,13 +48,7 @@ internal sealed class UsersController(IUserService userService, IUserClaimsServi
             return NotFound();
         }
 
-        var roles = await userClaimsService.GetClaimsAsync(user.Id, [Scopes.Roles], ct);
-        var roleList = roles
-            .Where(c => c.Type == ClaimTypes.Role)
-            .Select(c => c.Value)
-            .ToList();
-
-        return Ok(new UserResponse(user.Id, user.UserName!, user.FirstName, user.LastName, roleList, user.IsLockedOut));
+        return Ok(ToResponse(user));
     }
 
     /// <summary>
@@ -92,7 +65,7 @@ internal sealed class UsersController(IUserService userService, IUserClaimsServi
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> DeleteUser(Guid id, CancellationToken ct)
     {
-        var requesterId = GetCurrentUserId();
+        var requesterId = currentUser.UserId;
         if (requesterId is null)
         {
             return Unauthorized();
@@ -110,9 +83,6 @@ internal sealed class UsersController(IUserService userService, IUserClaimsServi
         return NoContent();
     }
 
-    private Guid? GetCurrentUserId()
-    {
-        var sub = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue(ClaimNames.Subject);
-        return Guid.TryParse(sub, out var id) ? id : null;
-    }
+    private static UserResponse ToResponse(UserDto user) =>
+        new(user.Id, user.UserName!, user.FirstName, user.LastName, [.. user.Roles], user.IsLockedOut);
 }

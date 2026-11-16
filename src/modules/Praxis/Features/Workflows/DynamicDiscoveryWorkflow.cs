@@ -19,7 +19,7 @@ internal sealed class DynamicDiscoveryWorkflow(
     {
         ArgumentNullException.ThrowIfNull(trigger);
 
-        var request = WorkspaceContextPrompt.Augment(trigger.ResolveActivity(), WorkspaceContextPrompt.TryExtract(trigger.Payload));
+        var request = WorkspaceContextPrompt.Augment(trigger.Activity, trigger.WorkspaceId);
 
         var roster = new List<SquadMember>();
         roster.AddRange(nativeAgents

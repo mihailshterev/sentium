@@ -2,6 +2,7 @@ using Azure.Storage.Blobs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
+using Microsoft.Net.Http.Headers;
 using Sentium.Core.Results;
 using Sentium.Praxis.Contracts;
 
@@ -131,16 +132,22 @@ internal sealed class SandboxController(
     }
 
     /// <summary>
-    /// Streams the requested artifact blob through the backend, avoiding direct blob storage credential requirements.
+    /// Streams an artifact of one of the caller's runs through the backend, so the browser never needs blob storage
+    /// credentials. The path is <c>{jobId:N}/{file}</c>; any other caller's artifact is reported as not found.
     /// </summary>
     [HttpGet("artifacts/{**path}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DownloadArtifactAsync(string path, CancellationToken ct)
     {
-        if (string.IsNullOrWhiteSpace(path) || path.Contains(".."))
+        if (string.IsNullOrWhiteSpace(path) || path.Contains("..", StringComparison.Ordinal))
         {
             return BadRequest("Invalid artifact path.");
+        }
+
+        if (!await IsOwnArtifactAsync(path, ct))
+        {
+            return NotFound();
         }
 
         var container = blobServiceClient.GetBlobContainerClient(_opts.ArtifactContainerName);
@@ -157,6 +164,25 @@ internal sealed class SandboxController(
         var stream = await blob.OpenReadAsync(cancellationToken: ct);
         var fileName = Path.GetFileName(path);
 
+        // Artifacts are written by sandboxed code: even if a browser opens one instead of downloading it, it runs nothing.
+        Response.Headers[HeaderNames.ContentSecurityPolicy] = "default-src 'none'; sandbox";
         return File(stream, contentType, fileName, enableRangeProcessing: true);
+    }
+
+    /// <summary>
+    /// The execution history is user-scoped, so finding the run that harvested <paramref name="path"/> proves the
+    /// caller may read it.
+    /// </summary>
+    private async Task<bool> IsOwnArtifactAsync(string path, CancellationToken ct)
+    {
+        var separator = path.IndexOf('/', StringComparison.Ordinal);
+        if (separator <= 0 || !Guid.TryParseExact(path[..separator], "N", out var jobId))
+        {
+            return false;
+        }
+
+        var entry = await executionLog.GetByIdAsync(jobId, ct);
+
+        return entry is not null && entry.Artifacts.Any(a => new BlobUriBuilder(a.BlobUri).BlobName == path);
     }
 }

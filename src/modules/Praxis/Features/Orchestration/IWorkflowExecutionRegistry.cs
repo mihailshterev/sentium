@@ -7,9 +7,10 @@ namespace Sentium.Praxis.Features.Orchestration;
 internal interface IWorkflowExecutionRegistry
 {
     /// <summary>
-    /// Registers the token source driving the run identified by <paramref name="streamId"/>.
+    /// Registers the token source driving the run identified by <paramref name="streamId"/>, run for
+    /// <paramref name="ownerId"/>.
     /// </summary>
-    void Register(string streamId, CancellationTokenSource cts);
+    void Register(string streamId, Guid? ownerId, CancellationTokenSource cts);
 
     /// <summary>
     /// Removes the run's registration (call once the run reaches a terminal state).
@@ -21,4 +22,9 @@ internal interface IWorkflowExecutionRegistry
     /// <see langword="true"/> if the run was in flight and a cancellation was signalled.
     /// </summary>
     bool Cancel(string streamId);
+
+    /// <summary>
+    /// <see cref="Cancel"/>, but only a run of <paramref name="ownerId"/>.
+    /// </summary>
+    bool CancelOwned(string streamId, Guid ownerId);
 }

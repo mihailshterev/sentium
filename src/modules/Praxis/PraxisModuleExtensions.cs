@@ -2,8 +2,10 @@ using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using Sentium.Core.Constants;
+using Sentium.Identity.Contracts;
 using Sentium.Infrastructure.Extensions;
 using Sentium.Infrastructure.Inference;
+using Sentium.Infrastructure.Retention;
 using Sentium.Infrastructure.Security;
 using Sentium.Infrastructure.Speech;
 using Sentium.Praxis.Contracts;
@@ -19,6 +21,7 @@ using Sentium.Praxis.Features.Learnings;
 using Sentium.Praxis.Features.Models;
 using Sentium.Praxis.Features.Orchestration;
 using Sentium.Praxis.Features.Registry;
+using Sentium.Praxis.Features.Retention;
 using Sentium.Praxis.Features.Sentinel;
 using Sentium.Praxis.Features.Skills;
 using Sentium.Praxis.Features.Skills.BuiltIn;
@@ -29,6 +32,7 @@ using Sentium.Praxis.Features.Tools;
 using Sentium.Praxis.Features.Tools.Inventory;
 using Sentium.Praxis.Features.Tools.Timeline;
 using Sentium.Praxis.Features.Tools.Workspace;
+using Sentium.Praxis.Features.Users;
 using Sentium.Praxis.Features.WorkflowManagement;
 using Sentium.Praxis.Features.Workflows;
 using Sentium.Praxis.Features.Workflows.Squad;
@@ -100,7 +104,6 @@ public static class PraxisModuleExtensions
 
         services.AddTransient<IAgentTool, KnowledgeBaseSearchTool>();
         services.AddTransient<IAgentTool, CodeExecutionSandboxTool>();
-        services.AddTransient<IAgentTool, ReadFileTool>();
         services.AddTransient<IAgentTool, StoreMemoryTool>();
         services.AddTransient<IAgentTool, RecallMemoryTool>();
         services.AddTransient<IAgentTool, RecallLearningsTool>();
@@ -125,9 +128,9 @@ public static class PraxisModuleExtensions
         services.AddScoped<IWorkflowRepository, WorkflowRepository>();
         services.AddScoped<IWorkflowRunRepository, WorkflowRunRepository>();
 
-        services.AddSingleton<SentinelClient>();
         services.AddSingleton<SentinelFunctionMiddleware>();
         services.AddSingleton<IPdpContextAccessor, PdpContextAccessor>();
+        services.AddSingleton<IUserRemovalObserver, PraxisUserDataRemover>();
 
         AddCodeExecution(services, configuration);
         AddSpeech(services, configuration);
@@ -238,6 +241,7 @@ public static class PraxisModuleExtensions
     {
         services.Configure<SandboxArtifactOptions>(configuration.GetSection(SandboxArtifactOptions.SectionName));
         services.AddScoped<IExecutionLogRepository, EfCoreExecutionLogRepository>();
+        services.AddRetentionSweep<RunHistoryRetention>();
 
         services.TryAddTransient<InternalApiKeyDelegatingHandler>();
 

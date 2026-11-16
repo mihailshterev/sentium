@@ -1,7 +1,16 @@
 import type { LucideIcon } from "lucide-react";
 
 /** A Registry settings group: one `/registry/settings/{key}` endpoint. */
-export type SettingsKey = "harness" | "calendar-user" | "companion" | "inference" | "calendar" | "pdp" | "mcp" | "vigil";
+export type SettingsKey =
+  | "harness"
+  | "calendar-user"
+  | "companion"
+  | "inference"
+  | "calendar"
+  | "pdp"
+  | "access"
+  | "mcp"
+  | "vigil";
 
 export interface SettingsEnvelope<T> {
   key: string;

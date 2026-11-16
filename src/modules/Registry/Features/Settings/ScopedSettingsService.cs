@@ -21,4 +21,10 @@ internal sealed class ScopedSettingsService(IServiceScopeFactory scopeFactory) :
         await using var scope = scopeFactory.CreateAsyncScope();
         return await scope.ServiceProvider.GetRequiredService<SettingsService>().UpdateAsync(key, userId, payload, updatedBy, ct);
     }
+
+    public async Task RemoveUserSettingsAsync(Guid userId, CancellationToken ct = default)
+    {
+        await using var scope = scopeFactory.CreateAsyncScope();
+        await scope.ServiceProvider.GetRequiredService<SettingsService>().RemoveUserSettingsAsync(userId, ct);
+    }
 }

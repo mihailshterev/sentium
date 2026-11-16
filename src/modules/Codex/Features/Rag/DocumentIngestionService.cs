@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using Sentium.Codex.Contracts;
 using Sentium.Codex.Contracts.Models;
 using Microsoft.Extensions.Options;
@@ -21,6 +22,12 @@ internal sealed class DocumentIngestionService(
     IOptions<RagOptions> options,
     ILogger<DocumentIngestionService> logger) : IDocumentIngestionService
 {
+    /// <summary>
+    /// Matches <c>EmbeddingReindexer.BatchSize</c>: small enough for the embedding server's batch, large enough to
+    /// amortize the round trip.
+    /// </summary>
+    private const int EmbeddingBatchSize = 32;
+
     private readonly RagOptions ragOptions = options.Value;
 
     public async Task IngestAsync(IngestionRequest request, string? targetCollection = null, CancellationToken ct = default)
@@ -29,28 +36,38 @@ internal sealed class DocumentIngestionService(
 
         var collectionName = targetCollection ?? ragOptions.CollectionName;
 
-        var chunks = TextChunker.Chunk(request.Content, ragOptions.ChunkSize, ragOptions.ChunkOverlap);
+        await foreach (var batch in EmbedAsync(request, ct))
+        {
+            await vectorRepository.AddRangeAsync(collectionName, batch, ct);
+        }
+    }
+
+    public async Task ReplaceAsync(IngestionRequest request, string documentKey, string? targetCollection = null, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(request, nameof(request));
+        ArgumentException.ThrowIfNullOrWhiteSpace(documentKey);
+
+        if (request.Metadata?.TryGetValue(documentKey, out var documentValue) != true || string.IsNullOrEmpty(documentValue))
+        {
+            throw new ArgumentException($"The request metadata has no '{documentKey}' to identify the document by.", nameof(documentKey));
+        }
+
+        var collectionName = targetCollection ?? ragOptions.CollectionName;
+
+        await vectorRepository.ReplaceByMetadataAsync(collectionName, documentKey, documentValue, EmbedAsync(request, ct), ct);
+    }
+
+    public async Task RemoveDocumentAsync(string documentKey, string documentValue, string? targetCollection = null, CancellationToken ct = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(documentKey);
+        ArgumentException.ThrowIfNullOrWhiteSpace(documentValue);
+
+        var collectionName = targetCollection ?? ragOptions.CollectionName;
+        var deleted = await vectorRepository.DeleteByMetadataAsync(collectionName, documentKey, documentValue, ct);
 
         if (logger.IsEnabled(LogLevel.Information))
         {
-            logger.LogInformation("Ingesting {ChunkCount} chunks from source '{Source}' ({Type})", chunks.Count, request.Source, request.SourceType);
-        }
-
-        foreach (var chunkText in chunks)
-        {
-            var embedding = await embeddingService.GenerateEmbeddingAsync(chunkText, ct);
-
-            var chunk = new DocumentChunk
-            {
-                Content = chunkText,
-                Source = request.Source,
-                SourceType = request.SourceType,
-                Metadata = request.Metadata ?? [],
-                Scope = request.Scope,
-                UserId = request.UserId
-            };
-
-            await vectorRepository.UpsertAsync(collectionName, chunk, embedding, ct);
+            logger.LogInformation("Removed {Count} chunks of document {Key}={Value} from collection '{Collection}'", deleted, documentKey, documentValue, collectionName);
         }
     }
 
@@ -114,5 +131,38 @@ internal sealed class DocumentIngestionService(
         }
 
         await vectorRepository.DeleteBySourceAsync(collectionName, source, ct);
+    }
+
+    /// <summary>
+    /// Chunks the request and embeds the chunks a batch per request to the embedding server, so a large document
+    /// never holds all of its vectors in memory at once.
+    /// </summary>
+    private async IAsyncEnumerable<IReadOnlyList<EmbeddedChunk>> EmbedAsync(IngestionRequest request, [EnumeratorCancellation] CancellationToken ct)
+    {
+        var chunks = TextChunker.Chunk(request.Content, ragOptions.ChunkSize, ragOptions.ChunkOverlap);
+
+        if (logger.IsEnabled(LogLevel.Information))
+        {
+            logger.LogInformation("Ingesting {ChunkCount} chunks from source '{Source}' ({Type})", chunks.Count, request.Source, request.SourceType);
+        }
+
+        var metadata = request.Metadata ?? [];
+
+        foreach (var texts in chunks.Chunk(EmbeddingBatchSize))
+        {
+            var embeddings = await embeddingService.GenerateEmbeddingsAsync(texts, ct);
+
+            yield return [.. texts.Select((text, i) => new EmbeddedChunk(
+                new DocumentChunk
+                {
+                    Content = text,
+                    Source = request.Source,
+                    SourceType = request.SourceType,
+                    Metadata = metadata,
+                    Scope = request.Scope,
+                    UserId = request.UserId
+                },
+                embeddings[i]))];
+        }
     }
 }

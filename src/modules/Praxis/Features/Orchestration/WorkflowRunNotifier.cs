@@ -21,7 +21,7 @@ internal sealed class WorkflowRunNotifier(INotifier notifier)
             return Task.CompletedTask;
         }
 
-        var name = run?.Title ?? Preview(trigger.ResolveActivity());
+        var name = run?.Title ?? Preview(trigger.Activity);
         var message = new NotificationMessage(
             NotificationCategories.WorkflowRun,
             outcome == WorkflowRunOutcome.Completed ? NotificationSeverity.Info : NotificationSeverity.Warning,

@@ -7,9 +7,8 @@ namespace Sentium.Infrastructure.Extensions;
 public static class ResilienceExtensions
 {
     /// <summary>
-    /// Replaces the globally-applied standard resilience handler with one tuned for long-running calls
-    /// (LLM token generation, sandboxed code execution) whose duration far exceeds the 30s default
-    /// <c>TotalRequestTimeout</c>.
+    /// Adds a resilience pipeline tuned for long-running calls (LLM token generation, sandboxed code execution)
+    /// whose duration far exceeds the standard handler's 30s <c>TotalRequestTimeout</c>.
     /// <para>
     /// When <paramref name="retries"/> is 0, <see cref="ResilienceHttpClientBuilderExtensions.AddStandardResilienceHandler(IHttpClientBuilder)"/> cannot be used
     /// because it enforces <c>MaxRetryAttempts >= 1</c> at startup validation. A custom pipeline is
@@ -27,10 +26,6 @@ public static class ResilienceExtensions
 
         var minSampling = TimeSpan.FromTicks(Math.Max((attemptTimeout * 2).Ticks, totalTimeout.Ticks));
         var samplingDuration = minSampling + TimeSpan.FromMinutes(1);
-
-#pragma warning disable EXTEXP0001 // RemoveAllResilienceHandlers is experimental
-        builder.RemoveAllResilienceHandlers();
-#pragma warning restore EXTEXP0001
 
         if (retries <= 0)
         {

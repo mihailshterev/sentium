@@ -1,19 +1,20 @@
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Sentium.Praxis.Contracts;
+using Sentium.Sentinel.Contracts;
 
 namespace Sentium.Praxis.Features.Sentinel;
 
 /// <summary>
 /// Agent Framework function-calling middleware that puts every Sentium tool call through the Sentinel policy decision
-/// point. A denied call never reaches the tool: the model receives the denial reason as the function result. If Sentinel
-/// is unreachable, <see cref="SentinelClient"/> fails closed (deny).
+/// point. A denied call never reaches the tool: the model receives the denial reason as the function result. The PDP
+/// fails closed, so a Sentinel fault is a deny too.
 /// </summary>
 /// <remarks>
 /// Runs after human approval (inside function invocation), so approved calls are still policy-checked. Functions that are
 /// not Sentium tools - the framework's skill functions - carry no Sentinel classification and pass straight through.
 /// </remarks>
-internal sealed class SentinelFunctionMiddleware(SentinelClient sentinel, IPdpContextAccessor runContext, ILogger<SentinelFunctionMiddleware> logger)
+internal sealed class SentinelFunctionMiddleware(IPolicyDecisionPoint sentinel, IPdpContextAccessor runContext, ILogger<SentinelFunctionMiddleware> logger)
 {
     private const int MaxPayloadChars = 8 * 1024;
     private const int MaxResourceIdChars = 200;
@@ -38,7 +39,7 @@ internal sealed class SentinelFunctionMiddleware(SentinelClient sentinel, IPdpCo
 
         var agentName = string.IsNullOrWhiteSpace(agent.Name) ? "Agent" : agent.Name;
 
-        var decision = await sentinel.EvaluateAsync(new PdpRequest
+        var decision = await sentinel.EvaluateAsync(new PolicyEvaluationRequest
         {
             AgentId = agentName,
             SkillName = context.Function.Name,
@@ -47,6 +48,7 @@ internal sealed class SentinelFunctionMiddleware(SentinelClient sentinel, IPdpCo
             Action = action,
             OriginalUserPrompt = runContext.OriginalUserPrompt,
             CorrelationId = runContext.CorrelationId.Length > 0 ? runContext.CorrelationId : Guid.NewGuid().ToString(),
+            UserId = runContext.UserId,
             Metadata = BuildMetadata(resource, action, context.Arguments),
         }, cancellationToken);
 
@@ -80,7 +82,7 @@ internal sealed class SentinelFunctionMiddleware(SentinelClient sentinel, IPdpCo
             return EmptyMetadata;
         }
 
-        return new Dictionary<string, string> { ["payload"] = payload.Length > MaxPayloadChars ? payload[..MaxPayloadChars] : payload };
+        return new Dictionary<string, string> { [PolicyEvaluationRequest.PayloadKey] = payload.Length > MaxPayloadChars ? payload[..MaxPayloadChars] : payload };
     }
 
     private static string ExtractResourceId(AIFunctionArguments arguments)

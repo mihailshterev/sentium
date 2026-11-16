@@ -490,11 +490,20 @@
           "Microsoft.Extensions.AI": "[10.10.0, )",
           "Pgvector.EntityFrameworkCore": "[0.3.0, )",
           "Sentium.Core": "[1.0.0, )",
+          "Sentium.Identity": "[1.0.0, )",
           "Sentium.Infrastructure": "[1.0.0, )"
         }
       },
       "sentium.core": {
         "type": "Project"
+      },
+      "sentium.identity": {
+        "type": "Project",
+        "dependencies": {
+          "Sentium.Core": "[1.0.0, )",
+          "Sentium.Infrastructure": "[1.0.0, )",
+          "Sentium.Registry": "[1.0.0, )"
+        }
       },
       "sentium.infrastructure": {
         "type": "Project",
@@ -514,6 +523,13 @@
           "Serilog.AspNetCore": "[10.0.0, )",
           "Serilog.Sinks.Console": "[6.1.1, )",
           "Serilog.Sinks.OpenTelemetry": "[4.2.0, )"
+        }
+      },
+      "sentium.registry": {
+        "type": "Project",
+        "dependencies": {
+          "Sentium.Core": "[1.0.0, )",
+          "Sentium.Infrastructure": "[1.0.0, )"
         }
       },
       "Aspire.Npgsql.EntityFrameworkCore.PostgreSQL": {

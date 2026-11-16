@@ -1,4 +1,5 @@
 using FluentValidation;
+using Sentium.Registry.Contracts.Settings;
 
 namespace Sentium.Registry.Features.Settings;
 

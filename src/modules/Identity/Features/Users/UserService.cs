@@ -2,6 +2,7 @@ using System.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Hybrid;
+using Sentium.Identity.Contracts;
 using Sentium.Identity.Data;
 using Sentium.Identity.Entities;
 using Sentium.Identity.Features.Devices;
@@ -14,6 +15,7 @@ internal sealed class UserService(
     UserManager<ApplicationUser> userManager,
     IdentityDbContext dbContext,
     IDeviceService deviceService,
+    IEnumerable<IUserRemovalObserver> removalObservers,
     HybridCache cache,
     ILogger<UserService> logger) : IUserService
 {
@@ -34,7 +36,7 @@ internal sealed class UserService(
     {
         return cache.GetOrCreateAsync(
             IdentityCacheKeys.UserById(userId),
-            _ => LoadUserByIdAsync(userId),
+            token => LoadUserByIdAsync(userId, token),
             options: IdentityCacheKeys.EntryOptions,
             tags: [IdentityCacheKeys.UsersTag, IdentityCacheKeys.UserTag(userId)],
             cancellationToken: ct);
@@ -119,7 +121,28 @@ internal sealed class UserService(
             logger.LogInformation("User {TargetId} deleted by requester {RequesterId}.", targetUserId, requesterId);
         }
 
+        await RemoveUserDataAsync(targetUserId);
+
         return (true, []);
+    }
+
+    /// <summary>
+    /// The account is already gone, so the cleanup runs to the end even if the request is aborted, and one module's
+    /// failure does not stop the others.
+    /// </summary>
+    private async Task RemoveUserDataAsync(Guid userId)
+    {
+        foreach (var observer in removalObservers)
+        {
+            try
+            {
+                await observer.OnUserRemovedAsync(userId, CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "{Observer} failed to remove the data of deleted user {UserId}.", observer.GetType().Name, userId);
+            }
+        }
     }
 
     private async Task<(bool Succeeded, string[] Errors)> DeleteUnlessLastSovereignAsync(Guid targetUserId)
@@ -151,16 +174,33 @@ internal sealed class UserService(
 
     private async ValueTask<IReadOnlyList<UserDto>> LoadAllUsersAsync(CancellationToken ct)
     {
-        var users = await userManager.Users.ToListAsync(ct);
-        return users.Select(ToDto).ToList();
+        var users = await dbContext.Users.AsNoTracking().OrderBy(u => u.UserName).ToListAsync(ct);
+        var roles = await LoadRolesAsync(null, ct);
+
+        return [.. users.Select(u => ToDto(u, roles))];
     }
 
-    private async ValueTask<UserDto?> LoadUserByIdAsync(Guid userId)
+    private async ValueTask<UserDto?> LoadUserByIdAsync(Guid userId, CancellationToken ct)
     {
-        var user = await userManager.FindByIdAsync(userId.ToString());
-        return user is null ? null : ToDto(user);
+        var user = await dbContext.Users.AsNoTracking().SingleOrDefaultAsync(u => u.Id == userId, ct);
+        return user is null ? null : ToDto(user, await LoadRolesAsync(userId, ct));
     }
 
-    private static UserDto ToDto(ApplicationUser user) =>
-        new(user.Id, user.UserName, user.FirstName, user.LastName, user.LockoutEnd);
+    /// <summary>
+    /// Role names by user, for one user or (<paramref name="userId"/> <see langword="null"/>) everyone, in one query.
+    /// </summary>
+    private async Task<ILookup<Guid, string>> LoadRolesAsync(Guid? userId, CancellationToken ct)
+    {
+        var rows = await (
+                from userRole in dbContext.UserRoles
+                join role in dbContext.Roles on userRole.RoleId equals role.Id
+                where userId == null || userRole.UserId == userId
+                select new { userRole.UserId, role.Name })
+            .ToListAsync(ct);
+
+        return rows.ToLookup(r => r.UserId, r => r.Name!);
+    }
+
+    private static UserDto ToDto(ApplicationUser user, ILookup<Guid, string> roles) =>
+        new(user.Id, user.UserName, user.FirstName, user.LastName, user.LockoutEnd, [.. roles[user.Id].Order(StringComparer.Ordinal)]);
 }

@@ -9,6 +9,11 @@ public static class SettingsKeys
     public const string Mcp = "mcp";
 
     /// <summary>
+    /// Whether self-registration is open (global).
+    /// </summary>
+    public const string Access = "access";
+
+    /// <summary>
     /// The household's time zone and day-start (global).
     /// </summary>
     public const string Calendar = "calendar";

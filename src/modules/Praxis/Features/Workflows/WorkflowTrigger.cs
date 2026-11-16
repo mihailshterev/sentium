@@ -2,11 +2,32 @@ using System.Text.Json;
 
 namespace Sentium.Praxis.Features.Workflows;
 
+/// <summary>
+/// A queued workflow run. It travels in-process, so it is typed; only <see cref="ToPayloadJson"/> turns it into the
+/// JSON kept on the run's history row.
+/// </summary>
 internal sealed class WorkflowTrigger
 {
+    private static readonly JsonSerializerOptions PayloadJsonOptions = new(JsonSerializerDefaults.Web);
+
     public string TriggerType { get; init; } = "";
-    public string Payload { get; init; } = "";
+
+    /// <summary>
+    /// The user's request text.
+    /// </summary>
+    public string Activity { get; init; } = "";
+
+    /// <summary>
+    /// The saved workflow to run, for a custom workflow run.
+    /// </summary>
+    public Guid? WorkflowId { get; init; }
+
+    public string? WorkflowName { get; init; }
+
+    public Guid? WorkspaceId { get; init; }
+
     public DateTime Timestamp { get; init; } = DateTime.UtcNow;
+
     public Guid? UserId { get; init; }
 
     public string StreamId
@@ -16,24 +37,11 @@ internal sealed class WorkflowTrigger
     }
 
     /// <summary>
-    /// The user's request text: the <c>activity</c> property of a JSON payload, or the raw payload otherwise.
+    /// The trigger as stored in <c>WorkflowRun.TriggerPayload</c>; the portal's run history reads its <c>activity</c>
+    /// and <c>workflowName</c>.
     /// </summary>
-    public string ResolveActivity()
+    public string ToPayloadJson()
     {
-        try
-        {
-            using var doc = JsonDocument.Parse(Payload);
-            if (doc.RootElement.ValueKind == JsonValueKind.Object
-                && doc.RootElement.TryGetProperty("activity", out var activity)
-                && activity.ValueKind == JsonValueKind.String)
-            {
-                return activity.GetString() ?? Payload;
-            }
-        }
-        catch (JsonException)
-        {
-        }
-
-        return Payload;
+        return JsonSerializer.Serialize(new WorkflowTriggerPayload(Activity, WorkflowId, WorkflowName, WorkspaceId), PayloadJsonOptions);
     }
 }

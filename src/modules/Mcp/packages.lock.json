@@ -546,6 +546,7 @@
           "Microsoft.Extensions.AI": "[10.10.0, )",
           "Pgvector.EntityFrameworkCore": "[0.3.0, )",
           "Sentium.Core": "[1.0.0, )",
+          "Sentium.Identity": "[1.0.0, )",
           "Sentium.Infrastructure": "[1.0.0, )"
         }
       },
@@ -556,7 +557,8 @@
         "type": "Project",
         "dependencies": {
           "Sentium.Core": "[1.0.0, )",
-          "Sentium.Infrastructure": "[1.0.0, )"
+          "Sentium.Infrastructure": "[1.0.0, )",
+          "Sentium.Registry": "[1.0.0, )"
         }
       },
       "sentium.infrastructure": {

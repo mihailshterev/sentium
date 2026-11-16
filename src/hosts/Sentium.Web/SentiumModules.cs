@@ -28,8 +28,8 @@ internal static class SentiumModules
 
     private static readonly SentiumModule[] Modules =
     [
-        new(typeof(IdentityModuleExtensions), b => b.AddIdentityModule(), a => a.InitializeIdentityModuleAsync()),
         new(typeof(RegistryModuleExtensions), b => b.AddRegistryModule(), a => a.InitializeRegistryModuleAsync()),
+        new(typeof(IdentityModuleExtensions), b => b.AddIdentityModule(), a => a.InitializeIdentityModuleAsync()),
         new(typeof(NuntiusModuleExtensions), b => b.AddNuntiusModule(), a => a.InitializeNuntiusModuleAsync()),
         new(typeof(SentinelModuleExtensions), b => b.AddSentinelModule(), a => a.InitializeSentinelModuleAsync()),
         new(typeof(CodexModuleExtensions), b => b.AddCodexModule(), a => a.InitializeCodexModuleAsync()),

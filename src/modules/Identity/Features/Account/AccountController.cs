@@ -2,8 +2,8 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using Sentium.Identity.Features.Security;
 using Sentium.Identity.Features.Users;
+using Sentium.Infrastructure.Security;
 
 namespace Sentium.Identity.Features.Account;
 
@@ -14,24 +14,45 @@ namespace Sentium.Identity.Features.Account;
 [Route($"{IdentityRoutes.Prefix}/account")]
 internal sealed class AccountController(
     IIdentityService identityService,
-    IUserService userService) : ControllerBase
+    IUserService userService,
+    ICurrentUser currentUser) : ControllerBase
 {
+    private const string RegistrationClosedMessage = "Registration is closed. Ask a Sovereign to open it in Settings.";
+
+    /// <summary>
+    /// Whether the sign-in page may offer registration.
+    /// </summary>
+    [HttpGet("registration")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(RegistrationStatusResponse), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetRegistrationStatus(CancellationToken ct)
+    {
+        return Ok(await identityService.GetRegistrationStatusAsync(ct));
+    }
+
     /// <response code="200">Returns the new user's unique identifier and username.</response>
     /// <response code="400">If the registration data is invalid or the username is already in use.</response>
+    /// <response code="403">If registration is closed.</response>
     [HttpPost("register")]
     [AllowAnonymous]
     [EnableRateLimiting("auth")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> Register([FromBody] RegisterRequest request)
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> Register([FromBody] RegisterRequest request, CancellationToken ct)
     {
-        var (result, user) = await identityService.RegisterUserAsync(request);
-        if (!result.Succeeded)
+        var outcome = await identityService.RegisterUserAsync(request, ct);
+        if (outcome.Closed)
         {
-            return BadRequest(result.Errors);
+            return Problem(detail: RegistrationClosedMessage, statusCode: StatusCodes.Status403Forbidden);
         }
 
-        return Ok(new RegisterResponse(user!.Id, user.UserName));
+        if (!outcome.Result.Succeeded)
+        {
+            return BadRequest(outcome.Result.Errors);
+        }
+
+        return Ok(new RegisterResponse(outcome.User!.Id, outcome.User.UserName));
     }
 
     /// <summary>
@@ -115,7 +136,7 @@ internal sealed class AccountController(
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetProfile(CancellationToken ct)
     {
-        var userId = GetCurrentUserId();
+        var userId = currentUser.UserId;
         if (userId is null)
         {
             return Unauthorized();
@@ -142,7 +163,7 @@ internal sealed class AccountController(
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        var userId = GetCurrentUserId();
+        var userId = currentUser.UserId;
         if (userId is null)
         {
             return Unauthorized();
@@ -159,11 +180,5 @@ internal sealed class AccountController(
         }
 
         return NoContent();
-    }
-
-    private Guid? GetCurrentUserId()
-    {
-        var sub = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue(ClaimNames.Subject);
-        return Guid.TryParse(sub, out var id) ? id : null;
     }
 }

@@ -69,7 +69,7 @@ internal sealed class WorkflowRunProcessor(
         }
 
         using var userCts = new CancellationTokenSource();
-        executionRegistry.Register(trigger.StreamId, userCts);
+        executionRegistry.Register(trigger.StreamId, trigger.UserId, userCts);
 
         var startedAt = DateTime.UtcNow;
 
@@ -142,7 +142,19 @@ internal sealed class WorkflowRunProcessor(
     private async Task<PersistedRun?> RunAndPersistAsync(WorkflowTrigger trigger, DateTime startedAt, CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
-        scope.ServiceProvider.GetRequiredService<SystemScopeContext>().Activate();
+
+        // A user's run sees exactly what that user's own request would (the query filters apply); only a run without a
+        // user is system work.
+        var identity = scope.ServiceProvider.GetRequiredService<SystemScopeContext>();
+        if (trigger.UserId is { } userId)
+        {
+            identity.ActAs(userId);
+        }
+        else
+        {
+            identity.Activate();
+        }
+
         var orchestrator = scope.ServiceProvider.GetRequiredService<IOrchestrator>();
 
         // The run context is AsyncLocal: it must be set here, in the method that awaits the run, so every
@@ -150,7 +162,7 @@ internal sealed class WorkflowRunProcessor(
         // callee's async method (e.g. the agent factory) never flow back out to this caller.
         runContext.UserId = trigger.UserId;
         runContext.CorrelationId = trigger.StreamId;
-        runContext.OriginalUserPrompt = trigger.ResolveActivity();
+        runContext.OriginalUserPrompt = trigger.Activity;
 
         var title = ResolveScenario(trigger) is { } scenario
             ? scope.ServiceProvider.GetRequiredService<ITitleGenerator>().GenerateAsync(scenario, ct)
@@ -171,7 +183,7 @@ internal sealed class WorkflowRunProcessor(
                 WorkflowId = result.WorkflowId,
                 Title = run.Title,
                 TriggerType = trigger.TriggerType,
-                TriggerPayload = trigger.Payload,
+                TriggerPayload = trigger.ToPayloadJson(),
                 Explanation = result.Explanation ?? string.Empty,
                 Risk = result.Risk?.ToString() ?? string.Empty,
                 Recommendation = result.Recommendation?.ToString() ?? string.Empty,
@@ -230,7 +242,7 @@ internal sealed class WorkflowRunProcessor(
                 WorkflowId = null,
                 Title = run.Title,
                 TriggerType = trigger.TriggerType,
-                TriggerPayload = trigger.Payload,
+                TriggerPayload = trigger.ToPayloadJson(),
                 Explanation = explanation,
                 Risk = string.Empty,
                 Recommendation = string.Empty,
@@ -248,13 +260,11 @@ internal sealed class WorkflowRunProcessor(
     }
 
     /// <summary>
-    /// The scenario the run was started with, or <see langword="null"/> when the payload carries none (a title made from
-    /// the raw JSON payload would be meaningless).
+    /// The scenario the run was started with, or <see langword="null"/> when it carries none.
     /// </summary>
     private static string? ResolveScenario(WorkflowTrigger trigger)
     {
-        var activity = trigger.ResolveActivity();
-        return string.Equals(activity, trigger.Payload, StringComparison.Ordinal) ? null : activity;
+        return string.IsNullOrWhiteSpace(trigger.Activity) ? null : trigger.Activity;
     }
 
     private void EmitSystem(string streamId, string text, string type)

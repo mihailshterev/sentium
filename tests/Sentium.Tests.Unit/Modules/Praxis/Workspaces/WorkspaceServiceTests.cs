@@ -1,5 +1,6 @@
 using FluentAssertions;
 using NSubstitute;
+using Sentium.Codex.Contracts;
 using Sentium.Core.Results;
 using Sentium.Praxis.Features.Storage;
 using Sentium.Praxis.Features.Workspaces;
@@ -12,11 +13,12 @@ public sealed class WorkspaceServiceTests
     private readonly IWorkspaceRepository _repository = Substitute.For<IWorkspaceRepository>();
     private readonly ILocalFileService _fileService = Substitute.For<ILocalFileService>();
     private readonly IFileIngestionQueue _ingestionQueue = Substitute.For<IFileIngestionQueue>();
+    private readonly IDocumentIngestionService _ingestion = Substitute.For<IDocumentIngestionService>();
     private readonly WorkspaceService _sut;
 
     public WorkspaceServiceTests()
     {
-        _sut = new WorkspaceService(_repository, _fileService, _ingestionQueue, new PassThroughScopedCache());
+        _sut = new WorkspaceService(_repository, _fileService, _ingestionQueue, _ingestion, new PassThroughScopedCache());
     }
 
     private static WorkspaceDto MakeDto(Guid? id = null, string name = "Test Workspace") =>
@@ -259,5 +261,21 @@ public sealed class WorkspaceServiceTests
         // Assert
         result.Should().NotBeNull();
         _ingestionQueue.Received(1).Enqueue(new FileIngestionRequest(fileDto.Id, fileDto.WorkspaceId));
+    }
+
+    [Fact]
+    public async Task DeleteFileAsync_RemovesTheFilesKnowledgeChunks_BlobAndRecord()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var fileId = Guid.NewGuid();
+        var blobName = Guid.NewGuid();
+        _repository.GetFileForDeletionAsync(fileId, ct).Returns(new DeleteFileRecord(fileId, blobName, null));
+
+        var deleted = await _sut.DeleteFileAsync(fileId, ct);
+
+        deleted.Should().BeTrue();
+        await _ingestion.Received(1).RemoveDocumentAsync(WorkspaceFileMetadata.FileId, fileId.ToString(), null, ct);
+        await _fileService.Received(1).DeleteFileAsync(blobName, ct);
+        await _repository.Received(1).DeleteFileRecordAsync(fileId, ct);
     }
 }

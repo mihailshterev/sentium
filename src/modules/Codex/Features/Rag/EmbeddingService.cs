@@ -31,4 +31,23 @@ internal sealed class EmbeddingService(
 
         return result[0].Vector.ToArray();
     }
+
+    public async Task<IReadOnlyList<float[]>> GenerateEmbeddingsAsync(IReadOnlyList<string> texts, CancellationToken ct = default)
+    {
+        ArgumentNullException.ThrowIfNull(texts);
+
+        if (texts.Count == 0)
+        {
+            return [];
+        }
+
+        var result = await embeddingGenerator.GenerateAsync(texts, cancellationToken: ct);
+
+        if (result.Count != texts.Count)
+        {
+            throw new InvalidOperationException($"The embedding model returned {result.Count} vectors for {texts.Count} texts.");
+        }
+
+        return [.. result.Select(e => e.Vector.ToArray())];
+    }
 }

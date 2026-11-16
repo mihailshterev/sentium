@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
 using Sentium.Identity.Features.Users;
+using Sentium.Tests.Unit.Modules.Common;
 using Xunit;
 
 namespace Sentium.Tests.Unit.Modules.Identity;
@@ -11,12 +12,11 @@ namespace Sentium.Tests.Unit.Modules.Identity;
 public sealed class UsersControllerTests
 {
     private readonly IUserService _userService = Substitute.For<IUserService>();
-    private readonly IUserClaimsService _claimsService = Substitute.For<IUserClaimsService>();
     private readonly UsersController _controller;
 
     public UsersControllerTests()
     {
-        _controller = new UsersController(_userService, _claimsService)
+        _controller = new UsersController(_userService, new PrincipalCurrentUser(() => _controller?.User))
         {
             ControllerContext = new ControllerContext
             {
@@ -30,7 +30,7 @@ public sealed class UsersControllerTests
     }
 
     private static UserDto MakeUser(Guid? id = null) =>
-        new(id ?? Guid.NewGuid(), "user1", "Test", "User", null);
+        new(id ?? Guid.NewGuid(), "user1", "Test", "User", null, ["Member"]);
 
     [Fact]
     public async Task GetAllUsers_ReturnsOk_WithPagedResponse()
@@ -39,8 +39,6 @@ public sealed class UsersControllerTests
         var ct = TestContext.Current.CancellationToken;
         var users = new List<UserDto> { MakeUser() };
         _userService.GetPagedUsersAsync(1, 20, ct).Returns((users, 1));
-        _claimsService.GetBatchClaimsAsync(Arg.Any<IEnumerable<Guid>>(), Arg.Any<IEnumerable<string>>(), ct)
-            .Returns(new Dictionary<Guid, IReadOnlyCollection<Claim>>());
 
         // Act
         var result = await _controller.GetAllUsers(1, 20, ct);
@@ -55,8 +53,6 @@ public sealed class UsersControllerTests
         // Arrange
         var ct = TestContext.Current.CancellationToken;
         _userService.GetPagedUsersAsync(1, 100, ct).Returns((new List<UserDto>(), 0));
-        _claimsService.GetBatchClaimsAsync(Arg.Any<IEnumerable<Guid>>(), Arg.Any<IEnumerable<string>>(), ct)
-            .Returns(new Dictionary<Guid, IReadOnlyCollection<Claim>>());
 
         // Act
         await _controller.GetAllUsers(1, 500, ct);
@@ -71,8 +67,6 @@ public sealed class UsersControllerTests
         // Arrange
         var ct = TestContext.Current.CancellationToken;
         _userService.GetPagedUsersAsync(1, 20, ct).Returns((new List<UserDto>(), 0));
-        _claimsService.GetBatchClaimsAsync(Arg.Any<IEnumerable<Guid>>(), Arg.Any<IEnumerable<string>>(), ct)
-            .Returns(new Dictionary<Guid, IReadOnlyCollection<Claim>>());
 
         // Act
         await _controller.GetAllUsers(0, 20, ct);
@@ -89,8 +83,6 @@ public sealed class UsersControllerTests
         var id = Guid.NewGuid();
         var user = MakeUser(id);
         _userService.GetUserByIdAsync(id, ct).Returns(user);
-        _claimsService.GetClaimsAsync(id, Arg.Any<IEnumerable<string>>(), ct)
-            .Returns(new List<Claim>());
 
         // Act
         var result = await _controller.GetUser(id, ct);

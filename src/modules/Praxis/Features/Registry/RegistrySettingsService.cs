@@ -1,11 +1,12 @@
 using Sentium.Core.Constants;
 using Sentium.Registry.Contracts;
+using Sentium.Registry.Contracts.Settings;
 
 namespace Sentium.Praxis.Features.Registry;
 
 /// <summary>
 /// Reads the harness (per-user) and inference (global) settings from the Registry module in-process.
-/// Registry caches every settings envelope itself (HybridCache L1 + L2) and evicts it on change,
+/// Registry caches every settings envelope itself (HybridCache) and evicts it on change,
 /// so Praxis keeps no copy of its own.
 /// </summary>
 internal sealed class RegistrySettingsService(
@@ -19,12 +20,12 @@ internal sealed class RegistrySettingsService(
 
         try
         {
-            var harnessTask = settingsService.GetValueAsync<HarnessSettingsSnapshot>(SettingsKeys.Harness, userId, ct);
+            var harnessTask = settingsService.GetValueAsync<HarnessSettings>(SettingsKeys.Harness, userId, ct);
             var inferenceTask = GetInferenceSettingsSafeAsync(ct);
 
             await Task.WhenAll(harnessTask, inferenceTask);
 
-            harness = await harnessTask;
+            harness = await harnessTask is { } h ? HarnessSettingsSnapshot.From(h) : null;
             inference = await inferenceTask;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
@@ -46,7 +47,9 @@ internal sealed class RegistrySettingsService(
     {
         try
         {
-            return await settingsService.GetValueAsync<InferenceSettingsSnapshot>(SettingsKeys.Inference, ct: ct);
+            return await settingsService.GetValueAsync<InferenceSettings>(SettingsKeys.Inference, ct: ct) is { } settings
+                ? InferenceSettingsSnapshot.From(settings)
+                : null;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

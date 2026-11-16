@@ -14,6 +14,18 @@ public interface IDocumentIngestionService
     Task IngestAsync(IngestionRequest request, string? targetCollection = null, CancellationToken ct = default);
 
     /// <summary>
+    /// Ingests a document in place of the chunks already stored for it: every chunk whose metadata
+    /// <paramref name="documentKey"/> equals the request's value for that key is replaced atomically. Safe to repeat.
+    /// </summary>
+    /// <exception cref="ArgumentException">The request's metadata has no value for <paramref name="documentKey"/>.</exception>
+    Task ReplaceAsync(IngestionRequest request, string documentKey, string? targetCollection = null, CancellationToken ct = default);
+
+    /// <summary>
+    /// Removes every chunk whose metadata <paramref name="documentKey"/> equals <paramref name="documentValue"/>.
+    /// </summary>
+    Task RemoveDocumentAsync(string documentKey, string documentValue, string? targetCollection = null, CancellationToken ct = default);
+
+    /// <summary>
     /// Ingests a collection of documents sequentially.
     /// Each request is processed independently so a partial failure does not abort the batch.
     /// </summary>

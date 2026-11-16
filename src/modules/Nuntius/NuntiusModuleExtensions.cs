@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Sentium.Identity.Contracts;
 using Sentium.Infrastructure.Extensions;
+using Sentium.Infrastructure.Retention;
 using Sentium.Nuntius.Contracts;
 using Sentium.Nuntius.Data;
 using Sentium.Nuntius.Features.Devices;
@@ -39,8 +40,8 @@ public static class NuntiusModuleExtensions
         services.AddSingleton<DeviceStreamRegistry>();
         services.AddSingleton<IDeviceRemovalObserver>(sp => sp.GetRequiredService<DeviceStreamRegistry>());
 
-        services.AddScoped<NotificationRetention>();
-        services.AddHostedService<NotificationRetentionWorker>();
+        services.AddSingleton<IUserRemovalObserver, InboxUserDataRemover>();
+        services.AddRetentionSweep<NotificationRetention>();
 
         services.AddHealthChecks().AddDbContextCheck<NuntiusDbContext>("nuntius-db", tags: [ModuleName]);
 

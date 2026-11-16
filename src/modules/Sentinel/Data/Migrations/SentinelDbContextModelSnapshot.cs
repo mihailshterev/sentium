@@ -18,7 +18,7 @@ namespace Sentium.Sentinel.Data.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("sentinel")
-                .HasAnnotation("ProductVersion", "10.0.9")
+                .HasAnnotation("ProductVersion", "10.0.14")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -93,6 +93,9 @@ namespace Sentium.Sentinel.Data.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("UserPromptHash")
                         .IsRequired()
                         .HasMaxLength(64)
@@ -103,6 +106,8 @@ namespace Sentium.Sentinel.Data.Migrations
                     b.HasIndex("AgentId");
 
                     b.HasIndex("Timestamp");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("AuditLogs", "sentinel");
                 });

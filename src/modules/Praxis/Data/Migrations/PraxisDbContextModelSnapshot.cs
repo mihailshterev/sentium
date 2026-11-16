@@ -509,9 +509,14 @@ namespace Sentium.Praxis.Data.Migrations
                     b.Property<bool>("TimedOut")
                         .HasColumnType("boolean");
 
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("JobId");
 
                     b.HasIndex("ExecutedAt");
+
+                    b.HasIndex("UserId", "ExecutedAt");
 
                     b.ToTable("ExecutionLogs", "praxis");
                 });

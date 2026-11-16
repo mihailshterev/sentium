@@ -13,6 +13,8 @@ internal sealed class SettingsService(
     IServiceProvider serviceProvider,
     ILogger<SettingsService> logger) : ISettingsService
 {
+    private const int MaxWriteAttempts = 3;
+
     private static readonly JsonSerializerOptions WebOptions = new(JsonSerializerDefaults.Web);
 
     private static readonly HybridCacheEntryOptions CacheOptions = new()
@@ -47,29 +49,40 @@ internal sealed class SettingsService(
 
         var scopeUserId = ScopeUserId(descriptor, userId);
 
-        var isNew = false;
-        var entity = await repository.FindAsync(scopeUserId, ct);
-        if (entity is null)
-        {
-            entity = new SystemSettings { UserId = scopeUserId };
-            isNew = true;
-        }
+        SystemSettings entity;
+        object value;
+        var attempt = 0;
 
-        var merged = MergePayload(descriptor.Read(entity.Settings), payload);
-        var value = descriptor.Deserialize(merged);
-        await descriptor.ValidateAsync(value, serviceProvider, ct);
-
-        descriptor.Write(entity.Settings, value);
-        entity.UpdatedAt = DateTimeOffset.UtcNow;
-        entity.UpdatedBy = updatedBy;
-
-        if (isNew)
+        // Optimistic: every key shares one row, so a concurrent update of another key makes this write lose; it then
+        // re-reads the row and merges its own change into the newer settings.
+        while (true)
         {
-            await repository.AddAsync(entity, ct);
-        }
-        else
-        {
-            await repository.UpdateAsync(entity, ct);
+            attempt++;
+
+            var existing = await repository.FindAsync(scopeUserId, ct);
+            entity = existing ?? new SystemSettings { UserId = scopeUserId };
+
+            var merged = MergePayload(descriptor.Read(entity.Settings), payload);
+            value = descriptor.Deserialize(merged);
+            await descriptor.ValidateAsync(value, serviceProvider, ct);
+
+            descriptor.Write(entity.Settings, value);
+            entity.UpdatedAt = DateTimeOffset.UtcNow;
+            entity.UpdatedBy = updatedBy;
+
+            var saved = existing is null
+                ? await repository.TryAddAsync(entity, ct)
+                : await repository.TryUpdateAsync(entity, ct);
+
+            if (saved)
+            {
+                break;
+            }
+
+            if (attempt == MaxWriteAttempts)
+            {
+                throw new InvalidOperationException($"Settings '{descriptor.Key}' kept changing concurrently; the update was not saved.");
+            }
         }
 
         // Consumers read through this cache entry and keep no copies, so evicting it is the whole invalidation.
@@ -80,6 +93,16 @@ internal sealed class SettingsService(
         await NotifyHandlersAsync(descriptor.Key, scopeUserId, ct);
 
         return new SettingsEnvelope(descriptor.Key, JsonSerializer.SerializeToElement(value, value.GetType(), WebOptions), entity.UpdatedAt, entity.UpdatedBy);
+    }
+
+    public async Task RemoveUserSettingsAsync(Guid userId, CancellationToken ct = default)
+    {
+        await repository.RemoveAsync(userId, ct);
+
+        foreach (var descriptor in catalog.All.Where(d => d.Scope == SettingsScope.PerUser))
+        {
+            await cache.RemoveAsync(RegistrySettingsCacheKeys.Envelope(descriptor.Key, userId), ct);
+        }
     }
 
     private async Task NotifyHandlersAsync(string key, Guid? scopeUserId, CancellationToken ct)

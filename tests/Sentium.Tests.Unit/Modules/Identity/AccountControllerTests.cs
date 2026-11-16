@@ -7,6 +7,7 @@ using NSubstitute;
 using Sentium.Identity.Entities;
 using Sentium.Identity.Features.Account;
 using Sentium.Identity.Features.Users;
+using Sentium.Tests.Unit.Modules.Common;
 using Xunit;
 
 namespace Sentium.Tests.Unit.Modules.Identity;
@@ -19,7 +20,7 @@ public sealed class AccountControllerTests
 
     public AccountControllerTests()
     {
-        _controller = new AccountController(_identityService, _userManagementService)
+        _controller = new AccountController(_identityService, _userManagementService, new PrincipalCurrentUser(() => _controller?.User))
         {
             ControllerContext = new ControllerContext
             {
@@ -34,14 +35,14 @@ public sealed class AccountControllerTests
         // Arrange
         var request = new RegisterRequest("newuser", "Test@123");
         var user = new ApplicationUser { Id = Guid.NewGuid(), UserName = request.UserName, FirstName = "new" };
-        _identityService.RegisterUserAsync(request).Returns((IdentityResult.Success, user));
+        _identityService.RegisterUserAsync(request, Arg.Any<CancellationToken>()).Returns(new RegistrationOutcome(IdentityResult.Success, user));
 
         // Act
-        var result = await _controller.Register(request);
+        var result = await _controller.Register(request, TestContext.Current.CancellationToken);
 
         // Assert
         result.Should().BeOfType<OkObjectResult>();
-        await _identityService.Received(1).RegisterUserAsync(request);
+        await _identityService.Received(1).RegisterUserAsync(request, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -50,13 +51,24 @@ public sealed class AccountControllerTests
         // Arrange
         var request = new RegisterRequest("baduser", "weak");
         var failure = IdentityResult.Failed(new IdentityError { Description = "Password too short." });
-        _identityService.RegisterUserAsync(request).Returns((failure, (ApplicationUser?)null));
+        _identityService.RegisterUserAsync(request, Arg.Any<CancellationToken>()).Returns(new RegistrationOutcome(failure, null));
 
         // Act
-        var result = await _controller.Register(request);
+        var result = await _controller.Register(request, TestContext.Current.CancellationToken);
 
         // Assert
         result.Should().BeOfType<BadRequestObjectResult>();
+    }
+
+    [Fact]
+    public async Task Register_ReturnsForbidden_WhenRegistrationIsClosed()
+    {
+        var request = new RegisterRequest("newcomer", "Test@1234");
+        _identityService.RegisterUserAsync(request, Arg.Any<CancellationToken>()).Returns(RegistrationOutcome.ClosedToNewAccounts);
+
+        var result = await _controller.Register(request, TestContext.Current.CancellationToken);
+
+        result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
     }
 
     [Fact]
@@ -152,7 +164,7 @@ public sealed class AccountControllerTests
         // Arrange
         var ct = TestContext.Current.CancellationToken;
         var userId = Guid.NewGuid();
-        var user = new UserDto(userId, "user1", "Test", "User", null);
+        var user = new UserDto(userId, "user1", "Test", "User", null, []);
         _userManagementService.GetUserByIdAsync(userId, ct).Returns(user);
 
         _controller.ControllerContext = new ControllerContext

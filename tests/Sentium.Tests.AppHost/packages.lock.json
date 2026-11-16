@@ -197,15 +197,6 @@
           "Npgsql": "8.0.3"
         }
       },
-      "AspNetCore.HealthChecks.Redis": {
-        "type": "Transitive",
-        "resolved": "9.0.0",
-        "contentHash": "yNH0h8GLRbAf+PU5HNVLZ5hNeyq9mDVmRKO9xuZsme/znUYoBJlQvI0gq45gaZNlLncCHkMhR4o90MuT+gxxPw==",
-        "dependencies": {
-          "Microsoft.Extensions.Diagnostics.HealthChecks": "8.0.11",
-          "StackExchange.Redis": "2.7.4"
-        }
-      },
       "AspNetCore.HealthChecks.Uris": {
         "type": "Transitive",
         "resolved": "9.0.0",
@@ -978,11 +969,6 @@
           "OpenTelemetry.Api": "1.18.0"
         }
       },
-      "Pipelines.Sockets.Unofficial": {
-        "type": "Transitive",
-        "resolved": "2.2.16",
-        "contentHash": "nonu9l0YrZH6krVYbskBjE7uG0VMAnvOQ9PU+RmzUsy+++vHkqzzCkHRoP877OiA3iRTxJyNDLfpcU8hrJ3/YQ=="
-      },
       "Polly.Core": {
         "type": "Transitive",
         "resolved": "8.7.0",
@@ -1026,16 +1012,6 @@
         "contentHash": "9jZCicsVgTebqkAujRWtC9J1A5EQVlu0TVKHcgoCuv345ve5DYf4D1MjhKEnQjdRZo6x/vdv6QQrYFs7ilGzLA==",
         "dependencies": {
           "Microsoft.Extensions.Primitives": "5.0.1"
-        }
-      },
-      "StackExchange.Redis": {
-        "type": "Transitive",
-        "resolved": "2.13.17",
-        "contentHash": "P7o7ZDBAmBrOLQEw8Pt44iIA08ioj48smRxn4Jp6yzCu6P3DOSU6lj7f+IOtN3pPvSgC9YufvM92ycukEEBCYQ==",
-        "dependencies": {
-          "Microsoft.Extensions.Logging.Abstractions": "8.0.0",
-          "Pipelines.Sockets.Unofficial": "2.2.16",
-          "System.IO.Hashing": "10.0.2"
         }
       },
       "StreamJsonRpc": {
@@ -1175,7 +1151,6 @@
           "Aspire.Hosting.Docker": "[13.6.5, )",
           "Aspire.Hosting.JavaScript": "[13.6.5, )",
           "Aspire.Hosting.PostgreSQL": "[13.6.5, )",
-          "Aspire.Hosting.Redis": "[13.6.5, )",
           "Sentium.Core": "[1.0.0, )"
         }
       },
@@ -1387,47 +1362,6 @@
           "OpenTelemetry.Extensions.Hosting": "1.17.0",
           "Polly.Core": "8.7.0",
           "Semver": "3.0.0",
-          "StreamJsonRpc": "2.25.29",
-          "System.IO.Hashing": "10.0.14",
-          "YamlDotNet": "18.1.0"
-        }
-      },
-      "Aspire.Hosting.Redis": {
-        "type": "CentralTransitive",
-        "requested": "[13.6.5, )",
-        "resolved": "13.6.5",
-        "contentHash": "uNaqKacIEelK+234wpurgIy2bL7xYZTeluGjFW41hURFfE0O49+Mq6HV+r4+ywc9JRN0Q3WeARJkgiXivhkdIw==",
-        "dependencies": {
-          "AspNetCore.HealthChecks.Redis": "9.0.0",
-          "AspNetCore.HealthChecks.Uris": "9.0.0",
-          "Aspire.Hosting": "13.6.5",
-          "Google.Protobuf": "3.36.1",
-          "Grpc.AspNetCore": "2.83.0",
-          "Grpc.Net.ClientFactory": "2.83.0",
-          "Grpc.Tools": "2.83.0",
-          "Hex1b": "0.168.0",
-          "KubernetesClient": "19.0.2",
-          "MessagePack": "2.5.307",
-          "Microsoft.Extensions.Configuration.Abstractions": "10.0.14",
-          "Microsoft.Extensions.Configuration.Binder": "10.0.14",
-          "Microsoft.Extensions.Configuration.EnvironmentVariables": "10.0.14",
-          "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.14",
-          "Microsoft.Extensions.Diagnostics.HealthChecks": "8.0.33",
-          "Microsoft.Extensions.FileSystemGlobbing": "10.0.14",
-          "Microsoft.Extensions.Hosting": "10.0.14",
-          "Microsoft.Extensions.Hosting.Abstractions": "10.0.14",
-          "Microsoft.Extensions.Http": "10.0.14",
-          "Microsoft.Extensions.Logging": "10.0.14",
-          "Microsoft.Extensions.Logging.Abstractions": "10.0.14",
-          "Microsoft.Extensions.Options": "10.0.14",
-          "Microsoft.Extensions.Primitives": "10.0.14",
-          "ModelContextProtocol": "1.4.1",
-          "Newtonsoft.Json": "13.0.4",
-          "OpenTelemetry.Exporter.OpenTelemetryProtocol": "1.17.0",
-          "OpenTelemetry.Extensions.Hosting": "1.17.0",
-          "Polly.Core": "8.7.0",
-          "Semver": "3.0.0",
-          "StackExchange.Redis": "2.13.17",
           "StreamJsonRpc": "2.25.29",
           "System.IO.Hashing": "10.0.14",
           "YamlDotNet": "18.1.0"

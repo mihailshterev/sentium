@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AlertCircle, ArrowRight, Lock, User } from "lucide-react";
@@ -16,6 +16,42 @@ const MODES: { id: Mode; label: string }[] = [
   { id: "register", label: "Register" },
 ];
 
+/** Whether the server accepts a new account; `bootstrap` means none exists yet and the first becomes the Sovereign. */
+interface RegistrationStatus {
+  open: boolean;
+  bootstrap: boolean;
+}
+
+const CLOSED: RegistrationStatus = { open: false, bootstrap: false };
+
+/** Registration is offered only while the server accepts it; on any failure the form is sign-in only. */
+function useRegistrationStatus(): RegistrationStatus {
+  const [status, setStatus] = useState<RegistrationStatus>(CLOSED);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    fetch(`${BASE_URL}/identity/account/registration`, { credentials: "include" })
+      .then((res) => (res.ok ? (res.json() as Promise<Partial<RegistrationStatus>>) : CLOSED))
+      .then((body) => {
+        if (!cancelled) {
+          setStatus({ open: body.open === true, bootstrap: body.bootstrap === true });
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setStatus(CLOSED);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return status;
+}
+
 function FieldError({ children }: { children: React.ReactNode }) {
   return (
     <p className={styles.error} role="alert">
@@ -26,6 +62,7 @@ function FieldError({ children }: { children: React.ReactNode }) {
 }
 
 export const AuthForm = () => {
+  const registration = useRegistrationStatus();
   const [mode, setMode] = useState<Mode>("login");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -67,7 +104,11 @@ export const AuthForm = () => {
         });
 
         if (!regRes.ok) {
-          setError("Registration failed. The username may already be in use.");
+          setError(
+            regRes.status === 403
+              ? "Registration is closed. Ask a Sovereign to open it."
+              : "Registration failed. The username may already be in use.",
+          );
           setSubmitting(false);
           return;
         }
@@ -114,19 +155,25 @@ export const AuthForm = () => {
   return (
     <div className={styles.root}>
       {/* Plain buttons (not tabs): e2e page objects switch modes by button name. */}
-      <div className={styles.segment} role="group" aria-label="Account">
-        {MODES.map((m) => (
-          <button
-            key={m.id}
-            type="button"
-            className={styles.segmentButton}
-            aria-pressed={mode === m.id}
-            onClick={() => switchMode(m.id)}
-          >
-            {m.label}
-          </button>
-        ))}
-      </div>
+      {registration.open && (
+        <div className={styles.segment} role="group" aria-label="Account">
+          {MODES.map((m) => (
+            <button
+              key={m.id}
+              type="button"
+              className={styles.segmentButton}
+              aria-pressed={mode === m.id}
+              onClick={() => switchMode(m.id)}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {registration.bootstrap && (
+        <p className={styles.note}>No account exists yet. The first account you register becomes the Sovereign.</p>
+      )}
 
       <form key={mode} className={styles.form} onSubmit={handleSubmit(onSubmit)} noValidate>
         <div className={styles.field}>

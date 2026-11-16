@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.Identity;
-using Sentium.Identity.Entities;
 
 namespace Sentium.Identity.Features.Account;
 
@@ -9,18 +8,17 @@ namespace Sentium.Identity.Features.Account;
 internal interface IIdentityService
 {
     /// <summary>
-    /// Creates a new user account, assigns default roles, and initiates the first session.
+    /// Whether an account can register now: always the first account of an installation, otherwise only while a
+    /// Sovereign keeps registration open (the Registry <c>access</c> setting).
     /// </summary>
-    /// <param name="request">The registration details including username and password.</param>
-    /// <remarks>
-    /// A newly registered user gets the <see cref="Security.Roles.Member"/> role.
-    /// </remarks>
-    Task<(IdentityResult Result, ApplicationUser? User)> RegisterUserAsync(RegisterRequest request);
+    Task<RegistrationStatusResponse> GetRegistrationStatusAsync(CancellationToken ct);
 
     /// <summary>
-    /// Authenticates a user using username and password credentials.
+    /// Creates an account and signs it in. The first account of an installation becomes the Sovereign; later ones are
+    /// Members. Reports <see cref="RegistrationOutcome.Closed"/> instead when registration is closed.
     /// </summary>
-    /// <param name="password">The plain-text password to validate.</param>
+    Task<RegistrationOutcome> RegisterUserAsync(RegisterRequest request, CancellationToken ct);
+
     /// <returns>A <see cref="SignInResult"/> indicating success, lockout, or requirement for 2FA.</returns>
     Task<SignInResult> LoginAsync(string userName, string password);
 

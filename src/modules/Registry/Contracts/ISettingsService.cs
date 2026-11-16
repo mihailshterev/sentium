@@ -20,4 +20,9 @@ public interface ISettingsService
     /// keys and <see cref="FluentValidation.ValidationException"/> for invalid payloads.
     /// </summary>
     Task<SettingsEnvelope> UpdateAsync(string key, Guid? userId, JsonElement payload, string? updatedBy = null, CancellationToken ct = default);
+
+    /// <summary>
+    /// Deletes every per-user setting of <paramref name="userId"/>, for an account that no longer exists.
+    /// </summary>
+    Task RemoveUserSettingsAsync(Guid userId, CancellationToken ct = default);
 }

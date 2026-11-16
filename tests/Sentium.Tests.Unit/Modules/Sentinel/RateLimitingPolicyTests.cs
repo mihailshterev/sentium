@@ -79,4 +79,18 @@ public sealed class RateLimitingPolicyTests
         // Assert
         await act.Should().ThrowAsync<ArgumentNullException>();
     }
+
+    [Fact]
+    public async Task EvaluateAsync_KeepsSeparateWindowsPerUser_ForTheSameAgent()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var sut = MakePolicy(max: 1);
+        var busy = MakeRequest("GeneralAssistant") with { UserId = Guid.NewGuid() };
+        var other = MakeRequest("GeneralAssistant") with { UserId = Guid.NewGuid() };
+
+        await sut.EvaluateAsync(busy, ct);
+
+        (await sut.EvaluateAsync(busy, ct)).Should().NotBeNull();
+        (await sut.EvaluateAsync(other, ct)).Should().BeNull();
+    }
 }

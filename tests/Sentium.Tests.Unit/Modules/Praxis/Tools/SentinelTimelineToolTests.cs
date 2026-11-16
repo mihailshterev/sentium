@@ -82,7 +82,7 @@ public sealed class SentinelTimelineToolTests
         bool forwardsPayload)
     {
         var middleware = new SentinelFunctionMiddleware(
-            new SentinelClient(_pdp, NullLogger<SentinelClient>.Instance),
+            _pdp,
             new PdpContextAccessor(),
             NullLogger<SentinelFunctionMiddleware>.Instance);
 

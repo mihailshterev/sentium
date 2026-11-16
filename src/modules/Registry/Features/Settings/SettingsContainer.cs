@@ -1,3 +1,5 @@
+using Sentium.Registry.Contracts.Settings;
+
 namespace Sentium.Registry.Features.Settings;
 
 /// <summary>
@@ -29,6 +31,11 @@ internal sealed class SettingsContainer
     /// Global MCP (Model Context Protocol) client settings.
     /// </summary>
     public McpSettings Mcp { get; set; } = new();
+
+    /// <summary>
+    /// Global self-registration settings.
+    /// </summary>
+    public AccessSettings Access { get; set; } = new();
 
     /// <summary>
     /// Global household calendar defaults.

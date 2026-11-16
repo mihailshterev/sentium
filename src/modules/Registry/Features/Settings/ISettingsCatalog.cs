@@ -7,5 +7,7 @@ namespace Sentium.Registry.Features.Settings;
 /// </summary>
 internal interface ISettingsCatalog
 {
+    IReadOnlyCollection<ISettingsDescriptor> All { get; }
+
     bool TryGet(string key, [NotNullWhen(true)] out ISettingsDescriptor? descriptor);
 }

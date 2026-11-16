@@ -1,4 +1,4 @@
-using Sentium.Core.Constants;
+using Sentium.Registry.Contracts.Settings;
 
 namespace Sentium.Praxis.Features.Registry;
 
@@ -6,10 +6,12 @@ internal sealed record InferenceSettingsSnapshot(
     string DefaultModel,
     float AgentTemperature)
 {
-    /// <summary>
-    /// Mirrors the defaults of Registry's <c>InferenceSettings</c>.
-    /// </summary>
-    public static readonly InferenceSettingsSnapshot Default = new(
-        DefaultModel: AIModels.Gemma4_E4B,
-        AgentTemperature: 0.3f);
+    public static readonly InferenceSettingsSnapshot Default = From(new InferenceSettings());
+
+    public static InferenceSettingsSnapshot From(InferenceSettings settings)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+
+        return new(settings.DefaultModel, settings.AgentTemperature);
+    }
 }

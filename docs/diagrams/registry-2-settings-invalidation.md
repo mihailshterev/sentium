@@ -6,7 +6,7 @@ sequenceDiagram
     participant SC as Registry · SettingsController
     participant SS as SettingsService
     participant DB as PostgreSQL (registry schema)
-    participant HC as HybridCache (L1 + Redis L2)
+    participant HC as HybridCache (in-process)
 
     U->>FE: Save a setting
     FE->>SC: PUT /api/registry/settings/{key} (JSON)

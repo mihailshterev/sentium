@@ -1,20 +1,14 @@
+using Sentium.Registry.Contracts.Settings;
+
 namespace Sentium.Praxis.Features.Registry;
 
 /// <summary>
-/// Praxis' projection of the Registry settings it consumes. Property names must match the JSON
-/// properties of Registry's <c>HarnessSettings</c> and <c>InferenceSettings</c>, since
-/// <c>ISettingsService.GetValueAsync</c> deserializes the stored JSON into these records.
+/// Praxis' immutable projection of the Registry <c>HarnessSettings</c> and <c>InferenceSettings</c> it consumes.
 /// </summary>
 internal sealed record SettingsSnapshot(HarnessSettingsSnapshot Harness, InferenceSettingsSnapshot? Inference = null)
 {
     /// <summary>
     /// Fallback used when the settings cannot be read from Registry.
     /// </summary>
-    public static readonly SettingsSnapshot Default = new(
-        Harness: new HarnessSettingsSnapshot(
-            UserHarnessPrompt: string.Empty,
-            IsBuiltInHarnessEnabled: true,
-            IsPromptEnhancementEnabled: false),
-        Inference: InferenceSettingsSnapshot.Default
-    );
+    public static readonly SettingsSnapshot Default = new(HarnessSettingsSnapshot.From(new HarnessSettings()), InferenceSettingsSnapshot.Default);
 }

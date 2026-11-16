@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sentium.Codex.Contracts;
 using Sentium.Codex.Contracts.Models;
+using Sentium.Infrastructure.Security;
 
 namespace Sentium.Codex.Features.KnowledgeBase;
 
@@ -30,9 +31,10 @@ internal sealed class KnowledgeBaseController(IVectorRepository vectorRepository
     }
 
     /// <summary>
-    /// Deletes an entire collection from the vector store.
+    /// Deletes an entire collection from the vector store, every user's entries included.
     /// </summary>
     [HttpDelete("collections/{collection}")]
+    [AuthorizeSovereign]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> DeleteCollection(string collection, CancellationToken ct)

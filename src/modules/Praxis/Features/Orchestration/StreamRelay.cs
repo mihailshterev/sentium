@@ -25,6 +25,17 @@ internal sealed class StreamRelay(IConfiguration configuration, ILogger<StreamRe
         return state.ReadAsync(fromSeqExclusive, ct);
     }
 
+    public void Claim(string streamId, Guid ownerId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(streamId);
+        _streams.GetOrAdd(streamId, _ => new StreamState()).OwnerId = ownerId;
+    }
+
+    public bool IsVisibleTo(string streamId, Guid userId)
+    {
+        return !_streams.TryGetValue(streamId, out var state) || state.OwnerId is not { } owner || owner == userId;
+    }
+
     public void Publish(string streamId, AgentStreamUpdate update)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(streamId);
@@ -102,8 +113,28 @@ internal sealed class StreamRelay(IConfiguration configuration, ILogger<StreamRe
         private int _bufferChars;
         private bool _completed;
         private DateTime _completedAtUtc;
+        private Guid? _ownerId;
 
         public DateTime LastActivityUtc { get; private set; } = DateTime.UtcNow;
+
+        public Guid? OwnerId
+        {
+            get
+            {
+                lock (_gate)
+                {
+                    return _ownerId;
+                }
+            }
+
+            set
+            {
+                lock (_gate)
+                {
+                    _ownerId = value;
+                }
+            }
+        }
 
         public void Publish(AgentStreamUpdate update)
         {

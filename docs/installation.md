@@ -28,6 +28,7 @@ in [Aspire vs. Compose parity](#aspire-vs-compose-parity).
 - [GPU acceleration](#gpu-acceleration)
 - [Managing models](#managing-models)
 - [Day-two operations (Compose)](#day-two-operations-compose)
+- [Accounts and data retention](#accounts-and-data-retention)
 - [Backups](#backups)
 - [Troubleshooting](#troubleshooting)
 - [Aspire vs. Compose parity](#aspire-vs-compose-parity)
@@ -56,7 +57,7 @@ sandbox) as containers, and Compose builds and runs everything in containers.
 
 The [.NET Aspire AppHost](../src/aspire/Sentium.AppHost/Program.cs) is the single entry point for
 local development. One command starts Sentium.Web, the Sandbox, the portal, and every backing
-dependency (PostgreSQL with pgvector, Redis, the llama.cpp inference servers, Azurite) as managed containers - with a
+dependency (PostgreSQL with pgvector, the llama.cpp inference servers, Azurite) as managed containers - with a
 live dashboard, hot reload, and automatic service discovery.
 
 ### Prerequisites
@@ -106,7 +107,7 @@ watch every resource start, stream logs, and follow the model downloads (the `mo
 ### What gets started
 
 Sentium.Web (all six modules), the Sandbox, the portal (`sentium-portal`), and the infrastructure
-(PostgreSQL with one `sentiumdb` database, Redis, Azurite, and the inference stack):
+(PostgreSQL with one `sentiumdb` database, Azurite, and the inference stack):
 
 - `models-init` downloads the model files pinned in [`infra/llm/models.lock`](../infra/llm/models.lock)
   into the `sentium-llm-models` volume and verifies each SHA-256, then exits.
@@ -132,7 +133,7 @@ healthy. Both servers reject every request except `/health` without the `llm-api
 | **Portal** (start here) | http://localhost:5173                   |
 | Aspire dashboard        | printed on startup (with a login token) |
 
-The portal sends you to its own `/login` page to sign in or register. Sentium.Web's API reference
+The portal sends you to its own `/login` page; the first account you register becomes the Sovereign (see [Accounts](#accounts-and-data-retention)). Sentium.Web's API reference
 (Scalar) is linked from its resource in the dashboard.
 
 > **First run takes a while** - Docker pulls the infrastructure images and `models-init` downloads
@@ -234,8 +235,7 @@ trust the installation's root certificate on each device.
 | Service       | Image                                                       | Host port(s)    | Purpose                                                                                                                                                                                                                         |
 | ------------- | ----------------------------------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `postgres`    | `pgvector/pgvector:pg18-trixie`                             | 127.0.0.1:5432  | Relational data + RAG vectors (pgvector) - one `sentiumdb` database, one schema per module (`identity`, `registry`, `sentinel`, `codex`, `locus`, `tempus`, `praxis`, `mcp`; the Quartz scheduler keeps its tables in `praxis`) |
-| `redis`       | `redis:7-alpine`                                            | 127.0.0.1:6379  | HybridCache L2                                                                                                                                                                                                                  |
-| `azurite`     | `mcr.microsoft.com/azure-storage/azurite`                   | 127.0.0.1:10000 | Azure Blob Storage emulator (workspace files, sandbox artifacts & inventory attachments)                                                                                                                                        |
+| `azurite`     | `mcr.microsoft.com/azure-storage/azurite:3.35.0`            | 127.0.0.1:10000 | Azure Blob Storage emulator (workspace files, sandbox artifacts & inventory attachments)                                                                                                                                        |
 | `models-init` | `curlimages/curl:8.22.0` (pinned digest)                    | -               | One-shot: downloads and checksum-verifies the model files from `infra/llm/models.lock`                                                                                                                                          |
 | `llm`         | `ghcr.io/ggml-org/llama.cpp:server-b11804` (pinned digest)  | 127.0.0.1:8090  | Chat models: `llama-server` in router mode, presets from `infra/llm/models.ini`                                                                                                                                                 |
 | `embeddings`  | `ghcr.io/ggml-org/llama.cpp:server-b11804` (pinned digest)  | 127.0.0.1:8091  | The RAG embedding model (768 dimensions)                                                                                                                                                                                        |
@@ -247,7 +247,7 @@ trust the installation's root certificate on each device.
 | Service       | Image / Dockerfile                     | Exposed via                         | Role                                                                                                      |
 | ------------- | -------------------------------------- | ----------------------------------- | --------------------------------------------------------------------------------------------------------- |
 | `caddy`       | `caddy:2.10.2-alpine`                  | **443** (HTTPS), 80 (redirect only) | TLS for `SENTIUM_HOSTNAME` from a per-installation CA (`infra/caddy/Caddyfile`); proxies to `sentium-web` |
-| `sentium-web` | `src/hosts/Sentium.Web/Dockerfile`     | internal (HTTP 8080)                | The modular monolith: every module, the API, the login session and the built portal                       |
+| `sentium-web` | `src/hosts/Sentium.Web/Dockerfile`     | internal (HTTP 8080)                | The modular monolith: every module, the API, the login session and the built portal (non-root, no caps)   |
 | `sandbox`     | `src/hosts/Sentium.Sandbox/Dockerfile` | internal                            | Stateless, hardened Docker code execution; reachable only from `sentium-web`                              |
 | `backup`      | `src/hosts/Sentium.Backup/Dockerfile`  | internal                            | Nightly verified backups to `BACKUP_DESTINATION`; see [Backups](#backups)                                 |
 
@@ -275,7 +275,8 @@ curl http://127.0.0.1:8091/health
 curl --cacert sentium-root-ca.crt https://sentium.home.arpa/api/identity/account/session
 ```
 
-Then open **https://sentium.home.arpa**, register or log in, and start a conversation. The Vigil page
+Then open **https://sentium.home.arpa**, register the first account (it becomes the Sovereign - do this right
+after installing, before anyone else can reach the portal), and start a conversation. The Vigil page
 inside the portal shows a live health view of every module, the sandbox and each infrastructure
 dependency.
 
@@ -636,11 +637,38 @@ docker compose down -v
 docker compose up -d models-init && docker compose restart llm embeddings
 ```
 
-Persisted state lives in named volumes: `postgres-data`, `redis-data`, `azurite-data`,
+Persisted state lives in named volumes: `postgres-data`, `azurite-data`,
 `web-dataprotection`, `caddy-data` (the installation's certificate authority) and `sentium-llm-models`
 (the verified model files, shared with the Aspire AppHost). They survive `docker compose down` and are
 only removed by `down -v`, which also deletes the downloaded models and creates a **new CA** on the next
 start - every device then has to trust the new root certificate.
+
+---
+
+## Accounts and data retention
+
+**The first account is the Sovereign.** On a fresh installation the login page offers **Register**; the first account
+registered becomes the household's Sovereign (administrator). After that, registration is **closed**: the page only
+offers sign-in. To let someone join, a Sovereign opens **Settings → Access → Open registration**, the person registers
+(as a Member), and the Sovereign closes it again. A Sovereign grants the Sovereign role to others on the **Users** page.
+
+An existing installation upgraded to this version keeps its accounts and has registration closed until a Sovereign
+opens it.
+
+**Deleting an account** (Users page, Sovereign only) deletes the user's data in every module - conversations,
+workspaces and files, knowledge, learnings, agents, skills, workflows and runs, sandbox history and artifacts, timeline,
+notifications and personal settings - and unschedules their scheduled jobs.
+
+**Retention.** History that grows with every agent action is pruned daily:
+
+| Setting (environment variable)      | Default | What                                                      |
+| ----------------------------------- | ------- | --------------------------------------------------------- |
+| `Sentinel__AuditRetentionDays`      | 180     | Sentinel policy-decision audit records                    |
+| `Praxis__ExecutionLogRetentionDays` | 90      | Sandbox execution history (code, file context and output) |
+| `Praxis__WorkflowRunRetentionDays`  | 180     | Workflow run history                                      |
+| `Nuntius__RetentionDays`            | 90      | Notifications                                             |
+
+Conversations, knowledge and the timeline are your content and are never expired.
 
 ---
 
@@ -661,7 +689,7 @@ Compose installation.
 | Data-protection keys | The `web-dataprotection` volume                                  | Sign-in cookies and MCP server secrets encrypted at rest |
 | Manifest             | Generated                                                        | Sentium version, time, and the size and SHA-256 per part |
 
-Not included: the model files (`models-init` downloads and verifies them again), Redis (a cache), your `.env`
+Not included: the model files (`models-init` downloads and verifies them again), your `.env`
 file, and the `caddy-data` volume with the installation's certificate authority. **Keep a copy of `.env`
 somewhere safe**: the restored database needs the `POSTGRES_PASSWORD` and the other secrets you started with.
 Without the old CA, a restored installation creates a new one and every device must trust the new root
@@ -847,5 +875,5 @@ Both full-stack methods are functionally equivalent. The intentional differences
 | Backups           | Sidecar to `backups/` in the repo; no key ring in it   | The `backup` service to `BACKUP_DESTINATION`; see [Backups](#backups)                                       |
 
 Everything else - Sentium.Web and its six modules, the separate Sandbox, the single PostgreSQL
-database (with pgvector), Redis, Azurite, the `X-Internal-Token` security model, per-user data isolation, the Sentinel PDP, the
+database (with pgvector), Azurite, the `X-Internal-Token` security model, per-user data isolation, the Sentinel PDP, the
 pinned llama.cpp build, and the default `gemma-4-e4b` / `embeddinggemma-2` models - matches between the two setups exactly.

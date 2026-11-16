@@ -29,6 +29,7 @@ const VALUES: Record<SettingsKey, Record<string, unknown>> = {
     rateLimitMaxRequests: 120,
     rateLimitWindowSeconds: 60,
   },
+  access: { registrationOpen: false },
   mcp: {
     enabled: true,
     connectTimeoutSeconds: 30,
@@ -108,7 +109,7 @@ describe("Settings layout", () => {
     renderSettings();
     await loaded();
 
-    for (const name of ["Inference", "Household calendar", "Security", "MCP", "Monitoring"]) {
+    for (const name of ["Inference", "Household calendar", "Security", "Access", "MCP", "Monitoring"]) {
       expect(screen.getByRole("heading", { level: 2, name })).toBeInTheDocument();
     }
     expect(screen.getByRole("option", { name: "Household default (Europe/Sofia)" })).toBeInTheDocument();

@@ -11,6 +11,15 @@ namespace Sentium.Sandbox.Docker;
 /// </summary>
 internal sealed class JobDirectoryService(IOptions<SandboxOptions> options, ILogger<JobDirectoryService> logger) : IJobDirectoryService
 {
+    /// <summary>
+    /// The worker container runs as <c>nobody</c>, so the job directory it gets as <c>/job</c> must be writable by
+    /// others, or the code cannot write any output file (artifact).
+    /// </summary>
+    private const UnixFileMode JobDirectoryMode =
+        UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
+        UnixFileMode.GroupRead | UnixFileMode.GroupWrite | UnixFileMode.GroupExecute |
+        UnixFileMode.OtherRead | UnixFileMode.OtherWrite | UnixFileMode.OtherExecute;
+
     private readonly string _baseDirectory = string.IsNullOrWhiteSpace(options.Value.JobBaseDirectory)
         ? Path.Combine(Path.GetTempPath(), "sentium-sandbox")
         : options.Value.JobBaseDirectory;
@@ -21,6 +30,11 @@ internal sealed class JobDirectoryService(IOptions<SandboxOptions> options, ILog
         var jobDirectory = Path.Combine(_baseDirectory, jobId.ToString("N"));
 
         Directory.CreateDirectory(jobDirectory);
+
+        if (!OperatingSystem.IsWindows())
+        {
+            File.SetUnixFileMode(jobDirectory, JobDirectoryMode);
+        }
 
         logger.LogDebug("Created job directory {JobDirectory} for job {JobId}", jobDirectory, jobId);
 

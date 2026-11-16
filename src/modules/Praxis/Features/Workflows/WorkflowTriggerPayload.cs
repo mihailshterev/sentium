@@ -1,12 +1,6 @@
-using System.Text.Json.Serialization;
-
 namespace Sentium.Praxis.Features.Workflows;
 
-internal sealed record WorkflowTriggerPayload(
-    [property: JsonPropertyName("activity")] string Activity,
-    [property: JsonPropertyName("workflowId")] Guid WorkflowId,
-    [property: JsonPropertyName("workflowName")] string WorkflowName,
-    [property: JsonPropertyName("agents")] IReadOnlyList<Guid> Agents,
-    [property: JsonPropertyName("workspaceId")] Guid? WorkspaceId,
-    [property: JsonPropertyName("userId")] Guid? UserId,
-    [property: JsonPropertyName("streamId")] string? StreamId = null);
+/// <summary>
+/// The stored JSON shape of a <see cref="WorkflowTrigger"/>.
+/// </summary>
+internal sealed record WorkflowTriggerPayload(string Activity, Guid? WorkflowId, string? WorkflowName, Guid? WorkspaceId);

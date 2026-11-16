@@ -2,6 +2,7 @@ using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Options;
 using Sentium.Infrastructure.Extensions;
 using Sentium.Infrastructure.Inference;
+using Sentium.Infrastructure.Retention;
 using Sentium.Infrastructure.Testing;
 using Sentium.Sentinel.Contracts;
 using Sentium.Sentinel.Data;
@@ -10,6 +11,7 @@ using Sentium.Sentinel.Features.Engine;
 using Sentium.Sentinel.Features.Options;
 using Sentium.Sentinel.Features.Policies;
 using Sentium.Sentinel.Features.RateLimiting;
+using Sentium.Sentinel.Features.Retention;
 using Sentium.Sentinel.Features.Settings;
 
 namespace Sentium.Sentinel;
@@ -56,6 +58,7 @@ public static class SentinelModuleExtensions
 
         builder.AddModuleDbContext<SentinelDbContext>(SentinelDbContext.Schema);
         services.AddScoped<IAuditLog, EfCoreAuditLog>();
+        services.AddRetentionSweep<AuditRetention>();
 
         // Intent checks are short classifications bounded by PdpOptions.IntentCheckTimeoutSeconds, so this
         // client gets far tighter limits than the agent clients.

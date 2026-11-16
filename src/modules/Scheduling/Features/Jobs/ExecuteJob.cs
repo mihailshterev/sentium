@@ -41,7 +41,8 @@ internal sealed class ExecuteJob(ISandboxClient sandboxClient, ILogger<ExecuteJo
             Language = language,
             Code = code,
             AgentId = agentId,
-            OriginalUserPrompt = $"Scheduled task '{jobName}' execution for agent '{agentId}'"
+            OriginalUserPrompt = $"Scheduled task '{jobName}' execution for agent '{agentId}'",
+            UserId = Guid.TryParse(context.JobDetail.Key.Group, out var ownerId) ? ownerId : null
         };
 
         try

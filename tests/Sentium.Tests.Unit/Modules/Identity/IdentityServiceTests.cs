@@ -4,10 +4,14 @@ using Microsoft.Extensions.Logging;
 using NSubstitute;
 using Sentium.Identity.Entities;
 using Sentium.Identity.Features.Account;
+using Sentium.Registry.Contracts;
 using Xunit;
 
 namespace Sentium.Tests.Unit.Modules.Identity;
 
+/// <summary>
+/// Sign-in flows. Registration runs in a database transaction and is covered by the integration tests.
+/// </summary>
 public sealed class IdentityServiceTests
 {
     private readonly UserManager<ApplicationUser> _userManager;
@@ -27,48 +31,7 @@ public sealed class IdentityServiceTests
             null, null, null, null);
 
         var logger = Substitute.For<ILogger<IdentityService>>();
-        _service = new IdentityService(_userManager, _signInManager, logger);
-    }
-
-    [Fact]
-    public async Task RegisterUserAsync_Success_ReturnsSucceededResultAndSignsIn()
-    {
-        var request = new RegisterRequest("user1", "Test@123");
-        _userManager.CreateAsync(Arg.Any<ApplicationUser>(), Arg.Any<string>())
-            .Returns(IdentityResult.Success);
-        _userManager.AddToRoleAsync(Arg.Any<ApplicationUser>(), Arg.Any<string>())
-            .Returns(IdentityResult.Success);
-        _signInManager.SignInAsync(Arg.Any<ApplicationUser>(), Arg.Any<bool>())
-            .Returns(Task.CompletedTask);
-
-        var (result, user) = await _service.RegisterUserAsync(request);
-
-        result.Succeeded.Should().BeTrue();
-        user.Should().NotBeNull();
-        user!.UserName.Should().Be(request.UserName);
-        await _signInManager.Received(1).SignInAsync(user, false);
-    }
-
-    [Fact]
-    public async Task RegisterUserAsync_Failure_DoesNotSignIn()
-    {
-        var request = new RegisterRequest("baduser", "weak");
-        var failure = IdentityResult.Failed(new IdentityError { Description = "Password too short." });
-        _userManager.CreateAsync(Arg.Any<ApplicationUser>(), Arg.Any<string>())
-            .Returns(failure);
-
-        var (result, _) = await _service.RegisterUserAsync(request);
-
-        result.Succeeded.Should().BeFalse();
-        await _signInManager.DidNotReceive().SignInAsync(Arg.Any<ApplicationUser>(), Arg.Any<bool>());
-    }
-
-    [Fact]
-    public async Task RegisterUserAsync_NullRequest_ThrowsArgumentNullException()
-    {
-        var act = async () => await _service.RegisterUserAsync(null!);
-
-        await act.Should().ThrowAsync<ArgumentNullException>();
+        _service = new IdentityService(_userManager, _signInManager, null!, Substitute.For<ISettingsService>(), logger);
     }
 
     [Fact]

@@ -11,7 +11,6 @@ internal static class ToolNames
     public const string StoreMemory = "store_memory";
     public const string CaptureAgentLearning = "capture_agent_learning";
     public const string ExecuteCode = "execute_code_sandbox";
-    public const string ReadFile = "read_file";
     public const string ListWorkspaces = "list_workspaces";
     public const string ListWorkspaceFiles = "list_workspace_files";
     public const string ReadWorkspaceFileContent = "read_file_content";

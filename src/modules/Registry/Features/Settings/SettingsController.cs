@@ -23,7 +23,7 @@ internal sealed class SettingsController(ISettingsService settingsService, ISett
     {
         get
         {
-            var value = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue("sub") ?? User.FindFirstValue("nameid");
+            var value = User.FindFirstValue(ClaimTypes.NameIdentifier);
             return Guid.TryParse(value, out var id) ? id : null;
         }
     }

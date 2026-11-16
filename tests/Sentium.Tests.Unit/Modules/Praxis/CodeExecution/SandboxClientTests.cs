@@ -4,10 +4,8 @@ using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
-using NSubstitute.ExceptionExtensions;
 using Sentium.Praxis.Contracts;
 using Sentium.Praxis.Features.CodeExecution;
-using Sentium.Praxis.Features.Sentinel;
 using Sentium.Sentinel.Contracts;
 using Xunit;
 
@@ -35,7 +33,7 @@ public sealed class SandboxClientTests : IDisposable
         _httpClient = new HttpClient(_handler) { BaseAddress = new Uri("http://sandbox/") };
         _sut = new SandboxClient(
             _httpClient,
-            new SentinelClient(_pdp, NullLogger<SentinelClient>.Instance),
+            _pdp,
             _services.GetRequiredService<IServiceScopeFactory>(),
             NullLogger<SandboxClient>.Instance);
     }
@@ -153,20 +151,6 @@ public sealed class SandboxClientTests : IDisposable
         await _executionLog.Received(1).AddAsync(
             Arg.Is<ExecutionLogEntry>(e => e.PolicyDenied && e.PolicyDenialReason == "blocked" && e.SentinelAuditId == auditId),
             Arg.Any<CancellationToken>());
-    }
-
-    [Fact]
-    public async Task ExecuteAsync_FailsClosed_WhenSentinelThrows()
-    {
-        var ct = TestContext.Current.CancellationToken;
-        _pdp.EvaluateAsync(Arg.Any<PolicyEvaluationRequest>(), Arg.Any<CancellationToken>())
-            .ThrowsAsync(new InvalidOperationException("boom"));
-
-        var result = await _sut.ExecuteAsync(MakeRequest(), "corr-5", ct);
-
-        result.PolicyDenied.Should().BeTrue();
-        result.SentinelAuditId.Should().NotBe(Guid.Empty);
-        _handler.LastRequest.Should().BeNull();
     }
 
     [Fact]

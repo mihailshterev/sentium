@@ -16,7 +16,7 @@ public sealed class WorkflowRunNotifierTests
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     private static WorkflowTrigger Trigger(Guid? userId = null)
-        => new() { TriggerType = "manual", Payload = """{"activity":"Summarise the inbox"}""", UserId = userId ?? UserId, StreamId = "stream-1" };
+        => new() { TriggerType = "manual", Activity = "Summarise the inbox", UserId = userId ?? UserId, StreamId = "stream-1" };
 
     private WorkflowRunNotifier CreateSut() => new(_notifier);
 
@@ -63,7 +63,7 @@ public sealed class WorkflowRunNotifierTests
     [Fact]
     public async Task UserlessRun_NotifiesNobody()
     {
-        var trigger = new WorkflowTrigger { TriggerType = "system", Payload = "{}" };
+        var trigger = new WorkflowTrigger { TriggerType = "system" };
 
         await CreateSut().NotifyAsync(trigger, new PersistedRun(RunId, null), WorkflowRunOutcome.Completed, null, Ct);
 

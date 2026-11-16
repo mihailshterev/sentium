@@ -1,3 +1,4 @@
+using Sentium.Codex.Contracts;
 using Sentium.Core.Results;
 using Sentium.Infrastructure.Caching;
 using Sentium.Praxis.Features.Storage;
@@ -8,9 +9,10 @@ internal sealed class WorkspaceService(
     IWorkspaceRepository repository,
     ILocalFileService fileService,
     IFileIngestionQueue ingestionQueue,
+    IDocumentIngestionService ingestionService,
     IScopedCache cache) : IWorkspaceService
 {
-    private const string CacheTag = "workspaces";
+    internal const string CacheTag = "workspaces";
 
     public async Task<IReadOnlyList<WorkspaceDto>> GetWorkspacesAsync(CancellationToken ct = default)
     {
@@ -142,6 +144,7 @@ internal sealed class WorkspaceService(
             return false;
         }
 
+        await ingestionService.RemoveDocumentAsync(WorkspaceFileMetadata.FileId, fileId.ToString(), ct: ct);
         await fileService.DeleteFileAsync(file.BlobName, ct);
         await repository.DeleteFileRecordAsync(fileId, ct);
         await cache.InvalidateTagAsync(CacheTag, ct);

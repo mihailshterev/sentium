@@ -1,5 +1,6 @@
 using Quartz;
 using Sentium.Core.Constants;
+using Sentium.Identity.Contracts;
 using Sentium.Praxis.Contracts;
 using Sentium.Scheduling.Features.Jobs;
 
@@ -19,6 +20,7 @@ public static class SchedulingModuleExtensions
         var services = builder.Services;
 
         services.AddTransient<IAgentTool, ScheduleTaskTool>();
+        services.AddSingleton<IUserRemovalObserver, ScheduledJobRemover>();
 
         services.AddQuartz(q =>
         {

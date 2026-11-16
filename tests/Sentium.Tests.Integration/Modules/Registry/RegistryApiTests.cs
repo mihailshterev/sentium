@@ -1,7 +1,7 @@
 using System.Net;
 using System.Net.Http.Json;
 using FluentAssertions;
-using Sentium.Registry.Features.Settings;
+using Sentium.Registry.Contracts.Settings;
 using Sentium.Tests.Integration.Common;
 using Xunit;
 

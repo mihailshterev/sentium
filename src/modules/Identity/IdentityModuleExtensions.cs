@@ -1,7 +1,6 @@
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Sentium.Core.Constants;
 using Sentium.Identity.Contracts;
@@ -40,10 +39,14 @@ public static class IdentityModuleExtensions
             options.Password.RequireLowercase = true;
             options.Password.RequireUppercase = false;
             options.Password.RequireNonAlphanumeric = false;
-            options.Password.RequiredLength = 6;
+            options.Password.RequiredLength = 8;
         })
         .AddEntityFrameworkStores<IdentityDbContext>()
         .AddDefaultTokenProviders();
+
+        // The cookie carries the roles; re-reading the user this often makes a role change or a deleted account take
+        // effect within a minute instead of the default 30.
+        services.Configure<SecurityStampValidatorOptions>(options => options.ValidationInterval = TimeSpan.FromMinutes(1));
 
         services.ConfigureApplicationCookie(options =>
         {
@@ -85,21 +88,25 @@ public static class IdentityModuleExtensions
 
         services.AddRateLimiter(options =>
         {
-            options.AddFixedWindowLimiter("auth", policy =>
-            {
-                policy.PermitLimit = authPermitLimit;
-                policy.Window = TimeSpan.FromMinutes(1);
-                policy.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
-                policy.QueueLimit = 0;
-            });
+            // One window per client address: someone guessing passwords must not lock everyone else out of signing in.
+            // Behind Caddy the address is the client's (forwarded headers).
+            options.AddPolicy("auth", context => RateLimitPartition.GetFixedWindowLimiter(
+                context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = authPermitLimit,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+                    QueueLimit = 0
+                }));
             options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
         });
 
-        services.AddScoped<IUserClaimsService, UserClaimsService>();
         services.AddScoped<IIdentityService, IdentityService>();
         services.AddScoped<IRoleService, RoleService>();
         services.AddScoped<IUserService, UserService>();
         services.AddSingleton<IUserDirectory, ScopedUserDirectory>();
+        services.AddSingleton<IUserRemovalObserver, UserSettingsRemover>();
 
         services.TryAddSingleton(TimeProvider.System);
         services.AddMemoryCache();
@@ -108,17 +115,20 @@ public static class IdentityModuleExtensions
         services.AddScoped<IDeviceService, DeviceService>();
         services.AddSingleton<IDeviceDirectory, ScopedDeviceDirectory>();
 
-        services.AddHostedService<IdentitySeeder>();
+        services.AddSingleton<IdentitySeeder>();
 
         services.AddHealthChecks().AddDbContextCheck<IdentityDbContext>("identity-db", tags: [ModuleName]);
 
         return builder;
     }
 
-    public static Task InitializeIdentityModuleAsync(this WebApplication app)
+    public static async Task InitializeIdentityModuleAsync(this WebApplication app)
     {
         ArgumentNullException.ThrowIfNull(app);
 
-        return app.Services.MigrateModuleDbContextAsync<IdentityDbContext>();
+        await app.Services.MigrateModuleDbContextAsync<IdentityDbContext>();
+
+        await using var scope = app.Services.CreateAsyncScope();
+        await scope.ServiceProvider.GetRequiredService<IdentitySeeder>().SeedAsync(scope.ServiceProvider);
     }
 }

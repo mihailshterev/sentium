@@ -5,20 +5,19 @@ using Sentium.Core.Constants;
 namespace Sentium.Infrastructure.Security;
 
 /// <summary>
-/// <see cref="ICurrentUser"/> implementation backed by <see cref="IHttpContextAccessor"/>.
-/// Claim lookups are deliberately tolerant of the different shapes a token can take
-/// (JWT bearer on backend services vs. mapped claims on the cookie/OIDC path).
+/// <see cref="ICurrentUser"/> implementation backed by <see cref="IHttpContextAccessor"/>. Every scheme (the Identity
+/// cookie, Device tokens) puts the user id in <see cref="ClaimTypes.NameIdentifier"/>.
 /// <para>
-/// <see cref="IsSystem"/> is driven by <see cref="SystemScopeContext"/>: background workers
-/// call <see cref="SystemScopeContext.Activate"/> on their DI scope <em>before</em> resolving
-/// any other scoped services so that every dependency in that scope sees <c>IsSystem = true</c>.
+/// Outside a request the identity comes from <see cref="SystemScopeContext"/>: background workers call
+/// <see cref="SystemScopeContext.Activate"/> (system) or <see cref="SystemScopeContext.ActAs"/> (one user) on their DI
+/// scope <em>before</em> resolving any other scoped services, so every dependency in that scope sees it.
 /// </para>
 /// </summary>
 internal sealed class CurrentUser(IHttpContextAccessor httpContextAccessor, SystemScopeContext systemScopeContext) : ICurrentUser
 {
     private ClaimsPrincipal? Principal => httpContextAccessor.HttpContext?.User;
 
-    public bool IsAuthenticated => Principal?.Identity?.IsAuthenticated ?? false;
+    public bool IsAuthenticated => systemScopeContext.ActingUserId is not null || (Principal?.Identity?.IsAuthenticated ?? false);
 
     public bool IsSystem => systemScopeContext.IsActive;
 
@@ -26,23 +25,24 @@ internal sealed class CurrentUser(IHttpContextAccessor httpContextAccessor, Syst
     {
         get
         {
+            if (systemScopeContext.ActingUserId is { } actingUserId)
+            {
+                return actingUserId;
+            }
+
             var principal = Principal;
             if (principal is null)
             {
                 return null;
             }
 
-            var value = principal.FindFirstValue(ClaimTypes.NameIdentifier)
-                ?? principal.FindFirstValue("sub")
-                ?? principal.FindFirstValue("nameid");
+            var value = principal.FindFirstValue(ClaimTypes.NameIdentifier);
 
             return Guid.TryParse(value, out var id) ? id : null;
         }
     }
 
-    public bool IsSovereign => RoleClaims.IsInRole(Principal, SecurityRoles.Sovereign);
+    public bool IsSovereign => systemScopeContext.ActingUserId is null && RoleClaims.IsInRole(Principal, SecurityRoles.Sovereign);
 
-    public string? UserName => IsAuthenticated
-        ? Principal?.Identity?.Name ?? Principal?.FindFirstValue(ClaimTypes.Name) ?? Principal?.FindFirstValue("name")
-        : null;
+    public string? UserName => systemScopeContext.ActingUserId is null && IsAuthenticated ? Principal?.Identity?.Name : null;
 }
