@@ -1,34 +1,19 @@
 using Microsoft.AspNetCore.Mvc;
 using Sentium.Core.Results;
 using Sentium.Infrastructure.Security;
-using Sentium.Sentinel.Contracts;
 using Sentium.Sentinel.Features.Audit;
 using Sentium.Sentinel.Features.Policies;
 
 namespace Sentium.Sentinel.Features.Engine;
 
 /// <summary>
-/// Policy Decision Point (PDP) API. Modules inside Sentium.Web evaluate in-process through
-/// <see cref="IPolicyDecisionPoint"/>; the HTTP evaluate endpoint exists for the out-of-process Sandbox.
+/// The Sentinel audit trail. Policy evaluation has no HTTP endpoint: every caller lives in Sentium.Web and
+/// evaluates in-process through <see cref="Sentium.Sentinel.Contracts.IPolicyDecisionPoint"/>.
 /// </summary>
 [ApiController]
 [Route($"{SentinelRoutes.Prefix}/policy")]
-internal sealed class PolicyController(IPolicyDecisionPoint policyDecisionPoint, IAuditLog auditLog) : ControllerBase
+internal sealed class PolicyController(IAuditLog auditLog) : ControllerBase
 {
-    /// <summary>
-    /// Evaluates a policy request and returns an authorization decision.
-    /// Restricted to internal service callers (the Sandbox) via the <c>SystemCaller</c> authorization policy.
-    /// </summary>
-    [HttpPost("evaluate")]
-    [AuthorizeSystem]
-    [ProducesResponseType<PolicyEvaluationResponse>(StatusCodes.Status200OK)]
-    public async Task<ActionResult<PolicyEvaluationResponse>> EvaluateAsync([FromBody] PolicyEvaluationRequest body, CancellationToken ct)
-    {
-        ArgumentNullException.ThrowIfNull(body);
-
-        return Ok(await policyDecisionPoint.EvaluateAsync(body, ct));
-    }
-
     /// <summary>
     /// Returns a page of forensic audit records, newest first. Requires authentication.
     /// </summary>

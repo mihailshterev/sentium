@@ -28,8 +28,8 @@ builder.AddSentiumPlatform();
 
 builder.AddSentiumDataProtection();
 
-// X-Internal-Token scheme for the out-of-process Sandbox service (Sentinel's evaluate endpoint, Praxis' sandbox client).
-builder.AddInternalApiSecurity();
+// Sentium.Web only sends the X-Internal-Token (to the Sandbox and the Backup service); no endpoint here accepts it.
+builder.AddInternalApiClient();
 
 // Module registration order mirrors the dependency graph (dependencies first).
 builder.AddSentiumModules();

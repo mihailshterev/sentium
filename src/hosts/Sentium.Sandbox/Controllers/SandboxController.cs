@@ -10,13 +10,12 @@ namespace Sentium.Sandbox.Controllers;
 
 [ApiController]
 [AuthorizeSystem]
-internal sealed class SandboxController(SandboxOrchestrator orchestrator) : ControllerBase
+internal sealed class SandboxController(ISandboxRunner runner) : ControllerBase
 {
     /// <summary>
-    /// Submits Python or Node.js code for isolated execution inside a Docker container.
-    /// The request must first be authorized by the Sentinel PDP; a denial is returned as a result
-    /// with <see cref="SandboxExecutionResponse.PolicyDenied"/> set, so the caller can record it.
-    /// The container runs with NetworkDisabled, ReadonlyRootfs, CapDrop=ALL and CPU/memory/PID hard limits.
+    /// Runs Python or Node.js code in a Docker container with NetworkDisabled, ReadonlyRootfs, CapDrop=ALL and
+    /// CPU/memory/PID hard limits. The caller (Praxis in Sentium.Web) has already had the run authorized by the
+    /// Sentinel PDP and records the outcome; the Sandbox trusts it through the internal API key alone.
     /// </summary>
     [HttpPost("execute")]
     [ProducesResponseType<SandboxExecutionResponse>(StatusCodes.Status200OK)]
@@ -40,11 +39,10 @@ internal sealed class SandboxController(SandboxOrchestrator orchestrator) : Cont
                 Content = f.Content
             }).ToList(),
             AgentId = body.AgentId,
-            CorrelationId = correlationId,
-            OriginalUserPrompt = body.OriginalUserPrompt
+            CorrelationId = correlationId
         };
 
-        var result = await orchestrator.ExecuteAsync(request, ct);
+        var result = await runner.RunAsync(request, ct);
 
         return Ok(new SandboxExecutionResponse
         {
@@ -53,10 +51,7 @@ internal sealed class SandboxController(SandboxOrchestrator orchestrator) : Cont
             Output = result.Output,
             Error = result.Error,
             TimedOut = result.TimedOut,
-            PolicyDenied = result.PolicyDenied,
-            PolicyDenialReason = result.PolicyDenialReason,
             JobId = result.JobId,
-            SentinelAuditId = result.SentinelAuditId,
             DurationMs = result.DurationMs,
             Artifacts = result.Artifacts
                 .Select(a => new ArtifactDto

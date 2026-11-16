@@ -20,6 +20,11 @@
 {$SENTIUM_HOSTNAME} {
 	tls internal
 
+	# Health reports list every dependency and its state. Vigil and container healthchecks reach sentium-web
+	# directly, so the network gets a 404 instead.
+	@health path /health /alive
+	respond @health 404
+
 	reverse_proxy sentium-web:8080 {
 		# Server-sent event streams (assistant, orchestration, Vigil, notifications) must reach the browser
 		# chunk by chunk, never buffered.

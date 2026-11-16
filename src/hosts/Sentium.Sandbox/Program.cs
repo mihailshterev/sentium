@@ -6,14 +6,12 @@ using Sentium.Core.Constants;
 using Sentium.Infrastructure.Diagnostics;
 using Sentium.Infrastructure.Extensions;
 using Sentium.Infrastructure.Mvc;
-using Sentium.Infrastructure.Security;
 using Sentium.Infrastructure.Validation;
 using Sentium.Sandbox.Artifacts;
 using Sentium.Sandbox.Docker;
 using Sentium.Sandbox.Execution;
 using Sentium.Sandbox.Mcp;
 using Sentium.Sandbox.Options;
-using Sentium.Sandbox.Sentinel;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -43,7 +41,6 @@ builder.Services.AddSingleton<ContainerConfigBuilder>();
 builder.Services.AddSingleton<DockerImageService>();
 builder.Services.AddSingleton<IJobDirectoryService, JobDirectoryService>();
 builder.Services.AddSingleton<ISandboxRunner, DockerSandboxRunner>();
-builder.Services.AddScoped<SandboxOrchestrator>();
 
 // Stdio MCP servers in hardened long-lived containers, on behalf of Sentium.Web (off unless Sandbox:Mcp:Enabled).
 builder.Services.AddSingleton(TimeProvider.System);
@@ -51,14 +48,6 @@ builder.Services.AddSingleton<DockerStdioAttach>();
 builder.Services.AddSingleton<McpContainerManager>();
 builder.Services.AddSingleton<IMcpServerHost>(sp => sp.GetRequiredService<McpContainerManager>());
 builder.Services.AddHostedService<McpHostService>();
-
-builder.Services.AddTransient<InternalApiKeyDelegatingHandler>();
-
-// Sentinel's PDP lives in Sentium.Web; every execution is authorized there first (fail-closed).
-builder.Services.AddHttpClient<ISentinelGateway, HttpSentinelGateway>(client =>
-{
-    client.BaseAddress = new Uri($"https+http://{ServiceNames.Web}");
-}).AddHttpMessageHandler<InternalApiKeyDelegatingHandler>();
 
 builder.Services.AddHealthChecks().AddCheck<DockerHealthCheck>("docker");
 

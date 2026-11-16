@@ -7,5 +7,4 @@ internal sealed record ExecutionRequest
     public IReadOnlyList<SandboxFileContext> FileContext { get; init; } = [];
     public required string AgentId { get; init; }
     public required string CorrelationId { get; init; }
-    public string? OriginalUserPrompt { get; init; }
 }

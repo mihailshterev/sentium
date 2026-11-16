@@ -50,7 +50,7 @@ This deployment model is central to the threat model:
 | User credentials & the session cookie (`Sentium.Auth`)                  | Account takeover                                                           |
 | ASP.NET Core Data Protection key ring                                   | Signs and encrypts the session cookie; whoever holds it can forge sessions |
 | Per-user data (conversations, RAG memories, knowledge base, workspaces) | Privacy - the platform's core promise                                      |
-| `X-Internal-Token` pre-shared key                                       | Reaches the Sandbox's `/execute` and Sentinel's policy-evaluation endpoint |
+| `X-Internal-Token` pre-shared key                                       | Reaches the Sandbox's `/execute` and the Backup service's API              |
 | PostgreSQL credentials                                                  | One login reads and writes every module's schema                           |
 | Sentinel audit log                                                      | Accountability / forensic integrity                                        |
 | The host running the Sandbox                                            | Container escape or Docker-socket abuse → full host compromise             |
@@ -85,12 +85,11 @@ This deployment model is central to the threat model:
       v
  [ Sentium.Web ]  portal · /api/{module} · session endpoints
     Identity · Registry · Nuntius · Sentinel · Codex · Locus · Tempus · Praxis · Mcp · Scheduling · Vigil   (one process, in-process calls)
-      |                                              ^
-      |  POST /execute                               |  POST /api/sentinel/policy/evaluate
-      |  (X-Internal-Token)                          |  (X-Internal-Token)
- ===== TB2: cross-process calls ======================|================================
-      v                                              |
- [ Sentium.Sandbox ] ---------------------------------+
+      |  Sentinel authorizes the run in-process, then
+      |  POST /execute (X-Internal-Token)              (also: Backup service, X-Internal-Token)
+ ===== TB2: cross-process calls ======================================================
+      v
+ [ Sentium.Sandbox ]   on the sentium-sandbox network: only Sentium.Web and Azurite
       |  (host Docker socket)
  ===== TB3: untrusted code execution =================================================
       v
@@ -108,11 +107,12 @@ This deployment model is central to the threat model:
   memory, a DI container and one database login. Module boundaries (`Contracts`, enforced by
   `ModuleBoundaryTests`) are an architectural control, not a security one: a flaw in one module
   is a flaw in all of them.
-- **TB2 - Cross-process calls.** Only Sentium.Web ↔ Sentium.Sandbox crosses a process boundary,
-  and both directions require `X-Internal-Token` (the `SystemCaller` policy). The Sandbox is not
-  routable from the browser. Sentinel's policy-evaluation endpoint, however, lives on Sentium.Web
-  and so sits on the public origin: there the token is the only control, with no network
-  isolation behind it.
+- **TB2 - Cross-process calls.** Sentium.Web calls two sidecars, the Sandbox and the Backup
+  service, one way only and with `X-Internal-Token` (the `SystemCaller` policy). Neither calls
+  Sentium.Web back, and Sentium.Web exposes no internal-token endpoint on the public origin: Sentinel
+  authorizes each sandbox run in-process before the call. Under Compose each sidecar is on its own
+  internal network (`sentium-sandbox`, `sentium-backup`) shared only with Sentium.Web and the data
+  stores it needs, so the token is defence-in-depth behind network isolation.
 - **TB3 - Untrusted code.** Agent-submitted code runs inside an ephemeral, network-disabled,
   capability-stripped container. The boundary here is the container/kernel.
 
@@ -122,14 +122,14 @@ This deployment model is central to the threat model:
 
 ### 3.1 Spoofing (identity)
 
-| Threat                                         | Mitigation                                                                                                                                                                                                                                        |
-| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Attacker steals the session from the browser   | ASP.NET Core Identity issues an `HttpOnly`, `Secure` (always), `SameSite=Strict` cookie (`Sentium.Auth`, 7-day sliding). There are no tokens in the browser, so XSS cannot exfiltrate a bearer credential.                                        |
-| Cross-site request forgery                     | `SameSite=Strict` keeps the cookie off every cross-site request, and the portal is served from the same origin as the API. There are no separate antiforgery tokens.                                                                              |
-| Credential stuffing / brute force on login     | Login and registration share a fixed-window rate limiter (`auth`, 10 requests per minute), and failed logins count towards account lockout (`lockoutOnFailure`). Unauthenticated API calls get `401`/`403`, never a redirect.                     |
-| Caller impersonates the Sandbox or Sentium.Web | `X-Internal-Token` is compared in constant time (`InternalApiKeyAuthenticationHandler`, SHA-256 + `FixedTimeEquals`) and maps to the `SystemCaller` policy. Aspire generates the key per install; for Compose the operator supplies it in `.env`. |
-| Forged `X-Forwarded-For` / `X-Forwarded-Proto` | Under Compose Sentium.Web trusts forwarded headers (`ASPNETCORE_FORWARDEDHEADERS_ENABLED`) because only the Caddy proxy can reach it: it publishes no host port, so a forged header needs a foothold on the internal network first.               |
-| Agent claims to be a system caller             | Agents run in-process and cannot set request headers. The token is attached only by `InternalApiKeyDelegatingHandler` on the Praxis → Sandbox client and the Sandbox → Sentinel client.                                                           |
+| Threat                                         | Mitigation                                                                                                                                                                                                                                                                                                                                                                       |
+| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Attacker steals the session from the browser   | ASP.NET Core Identity issues an `HttpOnly`, `Secure` (always), `SameSite=Strict` cookie (`Sentium.Auth`, 7-day sliding). There are no tokens in the browser, so XSS cannot exfiltrate a bearer credential.                                                                                                                                                                       |
+| Cross-site request forgery                     | `SameSite=Strict` keeps the cookie off every cross-site request, and the portal is served from the same origin as the API. There are no separate antiforgery tokens.                                                                                                                                                                                                             |
+| Credential stuffing / brute force on login     | Login and registration share a fixed-window rate limiter (`auth`, 10 requests per minute), and failed logins count towards account lockout (`lockoutOnFailure`). Unauthenticated API calls get `401`/`403`, never a redirect.                                                                                                                                                    |
+| Caller impersonates Sentium.Web to a sidecar   | Only Sentium.Web shares a network with the Sandbox or the Backup service. `X-Internal-Token` is compared in constant time (`InternalApiKeyAuthenticationHandler`, SHA-256 + `FixedTimeEquals`) and maps to the `SystemCaller` policy; outside Development an empty key rejects every call. Aspire generates the key per install; for Compose the operator supplies it in `.env`. |
+| Forged `X-Forwarded-For` / `X-Forwarded-Proto` | Under Compose Sentium.Web trusts forwarded headers (`ASPNETCORE_FORWARDEDHEADERS_ENABLED`) because only the Caddy proxy can reach it: it publishes no host port, so a forged header needs a foothold on the internal network first.                                                                                                                                              |
+| Agent claims to be a system caller             | Agents run in-process and cannot set request headers. The token is attached only by `InternalApiKeyDelegatingHandler` on Sentium.Web's Sandbox, MCP-host and Backup clients.                                                                                                                                                                                                     |
 
 ### 3.2 Tampering (integrity)
 
@@ -168,7 +168,7 @@ This deployment model is central to the threat model:
 | Personal timeline exposure             | Tempus timelines are **private, with no Sovereign bypass**: its query filter only skips for system scopes, so an administrator's own timeline never shows other members' tasks. The agent facade (`ITimelineAgentAccess`) runs in a system scope and therefore filters and stamps the **explicit acting user** on every call. Agents can read, add notes and **propose** tasks or moves - nothing changes until the user accepts (no approval-gated tools, so unattended runs can only suggest). Task titles, descriptions and notes reach models fenced as data; tool calls are classified as Sentinel resource `Timeline` with ids/dates (never titles) as resource ids; agents are capped at 50 pending proposals per user and 50 notes per user per day. |
 | Notification exposure                  | Inboxes are **private, with no Sovereign bypass** (same query filter as Tempus): a user lists, counts and marks read only their own Notifications, and the SSE stream is keyed by the signed-in user id. Publishers are in-process modules only (no HTTP publish endpoint), and they write as a system scope that names each recipient explicitly. Incident Notifications go to Sovereigns only.                                                                                                                                                                                                                                                                                                                                                             |
 | Attachments served from the app origin | Uploads are typed from their **magic bytes** (images, PDF, plain text only; SVG/HTML rejected) and served with `X-Content-Type-Options: nosniff` and `Content-Security-Policy: default-src 'none'; img-src 'self'; sandbox`; only images render inline, everything else is forced to download. File names never reach blob names or metadata.                                                                                                                                                                                                                                                                                                                                                                                                                |
-| Operational detail exposed             | `/health` on Sentium.Web is anonymous and returns each check's name and exception message. OpenAPI and Scalar are mapped only in Development, which is also the environment Compose runs (see §7).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| Operational detail exposed             | `/health` on Sentium.Web is anonymous and returns each check's name and exception message; under Compose, Caddy answers `/health` and `/alive` with 404, so only containers on the internal network see it. OpenAPI and Scalar are mapped only in Development; Compose runs Production.                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 
 ### 3.5 Denial of Service (availability)
 
@@ -187,12 +187,12 @@ This deployment model is central to the threat model:
 | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Member` performs `Sovereign`-only actions            | Two-tier role model enforced at the API; user/role management, model load/unload, global settings, audit and Codex ingestion are `Sovereign`-gated. Only a Sovereign can grant the role, and the last Sovereign cannot be removed.                                                                                                                                                              |
 | A new endpoint ships without authorization            | No gateway enforces "authenticated by default" any more; `ControllerAuthorizationTests` requires every controller action to declare an access rule.                                                                                                                                                                                                                                             |
-| Browser reaches privileged internal endpoints         | The Sandbox's `/execute` is not routable from the browser. Sentinel's `/api/sentinel/policy/evaluate` is, but it requires `X-Internal-Token` (see §7 for the Development fail-open).                                                                                                                                                                                                            |
+| Browser reaches privileged internal endpoints         | The Sandbox and the Backup service are not routable from the browser, and Sentium.Web has no internal-token endpoints: policy evaluation is in-process only.                                                                                                                                                                                                                                    |
 | Agent escalates beyond user intent (prompt injection) | **`SemanticIntentPolicy`** compares the declared action against the original user prompt via a local LLM (temp 0). `MISALIGNED` → deny-with-alert. Behavior tightens at low `AutonomyLevel`.                                                                                                                                                                                                    |
 | MCP server registration as an SSRF primitive          | Only a Sovereign registers servers. The connect-time guard refuses anything outside loopback/RFC 1918/100.64/10/fc00::/7 and all link-local addresses (cloud metadata), whatever the host name resolves to; the client neither follows redirects nor uses a proxy. A Sovereign can still aim it at Sentium's own private-network services, which only ever receive MCP JSON-RPC (accepted, §8). |
 | Agent tool call skips the PDP                         | Every Sentium tool carries a Sentinel classification and passes `SentinelFunctionMiddleware`, after human approval. Only the framework's skill functions (which load skill instructions) carry none and pass straight through.                                                                                                                                                                  |
 | **Container escape → host compromise**                | Defence-in-depth hardening (see §4).                                                                                                                                                                                                                                                                                                                                                            |
-| Policy bypass via unhandled exception                 | Sentinel is **fail-closed**: any unhandled error in any policy → deny with critical risk. Both callers also fail closed when the PDP is unreachable (Praxis' `SentinelClient`, the Sandbox's `HttpSentinelGateway`).                                                                                                                                                                            |
+| Policy bypass via unhandled exception                 | Sentinel is **fail-closed**: any unhandled error in any policy → deny with critical risk. Its in-process caller (Praxis' `SentinelClient`, used by the tool middleware and the sandbox client) also turns an evaluation error into a deny.                                                                                                                                                      |
 
 ---
 
@@ -268,15 +268,15 @@ The agent is treated as a **semi-trusted actor**. AI-specific risks beyond class
 
 ## 6. Infrastructure & Dependencies
 
-| Component                           | Threat                               | Note                                                                                                                                                                                                                                                                                                                               |
-| ----------------------------------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| PostgreSQL (`sentiumdb`, pgvector)  | Over-broad access across modules     | One database, one schema per module. Every module connects with the same login (the `postgres` superuser under Compose), so schema separation is not a permission boundary.                                                                                                                                                        |
-| Redis (HybridCache L2)              | Cache poisoning / stale data         | Internal network only. A settings change evicts Registry's cache entry directly; this assumes one Sentium.Web instance.                                                                                                                                                                                                            |
-| llama-server / Azurite              | Direct access bypassing app controls | Internal network only. The inference servers require a bearer API key (`LLM_API_KEY`, generated by Aspire) on every request except `/health`, have their web UI disabled, and Compose binds their ports to `127.0.0.1`. The Compose file still publishes PostgreSQL, Redis and Azurite on all interfaces for convenience (see §7). |
-| Docker daemon (via the Sandbox)     | Root-equivalent control of the host  | See §4. Only the Sandbox mounts the socket.                                                                                                                                                                                                                                                                                        |
-| MCP servers                         | Third-party tools on the network     | Sovereign-registered, local network only, tools approved individually and hash-pinned; stdio servers run in hardened Sandbox containers (§4.1). The MCP C# SDK is pinned to the version Aspire already uses.                                                                                                                       |
-| Third-party packages (NuGet / pnpm) | Supply-chain compromise              | Pinned lockfiles; keep dependencies patched (see §7).                                                                                                                                                                                                                                                                              |
-| Secrets in source/containers        | Leakage of keys/connection strings   | Use `.env` / Aspire secrets (`.env.example` is the template); **never commit real secrets**. `.gitignore` excludes env files.                                                                                                                                                                                                      |
+| Component                           | Threat                               | Note                                                                                                                                                                                                                                                                 |
+| ----------------------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PostgreSQL (`sentiumdb`, pgvector)  | Over-broad access across modules     | One database, one schema per module. Every module connects with the same login (the `postgres` superuser under Compose), so schema separation is not a permission boundary.                                                                                          |
+| Redis (HybridCache L2)              | Cache poisoning / stale data         | Internal network only. A settings change evicts Registry's cache entry directly; this assumes one Sentium.Web instance.                                                                                                                                              |
+| llama-server / Azurite              | Direct access bypassing app controls | Internal network only. The inference servers require a bearer API key (`LLM_API_KEY`, generated by Aspire) on every request except `/health`, have their web UI disabled, and Compose binds their ports, and those of PostgreSQL, Redis and Azurite, to `127.0.0.1`. |
+| Docker daemon (via the Sandbox)     | Root-equivalent control of the host  | See §4. Only the Sandbox mounts the socket.                                                                                                                                                                                                                          |
+| MCP servers                         | Third-party tools on the network     | Sovereign-registered, local network only, tools approved individually and hash-pinned; stdio servers run in hardened Sandbox containers (§4.1). The MCP C# SDK is pinned to the version Aspire already uses.                                                         |
+| Third-party packages (NuGet / pnpm) | Supply-chain compromise              | Pinned lockfiles; keep dependencies patched (see §7).                                                                                                                                                                                                                |
+| Secrets in source/containers        | Leakage of keys/connection strings   | Use `.env` / Aspire secrets (`.env.example` is the template); **never commit real secrets**. `.gitignore` excludes env files.                                                                                                                                        |
 
 ---
 
@@ -284,35 +284,25 @@ The agent is treated as a **semi-trusted actor**. AI-specific risks beyond class
 
 These are not yet fully addressed and are worth tracking:
 
-1. **Fail closed when the internal key is missing.** In Development, an empty `InternalApi:ApiKey`
-   makes the handler accept every caller. Compose runs Sentium.Web in Development, so a blank
-   `INTERNAL_API_KEY` opens Sentinel's public policy-evaluation endpoint to anyone.
-2. **Trim `/health` on the public origin.** Only the Sandbox's `/health` needs to be probed over
-   HTTP; Sentium.Web's modules are probed in-process. Its anonymous, detailed JSON report (check
-   names and exception messages) should be restricted or reduced to a status.
-3. **Run Compose outside Development.** Today Compose needs Development for startup migrations;
-   it also exposes OpenAPI and Scalar.
-4. **Partition the login rate limiter** per client instead of one window shared by everyone.
-5. **Bind or drop the Compose infrastructure ports** (PostgreSQL, Redis, Azurite; the inference ports are already bound to `127.0.0.1`) so they
-   are not reachable from other machines.
-6. **Per-module database roles** with grants on their own schema, and a non-superuser login.
-7. **Protect the Data Protection key ring at rest.** Compose now persists it on a volume
+1. **Partition the login rate limiter** per client instead of one window shared by everyone.
+2. **Per-module database roles** with grants on their own schema, and a non-superuser login.
+3. **Protect the Data Protection key ring at rest.** Compose now persists it on a volume
    (`DataProtection:KeysPath`), so restarts keep sessions and MCP secrets; the keys themselves are not yet encrypted
    (e.g. `ProtectKeysWithCertificate`), so whoever reads the volume can decrypt both.
-8. **Dependency scanning** in CI (Dependabot / `dotnet list package --vulnerable`, `pnpm audit`).
-9. **Stronger sandbox isolation** (gVisor / microVM) if untrusted code volume grows.
-10. **mTLS between Sentium.Web and the Sandbox** if Sentium is ever deployed on a network with
-    untrusted peers.
-11. **Further security headers** on Sentium.Web (HSTS, `Referrer-Policy`, `Permissions-Policy`); the portal's
-    Content-Security-Policy is in place.
-12. **Audit-log tamper-evidence** (e.g. hash chaining) if forensic guarantees must survive a
-    compromised host.
-13. **Provenance/validation for RAG-ingested content** to reduce learning-loop poisoning.
-14. **Secret rotation** procedure for the `X-Internal-Token`, the PostgreSQL password, Caddy's
+4. **Dependency scanning** in CI (Dependabot / `dotnet list package --vulnerable`, `pnpm audit`).
+5. **Stronger sandbox isolation** (gVisor / microVM) if untrusted code volume grows.
+6. **mTLS between Sentium.Web and its sidecars** if Sentium is ever deployed on a network with
+   untrusted peers.
+7. **Further security headers** on Sentium.Web (HSTS, `Referrer-Policy`, `Permissions-Policy`); the portal's
+   Content-Security-Policy is in place.
+8. **Audit-log tamper-evidence** (e.g. hash chaining) if forensic guarantees must survive a
+   compromised host.
+9. **Provenance/validation for RAG-ingested content** to reduce learning-loop poisoning.
+10. **Secret rotation** procedure for the `X-Internal-Token`, the PostgreSQL password, Caddy's
     local certificate authority and the Data Protection keys.
-15. **A documented first-Sovereign bootstrap**: new accounts are Members, and only an existing
+11. **A documented first-Sovereign bootstrap**: new accounts are Members, and only an existing
     Sovereign can grant the role.
-16. **Per-user MCP credentials / OAuth.** MCP servers use one credential set for every user's agents; per-user
+12. **Per-user MCP credentials / OAuth.** MCP servers use one credential set for every user's agents; per-user
     servers or OAuth (the SDK's `ClientOAuthOptions`) would let a server see who is acting.
 
 ---
@@ -321,10 +311,11 @@ These are not yet fully addressed and are worth tracking:
 
 Accepted under the self-hosted, single-operator, trusted-network deployment model:
 
-- **Pre-shared internal token.** A `X-Internal-Token` key (not mTLS) protects the two cross-process
-  endpoints. For the Sandbox it is _defence-in-depth on top of_ network isolation; for Sentinel's
-  policy-evaluation endpoint on the public origin it is the only control. Inadequate for a
-  hostile/multi-tenant network (upgrade path: mTLS, or moving that endpoint off the public origin).
+- **Pre-shared internal token.** A `X-Internal-Token` key (not mTLS) protects the Sandbox and the
+  Backup service, as _defence-in-depth on top of_ network isolation: under Compose only Sentium.Web
+  shares a network with them. One key serves both, and whoever compromises the Sandbox already holds
+  the host through the Docker socket. Inadequate for a hostile/multi-tenant network (upgrade path:
+  mTLS or per-service credentials).
 - **One process, one database login.** A flaw in any module exposes the data of all of them.
 - **Trusted `Sovereign`.** The administrator can read all audit, change governance config, and
   bypass data isolation. There is no protection against a malicious Sovereign - they own the host.

@@ -47,6 +47,8 @@ x-backup: &backup
     - FOWNER
   security_opt:
     - no-new-privileges:true
+  networks:
+    - sentium-backup
 
 services:
   postgres:
@@ -58,6 +60,9 @@ services:
       - "127.0.0.1:5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql
+    networks:
+      - default
+      - sentium-backup
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d sentiumdb"]
       interval: 10s
@@ -87,6 +92,10 @@ services:
       - "127.0.0.1:10000:10000"
     volumes:
       - azurite-data:/data
+    networks:
+      - default
+      - sentium-sandbox
+      - sentium-backup
     restart: unless-stopped
 
   # One-shot: downloads the model files pinned in infra/llm/models.lock and verifies their SHA-256
@@ -267,6 +276,10 @@ services:
       Backup__Endpoint: ${BACKUP_ENDPOINT-http://backup:8080}
     volumes:
       - web-dataprotection:/keys
+    networks:
+      - default
+      - sentium-sandbox
+      - sentium-backup
     depends_on:
       postgres:
         condition: service_healthy
@@ -281,7 +294,8 @@ services:
     restart: unless-stopped
 
   # Runs agent-written code in throwaway Docker containers. Kept out of the web process on purpose
-  # (it owns the Docker socket); stateless, reachable only from sentium-web with the internal API key.
+  # (it owns the Docker socket); stateless. Only on sentium-sandbox, so only sentium-web can call it (with the
+  # internal API key), and it calls nothing back: Sentinel authorizes each run inside sentium-web beforehand.
   sandbox:
     build:
       context: .
@@ -298,16 +312,16 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - ${SANDBOX_JOBS_DIR:-/tmp/sentium-sandbox}:${SANDBOX_JOBS_DIR:-/tmp/sentium-sandbox}
+    networks:
+      - sentium-sandbox
     depends_on:
       azurite:
-        condition: service_started
-      sentium-web:
         condition: service_started
     restart: unless-stopped
 
   # Nightly backups of the database, blobs and data-protection keys to BACKUP_DESTINATION. It holds the database
   # superuser tooling so sentium-web does not; Vigil reads its status and "back up now" calls it, both with the
-  # internal API key. It keeps running while sentium-web is down.
+  # internal API key. It keeps running while sentium-web is down. Only on sentium-backup (see x-backup).
   backup:
     <<: *backup
     volumes:
@@ -335,6 +349,14 @@ services:
     restart: "no"
 
 networks:
+  # Internal networks (`internal: true`: no route to the internet) that keep the two privileged sidecars away from
+  # every other container. sentium-sandbox: sentium-web calls the Sandbox, which reaches azurite for artifacts.
+  # sentium-backup: sentium-web calls the Backup service, which reads postgres and azurite.
+  sentium-sandbox:
+    internal: true
+  sentium-backup:
+    internal: true
+
   # Sandbox MCP containers may join this network (SANDBOX_MCP_ALLOWED_NETWORK). `internal: true` means no route to the
   # internet; only services also attached to it (searxng) are reachable. The explicit name keeps compose from
   # prefixing it with the project name - the Sandbox matches the allowed network by exact name.

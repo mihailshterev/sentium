@@ -86,7 +86,6 @@ flowchart TB
     Vigil -->|Contracts| Registry & Nuntius
 
     Praxis -->|X-Internal-Token| Sandbox["Sentium.Sandbox<br/>(hardened Docker exec)"]
-    Sandbox -->|X-Internal-Token<br/>policy evaluation| Sentinel
 
     subgraph Infrastructure
         PG[("PostgreSQL + pgvector<br/>one schema per module")]
@@ -139,7 +138,7 @@ Modules reference each other only through `Contracts`; a unit test (`ModuleBound
 
 - **Authentication** - ASP.NET Core Identity issues an HttpOnly session cookie. There are no tokens in the browser and no token hops between modules.
 - **Module boundaries** - modules call each other in-process through their `Contracts` interfaces. Facades over a module's database open their own DI scope per call, so concurrent callers never share a `DbContext`.
-- **Internal service calls** - only Sentium.Web ↔ Sentium.Sandbox crosses a process boundary. Both directions are authenticated with a pre-shared `X-Internal-Token` header (the `SystemCaller` policy).
+- **Internal service calls** - Sentium.Web calls two sidecars across a process boundary: the Sandbox and the Backup service. Calls go one way only and carry a pre-shared `X-Internal-Token` header (the `SystemCaller` policy); Sentium.Web itself accepts no internal-token calls. Sentinel authorizes every sandbox run inside Sentium.Web before the call.
 - **Per-user data isolation** - user-scoped tables carry a `UserId` and EF Core global query filters scope every query automatically; the `Sovereign` role and background tasks bypass the filter through an explicit accessor.
 - **In-process background work** - no message broker. Workflow runs and file ingestion go through in-memory queues (`Channel<T>`) drained by hosted services; agent token streams fan out through an in-memory relay with replay for SSE reconnects. Sentium.Web is designed to run as a single instance.
 - **Caching** via HybridCache (L1 in-process + L2 Redis). Modules read settings through Registry's cache instead of keeping their own copies, so a settings change only has to evict that one entry.
@@ -302,9 +301,9 @@ Set `PLAYWRIGHT_BASE_URL` to run the suite against an already running Testing st
 Sentium is designed to be **self-hosted** - typically by a single operator on a single host (or a single private network), with all AI inference running locally via llama.cpp's `llama-server`. This deployment model is what justifies several of the security choices below, so it is worth making the trust boundary explicit:
 
 - **Sentium.Web is the only public surface.** The browser talks exclusively to it over an `HttpOnly` session cookie. The Sandbox and the infrastructure run on the internal/orchestrated network and are not intended to be exposed to the public internet.
-- **Inside that boundary, Sentium.Web and the Sandbox authenticate to each other with a pre-shared internal token** (`X-Internal-Token`, the `SystemCaller` policy). For a single-operator, single-host deployment this is a right-sized, low-friction choice: there is no untrusted co-tenant on the internal network, and it avoids forcing operators to provision certificates, a PKI, or a service mesh. The internal token acts as **defense-in-depth on top of** network isolation, not as the sole control.
+- **Inside that boundary, Sentium.Web authenticates to the Sandbox and the Backup service with a pre-shared internal token** (`X-Internal-Token`, the `SystemCaller` policy). For a single-operator, single-host deployment this is a right-sized, low-friction choice: it avoids forcing operators to provision certificates, a PKI, or a service mesh. Under Compose the token is **defense-in-depth on top of** network isolation, not the sole control: each sidecar sits on its own internal Docker network (`sentium-sandbox`, `sentium-backup`) that only Sentium.Web and the data stores it needs share, so no other container can reach it.
 - **The internal token is generated per-installation as a secret** (managed as an Aspire secret parameter) - it is not a shipped default. Operators should treat it like any other deployment secret and rotate it if it is ever exposed.
-- **Out of scope for the default posture:** multi-tenant hosting on a shared/hostile network, where transport-level mutual identity (mTLS) or per-service credentials between Sentium.Web and the Sandbox would be the appropriate next step.
+- **Out of scope for the default posture:** multi-tenant hosting on a shared/hostile network, where transport-level mutual identity (mTLS) or per-service credentials between Sentium.Web and its sidecars would be the appropriate next step.
 
 ---
 

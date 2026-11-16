@@ -8,10 +8,9 @@ namespace Sentium.Sentinel.Features.Policies;
 /// agent action is denied. This is the platform's incident-response containment control: a single
 /// runtime flag that halts all autonomous activity.
 /// <para/>
-/// System / Sovereign traffic bypasses Sentinel entirely at the authentication layer
-/// (<c>SystemCaller</c> policy), so a blanket deny here only affects untrusted, user-facing
-/// agent actions - exactly the intent of a lockdown. Registered first so it short-circuits
-/// the chain before any other (more expensive) policy runs.
+/// Only agent tool calls and sandbox runs are evaluated by the PDP; the Sovereign's own requests (lifting the
+/// lockdown included) never reach it, so a blanket deny here halts agents without locking the Sovereign out.
+/// Registered first so it short-circuits the chain before any other (more expensive) policy runs.
 /// </summary>
 internal sealed class LockdownPolicy(IPdpRuntimeSettingsProvider settings) : IPdpPolicy
 {

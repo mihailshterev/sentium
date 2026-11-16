@@ -288,7 +288,7 @@ runtime.
 | Variable                        | Default                | Description                                                                             |
 | ------------------------------- | ---------------------- | --------------------------------------------------------------------------------------- |
 | `POSTGRES_PASSWORD`             | `change-me-…`          | PostgreSQL `postgres` superuser password.                                               |
-| `INTERNAL_API_KEY`              | `change-me-…`          | Pre-shared `X-Internal-Token` between `sentium-web` and `sandbox`.                      |
+| `INTERNAL_API_KEY`              | `change-me-…`          | Pre-shared `X-Internal-Token` from `sentium-web` to `sandbox` and `backup`.             |
 | `SENTIUM_HOSTNAME`              | `sentium.home.arpa`    | LAN hostname the certificate is issued for; comma-separate several names.               |
 | `HTTPS_PORT`                    | `443`                  | Host HTTPS port of `caddy` (the portal and the API).                                    |
 | `HTTP_PORT`                     | `80`                   | Host HTTP port of `caddy`; it only redirects to HTTPS.                                  |
@@ -331,6 +331,10 @@ expect slower responses; for Aspire, set `Llm:UseGpu=false`.
 
 Both .NET images run as **root**. The **Sandbox** needs it to drive the host Docker socket; Sentium.Web
 no longer reads a mounted certificate, but its image does not switch to the non-root `app` user yet.
+
+The two privileged sidecars sit on their own internal networks (no internet route): `sandbox` on
+`sentium-sandbox` with only `sentium-web` and `azurite`, `backup` on `sentium-backup` with only `sentium-web`,
+`postgres` and `azurite`. No other container (the inference servers, speech, SearXNG, Caddy) can reach them.
 
 ### Voice
 
@@ -819,9 +823,9 @@ The model id is not declared in `infra/llm/models.ini`. Check `SENTIUM_MODEL` an
 
 **Sandbox code execution fails.**
 Verify the host Docker socket is mounted and `SANDBOX_JOBS_DIR` resolves to the same absolute path on
-host and container. On Windows, that path must live inside your WSL2 distro. Every run is also
-authorized by Sentinel inside `sentium-web`: if `INTERNAL_API_KEY` is empty or the two containers
-disagree, runs are denied.
+host and container. On Windows, that path must live inside your WSL2 distro. `sentium-web` calls the
+Sandbox with `INTERNAL_API_KEY`: if it is empty or the two containers disagree, the Sandbox answers 401.
+A run Sentinel denies is not an error: it shows as **Denied** in the execution history.
 
 **Port already in use.**
 Change the offending `*_PORT` value in `.env`.
