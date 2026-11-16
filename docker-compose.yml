@@ -4,7 +4,7 @@ x-extra-hosts: &extra-hosts
   - "host.docker.internal:host-gateway"
 
 x-service-env: &service-env
-  ASPNETCORE_ENVIRONMENT: Development
+  ASPNETCORE_ENVIRONMENT: Production
   InternalApi__ApiKey: ${INTERNAL_API_KEY}
   services__sentium-web__http__0: http://sentium-web:8080
   services__sandbox__http__0: http://sandbox:8080
@@ -55,7 +55,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: sentiumdb
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql
     healthcheck:
@@ -69,7 +69,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis-data:/data
     healthcheck:
@@ -84,7 +84,7 @@ services:
     image: mcr.microsoft.com/azure-storage/azurite:latest
     command: ["azurite", "--blobHost", "0.0.0.0", "--queueHost", "0.0.0.0", "--tableHost", "0.0.0.0", "-l", "/data"]
     ports:
-      - "10000:10000"
+      - "127.0.0.1:10000:10000"
     volumes:
       - azurite-data:/data
     restart: unless-stopped

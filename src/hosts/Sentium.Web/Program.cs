@@ -4,7 +4,6 @@ using Scalar.AspNetCore;
 using Sentium.Core.Constants;
 using Sentium.Infrastructure.Extensions;
 using Sentium.Infrastructure.Mvc;
-using Sentium.Infrastructure.Testing;
 using Sentium.Infrastructure.Validation;
 using Sentium.Web;
 
@@ -47,10 +46,7 @@ app.UseSentiumTracing();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 
-if (app.Environment.IsDevelopment() || app.Environment.IsTesting())
-{
-    await app.InitializeSentiumModulesAsync();
-}
+await app.InitializeSentiumModulesAsync();
 
 if (app.Environment.IsDevelopment())
 {
