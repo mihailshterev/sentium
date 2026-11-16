@@ -186,4 +186,26 @@ public sealed class SentinelPolicyEngineTests
         captured.Should().NotBeNull();
         captured!.AgentId.Should().Be(request.AgentId);
     }
+
+    [Fact]
+    public async Task EvaluateAsync_AuditsTheUser_AndRedactsThePayload()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var userId = Guid.NewGuid();
+        var request = MakeRequest("write") with
+        {
+            UserId = userId,
+            Metadata = new Dictionary<string, string> { ["payload"] = "AKIAIOSFODNN7EXAMPLE secret", ["language"] = "Python" }
+        };
+
+        await MakeEngine().EvaluateAsync(request, ct);
+
+        await _auditLog.Received(1).RecordAsync(
+            Arg.Is<AuditRecord>(r =>
+                r.UserId == userId
+                && r.Metadata["language"] == "Python"
+                && r.Metadata["payload"].StartsWith("[redacted: 27 chars, sha256 ", StringComparison.Ordinal)
+                && !r.Metadata["payload"].Contains("AKIA", StringComparison.Ordinal)),
+            Arg.Any<CancellationToken>());
+    }
 }

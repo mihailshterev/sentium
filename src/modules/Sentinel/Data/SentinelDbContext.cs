@@ -35,6 +35,7 @@ internal sealed class SentinelDbContext(DbContextOptions<SentinelDbContext> opti
 
             entity.HasIndex(e => e.AgentId);
             entity.HasIndex(e => e.Timestamp);
+            entity.HasIndex(e => e.UserId);
         });
     }
 }

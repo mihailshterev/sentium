@@ -1,5 +1,6 @@
 using Sentium.Core.Constants;
 using Sentium.Registry.Contracts;
+using Sentium.Registry.Contracts.Settings;
 
 namespace Sentium.Mcp.Features.Runtime;
 
@@ -14,7 +15,9 @@ internal sealed class RegistryMcpSettingsProvider(
     {
         try
         {
-            return await settingsService.GetValueAsync<McpRuntimeSettings>(SettingsKeys.Mcp, ct: ct) ?? McpRuntimeSettings.Default;
+            return await settingsService.GetValueAsync<McpSettings>(SettingsKeys.Mcp, ct: ct) is { } settings
+                ? McpRuntimeSettings.From(settings)
+                : McpRuntimeSettings.Default;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

@@ -26,6 +26,7 @@ internal sealed class RegistryDbContext(DbContextOptions<RegistryDbContext> opti
             entity.HasKey(e => e.Id);
             entity.Property(e => e.UpdatedBy).HasMaxLength(512);
             entity.HasIndex(e => e.UserId).IsUnique().AreNullsDistinct(false);
+            entity.Property(e => e.Version).IsRowVersion();
 
             entity.Property(e => e.Settings)
                 .HasConversion(

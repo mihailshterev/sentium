@@ -59,7 +59,7 @@ public sealed class SentinelInventoryToolTests
     public async Task InventoryTools_AreClassifiedAsInventoryReads(string toolName, string argument, string value, string expectedAction)
     {
         var middleware = new SentinelFunctionMiddleware(
-            new SentinelClient(_pdp, NullLogger<SentinelClient>.Instance),
+            _pdp,
             new PdpContextAccessor(),
             NullLogger<SentinelFunctionMiddleware>.Instance);
 

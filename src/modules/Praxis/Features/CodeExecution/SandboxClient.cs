@@ -2,20 +2,21 @@ using System.Globalization;
 using System.Net;
 using Sentium.Core.Constants;
 using Sentium.Praxis.Contracts;
-using Sentium.Praxis.Features.Sentinel;
+using Sentium.Sentinel.Contracts;
 
 namespace Sentium.Praxis.Features.CodeExecution;
 
 /// <summary>
 /// Typed HTTP client for the Sentium.Sandbox service. Every run is authorized by the Sentinel PDP in-process
-/// first (fail-closed); only an allowed run reaches the Sandbox, which trusts its caller through the internal API
+/// first (fail-closed) - the only Sentinel check of an agent's code run, see
+/// <see cref="AgentToolPolicyAttribute.AuthorizedByCallee"/>; only an allowed run reaches the Sandbox, which trusts its caller through the internal API
 /// key alone. The sandbox is stateless, so the execution history lives here: each completed or denied call is
 /// written as an <see cref="ExecutionLogEntry"/>. The write uses its own DI scope so it never shares a DbContext
 /// with the agent loop that triggered it.
 /// </summary>
 internal sealed class SandboxClient(
     HttpClient httpClient,
-    SentinelClient sentinel,
+    IPolicyDecisionPoint sentinel,
     IServiceScopeFactory scopeFactory,
     ILogger<SandboxClient> logger) : ISandboxClient
 {
@@ -38,7 +39,7 @@ internal sealed class SandboxClient(
             throw new SandboxRejectedException(HttpStatusCode.BadRequest, $"Unsupported language '{request.Language}'.");
         }
 
-        var decision = await sentinel.EvaluateAsync(ToPdpRequest(request, language, correlationId), ct);
+        var decision = await sentinel.EvaluateAsync(ToPolicyRequest(request, language, correlationId), ct);
 
         var result = decision.Allowed
             ? await RunAsync(request, correlationId, decision.AuditId, ct)
@@ -49,9 +50,9 @@ internal sealed class SandboxClient(
         return result;
     }
 
-    private static PdpRequest ToPdpRequest(SandboxExecutionRequest request, ExecutionLanguage language, string correlationId)
+    private static PolicyEvaluationRequest ToPolicyRequest(SandboxExecutionRequest request, ExecutionLanguage language, string correlationId)
     {
-        return new PdpRequest
+        return new PolicyEvaluationRequest
         {
             AgentId = request.AgentId,
             SkillName = SkillName,
@@ -60,13 +61,14 @@ internal sealed class SandboxClient(
             Action = "execute",
             OriginalUserPrompt = request.OriginalUserPrompt ?? DefaultPrompt,
             CorrelationId = correlationId,
+            UserId = request.UserId,
             Metadata = new Dictionary<string, string>
             {
                 ["language"] = language.ToString(),
                 ["codeLength"] = request.Code.Length.ToString(CultureInfo.InvariantCulture),
                 ["fileContextCount"] = (request.FileContext?.Count ?? 0).ToString(CultureInfo.InvariantCulture),
                 // The (capped) source, so content-inspection layers (sensitive-data egress) scan what is executed.
-                ["payload"] = request.Code.Length > MaxScanChars ? request.Code[..MaxScanChars] : request.Code
+                [PolicyEvaluationRequest.PayloadKey] = request.Code.Length > MaxScanChars ? request.Code[..MaxScanChars] : request.Code
             }
         };
     }
@@ -104,7 +106,7 @@ internal sealed class SandboxClient(
         };
     }
 
-    private SandboxExecutionResponse Denied(SandboxExecutionRequest request, ExecutionLanguage language, PdpDecision decision)
+    private SandboxExecutionResponse Denied(SandboxExecutionRequest request, ExecutionLanguage language, PolicyEvaluationResponse decision)
     {
         // A fail-closed deny has no audit row; the history entry still needs an id to link to.
         var auditId = decision.AuditId == Guid.Empty ? Guid.NewGuid() : decision.AuditId;
@@ -140,6 +142,7 @@ internal sealed class SandboxClient(
                 JobId = result.JobId,
                 ExecutedAt = DateTimeOffset.UtcNow,
                 AgentId = request.AgentId,
+                UserId = request.UserId,
                 CorrelationId = correlationId,
                 Language = language,
                 Code = request.Code,

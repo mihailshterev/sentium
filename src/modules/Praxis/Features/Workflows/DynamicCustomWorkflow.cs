@@ -1,4 +1,3 @@
-using System.Text.Json;
 using Sentium.Praxis.Common.Streaming;
 using Sentium.Praxis.Features.Agents;
 using Sentium.Praxis.Features.Orchestration;
@@ -23,7 +22,7 @@ internal sealed class DynamicCustomWorkflow(
     {
         ArgumentNullException.ThrowIfNull(trigger);
 
-        if (!TryReadWorkflowId(trigger.Payload, out var workflowId))
+        if (trigger.WorkflowId is not { } workflowId)
         {
             return new WorkflowResult { Explanation = "Custom workflow trigger is missing a valid workflowId." };
         }
@@ -61,7 +60,7 @@ internal sealed class DynamicCustomWorkflow(
             "Contribute the part of the request that your role covers.",
             $"A complete, correct contribution for this role: {Summarize(a.Description)}"))]);
 
-        var request = WorkspaceContextPrompt.Augment(trigger.ResolveActivity(), WorkspaceContextPrompt.TryExtract(trigger.Payload));
+        var request = WorkspaceContextPrompt.Augment(trigger.Activity, trigger.WorkspaceId);
         var result = await squad.RunAsync(trigger, request, roster, plan, timeline, ct);
 
         return SquadResultMapper.ToWorkflowResult(result, timeline, $"Custom workflow '{workflowDef.Name}' completed with no output.", workflowId, workflowDef.UserId);
@@ -77,20 +76,6 @@ internal sealed class DynamicCustomWorkflow(
 
         var warning = $"Warning: workflow '{workflowName}' has duplicate agent names ({string.Join(", ", duplicates)}). Per-agent attribution may be unreliable - give each agent a unique name.";
         timeline.Post(WorkflowTimeline.SystemAuthor, warning, AgentUpdateTypes.Status);
-    }
-
-    private static bool TryReadWorkflowId(string payload, out Guid workflowId)
-    {
-        workflowId = Guid.Empty;
-        try
-        {
-            using var doc = JsonDocument.Parse(payload);
-            return doc.RootElement.TryGetProperty("workflowId", out var id) && id.TryGetGuid(out workflowId);
-        }
-        catch (JsonException)
-        {
-            return false;
-        }
     }
 
     private static string Summarize(string? text)

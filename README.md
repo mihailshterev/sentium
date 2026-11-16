@@ -89,12 +89,11 @@ flowchart TB
 
     subgraph Infrastructure
         PG[("PostgreSQL + pgvector<br/>one schema per module")]
-        Redis[("Redis<br/>HybridCache L2")]
         LLM[("llama-server<br/>chat router + embeddings")]
         Blobs[("Azurite<br/>blob storage")]
     end
 
-    Web --> PG & Redis & LLM & Blobs
+    Web --> PG & LLM & Blobs
     Sandbox --> Blobs
 ```
 
@@ -141,7 +140,7 @@ Modules reference each other only through `Contracts`; a unit test (`ModuleBound
 - **Internal service calls** - Sentium.Web calls two sidecars across a process boundary: the Sandbox and the Backup service. Calls go one way only and carry a pre-shared `X-Internal-Token` header (the `SystemCaller` policy); Sentium.Web itself accepts no internal-token calls. Sentinel authorizes every sandbox run inside Sentium.Web before the call.
 - **Per-user data isolation** - user-scoped tables carry a `UserId` and EF Core global query filters scope every query automatically; the `Sovereign` role and background tasks bypass the filter through an explicit accessor.
 - **In-process background work** - no message broker. Workflow runs and file ingestion go through in-memory queues (`Channel<T>`) drained by hosted services; agent token streams fan out through an in-memory relay with replay for SSE reconnects. Sentium.Web is designed to run as a single instance.
-- **Caching** via HybridCache (L1 in-process + L2 Redis). Modules read settings through Registry's cache instead of keeping their own copies, so a settings change only has to evict that one entry.
+- **Caching** via an in-process HybridCache (one process, so no distributed cache). Modules read settings through Registry's cache instead of keeping their own copies, so a settings change only has to evict that one entry; per-user cached lists are invalidated for every user at once, so a change made by a Sovereign or a background worker never leaves a stale view behind.
 - **Resilience** - a global Polly pipeline (retry + timeout + circuit-breaker) is applied to all HttpClients.
 
 ---
@@ -155,7 +154,7 @@ Modules reference each other only through `Contracts`; a unit test (`ModuleBound
 - `Microsoft.Extensions.AI` + `Microsoft.Agents.AI` (agent framework) over the **OpenAI-compatible API** of llama.cpp's `llama-server`
 - Entity Framework Core (PostgreSQL via Npgsql) · pgvector (vector store)
 - ASP.NET Core Identity (cookie authentication)
-- Redis (HybridCache) · Quartz.NET (scheduling)
+- HybridCache (in-process) · Quartz.NET (scheduling)
 - Docker.DotNet (sandbox)
 - FluentValidation · Polly · Serilog → OpenTelemetry
 
@@ -194,13 +193,13 @@ Modules reference each other only through `Contracts`; a unit test (`ModuleBound
 
 ### Run the whole system
 
-The Aspire AppHost is the single entry point. It starts Sentium.Web, the Sandbox, the portal, and every infrastructure dependency (PostgreSQL with pgvector, Redis, the llama.cpp inference servers, Azurite), and downloads and checksum-verifies the default models on first run.
+The Aspire AppHost is the single entry point. It starts Sentium.Web, the Sandbox, the portal, and every infrastructure dependency (PostgreSQL with pgvector, the llama.cpp inference servers, Azurite), and downloads and checksum-verifies the default models on first run.
 
 ```bash
 dotnet run --project src/aspire/Sentium.AppHost/Sentium.AppHost.csproj
 ```
 
-Then open the **Aspire dashboard** (the URL is printed on startup) to see every resource, its logs, and its endpoints. The **portal** is at `http://localhost:5173`; it sends you to its own `/login` page to sign in or register.
+Then open the **Aspire dashboard** (the URL is printed on startup) to see every resource, its logs, and its endpoints. The **portal** is at `http://localhost:5173`; it sends you to its own `/login` page. On a fresh installation the first account you register becomes the **Sovereign**; after that, registration is closed until a Sovereign opens it under **Settings → Access**.
 
 > First start takes a while: Docker images and about 5 GB of model files are downloaded. Subsequent starts reuse the persisted data volumes (the models volume `sentium-llm-models` is shared with Docker Compose).
 
@@ -270,7 +269,7 @@ dotnet ef migrations add <Name> \
 ```bash
 dotnet test                                                            # everything
 dotnet test tests/Sentium.Tests.Unit/Sentium.Tests.Unit.csproj        # unit
-dotnet test tests/Sentium.Tests.Integration/...                       # integration (needs Docker: PostgreSQL + Redis Testcontainers)
+dotnet test tests/Sentium.Tests.Integration/...                       # integration (needs Docker: PostgreSQL Testcontainer)
 ```
 
 **Frontend (Vitest)**
@@ -281,7 +280,7 @@ pnpm test:run
 pnpm test:coverage
 ```
 
-**End-to-end (Playwright)** - independent of Aspire. Playwright starts PostgreSQL, Redis and Azurite from `e2e/compose.e2e.yaml` (tmpfs, ports offset from the dev stack), builds the portal into `Sentium.Web/wwwroot`, and runs Sentium.Web in the `Testing` environment on `http://localhost:5180` - one origin, exactly like production. Each boot drops and re-seeds `sentiumdb_e2e`. The inference servers are replaced by a deterministic stub (`e2e/support/llm-stub.ts`) that declares no models. Needs Docker, .NET and pnpm:
+**End-to-end (Playwright)** - independent of Aspire. Playwright starts PostgreSQL and Azurite from `e2e/compose.e2e.yaml` (tmpfs, ports offset from the dev stack), builds the portal into `Sentium.Web/wwwroot`, and runs Sentium.Web in the `Testing` environment on `http://localhost:5180` - one origin, exactly like production. Each boot drops and re-seeds `sentiumdb_e2e`. The inference servers are replaced by a deterministic stub (`e2e/support/llm-stub.ts`) that declares no models. Needs Docker, .NET and pnpm:
 
 ```bash
 cd e2e
@@ -311,13 +310,14 @@ Sentium is designed to be **self-hosted** - typically by a single operator on a 
 
 Security is a first-class concern, enforced at several layers:
 
-1. **Authentication** - ASP.NET Core Identity in the Identity module. The browser only receives a `Secure`, `HttpOnly` session cookie and never holds a token.
+1. **Authentication** - ASP.NET Core Identity in the Identity module. The browser only receives a `Secure`, `HttpOnly` session cookie and never holds a token. Sign-in and registration are rate limited per client address. Self-registration is closed by default: the first account of an installation becomes the Sovereign, and later accounts can only register while a Sovereign keeps **Settings → Access** open.
 2. **Authorization** - a two-tier role model (`Member`, `Sovereign`). Privileged operations (user/role management, loading/unloading models, global settings, audit log) require `Sovereign`.
-3. **Data isolation** - every user-scoped entity is filtered by `UserId` through EF Core global query filters; cache keys and vector searches are user-scoped.
-4. **Policy Decision Point (Sentinel)** - every agent tool call is authorized before execution. The policy stack performs sliding-window rate limiting and an **LLM-based semantic-intent check** that compares the attempted action against the user's original prompt to catch prompt injection and agent hallucination. The engine is **fail-closed**: any error denies the action, and every decision is written to a forensic audit log.
+3. **Data isolation** - every user-scoped entity, including the sandbox execution history and its artifacts, is filtered by `UserId` through EF Core global query filters; cache keys and vector searches are user-scoped, and workflow runs act as the user who started them. Deleting an account deletes its data in every module and unschedules its jobs.
+4. **Policy Decision Point (Sentinel)** - every agent tool call is authorized before execution. The policy stack performs sliding-window rate limiting and an **LLM-based semantic-intent check** that compares the attempted action against the user's original prompt to catch prompt injection and agent hallucination. The engine is **fail-closed**: any error denies the action, and every decision is written to a forensic audit log that records the acting user and stores outbound payloads only as a length and hash. Rate limits apply per user and agent.
 5. **Human-in-the-loop** - high-risk tools (e.g. code execution) pause the stream and require explicit user approval before running.
 6. **Sandbox isolation** - code runs in Docker containers with networking disabled, a read-only root filesystem, all Linux capabilities dropped, `no-new-privileges`, a non-root user, a seccomp profile, `noexec` tmpfs, and hard CPU / memory / PID / file-descriptor limits, plus an execution timeout.
-7. **Internal API hardening** - the two cross-process endpoints (Sentinel's policy evaluation, called by the Sandbox, and the Sandbox's `execute`) require a pre-shared internal token and are never exposed to the browser.
+7. **Internal API hardening** - the cross-process endpoints (the Sandbox's `execute` and MCP host, and the Backup service) require a pre-shared internal token and are never exposed to the browser.
+8. **Response hardening** - every response carries `X-Content-Type-Options: nosniff`, `Referrer-Policy: no-referrer` and a `Permissions-Policy`; Caddy adds HSTS; the portal's files carry a strict own-origin Content-Security-Policy.
 
 ---
 

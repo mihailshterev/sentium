@@ -13,6 +13,7 @@ internal sealed record AuditRecord
     public required string Action { get; init; }
     public required string UserPromptHash { get; init; }
     public required string CorrelationId { get; init; }
+    public Guid? UserId { get; init; }
     public IReadOnlyDictionary<string, string> Metadata { get; init; } = new Dictionary<string, string>();
     public required bool Allowed { get; init; }
     public required PolicyEffect Effect { get; init; }

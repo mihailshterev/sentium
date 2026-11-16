@@ -17,6 +17,24 @@ public interface IVectorRepository
     Task UpsertAsync(string collectionName, DocumentChunk chunk, float[] embedding, CancellationToken ct = default);
 
     /// <summary>
+    /// Inserts new chunks (their ids must not exist yet) in one round trip.
+    /// </summary>
+    Task AddRangeAsync(string collectionName, IReadOnlyList<EmbeddedChunk> chunks, CancellationToken ct = default);
+
+    /// <summary>
+    /// In one transaction, deletes every entry whose metadata has <paramref name="metadataKey"/> =
+    /// <paramref name="metadataValue"/> and inserts the streamed <paramref name="batches"/>, so a document is
+    /// either fully replaced or left as it was, and re-ingesting it never duplicates its chunks.
+    /// </summary>
+    Task ReplaceByMetadataAsync(string collectionName, string metadataKey, string metadataValue, IAsyncEnumerable<IReadOnlyList<EmbeddedChunk>> batches, CancellationToken ct = default);
+
+    /// <summary>
+    /// Deletes every entry whose metadata has <paramref name="metadataKey"/> = <paramref name="metadataValue"/>.
+    /// </summary>
+    /// <returns>The number of deleted entries.</returns>
+    Task<int> DeleteByMetadataAsync(string collectionName, string metadataKey, string metadataValue, CancellationToken ct = default);
+
+    /// <summary>
     /// Performs a cosine-similarity search and returns the top-<paramref name="topK"/> results
     /// whose score meets or exceeds <paramref name="scoreThreshold"/>.
     /// </summary>

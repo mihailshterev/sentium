@@ -17,6 +17,18 @@ internal sealed class ArtifactService(
     IOptions<SandboxOptions> options,
     ILogger<ArtifactService> logger) : IArtifactService
 {
+    /// <summary>
+    /// The job directory is writable by the sandboxed code, which could plant a symbolic link to a file of the
+    /// Sandbox host itself (<c>/proc/1/environ</c> holds the internal API key). Links are never followed: neither
+    /// into linked directories nor to read a linked file.
+    /// </summary>
+    private static readonly EnumerationOptions HarvestEnumeration = new()
+    {
+        RecurseSubdirectories = true,
+        AttributesToSkip = FileAttributes.ReparsePoint,
+        IgnoreInaccessible = true,
+    };
+
     private static readonly Dictionary<string, string> MimeTypes = new(StringComparer.OrdinalIgnoreCase)
     {
         [".json"] = "application/json",
@@ -62,7 +74,7 @@ internal sealed class ArtifactService(
         var container = blobServiceClient.GetBlobContainerClient(opts.ArtifactContainerName);
         await container.CreateIfNotExistsAsync(cancellationToken: ct);
 
-        var allFiles = Directory.EnumerateFiles(jobDirectory, "*", SearchOption.AllDirectories);
+        var allFiles = Directory.EnumerateFiles(jobDirectory, "*", HarvestEnumeration);
         var artifacts = new List<ArtifactRecord>();
 
         foreach (var absolutePath in allFiles)
@@ -77,6 +89,12 @@ internal sealed class ArtifactService(
             }
 
             var fileInfo = new FileInfo(absolutePath);
+
+            if (fileInfo.LinkTarget is not null)
+            {
+                logger.LogWarning("Artifact '{RelativePath}' of job {JobId} is a link; skipping it.", relativePath, jobId);
+                continue;
+            }
 
             if (fileInfo.Length > opts.MaxArtifactSizeBytes)
             {

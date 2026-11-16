@@ -12,5 +12,7 @@ internal sealed class SettingsCatalog : ISettingsCatalog
         _byKey = descriptors.ToDictionary(d => d.Key, StringComparer.OrdinalIgnoreCase);
     }
 
+    public IReadOnlyCollection<ISettingsDescriptor> All => _byKey.Values;
+
     public bool TryGet(string key, [NotNullWhen(true)] out ISettingsDescriptor? descriptor) => _byKey.TryGetValue(key, out descriptor);
 }

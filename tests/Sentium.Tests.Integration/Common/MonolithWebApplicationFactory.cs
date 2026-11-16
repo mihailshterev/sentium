@@ -6,7 +6,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Sentium.Core.Constants;
 using Testcontainers.PostgreSql;
-using Testcontainers.Redis;
 using Xunit;
 
 namespace Sentium.Tests.Integration.Common;
@@ -23,17 +22,11 @@ public class MonolithWebApplicationFactory : WebApplicationFactory<Sentium.Web.P
     public const string InternalApiKey = "integration-test-internal-api-key";
 
     private readonly PostgreSqlContainer _dbContainer = new PostgreSqlBuilder("pgvector/pgvector:pg17").Build();
-    private readonly RedisContainer _redisContainer = new RedisBuilder("redis:7.0").Build();
 
     /// <summary>
     /// The Testcontainers PostgreSQL connection string (available once the fixture is initialized).
     /// </summary>
     public string DatabaseConnectionString => _dbContainer.GetConnectionString();
-
-    /// <summary>
-    /// The Testcontainers Redis connection string (available once the fixture is initialized).
-    /// </summary>
-    public string RedisConnectionString => _redisContainer.GetConnectionString();
 
     /// <summary>
     /// <see langword="true"/> replaces the default authentication with <see cref="TestAuthHandler"/>, which signs
@@ -43,7 +36,7 @@ public class MonolithWebApplicationFactory : WebApplicationFactory<Sentium.Web.P
 
     public async ValueTask InitializeAsync()
     {
-        await Task.WhenAll(_dbContainer.StartAsync(), _redisContainer.StartAsync());
+        await _dbContainer.StartAsync();
     }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -53,7 +46,6 @@ public class MonolithWebApplicationFactory : WebApplicationFactory<Sentium.Web.P
         builder.UseEnvironment("Development");
 
         builder.UseSetting($"ConnectionStrings:{ResourceNames.SentiumDb}", _dbContainer.GetConnectionString());
-        builder.UseSetting($"ConnectionStrings:{ResourceNames.Redis}", _redisContainer.GetConnectionString());
 
         builder.UseSetting($"ConnectionStrings:{ResourceNames.WorkspaceBlobs}", "UseDevelopmentStorage=true");
         builder.UseSetting("InternalApi:ApiKey", InternalApiKey);
@@ -89,7 +81,7 @@ public class MonolithWebApplicationFactory : WebApplicationFactory<Sentium.Web.P
     public override async ValueTask DisposeAsync()
     {
         await base.DisposeAsync();
-        await Task.WhenAll(_dbContainer.DisposeAsync().AsTask(), _redisContainer.DisposeAsync().AsTask());
+        await _dbContainer.DisposeAsync();
         GC.SuppressFinalize(this);
     }
 }

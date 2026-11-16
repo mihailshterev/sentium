@@ -9,5 +9,6 @@ internal sealed record PolicyRequest
     public required string Action { get; init; }
     public required string OriginalUserPrompt { get; init; }
     public required string CorrelationId { get; init; }
+    public Guid? UserId { get; init; }
     public IReadOnlyDictionary<string, string> Metadata { get; init; } = new Dictionary<string, string>();
 }

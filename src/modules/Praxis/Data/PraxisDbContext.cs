@@ -36,8 +36,8 @@ internal sealed class PraxisDbContext : DbContext
     public DbSet<AgentSkill> AgentSkills { get; set; }
 
     /// <summary>
-    /// Sandbox run history. The Sandbox service is stateless, so Praxis records every run it dispatches.
-    /// Not user-scoped, matching the history the Sandbox service kept before.
+    /// Sandbox run history. The Sandbox service is stateless, so Praxis records every run it dispatches. Each run
+    /// belongs to the user it acted for; runs without one (recorded before ownership existed) are Sovereign-only.
     /// </summary>
     public DbSet<ExecutionLogEntry> ExecutionLogs { get; set; }
 
@@ -239,6 +239,8 @@ internal sealed class PraxisDbContext : DbContext
             entity.Property(e => e.Error).IsRequired();
 
             entity.HasIndex(e => e.ExecutedAt);
+            entity.HasIndex(e => new { e.UserId, e.ExecutedAt });
+            entity.HasQueryFilter(e => BypassUserScope || e.UserId == ScopeUserId);
 
             entity.OwnsMany(e => e.FileContext, owned =>
             {

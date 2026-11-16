@@ -109,15 +109,15 @@ internal sealed class DockerSandboxRunner(
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
             timeoutCts.CancelAfter(TimeSpan.FromSeconds(_options.ExecutionTimeoutSeconds));
 
+            await using var stdoutBuffer = new BoundedOutputBuffer(_options.MaxOutputBytes);
+            await using var stderrBuffer = new BoundedOutputBuffer(_options.MaxOutputBytes);
+
             try
             {
-                using var stdoutBuffer = new MemoryStream();
-                using var stderrBuffer = new MemoryStream();
-
                 await attachStream.CopyOutputToAsync(Stream.Null, stdoutBuffer, stderrBuffer, timeoutCts.Token);
 
-                stdout = TruncateOutput(stdoutBuffer, _options.MaxOutputBytes, "stdout");
-                stderr = TruncateOutput(stderrBuffer, _options.MaxOutputBytes, "stderr");
+                stdout = stdoutBuffer.ToText("stdout");
+                stderr = stderrBuffer.ToText("stderr");
 
                 var inspect = await dockerClient.Containers.InspectContainerAsync(containerId, ct);
                 exitCode = inspect.State.ExitCode;
@@ -126,6 +126,7 @@ internal sealed class DockerSandboxRunner(
             catch (OperationCanceledException) when (!ct.IsCancellationRequested)
             {
                 timedOut = true;
+                stdout = stdoutBuffer.ToText("stdout");
                 stderr = $"Execution timed out after {_options.ExecutionTimeoutSeconds} second(s). Container killed.";
 
                 logger.LogWarning("Sandbox job {JobId} exceeded the {TimeoutSeconds}s execution window. Killing container {ContainerShortId}.", jobContext.JobId, _options.ExecutionTimeoutSeconds, ShortId(containerId));
@@ -251,18 +252,6 @@ internal sealed class DockerSandboxRunner(
         {
             logger.LogWarning(ex, "Failed to remove container {ContainerShortId}. The container may persist on the host.", ShortId(containerId));
         }
-    }
-
-    private static string TruncateOutput(MemoryStream buffer, int maxBytes, string streamName)
-    {
-        var bytes = buffer.ToArray();
-        if (bytes.Length <= maxBytes)
-        {
-            return Encoding.UTF8.GetString(bytes);
-        }
-
-        var truncated = Encoding.UTF8.GetString(bytes, 0, maxBytes);
-        return truncated + $"\n[{streamName} truncated at {maxBytes} bytes]";
     }
 
     private static string ShortId(string id) => id.Length >= 12 ? id[..12] : id;

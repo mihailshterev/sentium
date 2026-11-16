@@ -25,4 +25,12 @@ test.describe("Authentication", () => {
     await expect(page.getByText("Invalid username or password.")).toBeVisible();
     await expect(page).toHaveURL(/\/login/);
   });
+
+  test("offers no registration once the household has an account", { tag: "@regression" }, async ({ page, loginPage }) => {
+    const status = page.waitForResponse((res) => res.url().endsWith("/api/identity/account/registration"));
+    await loginPage.goto();
+    await status;
+
+    await expect(page.getByRole("button", { name: "Register" })).toHaveCount(0);
+  });
 });

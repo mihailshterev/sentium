@@ -1,3 +1,5 @@
+using Sentium.Registry.Contracts.Settings;
+
 namespace Sentium.Mcp.Features.Runtime;
 
 /// <summary>
@@ -10,5 +12,12 @@ internal sealed record McpRuntimeSettings(
     int IdleTimeoutMinutes = 15,
     int MaxResultChars = 16_000)
 {
-    public static McpRuntimeSettings Default { get; } = new();
+    public static McpRuntimeSettings Default { get; } = From(new McpSettings());
+
+    public static McpRuntimeSettings From(McpSettings settings)
+    {
+        ArgumentNullException.ThrowIfNull(settings);
+
+        return new(settings.Enabled, settings.ConnectTimeoutSeconds, settings.CallTimeoutSeconds, settings.IdleTimeoutMinutes, settings.MaxResultChars);
+    }
 }

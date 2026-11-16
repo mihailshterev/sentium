@@ -28,4 +28,10 @@ public sealed class AgentToolPolicyAttribute : Attribute
     /// The kind of access Sentinel evaluates. Write/Execute calls forward their payload for content inspection.
     /// </summary>
     public ToolAction Action { get; init; } = ToolAction.Execute;
+
+    /// <summary>
+    /// When <see langword="true"/> the client the tool calls already puts every call through Sentinel (as
+    /// <see cref="ISandboxClient"/> does), so the agent's function-calling middleware does not evaluate it a second time.
+    /// </summary>
+    public bool AuthorizedByCallee { get; init; }
 }

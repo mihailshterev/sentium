@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Sentium.Sentinel.Contracts;
 using Sentium.Sentinel.Features.Audit;
 using Sentium.Sentinel.Features.Policies;
 
@@ -100,6 +101,25 @@ internal sealed class SentinelPolicyEngine(
         return decision!;
     }
 
+    /// <summary>
+    /// The payload exists so the content policies can inspect it; it can hold the very secret the egress policy just
+    /// blocked, so the audit trail keeps only its length and hash.
+    /// </summary>
+    private static IReadOnlyDictionary<string, string> RedactPayload(IReadOnlyDictionary<string, string> metadata)
+    {
+        if (!metadata.TryGetValue(PolicyEvaluationRequest.PayloadKey, out var payload))
+        {
+            return metadata;
+        }
+
+        var redacted = new Dictionary<string, string>(metadata)
+        {
+            [PolicyEvaluationRequest.PayloadKey] = $"[redacted: {payload.Length} chars, sha256 {AuditHash.Of(payload)}]"
+        };
+
+        return redacted;
+    }
+
     private async Task WriteAuditAsync(
         PolicyRequest request,
         PolicyDecision decision,
@@ -116,9 +136,10 @@ internal sealed class SentinelPolicyEngine(
             ResourceType = request.ResourceType,
             ResourceId = request.ResourceId,
             Action = request.Action,
-            UserPromptHash = InMemoryAuditLog.HashPrompt(request.OriginalUserPrompt),
+            UserPromptHash = AuditHash.Of(request.OriginalUserPrompt),
             CorrelationId = request.CorrelationId,
-            Metadata = request.Metadata,
+            UserId = request.UserId,
+            Metadata = RedactPayload(request.Metadata),
             Allowed = decision.Allowed,
             Effect = decision.Effect,
             Reason = decision.Reason,

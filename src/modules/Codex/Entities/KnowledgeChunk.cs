@@ -1,4 +1,5 @@
 using Pgvector;
+using Sentium.Core.Common;
 using Sentium.Codex.Contracts.Models;
 
 namespace Sentium.Codex.Entities;
@@ -6,9 +7,9 @@ namespace Sentium.Codex.Entities;
 /// <summary>
 /// A stored, embedded piece of knowledge. One row per <see cref="DocumentChunk"/>; the
 /// <see cref="Collection"/> column partitions the rows into the logical vector collections
-/// (<see cref="KnowledgeCollections"/>).
+/// (<see cref="KnowledgeCollections"/>). Not change-logged by the audit interceptor: one ingestion writes thousands.
 /// </summary>
-internal sealed class KnowledgeChunk
+internal sealed class KnowledgeChunk : INonAudited
 {
     public Guid Id { get; set; }
 

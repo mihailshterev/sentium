@@ -1,6 +1,11 @@
+using Sentium.Core.Common;
+
 namespace Sentium.Sentinel.Data;
 
-internal sealed class AuditLogEntity
+/// <summary>
+/// Not change-logged by the audit interceptor: the row is the audit record.
+/// </summary>
+internal sealed class AuditLogEntity : INonAudited
 {
     public Guid Id { get; set; }
     public DateTimeOffset Timestamp { get; set; }
@@ -11,6 +16,7 @@ internal sealed class AuditLogEntity
     public string Action { get; set; } = "";
     public string UserPromptHash { get; set; } = "";
     public string CorrelationId { get; set; } = "";
+    public Guid? UserId { get; set; }
     public string MetadataJson { get; set; } = "{}";
     public bool Allowed { get; set; }
     public string Effect { get; set; } = "";

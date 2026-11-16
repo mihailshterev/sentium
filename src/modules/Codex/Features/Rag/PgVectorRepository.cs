@@ -23,13 +23,7 @@ internal sealed class PgVectorRepository(CodexDbContext db, IOptions<RagOptions>
         ArgumentNullException.ThrowIfNull(chunk);
         ArgumentNullException.ThrowIfNull(embedding);
 
-        if (embedding.Length != CodexDbContext.EmbeddingDimensions)
-        {
-            throw new ArgumentException(
-                $"Embedding has {embedding.Length} dimensions but the vector store expects {CodexDbContext.EmbeddingDimensions}. " +
-                "Check that the configured embedding model matches the codex schema.",
-                nameof(embedding));
-        }
+        EnsureDimensions(embedding);
 
         var entity = await db.KnowledgeChunks.FindAsync([chunk.Id], ct);
         if (entity is null)
@@ -62,6 +56,72 @@ internal sealed class PgVectorRepository(CodexDbContext db, IOptions<RagOptions>
         {
             logger.LogDebug("Upserted chunk {Id} from source '{Source}' into collection '{Collection}'", chunk.Id, chunk.Source, collectionName);
         }
+    }
+
+    public async Task AddRangeAsync(string collectionName, IReadOnlyList<EmbeddedChunk> chunks, CancellationToken ct = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(collectionName);
+        ArgumentNullException.ThrowIfNull(chunks);
+
+        if (chunks.Count == 0)
+        {
+            return;
+        }
+
+        AddEntities(collectionName, chunks);
+        await db.SaveChangesAsync(ct);
+        db.ChangeTracker.Clear();
+    }
+
+    public async Task ReplaceByMetadataAsync(
+        string collectionName,
+        string metadataKey,
+        string metadataValue,
+        IAsyncEnumerable<IReadOnlyList<EmbeddedChunk>> batches,
+        CancellationToken ct = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(collectionName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(metadataKey);
+        ArgumentNullException.ThrowIfNull(metadataValue);
+        ArgumentNullException.ThrowIfNull(batches);
+
+        // The retrying execution strategy only accepts a user transaction wrapped as one unit; a retry re-runs the
+        // whole replacement, including the (re-enumerated) batches.
+        var strategy = db.Database.CreateExecutionStrategy();
+        await strategy.ExecuteAsync(async cancellationToken =>
+        {
+            db.ChangeTracker.Clear();
+            await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+
+            var deleted = await DeleteByMetadataCoreAsync(collectionName, metadataKey, metadataValue, cancellationToken);
+            var added = 0;
+
+            await foreach (var batch in batches.WithCancellation(cancellationToken))
+            {
+                AddEntities(collectionName, batch);
+                await db.SaveChangesAsync(cancellationToken);
+                db.ChangeTracker.Clear();
+                added += batch.Count;
+            }
+
+            await transaction.CommitAsync(cancellationToken);
+
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation(
+                    "Replaced {Deleted} chunks with {Added} for {Key}={Value} in collection '{Collection}'",
+                    deleted, added, metadataKey, metadataValue, collectionName);
+            }
+        }, ct);
+    }
+
+    public Task<int> DeleteByMetadataAsync(string collectionName, string metadataKey, string metadataValue, CancellationToken ct = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(collectionName);
+        ArgumentException.ThrowIfNullOrWhiteSpace(metadataKey);
+        ArgumentNullException.ThrowIfNull(metadataValue);
+
+        return DeleteByMetadataCoreAsync(collectionName, metadataKey, metadataValue, ct);
     }
 
     public async Task<IReadOnlyList<VectorSearchResult>> SearchAsync(string collectionName, float[] queryEmbedding, int topK = 5, float scoreThreshold = 0.0f, KnowledgeScopeFilter? scope = null, CancellationToken ct = default)
@@ -159,6 +219,52 @@ internal sealed class PgVectorRepository(CodexDbContext db, IOptions<RagOptions>
             .ToListAsync(ct);
 
         return rows.Select(ToDocumentChunk).ToList();
+    }
+
+    private static void EnsureDimensions(float[] embedding)
+    {
+        if (embedding.Length != CodexDbContext.EmbeddingDimensions)
+        {
+            throw new ArgumentException(
+                $"Embedding has {embedding.Length} dimensions but the vector store expects {CodexDbContext.EmbeddingDimensions}. " +
+                "Check that the configured embedding model matches the codex schema.",
+                nameof(embedding));
+        }
+    }
+
+    /// <summary>
+    /// The metadata is a jsonb column mapped through a value converter, so the key lookup is raw SQL.
+    /// </summary>
+    private Task<int> DeleteByMetadataCoreAsync(string collectionName, string metadataKey, string metadataValue, CancellationToken ct)
+    {
+        return db.Database.ExecuteSqlInterpolatedAsync(
+            $"""DELETE FROM codex.knowledge_chunks WHERE "Collection" = {collectionName} AND "Metadata" ->> {metadataKey} = {metadataValue}""",
+            ct);
+    }
+
+    private void AddEntities(string collectionName, IReadOnlyList<EmbeddedChunk> chunks)
+    {
+        var model = ragOptions.Value.EmbeddingModelName;
+
+        foreach (var (chunk, embedding) in chunks)
+        {
+            EnsureDimensions(embedding);
+
+            db.KnowledgeChunks.Add(new KnowledgeChunk
+            {
+                Id = chunk.Id,
+                Collection = collectionName,
+                Content = chunk.Content,
+                Source = chunk.Source,
+                SourceType = chunk.SourceType,
+                Scope = chunk.Scope,
+                UserId = chunk.UserId,
+                Metadata = new Dictionary<string, string>(chunk.Metadata),
+                CreatedAt = chunk.CreatedAt,
+                Embedding = new Vector(embedding),
+                EmbeddingModel = model
+            });
+        }
     }
 
     /// <summary>

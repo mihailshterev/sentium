@@ -3,7 +3,8 @@ using Sentium.Registry.Entities;
 namespace Sentium.Registry.Features.Settings;
 
 /// <summary>
-/// Persistence contract for <see cref="SystemSettings"/> rows.
+/// Persistence contract for <see cref="SystemSettings"/> rows. Writes are optimistic: they report a lost race
+/// instead of overwriting a concurrent change.
 /// </summary>
 internal interface ISettingsRepository
 {
@@ -13,7 +14,11 @@ internal interface ISettingsRepository
     /// </summary>
     Task<SystemSettings?> FindAsync(Guid? userId, CancellationToken ct = default);
 
-    Task AddAsync(SystemSettings entity, CancellationToken ct = default);
+    /// <returns><see langword="false"/> when another request created the row first.</returns>
+    Task<bool> TryAddAsync(SystemSettings entity, CancellationToken ct = default);
 
-    Task UpdateAsync(SystemSettings entity, CancellationToken ct = default);
+    /// <returns><see langword="false"/> when the row changed since <paramref name="entity"/> was read.</returns>
+    Task<bool> TryUpdateAsync(SystemSettings entity, CancellationToken ct = default);
+
+    Task RemoveAsync(Guid userId, CancellationToken ct = default);
 }

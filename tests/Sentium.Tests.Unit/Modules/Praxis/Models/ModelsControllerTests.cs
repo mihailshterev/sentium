@@ -7,7 +7,6 @@ using Microsoft.Extensions.Options;
 using NSubstitute;
 using Sentium.Core.Constants;
 using Sentium.Infrastructure.Inference;
-using Sentium.Infrastructure.Security;
 using Sentium.Praxis.Features.Models;
 using Sentium.Praxis.Features.Registry;
 using Xunit;
@@ -29,7 +28,7 @@ public sealed class ModelsControllerTests
     private ModelsController Controller(bool sovereign = true)
     {
         var identity = new ClaimsIdentity(
-            sovereign ? [new Claim(RoleClaims.ShortRoleClaimType, SecurityRoles.Sovereign)] : [],
+            sovereign ? [new Claim(ClaimTypes.Role, SecurityRoles.Sovereign)] : [],
             authenticationType: "test");
 
         return new ModelsController(_catalog, _settings, Options.Create(new InferenceOptions { DefaultModel = "config-default" }))

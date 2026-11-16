@@ -88,7 +88,6 @@ public static class VigilModuleExtensions
                 client.BaseAddress = new Uri($"https+http://{clientName}");
                 client.Timeout = TimeSpan.FromSeconds(30);
             })
-            .RemoveAllResilienceHandlers()
             .RemoveAllLoggers();
 #pragma warning restore EXTEXP0001
 
@@ -98,8 +97,7 @@ public static class VigilModuleExtensions
 
     private static void RegisterInfrastructureProbes(IServiceCollection services, IConfiguration configuration)
     {
-        AddTcpProbe(services, configuration, ResourceNames.Redis, "Redis", defaultPort: 6379);
-        AddTcpProbe(services, configuration, ResourceNames.Postgres, "PostgreSQL", defaultPort: 5432);
+        AddTcpProbe(services, configuration, ResourceNames.SentiumDb, "PostgreSQL", defaultPort: 5432);
 
         // Both llama-server instances expose an unauthenticated /health that only turns healthy once their
         // model is loaded, so a loading or crashed model shows up here, not just a dead process.
@@ -136,7 +134,6 @@ public static class VigilModuleExtensions
             client.Timeout = TimeSpan.FromSeconds(10);
         })
         .AddHttpMessageHandler<InternalApiKeyDelegatingHandler>()
-        .RemoveAllResilienceHandlers()
         .RemoveAllLoggers();
 #pragma warning restore EXTEXP0001
 
@@ -162,7 +159,6 @@ public static class VigilModuleExtensions
             client.BaseAddress = baseAddress;
             client.Timeout = TimeSpan.FromSeconds(30);
         })
-        .RemoveAllResilienceHandlers()
         .RemoveAllLoggers();
 #pragma warning restore EXTEXP0001
 

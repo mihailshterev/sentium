@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Sentium.Infrastructure.Retention;
 using Sentium.Nuntius.Common;
 using Sentium.Nuntius.Data;
 
@@ -6,9 +7,9 @@ namespace Sentium.Nuntius.Features.Retention;
 
 /// <summary>
 /// Deletes Notifications last published more than the retention period ago (<c>Nuntius:RetentionDays</c>, default
-/// 90), read or not. Must run in a system scope so it reaches every Inbox.
+/// 90), read or not.
 /// </summary>
-internal sealed class NotificationRetention(NuntiusDbContext db, IConfiguration configuration, ILogger<NotificationRetention> logger)
+internal sealed class NotificationRetention(NuntiusDbContext db, IConfiguration configuration, ILogger<NotificationRetention> logger) : IRetentionSweep
 {
     private const string RetentionDaysKey = "Nuntius:RetentionDays";
     private const int MinRetentionDays = 1;

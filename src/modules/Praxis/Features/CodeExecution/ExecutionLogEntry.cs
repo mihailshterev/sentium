@@ -5,6 +5,7 @@ internal sealed record ExecutionLogEntry
     public required Guid JobId { get; init; }
     public required DateTimeOffset ExecutedAt { get; init; }
     public required string AgentId { get; init; }
+    public Guid? UserId { get; init; }
     public required string CorrelationId { get; init; }
     public required ExecutionLanguage Language { get; init; }
     public required string Code { get; init; }

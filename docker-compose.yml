@@ -71,22 +71,8 @@ services:
       start_period: 10s
     restart: unless-stopped
 
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "127.0.0.1:6379:6379"
-    volumes:
-      - redis-data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 3s
-      retries: 5
-      start_period: 5s
-    restart: unless-stopped
-
   azurite:
-    image: mcr.microsoft.com/azure-storage/azurite:latest
+    image: mcr.microsoft.com/azure-storage/azurite:3.35.0
     command: ["azurite", "--blobHost", "0.0.0.0", "--queueHost", "0.0.0.0", "--tableHost", "0.0.0.0", "-l", "/data"]
     ports:
       - "127.0.0.1:10000:10000"
@@ -248,9 +234,9 @@ services:
         condition: service_started
     restart: unless-stopped
 
-  # The modular monolith: every module (Identity, Registry, Sentinel, Codex, Praxis, Vigil) in one
-  # process. It serves the portal and the API from one origin, over plain HTTP on the internal network only;
-  # caddy is its sole public entry. Forwarded headers make requests read as HTTPS from the client's address.
+  # The modular monolith: every module in one process, as an unprivileged user with no capabilities. It serves the
+  # portal and the API from one origin, over plain HTTP on the internal network only; caddy is its sole public entry.
+  # Forwarded headers make requests read as HTTPS from the client's address.
   sentium-web:
     build:
       context: .
@@ -259,8 +245,6 @@ services:
     environment:
       <<: *service-env
       ConnectionStrings__sentiumdb: Host=postgres;Port=5432;Database=sentiumdb;Username=postgres;Password=${POSTGRES_PASSWORD}
-      ConnectionStrings__postgres: Host=postgres;Port=5432;Username=postgres;Password=${POSTGRES_PASSWORD}
-      ConnectionStrings__redis: redis:6379
       ConnectionStrings__workspace-storage: ${AZURITE_CONNECTION}
       Inference__ChatEndpoint: http://llm:8080
       Inference__EmbeddingEndpoint: http://embeddings:8080
@@ -276,14 +260,16 @@ services:
       Backup__Endpoint: ${BACKUP_ENDPOINT-http://backup:8080}
     volumes:
       - web-dataprotection:/keys
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
     networks:
       - default
       - sentium-sandbox
       - sentium-backup
     depends_on:
       postgres:
-        condition: service_healthy
-      redis:
         condition: service_healthy
       azurite:
         condition: service_started
@@ -366,7 +352,6 @@ networks:
 
 volumes:
   postgres-data:
-  redis-data:
   azurite-data:
   web-dataprotection:
   # Caddy's CA (root and intermediate keys) and issued certificates. Deleting it creates a new CA, which every

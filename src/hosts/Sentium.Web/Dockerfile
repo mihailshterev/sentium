@@ -25,4 +25,7 @@ COPY --from=build /app .
 ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
 
+# The image's unprivileged "app" user: the web process needs no root, only write access to /keys (above).
+USER $APP_UID
+
 ENTRYPOINT ["dotnet", "Sentium.Web.dll"]

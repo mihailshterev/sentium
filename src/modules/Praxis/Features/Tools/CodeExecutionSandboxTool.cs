@@ -7,9 +7,10 @@ using Sentium.Praxis.Features.CodeExecution;
 namespace Sentium.Praxis.Features.Tools;
 
 /// <summary>
-/// Runs agent-written code in the Sandbox. Calls need user approval and pass the Sentinel PDP before they reach it.
+/// Runs agent-written code in the Sandbox. Calls need user approval; <see cref="ISandboxClient"/> then puts each one
+/// through the Sentinel PDP before it reaches the Sandbox.
 /// </summary>
-[AgentToolPolicy(RiskLevel = ToolRiskLevel.High, RequiresApproval = true, Resource = ToolResource.Code, Action = ToolAction.Execute)]
+[AgentToolPolicy(RiskLevel = ToolRiskLevel.High, RequiresApproval = true, Resource = ToolResource.Code, Action = ToolAction.Execute, AuthorizedByCallee = true)]
 internal sealed class CodeExecutionSandboxTool(
     ISandboxClient sandboxClient,
     IPdpContextAccessor pdpContext,
@@ -49,7 +50,8 @@ internal sealed class CodeExecutionSandboxTool(
                 Language = language.ToString(),
                 Code = code,
                 AgentId = AgentToolFunction.CurrentAgentName,
-                OriginalUserPrompt = pdpContext.OriginalUserPrompt
+                OriginalUserPrompt = pdpContext.OriginalUserPrompt,
+                UserId = pdpContext.UserId
             }, correlationId, ct);
 
             if (result.PolicyDenied)

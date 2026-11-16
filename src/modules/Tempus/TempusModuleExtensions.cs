@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Sentium.Identity.Contracts;
 using Sentium.Infrastructure.Extensions;
 using Sentium.Registry.Contracts;
 using Sentium.Tempus.Contracts;
@@ -48,6 +49,8 @@ public static class TempusModuleExtensions
         services.AddSingleton<ISettingsChangedHandler, TimelineReminderRearmer>();
         services.AddHostedService<TimelineSeriesWorker>();
         services.AddHostedService<TimelineReminderWorker>();
+
+        services.AddSingleton<IUserRemovalObserver, TempusUserDataRemover>();
 
         services.AddHealthChecks().AddDbContextCheck<TempusDbContext>("tempus-db", tags: [ModuleName]);
 

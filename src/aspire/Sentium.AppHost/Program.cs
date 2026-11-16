@@ -10,8 +10,6 @@ var builder = DistributedApplication.CreateBuilder(args);
 
 builder.AddDockerComposeEnvironment("env");
 
-var redis = builder.AddRedis(ResourceNames.Redis);
-
 var internalApiKey = builder.AddParameter("internal-api-key", secret: true);
 
 var postgres = builder.AddPostgres(ResourceNames.Postgres)
@@ -109,8 +107,6 @@ var dockerHost = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
 
 var web = builder.AddProject<Projects.Sentium_Web>(ServiceNames.Web)
     .WithReference(sentiumDb).WaitFor(sentiumDb)
-    .WithReference(postgres)
-    .WithReference(redis).WaitFor(redis)
     .WithReference(blobs).WaitFor(blobs)
     .WaitFor(llm)
     .WaitFor(embeddings)

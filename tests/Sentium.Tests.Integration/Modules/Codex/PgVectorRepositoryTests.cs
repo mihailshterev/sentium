@@ -14,6 +14,8 @@ namespace Sentium.Tests.Integration.Modules.Codex;
 /// </summary>
 public sealed class PgVectorRepositoryTests(MonolithWebApplicationFactory factory) : IClassFixture<MonolithWebApplicationFactory>
 {
+    private const string FileIdKey = "FileId";
+
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     [Fact]
@@ -147,6 +149,54 @@ public sealed class PgVectorRepositoryTests(MonolithWebApplicationFactory factor
     }
 
     [Fact]
+    public async Task ReplaceByMetadata_SwapsOnlyThatDocumentsChunks()
+    {
+        var collection = NewCollection();
+
+        await WithRepositoryAsync(async repo =>
+        {
+            await repo.AddRangeAsync(collection, [Embedded("old-1", "file-1", 0), Embedded("old-2", "file-1", 1), Embedded("keep", "file-2", 2)], Ct);
+
+            await repo.ReplaceByMetadataAsync(collection, FileIdKey, "file-1", Batches([Embedded("new-1", "file-1", 3)], [Embedded("new-2", "file-1", 4)]), Ct);
+            await repo.ReplaceByMetadataAsync(collection, FileIdKey, "file-1", Batches([Embedded("new-1", "file-1", 3)], [Embedded("new-2", "file-1", 4)]), Ct);
+
+            (await repo.GetPageAsync(collection, ct: Ct)).Select(c => c.Content).Should().BeEquivalentTo("keep", "new-1", "new-2");
+        });
+    }
+
+    [Fact]
+    public async Task ReplaceByMetadata_KeepsTheOldChunks_WhenABatchFails()
+    {
+        var collection = NewCollection();
+
+        await WithRepositoryAsync(async repo =>
+        {
+            await repo.AddRangeAsync(collection, [Embedded("old", "file-1", 0)], Ct);
+
+            var act = () => repo.ReplaceByMetadataAsync(collection, FileIdKey, "file-1", FailingBatches(Embedded("new", "file-1", 1)), Ct);
+
+            await act.Should().ThrowAsync<InvalidOperationException>();
+            (await repo.GetPageAsync(collection, ct: Ct)).Select(c => c.Content).Should().Equal("old");
+        });
+    }
+
+    [Fact]
+    public async Task DeleteByMetadata_RemovesOnlyMatchingChunks()
+    {
+        var collection = NewCollection();
+
+        await WithRepositoryAsync(async repo =>
+        {
+            await repo.AddRangeAsync(collection, [Embedded("a", "file-1", 0), Embedded("b", "file-2", 1)], Ct);
+
+            var deleted = await repo.DeleteByMetadataAsync(collection, FileIdKey, "file-1", Ct);
+
+            deleted.Should().Be(1);
+            (await repo.GetPageAsync(collection, ct: Ct)).Select(c => c.Content).Should().Equal("b");
+        });
+    }
+
+    [Fact]
     public async Task Stats_AreNullWhenEmpty_AndCountAfterInsert_AndClearedByDeleteCollection()
     {
         var collection = NewCollection();
@@ -204,6 +254,35 @@ public sealed class PgVectorRepositoryTests(MonolithWebApplicationFactory factor
             UserId = userId,
             CreatedAt = createdAt ?? DateTimeOffset.UtcNow
         };
+    }
+
+    private static EmbeddedChunk Embedded(string content, string fileId, int dimension)
+    {
+        var chunk = new DocumentChunk
+        {
+            Content = content,
+            Source = "test-source",
+            SourceType = IngestionSourceType.File,
+            Metadata = new Dictionary<string, string> { [FileIdKey] = fileId }
+        };
+
+        return new EmbeddedChunk(chunk, Basis(dimension));
+    }
+
+    private static async IAsyncEnumerable<IReadOnlyList<EmbeddedChunk>> Batches(params IReadOnlyList<EmbeddedChunk>[] batches)
+    {
+        foreach (var batch in batches)
+        {
+            await Task.Yield();
+            yield return batch;
+        }
+    }
+
+    private static async IAsyncEnumerable<IReadOnlyList<EmbeddedChunk>> FailingBatches(EmbeddedChunk first)
+    {
+        await Task.Yield();
+        yield return [first];
+        throw new InvalidOperationException("The embedding server went away.");
     }
 
     /// <summary>

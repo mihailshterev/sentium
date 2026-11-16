@@ -20,6 +20,9 @@
 {$SENTIUM_HOSTNAME} {
 	tls internal
 
+	# Browsers that trust the local CA never fall back to plain HTTP for this host.
+	header Strict-Transport-Security "max-age=31536000"
+
 	# Health reports list every dependency and its state. Vigil and container healthchecks reach sentium-web
 	# directly, so the network gets a 404 instead.
 	@health path /health /alive

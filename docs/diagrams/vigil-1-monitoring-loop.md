@@ -9,7 +9,7 @@ sequenceDiagram
     participant FD as VigilFeed (in-process)
     participant NT as Nuntius · INotifier
 
-    Note over PR: Modules - in-process health checks by tag (Identity, Sentinel, Praxis, MCP, Codex, Locus, Tempus, Nuntius, Registry)<br/>Sandbox - HTTP /health · LLM, Embeddings - HTTP /health · PostgreSQL, Redis - TCP
+    Note over PR: Modules - in-process health checks by tag (Identity, Sentinel, Praxis, MCP, Codex, Locus, Tempus, Nuntius, Registry)<br/>Sandbox - HTTP /health · LLM, Embeddings - HTTP /health · PostgreSQL - TCP
     loop Every PollInterval
         MW->>RS: GetAsync() - cadence and thresholds
         par For each target

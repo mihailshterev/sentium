@@ -1,6 +1,7 @@
 using Sentium.Core.Constants;
 using Sentium.Infrastructure.Extensions;
 using Sentium.Registry.Contracts;
+using Sentium.Registry.Contracts.Settings;
 using Sentium.Registry.Data;
 using Sentium.Registry.Features.Settings;
 
@@ -36,6 +37,10 @@ public static class RegistryModuleExtensions
 
         services.AddSingleton<ISettingsDescriptor>(new SettingsDescriptor<McpSettings>(
             SettingsKeys.Mcp, SettingsScope.Global, c => c.Mcp, (c, v) => c.Mcp = v)
+        );
+
+        services.AddSingleton<ISettingsDescriptor>(new SettingsDescriptor<AccessSettings>(
+            SettingsKeys.Access, SettingsScope.Global, c => c.Access, (c, v) => c.Access = v)
         );
 
         services.AddSingleton<ISettingsDescriptor>(new SettingsDescriptor<CalendarSettings>(

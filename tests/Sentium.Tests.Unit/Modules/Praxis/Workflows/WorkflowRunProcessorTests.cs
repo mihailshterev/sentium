@@ -42,7 +42,7 @@ public sealed class WorkflowRunProcessorTests : IAsyncDisposable
         var frames = await ReadUntilTerminalAsync(trigger.StreamId, ct);
 
         frames[^1].Type.Should().Be(AgentUpdateTypes.Done);
-        await _runs.Received(1).AddAsync(Arg.Is<WorkflowRun>(r => r.Explanation == "ok" && r.TriggerPayload == trigger.Payload), Arg.Any<CancellationToken>());
+        await _runs.Received(1).AddAsync(Arg.Is<WorkflowRun>(r => r.Explanation == "ok" && r.TriggerPayload == trigger.ToPayloadJson()), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -66,7 +66,7 @@ public sealed class WorkflowRunProcessorTests : IAsyncDisposable
         _orchestrator.RunAsync(Arg.Any<WorkflowTrigger>(), Arg.Any<CancellationToken>()).Returns(new WorkflowResult { Explanation = "ok" });
         await StartAsync(ct);
 
-        var trigger = await EnqueueAsync(ct, payload: "{\"something\":\"else\"}");
+        var trigger = await EnqueueAsync(ct, activity: "");
         await ReadUntilTerminalAsync(trigger.StreamId, ct);
 
         await _runs.Received(1).AddAsync(Arg.Is<WorkflowRun>(r => r.Title == null), Arg.Any<CancellationToken>());
@@ -272,12 +272,12 @@ public sealed class WorkflowRunProcessorTests : IAsyncDisposable
         await _processor.StartAsync(ct);
     }
 
-    private async Task<WorkflowTrigger> EnqueueAsync(CancellationToken ct, Guid? userId = null, string payload = "{\"activity\":\"test\"}")
+    private async Task<WorkflowTrigger> EnqueueAsync(CancellationToken ct, Guid? userId = null, string activity = "test")
     {
         var trigger = new WorkflowTrigger
         {
             TriggerType = WorkflowTriggerTypes.Dynamic,
-            Payload = payload,
+            Activity = activity,
             UserId = userId,
             StreamId = Guid.NewGuid().ToString("N")
         };

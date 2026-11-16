@@ -2,7 +2,6 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Caching.StackExchangeRedis;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Logging;
@@ -12,9 +11,11 @@ using OpenTelemetry.Trace;
 
 namespace Microsoft.Extensions.Hosting;
 
-// Adds common Aspire services: service discovery, resilience, health checks, and OpenTelemetry.
-// This project should be referenced by each service project in your solution.
-// To learn more about using this project, see https://aka.ms/dotnet/aspire/service-defaults
+/// <summary>
+/// Common host services: service discovery, health checks and OpenTelemetry. Resilience is not applied globally:
+/// every HttpClient picks its own pipeline (see <c>AddLongRunningResilienceHandler</c>), because the standard one
+/// retries POSTs and caps requests at 30 seconds, which suits none of Sentium's calls.
+/// </summary>
 public static class Extensions
 {
     private const string HealthEndpointPath = "/health";
@@ -41,20 +42,7 @@ public static class Extensions
 
         builder.Services.AddServiceDiscovery();
 
-        builder.Services.ConfigureHttpClientDefaults(http =>
-        {
-            // Turn on resilience by default
-            http.AddStandardResilienceHandler();
-
-            // Turn on service discovery by default
-            http.AddServiceDiscovery();
-        });
-
-        // Uncomment the following to restrict the allowed schemes for service discovery.
-        // builder.Services.Configure<ServiceDiscoveryOptions>(options =>
-        // {
-        //     options.AllowedSchemes = ["https"];
-        // });
+        builder.Services.ConfigureHttpClientDefaults(http => http.AddServiceDiscovery());
 
         return builder;
     }
@@ -80,13 +68,10 @@ public static class Extensions
                 tracing.AddSource(builder.Environment.ApplicationName)
                     .AddSource(GenAiTelemetrySources)
                     .AddAspNetCoreInstrumentation(tracing =>
-                        // Exclude health check requests from tracing
                         tracing.Filter = context =>
                             !context.Request.Path.StartsWithSegments(HealthEndpointPath)
                             && !context.Request.Path.StartsWithSegments(AlivenessEndpointPath)
                     )
-                    // Uncomment the following line to enable gRPC instrumentation (requires the OpenTelemetry.Instrumentation.GrpcNetClient package)
-                    //.AddGrpcClientInstrumentation()
                     .AddHttpClientInstrumentation();
             });
 
@@ -161,13 +146,5 @@ public static class Extensions
         };
 
         return context.Response.WriteAsync(JsonSerializer.Serialize(payload, HealthJsonOptions));
-    }
-
-    public static TBuilder AddSentiumDistributedCache<TBuilder>(this TBuilder builder, string connectionName) where TBuilder : IHostApplicationBuilder
-    {
-        builder.AddRedisDistributedCache(connectionName);
-        builder.Services.Configure<RedisCacheOptions>(options => options.InstanceName = $"{builder.Environment.ApplicationName}:");
-
-        return builder;
     }
 }

@@ -29,7 +29,7 @@ Sentium runs as two .NET processes:
   Docker containers. It is kept out of Sentium.Web on purpose because it owns the Docker socket.
   It is reachable only on the internal network.
 
-The infrastructure (PostgreSQL with pgvector, Redis, the llama-server inference servers, Azurite) lives on the same
+The infrastructure (PostgreSQL with pgvector, the llama-server inference servers, Azurite) lives on the same
 **trusted internal network** and is not meant to be exposed to untrusted clients.
 
 Optionally, a Sovereign can register **MCP (Model Context Protocol) servers** whose tools agents may use. Sentium only
@@ -61,12 +61,14 @@ This deployment model is central to the threat model:
 ### Actors
 
 - **Anonymous / external attacker** - reaches only Sentium.Web's public surface: the portal's
-  static files, login and registration, the `/health` and `/alive` endpoints, and Sentinel's
-  token-gated policy-evaluation endpoint. Registration is open: anyone who can reach the server
-  can create a `Member` account.
+  static files, login and registration, and the `/health` and `/alive` endpoints (Caddy answers
+  those with 404). Registration is **closed** except for the very first account of an installation,
+  which becomes the Sovereign, and while a Sovereign opens it (**Settings → Access**); sign-in and
+  registration are rate limited per client address.
 - **Authenticated `Member`** - standard user; their actions are user-scoped and policy-governed.
 - **`Sovereign`** - administrator; trusted, can read audit, change global config, bypass data
-  filters. The role can only be granted by an existing Sovereign.
+  filters. The first account of an installation becomes the Sovereign; after that the role can only
+  be granted by an existing Sovereign.
 - **The AI agent itself** - a _semi-trusted, potentially-compromised_ actor. Prompt injection,
   hallucination, or a malicious skill can make an agent attempt unauthorized actions. Much of the
   governance machinery (Sentinel, Sandbox, tool approvals) exists to bound this actor.
@@ -95,7 +97,7 @@ This deployment model is central to the threat model:
       v
  [ Ephemeral hardened Docker container ]
 
- Internal network: PostgreSQL (pgvector) · Redis · llama-server (llm, embeddings) · Azurite
+ Internal network: PostgreSQL (pgvector) · llama-server (llm, embeddings) · Azurite
 ```
 
 - **TB1 - Public edge.** The only boundary exposed to untrusted input. Sentium.Web authenticates
@@ -145,11 +147,11 @@ This deployment model is central to the threat model:
 
 ### 3.3 Repudiation (accountability)
 
-| Threat                                 | Mitigation                                                                                                                                                                                          |
-| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Agent/user denies performing an action | **Sentinel writes a forensic audit record for every policy evaluation**, in-process or over HTTP (allow/deny, risk, alignment verdict, duration, `auditId`).                                        |
-| Sandbox execution disowned             | The Sandbox is stateless; Praxis records every execution it requests, including policy denials (code, agent, prompt, exit code, artifacts, originating Sentinel `auditId`), in the `praxis` schema. |
-| No centralized visibility              | Structured logs, traces and GenAI spans are exported over **OpenTelemetry (OTLP)** to the Aspire dashboard.                                                                                         |
+| Threat                                 | Mitigation                                                                                                                                                                                                                                                                                                   |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Agent/user denies performing an action | **Sentinel writes a forensic audit record for every policy evaluation** (acting user, allow/deny, risk, alignment verdict, duration, `auditId`); an outbound payload is kept only as its length and SHA-256, so the audit never stores the secret the egress policy blocked. A failed audit write is logged. |
+| Sandbox execution disowned             | The Sandbox is stateless; Praxis records every execution it requests, including policy denials (acting user, code, agent, prompt, exit code, artifacts, originating Sentinel `auditId`), in the `praxis` schema. The history and its artifacts are user-scoped: a Member sees only their own runs.           |
+| No centralized visibility              | Structured logs, traces and GenAI spans are exported over **OpenTelemetry (OTLP)** to the Aspire dashboard.                                                                                                                                                                                                  |
 
 ### 3.4 Information Disclosure (confidentiality)
 
@@ -268,15 +270,14 @@ The agent is treated as a **semi-trusted actor**. AI-specific risks beyond class
 
 ## 6. Infrastructure & Dependencies
 
-| Component                           | Threat                               | Note                                                                                                                                                                                                                                                                 |
-| ----------------------------------- | ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| PostgreSQL (`sentiumdb`, pgvector)  | Over-broad access across modules     | One database, one schema per module. Every module connects with the same login (the `postgres` superuser under Compose), so schema separation is not a permission boundary.                                                                                          |
-| Redis (HybridCache L2)              | Cache poisoning / stale data         | Internal network only. A settings change evicts Registry's cache entry directly; this assumes one Sentium.Web instance.                                                                                                                                              |
-| llama-server / Azurite              | Direct access bypassing app controls | Internal network only. The inference servers require a bearer API key (`LLM_API_KEY`, generated by Aspire) on every request except `/health`, have their web UI disabled, and Compose binds their ports, and those of PostgreSQL, Redis and Azurite, to `127.0.0.1`. |
-| Docker daemon (via the Sandbox)     | Root-equivalent control of the host  | See §4. Only the Sandbox mounts the socket.                                                                                                                                                                                                                          |
-| MCP servers                         | Third-party tools on the network     | Sovereign-registered, local network only, tools approved individually and hash-pinned; stdio servers run in hardened Sandbox containers (§4.1). The MCP C# SDK is pinned to the version Aspire already uses.                                                         |
-| Third-party packages (NuGet / pnpm) | Supply-chain compromise              | Pinned lockfiles; keep dependencies patched (see §7).                                                                                                                                                                                                                |
-| Secrets in source/containers        | Leakage of keys/connection strings   | Use `.env` / Aspire secrets (`.env.example` is the template); **never commit real secrets**. `.gitignore` excludes env files.                                                                                                                                        |
+| Component                           | Threat                               | Note                                                                                                                                                                                                                                                          |
+| ----------------------------------- | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PostgreSQL (`sentiumdb`, pgvector)  | Over-broad access across modules     | One database, one schema per module. Every module connects with the same login (the `postgres` superuser under Compose), so schema separation is not a permission boundary.                                                                                   |
+| llama-server / Azurite              | Direct access bypassing app controls | Internal network only. The inference servers require a bearer API key (`LLM_API_KEY`, generated by Aspire) on every request except `/health`, have their web UI disabled, and Compose binds their ports, and those of PostgreSQL and Azurite, to `127.0.0.1`. |
+| Docker daemon (via the Sandbox)     | Root-equivalent control of the host  | See §4. Only the Sandbox mounts the socket.                                                                                                                                                                                                                   |
+| MCP servers                         | Third-party tools on the network     | Sovereign-registered, local network only, tools approved individually and hash-pinned; stdio servers run in hardened Sandbox containers (§4.1). The MCP C# SDK is pinned to the version Aspire already uses.                                                  |
+| Third-party packages (NuGet / pnpm) | Supply-chain compromise              | Pinned lockfiles; keep dependencies patched (see §7).                                                                                                                                                                                                         |
+| Secrets in source/containers        | Leakage of keys/connection strings   | Use `.env` / Aspire secrets (`.env.example` is the template); **never commit real secrets**. `.gitignore` excludes env files.                                                                                                                                 |
 
 ---
 
@@ -284,26 +285,28 @@ The agent is treated as a **semi-trusted actor**. AI-specific risks beyond class
 
 These are not yet fully addressed and are worth tracking:
 
-1. **Partition the login rate limiter** per client instead of one window shared by everyone.
-2. **Per-module database roles** with grants on their own schema, and a non-superuser login.
-3. **Protect the Data Protection key ring at rest.** Compose now persists it on a volume
+1. **Per-module database roles** with grants on their own schema, and a non-superuser login.
+2. **Protect the Data Protection key ring at rest.** Compose now persists it on a volume
    (`DataProtection:KeysPath`), so restarts keep sessions and MCP secrets; the keys themselves are not yet encrypted
    (e.g. `ProtectKeysWithCertificate`), so whoever reads the volume can decrypt both.
-4. **Dependency scanning** in CI (Dependabot / `dotnet list package --vulnerable`, `pnpm audit`).
-5. **Stronger sandbox isolation** (gVisor / microVM) if untrusted code volume grows.
-6. **mTLS between Sentium.Web and its sidecars** if Sentium is ever deployed on a network with
+3. **Dependency scanning** in CI (Dependabot / `dotnet list package --vulnerable`, `pnpm audit`).
+4. **Stronger sandbox isolation** (gVisor / microVM) if untrusted code volume grows.
+5. **mTLS between Sentium.Web and its sidecars** if Sentium is ever deployed on a network with
    untrusted peers.
-7. **Further security headers** on Sentium.Web (HSTS, `Referrer-Policy`, `Permissions-Policy`); the portal's
-   Content-Security-Policy is in place.
-8. **Audit-log tamper-evidence** (e.g. hash chaining) if forensic guarantees must survive a
+6. **Audit-log tamper-evidence** (e.g. hash chaining) if forensic guarantees must survive a
    compromised host.
-9. **Provenance/validation for RAG-ingested content** to reduce learning-loop poisoning.
-10. **Secret rotation** procedure for the `X-Internal-Token`, the PostgreSQL password, Caddy's
-    local certificate authority and the Data Protection keys.
-11. **A documented first-Sovereign bootstrap**: new accounts are Members, and only an existing
-    Sovereign can grant the role.
-12. **Per-user MCP credentials / OAuth.** MCP servers use one credential set for every user's agents; per-user
-    servers or OAuth (the SDK's `ClientOAuthOptions`) would let a server see who is acting.
+7. **Provenance/validation for RAG-ingested content** to reduce learning-loop poisoning.
+8. **Secret rotation** procedure for the `X-Internal-Token`, the PostgreSQL password, Caddy's
+   local certificate authority and the Data Protection keys.
+9. **Per-user MCP credentials / OAuth.** MCP servers use one credential set for every user's agents; per-user
+   servers or OAuth (the SDK's `ClientOAuthOptions`) would let a server see who is acting.
+10. **A real blob store.** Azurite is an emulator; it is pinned and only reachable on internal networks, but a
+    filesystem or S3-compatible store would be the sturdier home for workspace files, attachments and artifacts.
+
+Done since the previous revision: the login/registration rate limiter is partitioned per client address; HSTS
+(Caddy), `X-Content-Type-Options`, `Referrer-Policy` and `Permissions-Policy` are on every response; the first
+account bootstraps the Sovereign and registration is otherwise closed; Redis (an unauthenticated cache on the
+shared network that held role lists) is gone; `sentium-web` runs as a non-root user without capabilities.
 
 ---
 

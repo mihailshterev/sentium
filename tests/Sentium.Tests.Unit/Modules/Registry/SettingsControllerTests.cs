@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
 using Sentium.Core.Constants;
 using Sentium.Registry.Contracts;
+using Sentium.Registry.Contracts.Settings;
 using Sentium.Registry.Features.Settings;
 using Xunit;
 

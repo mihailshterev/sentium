@@ -1,23 +1,15 @@
 namespace Sentium.Sentinel.Features.Audit;
 
 /// <summary>
-/// Forensic audit log for PDP decisions.
-/// Implementations must be thread-safe.
+/// Forensic audit log for PDP decisions. Implementations must be thread-safe.
 /// </summary>
 internal interface IAuditLog
 {
+    /// <summary>
+    /// Stores the record. Never throws: a failed write is logged, because an audit failure must not break the
+    /// caller's flow.
+    /// </summary>
     ValueTask RecordAsync(AuditRecord record, CancellationToken ct = default);
-
-    /// <summary>
-    /// Returns the most recent audit records, newest first. Intended for bounded aggregate
-    /// windows (e.g. stats); use <see cref="GetPagedAsync"/> to page through history.
-    /// </summary>
-    Task<IReadOnlyList<AuditRecord>> GetRecentAsync(int count = 100, CancellationToken ct = default);
-
-    /// <summary>
-    /// Returns audit records for a specific agent, newest first.
-    /// </summary>
-    Task<IReadOnlyList<AuditRecord>> GetByAgentAsync(string agentId, int count = 50, CancellationToken ct = default);
 
     /// <summary>
     /// Returns a page of audit records (newest first) plus the total count.
@@ -28,4 +20,15 @@ internal interface IAuditLog
     /// Returns a page of audit records for a specific agent (newest first) plus the total count.
     /// </summary>
     Task<(IReadOnlyList<AuditRecord> Items, int TotalCount)> GetByAgentPagedAsync(string agentId, int page, int pageSize, CancellationToken ct = default);
+
+    /// <summary>
+    /// Aggregates the outcomes of the newest <paramref name="window"/> records.
+    /// </summary>
+    Task<AuditStatsDto> GetStatsAsync(int window, CancellationToken ct = default);
+
+    /// <summary>
+    /// Deletes the records older than <paramref name="cutoff"/>.
+    /// </summary>
+    /// <returns>The number of deleted records.</returns>
+    Task<int> PurgeOlderThanAsync(DateTimeOffset cutoff, CancellationToken ct = default);
 }

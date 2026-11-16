@@ -60,7 +60,7 @@ internal sealed class RoleService(
             return (false, errors);
         }
 
-        await cache.RemoveByTagAsync(IdentityCacheKeys.UserTag(targetUserId), ct);
+        await EvictUserAsync(targetUserId, ct);
 
         if (logger.IsEnabled(LogLevel.Information))
         {
@@ -107,7 +107,7 @@ internal sealed class RoleService(
             return (removeResult, removeError);
         }
 
-        await cache.RemoveByTagAsync(IdentityCacheKeys.UserTag(targetUserId), ct);
+        await EvictUserAsync(targetUserId, ct);
 
         if (logger.IsEnabled(LogLevel.Information))
         {
@@ -158,6 +158,15 @@ internal sealed class RoleService(
         }
 
         return await userManager.GetRolesAsync(user);
+    }
+
+    /// <summary>
+    /// The user's cached roles and every cached user listing (which carries roles too).
+    /// </summary>
+    private async Task EvictUserAsync(Guid userId, CancellationToken ct)
+    {
+        await cache.RemoveByTagAsync(IdentityCacheKeys.UserTag(userId), ct);
+        await cache.RemoveByTagAsync(IdentityCacheKeys.UsersTag, ct);
     }
 
     private static string GetHighestRole(IEnumerable<string> roles)

@@ -23,7 +23,7 @@ public sealed class PolicyDecisionPointTests : IDisposable
             .AddScoped<SentinelPolicyEngine>()
             .BuildServiceProvider();
 
-        _sut = new PolicyDecisionPoint(_services.GetRequiredService<IServiceScopeFactory>());
+        _sut = new PolicyDecisionPoint(_services.GetRequiredService<IServiceScopeFactory>(), NullLogger<PolicyDecisionPoint>.Instance);
     }
 
     public void Dispose() => _services.Dispose();
@@ -73,5 +73,27 @@ public sealed class PolicyDecisionPointTests : IDisposable
         // Assert - fail-closed: an invalid request is a deny decision, not an exception.
         decision.Allowed.Should().BeFalse();
         decision.Effect.Should().Be("Deny");
+    }
+
+    [Fact]
+    public async Task EvaluateAsync_FailsClosed_WhenTheEngineCannotRun()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        using var broken = new ServiceCollection().BuildServiceProvider();
+        var sut = new PolicyDecisionPoint(broken.GetRequiredService<IServiceScopeFactory>(), NullLogger<PolicyDecisionPoint>.Instance);
+
+        var decision = await sut.EvaluateAsync(new PolicyEvaluationRequest
+        {
+            AgentId = "agent-1",
+            SkillName = "TestSkill",
+            ResourceType = "File",
+            ResourceId = "docs/report-1",
+            Action = "read",
+            OriginalUserPrompt = "Show me the report",
+            CorrelationId = Guid.NewGuid().ToString()
+        }, ct);
+
+        decision.Allowed.Should().BeFalse();
+        decision.TriggeredPolicies.Should().Equal("FailClosed");
     }
 }

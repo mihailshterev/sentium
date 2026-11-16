@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Mvc;
 using Sentium.Core.Results;
 using Sentium.Infrastructure.Security;
 using Sentium.Sentinel.Features.Audit;
-using Sentium.Sentinel.Features.Policies;
 
 namespace Sentium.Sentinel.Features.Engine;
 
@@ -14,6 +13,8 @@ namespace Sentium.Sentinel.Features.Engine;
 [Route($"{SentinelRoutes.Prefix}/policy")]
 internal sealed class PolicyController(IAuditLog auditLog) : ControllerBase
 {
+    private const int StatsWindow = 500;
+
     /// <summary>
     /// Returns a page of forensic audit records, newest first. Requires authentication.
     /// </summary>
@@ -63,38 +64,8 @@ internal sealed class PolicyController(IAuditLog auditLog) : ControllerBase
     [ProducesResponseType<AuditStatsDto>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAuditStats(CancellationToken ct = default)
     {
-        var records = await auditLog.GetRecentAsync(500, ct);
-
-        var latestAlignment = records
-            .Where(r => r.AlignmentVerdict is not null)
-            .Take(20)
-            .Select(r => r.AlignmentVerdict switch
-            {
-                "Aligned" => 1.0,
-                "Inconclusive" => 0.5,
-                "Misaligned" => 0.0,
-                _ => (double?)null
-            })
-            .Where(s => s.HasValue)
-            .Select(s => s!.Value)
-            .ToList();
-
-        double? avgAlignment = latestAlignment.Count > 0 ? latestAlignment.Average() : null;
-
-        var stats = new AuditStatsDto
-        {
-            Total = records.Count,
-            Allowed = records.Count(r => r.Allowed),
-            Denied = records.Count(r => !r.Allowed),
-            Alerts = records.Count(r => r.Effect == PolicyEffect.DenyWithAlert),
-            LowRisk = records.Count(r => r.Risk == PolicyRiskLevel.Low),
-            MediumRisk = records.Count(r => r.Risk == PolicyRiskLevel.Medium),
-            HighRisk = records.Count(r => r.Risk == PolicyRiskLevel.High),
-            CriticalRisk = records.Count(r => r.Risk == PolicyRiskLevel.Critical),
-            LatestAlignmentScore = avgAlignment
-        };
+        var stats = await auditLog.GetStatsAsync(StatsWindow, ct);
 
         return Ok(stats);
     }
-
 }

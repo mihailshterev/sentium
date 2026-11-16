@@ -62,28 +62,6 @@
         "resolved": "22.1.0",
         "contentHash": "mTdHWGsNCWpKyQxqyNcSS+q4BtBTSOUfhdG+Lwo6eAOznCLSwrZQ5VKtDG2G8VrUp1ul4DwWHefoBS1umjO/VQ=="
       },
-      "Aspire.StackExchange.Redis": {
-        "type": "Transitive",
-        "resolved": "13.6.5",
-        "contentHash": "HBBEvamDuAko26lJ1Rs3bMZPT11L7Q6F6rdvMR7cNlkN6KfP0juUBiV+o7zZGSQgarJBjTpRo8OyHfRSFlMtOQ==",
-        "dependencies": {
-          "AspNetCore.HealthChecks.Redis": "9.0.0",
-          "Microsoft.Extensions.Configuration.Abstractions": "10.0.14",
-          "Microsoft.Extensions.Configuration.Binder": "10.0.14",
-          "Microsoft.Extensions.Configuration.EnvironmentVariables": "10.0.14",
-          "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.14",
-          "Microsoft.Extensions.DependencyInjection.AutoActivation": "10.10.0",
-          "Microsoft.Extensions.Diagnostics.HealthChecks": "10.0.14",
-          "Microsoft.Extensions.Hosting.Abstractions": "10.0.14",
-          "Microsoft.Extensions.Logging": "10.0.14",
-          "Microsoft.Extensions.Logging.Abstractions": "10.0.14",
-          "Microsoft.Extensions.Options": "10.0.14",
-          "Microsoft.Extensions.Primitives": "10.0.14",
-          "OpenTelemetry.Extensions.Hosting": "1.17.0",
-          "StackExchange.Redis": "2.13.17",
-          "System.IO.Hashing": "10.0.14"
-        }
-      },
       "AspNetCore.HealthChecks.Azure.Storage.Blobs": {
         "type": "Transitive",
         "resolved": "9.0.0",
@@ -91,15 +69,6 @@
         "dependencies": {
           "Azure.Storage.Blobs": "12.19.1",
           "Microsoft.Extensions.Diagnostics.HealthChecks": "8.0.11"
-        }
-      },
-      "AspNetCore.HealthChecks.Redis": {
-        "type": "Transitive",
-        "resolved": "9.0.0",
-        "contentHash": "yNH0h8GLRbAf+PU5HNVLZ5hNeyq9mDVmRKO9xuZsme/znUYoBJlQvI0gq45gaZNlLncCHkMhR4o90MuT+gxxPw==",
-        "dependencies": {
-          "Microsoft.Extensions.Diagnostics.HealthChecks": "8.0.11",
-          "StackExchange.Redis": "2.7.4"
         }
       },
       "Azure.Core": {
@@ -343,17 +312,6 @@
           "Microsoft.Extensions.Logging.Abstractions": "10.0.14",
           "Microsoft.Extensions.Options": "10.0.14",
           "Microsoft.Extensions.Primitives": "10.0.14"
-        }
-      },
-      "Microsoft.Extensions.Caching.StackExchangeRedis": {
-        "type": "Transitive",
-        "resolved": "10.0.14",
-        "contentHash": "pd+40ZOZQ63O01wkPFLx2ODVILiPQ0AoQCz0YbQrH7y88z3ahaT1Vq3oOKnLrH7VeIYgH/C+X1R4MPkU3kpckQ==",
-        "dependencies": {
-          "Microsoft.Extensions.Caching.Abstractions": "10.0.14",
-          "Microsoft.Extensions.Logging.Abstractions": "10.0.14",
-          "Microsoft.Extensions.Options": "10.0.14",
-          "StackExchange.Redis": "2.7.27"
         }
       },
       "Microsoft.Extensions.Compliance.Abstractions": {
@@ -819,11 +777,6 @@
           "Npgsql": "8.0.5"
         }
       },
-      "Pipelines.Sockets.Unofficial": {
-        "type": "Transitive",
-        "resolved": "2.2.16",
-        "contentHash": "nonu9l0YrZH6krVYbskBjE7uG0VMAnvOQ9PU+RmzUsy+++vHkqzzCkHRoP877OiA3iRTxJyNDLfpcU8hrJ3/YQ=="
-      },
       "Polly.Core": {
         "type": "Transitive",
         "resolved": "8.4.2",
@@ -924,16 +877,6 @@
         "contentHash": "fKL7mXv7qaiNBUC71ssvn/dU0k9t0o45+qm2XgKAlSt19xF+ijjxyA3R6HmCgfKEKwfcfkwWjayuQtRueZFkYw==",
         "dependencies": {
           "Serilog": "4.2.0"
-        }
-      },
-      "StackExchange.Redis": {
-        "type": "Transitive",
-        "resolved": "2.13.17",
-        "contentHash": "P7o7ZDBAmBrOLQEw8Pt44iIA08ioj48smRxn4Jp6yzCu6P3DOSU6lj7f+IOtN3pPvSgC9YufvM92ycukEEBCYQ==",
-        "dependencies": {
-          "Microsoft.Extensions.Logging.Abstractions": "8.0.0",
-          "Pipelines.Sockets.Unofficial": "2.2.16",
-          "System.IO.Hashing": "10.0.2"
         }
       },
       "System.ClientModel": {
@@ -1101,9 +1044,9 @@
         "type": "Project",
         "dependencies": {
           "Azure.Storage.Blobs": "[12.30.1, )",
-          "Sentium.Core": "[0.1.0, )",
-          "Sentium.Infrastructure": "[0.1.0, )",
-          "Sentium.ServiceDefaults": "[0.1.0, )"
+          "Sentium.Core": "[1.0.0, )",
+          "Sentium.Infrastructure": "[1.0.0, )",
+          "Sentium.ServiceDefaults": "[1.0.0, )"
         }
       },
       "sentium.codex": {
@@ -1111,8 +1054,9 @@
         "dependencies": {
           "Microsoft.Extensions.AI": "[10.10.0, )",
           "Pgvector.EntityFrameworkCore": "[0.3.0, )",
-          "Sentium.Core": "[0.1.0, )",
-          "Sentium.Infrastructure": "[0.1.0, )"
+          "Sentium.Core": "[1.0.0, )",
+          "Sentium.Identity": "[1.0.0, )",
+          "Sentium.Infrastructure": "[1.0.0, )"
         }
       },
       "sentium.core": {
@@ -1121,8 +1065,9 @@
       "sentium.identity": {
         "type": "Project",
         "dependencies": {
-          "Sentium.Core": "[0.1.0, )",
-          "Sentium.Infrastructure": "[0.1.0, )"
+          "Sentium.Core": "[1.0.0, )",
+          "Sentium.Infrastructure": "[1.0.0, )",
+          "Sentium.Registry": "[1.0.0, )"
         }
       },
       "sentium.infrastructure": {
@@ -1139,7 +1084,7 @@
           "Microsoft.Extensions.Caching.Hybrid": "[10.4.0, )",
           "Microsoft.Extensions.Http.Resilience": "[10.11.0, )",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "[10.0.3, )",
-          "Sentium.Core": "[0.1.0, )",
+          "Sentium.Core": "[1.0.0, )",
           "Serilog.AspNetCore": "[10.0.0, )",
           "Serilog.Sinks.Console": "[6.1.1, )",
           "Serilog.Sinks.OpenTelemetry": "[4.2.0, )"
@@ -1149,9 +1094,9 @@
         "type": "Project",
         "dependencies": {
           "Azure.Storage.Blobs": "[12.30.1, )",
-          "Sentium.Codex": "[0.1.0, )",
-          "Sentium.Core": "[0.1.0, )",
-          "Sentium.Infrastructure": "[0.1.0, )"
+          "Sentium.Codex": "[1.0.0, )",
+          "Sentium.Core": "[1.0.0, )",
+          "Sentium.Infrastructure": "[1.0.0, )"
         }
       },
       "sentium.mcp": {
@@ -1159,18 +1104,18 @@
         "dependencies": {
           "Microsoft.Extensions.AI": "[10.10.0, )",
           "ModelContextProtocol.Core": "[2.4.0, )",
-          "Sentium.Core": "[0.1.0, )",
-          "Sentium.Infrastructure": "[0.1.0, )",
-          "Sentium.Praxis": "[0.1.0, )",
-          "Sentium.Registry": "[0.1.0, )"
+          "Sentium.Core": "[1.0.0, )",
+          "Sentium.Infrastructure": "[1.0.0, )",
+          "Sentium.Praxis": "[1.0.0, )",
+          "Sentium.Registry": "[1.0.0, )"
         }
       },
       "sentium.nuntius": {
         "type": "Project",
         "dependencies": {
-          "Sentium.Core": "[0.1.0, )",
-          "Sentium.Identity": "[0.1.0, )",
-          "Sentium.Infrastructure": "[0.1.0, )"
+          "Sentium.Core": "[1.0.0, )",
+          "Sentium.Identity": "[1.0.0, )",
+          "Sentium.Infrastructure": "[1.0.0, )"
         }
       },
       "sentium.praxis": {
@@ -1181,21 +1126,21 @@
           "Microsoft.Agents.AI": "[1.27.0, )",
           "Microsoft.Agents.AI.Workflows": "[1.27.0, )",
           "Microsoft.Extensions.AI": "[10.10.0, )",
-          "Sentium.Codex": "[0.1.0, )",
-          "Sentium.Core": "[0.1.0, )",
-          "Sentium.Infrastructure": "[0.1.0, )",
-          "Sentium.Locus": "[0.1.0, )",
-          "Sentium.Nuntius": "[0.1.0, )",
-          "Sentium.Registry": "[0.1.0, )",
-          "Sentium.Sentinel": "[0.1.0, )",
-          "Sentium.Tempus": "[0.1.0, )"
+          "Sentium.Codex": "[1.0.0, )",
+          "Sentium.Core": "[1.0.0, )",
+          "Sentium.Infrastructure": "[1.0.0, )",
+          "Sentium.Locus": "[1.0.0, )",
+          "Sentium.Nuntius": "[1.0.0, )",
+          "Sentium.Registry": "[1.0.0, )",
+          "Sentium.Sentinel": "[1.0.0, )",
+          "Sentium.Tempus": "[1.0.0, )"
         }
       },
       "sentium.registry": {
         "type": "Project",
         "dependencies": {
-          "Sentium.Core": "[0.1.0, )",
-          "Sentium.Infrastructure": "[0.1.0, )"
+          "Sentium.Core": "[1.0.0, )",
+          "Sentium.Infrastructure": "[1.0.0, )"
         }
       },
       "sentium.sandbox": {
@@ -1207,9 +1152,9 @@
           "Microsoft.AspNetCore.OpenApi": "[10.0.1, )",
           "ModelContextProtocol.Core": "[2.4.0, )",
           "Scalar.AspNetCore": "[2.14.4, )",
-          "Sentium.Core": "[0.1.0, )",
-          "Sentium.Infrastructure": "[0.1.0, )",
-          "Sentium.ServiceDefaults": "[0.1.0, )"
+          "Sentium.Core": "[1.0.0, )",
+          "Sentium.Infrastructure": "[1.0.0, )",
+          "Sentium.ServiceDefaults": "[1.0.0, )"
         }
       },
       "sentium.scheduling": {
@@ -1217,24 +1162,23 @@
         "dependencies": {
           "Quartz.Extensions.Hosting": "[3.18.0, )",
           "Quartz.Serialization.SystemTextJson": "[3.18.0, )",
-          "Sentium.Core": "[0.1.0, )",
-          "Sentium.Infrastructure": "[0.1.0, )",
-          "Sentium.Praxis": "[0.1.0, )"
+          "Sentium.Core": "[1.0.0, )",
+          "Sentium.Infrastructure": "[1.0.0, )",
+          "Sentium.Praxis": "[1.0.0, )"
         }
       },
       "sentium.sentinel": {
         "type": "Project",
         "dependencies": {
           "Microsoft.Extensions.AI": "[10.10.0, )",
-          "Sentium.Core": "[0.1.0, )",
-          "Sentium.Infrastructure": "[0.1.0, )",
-          "Sentium.Registry": "[0.1.0, )"
+          "Sentium.Core": "[1.0.0, )",
+          "Sentium.Infrastructure": "[1.0.0, )",
+          "Sentium.Registry": "[1.0.0, )"
         }
       },
       "sentium.servicedefaults": {
         "type": "Project",
         "dependencies": {
-          "Aspire.StackExchange.Redis.DistributedCaching": "[13.6.5, )",
           "Microsoft.Extensions.Http.Resilience": "[10.11.0, )",
           "Microsoft.Extensions.ServiceDiscovery": "[10.2.0, )",
           "OpenTelemetry.Exporter.OpenTelemetryProtocol": "[1.18.0, )",
@@ -1247,20 +1191,20 @@
       "sentium.tempus": {
         "type": "Project",
         "dependencies": {
-          "Sentium.Core": "[0.1.0, )",
-          "Sentium.Infrastructure": "[0.1.0, )",
-          "Sentium.Nuntius": "[0.1.0, )",
-          "Sentium.Registry": "[0.1.0, )"
+          "Sentium.Core": "[1.0.0, )",
+          "Sentium.Infrastructure": "[1.0.0, )",
+          "Sentium.Nuntius": "[1.0.0, )",
+          "Sentium.Registry": "[1.0.0, )"
         }
       },
       "sentium.vigil": {
         "type": "Project",
         "dependencies": {
-          "Sentium.Core": "[0.1.0, )",
-          "Sentium.Identity": "[0.1.0, )",
-          "Sentium.Infrastructure": "[0.1.0, )",
-          "Sentium.Nuntius": "[0.1.0, )",
-          "Sentium.Registry": "[0.1.0, )"
+          "Sentium.Core": "[1.0.0, )",
+          "Sentium.Identity": "[1.0.0, )",
+          "Sentium.Infrastructure": "[1.0.0, )",
+          "Sentium.Nuntius": "[1.0.0, )",
+          "Sentium.Registry": "[1.0.0, )"
         }
       },
       "Aspire.Azure.Storage.Blobs": {
@@ -1309,31 +1253,6 @@
           "Npgsql.EntityFrameworkCore.PostgreSQL": "10.0.3",
           "Npgsql.OpenTelemetry": "10.0.3",
           "OpenTelemetry.Extensions.Hosting": "1.17.0"
-        }
-      },
-      "Aspire.StackExchange.Redis.DistributedCaching": {
-        "type": "CentralTransitive",
-        "requested": "[13.6.5, )",
-        "resolved": "13.6.5",
-        "contentHash": "xuvkcRzn4fJbQ6mkDWGpS2T34kqpDqVFZQGbkdPQUFjlyG0b0kgzTuOe/cjYn13GEdUb5xsFET7QYZbcGCu8EA==",
-        "dependencies": {
-          "AspNetCore.HealthChecks.Redis": "9.0.0",
-          "Aspire.StackExchange.Redis": "13.6.5",
-          "Microsoft.Extensions.Caching.StackExchangeRedis": "10.0.14",
-          "Microsoft.Extensions.Configuration.Abstractions": "10.0.14",
-          "Microsoft.Extensions.Configuration.Binder": "10.0.14",
-          "Microsoft.Extensions.Configuration.EnvironmentVariables": "10.0.14",
-          "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.14",
-          "Microsoft.Extensions.DependencyInjection.AutoActivation": "10.10.0",
-          "Microsoft.Extensions.Diagnostics.HealthChecks": "10.0.14",
-          "Microsoft.Extensions.Hosting.Abstractions": "10.0.14",
-          "Microsoft.Extensions.Logging": "10.0.14",
-          "Microsoft.Extensions.Logging.Abstractions": "10.0.14",
-          "Microsoft.Extensions.Options": "10.0.14",
-          "Microsoft.Extensions.Primitives": "10.0.14",
-          "OpenTelemetry.Extensions.Hosting": "1.17.0",
-          "StackExchange.Redis": "2.13.17",
-          "System.IO.Hashing": "10.0.14"
         }
       },
       "Azure.Storage.Blobs": {

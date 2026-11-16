@@ -3,9 +3,10 @@ using FluentAssertions;
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
-using Sentium.Registry.Features.Settings;
-using Sentium.Registry.Entities;
 using Sentium.Core.Constants;
+using Sentium.Registry.Contracts.Settings;
+using Sentium.Registry.Entities;
+using Sentium.Registry.Features.Settings;
 using Xunit;
 
 namespace Sentium.Tests.Unit.Modules.Registry;
@@ -78,7 +79,7 @@ public sealed class SettingsServiceTests
         var result = await _sut.GetAsync(SettingsKeys.Harness, UserId, ct);
 
         result!.Value.Deserialize<HarnessSettings>(WebOptions)!.UserHarnessPrompt.Should().BeEmpty();
-        await _repository.DidNotReceive().AddAsync(Arg.Any<SystemSettings>(), Arg.Any<CancellationToken>());
+        await _repository.DidNotReceive().TryAddAsync(Arg.Any<SystemSettings>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -87,6 +88,7 @@ public sealed class SettingsServiceTests
         var ct = TestContext.Current.CancellationToken;
         var entity = new SystemSettings { UserId = UserId };
         _repository.FindAsync(UserId, ct).Returns(entity);
+        _repository.TryUpdateAsync(entity, ct).Returns(true);
         var cache = Substitute.For<HybridCache>();
         var sut = CreateSut(cache);
 
@@ -95,7 +97,7 @@ public sealed class SettingsServiceTests
             Payload(new { userHarnessPrompt = "custom", isBuiltInHarnessEnabled = true, isPromptEnhancementEnabled = true }),
             "admin", ct);
 
-        await _repository.Received(1).UpdateAsync(Arg.Any<SystemSettings>(), ct);
+        await _repository.Received(1).TryUpdateAsync(Arg.Any<SystemSettings>(), ct);
         entity.Settings.Harness.UserHarnessPrompt.Should().Be("custom");
         entity.UpdatedBy.Should().Be("admin");
         result.Value.Deserialize<HarnessSettings>(WebOptions)!.UserHarnessPrompt.Should().Be("custom");
@@ -108,6 +110,7 @@ public sealed class SettingsServiceTests
         var ct = TestContext.Current.CancellationToken;
         var globalRow = new SystemSettings { UserId = null };
         _repository.FindAsync(null, ct).Returns(globalRow);
+        _repository.TryUpdateAsync(globalRow, ct).Returns(true);
 
         await _sut.UpdateAsync(
             SettingsKeys.Pdp, UserId,
@@ -125,5 +128,26 @@ public sealed class SettingsServiceTests
         var ct = TestContext.Current.CancellationToken;
         var act = async () => await _sut.UpdateAsync("nope", UserId, Payload(new { }), null, ct);
         await act.Should().ThrowAsync<KeyNotFoundException>();
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ReReadsAndMerges_WhenAConcurrentUpdateWon()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var stale = new SystemSettings { UserId = UserId, Version = 1 };
+        var fresh = new SystemSettings
+        {
+            UserId = UserId,
+            Version = 2,
+            Settings = new SettingsContainer { Harness = new HarnessSettings { IsPromptEnhancementEnabled = true } }
+        };
+        _repository.FindAsync(UserId, ct).Returns(stale, fresh);
+        _repository.TryUpdateAsync(stale, ct).Returns(false);
+        _repository.TryUpdateAsync(fresh, ct).Returns(true);
+
+        await _sut.UpdateAsync(SettingsKeys.Harness, UserId, Payload(new { userHarnessPrompt = "mine" }), "admin", ct);
+
+        fresh.Settings.Harness.UserHarnessPrompt.Should().Be("mine");
+        fresh.Settings.Harness.IsPromptEnhancementEnabled.Should().BeTrue();
     }
 }

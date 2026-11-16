@@ -12,7 +12,6 @@
   <ItemGroup>
     <PackageReference Include="Aspire.Hosting.Testing" />
     <PackageReference Include="Testcontainers.PostgreSql" />
-    <PackageReference Include="Testcontainers.Redis" />
     <PackageReference Include="xunit.v3" />
     <PackageReference Include="xunit.runner.visualstudio">
       <PrivateAssets>all</PrivateAssets>

@@ -12,7 +12,6 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 builder.AddSentiumAuditLogging();
 
-builder.AddSentiumDistributedCache(ResourceNames.Redis);
 builder.AddAzureBlobServiceClient(ResourceNames.WorkspaceBlobs);
 
 builder.Services.AddHybridCache(options =>
@@ -43,6 +42,7 @@ builder.Services.AddValidatorsFromAssemblies(SentiumModules.Assemblies, includeI
 var app = builder.Build();
 
 app.UseSentiumTracing();
+app.UseSentiumSecurityHeaders();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
 

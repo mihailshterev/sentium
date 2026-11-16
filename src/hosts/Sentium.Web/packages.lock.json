@@ -36,32 +36,12 @@
         "resolved": "22.1.0",
         "contentHash": "mTdHWGsNCWpKyQxqyNcSS+q4BtBTSOUfhdG+Lwo6eAOznCLSwrZQ5VKtDG2G8VrUp1ul4DwWHefoBS1umjO/VQ=="
       },
-      "Aspire.StackExchange.Redis": {
-        "type": "Transitive",
-        "resolved": "13.6.5",
-        "contentHash": "HBBEvamDuAko26lJ1Rs3bMZPT11L7Q6F6rdvMR7cNlkN6KfP0juUBiV+o7zZGSQgarJBjTpRo8OyHfRSFlMtOQ==",
-        "dependencies": {
-          "AspNetCore.HealthChecks.Redis": "9.0.0",
-          "Microsoft.Extensions.DependencyInjection.AutoActivation": "10.10.0",
-          "OpenTelemetry.Extensions.Hosting": "1.17.0",
-          "StackExchange.Redis": "2.13.17",
-          "System.IO.Hashing": "10.0.14"
-        }
-      },
       "AspNetCore.HealthChecks.Azure.Storage.Blobs": {
         "type": "Transitive",
         "resolved": "9.0.0",
         "contentHash": "fORaHfhyerL+7Tu4lTyj5CBHEMPYdH0LS1bm9N2Wd/K4mgd/zzg+iXLFBYTNTbF+hLYpVNZyO2Tx/wU0/s4KqQ==",
         "dependencies": {
           "Azure.Storage.Blobs": "12.19.1"
-        }
-      },
-      "AspNetCore.HealthChecks.Redis": {
-        "type": "Transitive",
-        "resolved": "9.0.0",
-        "contentHash": "yNH0h8GLRbAf+PU5HNVLZ5hNeyq9mDVmRKO9xuZsme/znUYoBJlQvI0gq45gaZNlLncCHkMhR4o90MuT+gxxPw==",
-        "dependencies": {
-          "StackExchange.Redis": "2.7.4"
         }
       },
       "Azure.Core": {
@@ -236,14 +216,6 @@
         "contentHash": "und84BbwPu9u9GCOZ5WcqXctk+cqbY8vyXGKKU8a6VbZ5rFV19v7DA3EzDUkl0kb4TWtMEYqgMOPgMcsvBYq0Q==",
         "dependencies": {
           "Azure.Core": "1.61.0"
-        }
-      },
-      "Microsoft.Extensions.Caching.StackExchangeRedis": {
-        "type": "Transitive",
-        "resolved": "10.0.14",
-        "contentHash": "pd+40ZOZQ63O01wkPFLx2ODVILiPQ0AoQCz0YbQrH7y88z3ahaT1Vq3oOKnLrH7VeIYgH/C+X1R4MPkU3kpckQ==",
-        "dependencies": {
-          "StackExchange.Redis": "2.7.27"
         }
       },
       "Microsoft.Extensions.Compliance.Abstractions": {
@@ -421,11 +393,6 @@
           "Npgsql": "8.0.5"
         }
       },
-      "Pipelines.Sockets.Unofficial": {
-        "type": "Transitive",
-        "resolved": "2.2.16",
-        "contentHash": "nonu9l0YrZH6krVYbskBjE7uG0VMAnvOQ9PU+RmzUsy+++vHkqzzCkHRoP877OiA3iRTxJyNDLfpcU8hrJ3/YQ=="
-      },
       "Polly.Core": {
         "type": "Transitive",
         "resolved": "8.4.2",
@@ -515,15 +482,6 @@
           "Serilog": "4.2.0"
         }
       },
-      "StackExchange.Redis": {
-        "type": "Transitive",
-        "resolved": "2.13.17",
-        "contentHash": "P7o7ZDBAmBrOLQEw8Pt44iIA08ioj48smRxn4Jp6yzCu6P3DOSU6lj7f+IOtN3pPvSgC9YufvM92ycukEEBCYQ==",
-        "dependencies": {
-          "Pipelines.Sockets.Unofficial": "2.2.16",
-          "System.IO.Hashing": "10.0.2"
-        }
-      },
       "System.ClientModel": {
         "type": "Transitive",
         "resolved": "1.15.0",
@@ -611,6 +569,7 @@
           "Microsoft.Extensions.AI": "[10.10.0, )",
           "Pgvector.EntityFrameworkCore": "[0.3.0, )",
           "Sentium.Core": "[1.0.0, )",
+          "Sentium.Identity": "[1.0.0, )",
           "Sentium.Infrastructure": "[1.0.0, )"
         }
       },
@@ -631,7 +590,8 @@
         "type": "Project",
         "dependencies": {
           "Sentium.Core": "[1.0.0, )",
-          "Sentium.Infrastructure": "[1.0.0, )"
+          "Sentium.Infrastructure": "[1.0.0, )",
+          "Sentium.Registry": "[1.0.0, )"
         }
       },
       "sentium.infrastructure": {
@@ -729,7 +689,6 @@
       "sentium.servicedefaults": {
         "type": "Project",
         "dependencies": {
-          "Aspire.StackExchange.Redis.DistributedCaching": "[13.6.5, )",
           "Microsoft.Extensions.Http.Resilience": "[10.11.0, )",
           "Microsoft.Extensions.ServiceDiscovery": "[10.2.0, )",
           "OpenTelemetry.Exporter.OpenTelemetryProtocol": "[1.18.0, )",
@@ -769,21 +728,6 @@
           "Npgsql.EntityFrameworkCore.PostgreSQL": "10.0.3",
           "Npgsql.OpenTelemetry": "10.0.3",
           "OpenTelemetry.Extensions.Hosting": "1.17.0"
-        }
-      },
-      "Aspire.StackExchange.Redis.DistributedCaching": {
-        "type": "CentralTransitive",
-        "requested": "[13.6.5, )",
-        "resolved": "13.6.5",
-        "contentHash": "xuvkcRzn4fJbQ6mkDWGpS2T34kqpDqVFZQGbkdPQUFjlyG0b0kgzTuOe/cjYn13GEdUb5xsFET7QYZbcGCu8EA==",
-        "dependencies": {
-          "AspNetCore.HealthChecks.Redis": "9.0.0",
-          "Aspire.StackExchange.Redis": "13.6.5",
-          "Microsoft.Extensions.Caching.StackExchangeRedis": "10.0.14",
-          "Microsoft.Extensions.DependencyInjection.AutoActivation": "10.10.0",
-          "OpenTelemetry.Extensions.Hosting": "1.17.0",
-          "StackExchange.Redis": "2.13.17",
-          "System.IO.Hashing": "10.0.14"
         }
       },
       "Azure.Storage.Blobs": {

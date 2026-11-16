@@ -1,9 +1,11 @@
+using Microsoft.EntityFrameworkCore;
 using Sentium.Codex.Contracts;
 using Sentium.Codex.Contracts.Models;
-using Sentium.Praxis.Data;
+using Sentium.Infrastructure.Caching;
 using Sentium.Infrastructure.Security;
-using Microsoft.EntityFrameworkCore;
+using Sentium.Praxis.Data;
 using Sentium.Praxis.Features.Files;
+using Sentium.Praxis.Features.Workspaces;
 
 namespace Sentium.Praxis.Features.Storage;
 
@@ -131,9 +133,9 @@ internal sealed class FileIngestionWorker(IServiceScopeFactory scopeFactory, Fil
                 Content = content,
                 Metadata = new Dictionary<string, string>
                 {
-                    { "FileId", projectFile.Id.ToString() },
-                    { "BlobName", projectFile.BlobName.ToString() },
-                    { "Extension", projectFile.Extension }
+                    { WorkspaceFileMetadata.FileId, projectFile.Id.ToString() },
+                    { WorkspaceFileMetadata.BlobName, projectFile.BlobName.ToString() },
+                    { WorkspaceFileMetadata.Extension, projectFile.Extension }
                 },
                 Scope = KnowledgeScope.User,
                 UserId = projectFile.UserId
@@ -141,10 +143,11 @@ internal sealed class FileIngestionWorker(IServiceScopeFactory scopeFactory, Fil
 
             if (workspaceId.HasValue)
             {
-                ingestionRequest.Metadata.Add("WorkspaceId", workspaceId.Value.ToString());
+                ingestionRequest.Metadata.Add(WorkspaceFileMetadata.WorkspaceId, workspaceId.Value.ToString());
             }
 
-            await ingestionService.IngestAsync(ingestionRequest, ct: ct);
+            // Replaces whatever an interrupted earlier attempt stored, so a retry never duplicates chunks.
+            await ingestionService.ReplaceAsync(ingestionRequest, WorkspaceFileMetadata.FileId, ct: ct);
 
             projectFile.ProcessingStatus = FileProcessingStatus.Completed;
             logger.LogInformation("Successfully ingested file {FileName} ({FileId})", projectFile.FileName, fileId);
@@ -157,6 +160,7 @@ internal sealed class FileIngestionWorker(IServiceScopeFactory scopeFactory, Fil
         finally
         {
             await dbContext.SaveChangesAsync(ct);
+            await scope.ServiceProvider.GetRequiredService<IScopedCache>().InvalidateTagAsync(WorkspaceService.CacheTag, ct);
         }
     }
 }

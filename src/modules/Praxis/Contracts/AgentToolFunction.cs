@@ -8,7 +8,8 @@ namespace Sentium.Praxis.Contracts;
 
 /// <summary>
 /// Binds an <see cref="IAgentTool"/>'s typed method to an <see cref="AIFunction"/> via <see cref="AIFunctionFactory"/>,
-/// stamping the tool's Sentinel classification onto <see cref="AITool.AdditionalProperties"/> and wrapping it in
+/// stamping the tool's Sentinel classification onto <see cref="AITool.AdditionalProperties"/> (unless the tool is
+/// <see cref="AgentToolPolicyAttribute.AuthorizedByCallee"/>) and wrapping it in
 /// <see cref="ApprovalRequiredAIFunction"/> when its policy requires human approval.
 /// </summary>
 public static class AgentToolFunction
@@ -34,11 +35,13 @@ public static class AgentToolFunction
             Name = name,
             Description = description,
             SerializerOptions = SerializerOptions,
-            AdditionalProperties = new Dictionary<string, object?>
-            {
-                [ResourceKey] = policy.Resource.ToString(),
-                [ActionKey] = policy.Action.ToString(),
-            },
+            AdditionalProperties = policy.AuthorizedByCallee
+                ? new Dictionary<string, object?>()
+                : new Dictionary<string, object?>
+                {
+                    [ResourceKey] = policy.Resource.ToString(),
+                    [ActionKey] = policy.Action.ToString(),
+                },
         });
 
         return policy.RequiresApproval ? new ApprovalRequiredAIFunction(function) : function;

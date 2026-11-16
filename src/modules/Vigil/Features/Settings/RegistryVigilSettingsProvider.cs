@@ -1,5 +1,6 @@
 using Sentium.Core.Constants;
 using Sentium.Registry.Contracts;
+using Sentium.Registry.Contracts.Settings;
 
 namespace Sentium.Vigil.Features.Settings;
 
@@ -15,7 +16,7 @@ internal sealed class RegistryVigilSettingsProvider(
     {
         try
         {
-            var settings = await settingsService.GetValueAsync<VigilSettingsResponse>(SettingsKeys.Vigil, ct: ct);
+            var settings = await settingsService.GetValueAsync<VigilSettings>(SettingsKeys.Vigil, ct: ct);
             return settings is null ? Fallback() : Map(settings);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
@@ -25,9 +26,9 @@ internal sealed class RegistryVigilSettingsProvider(
         }
     }
 
-    private static VigilRuntimeSettings Fallback() => new();
+    private static VigilRuntimeSettings Fallback() => Map(new VigilSettings());
 
-    private static VigilRuntimeSettings Map(VigilSettingsResponse dto)
+    private static VigilRuntimeSettings Map(VigilSettings dto)
     {
         return new()
         {
@@ -39,12 +40,4 @@ internal sealed class RegistryVigilSettingsProvider(
             DeviceReportIntervalSeconds = dto.DeviceReportIntervalSeconds
         };
     }
-
-    private sealed record VigilSettingsResponse(
-        int PollIntervalSeconds,
-        int ProbeTimeoutSeconds,
-        int DegradedLatencyMs,
-        int ConsecutiveFailuresToOpenIncident,
-        int SampleHistorySize,
-        int DeviceReportIntervalSeconds = 30);
 }

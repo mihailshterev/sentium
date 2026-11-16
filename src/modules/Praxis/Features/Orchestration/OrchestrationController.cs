@@ -1,5 +1,3 @@
-using System.Text.Json;
-using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sentium.Infrastructure.Security;
@@ -29,44 +27,31 @@ internal sealed class OrchestrationController(
     private readonly TimeSpan _heartbeatInterval = ResolveTimeSpan(configuration, "Orchestration:HeartbeatInterval", TimeSpan.FromSeconds(20));
 
     /// <summary>
-    /// Queues an ad-hoc dynamic workflow run. The input is a JSON object; its <c>activity</c> string is enhanced when
-    /// prompt enhancement is on. Returns the stream id to follow the run.
+    /// Queues an ad-hoc dynamic workflow run; the activity is enhanced when prompt enhancement is on. Returns the
+    /// stream id to follow the run.
     /// </summary>
     [HttpPost("run-dynamic-workflow")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
-    public async Task<ActionResult<WorkflowAcceptedResponse>> RunDynamicWorkflow([FromBody] dynamic customInput, CancellationToken ct)
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<WorkflowAcceptedResponse>> RunDynamicWorkflow([FromBody] RunDynamicWorkflowRequest request, CancellationToken ct)
     {
-        var user = User.Identity?.Name ?? "Unknown";
+        ArgumentNullException.ThrowIfNull(request);
 
         var streamId = Guid.NewGuid().ToString("N");
 
-        var payload = customInput ?? new DynamicWorkflowActivity("Manual trigger", user);
-        var payloadNode = JsonNode.Parse(JsonSerializer.Serialize(payload))?.AsObject() ?? new JsonObject();
-        payloadNode["userId"] = currentUser.UserId?.ToString();
-        payloadNode["streamId"] = streamId;
-
-        if (payloadNode["activity"] is JsonValue activityNode && activityNode.GetValueKind() == JsonValueKind.String)
-        {
-            var activityText = activityNode.GetValue<string>();
-            if (!string.IsNullOrWhiteSpace(activityText))
-            {
-                payloadNode["activity"] = await EnhanceIfEnabledAsync(activityText, ct);
-            }
-        }
-
-        var jsonPayload = payloadNode.ToJsonString();
-
+        ClaimStream(streamId);
         await runQueue.EnqueueAsync(new WorkflowTrigger
         {
             TriggerType = WorkflowTriggerTypes.Dynamic,
-            Payload = jsonPayload,
+            Activity = await EnhanceIfEnabledAsync(request.Activity, ct),
+            WorkspaceId = request.WorkspaceId,
             UserId = currentUser.UserId,
             StreamId = streamId
         }, ct);
 
         if (logger.IsEnabled(LogLevel.Information))
         {
-            logger.LogInformation("Dynamic workflow triggered by {User}", user);
+            logger.LogInformation("Dynamic workflow triggered by {User}", currentUser.UserName);
         }
 
         return Accepted(new WorkflowAcceptedResponse(streamId));
@@ -88,24 +73,16 @@ internal sealed class OrchestrationController(
             return NotFound();
         }
 
-        var enhancedScenario = await EnhanceIfEnabledAsync(request.Scenario, ct);
-
         var streamId = Guid.NewGuid().ToString("N");
 
-        var payload = new WorkflowTriggerPayload(
-            Activity: enhancedScenario,
-            WorkflowId: workflow.Id,
-            WorkflowName: workflow.Name,
-            Agents: workflow.Agents.Select(a => a.AgentId).ToList(),
-            WorkspaceId: request.WorkspaceId,
-            UserId: currentUser.UserId,
-            StreamId: streamId);
-
-        var jsonPayload = JsonSerializer.Serialize(payload);
+        ClaimStream(streamId);
         await runQueue.EnqueueAsync(new WorkflowTrigger
         {
             TriggerType = WorkflowTriggerTypes.CustomWorkflow,
-            Payload = jsonPayload,
+            Activity = await EnhanceIfEnabledAsync(request.Scenario, ct),
+            WorkflowId = workflow.Id,
+            WorkflowName = workflow.Name,
+            WorkspaceId = request.WorkspaceId,
             UserId = currentUser.UserId,
             StreamId = streamId
         }, ct);
@@ -121,7 +98,9 @@ internal sealed class OrchestrationController(
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     public IActionResult CancelRun(string streamId)
     {
-        var signalled = executionRegistry.Cancel(streamId);
+        var signalled = currentUser.IsSovereign
+            ? executionRegistry.Cancel(streamId)
+            : currentUser.UserId is { } userId && executionRegistry.CancelOwned(streamId, userId);
 
         if (logger.IsEnabled(LogLevel.Information))
         {
@@ -138,8 +117,15 @@ internal sealed class OrchestrationController(
     /// </summary>
     [HttpGet("stream/{eventId}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task StreamAgentExecution(string eventId, CancellationToken ct)
     {
+        if (!currentUser.IsSovereign && (currentUser.UserId is not { } userId || !streamRelay.IsVisibleTo(eventId, userId)))
+        {
+            Response.StatusCode = StatusCodes.Status404NotFound;
+            return;
+        }
+
         var fromSeq = ParseLastEventId(Request.Headers["Last-Event-ID"].ToString());
 
         using var streamCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -170,6 +156,14 @@ internal sealed class OrchestrationController(
         {
             logger.LogError(ex, "Error while streaming agent execution for event {EventId}.", eventId);
             await sse.FailAsync("An unexpected error occurred while streaming the run.");
+        }
+    }
+
+    private void ClaimStream(string streamId)
+    {
+        if (currentUser.UserId is { } userId)
+        {
+            streamRelay.Claim(streamId, userId);
         }
     }
 

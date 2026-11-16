@@ -4,13 +4,13 @@ namespace Sentium.Praxis.Features.Orchestration;
 
 internal sealed class WorkflowExecutionRegistry : IWorkflowExecutionRegistry
 {
-    private readonly ConcurrentDictionary<string, CancellationTokenSource> _running = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, Run> _running = new(StringComparer.Ordinal);
 
-    public void Register(string streamId, CancellationTokenSource cts)
+    public void Register(string streamId, Guid? ownerId, CancellationTokenSource cts)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(streamId);
         ArgumentNullException.ThrowIfNull(cts);
-        _running[streamId] = cts;
+        _running[streamId] = new Run(ownerId, cts);
     }
 
     public void Unregister(string streamId)
@@ -23,14 +23,19 @@ internal sealed class WorkflowExecutionRegistry : IWorkflowExecutionRegistry
 
     public bool Cancel(string streamId)
     {
-        if (string.IsNullOrWhiteSpace(streamId) || !_running.TryGetValue(streamId, out var cts))
-        {
-            return false;
-        }
+        return !string.IsNullOrWhiteSpace(streamId) && _running.TryGetValue(streamId, out var run) && TryCancel(run);
+    }
 
+    public bool CancelOwned(string streamId, Guid ownerId)
+    {
+        return !string.IsNullOrWhiteSpace(streamId) && _running.TryGetValue(streamId, out var run) && run.OwnerId == ownerId && TryCancel(run);
+    }
+
+    private static bool TryCancel(Run run)
+    {
         try
         {
-            cts.Cancel();
+            run.Cts.Cancel();
             return true;
         }
         catch (ObjectDisposedException)
@@ -38,4 +43,6 @@ internal sealed class WorkflowExecutionRegistry : IWorkflowExecutionRegistry
             return false;
         }
     }
+
+    private sealed record Run(Guid? OwnerId, CancellationTokenSource Cts);
 }

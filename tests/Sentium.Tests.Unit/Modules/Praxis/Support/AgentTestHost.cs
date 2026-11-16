@@ -81,8 +81,6 @@ internal sealed class AgentTestHost
         var toolProvider = Substitute.For<IAgentToolProvider>();
         toolProvider.GetToolsForAgent(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(_ => [.. Tools]);
 
-        var sentinel = new SentinelClient(Pdp, NullLogger<SentinelClient>.Instance);
-
         // Stands in for the MCP source: like the real one it yields nothing while MCP is disabled.
         var mcpSource = Substitute.For<IAgentToolSource>();
         mcpSource.GetFunctionsAsync(Arg.Any<IReadOnlySet<string>>(), Arg.Any<CancellationToken>())
@@ -100,7 +98,7 @@ internal sealed class AgentTestHost
             Settings,
             new AgentSkillsProviderFactory(new BuiltInSkillCatalog(), Skills, RunContext, NullLoggerFactory.Instance),
             new LearningsContextProvider(Learnings, RunContext),
-            new SentinelFunctionMiddleware(sentinel, RunContext, NullLogger<SentinelFunctionMiddleware>.Instance),
+            new SentinelFunctionMiddleware(Pdp, RunContext, NullLogger<SentinelFunctionMiddleware>.Instance),
             RunContext,
             provider,
             NullLoggerFactory.Instance);

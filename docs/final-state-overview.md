@@ -39,9 +39,9 @@
 - **In-process background work** - no message broker: workflow runs and file ingestion go through
   in-memory queues drained by hosted services, and agent output streams fan out through an
   in-memory relay that replays missed updates on reconnect
-- **Two-tier HybridCache** (in-process + Redis); Registry owns the settings cache and evicts its
+- **In-process HybridCache** (one process, no distributed cache); Registry owns the settings cache and evicts its
   entry on change, so consumers never hold stale copies
-- Resilience (retry + timeout + circuit-breaker) and structured error handling applied globally
+- Resilience pipelines chosen per HttpClient (long-running calls never retry a POST) and structured error handling
 
 ### Core System Components
 
@@ -81,7 +81,7 @@ Mapping old → new:
 - **Frontend** - `sentium-portal` (React), including its own login page, built into and served by
   Sentium.Web.
 - **Infrastructure** (all local, started by Aspire): PostgreSQL with pgvector (one database, one
-  schema per module), Redis, llama.cpp's `llama-server` (a chat-model router plus an embeddings server), Azurite.
+  schema per module), llama.cpp's `llama-server` (a chat-model router plus an embeddings server), Azurite.
 
 ### AI Integration
 

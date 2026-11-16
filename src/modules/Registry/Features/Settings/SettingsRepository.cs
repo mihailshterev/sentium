@@ -1,27 +1,43 @@
 using Microsoft.EntityFrameworkCore;
-using Sentium.Registry.Entities;
+using Npgsql;
 using Sentium.Registry.Data;
+using Sentium.Registry.Entities;
 
 namespace Sentium.Registry.Features.Settings;
 
 internal sealed class SettingsRepository(RegistryDbContext db) : ISettingsRepository
 {
     public Task<SystemSettings?> FindAsync(Guid? userId, CancellationToken ct = default)
-        => db.SystemSettings.FirstOrDefaultAsync(s => s.UserId == userId, ct);
+        => db.SystemSettings.AsNoTracking().FirstOrDefaultAsync(s => s.UserId == userId, ct);
 
-    public async Task AddAsync(SystemSettings entity, CancellationToken ct = default)
+    public async Task<bool> TryAddAsync(SystemSettings entity, CancellationToken ct = default)
     {
         db.SystemSettings.Add(entity);
-        await db.SaveChangesAsync(ct);
+
+        try
+        {
+            await db.SaveChangesAsync(ct);
+            return true;
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is PostgresException { SqlState: PostgresErrorCodes.UniqueViolation })
+        {
+            db.ChangeTracker.Clear();
+            return false;
+        }
     }
 
-    public Task UpdateAsync(SystemSettings entity, CancellationToken ct = default)
+    public async Task<bool> TryUpdateAsync(SystemSettings entity, CancellationToken ct = default)
     {
-        return db.SystemSettings
-            .Where(s => s.Id == entity.Id)
+        var updated = await db.SystemSettings
+            .Where(s => s.Id == entity.Id && s.Version == entity.Version)
             .ExecuteUpdateAsync(setters => setters
                 .SetProperty(s => s.Settings, entity.Settings)
                 .SetProperty(s => s.UpdatedAt, entity.UpdatedAt)
                 .SetProperty(s => s.UpdatedBy, entity.UpdatedBy), ct);
+
+        return updated == 1;
     }
+
+    public Task RemoveAsync(Guid userId, CancellationToken ct = default)
+        => db.SystemSettings.Where(s => s.UserId == userId).ExecuteDeleteAsync(ct);
 }

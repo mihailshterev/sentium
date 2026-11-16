@@ -13,7 +13,6 @@ flowchart LR
     SBX["Sentium.Sandbox"]
 
     PG[("PostgreSQL + pgvector<br/>sentiumdb")]
-    REDIS[("Redis<br/>HybridCache L2")]
     OLL["llama-server<br/>chat router + embeddings"]
     BLOB[("Azurite<br/>Blob storage")]
     DOCKER{{"Host Docker daemon"}}
@@ -25,8 +24,6 @@ flowchart LR
     PRX -->|"praxis schema"| PG
     NUN -->|"nuntius schema"| PG
 
-    WEB --> REDIS
-
     PRX -->|"agents"| OLL
     CDX -->|"embeddings"| OLL
     SEN -->|"semantic intent"| OLL
@@ -36,7 +33,6 @@ flowchart LR
     SBX -->|"socket: throwaway containers"| DOCKER
 
     VIG -.->|"TCP / HTTP probes"| PG
-    VIG -.-> REDIS
     VIG -.-> OLL
 ```
 

@@ -9,12 +9,12 @@ internal sealed class InMemoryRateLimitStore : IRateLimitStore
 {
     private readonly ConcurrentDictionary<string, Queue<long>> _windows = new(StringComparer.OrdinalIgnoreCase);
 
-    public bool TryConsume(string agentId, TimeSpan window, int maxRequests)
+    public bool TryConsume(string key, TimeSpan window, int maxRequests)
     {
         var now = DateTimeOffset.UtcNow.UtcTicks;
         var cutoff = now - window.Ticks;
 
-        var queue = _windows.GetOrAdd(agentId, _ => new Queue<long>());
+        var queue = _windows.GetOrAdd(key, _ => new Queue<long>());
 
         lock (queue)
         {
@@ -33,9 +33,9 @@ internal sealed class InMemoryRateLimitStore : IRateLimitStore
         }
     }
 
-    public int GetCurrentCount(string agentId, TimeSpan window)
+    public int GetCurrentCount(string key, TimeSpan window)
     {
-        if (!_windows.TryGetValue(agentId, out var queue))
+        if (!_windows.TryGetValue(key, out var queue))
         {
             return 0;
         }

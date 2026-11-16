@@ -1,4 +1,4 @@
-import { Activity, AudioLines, Bot, CalendarClock, Cpu, Home, Plug, ShieldCheck } from "lucide-react";
+import { Activity, AudioLines, Bot, CalendarClock, Cpu, Home, Plug, ShieldCheck, UserPlus } from "lucide-react";
 import type { SettingDefinition, SettingScope, SettingsSection, SettingValue } from "../types/settings";
 
 export const PROMPT_LIMIT = 16000;
@@ -291,6 +291,24 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
         keywords: ["sentinel", "pdp", "throttle", "quota"],
         control: { kind: "number", min: 1, unit: "s" },
         defaultValue: 60,
+      }),
+    ],
+  },
+  {
+    id: "access",
+    scope: "household",
+    group: "access",
+    title: "Access",
+    description: "Who can create an account on this installation.",
+    icon: UserPlus,
+    settings: [
+      setting("access", "registrationOpen", {
+        title: "Open registration",
+        description:
+          "Lets anyone who can reach the portal create a Member account. Keep it off and open it only while someone joins the household.",
+        keywords: ["register", "sign up", "account", "member", "invite", "users"],
+        control: { kind: "switch" },
+        defaultValue: false,
       }),
     ],
   },

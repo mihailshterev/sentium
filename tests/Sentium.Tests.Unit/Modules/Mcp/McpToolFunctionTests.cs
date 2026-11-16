@@ -144,7 +144,7 @@ public sealed class McpToolFunctionTests
         pdp.EvaluateAsync(Arg.Do<PolicyEvaluationRequest>(r => captured = r), Arg.Any<CancellationToken>())
             .Returns(new PolicyEvaluationResponse { Allowed = true, Effect = "Allow", Reason = "ok", Risk = "Low", AuditId = Guid.NewGuid(), Timestamp = DateTimeOffset.UtcNow });
 
-        var middleware = new SentinelFunctionMiddleware(new SentinelClient(pdp, NullLogger<SentinelClient>.Instance), new PdpContextAccessor(), NullLogger<SentinelFunctionMiddleware>.Instance);
+        var middleware = new SentinelFunctionMiddleware(pdp, new PdpContextAccessor(), NullLogger<SentinelFunctionMiddleware>.Instance);
 
         await middleware.InvokeAsync(
             new ChatClientAgent(Substitute.For<IChatClient>(), name: AgentRole.GeneralAssistant),

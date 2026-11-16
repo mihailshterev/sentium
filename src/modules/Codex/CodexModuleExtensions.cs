@@ -1,9 +1,10 @@
-using Microsoft.Extensions.AI;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Options;
 using Sentium.Codex.Contracts;
 using Sentium.Codex.Data;
 using Sentium.Codex.Features.Rag;
+using Sentium.Identity.Contracts;
 using Sentium.Infrastructure.Extensions;
 using Sentium.Infrastructure.Inference;
 
@@ -52,6 +53,7 @@ public static class CodexModuleExtensions
         services.AddScoped<EmbeddingReindexer>();
         services.AddHostedService<EmbeddingReindexService>();
         services.AddScoped<IDocumentIngestionService, DocumentIngestionService>();
+        services.AddSingleton<IUserRemovalObserver, CodexUserDataRemover>();
 
         services.AddHealthChecks().AddDbContextCheck<CodexDbContext>("codex-db", tags: [ModuleName]);
 

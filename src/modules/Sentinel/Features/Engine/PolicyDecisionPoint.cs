@@ -5,17 +5,33 @@ namespace Sentium.Sentinel.Features.Engine;
 
 /// <summary>
 /// In-process <see cref="IPolicyDecisionPoint"/>. Each evaluation runs in its own DI scope, so concurrent tool calls
-/// never share the audit <see cref="Data.SentinelDbContext"/>.
+/// never share the audit <see cref="Data.SentinelDbContext"/>. Fails closed: any fault outside the engine (which
+/// already denies on a policy fault) is a deny too, so callers never need their own guard.
 /// </summary>
-internal sealed class PolicyDecisionPoint(IServiceScopeFactory scopeFactory) : IPolicyDecisionPoint
+internal sealed class PolicyDecisionPoint(IServiceScopeFactory scopeFactory, ILogger<PolicyDecisionPoint> logger) : IPolicyDecisionPoint
 {
+    private const string UnavailableReason = "Sentinel PDP is unavailable. Request denied for safety.";
+
     public async Task<PolicyEvaluationResponse> EvaluateAsync(PolicyEvaluationRequest request, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(request);
 
+        try
+        {
+            return await EvaluateCoreAsync(request, ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogError(ex, "Sentinel PDP evaluation failed for agent '{AgentId}' skill '{Skill}'. Failing closed.", request.AgentId, request.SkillName);
+            return Deny(UnavailableReason, PolicyRiskLevel.Critical, "FailClosed");
+        }
+    }
+
+    private async Task<PolicyEvaluationResponse> EvaluateCoreAsync(PolicyEvaluationRequest request, CancellationToken ct)
+    {
         if (!Enum.TryParse<ResourceType>(request.ResourceType, ignoreCase: true, out var resourceType))
         {
-            return Deny($"Unknown resource type '{request.ResourceType}'. Valid values: {string.Join(", ", Enum.GetNames<ResourceType>())}");
+            return Deny($"Unknown resource type '{request.ResourceType}'. Valid values: {string.Join(", ", Enum.GetNames<ResourceType>())}", PolicyRiskLevel.High, "InvalidRequest");
         }
 
         var policyRequest = new PolicyRequest
@@ -27,6 +43,7 @@ internal sealed class PolicyDecisionPoint(IServiceScopeFactory scopeFactory) : I
             Action = request.Action,
             OriginalUserPrompt = request.OriginalUserPrompt,
             CorrelationId = request.CorrelationId,
+            UserId = request.UserId,
             Metadata = request.Metadata
         };
 
@@ -47,17 +64,17 @@ internal sealed class PolicyDecisionPoint(IServiceScopeFactory scopeFactory) : I
         };
     }
 
-    private static PolicyEvaluationResponse Deny(string reason)
+    private static PolicyEvaluationResponse Deny(string reason, PolicyRiskLevel risk, string trigger)
     {
         return new()
         {
             Allowed = false,
             Effect = nameof(PolicyEffect.Deny),
             Reason = reason,
-            Risk = nameof(PolicyRiskLevel.High),
+            Risk = risk.ToString(),
             AuditId = Guid.Empty,
             Timestamp = DateTimeOffset.UtcNow,
-            TriggeredPolicies = ["InvalidRequest"]
+            TriggeredPolicies = [trigger]
         };
     }
 }
