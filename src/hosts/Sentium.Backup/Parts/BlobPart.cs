@@ -7,7 +7,7 @@ using Sentium.Infrastructure.Storage;
 namespace Sentium.Backup.Parts;
 
 /// <summary>
-/// Copies every object of every bucket through the object storage API (see ADR 0004). Each object is read whole, so
+/// Copies every object of every bucket through the object storage API. Each object is read whole, so
 /// it is consistent on its own; an object written during the run may be missing and is picked up by the next one.
 /// An index entry's <see cref="BlobIndexEntry.Container"/> is the bucket name.
 /// </summary>
