@@ -81,7 +81,7 @@ Mapping old → new:
 - **Frontend** - `sentium-portal` (React), including its own login page, built into and served by
   Sentium.Web.
 - **Infrastructure** (all local, started by Aspire): PostgreSQL with pgvector (one database, one
-  schema per module), llama.cpp's `llama-server` (a chat-model router plus an embeddings server), Azurite.
+  schema per module), llama.cpp's `llama-server` (a chat-model router plus an embeddings server), SeaweedFS (S3-compatible object storage).
 
 ### AI Integration
 

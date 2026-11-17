@@ -7,10 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Azure.Storage.Blobs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <InternalsVisibleTo Include="Sentium.Tests.Unit" />
     <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
   </ItemGroup>

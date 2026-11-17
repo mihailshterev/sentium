@@ -57,7 +57,7 @@ sandbox) as containers, and Compose builds and runs everything in containers.
 
 The [.NET Aspire AppHost](../src/aspire/Sentium.AppHost/Program.cs) is the single entry point for
 local development. One command starts Sentium.Web, the Sandbox, the portal, and every backing
-dependency (PostgreSQL with pgvector, the llama.cpp inference servers, Azurite) as managed containers - with a
+dependency (PostgreSQL with pgvector, the llama.cpp inference servers, SeaweedFS object storage) as managed containers - with a
 live dashboard, hot reload, and automatic service discovery.
 
 ### Prerequisites
@@ -107,8 +107,12 @@ watch every resource start, stream logs, and follow the model downloads (the `mo
 ### What gets started
 
 Sentium.Web (all six modules), the Sandbox, the portal (`sentium-portal`), and the infrastructure
-(PostgreSQL with one `sentiumdb` database, Azurite, and the inference stack):
+(PostgreSQL with one `sentiumdb` database, SeaweedFS object storage, and the inference stack):
 
+- `storage` runs SeaweedFS, the S3-compatible object store for workspace files, sandbox artifacts and
+  inventory attachments, with generated `storage-access-key`/`storage-secret-key` parameters, in the
+  `…-storage-seaweedfs-data` volume (see [Object storage](#object-storage)). A leftover `…-storage-data` volume
+  belongs to the Azurite emulator it replaced and can be deleted.
 - `models-init` downloads the model files pinned in [`infra/llm/models.lock`](../infra/llm/models.lock)
   into the `sentium-llm-models` volume and verifies each SHA-256, then exits.
 - `llm` runs llama.cpp's `llama-server` in router mode for the chat models declared in
@@ -232,15 +236,15 @@ trust the installation's root certificate on each device.
 
 #### Infrastructure
 
-| Service       | Image                                                       | Host port(s)    | Purpose                                                                                                                                                                                                                         |
-| ------------- | ----------------------------------------------------------- | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `postgres`    | `pgvector/pgvector:pg18-trixie`                             | 127.0.0.1:5432  | Relational data + RAG vectors (pgvector) - one `sentiumdb` database, one schema per module (`identity`, `registry`, `sentinel`, `codex`, `locus`, `tempus`, `praxis`, `mcp`; the Quartz scheduler keeps its tables in `praxis`) |
-| `azurite`     | `mcr.microsoft.com/azure-storage/azurite:3.35.0`            | 127.0.0.1:10000 | Azure Blob Storage emulator (workspace files, sandbox artifacts & inventory attachments)                                                                                                                                        |
-| `models-init` | `curlimages/curl:8.22.0` (pinned digest)                    | -               | One-shot: downloads and checksum-verifies the model files from `infra/llm/models.lock`                                                                                                                                          |
-| `llm`         | `ghcr.io/ggml-org/llama.cpp:server-b11804` (pinned digest)  | 127.0.0.1:8090  | Chat models: `llama-server` in router mode, presets from `infra/llm/models.ini`                                                                                                                                                 |
-| `embeddings`  | `ghcr.io/ggml-org/llama.cpp:server-b11804` (pinned digest)  | 127.0.0.1:8091  | The RAG embedding model (768 dimensions)                                                                                                                                                                                        |
-| `whisper`     | `ghcr.io/ggml-org/whisper.cpp` (pinned digest)              | -               | Speech-to-text for push-to-talk (CPU); Whisper `base.en` from `infra/llm/models.lock`. Optional, see [Voice](#voice)                                                                                                            |
-| `tts`         | `ghcr.io/remsky/kokoro-fastapi-cpu:v0.10.0` (pinned digest) | -               | Text-to-speech for spoken replies (CPU); the Kokoro model is part of the image. Optional, see [Voice](#voice)                                                                                                                   |
+| Service       | Image                                                       | Host port(s)   | Purpose                                                                                                                                                                                                                         |
+| ------------- | ----------------------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `postgres`    | `pgvector/pgvector:pg18-trixie`                             | 127.0.0.1:5432 | Relational data + RAG vectors (pgvector) - one `sentiumdb` database, one schema per module (`identity`, `registry`, `sentinel`, `codex`, `locus`, `tempus`, `praxis`, `mcp`; the Quartz scheduler keeps its tables in `praxis`) |
+| `storage`     | `chrislusf/seaweedfs:4.54` (pinned digest)                  | -              | S3-compatible object storage (workspace files, sandbox artifacts & inventory attachments); see [Object storage](#object-storage)                                                                                                |
+| `models-init` | `curlimages/curl:8.22.0` (pinned digest)                    | -              | One-shot: downloads and checksum-verifies the model files from `infra/llm/models.lock`                                                                                                                                          |
+| `llm`         | `ghcr.io/ggml-org/llama.cpp:server-b11804` (pinned digest)  | 127.0.0.1:8090 | Chat models: `llama-server` in router mode, presets from `infra/llm/models.ini`                                                                                                                                                 |
+| `embeddings`  | `ghcr.io/ggml-org/llama.cpp:server-b11804` (pinned digest)  | 127.0.0.1:8091 | The RAG embedding model (768 dimensions)                                                                                                                                                                                        |
+| `whisper`     | `ghcr.io/ggml-org/whisper.cpp` (pinned digest)              | -              | Speech-to-text for push-to-talk (CPU); Whisper `base.en` from `infra/llm/models.lock`. Optional, see [Voice](#voice)                                                                                                            |
+| `tts`         | `ghcr.io/remsky/kokoro-fastapi-cpu:v0.10.0` (pinned digest) | -              | Text-to-speech for spoken replies (CPU); the Kokoro model is part of the image. Optional, see [Voice](#voice)                                                                                                                   |
 
 #### Application services
 
@@ -300,7 +304,8 @@ runtime.
 | `SPEECH_TRANSCRIPTION_ENDPOINT` | `http://whisper:8080`  | Speech-to-text server. Set it to empty to switch push-to-talk off.                      |
 | `SPEECH_SYNTHESIS_ENDPOINT`     | `http://tts:8880`      | Text-to-speech server. Set it to empty to switch spoken replies off.                    |
 | `SANDBOX_JOBS_DIR`              | `/tmp/sentium-sandbox` | Per-job sandbox working directory - identical on host and inside the Sandbox container. |
-| `AZURITE_CONNECTION`            | _(well-known dev key)_ | Azurite blob connection string. Safe to leave as-is.                                    |
+| `STORAGE_ACCESS_KEY`            | _(required)_           | S3 access key of the `storage` service. Hex only (`openssl rand -hex 20`).              |
+| `STORAGE_SECRET_KEY`            | _(required)_           | S3 secret key of the `storage` service. Hex only (`openssl rand -hex 32`).              |
 | `BACKUP_DESTINATION`            | `./backups`            | Host directory for backup archives, typically a NAS mount. See [Backups](#backups).     |
 | `BACKUP_TIME`                   | `03:00`                | Local time of the nightly backup, in `BACKUP_TIMEZONE`.                                 |
 | `BACKUP_TIMEZONE`               | `UTC`                  | IANA time zone for `BACKUP_TIME` (for example `Europe/Sofia`).                          |
@@ -333,9 +338,11 @@ expect slower responses; for Aspire, set `Llm:UseGpu=false`.
 Both .NET images run as **root**. The **Sandbox** needs it to drive the host Docker socket; Sentium.Web
 no longer reads a mounted certificate, but its image does not switch to the non-root `app` user yet.
 
-The two privileged sidecars sit on their own internal networks (no internet route): `sandbox` on
-`sentium-sandbox` with only `sentium-web` and `azurite`, `backup` on `sentium-backup` with only `sentium-web`,
-`postgres` and `azurite`. No other container (the inference servers, speech, SearXNG, Caddy) can reach them.
+The two privileged sidecars and the object store sit on their own internal networks (no internet route):
+`sandbox` on `sentium-sandbox` with only `sentium-web`, `backup` on `sentium-backup` with only `sentium-web` and
+`postgres`, and `storage` on `sentium-storage` with only `sentium-web`, `sandbox` and `backup`. No other container
+(the inference servers, speech, SearXNG, Caddy) can reach them. `storage` publishes no port: only its S3 API
+checks credentials, its internal SeaweedFS ports do not.
 
 ### Voice
 
@@ -637,11 +644,29 @@ docker compose down -v
 docker compose up -d models-init && docker compose restart llm embeddings
 ```
 
-Persisted state lives in named volumes: `postgres-data`, `azurite-data`,
+Persisted state lives in named volumes: `postgres-data`, `storage-data`,
 `web-dataprotection`, `caddy-data` (the installation's certificate authority) and `sentium-llm-models`
 (the verified model files, shared with the Aspire AppHost). They survive `docker compose down` and are
 only removed by `down -v`, which also deletes the downloaded models and creates a **new CA** on the next
 start - every device then has to trust the new root certificate.
+
+### Object storage
+
+Files live in the `storage` service: SeaweedFS in single-process mode, speaking the S3 API on port 8333 inside
+`sentium-storage` (see [ADR 0005](adr/0005-seaweedfs-replaces-azurite-behind-an-s3-object-store.md)). There are
+three buckets, created on first write: `workspace-storage`, `sandbox-artifacts` and `locus-attachments`.
+
+- **Health.** Compose waits for `/healthz` before starting `sentium-web`, `sandbox` and `backup`. Sentium.Web's
+  `/health` includes an `object-storage` check that signs a real request, and Vigil has an `Object storage` target.
+  By hand: `docker compose exec storage wget -qO- http://127.0.0.1:8333/healthz`.
+- **Credentials.** `STORAGE_ACCESS_KEY` and `STORAGE_SECRET_KEY` in `.env` are the only identity. To rotate them,
+  change both and run `docker compose up -d`; stored objects are unaffected and the old key stops working.
+- **Backups.** The [backup service](#backups) copies every object through the S3 API. Do not copy the
+  `storage-data` volume while it is running; SeaweedFS's index and data files can disagree mid-write.
+- **Disk.** Deleted objects are reclaimed by SeaweedFS's vacuum (every 14 minutes once a volume is 30% garbage),
+  so disk usage drops with a delay.
+- **Upgrading SeaweedFS.** Change the digest in `docker-compose.yml`, `StorageConfig` (Aspire) and
+  `e2e/compose.e2e.yaml` together, and run `dotnet test tests/Sentium.Tests.Integration --filter ObjectStoreContract`.
 
 ---
 
@@ -685,7 +710,7 @@ Compose installation.
 | Part                 | Source                                                           | Why                                                      |
 | -------------------- | ---------------------------------------------------------------- | -------------------------------------------------------- |
 | Database             | `pg_dump -Fc` of `sentiumdb`: every module schema, Quartz tables | All application state and schedules                      |
-| Blobs                | Every Azurite container, copied through the blob API             | Inventory photos, workspace files, sandbox artifacts     |
+| Blobs                | Every bucket of the object store, copied through the S3 API      | Inventory photos, workspace files, sandbox artifacts     |
 | Data-protection keys | The `web-dataprotection` volume                                  | Sign-in cookies and MCP server secrets encrypted at rest |
 | Manifest             | Generated                                                        | Sentium version, time, and the size and SHA-256 per part |
 
@@ -765,7 +790,7 @@ first). It restores into an empty installation; `--replace` discards the current
    # encrypted archives need the identity file:
    infra/backup/restore.sh /mnt/nas/sentium-backups/sentium-20261115T030000Z.tar.age --identity ~/sentium-backup.key
    ```
-   It starts `postgres` and `azurite`, restores the database in a single transaction, then the blobs and the
+   It starts `postgres` and `storage`, restores the database in a single transaction, then the blobs and the
    keys. If the files fail after the database succeeded, run it again with `--replace`.
 4. Start the stack with `docker compose up -d`. Sentium.Web applies any newer database migrations on startup.
 
@@ -875,5 +900,5 @@ Both full-stack methods are functionally equivalent. The intentional differences
 | Backups           | Sidecar to `backups/` in the repo; no key ring in it   | The `backup` service to `BACKUP_DESTINATION`; see [Backups](#backups)                                       |
 
 Everything else - Sentium.Web and its six modules, the separate Sandbox, the single PostgreSQL
-database (with pgvector), Azurite, the `X-Internal-Token` security model, per-user data isolation, the Sentinel PDP, the
+database (with pgvector), the SeaweedFS object store, the `X-Internal-Token` security model, per-user data isolation, the Sentinel PDP, the
 pinned llama.cpp build, and the default `gemma-4-e4b` / `embeddinggemma-2` models - matches between the two setups exactly.

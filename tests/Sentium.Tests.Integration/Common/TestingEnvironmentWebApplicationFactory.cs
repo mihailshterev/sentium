@@ -24,7 +24,7 @@ public sealed class TestingEnvironmentWebApplicationFactory : MonolithWebApplica
         builder.ConfigureAppConfiguration((_, configuration) => configuration.AddInMemoryCollection(new Dictionary<string, string?>
         {
             [$"ConnectionStrings:{ResourceNames.SentiumDb}"] = new NpgsqlConnectionStringBuilder(DatabaseConnectionString) { Database = "sentiumdb_e2e" }.ConnectionString,
-            [$"ConnectionStrings:{ResourceNames.WorkspaceBlobs}"] = "UseDevelopmentStorage=true",
+            [$"ConnectionStrings:{ResourceNames.WorkspaceBlobs}"] = UnusedObjectStoreConnectionString,
         }));
     }
 }

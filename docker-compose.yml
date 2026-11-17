@@ -21,6 +21,10 @@ x-llama-server: &llama-server
       condition: service_completed_successfully
   restart: unless-stopped
 
+# S3 connection string for the object store (see the storage service). sentium-web, the sandbox and the backup
+# sidecar all use it; the keys must not contain ";".
+x-storage-connection: &storage-connection Endpoint=http://storage:8333;AccessKey=${STORAGE_ACCESS_KEY};SecretKey=${STORAGE_SECRET_KEY}
+
 # The backup sidecar (see "Backups" in docs/installation.md). Shared by the nightly service and the one-shot restore.
 x-backup: &backup
   image: sentium-backup:local
@@ -33,7 +37,7 @@ x-backup: &backup
     PGUSER: postgres
     PGPASSWORD: ${POSTGRES_PASSWORD}
     PGDATABASE: sentiumdb
-    ConnectionStrings__workspace-storage: ${AZURITE_CONNECTION}
+    ConnectionStrings__workspace-storage: *storage-connection
     Backup__TimeOfDay: ${BACKUP_TIME:-03:00}
     Backup__KeepDaily: ${BACKUP_KEEP_DAILY:-7}
     Backup__KeepWeekly: ${BACKUP_KEEP_WEEKLY:-4}
@@ -49,6 +53,7 @@ x-backup: &backup
     - no-new-privileges:true
   networks:
     - sentium-backup
+    - sentium-storage
 
 services:
   postgres:
@@ -71,17 +76,45 @@ services:
       start_period: 10s
     restart: unless-stopped
 
-  azurite:
-    image: mcr.microsoft.com/azure-storage/azurite:3.35.0
-    command: ["azurite", "--blobHost", "0.0.0.0", "--queueHost", "0.0.0.0", "--tableHost", "0.0.0.0", "-l", "/data"]
-    ports:
-      - "127.0.0.1:10000:10000"
+  # S3-compatible object storage: SeaweedFS in single-process mode (master, volume, filer and S3 gateway), pinned by
+  # digest. Holds workspace files, sandbox artifacts and inventory attachments (see ADR 0005). Only the S3 API is
+  # authenticated, so the store sits alone on the internal sentium-storage network with no published port; telemetry
+  # and the WebDAV, admin UI, Iceberg and Lance front ends are off. The entrypoint drops to the seaweed user.
+  storage:
+    image: chrislusf/seaweedfs:4.54@sha256:4b42c212543a0acd4c0e675215ecdcaf62a186ef98def76c7e12701871222d15
+    command:
+      - mini
+      - -dir=/data
+      - -ip=127.0.0.1
+      - -ip.bind=0.0.0.0
+      - -master.telemetry=false
+      - -admin.ui=false
+      - -webdav=false
+      - -s3.port.iceberg=0
+      - -s3.port.lance=0
+    environment:
+      AWS_ACCESS_KEY_ID: ${STORAGE_ACCESS_KEY:?Set STORAGE_ACCESS_KEY in .env (see .env.example)}
+      AWS_SECRET_ACCESS_KEY: ${STORAGE_SECRET_KEY:?Set STORAGE_SECRET_KEY in .env (see .env.example)}
     volumes:
-      - azurite-data:/data
+      - storage-data:/data
     networks:
-      - default
-      - sentium-sandbox
-      - sentium-backup
+      - sentium-storage
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETGID
+      - SETUID
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8333/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
     restart: unless-stopped
 
   # One-shot: downloads the model files pinned in infra/llm/models.lock and verifies their SHA-256
@@ -245,7 +278,7 @@ services:
     environment:
       <<: *service-env
       ConnectionStrings__sentiumdb: Host=postgres;Port=5432;Database=sentiumdb;Username=postgres;Password=${POSTGRES_PASSWORD}
-      ConnectionStrings__workspace-storage: ${AZURITE_CONNECTION}
+      ConnectionStrings__workspace-storage: *storage-connection
       Inference__ChatEndpoint: http://llm:8080
       Inference__EmbeddingEndpoint: http://embeddings:8080
       Inference__ApiKey: ${LLM_API_KEY}
@@ -268,11 +301,12 @@ services:
       - default
       - sentium-sandbox
       - sentium-backup
+      - sentium-storage
     depends_on:
       postgres:
         condition: service_healthy
-      azurite:
-        condition: service_started
+      storage:
+        condition: service_healthy
       llm:
         condition: service_healthy
       embeddings:
@@ -289,7 +323,7 @@ services:
     extra_hosts: *extra-hosts
     environment:
       <<: *service-env
-      ConnectionStrings__workspace-storage: ${AZURITE_CONNECTION}
+      ConnectionStrings__workspace-storage: *storage-connection
       DOCKER_HOST: unix:///var/run/docker.sock
       Sandbox__DockerHost: unix:///var/run/docker.sock
       Sandbox__JobBaseDirectory: ${SANDBOX_JOBS_DIR:-/tmp/sentium-sandbox}
@@ -300,9 +334,10 @@ services:
       - ${SANDBOX_JOBS_DIR:-/tmp/sentium-sandbox}:${SANDBOX_JOBS_DIR:-/tmp/sentium-sandbox}
     networks:
       - sentium-sandbox
+      - sentium-storage
     depends_on:
-      azurite:
-        condition: service_started
+      storage:
+        condition: service_healthy
     restart: unless-stopped
 
   # Nightly backups of the database, blobs and data-protection keys to BACKUP_DESTINATION. It holds the database
@@ -316,8 +351,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      azurite:
-        condition: service_started
+      storage:
+        condition: service_healthy
     restart: unless-stopped
 
   # One-shot restore, run only by infra/backup/restore.sh while the application containers are stopped.
@@ -330,17 +365,20 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      azurite:
-        condition: service_started
+      storage:
+        condition: service_healthy
     restart: "no"
 
 networks:
-  # Internal networks (`internal: true`: no route to the internet) that keep the two privileged sidecars away from
-  # every other container. sentium-sandbox: sentium-web calls the Sandbox, which reaches azurite for artifacts.
-  # sentium-backup: sentium-web calls the Backup service, which reads postgres and azurite.
+  # Internal networks (`internal: true`: no route to the internet) that keep the two privileged sidecars and the
+  # object store away from every other container. sentium-sandbox: sentium-web calls the Sandbox.
+  # sentium-backup: sentium-web calls the Backup service, which reads postgres. sentium-storage: only sentium-web, the
+  # Sandbox (artifacts) and the Backup service reach the object store.
   sentium-sandbox:
     internal: true
   sentium-backup:
+    internal: true
+  sentium-storage:
     internal: true
 
   # Sandbox MCP containers may join this network (SANDBOX_MCP_ALLOWED_NETWORK). `internal: true` means no route to the
@@ -352,7 +390,8 @@ networks:
 
 volumes:
   postgres-data:
-  azurite-data:
+  # Object storage (SeaweedFS). Back it up through the backup service, not by copying the volume.
+  storage-data:
   web-dataprotection:
   # Caddy's CA (root and intermediate keys) and issued certificates. Deleting it creates a new CA, which every
   # device then has to trust again.

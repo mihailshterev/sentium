@@ -142,6 +142,9 @@ public sealed class AppHostTests
         // Assert - the sidecar dumps sentiumdb and copies the blobs; Sentium.Web probes it and offers "back up now".
         backupEnv.Should().ContainKey($"ConnectionStrings__{ResourceNames.SentiumDb}");
         backupEnv.Should().ContainKey($"ConnectionStrings__{ResourceNames.WorkspaceBlobs}");
+        appHost.Resources.OfType<IResourceWithConnectionString>().Single(r => r.Name == ResourceNames.WorkspaceBlobs)
+            .ConnectionStringExpression.ValueExpression.Should()
+            .Be($"Endpoint={{{ResourceNames.Storage}.bindings.http.url}};AccessKey={{storage-access-key.value}};SecretKey={{storage-secret-key.value}}");
         backupEnv.Should().ContainKey(EnvConfig.Keys.InternalApiKey);
         webEnv.Should().ContainKey(EnvConfig.Keys.Backup.Endpoint)
             .WhoseValue.Should().Contain($"{{{ResourceNames.Backup}.bindings.http.url}}");

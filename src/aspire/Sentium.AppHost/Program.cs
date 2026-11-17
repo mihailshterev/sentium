@@ -19,10 +19,33 @@ postgres.WithVolume(VolumeNameGenerator.Generate(postgres, "data"), "/var/lib/po
 
 var sentiumDb = postgres.AddDatabase(ResourceNames.SentiumDb);
 
-var storage = builder.AddAzureStorage(ResourceNames.Storage)
-    .RunAsEmulator(azurite => azurite.WithDataVolume());
+// S3-compatible object storage (SeaweedFS). The modules reach it through the workspace-storage connection string.
+var storageAccessKey = builder.AddParameter(
+    "storage-access-key",
+    new GenerateParameterDefault { MinLength = 20, Special = false },
+    secret: true,
+    persist: true);
 
-var blobs = storage.AddBlobs(ResourceNames.WorkspaceBlobs);
+var storageSecretKey = builder.AddParameter(
+    "storage-secret-key",
+    new GenerateParameterDefault { MinLength = 40, Special = false },
+    secret: true,
+    persist: true);
+
+var storage = builder.AddContainer(ResourceNames.Storage, StorageConfig.Image, StorageConfig.Tag)
+    .WithImageSHA256(StorageConfig.Digest)
+    .WithHttpEndpoint(targetPort: StorageConfig.S3Port, name: "http")
+    .WithEnvironment(StorageConfig.AccessKeyEnv, storageAccessKey)
+    .WithEnvironment(StorageConfig.SecretKeyEnv, storageSecretKey)
+    .WithArgs(StorageConfig.Args)
+    .WithHttpHealthCheck(StorageConfig.HealthPath);
+
+storage.WithVolume(VolumeNameGenerator.Generate(storage, StorageConfig.VolumeSuffix), StorageConfig.DataPath);
+
+var blobs = builder.AddConnectionString(
+    ResourceNames.WorkspaceBlobs,
+    ReferenceExpression.Create(
+        $"Endpoint={storage.GetEndpoint("http")};AccessKey={storageAccessKey.Resource};SecretKey={storageSecretKey.Resource}"));
 
 // Local inference: llama.cpp's llama-server, as a router for the chat models declared in infra/llm/models.ini
 // plus a dedicated embeddings server. Model files are fetched and checksum-verified from
@@ -107,7 +130,7 @@ var dockerHost = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
 
 var web = builder.AddProject<Projects.Sentium_Web>(ServiceNames.Web)
     .WithReference(sentiumDb).WaitFor(sentiumDb)
-    .WithReference(blobs).WaitFor(blobs)
+    .WithReference(blobs).WaitFor(storage)
     .WaitFor(llm)
     .WaitFor(embeddings)
     .WithEnvironment(EnvConfig.Keys.Inference.ChatEndpoint, llm.GetEndpoint("http"))
@@ -138,7 +161,7 @@ if (whisper is not null && tts is not null)
 var egressNetwork = builder.Configuration[SearxngConfig.EgressNetworkKey] ?? SearxngConfig.EgressNetwork;
 
 var sandbox = builder.AddProject<Projects.Sentium_Sandbox>(ServiceNames.Sandbox)
-    .WithReference(blobs).WaitFor(blobs)
+    .WithReference(blobs).WaitFor(storage)
     .WithEnvironment(EnvConfig.Keys.DockerHost, dockerHost)
     .WithEnvironment(EnvConfig.Keys.InternalApiKey, internalApiKey)
     .WithEnvironment(EnvConfig.Keys.SandboxMcp.Enabled, builder.Configuration["Mcp:SandboxEnabled"] ?? "true")
@@ -191,7 +214,7 @@ IResourceBuilder<ContainerResource> AddBackup()
     return builder.AddDockerfile(ResourceNames.Backup, BackupConfig.ContextPath, BackupConfig.DockerfilePath)
         .WithHttpEndpoint(targetPort: BackupConfig.ContainerPort, name: "http")
         .WithReference(sentiumDb).WaitFor(sentiumDb)
-        .WithReference(blobs).WaitFor(blobs)
+        .WithReference(blobs).WaitFor(storage)
         .WithEnvironment(EnvConfig.Keys.InternalApiKey, internalApiKey)
         .WithBindMount(destination, BackupConfig.DestinationPath)
         .WithVolume(BackupConfig.KeysVolume, BackupConfig.KeysPath, isReadOnly: true)

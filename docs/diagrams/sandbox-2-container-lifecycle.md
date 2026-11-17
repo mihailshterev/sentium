@@ -5,7 +5,7 @@ sequenceDiagram
     participant JD as JobDirectoryService
     participant DK as Docker daemon
     participant AS as ArtifactService
-    participant BL as Blob Storage (Azurite)
+    participant BL as Object Storage (SeaweedFS)
 
     DR->>JD: Create job directory + write code/files
     DR->>DK: (optional) Pull worker image
@@ -20,7 +20,7 @@ sequenceDiagram
     opt Harvest artifacts
         DR->>AS: Harvest(new files)
         AS->>BL: Upload artifacts
-        AS-->>DR: list of blob URIs
+        AS-->>DR: artifact references (s3://bucket/key)
     end
     DR->>DK: Remove the container (finally)
     DR->>JD: Cleanup the directory (finally)

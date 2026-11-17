@@ -1,19 +1,16 @@
-using Azure.Storage.Blobs;
-using Azure.Storage.Blobs.Models;
 using Microsoft.Extensions.Options;
+using Sentium.Infrastructure.Storage;
 using Sentium.Sandbox.Options;
 using Sentium.Sandbox.Models;
 
 namespace Sentium.Sandbox.Artifacts;
 
 /// <summary>
-/// Harvests output artifacts from a completed job directory and uploads them to Azure Blob Storage.
-/// <para>
-/// Blob path layout: <c>{container}/{jobId:N}/{relativeFilePath}</c>
-/// </para>
+/// Harvests output artifacts from a completed job directory and uploads them to object storage, as
+/// <c>{bucket}/{jobId:N}/{relativeFilePath}</c>. Each artifact is referenced by its <see cref="ObjectUri"/>.
 /// </summary>
 internal sealed class ArtifactService(
-    BlobServiceClient blobServiceClient,
+    IObjectStore objectStore,
     IOptions<SandboxOptions> options,
     ILogger<ArtifactService> logger) : IArtifactService
 {
@@ -71,9 +68,6 @@ internal sealed class ArtifactService(
             return [];
         }
 
-        var container = blobServiceClient.GetBlobContainerClient(opts.ArtifactContainerName);
-        await container.CreateIfNotExistsAsync(cancellationToken: ct);
-
         var allFiles = Directory.EnumerateFiles(jobDirectory, "*", HarvestEnumeration);
         var artifacts = new List<ArtifactRecord>();
 
@@ -107,24 +101,21 @@ internal sealed class ArtifactService(
 
             try
             {
-                var blobClient = container.GetBlobClient(blobName);
-
                 await using var fileStream = File.OpenRead(absolutePath);
 
-                await blobClient.UploadAsync(fileStream, new BlobUploadOptions
-                {
-                    HttpHeaders = new BlobHttpHeaders { ContentType = mimeType }
-                }, ct);
+                await objectStore.PutAsync(opts.ArtifactContainerName, blobName, fileStream, mimeType, ct: ct);
 
+                var blobUri = ObjectUri.Create(opts.ArtifactContainerName, blobName);
                 artifacts.Add(new ArtifactRecord
                 {
                     FileName = relativePath,
                     MimeType = mimeType,
-                    BlobUri = blobClient.Uri,
+                    BlobUri = blobUri,
+                    Key = blobName,
                     SizeBytes = fileInfo.Length
                 });
 
-                logger.LogInformation("Harvested artifact '{RelativePath}' ({SizeBytes:N0} bytes) → {BlobUri}", relativePath, fileInfo.Length, blobClient.Uri);
+                logger.LogInformation("Harvested artifact '{RelativePath}' ({SizeBytes:N0} bytes) → {BlobUri}", relativePath, fileInfo.Length, blobUri);
             }
             catch (OperationCanceledException)
             {

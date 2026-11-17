@@ -1,4 +1,3 @@
-using Azure.Storage.Blobs;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Sentium.Backup.Options;
 using Sentium.Backup.Parts;
@@ -96,9 +95,7 @@ internal static class Program
 
         PostgresEnvironment.ApplyConnectionString(builder.Configuration);
 
-        var blobConnection = builder.Configuration.GetConnectionString(ResourceNames.WorkspaceBlobs)
-            ?? throw new InvalidOperationException($"ConnectionStrings:{ResourceNames.WorkspaceBlobs} is not set.");
-        builder.Services.AddSingleton(new BlobServiceClient(blobConnection));
+        builder.AddSentiumObjectStore(ResourceNames.WorkspaceBlobs);
         builder.Services.AddSingleton<BlobPart>();
         builder.Services.AddSingleton<KeysPart>();
     }

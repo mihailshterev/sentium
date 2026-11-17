@@ -1,7 +1,7 @@
-using Azure.Storage.Blobs;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using NSubstitute;
+using Sentium.Infrastructure.Storage;
 using Sentium.Praxis.Features.Storage;
 using Sentium.Tests.Integration.Common;
 
@@ -15,9 +15,9 @@ public sealed class WorkspaceApiFactory : MonolithWebApplicationFactory
         builder.ConfigureServices(services =>
         {
             services.RemoveAll<ILocalFileService>();
-            services.RemoveAll<BlobServiceClient>();
+            services.RemoveAll<IObjectStore>();
             services.AddSingleton(Substitute.For<ILocalFileService>());
-            services.AddSingleton(Substitute.For<BlobServiceClient>());
+            services.AddSingleton(Substitute.For<IObjectStore>());
         });
     }
 }

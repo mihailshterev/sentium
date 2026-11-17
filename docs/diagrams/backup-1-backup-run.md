@@ -6,7 +6,7 @@ sequenceDiagram
     participant BR as BackupRunner
     participant DST as Destination (/backups)
     participant PG as PostgreSQL (sentiumdb)
-    participant AZ as Azurite (blob API)
+    participant AZ as SeaweedFS (S3 API)
     participant K as /keys (key ring, read-only)
 
     SCH->>SCH: Wait for next TimeOfDay (container TZ)
@@ -19,7 +19,7 @@ sequenceDiagram
     else Destination ready
         BR->>DST: Remove leftover .work-* and *.partial
         BR->>PG: pg_dump -Fc → .work-ts/database.dump
-        BR->>AZ: List containers and blobs, download each
+        BR->>AZ: List buckets and objects, download each
         BR->>DST: .work-ts/blobs.tar (data/NNNNNN + index.json last)
         BR->>K: Read key files
         BR->>DST: .work-ts/keys.tar

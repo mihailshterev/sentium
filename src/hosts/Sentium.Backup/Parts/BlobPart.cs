@@ -1,18 +1,17 @@
 using System.Formats.Tar;
 using System.Globalization;
 using System.Text.Json;
-using Azure;
-using Azure.Storage.Blobs;
-using Azure.Storage.Blobs.Models;
 using Sentium.Backup.Tools;
+using Sentium.Infrastructure.Storage;
 
 namespace Sentium.Backup.Parts;
 
 /// <summary>
-/// Copies every blob of every container through the blob API (see ADR 0004). Each blob is read whole, so it is
-/// consistent on its own; a blob written during the run may be missing and is picked up by the next one.
+/// Copies every object of every bucket through the object storage API (see ADR 0004). Each object is read whole, so
+/// it is consistent on its own; an object written during the run may be missing and is picked up by the next one.
+/// The archive keeps the blob-era names: an index entry's <see cref="BlobIndexEntry.Container"/> is the bucket.
 /// </summary>
-internal sealed class BlobPart(BlobServiceClient blobs, ILogger<BlobPart> logger)
+internal sealed class BlobPart(IObjectStore store, ILogger<BlobPart> logger)
 {
     private const string IndexEntryName = "index.json";
     private const string DataEntryPrefix = "data/";
@@ -29,26 +28,26 @@ internal sealed class BlobPart(BlobServiceClient blobs, ILogger<BlobPart> logger
         await using (var output = File.Create(tarPath))
         await using (var writer = new TarWriter(output, TarEntryFormat.Pax, leaveOpen: false))
         {
-            await foreach (var container in blobs.GetBlobContainersAsync(cancellationToken: ct))
+            await foreach (var bucket in store.ListBucketsAsync(ct))
             {
-                var containerClient = blobs.GetBlobContainerClient(container.Name);
-                await foreach (var item in containerClient.GetBlobsAsync(new GetBlobsOptions { Traits = BlobTraits.Metadata }, ct))
+                await foreach (var key in store.ListKeysAsync(bucket, ct: ct))
                 {
                     var entryName = DataEntryPrefix + index.Count.ToString("D6", CultureInfo.InvariantCulture);
-                    if (!await TryDownloadAsync(containerClient.GetBlobClient(item.Name), scratchFile, ct))
+                    var stored = await TryDownloadAsync(bucket, key, scratchFile, ct);
+                    if (stored is null)
                     {
-                        logger.LogInformation("Blob {Container}/{Blob} was deleted during the backup; skipping it", container.Name, item.Name);
+                        logger.LogInformation("Blob {Container}/{Blob} was deleted during the backup; skipping it", bucket, key);
                         continue;
                     }
 
                     await writer.WriteEntryAsync(scratchFile, entryName, ct);
                     index.Add(new BlobIndexEntry(
                         entryName,
-                        container.Name,
-                        item.Name,
+                        bucket,
+                        key,
                         new FileInfo(scratchFile).Length,
-                        item.Properties.ContentType,
-                        item.Metadata));
+                        stored.ContentType,
+                        new Dictionary<string, string>(stored.Metadata)));
                 }
             }
 
@@ -62,7 +61,6 @@ internal sealed class BlobPart(BlobServiceClient blobs, ILogger<BlobPart> logger
     public async Task<int> ImportAsync(string tarPath, CancellationToken ct)
     {
         var index = (await ReadIndexAsync(tarPath, ct)).ToDictionary(e => e.Entry, StringComparer.Ordinal);
-        var created = new HashSet<string>(StringComparer.Ordinal);
         var restored = 0;
 
         await using var input = File.OpenRead(tarPath);
@@ -74,17 +72,13 @@ internal sealed class BlobPart(BlobServiceClient blobs, ILogger<BlobPart> logger
                 continue;
             }
 
-            var container = blobs.GetBlobContainerClient(blob.Container);
-            if (created.Add(blob.Container))
-            {
-                await container.CreateIfNotExistsAsync(cancellationToken: ct);
-            }
-
-            await container.GetBlobClient(blob.Name).UploadAsync(entry.DataStream, new BlobUploadOptions
-            {
-                HttpHeaders = new BlobHttpHeaders { ContentType = blob.ContentType },
-                Metadata = blob.Metadata
-            }, ct);
+            await store.PutAsync(
+                blob.Container,
+                blob.Name,
+                entry.DataStream,
+                blob.ContentType,
+                blob.Metadata?.AsReadOnly(),
+                ct);
             restored++;
         }
 
@@ -97,7 +91,7 @@ internal sealed class BlobPart(BlobServiceClient blobs, ILogger<BlobPart> logger
     }
 
     /// <summary>
-    /// Waits for the blob service, which may still be starting when a restore begins.
+    /// Waits for the object store, which may still be starting when a restore begins.
     /// </summary>
     public async Task WaitUntilReachableAsync(CancellationToken ct)
     {
@@ -105,7 +99,7 @@ internal sealed class BlobPart(BlobServiceClient blobs, ILogger<BlobPart> logger
         {
             try
             {
-                await blobs.GetPropertiesAsync(ct);
+                await store.PingAsync(ct);
                 return;
             }
             catch (Exception ex) when (ex is not OperationCanceledException && attempt < ReadinessAttempts)
@@ -117,9 +111,9 @@ internal sealed class BlobPart(BlobServiceClient blobs, ILogger<BlobPart> logger
 
     public async Task<bool> HasAnyBlobAsync(CancellationToken ct)
     {
-        await foreach (var container in blobs.GetBlobContainersAsync(cancellationToken: ct))
+        await foreach (var bucket in store.ListBucketsAsync(ct))
         {
-            await foreach (var _ in blobs.GetBlobContainerClient(container.Name).GetBlobsAsync(cancellationToken: ct))
+            await foreach (var _ in store.ListKeysAsync(bucket, ct: ct))
             {
                 return true;
             }
@@ -128,25 +122,38 @@ internal sealed class BlobPart(BlobServiceClient blobs, ILogger<BlobPart> logger
         return false;
     }
 
-    public async Task DeleteAllContainersAsync(CancellationToken ct)
+    /// <summary>
+    /// Empties every bucket. The buckets themselves stay; writes recreate any that are missing anyway.
+    /// </summary>
+    public async Task DeleteAllBlobsAsync(CancellationToken ct)
     {
-        await foreach (var container in blobs.GetBlobContainersAsync(cancellationToken: ct))
+        var buckets = new List<string>();
+        await foreach (var bucket in store.ListBucketsAsync(ct))
         {
-            await blobs.DeleteBlobContainerAsync(container.Name, cancellationToken: ct);
+            buckets.Add(bucket);
+        }
+
+        foreach (var bucket in buckets)
+        {
+            await store.DeletePrefixAsync(bucket, string.Empty, ct);
         }
     }
 
-    private static async Task<bool> TryDownloadAsync(BlobClient blob, string path, CancellationToken ct)
+    private async Task<StoredObject?> TryDownloadAsync(string bucket, string key, string path, CancellationToken ct)
     {
-        try
+        var stored = await store.OpenReadAsync(bucket, key, ct);
+        if (stored is null)
         {
-            await blob.DownloadToAsync(path, ct);
-            return true;
+            return null;
         }
-        catch (RequestFailedException ex) when (ex.Status == StatusCodes.Status404NotFound)
+
+        await using (stored.Content)
+        await using (var file = File.Create(path))
         {
-            return false;
+            await stored.Content.CopyToAsync(file, ct);
         }
+
+        return stored;
     }
 
     private static async Task WriteIndexAsync(TarWriter writer, List<BlobIndexEntry> index, CancellationToken ct)

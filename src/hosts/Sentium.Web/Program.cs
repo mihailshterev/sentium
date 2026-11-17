@@ -12,7 +12,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddServiceDefaults();
 builder.AddSentiumAuditLogging();
 
-builder.AddAzureBlobServiceClient(ResourceNames.WorkspaceBlobs);
+builder.AddSentiumObjectStore(ResourceNames.WorkspaceBlobs);
 
 builder.Services.AddHybridCache(options =>
 {

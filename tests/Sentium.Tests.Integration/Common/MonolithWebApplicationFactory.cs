@@ -21,6 +21,12 @@ public class MonolithWebApplicationFactory : WebApplicationFactory<Sentium.Web.P
     /// </summary>
     public const string InternalApiKey = "integration-test-internal-api-key";
 
+    /// <summary>
+    /// A well-formed connection string to an object store that is never reached: the client connects lazily, and
+    /// tests that store files replace <see cref="Sentium.Infrastructure.Storage.IObjectStore"/> or the module store.
+    /// </summary>
+    public const string UnusedObjectStoreConnectionString = "Endpoint=http://127.0.0.1:9;AccessKey=unused;SecretKey=unused";
+
     private readonly PostgreSqlContainer _dbContainer = new PostgreSqlBuilder("pgvector/pgvector:pg17").Build();
 
     /// <summary>
@@ -47,7 +53,7 @@ public class MonolithWebApplicationFactory : WebApplicationFactory<Sentium.Web.P
 
         builder.UseSetting($"ConnectionStrings:{ResourceNames.SentiumDb}", _dbContainer.GetConnectionString());
 
-        builder.UseSetting($"ConnectionStrings:{ResourceNames.WorkspaceBlobs}", "UseDevelopmentStorage=true");
+        builder.UseSetting($"ConnectionStrings:{ResourceNames.WorkspaceBlobs}", UnusedObjectStoreConnectionString);
         builder.UseSetting("InternalApi:ApiKey", InternalApiKey);
 
         // The login and pairing endpoints share one fixed window; the production limit would throttle the tests.

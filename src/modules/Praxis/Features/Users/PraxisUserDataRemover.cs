@@ -1,8 +1,8 @@
-using Azure.Storage.Blobs;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Sentium.Identity.Contracts;
 using Sentium.Infrastructure.Security;
+using Sentium.Infrastructure.Storage;
 using Sentium.Praxis.Data;
 using Sentium.Praxis.Features.CodeExecution;
 using Sentium.Praxis.Features.Storage;
@@ -19,7 +19,7 @@ namespace Sentium.Praxis.Features.Users;
 /// </remarks>
 internal sealed class PraxisUserDataRemover(
     IServiceScopeFactory scopeFactory,
-    BlobServiceClient blobServiceClient,
+    IObjectStore objectStore,
     IOptions<SandboxArtifactOptions> artifactOptions,
     ILogger<PraxisUserDataRemover> logger) : IUserRemovalObserver
 {
@@ -52,11 +52,17 @@ internal sealed class PraxisUserDataRemover(
             await DeleteBlobAsync(() => files.DeleteFileAsync(blobName, ct), blobName.ToString());
         }
 
-        var artifacts = blobServiceClient.GetBlobContainerClient(artifactOptions.Value.ArtifactContainerName);
+        var artifactBucket = artifactOptions.Value.ArtifactContainerName;
         foreach (var artifact in runs.SelectMany(r => r.Artifacts))
         {
-            var blobName = new BlobUriBuilder(artifact.BlobUri).BlobName;
-            await DeleteBlobAsync(() => artifacts.DeleteBlobIfExistsAsync(blobName, cancellationToken: ct), blobName);
+            var key = ObjectUri.GetKey(artifact.BlobUri, artifactBucket);
+            if (key is null)
+            {
+                logger.LogWarning("Artifact {BlobUri} of a removed user is not in the {Bucket} bucket; it is orphaned.", artifact.BlobUri, artifactBucket);
+                continue;
+            }
+
+            await DeleteBlobAsync(() => objectStore.DeleteAsync(artifactBucket, key, ct), key);
         }
     }
 

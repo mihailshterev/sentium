@@ -4,7 +4,7 @@ sequenceDiagram
     actor U as User
     participant WC as Praxis · WorkspacesController
     participant WS as WorkspaceService
-    participant BL as Blob Storage (Azurite)
+    participant BL as Object Storage (SeaweedFS)
     participant DB as PostgreSQL (praxis schema)
     participant Q as FileIngestionQueue (in-memory)
     participant FW as FileIngestionWorker
