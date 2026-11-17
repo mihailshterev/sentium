@@ -30,6 +30,8 @@ namespace Sentium.Praxis.Features.Storage;
 /// </remarks>
 internal sealed class FileIngestionWorker(IServiceScopeFactory scopeFactory, FileIngestionQueue queue, ILogger<FileIngestionWorker> logger) : BackgroundService
 {
+    private const int MaxErrorLength = 1000;
+
     /// <summary>
     /// Re-queues unfinished files, then processes queued files one at a time until shutdown.
     /// </summary>
@@ -89,9 +91,9 @@ internal sealed class FileIngestionWorker(IServiceScopeFactory scopeFactory, Fil
     /// Processing flow:
     /// 1. Fetches the file metadata from the database (skipping files already ingested).
     /// 2. Updates status to Processing.
-    /// 3. Reads file content from blob storage.
+    /// 3. Reads the file from blob storage and extracts its text (see <see cref="IWorkspaceFileTextReader"/>).
     /// 4. Calls the ingestion service to vectorize and index the content.
-    /// 5. Updates status to Completed on success, or Failed on exception.
+    /// 5. Updates status to Completed on success, or Failed (with the error) on exception.
     /// </para>
     /// <para>
     /// All exceptions are caught and logged; processing status is updated accordingly.
@@ -102,7 +104,7 @@ internal sealed class FileIngestionWorker(IServiceScopeFactory scopeFactory, Fil
         using var scope = scopeFactory.CreateScope();
         scope.ServiceProvider.GetRequiredService<SystemScopeContext>().Activate();
         var dbContext = scope.ServiceProvider.GetRequiredService<PraxisDbContext>();
-        var fileService = scope.ServiceProvider.GetRequiredService<ILocalFileService>();
+        var textReader = scope.ServiceProvider.GetRequiredService<IWorkspaceFileTextReader>();
         var ingestionService = scope.ServiceProvider.GetRequiredService<IDocumentIngestionService>();
 
         var projectFile = await dbContext.ProjectFiles.FindAsync([fileId], ct);
@@ -120,11 +122,10 @@ internal sealed class FileIngestionWorker(IServiceScopeFactory scopeFactory, Fil
         try
         {
             projectFile.ProcessingStatus = FileProcessingStatus.Processing;
+            projectFile.ProcessingError = null;
             await dbContext.SaveChangesAsync(ct);
 
-            using var stream = await fileService.GetFileStreamAsync(projectFile.BlobName, ct);
-            using var reader = new StreamReader(stream);
-            var content = await reader.ReadToEndAsync(ct);
+            var content = await textReader.ReadAsync(projectFile.BlobName, projectFile.Extension, ct);
 
             var ingestionRequest = new IngestionRequest
             {
@@ -149,6 +150,14 @@ internal sealed class FileIngestionWorker(IServiceScopeFactory scopeFactory, Fil
             // Replaces whatever an interrupted earlier attempt stored, so a retry never duplicates chunks.
             await ingestionService.ReplaceAsync(ingestionRequest, WorkspaceFileMetadata.FileId, ct: ct);
 
+            if (!await dbContext.ProjectFiles.AnyAsync(f => f.Id == fileId, ct))
+            {
+                // Deleted while being ingested: the delete removed the chunks before this run stored them.
+                await ingestionService.RemoveDocumentAsync(WorkspaceFileMetadata.FileId, fileId.ToString(), ct: ct);
+                logger.LogInformation("File {FileId} was deleted during ingestion; its chunks were removed.", fileId);
+                return;
+            }
+
             projectFile.ProcessingStatus = FileProcessingStatus.Completed;
             logger.LogInformation("Successfully ingested file {FileName} ({FileId})", projectFile.FileName, fileId);
         }
@@ -156,11 +165,28 @@ internal sealed class FileIngestionWorker(IServiceScopeFactory scopeFactory, Fil
         {
             logger.LogError(ex, "Failed to ingest file {FileName} ({FileId})", projectFile.FileName, fileId);
             projectFile.ProcessingStatus = FileProcessingStatus.Failed;
+            projectFile.ProcessingError = Truncate(ex.Message);
         }
-        finally
+
+        await SaveStatusAsync(scope, dbContext, fileId, ct);
+    }
+
+    private async Task SaveStatusAsync(IServiceScope scope, PraxisDbContext dbContext, Guid fileId, CancellationToken ct)
+    {
+        try
         {
             await dbContext.SaveChangesAsync(ct);
-            await scope.ServiceProvider.GetRequiredService<IScopedCache>().InvalidateTagAsync(WorkspaceService.CacheTag, ct);
         }
+        catch (DbUpdateConcurrencyException)
+        {
+            logger.LogInformation("File {FileId} was deleted during ingestion; its status was not saved.", fileId);
+        }
+
+        await scope.ServiceProvider.GetRequiredService<IScopedCache>().InvalidateTagAsync(WorkspaceService.CacheTag, ct);
+    }
+
+    private static string Truncate(string message)
+    {
+        return message.Length <= MaxErrorLength ? message : message[..MaxErrorLength];
     }
 }

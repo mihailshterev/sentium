@@ -6,6 +6,7 @@ using Sentium.Praxis.Features.Agents;
 using Sentium.Praxis.Features.Registry;
 using Sentium.Praxis.Features.WorkflowManagement;
 using Sentium.Praxis.Features.Workflows;
+using Sentium.Praxis.Features.Workspaces;
 
 namespace Sentium.Praxis.Features.Orchestration;
 
@@ -20,9 +21,13 @@ internal sealed class OrchestrationController(
     ICurrentUser currentUser,
     IPromptEnhancementService promptEnhancementService,
     IRegistrySettingsService registrySettingsService,
+    IWorkspaceService workspaceService,
+    IWorkspaceContextBuilder workspaceContext,
     IConfiguration configuration,
     ILogger<OrchestrationController> logger) : ControllerBase
 {
+    private const string UnknownWorkspaceMessage = "There is no such workspace.";
+
     private readonly TimeSpan _maxStreamDuration = ResolveTimeSpan(configuration, "Orchestration:StreamMaxDuration", TimeSpan.FromMinutes(30));
     private readonly TimeSpan _heartbeatInterval = ResolveTimeSpan(configuration, "Orchestration:HeartbeatInterval", TimeSpan.FromSeconds(20));
 
@@ -37,6 +42,11 @@ internal sealed class OrchestrationController(
     {
         ArgumentNullException.ThrowIfNull(request);
 
+        if (!await IsOwnWorkspaceAsync(request.WorkspaceId, ct))
+        {
+            return Problem(detail: UnknownWorkspaceMessage, statusCode: StatusCodes.Status400BadRequest);
+        }
+
         var streamId = Guid.NewGuid().ToString("N");
 
         ClaimStream(streamId);
@@ -45,6 +55,7 @@ internal sealed class OrchestrationController(
             TriggerType = WorkflowTriggerTypes.Dynamic,
             Activity = await EnhanceIfEnabledAsync(request.Activity, ct),
             WorkspaceId = request.WorkspaceId,
+            FileIds = await OwnFileIdsAsync(request.FileIds, ct),
             UserId = currentUser.UserId,
             StreamId = streamId
         }, ct);
@@ -62,10 +73,16 @@ internal sealed class OrchestrationController(
     /// </summary>
     [HttpPost("run-workflow")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<WorkflowAcceptedResponse>> RunWorkflow([FromBody] RunWorkflowRequest request, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(request);
+
+        if (!await IsOwnWorkspaceAsync(request.WorkspaceId, ct))
+        {
+            return Problem(detail: UnknownWorkspaceMessage, statusCode: StatusCodes.Status400BadRequest);
+        }
 
         var workflow = await workflowService.GetWorkflowAsync(request.WorkflowId, ct);
         if (workflow is null)
@@ -83,6 +100,7 @@ internal sealed class OrchestrationController(
             WorkflowId = workflow.Id,
             WorkflowName = workflow.Name,
             WorkspaceId = request.WorkspaceId,
+            FileIds = await OwnFileIdsAsync(request.FileIds, ct),
             UserId = currentUser.UserId,
             StreamId = streamId
         }, ct);
@@ -197,5 +215,25 @@ internal sealed class OrchestrationController(
 
         var settings = await registrySettingsService.GetAsync(currentUser.UserId, ct);
         return settings.Harness.IsPromptEnhancementEnabled ? await promptEnhancementService.EnhanceAsync(text, ct) : text;
+    }
+
+    /// <summary>
+    /// No workspace counts as valid. The lookup goes through the per-user query filter, and the run's context builder
+    /// filters on the run's user again, so a Sovereign's foreign id can never expose another member's files.
+    /// </summary>
+    private async Task<bool> IsOwnWorkspaceAsync(Guid? workspaceId, CancellationToken ct)
+    {
+        return workspaceId is not { } id || await workspaceService.GetWorkspaceAsync(id, ct) is not null;
+    }
+
+    private async Task<IReadOnlyList<Guid>> OwnFileIdsAsync(IReadOnlyList<Guid>? fileIds, CancellationToken ct)
+    {
+        if (fileIds is not { Count: > 0 } || currentUser.UserId is not { } userId)
+        {
+            return [];
+        }
+
+        var owned = await workspaceContext.ResolveAttachmentsAsync(userId, fileIds, ct);
+        return [.. owned.Select(a => a.FileId)];
     }
 }

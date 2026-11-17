@@ -45,18 +45,10 @@ const renderSidebar = (overrides: Partial<React.ComponentProps<typeof Conversati
     hasMoreConversations: false,
     isLoadingMoreConversations: false,
     onLoadMoreConversations: vi.fn(),
-    wsContextOpen: false,
-    workspaces: [],
-    expandedWorkspace: null,
-    expandedWorkspaceFiles: [],
     onNewConversation: vi.fn(),
     onLoadConversation: vi.fn(),
     onDeleteConversation: vi.fn(),
     onRenameConversation: vi.fn(),
-    onToggleWsContext: vi.fn(),
-    onToggleExpandWorkspace: vi.fn(),
-    onInjectWorkspaceContext: vi.fn(),
-    onInjectFileContext: vi.fn(),
     ...overrides,
   };
   render(<ConversationSidebar {...props} />);

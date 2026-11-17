@@ -38,10 +38,30 @@ internal interface IConversationRepository
     /// <returns><see langword="false"/> when the conversation does not exist.</returns>
     Task<bool> RenameConversationAsync(Guid conversationId, string title, CancellationToken ct = default);
 
+    /// <returns><see langword="false"/> when the conversation does not exist.</returns>
+    Task<bool> SetWorkspaceAsync(Guid conversationId, Guid? workspaceId, CancellationToken ct = default);
+
     /// <summary>
-    /// Appends a message (with optional enhanced prompt, thought, and tool calls) to a conversation.
+    /// The workspace of <paramref name="userId"/>'s conversation; <see langword="null"/> when it has none or is not theirs.
     /// </summary>
-    Task AddMessageAsync(Guid conversationId, string role, string content, string? enhancedPrompt = null, IReadOnlyList<MessageStep>? steps = null, CancellationToken ct = default);
+    Task<Guid?> GetWorkspaceIdAsync(Guid conversationId, Guid userId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Filters on the owner explicitly: a Sovereign bypasses the query filter and must not bind another member's workspace.
+    /// </summary>
+    Task<bool> WorkspaceIsOwnedByAsync(Guid workspaceId, Guid userId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Appends a message (with optional enhanced prompt, activity steps and attached files) to a conversation.
+    /// </summary>
+    Task AddMessageAsync(
+        Guid conversationId,
+        string role,
+        string content,
+        string? enhancedPrompt = null,
+        IReadOnlyList<MessageStep>? steps = null,
+        IReadOnlyList<MessageAttachment>? attachments = null,
+        CancellationToken ct = default);
 
     /// <summary>
     /// Whether <paramref name="conversationId"/> exists and belongs to <paramref name="userId"/>. Filters explicitly so the

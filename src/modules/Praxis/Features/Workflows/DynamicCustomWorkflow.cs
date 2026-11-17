@@ -3,6 +3,7 @@ using Sentium.Praxis.Features.Agents;
 using Sentium.Praxis.Features.Orchestration;
 using Sentium.Praxis.Features.WorkflowManagement;
 using Sentium.Praxis.Features.Workflows.Squad;
+using Sentium.Praxis.Features.Workspaces;
 using AgentResponse = Sentium.Praxis.Features.Agents.AgentResponse;
 
 namespace Sentium.Praxis.Features.Workflows;
@@ -14,7 +15,8 @@ internal sealed class DynamicCustomWorkflow(
     SquadWorkflowRunner squad,
     IAgentRepository agentRepository,
     IWorkflowService workflowService,
-    IAgentStreamPublisher stream) : IAgentWorkflow
+    IAgentStreamPublisher stream,
+    IWorkspaceContextBuilder workspaceContext) : IAgentWorkflow
 {
     public WorkflowType Type => WorkflowType.Custom;
 
@@ -60,7 +62,7 @@ internal sealed class DynamicCustomWorkflow(
             "Contribute the part of the request that your role covers.",
             $"A complete, correct contribution for this role: {Summarize(a.Description)}"))]);
 
-        var request = WorkspaceContextPrompt.Augment(trigger.Activity, trigger.WorkspaceId);
+        var request = await WorkspaceContextPrompt.AugmentAsync(workspaceContext, trigger, ct);
         var result = await squad.RunAsync(trigger, request, roster, plan, timeline, ct);
 
         return SquadResultMapper.ToWorkflowResult(result, timeline, $"Custom workflow '{workflowDef.Name}' completed with no output.", workflowId, workflowDef.UserId);

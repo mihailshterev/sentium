@@ -16,6 +16,11 @@ vi.mock("@/features/workspaces/api/workspaces.service", () => ({
   fetchWorkspaceFiles: vi.fn(),
   uploadWorkspaceFile: vi.fn(),
   deleteWorkspaceFile: vi.fn(),
+  fetchWorkspace: vi.fn(),
+  fetchUploadRules: vi.fn(),
+  reindexWorkspaceFile: vi.fn(),
+  fetchWorkspaceFileText: vi.fn(),
+  workspaceFileContentUrl: (id: string) => `/files/${id}/content`,
 }));
 
 const mockWorkspace: Workspace = {
@@ -81,7 +86,27 @@ beforeEach(() => {
   vi.mocked(workspaceService.deleteWorkspace).mockResolvedValue(undefined);
   vi.mocked(workspaceService.uploadWorkspaceFile).mockResolvedValue(mockFile);
   vi.mocked(workspaceService.deleteWorkspaceFile).mockResolvedValue(undefined);
+  vi.mocked(workspaceService.fetchWorkspace).mockResolvedValue(mockWorkspace);
+  vi.mocked(workspaceService.fetchUploadRules).mockResolvedValue({
+    extensions: [".txt", ".csv", ".md", ".pdf"],
+    maxFileSizeBytes: 100 * 1024 * 1024,
+  });
+  vi.mocked(workspaceService.reindexWorkspaceFile).mockResolvedValue(undefined);
+  vi.mocked(workspaceService.fetchWorkspaceFileText).mockResolvedValue({
+    fileId: "file-1",
+    fileName: "report.txt",
+    text: "incident timeline",
+    truncated: false,
+    totalChars: 17,
+  });
 });
+
+/** Waits until the upload rules have loaded, so client-side checks apply. */
+const fileInputWhenReady = async () => {
+  const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+  await waitFor(() => expect(input).toHaveAttribute("accept"));
+  return input;
+};
 
 describe("Workspaces initial render", () => {
   it("renders the page title", async () => {
@@ -173,22 +198,22 @@ describe("Workspaces create form", () => {
 describe("Workspaces file upload", () => {
   it("shows file type error for unsupported file types", async () => {
     renderWorkspaceDetail();
-    await waitFor(() => screen.getByText("Upload File"));
+    await waitFor(() => screen.getByText("Upload Files"));
 
-    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const fileInput = await fileInputWhenReady();
     Object.defineProperty(fileInput, "files", {
       value: [new File(["content"], "test.exe", { type: "application/octet-stream" })],
       configurable: true,
     });
     fireEvent.change(fileInput);
-    await waitFor(() => expect(screen.getByText(/".exe" is not supported/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/\.exe files are not supported/i)).toBeInTheDocument());
   });
 
   it("shows selected file name when valid file chosen", async () => {
     renderWorkspaceDetail();
-    await waitFor(() => screen.getByText("Upload File"));
+    await waitFor(() => screen.getByText("Upload Files"));
 
-    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const fileInput = await fileInputWhenReady();
     Object.defineProperty(fileInput, "files", {
       value: [new File(["content"], "report.txt", { type: "text/plain" })],
       configurable: true,
@@ -264,13 +289,22 @@ describe("Workspaces delete workspace", () => {
     await waitFor(() => expect(workspaceService.deleteWorkspace).toHaveBeenCalledWith("ws-1"));
   });
 
-  it("deselects workspace when selected workspace is deleted", async () => {
+  it("warns that the workspace's files are deleted with it", async () => {
+    renderWorkspaces();
+    await waitFor(() => screen.getByText("Incident 2026"));
+    fireEvent.click(screen.getByTitle("Delete workspace"));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText(/its 2 files and their indexed content will be permanently deleted/i)).toBeInTheDocument();
+  });
+
+  it("shows a delete failure on the page instead of an alert", async () => {
+    vi.mocked(workspaceService.deleteWorkspace).mockRejectedValue(new Error("Database unavailable"));
     renderWorkspaces();
     await waitFor(() => screen.getByText("Incident 2026"));
     fireEvent.click(screen.getByTitle("Delete workspace"));
     const dialog = await screen.findByRole("dialog");
     fireEvent.click(within(dialog).getByRole("button", { name: /delete workspace/i }));
-    await waitFor(() => expect(workspaceService.deleteWorkspace).toHaveBeenCalledWith("ws-1"));
+    expect(await screen.findByText("Database unavailable")).toBeInTheDocument();
   });
 });
 
@@ -288,9 +322,9 @@ describe("Workspaces delete file", () => {
 describe("Workspaces upload submit", () => {
   it("calls uploadWorkspaceFile when form submitted with a file", async () => {
     renderWorkspaceDetail();
-    await waitFor(() => screen.getByText("Drop a file or click to browse"));
+    await waitFor(() => screen.getByText("Drop files or click to browse"));
 
-    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const fileInput = await fileInputWhenReady();
     Object.defineProperty(fileInput, "files", {
       value: [new File(["content"], "data.csv", { type: "text/csv" })],
       configurable: true,
@@ -304,9 +338,9 @@ describe("Workspaces upload submit", () => {
   it("shows upload error when upload fails", async () => {
     vi.mocked(workspaceService.uploadWorkspaceFile).mockRejectedValue(new Error("Upload failed"));
     renderWorkspaceDetail();
-    await waitFor(() => screen.getByText("Drop a file or click to browse"));
+    await waitFor(() => screen.getByText("Drop files or click to browse"));
 
-    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    const fileInput = await fileInputWhenReady();
     Object.defineProperty(fileInput, "files", {
       value: [new File(["x"], "notes.txt", { type: "text/plain" })],
       configurable: true,
@@ -375,7 +409,7 @@ describe("Workspaces small file bytes", () => {
 describe("Workspaces drag and drop upload", () => {
   it("handles drag over and drag leave on upload area", async () => {
     renderWorkspaceDetail();
-    await waitFor(() => screen.getByText("Upload File"));
+    await waitFor(() => screen.getByText("Upload Files"));
     const uploadArea = document.querySelector("[role='button']") as HTMLElement;
     fireEvent.dragOver(uploadArea);
     fireEvent.dragLeave(uploadArea);
@@ -384,7 +418,7 @@ describe("Workspaces drag and drop upload", () => {
 
   it("handles drop event with a file", async () => {
     renderWorkspaceDetail();
-    await waitFor(() => screen.getByText("Upload File"));
+    await waitFor(() => screen.getByText("Upload Files"));
     const uploadArea = document.querySelector("[role='button']") as HTMLElement;
     const file = new File(["content"], "test-file.txt", { type: "text/plain" });
     fireEvent.drop(uploadArea, { dataTransfer: { files: [file] } });
@@ -393,7 +427,7 @@ describe("Workspaces drag and drop upload", () => {
 
   it("handles keydown Enter on upload area", async () => {
     renderWorkspaceDetail();
-    await waitFor(() => screen.getByText("Upload File"));
+    await waitFor(() => screen.getByText("Upload Files"));
     const uploadArea = document.querySelector("[role='button']") as HTMLElement;
     fireEvent.keyDown(uploadArea, { key: "Enter" });
     expect(uploadArea).toBeInTheDocument();
@@ -401,9 +435,47 @@ describe("Workspaces drag and drop upload", () => {
 
   it("does nothing on non-Enter keydown on upload area", async () => {
     renderWorkspaceDetail();
-    await waitFor(() => screen.getByText("Upload File"));
+    await waitFor(() => screen.getByText("Upload Files"));
     const uploadArea = document.querySelector("[role='button']") as HTMLElement;
     fireEvent.keyDown(uploadArea, { key: "Space" });
     expect(uploadArea).toBeInTheDocument();
+  });
+});
+
+describe("Workspaces file actions", () => {
+  it("loads the workspace by id for the page title", async () => {
+    renderWorkspaceDetail();
+    expect(await screen.findByRole("heading", { name: "Incident 2026" })).toBeInTheDocument();
+    expect(workspaceService.fetchWorkspace).toHaveBeenCalledWith("ws-1");
+  });
+
+  it("previews a file's text", async () => {
+    renderWorkspaceDetail();
+    fireEvent.click(await screen.findByTitle("Preview"));
+    expect(await screen.findByText("incident timeline")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /download original/i })).toHaveAttribute("href", "/files/file-1/content");
+  });
+
+  it("shows why indexing failed and retries it", async () => {
+    vi.mocked(workspaceService.fetchWorkspaceFiles).mockResolvedValue([
+      { ...mockFile, processingStatus: "Failed", processingError: "The PDF could not be read." },
+    ]);
+    renderWorkspaceDetail();
+    expect(await screen.findByText("The PDF could not be read.")).toBeInTheDocument();
+    fireEvent.click(screen.getByTitle("Retry indexing"));
+    await waitFor(() => expect(workspaceService.reindexWorkspaceFile).toHaveBeenCalledWith("file-1"));
+  });
+
+  it("uploads every selected file", async () => {
+    renderWorkspaceDetail();
+    const fileInput = await fileInputWhenReady();
+    Object.defineProperty(fileInput, "files", {
+      value: [new File(["a"], "a.md"), new File(["b"], "b.txt")],
+      configurable: true,
+    });
+    fireEvent.change(fileInput);
+    await screen.findByText("2 files selected");
+    fireEvent.submit(document.querySelector("form")!);
+    await waitFor(() => expect(workspaceService.uploadWorkspaceFile).toHaveBeenCalledTimes(2));
   });
 });

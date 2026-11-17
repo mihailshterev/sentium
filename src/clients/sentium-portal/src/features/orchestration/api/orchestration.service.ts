@@ -1,9 +1,9 @@
 import { client } from "@/shared/api/client";
-import type { RunWorkflowPayload } from "@/features/workflows/types/workflows";
+import type { RunDynamicWorkflowPayload, RunWorkflowPayload } from "@/features/workflows/types/workflows";
 
 const BASE = "/praxis";
 
-export const runDynamicWorkflow = (payload: Record<string, string>) =>
+export const runDynamicWorkflow = (payload: RunDynamicWorkflowPayload) =>
   client.post<{ eventId: string }>(`${BASE}/orchestration/run-dynamic-workflow`, payload);
 
 export const runWorkflowPipeline = (payload: RunWorkflowPayload) =>

@@ -5,12 +5,15 @@ using Microsoft.Extensions.Options;
 using Sentium.Codex.Contracts;
 using Sentium.Codex.Contracts.Models;
 using Sentium.Praxis.Contracts;
+using Sentium.Praxis.Data;
+using Sentium.Praxis.Features.Storage;
+using Sentium.Praxis.Features.Tools.Workspace;
 
 namespace Sentium.Praxis.Features.Tools;
 
 /// <summary>
 /// Agent tool that performs a semantic similarity search against the RAG knowledge base
-/// and returns formatted snippets with source citations.
+/// and returns formatted snippets with source citations. With a workspace it searches only that workspace's files.
 /// </summary>
 [AgentToolPolicy(RiskLevel = ToolRiskLevel.Low, Resource = ToolResource.VectorDb, Action = ToolAction.Search)]
 internal sealed class KnowledgeBaseSearchTool(
@@ -18,6 +21,7 @@ internal sealed class KnowledgeBaseSearchTool(
     IVectorRepository vectorRepository,
     IOptions<RagOptions> options,
     IPdpContextAccessor pdpContext,
+    PraxisDbContext dbContext,
     ILogger<KnowledgeBaseSearchTool> logger) : IAgentTool
 {
     private readonly RagOptions ragOptions = options.Value;
@@ -30,12 +34,14 @@ internal sealed class KnowledgeBaseSearchTool(
             this,
             SearchAsync,
             ToolNames.KnowledgeBaseSearch,
-            "Search ALL of your knowledge - the shared knowledge base, your captured learnings, and your saved memories - for relevant context.");
+            "Search ALL of your knowledge - the shared knowledge base, your captured learnings, and your saved memories - for relevant context. " +
+            "Pass a workspace (name or ID) to search only the files in that workspace.");
     }
 
     public async Task<string> SearchAsync(
         [Description("The search string describing what you are looking for.")] string query,
         [Description("Maximum number of results to return (1-20).")] int? topK = null,
+        [Description("Optional workspace (name or ID) to restrict the search to that workspace's files.")] string? workspace = null,
         CancellationToken ct = default)
     {
         if (string.IsNullOrWhiteSpace(query))
@@ -48,13 +54,30 @@ internal sealed class KnowledgeBaseSearchTool(
 
         if (logger.IsEnabled(LogLevel.Information))
         {
-            logger.LogInformation("Knowledge search - query: '{Query}', topK: {TopK}", query, limit);
+            logger.LogInformation("Knowledge search - query: '{Query}', topK: {TopK}, workspace: '{Workspace}'", query, limit, workspace);
+        }
+
+        var scope = new KnowledgeScopeFilter(pdpContext.UserId);
+        var collections = ragOptions.SearchCollections is { Length: > 0 } ? ragOptions.SearchCollections : [ragOptions.CollectionName];
+
+        if (!string.IsNullOrWhiteSpace(workspace))
+        {
+            if (pdpContext.UserId is not { } userId)
+            {
+                return WorkspaceToolScope.NoUserError;
+            }
+
+            if (await WorkspaceToolScope.ResolveWorkspaceIdAsync(dbContext, userId, workspace, ct) is not { } workspaceId)
+            {
+                return $"Error: No workspace found with name or ID '{workspace.Trim()}'.";
+            }
+
+            // Workspace files live only in the knowledge base collection, tagged with their workspace.
+            scope = scope with { MetadataKey = WorkspaceFileMetadata.WorkspaceId, MetadataValue = workspaceId.ToString() };
+            collections = [ragOptions.CollectionName];
         }
 
         var queryEmbedding = await embeddingService.GenerateEmbeddingAsync(query, ct);
-        var scope = new KnowledgeScopeFilter(pdpContext.UserId);
-
-        var collections = ragOptions.SearchCollections is { Length: > 0 } ? ragOptions.SearchCollections : [ragOptions.CollectionName];
 
         var merged = new List<(string Collection, VectorSearchResult Result)>();
         foreach (var collection in collections)

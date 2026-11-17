@@ -25,6 +25,7 @@ vi.mock("@/features/assistant/api/assistant.service", () => ({
 vi.mock("@/features/workspaces/api/workspaces.service", () => ({
   fetchWorkspaces: vi.fn().mockResolvedValue([]),
   fetchWorkspaceFiles: vi.fn().mockResolvedValue([]),
+  fetchUploadRules: vi.fn().mockResolvedValue({ extensions: [".md"], maxFileSizeBytes: 1024 }),
 }));
 
 const createConversation = vi.fn().mockResolvedValue({ id: "new-c" });

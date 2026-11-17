@@ -1,6 +1,7 @@
 using Sentium.Praxis.Features.Agents;
 using Sentium.Praxis.Features.Orchestration;
 using Sentium.Praxis.Features.Workflows.Squad;
+using Sentium.Praxis.Features.Workspaces;
 
 namespace Sentium.Praxis.Features.Workflows;
 
@@ -11,7 +12,8 @@ internal sealed class DynamicDiscoveryWorkflow(
     SquadWorkflowRunner squad,
     IEnumerable<IAgent> nativeAgents,
     IAgentRepository agentRepository,
-    IAgentStreamPublisher stream) : IAgentWorkflow
+    IAgentStreamPublisher stream,
+    IWorkspaceContextBuilder workspaceContext) : IAgentWorkflow
 {
     public WorkflowType Type => WorkflowType.Dynamic;
 
@@ -19,7 +21,7 @@ internal sealed class DynamicDiscoveryWorkflow(
     {
         ArgumentNullException.ThrowIfNull(trigger);
 
-        var request = WorkspaceContextPrompt.Augment(trigger.Activity, trigger.WorkspaceId);
+        var request = await WorkspaceContextPrompt.AugmentAsync(workspaceContext, trigger, ct);
 
         var roster = new List<SquadMember>();
         roster.AddRange(nativeAgents

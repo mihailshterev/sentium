@@ -1,5 +1,6 @@
 import { test, expect } from "../fixtures";
 import { mockSseRoute, sseMessage, sseDone } from "../support/mock-sse";
+import { uniqueName } from "../support/test-data";
 
 test.describe("Assistant", () => {
   test.beforeEach(async ({ assistantPage }) => {
@@ -41,6 +42,37 @@ test.describe("Assistant", () => {
   test("model selector is visible", async ({ page }) => {
     await expect(page.getByPlaceholder(/model name/i)).toBeVisible();
   });
+
+  test(
+    "uploads a file from the composer and sends it as an attachment, not as text",
+    { tag: "@regression" },
+    async ({ assistantPage, page }) => {
+      await mockSseRoute(page, /\/assistant\/chat/, [
+        sseMessage({ type: "content", message: { content: "Read it." } }),
+        sseDone(),
+      ]);
+      const fileName = `${uniqueName("brief")}.md`;
+
+      await assistantPage.startNewConversation();
+      await page
+        .getByTestId("composer-file-input")
+        .setInputFiles({ name: fileName, mimeType: "text/markdown", buffer: Buffer.from("# Brief") });
+      await expect(page.getByTestId("composer-attachment")).toContainText(fileName);
+      await expect(page.locator("form button[type='submit']")).toBeEnabled();
+
+      const chatRequest = page.waitForRequest(/\/assistant\/chat/);
+      await assistantPage.typeMessage("Summarise the brief");
+      await assistantPage.sendMessage();
+
+      const body = (await chatRequest).postDataJSON() as { fileIds?: string[]; messages: { content: string }[] };
+      expect(body.fileIds).toHaveLength(1);
+      expect(body.messages.at(-1)?.content).toBe("Summarise the brief");
+
+      await assistantPage.expectMessageVisible("Read it.");
+      await expect(page.getByRole("button", { name: `Preview ${fileName}` })).toBeVisible();
+      await expect(page.getByText("[File:")).toHaveCount(0);
+    },
+  );
 
   test("sends a message and shows mocked SSE response", { tag: "@regression" }, async ({ assistantPage, page }) => {
     await mockSseRoute(page, /\/assistant\/chat/, [

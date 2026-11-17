@@ -1,11 +1,12 @@
 import { memo, useState } from "react";
 import Markdown from "react-markdown";
-import { Check, ChevronDown, Copy, ShieldAlert, Sparkles } from "lucide-react";
+import { Check, ChevronDown, Copy, FileText, ShieldAlert, Sparkles } from "lucide-react";
 import styles from "../assistant.module.css";
 import { Button } from "@/shared/ui/button";
 import { SentiumMark } from "@/shared/ui/sentium-mark";
 import { AgentTimeline } from "@/shared/agent-activity";
-import type { ConversationMessage } from "@/features/assistant/types/assistant";
+import type { ConversationMessage, MessageAttachment } from "@/features/assistant/types/assistant";
+import { FilePreviewDialog } from "@/features/workspaces/components/file-preview-dialog";
 import { STATUS_MESSAGES } from "../status-messages";
 
 interface MessageBubbleProps {
@@ -37,6 +38,7 @@ export const MessageBubble = memo(function MessageBubble({
   senderName = "Sentium",
 }: MessageBubbleProps) {
   const [enhancedOpen, setEnhancedOpen] = useState(false);
+  const [previewing, setPreviewing] = useState<MessageAttachment | null>(null);
 
   const isAssistant = msg.role === "assistant";
   const isLastMessage = isAssistant && msg.content === "" && isTyping && !msg.error;
@@ -58,6 +60,27 @@ export const MessageBubble = memo(function MessageBubble({
     return (
       <div className={`${styles.message} ${styles.messageUser}`}>
         <div className={styles.userBubble}>
+          {msg.attachments && msg.attachments.length > 0 && (
+            <div className={styles.messageAttachments} aria-label="Attached files">
+              {msg.attachments.map((a) => (
+                <button
+                  key={a.fileId}
+                  type="button"
+                  className={styles.messageAttachment}
+                  onClick={() => setPreviewing(a)}
+                  title={`Preview ${a.fileName}`}
+                  aria-label={`Preview ${a.fileName}`}
+                >
+                  <FileText size={12} aria-hidden="true" />
+                  <span>{a.fileName}</span>
+                </button>
+              ))}
+              <FilePreviewDialog
+                file={previewing && { id: previewing.fileId, fileName: previewing.fileName }}
+                onClose={() => setPreviewing(null)}
+              />
+            </div>
+          )}
           <div className={styles.content}>
             <Markdown>{msg.content}</Markdown>
           </div>

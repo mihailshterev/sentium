@@ -28,7 +28,7 @@ internal sealed class ConversationRepository(PraxisDbContext context) : IConvers
             .ThenByDescending(c => c.Id)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(c => new ConversationSummary(c.Id, c.Title, c.Model, c.CreatedAt, c.AgentName))
+            .Select(c => new ConversationSummary(c.Id, c.Title, c.Model, c.CreatedAt, c.AgentName, c.WorkspaceId, c.Workspace != null ? c.Workspace.Name : null))
             .ToListAsync(ct);
 
         return (items, total);
@@ -39,6 +39,7 @@ internal sealed class ConversationRepository(PraxisDbContext context) : IConvers
         var conv = await context.Conversations
             .AsNoTracking()
             .Include(c => c.Messages.OrderBy(m => m.Timestamp))
+            .Include(c => c.Workspace)
             .FirstOrDefaultAsync(c => c.Id == conversationId, ct);
 
         if (conv is null)
@@ -56,8 +57,11 @@ internal sealed class ConversationRepository(PraxisDbContext context) : IConvers
                 m.EnhancedPrompt,
                 m.Thought,
                 m.ToolCalls != null ? JsonSerializer.Deserialize<List<string>>(m.ToolCalls) : null,
-                m.Steps != null ? JsonSerializer.Deserialize<List<MessageStep>>(m.Steps, StepJson) : null)).ToList(),
-            conv.AgentName);
+                m.Steps != null ? JsonSerializer.Deserialize<List<MessageStep>>(m.Steps, StepJson) : null,
+                ReadAttachments(m.Attachments))).ToList(),
+            conv.AgentName,
+            conv.WorkspaceId,
+            conv.Workspace?.Name);
     }
 
     public async Task<ConversationSummary> CreateConversationAsync(CreateConversationRequest request, CancellationToken ct = default)
@@ -72,13 +76,18 @@ internal sealed class ConversationRepository(PraxisDbContext context) : IConvers
             IsTitlePending = string.IsNullOrEmpty(title),
             Model = request.Model,
             AgentName = string.IsNullOrWhiteSpace(request.AgentName) ? null : request.AgentName.Trim(),
+            WorkspaceId = request.WorkspaceId,
             CreatedAt = DateTime.UtcNow
         };
 
         context.Conversations.Add(conversation);
         await context.SaveChangesAsync(ct);
 
-        return new ConversationSummary(conversation.Id, conversation.Title, conversation.Model, conversation.CreatedAt, conversation.AgentName);
+        var workspaceName = request.WorkspaceId is { } workspaceId
+            ? await context.Workspaces.Where(w => w.Id == workspaceId).Select(w => w.Name).FirstOrDefaultAsync(ct)
+            : null;
+
+        return new ConversationSummary(conversation.Id, conversation.Title, conversation.Model, conversation.CreatedAt, conversation.AgentName, conversation.WorkspaceId, workspaceName);
     }
 
     public async Task<bool> DeleteConversationAsync(Guid conversationId, CancellationToken ct = default)
@@ -126,7 +135,35 @@ internal sealed class ConversationRepository(PraxisDbContext context) : IConvers
         return affected > 0;
     }
 
-    public async Task AddMessageAsync(Guid conversationId, string role, string content, string? enhancedPrompt = null, IReadOnlyList<MessageStep>? steps = null, CancellationToken ct = default)
+    public async Task<bool> SetWorkspaceAsync(Guid conversationId, Guid? workspaceId, CancellationToken ct = default)
+    {
+        var affected = await context.Conversations
+            .Where(c => c.Id == conversationId)
+            .ExecuteUpdateAsync(s => s.SetProperty(c => c.WorkspaceId, workspaceId), ct);
+
+        return affected > 0;
+    }
+
+    public async Task<Guid?> GetWorkspaceIdAsync(Guid conversationId, Guid userId, CancellationToken ct = default)
+    {
+        return await context.Conversations
+            .AsNoTracking()
+            .Where(c => c.Id == conversationId && c.UserId == userId)
+            .Select(c => c.WorkspaceId)
+            .FirstOrDefaultAsync(ct);
+    }
+
+    public async Task<bool> WorkspaceIsOwnedByAsync(Guid workspaceId, Guid userId, CancellationToken ct = default)
+        => await context.Workspaces.AnyAsync(w => w.Id == workspaceId && w.UserId == userId, ct);
+
+    public async Task AddMessageAsync(
+        Guid conversationId,
+        string role,
+        string content,
+        string? enhancedPrompt = null,
+        IReadOnlyList<MessageStep>? steps = null,
+        IReadOnlyList<MessageAttachment>? attachments = null,
+        CancellationToken ct = default)
     {
         var message = new Message
         {
@@ -136,6 +173,7 @@ internal sealed class ConversationRepository(PraxisDbContext context) : IConvers
             Content = content,
             EnhancedPrompt = enhancedPrompt,
             Steps = steps is { Count: > 0 } ? JsonSerializer.Serialize(steps, StepJson) : null,
+            Attachments = attachments is { Count: > 0 } ? JsonSerializer.Serialize(attachments, StepJson) : null,
             Timestamp = DateTime.UtcNow
         };
 
@@ -153,10 +191,15 @@ internal sealed class ConversationRepository(PraxisDbContext context) : IConvers
             .Where(m => m.ConversationId == conversationId && m.Conversation.UserId == userId)
             .OrderByDescending(m => m.Timestamp)
             .Take(limit)
-            .Select(m => new MessageResponse(m.Id, m.Role, m.Content, m.Timestamp, m.EnhancedPrompt, null, null))
+            .Select(m => new { m.Id, m.Role, m.Content, m.Timestamp, m.EnhancedPrompt, m.Attachments })
             .ToListAsync(ct);
 
         recent.Reverse();
-        return recent;
+        return [.. recent.Select(m => new MessageResponse(m.Id, m.Role, m.Content, m.Timestamp, m.EnhancedPrompt, Attachments: ReadAttachments(m.Attachments)))];
+    }
+
+    private static List<MessageAttachment>? ReadAttachments(string? json)
+    {
+        return json is null ? null : JsonSerializer.Deserialize<List<MessageAttachment>>(json, StepJson);
     }
 }

@@ -78,6 +78,26 @@ public sealed class PgVectorRepositoryTests(MonolithWebApplicationFactory factor
     }
 
     [Fact]
+    public async Task Search_NarrowsToAMetadataValue_WithinTheUsersScope()
+    {
+        var collection = NewCollection();
+        var alice = Guid.NewGuid();
+        var bob = Guid.NewGuid();
+
+        await WithRepositoryAsync(async repo =>
+        {
+            await repo.UpsertAsync(collection, Tagged("alice ws-1", alice, "ws-1"), Basis(0), Ct);
+            await repo.UpsertAsync(collection, Tagged("alice ws-2", alice, "ws-2"), Basis(0), Ct);
+            await repo.UpsertAsync(collection, Tagged("bob ws-1", bob, "ws-1"), Basis(0), Ct);
+            await repo.UpsertAsync(collection, Chunk("shared, untagged"), Basis(0), Ct);
+
+            var hits = await repo.SearchAsync(collection, Basis(0), topK: 10, scope: new KnowledgeScopeFilter(alice, "WorkspaceId", "ws-1"), ct: Ct);
+
+            hits.Select(h => h.Chunk.Content).Should().Equal("alice ws-1");
+        });
+    }
+
+    [Fact]
     public async Task Upsert_RoundTripsAllFields_AndReplacesById()
     {
         var collection = NewCollection();
@@ -253,6 +273,20 @@ public sealed class PgVectorRepositoryTests(MonolithWebApplicationFactory factor
             Scope = scope,
             UserId = userId,
             CreatedAt = createdAt ?? DateTimeOffset.UtcNow
+        };
+    }
+
+    private static DocumentChunk Tagged(string content, Guid? userId, string workspaceId)
+    {
+        return new()
+        {
+            Content = content,
+            Source = "test-source",
+            SourceType = IngestionSourceType.Custom,
+            Scope = KnowledgeScope.User,
+            UserId = userId,
+            Metadata = new Dictionary<string, string> { ["WorkspaceId"] = workspaceId },
+            CreatedAt = DateTimeOffset.UtcNow
         };
     }
 

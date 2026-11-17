@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { ConversationMessage } from "@/features/assistant/types/assistant";
+import type { ConversationMessage, MessageAttachment } from "@/features/assistant/types/assistant";
 import { DEFAULT_ASSISTANT_MODEL } from "@/shared/utils/constants";
 import { sendChatMessage, approveToolCall } from "@/features/assistant/api/assistant.service";
 import { handleUnauthorized } from "@/shared/api/client";
@@ -25,6 +25,8 @@ interface SendMessageArgs {
   conversationId: string | null;
   model: string;
   userContent: string;
+  /** Workspace files attached to this message; their text is put in front of the agent for this turn. */
+  attachments?: MessageAttachment[];
 }
 
 interface RespondToApprovalArgs {
@@ -342,7 +344,7 @@ export const createConversationStore = () => {
           model: DEFAULT_ASSISTANT_MODEL,
         }),
 
-      sendMessage: async ({ conversationId, model, userContent }) => {
+      sendMessage: async ({ conversationId, model, userContent, attachments }) => {
         const { appendMessage } = get();
 
         const userMsg: ConversationMessage = {
@@ -350,6 +352,7 @@ export const createConversationStore = () => {
           role: "user",
           content: userContent,
           timestamp: new Date(),
+          ...(attachments?.length ? { attachments } : {}),
         };
 
         const chatHistory = [
@@ -379,6 +382,7 @@ export const createConversationStore = () => {
               model,
               messages: chatHistory,
               stream: true,
+              ...(attachments?.length ? { fileIds: attachments.map((a) => a.fileId) } : {}),
             },
             controller.signal,
           );
@@ -405,7 +409,12 @@ export const createConversationStore = () => {
         if (lastUserIdx === undefined) return;
         const lastUser = messages[lastUserIdx];
         set({ messages: messages.slice(0, lastUserIdx) });
-        void get().sendMessage({ conversationId: activeConversationId, model, userContent: lastUser.content });
+        void get().sendMessage({
+          conversationId: activeConversationId,
+          model,
+          userContent: lastUser.content,
+          attachments: lastUser.attachments,
+        });
       },
 
       respondToApproval: async ({ aiMsgId, requestId, approved, conversationId }) => {

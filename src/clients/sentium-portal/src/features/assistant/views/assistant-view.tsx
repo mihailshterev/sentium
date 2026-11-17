@@ -2,19 +2,17 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router";
 import styles from "../assistant.module.css";
 import { ArrowDown, Loader2, PanelRightClose, PanelRightOpen } from "lucide-react";
-import { fetchConversation } from "@/features/assistant/api/assistant.service";
-import { fetchWorkspaces, fetchWorkspaceFiles } from "@/features/workspaces/api/workspaces.service";
+import { fetchConversation, setConversationWorkspace } from "@/features/assistant/api/assistant.service";
 import { useConversations } from "@/features/assistant/hooks/useConversations";
 import { useDebouncedValue } from "@/shared/hooks/useDebouncedValue";
 import { useModels } from "@/features/models/hooks/useModels";
 import type { ConversationMessage, ConversationSummary } from "@/features/assistant/types/assistant";
-import type { Workspace } from "@/features/workspaces/types/workspace";
 import { useConversationStore } from "@/features/assistant/state/assistant-conversation-store";
 import { markSpokenTurn } from "@/features/companion/audio/reply-speaker";
 import { PushToTalkButton } from "@/features/companion/components/push-to-talk-button";
 import { useCompanionStore, useVoiceHint } from "@/features/companion/state/companion-store";
 import { SUGGESTIONS_POOL } from "@/shared/utils/constants";
-import { useQuery } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/shared/ui/button";
 import { Page } from "@/shared/ui/page";
 import { MessageBubble } from "../components/message-bubble";
@@ -23,10 +21,13 @@ import { messageFromDto } from "../utils/message-from-dto";
 import { WelcomeScreen } from "../components/welcome-screen";
 import { ChatInputBar } from "../components/chat-input-bar";
 import { ConversationSidebar } from "../components/conversation-sidebar";
+import { AttachMenu } from "../components/attach-menu";
+import { WorkspaceChip, type ChatWorkspace } from "../components/workspace-chip";
+import { useComposerAttachments } from "../hooks/useComposerAttachments";
+import { useUploadRules } from "@/features/workspaces/hooks/useUploadRules";
+import { acceptAttribute } from "@/features/workspaces/utils/upload-validation";
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
 import { StatusMessage } from "@/shared/ui/status-message";
-
-type ContextPill = { type: "workspace" | "file"; id: string; label: string };
 
 const groupConversationsByDate = (convs: ConversationSummary[]) => {
   const now = new Date();
@@ -95,9 +96,7 @@ export function AssistantView() {
 
   const [input, setInput] = useState("");
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [wsContextOpen, setWsContextOpen] = useState(false);
-  const [expandedWorkspace, setExpandedWorkspace] = useState<string | null>(null);
-  const [contextPills, setContextPills] = useState<ContextPill[]>([]);
+  const [chatWorkspace, setChatWorkspace] = useState<ChatWorkspace | null>(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
 
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
@@ -109,6 +108,10 @@ export function AssistantView() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const isTyping = isStreaming && streamingConversationId === activeConversationId;
+  const queryClient = useQueryClient();
+  const uploadRules = useUploadRules();
+  const composer = useComposerAttachments(chatWorkspace?.id ?? null);
+  const clearAttachments = composer.clear;
   const { copiedMessageId, copyMessage, statusIndex, statusVisible, resetStatus } = useMessageListUi(isTyping);
 
   const scrollToBottom = useCallback(() => {
@@ -164,6 +167,7 @@ export function AssistantView() {
           const loadedMessages: ConversationMessage[] = (data.messages ?? []).map(messageFromDto);
           setActiveConversation(routeConversationId, loadedMessages, data.model);
           setModel(data.model);
+          setChatWorkspace(data.workspaceId ? { id: data.workspaceId, name: data.workspaceName ?? "Workspace" } : null);
         })
         .catch(() => {
           if (!cancelled) {
@@ -177,40 +181,26 @@ export function AssistantView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routeConversationId, isStreaming, streamingConversationId, activeConversationId]);
 
+  // Attachments belong to the message being written in one conversation; switching conversations drops them.
+  useEffect(() => {
+    clearAttachments();
+  }, [routeConversationId, clearAttachments]);
+
   const [randomizedSuggestions] = useState(() => [...SUGGESTIONS_POOL].sort(() => 0.5 - Math.random()).slice(0, 4));
 
-  const { data: workspaces = [] } = useQuery({
-    queryKey: ["workspaces", "options"],
-    queryFn: fetchWorkspaces,
-    enabled: wsContextOpen,
-  });
-
-  const { data: expandedWorkspaceFiles = [] } = useQuery({
-    queryKey: ["workspaceFiles", expandedWorkspace],
-    queryFn: () => fetchWorkspaceFiles(expandedWorkspace!),
-    enabled: !!expandedWorkspace,
-  });
-
-  const injectWorkspaceContext = (ws: Workspace) => {
-    setContextPills((prev) => {
-      if (prev.some((p) => p.id === ws.id)) {
-        return prev;
-      }
-      return [...prev, { type: "workspace", id: ws.id, label: ws.name }];
-    });
-  };
-
-  const injectFileContext = (fileName: string, fileId: string) => {
-    setContextPills((prev) => {
-      if (prev.some((p) => p.id === fileId)) {
-        return prev;
-      }
-      return [...prev, { type: "file", id: fileId, label: fileName }];
-    });
-  };
-
-  const removeContextPill = (id: string) => {
-    setContextPills((prev) => prev.filter((p) => p.id !== id));
+  const changeWorkspace = async (next: ChatWorkspace | null) => {
+    const previous = chatWorkspace;
+    setChatWorkspace(next);
+    if (!activeConversationId) {
+      return;
+    }
+    try {
+      await setConversationWorkspace(activeConversationId, next?.id ?? null);
+      void queryClient.invalidateQueries({ queryKey: ["conversations"] });
+    } catch {
+      setChatWorkspace(previous);
+      setSendError("The workspace could not be changed. Please try again.");
+    }
   };
 
   const resizeTextarea = () => {
@@ -228,7 +218,7 @@ export function AssistantView() {
 
   const createNewConversation = async (): Promise<string | null> => {
     try {
-      const data = await createConversation({ model });
+      const data = await createConversation({ model, ...(chatWorkspace ? { workspaceId: chatWorkspace.id } : {}) });
       setActiveConversation(data.id, [], model);
       navigate(`/assistant/${data.id}`);
       return data.id;
@@ -283,8 +273,9 @@ export function AssistantView() {
   /** `spoken`: a push-to-talk transcript, sent as it is instead of the typed input. */
   const submitMessage = async (spoken?: string) => {
     const text = spoken ?? input;
-    const hasContent = text.trim() || contextPills.length > 0;
-    if (!hasContent || isTyping) {
+    const attachments = composer.ready;
+    const hasContent = text.trim() || attachments.length > 0;
+    if (!hasContent || isTyping || composer.isUploading) {
       return;
     }
 
@@ -298,25 +289,18 @@ export function AssistantView() {
       }
     }
 
-    const pillPrefix = contextPills
-      .map((p) =>
-        p.type === "workspace" ? `[Workspace: ${p.label} | ID: ${p.id}]` : `[File: ${p.label} | ID: ${p.id}]`,
-      )
-      .join(" ");
-    const userContent = pillPrefix ? (text.trim() ? `${pillPrefix} ${text.trim()}` : pillPrefix) : text.trim();
-
     if (spoken) {
       markSpokenTurn(useConversationStore);
     }
 
     setInput("");
-    setContextPills([]);
+    composer.clear();
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }
     resetStatus();
 
-    void sendMessage({ conversationId, model, userContent });
+    void sendMessage({ conversationId, model, userContent: text.trim(), attachments });
   };
 
   const handleTranscript = (transcript: string) => {
@@ -431,15 +415,31 @@ export function AssistantView() {
             <ChatInputBar
               input={input}
               isTyping={isTyping}
-              contextPills={contextPills}
               model={model}
               models={models}
               onInputChange={resizeTextareaOnInput}
               onKeyDown={handleKeyDown}
               onSubmit={handleSubmit}
               onStop={handleStop}
-              onRemoveContextPill={removeContextPill}
               onSetModel={setModel}
+              attachments={composer.attachments}
+              onRemoveAttachment={composer.remove}
+              onAddFiles={composer.uploadFiles}
+              sendBlocked={composer.isUploading}
+              attachmentProblem={composer.problem}
+              leadingSlot={
+                <>
+                  <AttachMenu
+                    preferredWorkspaceId={chatWorkspace?.id ?? null}
+                    selectedIds={composer.selectedIds}
+                    onToggleFile={composer.toggleFile}
+                    onUploadFiles={composer.uploadFiles}
+                    accept={acceptAttribute(uploadRules)}
+                    disabled={isTyping}
+                  />
+                  <WorkspaceChip value={chatWorkspace} onChange={changeWorkspace} disabled={isTyping} />
+                </>
+              }
               textareaRef={textareaRef}
               voiceSlot={<PushToTalkButton onTranscript={handleTranscript} disabled={isTyping} />}
               hint={voiceHint ?? undefined}
@@ -459,18 +459,10 @@ export function AssistantView() {
           hasMoreConversations={hasMoreConversations}
           isLoadingMoreConversations={isLoadingMoreConversations}
           onLoadMoreConversations={loadMoreConversations}
-          wsContextOpen={wsContextOpen}
-          workspaces={workspaces}
-          expandedWorkspace={expandedWorkspace}
-          expandedWorkspaceFiles={expandedWorkspaceFiles}
           onNewConversation={createNewConversation}
           onLoadConversation={loadConversation}
           onDeleteConversation={deleteConversation}
           onRenameConversation={(id, title) => renameConversation({ id, title })}
-          onToggleWsContext={() => setWsContextOpen((v) => !v)}
-          onToggleExpandWorkspace={(wsId) => setExpandedWorkspace((v) => (v === wsId ? null : wsId))}
-          onInjectWorkspaceContext={injectWorkspaceContext}
-          onInjectFileContext={injectFileContext}
         />
       </div>
 

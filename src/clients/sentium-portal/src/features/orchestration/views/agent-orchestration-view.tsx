@@ -19,7 +19,7 @@ import { Button } from "@/shared/ui/button";
 import { EmptyState } from "@/shared/ui/empty-state";
 import { Page } from "@/shared/ui/page";
 import { WorkflowTimeline } from "../components/workflow-timeline";
-import { ExecuteSidebar, type ExecuteMode } from "../components/execute-sidebar";
+import { ExecuteSidebar, type AttachedFile, type ExecuteMode } from "../components/execute-sidebar";
 
 const ALL_PHASE_STEPS: { key: Phase; label: string; icon: React.ElementType }[] = [
   { key: "PLANNING", label: "Plan", icon: Circle },
@@ -57,6 +57,7 @@ export function AgentOrchestrationView() {
   const [selectedWorkflow, setSelectedWorkflow] = useState<WorkflowRecord | null>(null);
   const [scenarioInput, setScenarioInput] = useState("");
   const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string>("");
+  const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -125,6 +126,7 @@ export function AgentOrchestrationView() {
       workflowId: selectedWorkflow.id,
       scenario,
       ...(selectedWorkspaceId && { workspaceId: selectedWorkspaceId }),
+      fileIds: attachedFiles.map((f) => f.id),
     });
   };
 
@@ -137,6 +139,7 @@ export function AgentOrchestrationView() {
     await startDynamic({
       activity: scenario,
       ...(selectedWorkspaceId && { workspaceId: selectedWorkspaceId }),
+      fileIds: attachedFiles.map((f) => f.id),
     });
   };
 
@@ -320,6 +323,15 @@ export function AgentOrchestrationView() {
           onLoadMoreRuns={loadMoreRuns}
           selectedWorkflow={selectedWorkflow}
           selectedWorkspaceId={selectedWorkspaceId}
+          attachedFiles={attachedFiles}
+          onToggleAttachedFile={(file) =>
+            setAttachedFiles((prev) =>
+              prev.some((f) => f.id === file.id)
+                ? prev.filter((f) => f.id !== file.id)
+                : [...prev, { id: file.id, fileName: file.fileName }],
+            )
+          }
+          onRemoveAttachedFile={(id) => setAttachedFiles((prev) => prev.filter((f) => f.id !== id))}
           scenarioInput={scenarioInput}
           activeRunId={runId}
           isRunning={isRunning}

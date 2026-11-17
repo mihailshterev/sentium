@@ -12,13 +12,14 @@ public sealed class WorkspaceServiceTests
 {
     private readonly IWorkspaceRepository _repository = Substitute.For<IWorkspaceRepository>();
     private readonly ILocalFileService _fileService = Substitute.For<ILocalFileService>();
+    private readonly IWorkspaceFileTextReader _textReader = Substitute.For<IWorkspaceFileTextReader>();
     private readonly IFileIngestionQueue _ingestionQueue = Substitute.For<IFileIngestionQueue>();
     private readonly IDocumentIngestionService _ingestion = Substitute.For<IDocumentIngestionService>();
     private readonly WorkspaceService _sut;
 
     public WorkspaceServiceTests()
     {
-        _sut = new WorkspaceService(_repository, _fileService, _ingestionQueue, _ingestion, new PassThroughScopedCache());
+        _sut = new WorkspaceService(_repository, _fileService, _textReader, _ingestionQueue, _ingestion, new PassThroughScopedCache());
     }
 
     private static WorkspaceDto MakeDto(Guid? id = null, string name = "Test Workspace") =>
@@ -250,7 +251,9 @@ public sealed class WorkspaceServiceTests
         var ct = TestContext.Current.CancellationToken;
         var blobId = Guid.NewGuid();
         var fileDto = MakeFileDto();
-        _fileService.UploadToWorkspaceAsync(Arg.Any<Stream>(), "test.pdf", null, ct).Returns(blobId);
+        var defaultWorkspaceId = Guid.NewGuid();
+        _repository.GetOrCreateIdAsync(WorkspaceService.DefaultWorkspaceName, Arg.Any<string>(), ct).Returns(defaultWorkspaceId);
+        _fileService.UploadToWorkspaceAsync(Arg.Any<Stream>(), "test.pdf", defaultWorkspaceId, ct).Returns(blobId);
         _repository.AddFileRecordAsync(Arg.Any<AddFileRecord>(), ct).Returns(fileDto);
 
         using var stream = new MemoryStream([1, 2, 3]);
@@ -260,6 +263,7 @@ public sealed class WorkspaceServiceTests
 
         // Assert
         result.Should().NotBeNull();
+        await _repository.Received(1).AddFileRecordAsync(Arg.Is<AddFileRecord>(r => r.WorkspaceId == defaultWorkspaceId && r.BlobName == blobId), ct);
         _ingestionQueue.Received(1).Enqueue(new FileIngestionRequest(fileDto.Id, fileDto.WorkspaceId));
     }
 
@@ -269,7 +273,7 @@ public sealed class WorkspaceServiceTests
         var ct = TestContext.Current.CancellationToken;
         var fileId = Guid.NewGuid();
         var blobName = Guid.NewGuid();
-        _repository.GetFileForDeletionAsync(fileId, ct).Returns(new DeleteFileRecord(fileId, blobName, null));
+        _repository.GetStoredFileAsync(fileId, ct).Returns(new StoredFileRecord(fileId, "notes.md", blobName, ".md", null));
 
         var deleted = await _sut.DeleteFileAsync(fileId, ct);
 
@@ -277,5 +281,84 @@ public sealed class WorkspaceServiceTests
         await _ingestion.Received(1).RemoveDocumentAsync(WorkspaceFileMetadata.FileId, fileId.ToString(), null, ct);
         await _fileService.Received(1).DeleteFileAsync(blobName, ct);
         await _repository.Received(1).DeleteFileRecordAsync(fileId, ct);
+    }
+
+    [Fact]
+    public async Task DeleteWorkspaceAsync_RemovesEveryFile_BeforeTheWorkspace()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var workspaceId = Guid.NewGuid();
+        var first = new StoredFileRecord(Guid.NewGuid(), "a.md", Guid.NewGuid(), ".md", workspaceId);
+        var second = new StoredFileRecord(Guid.NewGuid(), "b.pdf", Guid.NewGuid(), ".pdf", workspaceId);
+        _repository.ExistsAsync(workspaceId, ct).Returns(true);
+        _repository.GetStoredFilesAsync(workspaceId, ct).Returns([first, second]);
+
+        var deleted = await _sut.DeleteWorkspaceAsync(workspaceId, ct);
+
+        deleted.Should().BeTrue();
+        foreach (var file in new[] { first, second })
+        {
+            await _ingestion.Received(1).RemoveDocumentAsync(WorkspaceFileMetadata.FileId, file.FileId.ToString(), null, ct);
+            await _fileService.Received(1).DeleteFileAsync(file.BlobName, ct);
+            await _repository.Received(1).DeleteFileRecordAsync(file.FileId, ct);
+        }
+
+        Received.InOrder(() =>
+        {
+            _repository.DeleteFileRecordAsync(second.FileId, ct);
+            _repository.DeleteWorkspaceAsync(workspaceId, ct);
+        });
+    }
+
+    [Fact]
+    public async Task ReindexFileAsync_ResetsAndQueuesTheFile()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var file = new StoredFileRecord(Guid.NewGuid(), "a.md", Guid.NewGuid(), ".md", Guid.NewGuid());
+        _repository.GetStoredFileAsync(file.FileId, ct).Returns(file);
+        _repository.ResetForReindexAsync(file.FileId, ct).Returns(true);
+
+        var queued = await _sut.ReindexFileAsync(file.FileId, ct);
+
+        queued.Should().BeTrue();
+        _ingestionQueue.Received(1).Enqueue(new FileIngestionRequest(file.FileId, file.WorkspaceId));
+    }
+
+    [Fact]
+    public async Task ReindexFileAsync_ReturnsFalse_ForAnUnknownFile()
+    {
+        var ct = TestContext.Current.CancellationToken;
+
+        var queued = await _sut.ReindexFileAsync(Guid.NewGuid(), ct);
+
+        queued.Should().BeFalse();
+        _ingestionQueue.DidNotReceive().Enqueue(Arg.Any<FileIngestionRequest>());
+    }
+
+    [Fact]
+    public async Task GetFileTextAsync_CutsAtMaxChars_AndReportsTheTotal()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var file = new StoredFileRecord(Guid.NewGuid(), "a.md", Guid.NewGuid(), ".md", null);
+        _repository.GetStoredFileAsync(file.FileId, ct).Returns(file);
+        _textReader.ReadAsync(file.BlobName, ".md", ct).Returns("0123456789");
+
+        var result = await _sut.GetFileTextAsync(file.FileId, 4, ct);
+
+        result.Status.Should().Be(ResultStatus.Success);
+        result.Value.Should().BeEquivalentTo(new { Text = "0123", Truncated = true, TotalChars = 10 });
+    }
+
+    [Fact]
+    public async Task GetFileTextAsync_IsInvalid_WhenTheDocumentCannotBeParsed()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var file = new StoredFileRecord(Guid.NewGuid(), "a.pdf", Guid.NewGuid(), ".pdf", null);
+        _repository.GetStoredFileAsync(file.FileId, ct).Returns(file);
+        _textReader.ReadAsync(file.BlobName, ".pdf", ct).Returns<string>(_ => throw new InvalidDataException("The PDF could not be read."));
+
+        var result = await _sut.GetFileTextAsync(file.FileId, 100, ct);
+
+        result.Status.Should().Be(ResultStatus.Invalid);
     }
 }

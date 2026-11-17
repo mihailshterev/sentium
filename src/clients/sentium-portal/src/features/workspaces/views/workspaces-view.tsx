@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { StatusMessage } from "@/shared/ui/status-message";
 import { useNavigate } from "react-router";
 import { FolderOpen, Plus } from "lucide-react";
 import styles from "../workspaces.module.css";
@@ -34,7 +35,8 @@ export function WorkspacesView() {
 
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingWorkspace, setEditingWorkspace] = useState<Workspace | null>(null);
-  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string; fileCount: number } | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [createError, setCreateError] = useState<string | null>(null);
   const [updateError, setUpdateError] = useState<string | null>(null);
 
@@ -57,6 +59,7 @@ export function WorkspacesView() {
         </>
       }
     >
+      {deleteError && <StatusMessage variant="error" message={deleteError} className={styles.pageError} />}
       {isLoading ? (
         <div className={styles.grid} aria-busy="true">
           <span className="visually-hidden">Loading workspaces...</span>
@@ -95,7 +98,8 @@ export function WorkspacesView() {
                 }}
                 onDelete={(e) => {
                   e.stopPropagation();
-                  setPendingDelete({ id: ws.id, name: ws.name });
+                  setDeleteError(null);
+                  setPendingDelete({ id: ws.id, name: ws.name, fileCount: ws.fileCount });
                 }}
               />
             ))}
@@ -159,7 +163,7 @@ export function WorkspacesView() {
         open={pendingDelete !== null}
         variant="danger"
         title="Delete Workspace"
-        description={`Are you sure you want to delete "${pendingDelete?.name}"? All files will be permanently disassociated.`}
+        description={deleteDescription(pendingDelete)}
         confirmLabel="Delete workspace"
         onConfirm={() =>
           pendingDelete &&
@@ -167,7 +171,7 @@ export function WorkspacesView() {
             onSuccess: () => setPendingDelete(null),
             onError: (err) => {
               setPendingDelete(null);
-              alert(err instanceof Error ? err.message : "Failed to delete workspace");
+              setDeleteError(err instanceof Error ? err.message : "Failed to delete workspace.");
             },
           })
         }
@@ -176,3 +180,14 @@ export function WorkspacesView() {
     </Page>
   );
 }
+
+const deleteDescription = (target: { name: string; fileCount: number } | null): string => {
+  if (!target) {
+    return "";
+  }
+  const files =
+    target.fileCount === 0
+      ? "It has no files."
+      : `Its ${target.fileCount} file${target.fileCount === 1 ? "" : "s"} and their indexed content will be permanently deleted.`;
+  return `Delete "${target.name}"? ${files}`;
+};

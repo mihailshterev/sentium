@@ -45,7 +45,7 @@ internal sealed partial class TitleGenerator(IChatClient chatClient, ILogger<Tit
 
     public async Task<string?> GenerateAsync(string text, CancellationToken ct = default)
     {
-        var source = StripContextTags(text);
+        var source = CollapseWhitespace(text);
         if (source.Length == 0)
         {
             return null;
@@ -97,13 +97,13 @@ internal sealed partial class TitleGenerator(IChatClient chatClient, ILogger<Tit
     }
 
     /// <summary>
-    /// A title derived from the text itself, without the model: context tags removed, whitespace collapsed and cut to
+    /// A title derived from the text itself, without the model: whitespace collapsed and cut to
     /// <see cref="MaxFallbackLength"/> characters on a word boundary (with an ellipsis when shortened). Returns
-    /// <see langword="null"/> when the text holds nothing but context tags or whitespace.
+    /// <see langword="null"/> when the text holds nothing but whitespace.
     /// </summary>
     public static string? FromText(string? text)
     {
-        var cleaned = StripContextTags(text);
+        var cleaned = CollapseWhitespace(text);
         if (cleaned.Length == 0)
         {
             return null;
@@ -112,11 +112,8 @@ internal sealed partial class TitleGenerator(IChatClient chatClient, ILogger<Tit
         return cleaned.Length <= MaxFallbackLength ? cleaned : Clamp(cleaned, MaxFallbackLength) + "…";
     }
 
-    /// <summary>
-    /// Removes the portal's context references (<c>[Workspace: name | ID: …]</c>, <c>[File: name | ID: …]</c>) and collapses whitespace.
-    /// </summary>
-    public static string StripContextTags(string? text) =>
-        string.IsNullOrWhiteSpace(text) ? string.Empty : Whitespace().Replace(ContextTag().Replace(text, " "), " ").Trim();
+    private static string CollapseWhitespace(string? text) =>
+        string.IsNullOrWhiteSpace(text) ? string.Empty : Whitespace().Replace(text, " ").Trim();
 
     private static string Clamp(string value, int maxLength)
     {
@@ -129,9 +126,6 @@ internal sealed partial class TitleGenerator(IChatClient chatClient, ILogger<Tit
         var lastSpace = cut.LastIndexOf(' ');
         return (lastSpace > maxLength / 2 ? cut[..lastSpace] : cut).TrimEnd(' ', ',', ';', ':', '-');
     }
-
-    [GeneratedRegex(@"\[(?:Workspace|File):[^\]]*\]", RegexOptions.IgnoreCase)]
-    private static partial Regex ContextTag();
 
     [GeneratedRegex(@"^[\s*_#]*title[\s*_]*:[\s*_]*", RegexOptions.IgnoreCase)]
     private static partial Regex TitleLabel();

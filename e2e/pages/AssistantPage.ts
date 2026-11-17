@@ -19,7 +19,10 @@ export class AssistantPage {
   }
 
   async startNewConversation(): Promise<void> {
+    await expect(this.page.getByPlaceholder(/model name/i)).not.toHaveValue("");
+    const previousUrl = this.page.url();
     await this.newConversationButton.click();
+    await this.page.waitForURL((url) => /\/assistant\/[^/]+$/.test(url.pathname) && url.href !== previousUrl);
   }
 
   async selectConversation(title: string): Promise<void> {

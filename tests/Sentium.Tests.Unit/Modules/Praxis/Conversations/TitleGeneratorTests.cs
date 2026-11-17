@@ -31,13 +31,13 @@ public sealed class TitleGeneratorTests
     }
 
     [Fact]
-    public async Task GenerateAsync_SendsPromptWithoutContextTags()
+    public async Task GenerateAsync_SendsPromptWithCollapsedWhitespace()
     {
         IEnumerable<ChatMessage>? sent = null;
         _chatClient.GetResponseAsync(Arg.Do<IEnumerable<ChatMessage>>(m => sent = m.ToList()), Arg.Any<ChatOptions?>(), Arg.Any<CancellationToken>())
             .Returns(new ChatResponse(new ChatMessage(ChatRole.Assistant, "Quarterly report summary")));
 
-        await _generator.GenerateAsync("[Workspace: Finance | ID: 123] summarize the report", TestContext.Current.CancellationToken);
+        await _generator.GenerateAsync("  summarize\n\tthe report ", TestContext.Current.CancellationToken);
 
         sent.Should().NotBeNull();
         sent!.Last().Text.Should().Be("summarize the report");
@@ -76,9 +76,9 @@ public sealed class TitleGeneratorTests
     }
 
     [Fact]
-    public async Task GenerateAsync_ReturnsNull_WithoutCallingModel_WhenTextIsOnlyContextTags()
+    public async Task GenerateAsync_ReturnsNull_WithoutCallingModel_WhenTextIsBlank()
     {
-        var title = await _generator.GenerateAsync("[File: data.csv | ID: 42]  ", TestContext.Current.CancellationToken);
+        var title = await _generator.GenerateAsync(" \n ", TestContext.Current.CancellationToken);
 
         title.Should().BeNull();
         await _chatClient.DidNotReceive().GetResponseAsync(Arg.Any<IEnumerable<ChatMessage>>(), Arg.Any<ChatOptions?>(), Arg.Any<CancellationToken>());
@@ -110,7 +110,7 @@ public sealed class TitleGeneratorTests
     [Fact]
     public void FromText_ShortensLongText_WithEllipsis()
     {
-        var title = TitleGenerator.FromText("[Workspace: Ops | ID: 7] Please review the deployment pipeline configuration and suggest improvements");
+        var title = TitleGenerator.FromText("Please review the deployment pipeline configuration and suggest improvements");
 
         title.Should().StartWith("Please review the deployment pipeline").And.EndWith("…");
         title!.Length.Should().BeLessThanOrEqualTo(TitleGenerator.MaxFallbackLength + 1);
@@ -119,7 +119,7 @@ public sealed class TitleGeneratorTests
     [Theory]
     [InlineData(null)]
     [InlineData("  ")]
-    [InlineData("[Workspace: Ops | ID: 7]")]
+    [InlineData("\t\n")]
     public void FromText_ReturnsNull_WhenNothingToTitle(string? text)
         => TitleGenerator.FromText(text).Should().BeNull();
 

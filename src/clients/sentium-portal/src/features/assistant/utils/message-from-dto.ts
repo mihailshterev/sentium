@@ -10,5 +10,6 @@ export const messageFromDto = (dto: ConversationMessageDto): ConversationMessage
     timestamp: new Date(dto.timestamp),
     enhancedPrompt: dto.enhancedPrompt ?? undefined,
     ...(steps.length > 0 ? { steps } : {}),
+    ...(dto.attachments?.length ? { attachments: dto.attachments } : {}),
   };
 };

@@ -10,8 +10,6 @@ vi.mock("@/shared/api/client", async (importOriginal) => {
   };
 });
 
-const okResponse = (body: unknown) => ({ ok: true, status: 200, json: async () => body }) as unknown as Response;
-
 beforeEach(() => {
   vi.clearAllMocks();
   vi.stubGlobal("fetch", vi.fn());
@@ -43,45 +41,108 @@ describe("workspaces.service files", () => {
   });
 });
 
+/** A stand-in XMLHttpRequest that answers each send with the scripted status and body. */
+class FakeXhr {
+  static next: { status: number; body: string } = { status: 201, body: "{}" };
+  static last: FakeXhr | null = null;
+
+  method = "";
+  url = "";
+  withCredentials = false;
+  status = 0;
+  responseText = "";
+  sent: FormData | null = null;
+  upload: { onprogress: ((e: { lengthComputable: boolean; loaded: number; total: number }) => void) | null } = {
+    onprogress: null,
+  };
+  onload: (() => void) | null = null;
+  onerror: (() => void) | null = null;
+  onabort: (() => void) | null = null;
+
+  open(method: string, url: string) {
+    this.method = method;
+    this.url = url;
+  }
+
+  send(body: FormData) {
+    FakeXhr.last = this;
+    this.sent = body;
+    this.upload.onprogress?.({ lengthComputable: true, loaded: 5, total: 10 });
+    this.status = FakeXhr.next.status;
+    this.responseText = FakeXhr.next.body;
+    queueMicrotask(() => this.onload?.());
+  }
+}
+
 describe("workspaces.service uploadWorkspaceFile()", () => {
-  it("calls fetch with FormData (not JSON)", async () => {
-    vi.mocked(fetch).mockResolvedValueOnce(okResponse({ id: "file-1", name: "doc.pdf" }));
-
-    const file = new File(["content"], "doc.pdf", { type: "application/pdf" });
-    await workspacesService.uploadWorkspaceFile(file);
-
-    const [, config] = vi.mocked(fetch).mock.calls[0];
-    expect((config as RequestInit).method).toBe("POST");
-    expect((config as RequestInit).body).toBeInstanceOf(FormData);
+  beforeEach(() => {
+    FakeXhr.next = { status: 201, body: JSON.stringify({ id: "f1" }) };
+    FakeXhr.last = null;
+    vi.stubGlobal("XMLHttpRequest", FakeXhr);
   });
 
-  it("appends workspaceId to FormData when provided", async () => {
-    vi.mocked(fetch).mockResolvedValueOnce(okResponse({}));
+  it("posts multipart form data with credentials and reports progress", async () => {
+    const onProgress = vi.fn();
+    const file = new File(["content"], "doc.pdf", { type: "application/pdf" });
 
+    await workspacesService.uploadWorkspaceFile(file, undefined, onProgress);
+
+    const xhr = FakeXhr.last!;
+    expect(xhr.method).toBe("POST");
+    expect(xhr.url).toMatch(/\/praxis\/workspaces\/files$/);
+    expect(xhr.withCredentials).toBe(true);
+    expect(xhr.sent).toBeInstanceOf(FormData);
+    expect(xhr.sent!.get("workspaceId")).toBeNull();
+    expect(onProgress).toHaveBeenCalledWith(0.5);
+  });
+
+  it("appends workspaceId to the form when provided", async () => {
     await workspacesService.uploadWorkspaceFile(new File(["x"], "x.txt"), "ws-1");
-
-    const [, config] = vi.mocked(fetch).mock.calls[0];
-    const fd = (config as RequestInit).body as FormData;
-    expect(fd.get("workspaceId")).toBe("ws-1");
+    expect(FakeXhr.last!.sent!.get("workspaceId")).toBe("ws-1");
   });
 
   it("returns the created file on success", async () => {
-    vi.mocked(fetch).mockResolvedValueOnce(okResponse({ id: "f1" }));
     const result = await workspacesService.uploadWorkspaceFile(new File(["x"], "a.txt"), "w1");
     expect(result).toEqual({ id: "f1" });
   });
 
-  it("throws 'Session expired' on 401 from upload endpoint", async () => {
-    vi.mocked(fetch).mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({}) } as unknown as Response);
-    await expect(workspacesService.uploadWorkspaceFile(new File(["x"], "x.txt"))).rejects.toThrow("Session expired.");
+  it("rejects with 'Session expired' on 401", async () => {
+    FakeXhr.next = { status: 401, body: "" };
+    await expect(workspacesService.uploadWorkspaceFile(new File(["x"], "x.txt"))).rejects.toThrow("Session expired");
   });
 
-  it("throws the API error message on failure", async () => {
-    vi.mocked(fetch).mockResolvedValueOnce({
-      ok: false,
-      status: 500,
-      json: async () => ({ error: "disk full" }),
-    } as unknown as Response);
-    await expect(workspacesService.uploadWorkspaceFile(new File(["x"], "a.txt"))).rejects.toThrow("disk full");
+  it("rejects with the problem details' detail on failure", async () => {
+    FakeXhr.next = {
+      status: 400,
+      body: JSON.stringify({ title: "Bad Request", detail: "File exceeds the 100 MB size limit." }),
+    };
+    await expect(workspacesService.uploadWorkspaceFile(new File(["x"], "a.txt"))).rejects.toThrow(
+      "File exceeds the 100 MB size limit.",
+    );
+  });
+
+  it("falls back to the status when the error body is unreadable", async () => {
+    FakeXhr.next = { status: 502, body: "<html>bad gateway</html>" };
+    await expect(workspacesService.uploadWorkspaceFile(new File(["x"], "a.txt"))).rejects.toThrow(
+      "Upload failed (502).",
+    );
+  });
+});
+
+describe("workspaces.service file endpoints", () => {
+  it("builds the content, text, reindex and rules URLs", async () => {
+    vi.mocked(client.get).mockResolvedValue({} as never);
+    vi.mocked(client.post).mockResolvedValue(undefined as never);
+
+    expect(workspacesService.workspaceFileContentUrl("f1")).toMatch(/\/praxis\/workspaces\/files\/f1\/content$/);
+    await workspacesService.fetchWorkspaceFileText("f1", 500);
+    await workspacesService.reindexWorkspaceFile("f1");
+    await workspacesService.fetchUploadRules();
+    await workspacesService.fetchWorkspace("w1");
+
+    expect(client.get).toHaveBeenCalledWith("/praxis/workspaces/files/f1/text?maxChars=500");
+    expect(client.post).toHaveBeenCalledWith("/praxis/workspaces/files/f1/reindex", undefined);
+    expect(client.get).toHaveBeenCalledWith("/praxis/workspaces/files/rules");
+    expect(client.get).toHaveBeenCalledWith("/praxis/workspaces/w1");
   });
 });

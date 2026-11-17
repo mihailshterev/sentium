@@ -36,14 +36,17 @@ describe("useWorkspaceFiles", () => {
     expect(result.current.files).toEqual([file]);
   });
 
-  it("uploads a file scoped to the workspace", async () => {
+  it("uploads several files one after another, scoped to the workspace", async () => {
     const { result } = renderHook(() => useWorkspaceFiles("w1"), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isFilesLoading).toBe(false));
-    const upload = new File(["x"], "x.txt");
+    const first = new File(["x"], "x.txt");
+    const second = new File(["y"], "y.md");
     act(() => {
-      result.current.uploadFile(upload);
+      result.current.uploadFiles([first, second]);
     });
-    await waitFor(() => expect(workspacesService.uploadWorkspaceFile).toHaveBeenCalledWith(upload, "w1"));
+    await waitFor(() => expect(workspacesService.uploadWorkspaceFile).toHaveBeenCalledTimes(2));
+    expect(workspacesService.uploadWorkspaceFile).toHaveBeenNthCalledWith(1, first, "w1", expect.any(Function));
+    expect(workspacesService.uploadWorkspaceFile).toHaveBeenNthCalledWith(2, second, "w1", expect.any(Function));
   });
 
   it("deletes a file", async () => {

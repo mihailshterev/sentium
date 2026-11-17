@@ -58,6 +58,11 @@ internal sealed class ConversationService(
             agentName = string.Equals(agent.Name, AgentRole.GeneralAssistant, StringComparison.Ordinal) ? null : agent.Name;
         }
 
+        if (request.WorkspaceId is { } workspaceId && !await IsOwnWorkspaceAsync(workspaceId, ct))
+        {
+            return Result<ConversationSummary>.Invalid("There is no such workspace.");
+        }
+
         var result = await repository.CreateConversationAsync(request with { AgentName = agentName }, ct);
         await cache.InvalidateTagAsync(CacheTag, ct);
         return Result<ConversationSummary>.Success(result);
@@ -119,10 +124,41 @@ internal sealed class ConversationService(
         return renamed;
     }
 
-    public async Task AddMessageAsync(Guid conversationId, string role, string content, string? enhancedPrompt = null, IReadOnlyList<MessageStep>? steps = null, CancellationToken ct = default)
+    public async Task<Result<bool>> SetWorkspaceAsync(Guid conversationId, Guid? workspaceId, CancellationToken ct = default)
     {
-        await repository.AddMessageAsync(conversationId, role, content, enhancedPrompt, steps, ct);
+        if (workspaceId is { } id && !await IsOwnWorkspaceAsync(id, ct))
+        {
+            return Result<bool>.Invalid("There is no such workspace.");
+        }
+
+        if (!await repository.SetWorkspaceAsync(conversationId, workspaceId, ct))
+        {
+            return Result<bool>.NotFound();
+        }
+
+        await cache.InvalidateTagAsync(CacheTag, ct);
+        return Result<bool>.Success(true);
+    }
+
+    public Task<Guid?> GetWorkspaceIdAsync(Guid conversationId, Guid userId, CancellationToken ct = default)
+        => repository.GetWorkspaceIdAsync(conversationId, userId, ct);
+
+    public async Task AddMessageAsync(
+        Guid conversationId,
+        string role,
+        string content,
+        string? enhancedPrompt = null,
+        IReadOnlyList<MessageStep>? steps = null,
+        IReadOnlyList<MessageAttachment>? attachments = null,
+        CancellationToken ct = default)
+    {
+        await repository.AddMessageAsync(conversationId, role, content, enhancedPrompt, steps, attachments, ct);
         await cache.RemoveAsync($"{CacheTag}:{conversationId}", ct);
+    }
+
+    private async Task<bool> IsOwnWorkspaceAsync(Guid workspaceId, CancellationToken ct)
+    {
+        return currentUser.UserId is { } userId && await repository.WorkspaceIsOwnedByAsync(workspaceId, userId, ct);
     }
 
     private async ValueTask<PagedResponse<ConversationSummary>> LoadPageAsync(int page, int pageSize, string? term, CancellationToken ct)

@@ -31,6 +31,10 @@ export const deleteConversation = (id: string) => client.delete<void>(`${BASE}/c
 export const renameConversation = (id: string, title: string) =>
   client.put<void>(`${BASE}/conversations/${id}/title`, { title });
 
+/** Binds the conversation to a workspace, or unbinds it with null. */
+export const setConversationWorkspace = (id: string, workspaceId: string | null) =>
+  client.put<void>(`${BASE}/conversations/${id}/workspace`, { workspaceId });
+
 export const sendChatMessage = (payload: ChatPayload, signal?: AbortSignal): Promise<Response> =>
   fetch(`${BASE_URL}${BASE}/assistant/chat`, {
     method: "POST",
