@@ -1,9 +1,9 @@
-using Azure.Storage.Blobs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.Net.Http.Headers;
 using Sentium.Core.Results;
+using Sentium.Infrastructure.Storage;
 using Sentium.Praxis.Contracts;
 
 namespace Sentium.Praxis.Features.CodeExecution;
@@ -18,7 +18,7 @@ namespace Sentium.Praxis.Features.CodeExecution;
 [Route(SandboxRoutePrefix)]
 internal sealed class SandboxController(
     IExecutionLogRepository executionLog,
-    BlobServiceClient blobServiceClient,
+    IObjectStore objectStore,
     IOptions<SandboxArtifactOptions> options) : ControllerBase
 {
     private const string SandboxRoutePrefix = "api/sandbox";
@@ -95,7 +95,7 @@ internal sealed class SandboxController(
         });
     }
 
-    private static SandboxExecutionLogRecord ToRecord(ExecutionLogEntry e)
+    private SandboxExecutionLogRecord ToRecord(ExecutionLogEntry e)
     {
         return new()
         {
@@ -124,7 +124,7 @@ internal sealed class SandboxController(
                     FileName = a.FileName,
                     MimeType = a.MimeType,
                     BlobUri = a.BlobUri.ToString(),
-                    DownloadPath = new BlobUriBuilder(a.BlobUri).BlobName,
+                    DownloadPath = ArtifactKey(a) ?? string.Empty,
                     SizeBytes = a.SizeBytes
                 })
                 .ToList()
@@ -150,23 +150,17 @@ internal sealed class SandboxController(
             return NotFound();
         }
 
-        var container = blobServiceClient.GetBlobContainerClient(_opts.ArtifactContainerName);
-        var blob = container.GetBlobClient(path);
-
-        if (!await blob.ExistsAsync(ct))
+        var artifact = await objectStore.OpenReadAsync(_opts.ArtifactContainerName, path, ct);
+        if (artifact is null)
         {
             return NotFound();
         }
 
-        var props = await blob.GetPropertiesAsync(cancellationToken: ct);
-        var contentType = string.IsNullOrEmpty(props.Value.ContentType) ? "application/octet-stream" : props.Value.ContentType;
-
-        var stream = await blob.OpenReadAsync(cancellationToken: ct);
         var fileName = Path.GetFileName(path);
 
         // Artifacts are written by sandboxed code: even if a browser opens one instead of downloading it, it runs nothing.
         Response.Headers[HeaderNames.ContentSecurityPolicy] = "default-src 'none'; sandbox";
-        return File(stream, contentType, fileName, enableRangeProcessing: true);
+        return File(artifact.Content, artifact.ContentType, fileName, enableRangeProcessing: true);
     }
 
     /// <summary>
@@ -183,6 +177,8 @@ internal sealed class SandboxController(
 
         var entry = await executionLog.GetByIdAsync(jobId, ct);
 
-        return entry is not null && entry.Artifacts.Any(a => new BlobUriBuilder(a.BlobUri).BlobName == path);
+        return entry is not null && entry.Artifacts.Any(a => ArtifactKey(a) == path);
     }
+
+    private string? ArtifactKey(ArtifactRecord artifact) => ObjectUri.GetKey(artifact.BlobUri, _opts.ArtifactContainerName);
 }

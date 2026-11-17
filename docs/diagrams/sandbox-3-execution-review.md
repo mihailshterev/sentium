@@ -5,7 +5,7 @@ sequenceDiagram
     participant FE as sentium-portal (Sandbox)
     participant SC as Praxis · SandboxController
     participant LOG as PostgreSQL (praxis.ExecutionLogs)
-    participant BL as Blob Storage (Azurite)
+    participant BL as Object Storage (SeaweedFS)
 
     U->>FE: Open the execution list
     FE->>SC: GET /api/sandbox/executions (page, filters)

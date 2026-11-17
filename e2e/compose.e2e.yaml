@@ -16,13 +16,29 @@ services:
       timeout: 3s
       retries: 30
 
-  azurite:
-    image: mcr.microsoft.com/azure-storage/azurite:3.35.0
-    command: ["azurite-blob", "--blobHost", "0.0.0.0", "--inMemoryPersistence", "--skipApiVersionCheck", "--loose"]
+  storage:
+    image: chrislusf/seaweedfs:4.54@sha256:4b42c212543a0acd4c0e675215ecdcaf62a186ef98def76c7e12701871222d15
+    command:
+      [
+        "mini",
+        "-dir=/data",
+        "-ip=127.0.0.1",
+        "-ip.bind=0.0.0.0",
+        "-master.telemetry=false",
+        "-admin.ui=false",
+        "-webdav=false",
+        "-s3.port.iceberg=0",
+        "-s3.port.lance=0",
+      ]
+    environment:
+      AWS_ACCESS_KEY_ID: e2eaccesskey
+      AWS_SECRET_ACCESS_KEY: e2esecretkey-not-a-real-secret
     ports:
-      - "20000:10000"
+      - "28333:8333"
+    tmpfs:
+      - /data
     healthcheck:
-      test: ["CMD", "nc", "-z", "127.0.0.1", "10000"]
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8333/healthz"]
       interval: 2s
       timeout: 3s
       retries: 30

@@ -63,5 +63,5 @@ if [[ -n $identity ]]; then
   args+=(--identity /restore/identity)
 fi
 
-# Starts postgres and azurite (waiting for the database to be healthy) and runs the restore in the sidecar image.
+# Starts postgres and storage (waiting for both to be healthy) and runs the restore in the sidecar image.
 docker compose --profile restore run --rm "${mounts[@]}" backup-restore "${args[@]}" ${replace[@]+"${replace[@]}"}

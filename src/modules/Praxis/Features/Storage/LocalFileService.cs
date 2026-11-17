@@ -1,24 +1,19 @@
-using Azure.Storage.Blobs;
-using Azure.Storage.Blobs.Models;
 using Sentium.Core.Constants;
+using Sentium.Infrastructure.Storage;
 
 namespace Sentium.Praxis.Features.Storage;
 
 /// <summary>
-/// Implements file storage operations using Azure Blob Storage as the backend.
-/// Files are stored in the <see cref="Sentium.Core.Constants.ResourceNames.WorkspaceBlobs"/> container, one blob per
-/// file named by a GUID, with the filename and workspace as blob metadata.
+/// Workspace file content in the <see cref="ResourceNames.WorkspaceBlobs"/> bucket, one object per file named by a
+/// GUID, with the filename and workspace as object metadata.
 /// </summary>
-internal sealed class LocalFileService(BlobServiceClient blobServiceClient) : ILocalFileService
+internal sealed class LocalFileService(IObjectStore objectStore) : ILocalFileService
 {
-    /// <inheritdoc/>
+    private const string Bucket = ResourceNames.WorkspaceBlobs;
+
     public async Task<Guid> UploadToWorkspaceAsync(Stream fileStream, string fileName, Guid? workspaceId, CancellationToken ct = default)
     {
-        var blobContainerClient = blobServiceClient.GetBlobContainerClient(ResourceNames.WorkspaceBlobs);
-        await blobContainerClient.CreateIfNotExistsAsync(PublicAccessType.None, cancellationToken: ct);
-
         var blobName = Guid.NewGuid();
-        var blobClient = blobContainerClient.GetBlobClient(blobName.ToString());
 
         var metadata = new Dictionary<string, string>
         {
@@ -30,30 +25,21 @@ internal sealed class LocalFileService(BlobServiceClient blobServiceClient) : IL
             metadata.Add("WorkspaceId", workspaceId.Value.ToString());
         }
 
-        await blobClient.UploadAsync(fileStream, new BlobUploadOptions
-        {
-            Metadata = metadata
-        }, ct);
+        await objectStore.PutAsync(Bucket, blobName.ToString(), fileStream, metadata: metadata, ct: ct);
 
         return blobName;
     }
 
-    /// <inheritdoc/>
     public async Task<Stream> GetFileStreamAsync(Guid blobName, CancellationToken ct = default)
     {
-        var blobContainerClient = blobServiceClient.GetBlobContainerClient(ResourceNames.WorkspaceBlobs);
-        var blobClient = blobContainerClient.GetBlobClient(blobName.ToString());
+        var stored = await objectStore.OpenReadAsync(Bucket, blobName.ToString(), ct)
+            ?? throw new FileNotFoundException($"Workspace file {blobName} is not in storage.");
 
-        var response = await blobClient.DownloadStreamingAsync(cancellationToken: ct);
-        return response.Value.Content;
+        return stored.Content;
     }
 
-    /// <inheritdoc/>
-    public async Task DeleteFileAsync(Guid blobName, CancellationToken ct = default)
+    public Task DeleteFileAsync(Guid blobName, CancellationToken ct = default)
     {
-        var blobContainerClient = blobServiceClient.GetBlobContainerClient(ResourceNames.WorkspaceBlobs);
-        var blobClient = blobContainerClient.GetBlobClient(blobName.ToString());
-
-        await blobClient.DeleteIfExistsAsync(DeleteSnapshotsOption.IncludeSnapshots, cancellationToken: ct);
+        return objectStore.DeleteAsync(Bucket, blobName.ToString(), ct);
     }
 }

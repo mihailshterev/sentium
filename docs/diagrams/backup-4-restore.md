@@ -6,7 +6,7 @@ sequenceDiagram
     participant DC as docker compose
     participant RC as backup-restore · RestoreCommand
     participant PG as PostgreSQL (sentiumdb)
-    participant AZ as Azurite (blob API)
+    participant AZ as SeaweedFS (S3 API)
     participant K as /keys (key ring, read-write)
 
     O->>SH: restore.sh archive [--identity key] [--replace]
@@ -33,7 +33,7 @@ sequenceDiagram
         else Empty, or --replace
             opt --replace
                 RC->>PG: DROP DATABASE WITH (FORCE), CREATE DATABASE
-                RC->>AZ: Delete all containers
+                RC->>AZ: Delete every object of every bucket
                 RC->>K: Delete key files
             end
             RC->>PG: pg_restore --single-transaction (failure leaves it empty)

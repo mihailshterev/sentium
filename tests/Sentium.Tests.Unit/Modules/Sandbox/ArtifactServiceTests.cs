@@ -1,10 +1,8 @@
-using Azure;
-using Azure.Storage.Blobs;
-using Azure.Storage.Blobs.Models;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NSubstitute;
+using Sentium.Infrastructure.Storage;
 using Sentium.Sandbox.Artifacts;
 using Sentium.Sandbox.Options;
 using Xunit;
@@ -15,17 +13,20 @@ public sealed class ArtifactServiceTests : IDisposable
 {
     private readonly string _jobDirectory = Directory.CreateTempSubdirectory("sentium-artifacts-").FullName;
     private readonly string _outside = Path.Combine(Path.GetTempPath(), $"sentium-secret-{Guid.NewGuid():N}.txt");
-    private readonly BlobContainerClient _container = Substitute.For<BlobContainerClient>();
+    private readonly IObjectStore _store = Substitute.For<IObjectStore>();
     private readonly List<string> _uploaded = [];
     private readonly ArtifactService _sut;
 
     public ArtifactServiceTests()
     {
-        var blobs = Substitute.For<BlobServiceClient>();
-        blobs.GetBlobContainerClient(Arg.Any<string>()).Returns(_container);
-        _container.GetBlobClient(Arg.Any<string>()).Returns(call => FakeBlob(call.Arg<string>()));
+        _store.PutAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<Stream>(), Arg.Any<string?>(), Arg.Any<IReadOnlyDictionary<string, string>?>(), Arg.Any<CancellationToken>())
+            .Returns(call =>
+            {
+                _uploaded.Add($"{call.ArgAt<string>(0)}/{call.ArgAt<string>(1)}");
+                return Task.CompletedTask;
+            });
 
-        _sut = new ArtifactService(blobs, Options.Create(new SandboxOptions()), NullLogger<ArtifactService>.Instance);
+        _sut = new ArtifactService(_store, Options.Create(new SandboxOptions()), NullLogger<ArtifactService>.Instance);
     }
 
     public void Dispose()
@@ -57,16 +58,20 @@ public sealed class ArtifactServiceTests : IDisposable
         _uploaded.Should().ContainSingle().Which.Should().EndWith("/result.csv");
     }
 
-    private BlobClient FakeBlob(string name)
+    [Fact]
+    public async Task Harvest_ReferencesEachArtifactByBucketAndKey()
     {
-        var blob = Substitute.For<BlobClient>();
-        blob.Uri.Returns(new Uri($"http://blobs.test/artifacts/{name}"));
-        blob.UploadAsync(Arg.Any<Stream>(), Arg.Any<BlobUploadOptions>(), Arg.Any<CancellationToken>())
-            .Returns(_ =>
-            {
-                _uploaded.Add(name);
-                return Task.FromResult(Substitute.For<Response<BlobContentInfo>>());
-            });
-        return blob;
+        var ct = TestContext.Current.CancellationToken;
+        var jobId = Guid.NewGuid();
+        Directory.CreateDirectory(Path.Combine(_jobDirectory, "out"));
+        await File.WriteAllTextAsync(Path.Combine(_jobDirectory, "out", "my chart.png"), "png", ct);
+
+        var artifacts = await _sut.HarvestAsync(_jobDirectory, new HashSet<string>(), jobId, ct);
+
+        var artifact = artifacts.Should().ContainSingle().Subject;
+        artifact.Key.Should().Be($"{jobId:N}/out/my chart.png");
+        artifact.MimeType.Should().Be("image/png");
+        artifact.BlobUri.Should().Be(new Uri($"s3://sandbox-artifacts/{jobId:N}/out/my%20chart.png"));
+        _uploaded.Should().Equal($"sandbox-artifacts/{jobId:N}/out/my chart.png");
     }
 }

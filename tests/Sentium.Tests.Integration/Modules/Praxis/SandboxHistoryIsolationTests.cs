@@ -4,6 +4,7 @@ using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Sentium.Core.Results;
 using Sentium.Infrastructure.Security;
+using Sentium.Infrastructure.Storage;
 using Sentium.Praxis.Data;
 using Sentium.Praxis.Features.CodeExecution;
 using Sentium.Tests.Integration.Common;
@@ -76,7 +77,7 @@ public sealed class SandboxHistoryIsolationTests(MonolithWebApplicationFactory f
                 {
                     FileName = "result.csv",
                     MimeType = "text/csv",
-                    BlobUri = new Uri($"http://127.0.0.1:10000/devstoreaccount1/sandbox-artifacts/{jobId:N}/result.csv"),
+                    BlobUri = ObjectUri.Create("sandbox-artifacts", $"{jobId:N}/result.csv"),
                     SizeBytes = 3
                 }
             ]

@@ -28,7 +28,7 @@ builder.Services.AddValidatorsFromAssemblyContaining<Program>(includeInternalTyp
 builder.Services.Configure<SandboxOptions>(builder.Configuration.GetSection(SandboxOptions.SectionName));
 builder.Services.Configure<McpHostOptions>(builder.Configuration.GetSection(McpHostOptions.SectionName));
 
-builder.AddAzureBlobServiceClient(ResourceNames.WorkspaceBlobs);
+builder.AddSentiumObjectStore(ResourceNames.WorkspaceBlobs);
 builder.Services.AddSingleton<IArtifactService, ArtifactService>();
 
 builder.Services.AddSingleton<IDockerClient>(sp =>

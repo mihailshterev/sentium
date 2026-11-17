@@ -1,9 +1,9 @@
-using Azure.Storage.Blobs;
 using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using NSubstitute;
+using Sentium.Infrastructure.Storage;
 using Sentium.Praxis.Features.CodeExecution;
 using Xunit;
 
@@ -15,14 +15,14 @@ namespace Sentium.Tests.Unit.Modules.Praxis.CodeExecution;
 public sealed class SandboxHistoryControllerTests
 {
     private readonly IExecutionLogRepository _executionLog = Substitute.For<IExecutionLogRepository>();
-    private readonly BlobServiceClient _blobClient = Substitute.For<BlobServiceClient>();
+    private readonly IObjectStore _store = Substitute.For<IObjectStore>();
     private readonly SandboxController _controller;
 
     public SandboxHistoryControllerTests()
     {
         _controller = new SandboxController(
             _executionLog,
-            _blobClient,
+            _store,
             Options.Create(new SandboxArtifactOptions()))
         {
             ControllerContext = new ControllerContext
@@ -32,11 +32,11 @@ public sealed class SandboxHistoryControllerTests
         };
     }
 
-    private static ExecutionLogEntry MakeLogEntry()
+    private static ExecutionLogEntry MakeLogEntry(Guid? jobId = null, params ArtifactRecord[] artifacts)
     {
         return new()
         {
-            JobId = Guid.NewGuid(),
+            JobId = jobId ?? Guid.NewGuid(),
             ExecutedAt = DateTimeOffset.UtcNow,
             AgentId = "agent-1",
             CorrelationId = Guid.NewGuid().ToString(),
@@ -49,7 +49,8 @@ public sealed class SandboxHistoryControllerTests
             TimedOut = false,
             PolicyDenied = false,
             SentinelAuditId = Guid.NewGuid(),
-            DurationMs = 50
+            DurationMs = 50,
+            Artifacts = [.. artifacts]
         };
     }
 
@@ -140,5 +141,59 @@ public sealed class SandboxHistoryControllerTests
 
         // Assert
         result.Should().BeOfType<OkObjectResult>();
+    }
+
+    [Fact]
+    public async Task Artifacts_AreListedAndDownloadedByTheirObjectKey()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        var jobId = Guid.NewGuid();
+        var key = $"{jobId:N}/out/result v2.csv";
+        var entry = MakeLogEntry(jobId, new ArtifactRecord
+        {
+            FileName = "out/result v2.csv",
+            MimeType = "text/csv",
+            BlobUri = ObjectUri.Create("sandbox-artifacts", key),
+            SizeBytes = 3
+        });
+        _executionLog.GetByIdAsync(jobId, ct).Returns(entry);
+        var content = new MemoryStream("a,b"u8.ToArray());
+        _store.OpenReadAsync("sandbox-artifacts", key, ct)
+            .Returns(new StoredObject(content, "text/csv", content.Length, new Dictionary<string, string>()));
+
+        // Act
+        var record = (SandboxExecutionLogRecord)((OkObjectResult)await _controller.GetExecution(jobId, ct)).Value!;
+        var download = await _controller.DownloadArtifactAsync(key, ct);
+
+        // Assert
+        record.Artifacts.Should().ContainSingle().Which.DownloadPath.Should().Be(key);
+        var file = download.Should().BeOfType<FileStreamResult>().Subject;
+        file.FileStream.Should().BeSameAs(content);
+        file.ContentType.Should().Be("text/csv");
+        file.FileDownloadName.Should().Be("result v2.csv");
+    }
+
+    [Fact]
+    public async Task DownloadArtifact_ReturnsNotFound_WhenTheObjectIsGone()
+    {
+        // Arrange
+        var ct = TestContext.Current.CancellationToken;
+        var jobId = Guid.NewGuid();
+        var key = $"{jobId:N}/result.csv";
+        _executionLog.GetByIdAsync(jobId, ct).Returns(MakeLogEntry(jobId, new ArtifactRecord
+        {
+            FileName = "result.csv",
+            MimeType = "text/csv",
+            BlobUri = ObjectUri.Create("sandbox-artifacts", key),
+            SizeBytes = 3
+        }));
+        _store.OpenReadAsync("sandbox-artifacts", key, ct).Returns((StoredObject?)null);
+
+        // Act
+        var result = await _controller.DownloadArtifactAsync(key, ct);
+
+        // Assert
+        result.Should().BeOfType<NotFoundResult>();
     }
 }

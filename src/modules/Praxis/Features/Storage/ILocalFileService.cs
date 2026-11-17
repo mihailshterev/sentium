@@ -1,7 +1,7 @@
 namespace Sentium.Praxis.Features.Storage;
 
 /// <summary>
-/// Abstraction over the cloud blob storage that holds workspace file content.
+/// Abstraction over the object storage that holds workspace file content.
 /// </summary>
 internal interface ILocalFileService
 {
@@ -14,7 +14,7 @@ internal interface ILocalFileService
     /// <summary>
     /// Retrieves the content stream of a stored file by its blob identifier.
     /// </summary>
-    /// <exception cref="Azure.RequestFailedException">Thrown if the blob does not exist or cannot be accessed.</exception>
+    /// <exception cref="FileNotFoundException">Thrown if the blob does not exist.</exception>
     Task<Stream> GetFileStreamAsync(Guid blobName, CancellationToken ct = default);
 
     /// <summary>

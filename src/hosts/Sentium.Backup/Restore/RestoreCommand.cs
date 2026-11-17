@@ -116,7 +116,7 @@ internal sealed class RestoreCommand(BlobPart blobPart, KeysPart keysPart, IOpti
 
         Console.WriteLine($"Discarding the current {string.Join(", ", occupied)}...");
         await PostgresTools.RecreateDatabaseAsync(ct);
-        await blobPart.DeleteAllContainersAsync(ct);
+        await blobPart.DeleteAllBlobsAsync(ct);
         keysPart.DeleteAll();
     }
 

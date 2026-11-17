@@ -90,7 +90,7 @@ flowchart TB
     subgraph Infrastructure
         PG[("PostgreSQL + pgvector<br/>one schema per module")]
         LLM[("llama-server<br/>chat router + embeddings")]
-        Blobs[("Azurite<br/>blob storage")]
+        Blobs[("SeaweedFS<br/>object storage (S3)")]
     end
 
     Web --> PG & LLM & Blobs
@@ -193,7 +193,7 @@ Modules reference each other only through `Contracts`; a unit test (`ModuleBound
 
 ### Run the whole system
 
-The Aspire AppHost is the single entry point. It starts Sentium.Web, the Sandbox, the portal, and every infrastructure dependency (PostgreSQL with pgvector, the llama.cpp inference servers, Azurite), and downloads and checksum-verifies the default models on first run.
+The Aspire AppHost is the single entry point. It starts Sentium.Web, the Sandbox, the portal, and every infrastructure dependency (PostgreSQL with pgvector, the llama.cpp inference servers, SeaweedFS object storage), and downloads and checksum-verifies the default models on first run.
 
 ```bash
 dotnet run --project src/aspire/Sentium.AppHost/Sentium.AppHost.csproj
@@ -280,7 +280,7 @@ pnpm test:run
 pnpm test:coverage
 ```
 
-**End-to-end (Playwright)** - independent of Aspire. Playwright starts PostgreSQL and Azurite from `e2e/compose.e2e.yaml` (tmpfs, ports offset from the dev stack), builds the portal into `Sentium.Web/wwwroot`, and runs Sentium.Web in the `Testing` environment on `http://localhost:5180` - one origin, exactly like production. Each boot drops and re-seeds `sentiumdb_e2e`. The inference servers are replaced by a deterministic stub (`e2e/support/llm-stub.ts`) that declares no models. Needs Docker, .NET and pnpm:
+**End-to-end (Playwright)** - independent of Aspire. Playwright starts PostgreSQL and SeaweedFS from `e2e/compose.e2e.yaml` (tmpfs, ports offset from the dev stack), builds the portal into `Sentium.Web/wwwroot`, and runs Sentium.Web in the `Testing` environment on `http://localhost:5180` - one origin, exactly like production. Each boot drops and re-seeds `sentiumdb_e2e`. The inference servers are replaced by a deterministic stub (`e2e/support/llm-stub.ts`) that declares no models. Needs Docker, .NET and pnpm:
 
 ```bash
 cd e2e

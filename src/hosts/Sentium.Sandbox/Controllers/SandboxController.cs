@@ -1,4 +1,3 @@
-using Azure.Storage.Blobs;
 using Microsoft.AspNetCore.Mvc;
 using Sentium.Core.Constants;
 using Sentium.Infrastructure.Security;
@@ -59,7 +58,7 @@ internal sealed class SandboxController(ISandboxRunner runner) : ControllerBase
                     FileName = a.FileName,
                     MimeType = a.MimeType,
                     BlobUri = a.BlobUri.ToString(),
-                    DownloadPath = new BlobUriBuilder(a.BlobUri).BlobName,
+                    DownloadPath = a.Key,
                     SizeBytes = a.SizeBytes
                 })
                 .ToList()

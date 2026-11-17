@@ -14,7 +14,7 @@ flowchart LR
 
     PG[("PostgreSQL + pgvector<br/>sentiumdb")]
     OLL["llama-server<br/>chat router + embeddings"]
-    BLOB[("Azurite<br/>Blob storage")]
+    BLOB[("SeaweedFS<br/>Object storage (S3)")]
     DOCKER{{"Host Docker daemon"}}
 
     ID -->|"identity schema"| PG
