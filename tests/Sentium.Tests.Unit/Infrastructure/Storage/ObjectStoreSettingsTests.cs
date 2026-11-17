@@ -34,7 +34,6 @@ public sealed class ObjectStoreSettingsTests
     [InlineData("Endpoint=ftp://storage;AccessKey=ak;SecretKey=sk")]
     [InlineData("Endpoint=http://storage:8333;SecretKey=sk")]
     [InlineData("Endpoint=http://storage:8333;AccessKey=ak;SecretKey=")]
-    [InlineData("UseDevelopmentStorage=true")]
     public void Parse_RejectsIncompleteConnectionStrings(string? connectionString)
     {
         var parse = () => ObjectStoreSettings.Parse(connectionString);

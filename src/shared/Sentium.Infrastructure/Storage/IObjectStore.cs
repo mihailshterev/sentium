@@ -1,8 +1,7 @@
 namespace Sentium.Infrastructure.Storage;
 
 /// <summary>
-/// Vendor-neutral object storage: named buckets of objects addressed by key. Modules depend on this, never on a
-/// storage SDK, so the backend (an S3-compatible server today) can change without touching them.
+/// Object storage: named buckets of objects addressed by key. Modules depend on this, never on a storage SDK.
 /// </summary>
 public interface IObjectStore
 {

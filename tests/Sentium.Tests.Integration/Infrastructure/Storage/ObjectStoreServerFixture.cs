@@ -10,10 +10,10 @@ using Xunit;
 namespace Sentium.Tests.Integration.Infrastructure.Storage;
 
 /// <summary>
-/// The SeaweedFS image and flags the deployments run (docker-compose.yml, StorageConfig), so the contract tests
-/// exercise the real server rather than a stand-in.
+/// The object store server, image and flags as the deployments run it (docker-compose.yml, StorageConfig), so the
+/// contract tests exercise the real server rather than a stand-in. Keep the three in step.
 /// </summary>
-public sealed class SeaweedFsFixture : IAsyncLifetime
+public sealed class ObjectStoreServerFixture : IAsyncLifetime
 {
     public const string AccessKey = "contract-access-key";
     public const string SecretKey = "contract-secret-key-0123456789abcdef";

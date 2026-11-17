@@ -111,8 +111,7 @@ Sentium.Web (all six modules), the Sandbox, the portal (`sentium-portal`), and t
 
 - `storage` runs SeaweedFS, the S3-compatible object store for workspace files, sandbox artifacts and
   inventory attachments, with generated `storage-access-key`/`storage-secret-key` parameters, in the
-  `…-storage-seaweedfs-data` volume (see [Object storage](#object-storage)). A leftover `…-storage-data` volume
-  belongs to the Azurite emulator it replaced and can be deleted.
+  `…-storage-data` volume (see [Object storage](#object-storage)).
 - `models-init` downloads the model files pinned in [`infra/llm/models.lock`](../infra/llm/models.lock)
   into the `sentium-llm-models` volume and verifies each SHA-256, then exits.
 - `llm` runs llama.cpp's `llama-server` in router mode for the chat models declared in

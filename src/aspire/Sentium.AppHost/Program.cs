@@ -19,7 +19,7 @@ postgres.WithVolume(VolumeNameGenerator.Generate(postgres, "data"), "/var/lib/po
 
 var sentiumDb = postgres.AddDatabase(ResourceNames.SentiumDb);
 
-// S3-compatible object storage (SeaweedFS). The modules reach it through the workspace-storage connection string.
+// S3-compatible object storage; the modules reach it through the workspace-storage connection string.
 var storageAccessKey = builder.AddParameter(
     "storage-access-key",
     new GenerateParameterDefault { MinLength = 20, Special = false },
@@ -40,7 +40,7 @@ var storage = builder.AddContainer(ResourceNames.Storage, StorageConfig.Image, S
     .WithArgs(StorageConfig.Args)
     .WithHttpHealthCheck(StorageConfig.HealthPath);
 
-storage.WithVolume(VolumeNameGenerator.Generate(storage, StorageConfig.VolumeSuffix), StorageConfig.DataPath);
+storage.WithVolume(VolumeNameGenerator.Generate(storage, "data"), StorageConfig.DataPath);
 
 var blobs = builder.AddConnectionString(
     ResourceNames.WorkspaceBlobs,

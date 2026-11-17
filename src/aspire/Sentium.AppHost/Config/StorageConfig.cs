@@ -1,8 +1,7 @@
 namespace Sentium.AppHost.Config;
 
 /// <summary>
-/// SeaweedFS in single-process <c>weed mini</c> mode as the S3-compatible object store. Mirrors the <c>storage</c>
-/// service in <c>docker-compose.yml</c>; see ADR 0005.
+/// The S3-compatible object store container. Mirrors the <c>storage</c> service in <c>docker-compose.yml</c>.
 /// </summary>
 internal static class StorageConfig
 {
@@ -16,18 +15,11 @@ internal static class StorageConfig
     public const string HealthPath = "/healthz";
     public const string DataPath = "/data";
 
-    /// <summary>
-    /// Not "data": dev machines may still have the <c>storage-data</c> volume of the Azurite emulator this replaced,
-    /// and SeaweedFS must not start on top of its files.
-    /// </summary>
-    public const string VolumeSuffix = "seaweedfs-data";
-
     public const string AccessKeyEnv = "AWS_ACCESS_KEY_ID";
     public const string SecretKeyEnv = "AWS_SECRET_ACCESS_KEY";
 
     /// <summary>
-    /// One process (master, volume, filer, S3 gateway) with telemetry and every extra front end off: only the
-    /// authenticated S3 API is used.
+    /// Telemetry and every front end besides the authenticated S3 API are off.
     /// </summary>
     public static readonly string[] Args =
     [

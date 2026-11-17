@@ -12,7 +12,7 @@ public sealed class EndpointResolverTests
     [InlineData("redis://cache-host:6380", "cache-host", 6380)]
     [InlineData("Host=postgres;Port=5433;Username=postgres;Password=x", "postgres", 5433)]
     [InlineData("Host=pg-primary,pg-replica;Database=sentiumdb", "pg-primary", 1)]
-    [InlineData("Endpoint=http://azurite:10000", "azurite", 10000)]
+    [InlineData("Endpoint=http://storage:8333;AccessKey=a;SecretKey=b", "storage", 8333)]
     public void ResolveHostPort_ParsesVariousFormats(string conn, string host, int port)
     {
         var result = EndpointResolver.ResolveHostPort(conn, defaultPort: 1);

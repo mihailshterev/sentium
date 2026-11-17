@@ -8,8 +8,8 @@ using Amazon.S3.Model;
 namespace Sentium.Infrastructure.Storage;
 
 /// <summary>
-/// <see cref="IObjectStore"/> on any S3-compatible server (SeaweedFS in the shipped deployments). The client is
-/// configured for self-hosted servers rather than AWS: path-style addressing (no bucket subdomains to resolve), plain
+/// <see cref="IObjectStore"/> on any S3-compatible server. The client is configured for self-hosted servers rather
+/// than AWS: path-style addressing (no bucket subdomains to resolve), plain
 /// SigV4 over the whole payload instead of aws-chunked uploads, and checksums only where the API requires them.
 /// Those are the corners where S3-compatible servers differ most from AWS.
 /// </summary>

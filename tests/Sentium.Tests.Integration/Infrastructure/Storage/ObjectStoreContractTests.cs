@@ -8,12 +8,12 @@ using Xunit;
 namespace Sentium.Tests.Integration.Infrastructure.Storage;
 
 /// <summary>
-/// What the modules rely on from <see cref="IObjectStore"/>, against the SeaweedFS the deployments ship. Re-run after
-/// upgrading SeaweedFS or AWSSDK.S3.
+/// What the modules rely on from <see cref="IObjectStore"/>, against the object store server the deployments run.
+/// Re-run after changing or upgrading that server, or AWSSDK.S3.
 /// </summary>
-public sealed class ObjectStoreContractTests(SeaweedFsFixture seaweed) : IClassFixture<SeaweedFsFixture>
+public sealed class ObjectStoreContractTests(ObjectStoreServerFixture server) : IClassFixture<ObjectStoreServerFixture>
 {
-    private readonly IObjectStore _store = seaweed.Store;
+    private readonly IObjectStore _store = server.Store;
     private readonly string _bucket = $"contract-{Guid.NewGuid():N}"[..30];
 
     [Fact]
@@ -129,11 +129,11 @@ public sealed class ObjectStoreContractTests(SeaweedFsFixture seaweed) : IClassF
     public async Task WrongCredentials_FailThePing_AndTheHealthCheck()
     {
         var ct = TestContext.Current.CancellationToken;
-        using var host = seaweed.BuildHost(seaweed.ConnectionString(secretKey: "wrong-secret"));
+        using var host = server.BuildHost(server.ConnectionString(secretKey: "wrong-secret"));
 
         var ping = () => host.Services.GetRequiredService<IObjectStore>().PingAsync(ct);
         var report = await host.Services.GetRequiredService<HealthCheckService>().CheckHealthAsync(ct);
-        var goodReport = await seaweed.Services.GetRequiredService<HealthCheckService>().CheckHealthAsync(ct);
+        var goodReport = await server.Services.GetRequiredService<HealthCheckService>().CheckHealthAsync(ct);
 
         await ping.Should().ThrowAsync<Exception>();
         report.Status.Should().Be(HealthStatus.Unhealthy);

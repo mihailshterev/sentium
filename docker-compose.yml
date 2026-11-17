@@ -76,10 +76,10 @@ services:
       start_period: 10s
     restart: unless-stopped
 
-  # S3-compatible object storage: SeaweedFS in single-process mode (master, volume, filer and S3 gateway), pinned by
-  # digest. Holds workspace files, sandbox artifacts and inventory attachments (see ADR 0005). Only the S3 API is
-  # authenticated, so the store sits alone on the internal sentium-storage network with no published port; telemetry
-  # and the WebDAV, admin UI, Iceberg and Lance front ends are off. The entrypoint drops to the seaweed user.
+  # S3-compatible object storage, pinned by digest: workspace files, sandbox artifacts and inventory attachments.
+  # Only the S3 API is authenticated, so the store sits alone on the internal sentium-storage network with no
+  # published port; telemetry and every other front end are off. The entrypoint drops to an unprivileged user,
+  # hence the CHOWN/SETUID/SETGID capabilities.
   storage:
     image: chrislusf/seaweedfs:4.54@sha256:4b42c212543a0acd4c0e675215ecdcaf62a186ef98def76c7e12701871222d15
     command:
@@ -390,7 +390,7 @@ networks:
 
 volumes:
   postgres-data:
-  # Object storage (SeaweedFS). Back it up through the backup service, not by copying the volume.
+  # Object storage. Back it up through the backup service, not by copying the volume.
   storage-data:
   web-dataprotection:
   # Caddy's CA (root and intermediate keys) and issued certificates. Deleting it creates a new CA, which every
