@@ -26,6 +26,11 @@ internal sealed class WorkflowTrigger
 
     public Guid? WorkspaceId { get; init; }
 
+    /// <summary>
+    /// Workspace files attached to the request, whose text the run's agents get up front.
+    /// </summary>
+    public IReadOnlyList<Guid> FileIds { get; init; } = [];
+
     public DateTime Timestamp { get; init; } = DateTime.UtcNow;
 
     public Guid? UserId { get; init; }
@@ -42,6 +47,6 @@ internal sealed class WorkflowTrigger
     /// </summary>
     public string ToPayloadJson()
     {
-        return JsonSerializer.Serialize(new WorkflowTriggerPayload(Activity, WorkflowId, WorkflowName, WorkspaceId), PayloadJsonOptions);
+        return JsonSerializer.Serialize(new WorkflowTriggerPayload(Activity, WorkflowId, WorkflowName, WorkspaceId, FileIds.Count > 0 ? FileIds : null), PayloadJsonOptions);
     }
 }

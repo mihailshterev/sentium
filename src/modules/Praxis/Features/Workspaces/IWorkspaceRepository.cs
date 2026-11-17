@@ -40,7 +40,7 @@ internal interface IWorkspaceRepository
     Task<WorkspaceDto?> UpdateWorkspaceAsync(Guid id, UpdateWorkspaceRequest request, CancellationToken ct = default);
 
     /// <summary>
-    /// Deletes a workspace and its associated files.
+    /// Deletes the workspace row only; its files must be removed first (the foreign key would just detach them).
     /// </summary>
     /// <returns><c>true</c> if the workspace was deleted; <c>false</c> if it was not found.</returns>
     Task<bool> DeleteWorkspaceAsync(Guid id, CancellationToken ct = default);
@@ -64,10 +64,19 @@ internal interface IWorkspaceRepository
     Task<WorkspaceFileDto> AddFileRecordAsync(AddFileRecord record, CancellationToken ct = default);
 
     /// <summary>
-    /// Gathers the blob and workspace info needed to delete a file.
+    /// The current user's workspace with exactly this name, created when missing; safe against a concurrent create.
     /// </summary>
-    /// <returns>The delete metadata if the file exists; otherwise <c>null</c>.</returns>
-    Task<DeleteFileRecord?> GetFileForDeletionAsync(Guid fileId, CancellationToken ct = default);
+    Task<Guid> GetOrCreateIdAsync(string name, string description, CancellationToken ct = default);
+
+    Task<StoredFileRecord?> GetStoredFileAsync(Guid fileId, CancellationToken ct = default);
+
+    Task<IReadOnlyList<StoredFileRecord>> GetStoredFilesAsync(Guid workspaceId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Marks a file Pending again and clears its last ingestion error.
+    /// </summary>
+    /// <returns><see langword="false"/> when the file does not exist.</returns>
+    Task<bool> ResetForReindexAsync(Guid fileId, CancellationToken ct = default);
 
     /// <summary>
     /// Deletes a file record from the system (called after blob deletion).

@@ -191,6 +191,31 @@
   white-space: nowrap;
 }
 
+.fileError {
+  color: var(--danger);
+  font-size: var(--text-xs);
+  overflow-wrap: anywhere;
+}
+
+.iconLink {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+
+  &:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+}
+
 /* ---------- Upload ---------- */
 
 .uploadCard {
@@ -306,4 +331,8 @@
     border-color: var(--accent-line);
     background: var(--accent-soft);
   }
+}
+
+.pageError {
+  margin-bottom: var(--space-4);
 }

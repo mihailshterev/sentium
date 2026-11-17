@@ -214,7 +214,6 @@ export function AgentChatDrawer({ context, today, onClose }: AgentChatDrawerProp
         <ChatInputBar
           input={input}
           isTyping={isTyping}
-          contextPills={[]}
           model={effectiveModel}
           models={models}
           onInputChange={setInput}
@@ -229,7 +228,6 @@ export function AgentChatDrawer({ context, today, onClose }: AgentChatDrawerProp
             void send(input);
           }}
           onStop={stopStreaming}
-          onRemoveContextPill={() => {}}
           onSetModel={setModel}
           textareaRef={textareaRef}
           placeholder={`Message ${agentName}…`}

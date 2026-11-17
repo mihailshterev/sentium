@@ -11,7 +11,8 @@ namespace Sentium.Praxis.Features.Workspaces;
 [Route($"{PraxisRoutes.Prefix}/workspaces")]
 internal sealed class WorkspacesController(IWorkspaceService workspaceService) : ControllerBase
 {
-    private const long MaxFileSizeBytes = 100 * 1024 * 1024;
+    private const int DefaultPreviewChars = 20_000;
+    private const int MaxPreviewChars = 200_000;
 
     /// <summary>
     /// Retrieves a page of workspaces (most recent first).
@@ -125,10 +126,21 @@ internal sealed class WorkspacesController(IWorkspaceService workspaceService) :
     }
 
     /// <summary>
+    /// The upload rules the portal validates against before sending a file.
+    /// </summary>
+    [HttpGet("files/rules")]
+    [ProducesResponseType(typeof(UploadRulesResponse), StatusCodes.Status200OK)]
+    public IActionResult GetUploadRules()
+    {
+        return Ok(new UploadRulesResponse([.. AllowedFileTypes.Extensions.Order()], AllowedFileTypes.MaxFileSizeBytes));
+    }
+
+    /// <summary>
     /// <para>
     /// The file is validated for:
     /// - Non-zero size.
-    /// - Size not exceeding 100 MB.
+    /// - Size not exceeding <see cref="AllowedFileTypes.MaxFileSizeBytes"/>.
+    /// - A file name within <see cref="AllowedFileTypes.MaxFileNameLength"/> characters.
     /// - Extension in the allowed list (see <see cref="AllowedFileTypes"/>).
     /// </para>
     /// <para>
@@ -138,15 +150,17 @@ internal sealed class WorkspacesController(IWorkspaceService workspaceService) :
     /// </para>
     /// </summary>
     /// <param name="file">The file to upload (multipart form data).</param>
-    /// <param name="workspaceId">Optional workspace ID to associate with the file. If null, the file is not workspace-specific.</param>
+    /// <param name="workspaceId">The workspace to add the file to; without one it goes to the user's "Chat uploads" workspace.</param>
     /// <returns>
     /// An HTTP 201 Created response with the file metadata DTO if successful;
-    /// an HTTP 400 Bad Request if validation fails (empty file, exceeds size, disallowed extension, or workspace not found).
+    /// an HTTP 400 Bad Request if validation fails;
+    /// or an HTTP 404 Not Found if the workspace does not exist.
     /// </returns>
     [HttpPost("files")]
-    [RequestSizeLimit(100 * 1024 * 1024)]
+    [RequestSizeLimit(AllowedFileTypes.MaxFileSizeBytes)]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UploadFile(IFormFile file, [FromForm] Guid? workspaceId, CancellationToken ct)
     {
         if (file is null || file.Length == 0)
@@ -154,26 +168,32 @@ internal sealed class WorkspacesController(IWorkspaceService workspaceService) :
             return Problem(detail: "A non-empty file is required.", statusCode: StatusCodes.Status400BadRequest);
         }
 
-        if (file.Length > MaxFileSizeBytes)
+        if (file.Length > AllowedFileTypes.MaxFileSizeBytes)
         {
             return Problem(detail: "File exceeds the 100 MB size limit.", statusCode: StatusCodes.Status400BadRequest);
         }
 
-        var extension = Path.GetExtension(file.FileName);
+        var fileName = Path.GetFileName(file.FileName);
+        if (string.IsNullOrWhiteSpace(fileName) || fileName.Length > AllowedFileTypes.MaxFileNameLength)
+        {
+            return Problem(detail: $"The file name must be 1-{AllowedFileTypes.MaxFileNameLength} characters long.", statusCode: StatusCodes.Status400BadRequest);
+        }
+
+        var extension = Path.GetExtension(fileName);
         if (!AllowedFileTypes.IsAllowed(extension))
         {
             return Problem(detail: $"File type '{extension}' is not supported. Allowed types: {AllowedFileTypes.AllowedList}.", statusCode: StatusCodes.Status400BadRequest);
         }
 
-        using var stream = file.OpenReadStream();
-        var fileDto = await workspaceService.UploadFileAsync(stream, file.FileName, workspaceId, ct);
+        await using var stream = file.OpenReadStream();
+        var fileDto = await workspaceService.UploadFileAsync(stream, fileName, workspaceId, ct);
 
         if (fileDto is null)
         {
             return NotFound();
         }
 
-        return CreatedAtAction(nameof(GetFiles), new { workspaceId }, fileDto);
+        return CreatedAtAction(nameof(GetFileContent), new { id = fileDto.Id }, fileDto);
     }
 
     /// <summary>
@@ -210,5 +230,62 @@ internal sealed class WorkspacesController(IWorkspaceService workspaceService) :
         }
 
         return NoContent();
+    }
+
+    /// <summary>
+    /// Queues the file for ingestion again, e.g. after it failed.
+    /// </summary>
+    [HttpPost("files/{id:guid}/reindex")]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ReindexFile(Guid id, CancellationToken ct)
+    {
+        return await workspaceService.ReindexFileAsync(id, ct) ? Accepted() : NotFound();
+    }
+
+    /// <summary>
+    /// Downloads the file as uploaded. Always sent as an attachment, and text files as <c>text/plain</c>, so an
+    /// uploaded HTML or script file is never rendered on the portal's origin.
+    /// </summary>
+    [HttpGet("files/{id:guid}/content")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetFileContent(Guid id, CancellationToken ct)
+    {
+        var content = await workspaceService.OpenFileAsync(id, ct);
+        if (content is null)
+        {
+            return NotFound();
+        }
+
+        return File(content.Content, DownloadContentType(content.Extension), content.FileName);
+    }
+
+    /// <summary>
+    /// The file's extracted text for previewing, cut at <paramref name="maxChars"/> characters.
+    /// </summary>
+    [HttpGet("files/{id:guid}/text")]
+    [ProducesResponseType(typeof(WorkspaceFileText), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetFileText(Guid id, [FromQuery] int maxChars = DefaultPreviewChars, CancellationToken ct = default)
+    {
+        var result = await workspaceService.GetFileTextAsync(id, Math.Clamp(maxChars, 1, MaxPreviewChars), ct);
+        return result.ToActionResult(this);
+    }
+
+    private static string DownloadContentType(string extension)
+    {
+        if (string.Equals(extension, AllowedFileTypes.Pdf, StringComparison.OrdinalIgnoreCase))
+        {
+            return "application/pdf";
+        }
+
+        if (string.Equals(extension, AllowedFileTypes.Docx, StringComparison.OrdinalIgnoreCase))
+        {
+            return "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+        }
+
+        return "text/plain; charset=utf-8";
     }
 }

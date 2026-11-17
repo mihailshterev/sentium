@@ -46,7 +46,25 @@ internal interface IConversationService
     Task<bool> RenameConversationAsync(Guid conversationId, string title, CancellationToken ct = default);
 
     /// <summary>
-    /// Appends a message (with optional enhanced prompt and ordered activity steps) to a conversation.
+    /// Binds the conversation to one of the current user's workspaces, or unbinds it with <see langword="null"/>.
+    /// <see cref="ResultStatus.Invalid"/> for a workspace the user does not own.
     /// </summary>
-    Task AddMessageAsync(Guid conversationId, string role, string content, string? enhancedPrompt = null, IReadOnlyList<MessageStep>? steps = null, CancellationToken ct = default);
+    Task<Result<bool>> SetWorkspaceAsync(Guid conversationId, Guid? workspaceId, CancellationToken ct = default);
+
+    /// <summary>
+    /// The workspace of <paramref name="userId"/>'s conversation; <see langword="null"/> when it has none or is not theirs.
+    /// </summary>
+    Task<Guid?> GetWorkspaceIdAsync(Guid conversationId, Guid userId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Appends a message (with optional enhanced prompt, ordered activity steps and attached files) to a conversation.
+    /// </summary>
+    Task AddMessageAsync(
+        Guid conversationId,
+        string role,
+        string content,
+        string? enhancedPrompt = null,
+        IReadOnlyList<MessageStep>? steps = null,
+        IReadOnlyList<MessageAttachment>? attachments = null,
+        CancellationToken ct = default);
 }

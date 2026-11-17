@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Sentium.Praxis.Contracts;
@@ -29,7 +30,17 @@ internal sealed class ConversationChatHistoryProvider : ChatHistoryProvider
     /// </summary>
     public const string OriginalPromptProperty = "sentium.originalPrompt";
 
+    /// <summary>
+    /// <see cref="ChatMessage.AdditionalProperties"/> key carrying the <see cref="MessageAttachment"/>s of a user turn
+    /// (as JSON - see <see cref="WithAttachments"/>), persisted with the message. Later turns see only the file names
+    /// and ids (the content was injected for the turn they were attached to), so the model knows the files exist and can
+    /// read them again.
+    /// </summary>
+    public const string AttachmentsProperty = "sentium.attachments";
+
     private const int MaxHistoryMessages = 20;
+
+    private static readonly JsonSerializerOptions AttachmentJson = new(JsonSerializerDefaults.Web);
 
     private readonly ProviderSessionState<State> sessionState;
     private readonly IConversationRepository repository;
@@ -51,6 +62,16 @@ internal sealed class ConversationChatHistoryProvider : ChatHistoryProvider
         this.conversations = conversations;
         this.runContext = runContext;
         this.logger = logger;
+    }
+
+    /// <summary>
+    /// Stores <paramref name="attachments"/> on a user turn. They travel as a JSON string: a turn paused for approval
+    /// is serialized with the session, and a plain string survives that round trip unchanged.
+    /// </summary>
+    public static void WithAttachments(AdditionalPropertiesDictionary properties, IReadOnlyList<MessageAttachment> attachments)
+    {
+        ArgumentNullException.ThrowIfNull(properties);
+        properties[AttachmentsProperty] = JsonSerializer.Serialize(attachments, AttachmentJson);
     }
 
     /// <summary>
@@ -94,7 +115,7 @@ internal sealed class ConversationChatHistoryProvider : ChatHistoryProvider
 
         var history = rows
             .Select(row => IsUser(row.Role)
-                ? new ChatMessage(ChatRole.User, row.EnhancedPrompt ?? row.Content)
+                ? new ChatMessage(ChatRole.User, WithAttachmentNote(row.EnhancedPrompt ?? row.Content, row.Attachments))
                 : new ChatMessage(ChatRole.Assistant, row.Content))
             .Where(m => !string.IsNullOrWhiteSpace(m.Text))
             .ToList();
@@ -214,12 +235,16 @@ internal sealed class ConversationChatHistoryProvider : ChatHistoryProvider
         foreach (var message in messages.Where(IsUserText))
         {
             var original = message.AdditionalProperties?.TryGetValue(OriginalPromptProperty, out var value) == true ? value as string : null;
+            var attachments = message.AdditionalProperties?.TryGetValue(AttachmentsProperty, out var files) == true && files is string json
+                ? JsonSerializer.Deserialize<List<MessageAttachment>>(json, AttachmentJson)
+                : null;
 
             await conversations.AddMessageAsync(
                 conversationId,
                 ChatRole.User.ToString(),
                 original ?? message.Text,
                 enhancedPrompt: original is null ? null : message.Text,
+                attachments: attachments,
                 ct: ct);
         }
     }
@@ -238,6 +263,17 @@ internal sealed class ConversationChatHistoryProvider : ChatHistoryProvider
 
         logger.LogWarning("Refusing to persist chat history into conversation {ConversationId}: not owned by the acting user.", conversationId);
         return null;
+    }
+
+    private static string WithAttachmentNote(string text, IReadOnlyList<MessageAttachment>? attachments)
+    {
+        if (attachments is not { Count: > 0 })
+        {
+            return text;
+        }
+
+        var files = string.Join(", ", attachments.Select(a => $"{a.FileName} (ID: {a.FileId})"));
+        return $"{text}\n[Attached files: {files}]";
     }
 
     private static bool IsExternal(ChatMessage message) =>

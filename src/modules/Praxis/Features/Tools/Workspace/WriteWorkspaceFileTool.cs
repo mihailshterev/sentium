@@ -44,10 +44,16 @@ internal sealed class WriteWorkspaceFileTool(
             return "Error: workspace (name or id), fileName, and content are required.";
         }
 
-        var extension = Path.GetExtension(fileName);
-        if (!AllowedFileTypes.IsAllowed(extension))
+        fileName = Path.GetFileName(fileName.Trim());
+        if (fileName.Length is 0 or > AllowedFileTypes.MaxFileNameLength)
         {
-            return $"Error: File type '{extension}' is not allowed. Allowed types: {AllowedFileTypes.AllowedList}.";
+            return $"Error: The file name must be 1-{AllowedFileTypes.MaxFileNameLength} characters long.";
+        }
+
+        var extension = Path.GetExtension(fileName);
+        if (!AllowedFileTypes.IsWritableAsText(extension))
+        {
+            return $"Error: File type '{extension}' cannot be written as text. Use a text format such as .md, .txt, .csv or .json.";
         }
 
         try

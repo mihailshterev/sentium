@@ -7,4 +7,5 @@ internal sealed record WorkspaceFileDto(
     long SizeBytes,
     Guid? WorkspaceId,
     string ProcessingStatus,
-    DateTime CreatedAt);
+    DateTime CreatedAt,
+    string? ProcessingError = null);

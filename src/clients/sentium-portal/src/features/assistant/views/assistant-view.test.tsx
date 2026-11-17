@@ -202,16 +202,6 @@ describe("Assistant text input", () => {
   });
 });
 
-describe("Assistant workspace context panel", () => {
-  it("shows workspace context toggle button", () => {
-    renderAssistant();
-    const ctxBtn = document.querySelector(".wsContextBtn") ?? screen.queryByTitle(/workspace context/i);
-    if (ctxBtn) {
-      fireEvent.click(ctxBtn as HTMLElement);
-    }
-  });
-});
-
 describe("Assistant empty state", () => {
   it("shows empty state with no conversations", () => {
     vi.spyOn(useConversationsHook, "useConversations").mockReturnValue({
@@ -476,50 +466,6 @@ describe("Assistant conversation deletion", () => {
   });
 });
 
-describe("Assistant workspace context panel", () => {
-  it("opens workspace context panel when Workspace Context is clicked", async () => {
-    vi.mocked(workspaceService.fetchWorkspaces).mockResolvedValue([
-      {
-        id: "ws-1",
-        name: "Alpha Workspace",
-        description: null,
-        fileCount: 0,
-        createdAt: "2025-01-01T00:00:00Z",
-        updatedAt: "2025-01-01T00:00:00Z",
-      },
-    ]);
-    renderAssistant();
-    fireEvent.click(screen.getByText("Workspace Context"));
-    await waitFor(() => expect(screen.getByText("Alpha Workspace")).toBeInTheDocument());
-  });
-
-  it("shows 'No workspaces found' when no workspaces", async () => {
-    vi.mocked(workspaceService.fetchWorkspaces).mockResolvedValue([]);
-    renderAssistant();
-    fireEvent.click(screen.getByText("Workspace Context"));
-    await waitFor(() => expect(screen.getByText(/no workspaces found/i)).toBeInTheDocument());
-  });
-
-  it("injects workspace context into input when + is clicked", async () => {
-    vi.mocked(workspaceService.fetchWorkspaces).mockResolvedValue([
-      {
-        id: "ws-1",
-        name: "Alpha Workspace",
-        description: null,
-        fileCount: 0,
-        createdAt: "2025-01-01T00:00:00Z",
-        updatedAt: "2025-01-01T00:00:00Z",
-      },
-    ]);
-    renderAssistant();
-    fireEvent.click(screen.getByText("Workspace Context"));
-    await waitFor(() => screen.getByText("Alpha Workspace"));
-    const injectBtn = screen.getByTitle("Insert workspace reference into message");
-    fireEvent.click(injectBtn);
-    expect(screen.getAllByText("Alpha Workspace").length).toBeGreaterThanOrEqual(1);
-  });
-});
-
 describe("Assistant model input when no models list", () => {
   it("renders text input for model when no models returned", () => {
     vi.spyOn(useModelsHook, "useModels").mockReturnValue({ ...defaultModelsHook, models: [] });
@@ -629,83 +575,77 @@ describe("Assistant stop generation", () => {
   });
 });
 
-describe("Assistant workspace file expansion", () => {
-  it("shows files when workspace is expanded in context panel", async () => {
-    vi.mocked(workspaceService.fetchWorkspaces).mockResolvedValue([
-      {
-        id: "ws-1",
-        name: "MyWorkspace",
-        description: "",
-        fileCount: 1,
-        createdAt: "2025-01-01T00:00:00Z",
-        updatedAt: "2025-01-01T00:00:00Z",
-      },
-    ]);
-    vi.mocked(workspaceService.fetchWorkspaceFiles).mockResolvedValue([
-      {
-        id: "file-1",
-        fileName: "data.csv",
-        extension: "csv",
-        processingStatus: "Completed",
-        sizeBytes: 1024,
-        workspaceId: "ws-1",
-        createdAt: "2024-01-01T00:00:00Z",
-      },
-    ]);
+const workspace = {
+  id: "ws-1",
+  name: "MyWorkspace",
+  description: "",
+  fileCount: 1,
+  createdAt: "2025-01-01T00:00:00Z",
+  updatedAt: "2025-01-01T00:00:00Z",
+};
+
+const dataFile = {
+  id: "file-1",
+  fileName: "data.csv",
+  extension: ".csv",
+  processingStatus: "Pending" as const,
+  sizeBytes: 1024,
+  workspaceId: "ws-1",
+  createdAt: "2024-01-01T00:00:00Z",
+};
+
+describe("Assistant attachments", () => {
+  it("attaches a workspace file from the paperclip, even while it is still indexing", async () => {
+    vi.mocked(workspaceService.fetchWorkspaces).mockResolvedValue([workspace]);
+    vi.mocked(workspaceService.fetchWorkspaceFiles).mockResolvedValue([dataFile]);
     renderAssistant();
-    fireEvent.click(screen.getByText("Workspace Context"));
-    await waitFor(() => screen.getByText("MyWorkspace"));
-    fireEvent.click(screen.getByTitle("Expand workspace files"));
-    await waitFor(() => expect(screen.getByText("data.csv")).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole("button", { name: "Attach files" }));
+    fireEvent.click(await screen.findByText("MyWorkspace"));
+    fireEvent.click(await screen.findByText("data.csv"));
+
+    const chip = await screen.findByTestId("composer-attachment");
+    expect(chip).toHaveTextContent("data.csv");
+    expect(screen.getByRole("button", { name: "Send message" })).toBeEnabled();
   });
 
-  it("shows No files when workspace has no files", async () => {
-    vi.mocked(workspaceService.fetchWorkspaces).mockResolvedValue([
-      {
-        id: "ws-1",
-        name: "MyWorkspace",
-        description: "",
-        fileCount: 0,
-        createdAt: "2025-01-01T00:00:00Z",
-        updatedAt: "2025-01-01T00:00:00Z",
-      },
-    ]);
-    vi.mocked(workspaceService.fetchWorkspaceFiles).mockResolvedValue([]);
+  it("sends attachments as file ids instead of text tags", async () => {
+    vi.mocked(workspaceService.fetchWorkspaces).mockResolvedValue([workspace]);
+    vi.mocked(workspaceService.fetchWorkspaceFiles).mockResolvedValue([{ ...dataFile, processingStatus: "Completed" }]);
+    vi.mocked(assistantService.sendChatMessage).mockClear();
     renderAssistant();
-    fireEvent.click(screen.getByText("Workspace Context"));
-    await waitFor(() => screen.getByText("MyWorkspace"));
-    fireEvent.click(screen.getByTitle("Expand workspace files"));
-    await waitFor(() => expect(screen.getByText("No files.")).toBeInTheDocument());
+
+    fireEvent.click(screen.getByRole("button", { name: "Attach files" }));
+    fireEvent.click(await screen.findByText("MyWorkspace"));
+    fireEvent.click(await screen.findByText("data.csv"));
+    fireEvent.change(screen.getByPlaceholderText(/ask sentium/i), { target: { value: "Summarise it" } });
+    fireEvent.submit(screen.getByRole("textbox", { name: "Chat message" }).closest("form")!);
+
+    await waitFor(() => expect(assistantService.sendChatMessage).toHaveBeenCalled());
+    const payload = vi.mocked(assistantService.sendChatMessage).mock.calls[0][0];
+    expect(payload.fileIds).toEqual(["file-1"]);
+    expect(payload.messages.at(-1)?.content).toBe("Summarise it");
+    expect(screen.queryByTestId("composer-attachment")).not.toBeInTheDocument();
   });
 
-  it("injects file context when file button is clicked", async () => {
-    vi.mocked(workspaceService.fetchWorkspaces).mockResolvedValue([
-      {
-        id: "ws-1",
-        name: "MyWorkspace",
-        description: "",
-        fileCount: 1,
-        createdAt: "2025-01-01T00:00:00Z",
-        updatedAt: "2025-01-01T00:00:00Z",
-      },
-    ]);
-    vi.mocked(workspaceService.fetchWorkspaceFiles).mockResolvedValue([
-      {
-        id: "file-1",
-        fileName: "data.csv",
-        extension: "csv",
-        processingStatus: "Completed",
-        sizeBytes: 1024,
-        workspaceId: "ws-1",
-        createdAt: "2024-01-01T00:00:00Z",
-      },
-    ]);
+  it("creates the conversation in the chosen workspace", async () => {
+    vi.mocked(workspaceService.fetchWorkspaces).mockResolvedValue([workspace]);
+    const createConversation = vi.fn().mockResolvedValue({ id: "conv-new" });
+    vi.spyOn(useConversationsHook, "useConversations").mockReturnValue({
+      ...defaultConversationsHook,
+      createConversation,
+    });
     renderAssistant();
-    fireEvent.click(screen.getByText("Workspace Context"));
-    await waitFor(() => screen.getByText("MyWorkspace"));
-    fireEvent.click(screen.getByTitle("Expand workspace files"));
-    await waitFor(() => screen.getByTitle("Insert file reference: data.csv"));
-    fireEvent.click(screen.getByTitle("Insert file reference: data.csv"));
-    expect(screen.getAllByText("data.csv").length).toBeGreaterThanOrEqual(1);
+
+    fireEvent.click(screen.getByRole("button", { name: "Choose a workspace" }));
+    fireEvent.click(await screen.findByRole("option", { name: /MyWorkspace/ }));
+    expect(screen.getByRole("button", { name: "Workspace: MyWorkspace" })).toBeInTheDocument();
+
+    fireEvent.change(screen.getByPlaceholderText(/ask sentium/i), { target: { value: "Hello" } });
+    fireEvent.submit(screen.getByRole("textbox", { name: "Chat message" }).closest("form")!);
+
+    await waitFor(() =>
+      expect(createConversation).toHaveBeenCalledWith(expect.objectContaining({ workspaceId: "ws-1" })),
+    );
   });
 });

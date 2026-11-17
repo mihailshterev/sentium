@@ -8,4 +8,5 @@ internal sealed record MessageResponse(
     string? EnhancedPrompt = null,
     string? Thought = null,
     IReadOnlyList<string>? ToolCalls = null,
-    IReadOnlyList<MessageStep>? Steps = null);
+    IReadOnlyList<MessageStep>? Steps = null,
+    IReadOnlyList<MessageAttachment>? Attachments = null);

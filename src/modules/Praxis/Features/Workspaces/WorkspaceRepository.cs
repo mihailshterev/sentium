@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using Sentium.Core.Results;
 using Sentium.Praxis.Data;
@@ -8,6 +9,13 @@ namespace Sentium.Praxis.Features.Workspaces;
 
 internal sealed class WorkspaceRepository(PraxisDbContext context) : IWorkspaceRepository
 {
+    private static readonly Expression<Func<ProjectFile, WorkspaceFileDto>> ToFileDto = f => new WorkspaceFileDto(
+        f.Id, f.FileName, f.Extension, f.SizeBytes,
+        f.WorkspaceId, f.ProcessingStatus.ToString(), f.CreatedAt, f.ProcessingError);
+
+    private static readonly Expression<Func<ProjectFile, StoredFileRecord>> ToStoredFile = f => new StoredFileRecord(
+        f.Id, f.FileName, f.BlobName, f.Extension, f.WorkspaceId);
+
     public async Task<IReadOnlyList<WorkspaceDto>> GetWorkspacesAsync(CancellationToken ct = default)
     {
         return await context.Workspaces
@@ -128,9 +136,7 @@ internal sealed class WorkspaceRepository(PraxisDbContext context) : IWorkspaceR
             .Where(f => f.WorkspaceId == workspaceId)
             .OrderByDescending(f => f.CreatedAt)
             .Take(PaginationQuery.MaxListCap)
-            .Select(f => new WorkspaceFileDto(
-                f.Id, f.FileName, f.Extension, f.SizeBytes,
-                f.WorkspaceId, f.ProcessingStatus.ToString(), f.CreatedAt))
+            .Select(ToFileDto)
             .ToListAsync(ct);
     }
 
@@ -146,9 +152,7 @@ internal sealed class WorkspaceRepository(PraxisDbContext context) : IWorkspaceR
         return await query
             .OrderByDescending(f => f.CreatedAt)
             .Take(PaginationQuery.MaxListCap)
-            .Select(f => new WorkspaceFileDto(
-                f.Id, f.FileName, f.Extension, f.SizeBytes,
-                f.WorkspaceId, f.ProcessingStatus.ToString(), f.CreatedAt))
+            .Select(ToFileDto)
             .ToListAsync(ct);
     }
 
@@ -176,13 +180,59 @@ internal sealed class WorkspaceRepository(PraxisDbContext context) : IWorkspaceR
             projectFile.WorkspaceId, projectFile.ProcessingStatus.ToString(), projectFile.CreatedAt);
     }
 
-    public async Task<DeleteFileRecord?> GetFileForDeletionAsync(Guid fileId, CancellationToken ct = default)
+    public async Task<Guid> GetOrCreateIdAsync(string name, string description, CancellationToken ct = default)
+    {
+        if (await FindIdByNameAsync(name, ct) is { } existing)
+        {
+            return existing;
+        }
+
+        var now = DateTime.UtcNow;
+        var workspace = new Workspace { Id = Guid.NewGuid(), Name = name, Description = description, CreatedAt = now, UpdatedAt = now };
+        context.Workspaces.Add(workspace);
+
+        try
+        {
+            await context.SaveChangesAsync(ct);
+            return workspace.Id;
+        }
+        catch (DbUpdateException)
+        {
+            // A concurrent request created it first (names are unique per user). Detach the failed insert so the next
+            // save on this context does not retry it.
+            context.Entry(workspace).State = EntityState.Detached;
+            return await FindIdByNameAsync(name, ct)
+                ?? throw new InvalidOperationException($"Workspace '{name}' could not be created.");
+        }
+    }
+
+    public async Task<StoredFileRecord?> GetStoredFileAsync(Guid fileId, CancellationToken ct = default)
     {
         return await context.ProjectFiles
             .AsNoTracking()
             .Where(f => f.Id == fileId)
-            .Select(f => new DeleteFileRecord(f.Id, f.BlobName, f.WorkspaceId))
+            .Select(ToStoredFile)
             .FirstOrDefaultAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<StoredFileRecord>> GetStoredFilesAsync(Guid workspaceId, CancellationToken ct = default)
+    {
+        return await context.ProjectFiles
+            .AsNoTracking()
+            .Where(f => f.WorkspaceId == workspaceId)
+            .Select(ToStoredFile)
+            .ToListAsync(ct);
+    }
+
+    public async Task<bool> ResetForReindexAsync(Guid fileId, CancellationToken ct = default)
+    {
+        var affected = await context.ProjectFiles
+            .Where(f => f.Id == fileId)
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(f => f.ProcessingStatus, FileProcessingStatus.Pending)
+                .SetProperty(f => f.ProcessingError, (string?)null), ct);
+
+        return affected > 0;
     }
 
     public async Task DeleteFileRecordAsync(Guid fileId, CancellationToken ct = default)
@@ -191,5 +241,12 @@ internal sealed class WorkspaceRepository(PraxisDbContext context) : IWorkspaceR
             .Where(f => f.Id == fileId)
             .ExecuteDeleteAsync(ct);
     }
-}
 
+    private async Task<Guid?> FindIdByNameAsync(string name, CancellationToken ct)
+    {
+        return await context.Workspaces
+            .Where(w => w.Name == name)
+            .Select(w => (Guid?)w.Id)
+            .FirstOrDefaultAsync(ct);
+    }
+}

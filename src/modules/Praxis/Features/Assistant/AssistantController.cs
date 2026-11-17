@@ -14,6 +14,7 @@ using Sentium.Praxis.Features.Agents.Runtime;
 using Sentium.Praxis.Features.Conversations;
 using Sentium.Praxis.Features.Registry;
 using Sentium.Praxis.Features.Titles;
+using Sentium.Praxis.Features.Workspaces;
 using AiChatMessage = Microsoft.Extensions.AI.ChatMessage;
 
 namespace Sentium.Praxis.Features.Assistant;
@@ -37,9 +38,15 @@ internal sealed class AssistantController(
     ConversationChatHistoryProvider conversationHistory,
     IConversationService conversationService,
     ITitleGenerator titleGenerator,
+    IWorkspaceContextBuilder workspaceContext,
     ILogger<AssistantController> logger) : ControllerBase
 {
     private const string GenericStreamErrorMessage = "An unexpected error occurred while generating the response.";
+
+    /// <summary>
+    /// The user turn sent when files are attached without any text, so the turn is still recorded and titled.
+    /// </summary>
+    private const string AttachmentOnlyPrompt = "Please review the attached files.";
 
     /// <summary>
     /// Sends a chat message to the assistant and streams the response (thoughts, tool calls, text, approval requests).
@@ -53,7 +60,11 @@ internal sealed class AssistantController(
     {
         ArgumentNullException.ThrowIfNull(requestBody);
 
-        var lastUserMessage = requestBody.Messages.LastOrDefault(m => IsUserRole(m.Role));
+        var attachments = currentUser.UserId is { } userId && requestBody.FileIds is { Count: > 0 } fileIds
+            ? await workspaceContext.ResolveAttachmentsAsync(userId, fileIds, ct)
+            : [];
+
+        var lastUserMessage = WithAttachmentPrompt(requestBody.Messages.LastOrDefault(m => IsUserRole(m.Role)), attachments);
 
         // Ambient run context (AsyncLocal): set here, in the method that awaits the agent run, so it flows to every tool.
         runContext.OriginalUserPrompt = lastUserMessage?.Content ?? string.Empty;
@@ -80,16 +91,21 @@ internal sealed class AssistantController(
         var session = await agent.CreateSessionAsync(ct);
 
         List<AiChatMessage> input;
+        Guid? workspaceId;
         if (requestBody.ConversationId is { } conversationId)
         {
             conversationHistory.Attach(session, conversationId);
-            input = lastUserMessage is null ? [] : [CreateUserTurn(lastUserMessage.Content, enhancedPrompt)];
+            input = lastUserMessage is null ? [] : [CreateUserTurn(lastUserMessage.Content, enhancedPrompt, attachments)];
+            workspaceId = currentUser.UserId is { } owner ? await conversationService.GetWorkspaceIdAsync(conversationId, owner, ct) : null;
         }
         else
         {
             // Ephemeral chat: there is no server-side transcript, so the client-held history is the context.
-            input = MapClientHistory(requestBody.Messages, enhancedPrompt);
+            input = MapClientHistory(requestBody.Messages, enhancedPrompt, lastUserMessage);
+            workspaceId = requestBody.WorkspaceId;
         }
+
+        WorkspaceContextProvider.Attach(session, workspaceId, [.. attachments.Select(a => a.FileId)]);
 
         await RunStreamingAsync(agent, agentName, session, input, requestBody.ConversationId, requestBody.Model, sse, ct, pendingTitle);
     }
@@ -290,33 +306,49 @@ internal sealed class AssistantController(
 
     /// <summary>
     /// The user turn sent to the model: the enhanced prompt when there is one, carrying the original text so the
-    /// transcript stores what the user actually typed.
+    /// transcript stores what the user actually typed, and the attached files so the transcript lists them.
     /// </summary>
-    private static AiChatMessage CreateUserTurn(string original, string? enhancedPrompt)
+    private static AiChatMessage CreateUserTurn(string original, string? enhancedPrompt, IReadOnlyList<MessageAttachment>? attachments = null)
     {
-        if (enhancedPrompt is null)
+        var properties = new AdditionalPropertiesDictionary();
+        if (enhancedPrompt is not null)
         {
-            return new AiChatMessage(ChatRole.User, original);
+            properties[ConversationChatHistoryProvider.OriginalPromptProperty] = original;
         }
 
-        return new AiChatMessage(ChatRole.User, enhancedPrompt)
+        if (attachments is { Count: > 0 })
         {
-            AdditionalProperties = new AdditionalPropertiesDictionary { [ConversationChatHistoryProvider.OriginalPromptProperty] = original },
+            ConversationChatHistoryProvider.WithAttachments(properties, attachments);
+        }
+
+        return new AiChatMessage(ChatRole.User, enhancedPrompt ?? original)
+        {
+            AdditionalProperties = properties.Count > 0 ? properties : null,
         };
     }
 
-    private static List<AiChatMessage> MapClientHistory(IReadOnlyList<ChatMessage> messages, string? enhancedPrompt)
+    private static List<AiChatMessage> MapClientHistory(IReadOnlyList<ChatMessage> messages, string? enhancedPrompt, ChatMessage? lastUserMessage)
     {
         var mapped = messages
             .Select(m => new AiChatMessage(IsUserRole(m.Role) ? ChatRole.User : ChatRole.Assistant, m.Content))
             .ToList();
 
-        if (enhancedPrompt is not null && mapped.FindLastIndex(m => m.Role == ChatRole.User) is var last and >= 0)
+        if (lastUserMessage is not null && mapped.FindLastIndex(m => m.Role == ChatRole.User) is var last and >= 0)
         {
-            mapped[last] = CreateUserTurn(mapped[last].Text, enhancedPrompt);
+            mapped[last] = CreateUserTurn(lastUserMessage.Content, enhancedPrompt);
         }
 
         return mapped;
+    }
+
+    private static ChatMessage? WithAttachmentPrompt(ChatMessage? message, IReadOnlyList<MessageAttachment> attachments)
+    {
+        if (attachments.Count == 0 || !string.IsNullOrWhiteSpace(message?.Content))
+        {
+            return message;
+        }
+
+        return new ChatMessage(ChatRole.User.Value, AttachmentOnlyPrompt);
     }
 
     private static bool IsUserRole(string role) => role.Equals(ChatRole.User.ToString(), StringComparison.OrdinalIgnoreCase);

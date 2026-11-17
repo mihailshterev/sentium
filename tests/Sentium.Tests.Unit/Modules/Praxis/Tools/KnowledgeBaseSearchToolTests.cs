@@ -5,6 +5,7 @@ using NSubstitute;
 using Sentium.Codex.Contracts;
 using Sentium.Codex.Contracts.Models;
 using Sentium.Praxis.Contracts;
+using Sentium.Praxis.Data;
 using Sentium.Praxis.Features.Tools;
 using Xunit;
 
@@ -29,7 +30,7 @@ public sealed class KnowledgeBaseSearchToolTests
     {
         var options = Substitute.For<IOptions<RagOptions>>();
         options.Value.Returns(_options);
-        return new KnowledgeBaseSearchTool(_embedding, _repo, options, _pdp, Substitute.For<ILogger<KnowledgeBaseSearchTool>>());
+        return new KnowledgeBaseSearchTool(_embedding, _repo, options, _pdp, new PraxisDbContextFactory().CreateDbContext([]), Substitute.For<ILogger<KnowledgeBaseSearchTool>>());
     }
 
     private void MockStore(string collection, string content, float score)
@@ -97,7 +98,7 @@ public sealed class KnowledgeBaseSearchToolTests
         MockStore(KnowledgeCollections.AgentLearnings, "learning snippet", 0.95f);
         MockStore(KnowledgeCollections.UserMemories, "memory snippet", 0.80f);
 
-        var result = await CreateTool().SearchAsync("x", 1, ct);
+        var result = await CreateTool().SearchAsync("x", 1, ct: ct);
 
         result.Should().Contain("Snippet 1").And.NotContain("Snippet 2");
         result.Should().Contain("learning snippet");

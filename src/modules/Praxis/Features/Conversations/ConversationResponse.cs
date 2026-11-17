@@ -6,4 +6,6 @@ internal sealed record ConversationResponse(
     string Model,
     DateTime CreatedAt,
     IReadOnlyList<MessageResponse> Messages,
-    string? AgentName = null);
+    string? AgentName = null,
+    Guid? WorkspaceId = null,
+    string? WorkspaceName = null);

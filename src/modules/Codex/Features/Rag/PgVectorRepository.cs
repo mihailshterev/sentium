@@ -144,7 +144,7 @@ internal sealed class PgVectorRepository(CodexDbContext db, IOptions<RagOptions>
             await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
             await db.Database.ExecuteSqlRawAsync("SET LOCAL hnsw.iterative_scan = relaxed_order", cancellationToken);
 
-            var rows = await ApplyScope(db.KnowledgeChunks.AsNoTracking().Where(e => e.Collection == collectionName), scope)
+            var rows = await ApplyScope(Chunks(scope).AsNoTracking().Where(e => e.Collection == collectionName), scope)
                 .Select(e => new { Chunk = e, Distance = e.Embedding.CosineDistance(query) })
                 .OrderBy(x => x.Distance)
                 .Take(topK)
@@ -211,7 +211,7 @@ internal sealed class PgVectorRepository(CodexDbContext db, IOptions<RagOptions>
         var take = (int)Math.Clamp(limit, 1UL, MaxPageLimit);
         var skip = (int)Math.Min(offset ?? 0, int.MaxValue);
 
-        var rows = await ApplyScope(db.KnowledgeChunks.AsNoTracking().Where(e => e.Collection == collectionName), scope)
+        var rows = await ApplyScope(Chunks(scope).AsNoTracking().Where(e => e.Collection == collectionName), scope)
             .OrderBy(e => e.CreatedAt)
             .ThenBy(e => e.Id)
             .Skip(skip)
@@ -265,6 +265,21 @@ internal sealed class PgVectorRepository(CodexDbContext db, IOptions<RagOptions>
                 EmbeddingModel = model
             });
         }
+    }
+
+    /// <summary>
+    /// The chunk set to query: all of them, or - for a scope with a metadata pair - only those whose metadata holds
+    /// that value. The metadata is a jsonb column mapped through a value converter, so the key lookup is raw SQL that
+    /// the rest of the query composes over.
+    /// </summary>
+    private IQueryable<KnowledgeChunk> Chunks(KnowledgeScopeFilter? scope)
+    {
+        if (scope is not { MetadataKey: { } key, MetadataValue: { } value })
+        {
+            return db.KnowledgeChunks;
+        }
+
+        return db.KnowledgeChunks.FromSqlInterpolated($"""SELECT * FROM codex.knowledge_chunks WHERE "Metadata" ->> {key} = {value}""");
     }
 
     /// <summary>

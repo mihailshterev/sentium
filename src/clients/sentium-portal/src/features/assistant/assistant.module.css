@@ -460,6 +460,7 @@
 }
 
 .composer {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
@@ -489,6 +490,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  max-width: 260px;
   height: 26px;
   padding: 0 4px 0 9px;
   border: 1px solid var(--accent-line);
@@ -517,6 +519,156 @@
       background: var(--bg-hover);
       color: var(--text-primary);
     }
+  }
+}
+
+.contextPill[data-state="error"] {
+  border-color: var(--danger-line);
+  background: var(--danger-soft);
+
+  & > svg {
+    color: var(--danger);
+  }
+}
+
+.contextPillName {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.contextPillStatus {
+  color: var(--text-muted);
+  font-size: var(--text-2xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.dropOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  border: 1px dashed var(--accent);
+  border-radius: inherit;
+  background: color-mix(in srgb, var(--accent) 12%, var(--mat-thick-bg));
+  color: var(--accent);
+  font-size: var(--text-sm);
+  pointer-events: none;
+}
+
+.attachmentProblem {
+  margin: 0;
+  color: var(--danger);
+  font-size: var(--text-xs);
+  text-align: center;
+}
+
+.composerLeading {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.attachMenu {
+  position: relative;
+  display: inline-flex;
+}
+
+.attachButton {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--border-color);
+  border-radius: 50%;
+  background: var(--mat-thin-bg);
+  color: var(--text-secondary);
+  cursor: pointer;
+
+  &:hover:not(:disabled),
+  &[aria-expanded="true"] {
+    border-color: var(--accent-line);
+    color: var(--text-primary);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.attachPopover {
+  bottom: calc(100% + 8px);
+  left: 0;
+}
+
+.workspaceChip {
+  max-width: 200px;
+
+  & > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.workspaceChipNote {
+  margin: 0 0 0 auto;
+  padding: 4px 8px;
+  color: var(--text-dim);
+  font-size: var(--text-2xs);
+}
+
+.messageAttachments {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.messageAttachment {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 240px;
+  height: 24px;
+  padding: 0 9px;
+  border: 1px solid var(--accent-line);
+  border-radius: var(--radius-full);
+  background: var(--accent-soft);
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: var(--text-xs);
+  cursor: pointer;
+
+  & > svg {
+    flex-shrink: 0;
+    color: var(--accent);
+  }
+
+  & > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  &:hover {
+    border-color: var(--accent);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
   }
 }
 
@@ -951,140 +1103,6 @@
 
 .convEditing {
   padding: 6px;
-}
-
-/* Workspace context */
-
-.wsSection {
-  flex-shrink: 0;
-  border-top: 1px solid var(--border-subtle);
-}
-
-.wsToggle {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  width: 100%;
-  padding: 12px var(--space-4);
-  border: none;
-  background: transparent;
-  color: var(--text-secondary);
-  font-family: inherit;
-  font-size: var(--text-sm);
-  font-weight: var(--fw-medium);
-  cursor: pointer;
-
-  & span {
-    flex: 1;
-    text-align: left;
-  }
-
-  &:hover {
-    color: var(--text-primary);
-  }
-
-  &:focus-visible {
-    outline: none;
-    box-shadow: inset var(--focus-ring);
-  }
-}
-
-.wsList {
-  max-height: 260px;
-  padding: 0 var(--space-2) var(--space-3);
-  overflow-y: auto;
-}
-
-.wsEmpty {
-  margin: 0;
-  padding: 6px 10px;
-  color: var(--text-muted);
-  font-size: var(--text-xs);
-}
-
-.wsRow {
-  display: flex;
-  align-items: center;
-  border-radius: var(--radius-md);
-
-  &:hover {
-    background: var(--bg-hover);
-  }
-}
-
-.wsName,
-.wsFile {
-  display: flex;
-  flex: 1;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  padding: 7px 8px;
-  border: none;
-  border-radius: var(--radius-md);
-  background: transparent;
-  color: var(--text-secondary);
-  font-family: inherit;
-  font-size: var(--text-sm);
-  text-align: left;
-  cursor: pointer;
-
-  & span {
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  &:hover:not(:disabled) {
-    color: var(--text-primary);
-  }
-
-  &:focus-visible {
-    outline: none;
-    box-shadow: var(--focus-ring);
-  }
-}
-
-.wsInject {
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  margin-right: 4px;
-  border: none;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-
-  &:hover {
-    background: var(--accent-soft);
-    color: var(--accent);
-  }
-}
-
-.wsFiles {
-  padding-left: 18px;
-}
-
-.wsFile {
-  width: 100%;
-  font-size: var(--text-xs);
-
-  &:hover:not(:disabled) {
-    background: var(--bg-hover);
-  }
-
-  &:disabled {
-    opacity: 0.55;
-    cursor: not-allowed;
-  }
-}
-
-.wsFileStatus {
-  margin-left: auto;
-  color: var(--text-dim);
-  font-size: var(--text-2xs);
 }
 
 @media (max-width: 1100px) {

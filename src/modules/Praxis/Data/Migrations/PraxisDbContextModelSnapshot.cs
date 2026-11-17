@@ -220,7 +220,12 @@ namespace Sentium.Praxis.Data.Migrations
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("WorkspaceId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("WorkspaceId");
 
                     b.HasIndex("UserId", "CreatedAt");
 
@@ -232,6 +237,9 @@ namespace Sentium.Praxis.Data.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<string>("Attachments")
+                        .HasColumnType("jsonb");
 
                     b.Property<string>("Content")
                         .IsRequired()
@@ -288,6 +296,10 @@ namespace Sentium.Praxis.Data.Migrations
                         .IsRequired()
                         .HasMaxLength(512)
                         .HasColumnType("character varying(512)");
+
+                    b.Property<string>("ProcessingError")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
 
                     b.Property<int>("ProcessingStatus")
                         .HasColumnType("integer");
@@ -519,6 +531,16 @@ namespace Sentium.Praxis.Data.Migrations
                     b.HasIndex("UserId", "ExecutedAt");
 
                     b.ToTable("ExecutionLogs", "praxis");
+                });
+
+            modelBuilder.Entity("Sentium.Praxis.Entities.Conversation", b =>
+                {
+                    b.HasOne("Sentium.Praxis.Entities.Workspace", "Workspace")
+                        .WithMany()
+                        .HasForeignKey("WorkspaceId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Workspace");
                 });
 
             modelBuilder.Entity("Sentium.Praxis.Entities.Message", b =>

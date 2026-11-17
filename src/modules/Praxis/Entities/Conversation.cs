@@ -23,6 +23,13 @@ internal sealed class Conversation : IUserOwned
     /// </summary>
     public string? AgentName { get; set; }
 
+    /// <summary>
+    /// The workspace whose files every turn of this conversation can draw on; <see langword="null"/> for none.
+    /// </summary>
+    public Guid? WorkspaceId { get; set; }
+
+    public Workspace? Workspace { get; set; }
+
     public DateTime CreatedAt { get; set; }
 
     public ICollection<Message> Messages { get; set; } = [];

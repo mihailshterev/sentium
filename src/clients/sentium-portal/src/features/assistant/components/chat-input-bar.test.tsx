@@ -2,22 +2,30 @@ import { describe, it, expect, vi } from "vitest";
 import { createRef } from "react";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { ChatInputBar } from "./chat-input-bar";
+import type { ComposerAttachment } from "../hooks/useComposerAttachments";
 
 const noop = () => {};
+
+const readyAttachment: ComposerAttachment = {
+  key: "k1",
+  fileId: "f1",
+  fileName: "notes.md",
+  state: "ready",
+  progress: 1,
+  processingStatus: "Completed",
+};
 
 const renderBar = (props: Partial<React.ComponentProps<typeof ChatInputBar>> = {}) =>
   render(
     <ChatInputBar
       input=""
       isTyping={false}
-      contextPills={[]}
       model="gemma"
       models={["gemma", "qwen"]}
       onInputChange={noop}
       onKeyDown={noop}
       onSubmit={(e) => e.preventDefault()}
       onStop={noop}
-      onRemoveContextPill={noop}
       onSetModel={noop}
       textareaRef={createRef<HTMLTextAreaElement>()}
       {...props}
@@ -32,7 +40,7 @@ describe("ChatInputBar", () => {
     expect(onInputChange).toHaveBeenCalledWith("hi");
   });
 
-  it("disables send when input is empty and there are no pills", () => {
+  it("disables send when input is empty and there are no attachments", () => {
     renderBar({ input: "" });
     expect(screen.getByRole("button", { name: "Send message" })).toBeDisabled();
   });
@@ -50,15 +58,41 @@ describe("ChatInputBar", () => {
     expect(onStop).toHaveBeenCalled();
   });
 
-  it("renders context pills and removes them", () => {
-    const onRemoveContextPill = vi.fn();
-    renderBar({
-      contextPills: [{ type: "file", id: "f1", label: "notes.md" }],
-      onRemoveContextPill,
-    });
+  it("renders attachments, enables send with only attachments, and removes them by name", () => {
+    const onRemoveAttachment = vi.fn();
+    renderBar({ attachments: [readyAttachment], onRemoveAttachment });
     expect(screen.getByText("notes.md")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Remove" }));
-    expect(onRemoveContextPill).toHaveBeenCalledWith("f1");
+    expect(screen.getByRole("button", { name: "Send message" })).toBeEnabled();
+    fireEvent.click(screen.getByRole("button", { name: "Remove notes.md" }));
+    expect(onRemoveAttachment).toHaveBeenCalledWith("k1");
+  });
+
+  it("shows upload progress and blocks sending while uploads run", () => {
+    renderBar({
+      input: "hello",
+      attachments: [{ ...readyAttachment, fileId: null, state: "uploading", progress: 0.42 }],
+      onRemoveAttachment: noop,
+      sendBlocked: true,
+    });
+    expect(screen.getByText("42%")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Send message" })).toBeDisabled();
+  });
+
+  it("hands dropped files to onAddFiles", () => {
+    const onAddFiles = vi.fn();
+    renderBar({ onAddFiles });
+    const file = new File(["x"], "a.md");
+    const form = screen.getByRole("textbox", { name: "Chat message" }).closest("form")!;
+    fireEvent.drop(form, { dataTransfer: { files: [file], types: ["Files"] } });
+    expect(onAddFiles).toHaveBeenCalledWith([file]);
+  });
+
+  it("hands pasted files to onAddFiles", () => {
+    const onAddFiles = vi.fn();
+    renderBar({ onAddFiles });
+    const file = new File(["x"], "shot.md");
+    fireEvent.paste(screen.getByRole("textbox", { name: "Chat message" }), { clipboardData: { files: [file] } });
+    expect(onAddFiles).toHaveBeenCalledWith([file]);
   });
 
   it("opens the model dropdown and selects a model", () => {

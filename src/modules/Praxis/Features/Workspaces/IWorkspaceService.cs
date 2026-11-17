@@ -38,7 +38,7 @@ internal interface IWorkspaceService
     Task<Result<WorkspaceDto>> UpdateWorkspaceAsync(Guid id, UpdateWorkspaceRequest request, CancellationToken ct = default);
 
     /// <summary>
-    /// Deletes a workspace and all its associated files.
+    /// Deletes a workspace together with its files: their index entries, stored content and records.
     /// </summary>
     /// <returns><c>true</c> if the workspace was deleted; <c>false</c> if not found.</returns>
     Task<bool> DeleteWorkspaceAsync(Guid id, CancellationToken ct = default);
@@ -59,7 +59,8 @@ internal interface IWorkspaceService
     /// </summary>
     /// <returns>
     /// The uploaded file DTO (created in Pending status and processed asynchronously for RAG ingestion),
-    /// or <c>null</c> if the specified workspace was not found.
+    /// or <c>null</c> if the specified workspace was not found. Without a workspace the file goes to the user's
+    /// "Chat uploads" workspace, which is created on first use.
     /// </returns>
     Task<WorkspaceFileDto?> UploadFileAsync(Stream content, string fileName, Guid? workspaceId, CancellationToken ct = default);
 
@@ -68,4 +69,21 @@ internal interface IWorkspaceService
     /// </summary>
     /// <returns><c>true</c> if the file was deleted; <c>false</c> if the file was not found.</returns>
     Task<bool> DeleteFileAsync(Guid fileId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Queues a file for ingestion again (e.g. after a failure), clearing its last error.
+    /// </summary>
+    /// <returns><see langword="false"/> when the file does not exist.</returns>
+    Task<bool> ReindexFileAsync(Guid fileId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Opens a file's original content; <see langword="null"/> when the file or its stored content is missing.
+    /// </summary>
+    Task<WorkspaceFileContent?> OpenFileAsync(Guid fileId, CancellationToken ct = default);
+
+    /// <summary>
+    /// The file's extracted text, cut at <paramref name="maxChars"/>. <see cref="ResultStatus.Invalid"/> when the
+    /// document cannot be parsed.
+    /// </summary>
+    Task<Result<WorkspaceFileText>> GetFileTextAsync(Guid fileId, int maxChars, CancellationToken ct = default);
 }

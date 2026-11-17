@@ -3,18 +3,22 @@ import styles from "../workspaces.module.css";
 import { Button } from "@/shared/ui/button";
 import { Card, CardHeader } from "@/shared/ui/card";
 import { StatusMessage } from "@/shared/ui/status-message";
-import { formatBytesToMb } from "../../../shared/utils/formatters";
+import { formatBytesToMb } from "@/shared/utils/formatters";
+import type { UploadRules } from "@/features/workspaces/types/workspace";
 
 interface UploadPanelProps {
   workspaceName: string;
-  selectedFile: File | null;
+  selectedFiles: readonly File[];
   dragActive: boolean;
-  fileTypeError: string | null;
+  /** Why some of the chosen files were not selected. */
+  problems: readonly string[];
   isUploading: boolean;
+  /** Overall progress of the running upload, 0-1. */
+  uploadProgress: number | null;
   isUploadSuccess: boolean;
   isUploadError: boolean;
   uploadError: Error | null;
-  acceptedExtensions: string;
+  rules: UploadRules | null;
   onDrop: (e: React.DragEvent) => void;
   onDragOver: (e: React.DragEvent) => void;
   onDragLeave: () => void;
@@ -23,16 +27,19 @@ interface UploadPanelProps {
   fileInputRef: React.RefObject<HTMLInputElement | null>;
 }
 
+const TYPE_HINT = "Text, code, PDF and Word files";
+
 export function UploadPanel({
   workspaceName,
-  selectedFile,
+  selectedFiles,
   dragActive,
-  fileTypeError,
+  problems,
   isUploading,
+  uploadProgress,
   isUploadSuccess,
   isUploadError,
   uploadError,
-  acceptedExtensions,
+  rules,
   onDrop,
   onDragOver,
   onDragLeave,
@@ -40,10 +47,17 @@ export function UploadPanel({
   onSubmit,
   fileInputRef,
 }: UploadPanelProps) {
+  const totalBytes = selectedFiles.reduce((sum, f) => sum + f.size, 0);
+  const limit = rules ? ` up to ${formatBytesToMb(rules.maxFileSizeBytes)} each` : "";
+
   return (
     <Card as="section" padding="md" className={styles.uploadCard}>
       <form className={styles.uploadForm} onSubmit={onSubmit}>
-        <CardHeader icon={<UploadCloud />} title="Upload File" description="Files are indexed for RAG automatically" />
+        <CardHeader
+          icon={<UploadCloud />}
+          title="Upload Files"
+          description="Agents can read files right away; search indexing runs in the background"
+        />
         <div
           className={styles.dropZone}
           data-active={dragActive || undefined}
@@ -58,23 +72,45 @@ export function UploadPanel({
           <span className={styles.dropIcon} aria-hidden="true">
             <UploadCloud size={22} />
           </span>
-          {selectedFile ? (
+          {selectedFiles.length === 1 ? (
             <>
-              <span className={styles.dropText}>{selectedFile.name}</span>
-              <span className={styles.dropHint}>{formatBytesToMb(selectedFile.size)}</span>
+              <span className={styles.dropText}>{selectedFiles[0].name}</span>
+              <span className={styles.dropHint}>{formatBytesToMb(selectedFiles[0].size)}</span>
+            </>
+          ) : selectedFiles.length > 1 ? (
+            <>
+              <span className={styles.dropText}>{selectedFiles.length} files selected</span>
+              <span className={styles.dropHint}>{formatBytesToMb(totalBytes)} in total</span>
             </>
           ) : (
             <>
-              <span className={styles.dropText}>Drop a file or click to browse</span>
-              <span className={styles.dropHint}>Text files up to 100 MB — .txt .md .json .csv .yaml .py .ts …</span>
+              <span className={styles.dropText}>Drop files or click to browse</span>
+              <span className={styles.dropHint}>
+                {TYPE_HINT}
+                {limit}
+              </span>
             </>
           )}
         </div>
-        <input ref={fileInputRef} type="file" hidden onChange={onInputChange} accept={acceptedExtensions} />
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          hidden
+          onChange={onInputChange}
+          accept={rules?.extensions.join(",")}
+        />
 
-        {fileTypeError && <StatusMessage variant="error" message={fileTypeError} />}
-        {isUploading && <StatusMessage variant="loading" message="Uploading…" />}
-        {isUploadSuccess && <StatusMessage variant="success" message="File uploaded — indexing in background." />}
+        {problems.map((p) => (
+          <StatusMessage key={p} variant="error" message={p} />
+        ))}
+        {isUploading && (
+          <StatusMessage
+            variant="loading"
+            message={uploadProgress === null ? "Uploading…" : `Uploading… ${Math.round(uploadProgress * 100)}%`}
+          />
+        )}
+        {isUploadSuccess && <StatusMessage variant="success" message="Uploaded - indexing in background." />}
         {isUploadError && (
           <StatusMessage
             variant="error"
@@ -88,7 +124,7 @@ export function UploadPanel({
           fullWidth
           icon={<UploadCloud size={16} />}
           loading={isUploading}
-          disabled={!selectedFile}
+          disabled={selectedFiles.length === 0}
         >
           Upload to {workspaceName}
         </Button>

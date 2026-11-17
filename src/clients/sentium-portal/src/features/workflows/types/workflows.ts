@@ -36,6 +36,14 @@ export interface RunWorkflowPayload {
   workflowId: string;
   scenario: string;
   workspaceId?: string;
+  /** Workspace files whose text the run's agents get up front. */
+  fileIds?: string[];
+}
+
+export interface RunDynamicWorkflowPayload {
+  activity: string;
+  workspaceId?: string;
+  fileIds?: string[];
 }
 
 export interface WorkflowRun {

@@ -63,6 +63,21 @@ internal sealed class ConversationsController(IConversationService conversationS
         return renamed ? NoContent() : NotFound();
     }
 
+    /// <summary>
+    /// Binds the conversation to a workspace whose files every later turn can use, or unbinds it with a null id.
+    /// </summary>
+    [HttpPut("{conversationId:guid}/workspace")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> SetWorkspace(Guid conversationId, [FromBody] UpdateConversationWorkspaceRequest request, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var result = await conversationService.SetWorkspaceAsync(conversationId, request.WorkspaceId, ct);
+        return result.IsSuccess ? NoContent() : result.ToActionResult(this);
+    }
+
     [HttpDelete("{conversationId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

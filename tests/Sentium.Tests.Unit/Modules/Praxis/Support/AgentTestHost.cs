@@ -17,6 +17,7 @@ using Sentium.Praxis.Features.Sentinel;
 using Sentium.Praxis.Features.Skills;
 using Sentium.Praxis.Features.Skills.BuiltIn;
 using Sentium.Praxis.Features.Tools;
+using Sentium.Praxis.Features.Workspaces;
 using Sentium.Sentinel.Contracts;
 
 namespace Sentium.Tests.Unit.Modules.Praxis.Support;
@@ -29,6 +30,8 @@ internal sealed class AgentTestHost
 {
     public RecordingChatClient Model { get; } = new();
     public IAgentLearningService Learnings { get; } = Substitute.For<IAgentLearningService>();
+
+    public IWorkspaceContextBuilder WorkspaceContext { get; } = Substitute.For<IWorkspaceContextBuilder>();
     public IAgentSkillRepository Skills { get; } = Substitute.For<IAgentSkillRepository>();
     public IRegistrySettingsService Settings { get; } = Substitute.For<IRegistrySettingsService>();
     public IPolicyDecisionPoint Pdp { get; } = Substitute.For<IPolicyDecisionPoint>();
@@ -98,6 +101,7 @@ internal sealed class AgentTestHost
             Settings,
             new AgentSkillsProviderFactory(new BuiltInSkillCatalog(), Skills, RunContext, NullLoggerFactory.Instance),
             new LearningsContextProvider(Learnings, RunContext),
+            new WorkspaceContextProviderFactory(WorkspaceContext, RunContext),
             new SentinelFunctionMiddleware(Pdp, RunContext, NullLogger<SentinelFunctionMiddleware>.Instance),
             RunContext,
             provider,

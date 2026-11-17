@@ -17,6 +17,7 @@ using Sentium.Praxis.Features.Agents.Runtime;
 using Sentium.Praxis.Features.Agents.ToolOverrides;
 using Sentium.Praxis.Features.CodeExecution;
 using Sentium.Praxis.Features.Conversations;
+using Sentium.Praxis.Features.Files;
 using Sentium.Praxis.Features.Learnings;
 using Sentium.Praxis.Features.Models;
 using Sentium.Praxis.Features.Orchestration;
@@ -72,6 +73,8 @@ public static class PraxisModuleExtensions
         services.AddSingleton<IRegistrySettingsService, RegistrySettingsService>();
 
         services.AddScoped<ILocalFileService, LocalFileService>();
+        services.AddSingleton<IFileTextExtractor, FileTextExtractor>();
+        services.AddScoped<IWorkspaceFileTextReader, WorkspaceFileTextReader>();
         services.AddSingleton<FileIngestionQueue>();
         services.AddSingleton<IFileIngestionQueue>(sp => sp.GetRequiredService<FileIngestionQueue>());
         services.AddHostedService<FileIngestionWorker>();
@@ -85,6 +88,8 @@ public static class PraxisModuleExtensions
         services.AddScoped<IAgentSkillService, AgentSkillService>();
         services.AddScoped<AgentSkillsProviderFactory>();
         services.AddScoped<LearningsContextProvider>();
+        services.AddScoped<IWorkspaceContextBuilder, WorkspaceContextBuilder>();
+        services.AddScoped<WorkspaceContextProviderFactory>();
 
         services.AddSingleton<IPendingApprovalStore, PendingApprovalStore>();
 

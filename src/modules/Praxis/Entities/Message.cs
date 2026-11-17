@@ -12,6 +12,11 @@ internal sealed class Message : INonAudited
     public string? Thought { get; set; }
     public string? ToolCalls { get; set; }
     public string? Steps { get; set; }
+
+    /// <summary>
+    /// The workspace files attached to a user turn, as JSON.
+    /// </summary>
+    public string? Attachments { get; set; }
     public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 
     public Conversation Conversation { get; set; } = null!;

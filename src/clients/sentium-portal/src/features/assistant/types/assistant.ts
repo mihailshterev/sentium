@@ -6,6 +6,14 @@ export interface ConversationSummary {
   model: string;
   createdAt: string;
   agentName?: string | null;
+  workspaceId?: string | null;
+  workspaceName?: string | null;
+}
+
+/** A workspace file attached to a user message. */
+export interface MessageAttachment {
+  fileId: string;
+  fileName: string;
 }
 
 export interface PendingApproval {
@@ -25,6 +33,7 @@ export interface ConversationMessage {
   pendingApproval?: PendingApproval;
   enhancedPrompt?: string;
   error?: string;
+  attachments?: MessageAttachment[];
 }
 
 export interface ConversationMessageDto {
@@ -36,6 +45,7 @@ export interface ConversationMessageDto {
   steps?: MessageStepDto[] | null;
   thought?: string | null;
   toolCalls?: string[] | null;
+  attachments?: MessageAttachment[] | null;
 }
 
 export interface ConversationDetail {
@@ -44,16 +54,21 @@ export interface ConversationDetail {
   model: string;
   messages: ConversationMessageDto[];
   agentName?: string | null;
+  workspaceId?: string | null;
+  workspaceName?: string | null;
 }
 
 export interface CreateConversationPayload {
   title?: string;
   model: string;
   agentName?: string;
+  workspaceId?: string | null;
 }
 
 export interface CreateConversationResult {
   id: string;
+  workspaceId?: string | null;
+  workspaceName?: string | null;
 }
 
 export interface ChatMessage {
@@ -66,4 +81,6 @@ export interface ChatPayload {
   model: string;
   messages: ChatMessage[];
   stream: boolean;
+  /** Workspace files attached to the latest user message. */
+  fileIds?: string[];
 }

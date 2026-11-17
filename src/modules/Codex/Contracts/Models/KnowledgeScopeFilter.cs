@@ -13,5 +13,9 @@ namespace Sentium.Codex.Contracts.Models;
 /// metadata, not in the scope <c>UserId</c>, so it still reads as shared.
 /// Passing <c>null</c> for the whole filter disables scope filtering entirely; that branch is reserved
 /// and is not currently used by any collection.
+/// <para>
+/// <see cref="MetadataKey"/> and <see cref="MetadataValue"/> narrow the visible entries further to those whose
+/// metadata holds exactly that value (e.g. the chunks of one workspace's files); both must be set to apply.
+/// </para>
 /// </remarks>
-public sealed record KnowledgeScopeFilter(Guid? UserId);
+public sealed record KnowledgeScopeFilter(Guid? UserId, string? MetadataKey = null, string? MetadataValue = null);

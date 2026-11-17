@@ -57,7 +57,18 @@ export class WorkspacesPage {
   }
 
   async expectFileVisible(fileName: string): Promise<void> {
-    await expect(this.page.getByText(fileName)).toBeVisible();
+    await expect(this.page.getByText(fileName, { exact: true })).toBeVisible();
+  }
+
+  async uploadTextFile(fileName: string, content: string): Promise<void> {
+    await this.page
+      .locator('input[type="file"]')
+      .setInputFiles({ name: fileName, mimeType: "text/markdown", buffer: Buffer.from(content) });
+    await this.page.getByRole("button", { name: /upload to/i }).click();
+  }
+
+  async previewFile(): Promise<void> {
+    await this.page.getByTitle("Preview").first().click();
   }
 
   async expectEmptyState(): Promise<void> {

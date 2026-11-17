@@ -6,6 +6,7 @@ using NSubstitute;
 using Sentium.Praxis.Contracts;
 using Sentium.Praxis.Features.Agents;
 using Sentium.Praxis.Features.Conversations;
+using Sentium.Praxis.Features.Workspaces;
 using Sentium.Tests.Unit.Modules.Praxis.Support;
 using Xunit;
 using ChatMessage = Microsoft.Extensions.AI.ChatMessage;
@@ -35,9 +36,10 @@ public sealed class ConversationChatHistoryProviderTests
 
         // The service writes into the in-memory transcript, so later loads see earlier writes - as the database would.
         _conversations
-            .When(c => c.AddMessageAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<IReadOnlyList<MessageStep>?>(), Arg.Any<CancellationToken>()))
+            .When(c => c.AddMessageAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<IReadOnlyList<MessageStep>?>(), Arg.Any<IReadOnlyList<MessageAttachment>?>(), Arg.Any<CancellationToken>()))
             .Do(call => _transcript.Add(new MessageResponse(
-                Guid.NewGuid(), call.ArgAt<string>(1), call.ArgAt<string>(2), DateTime.UtcNow, call.ArgAt<string?>(3), Steps: call.ArgAt<IReadOnlyList<MessageStep>?>(4))));
+                Guid.NewGuid(), call.ArgAt<string>(1), call.ArgAt<string>(2), DateTime.UtcNow, call.ArgAt<string?>(3),
+                Steps: call.ArgAt<IReadOnlyList<MessageStep>?>(4), Attachments: call.ArgAt<IReadOnlyList<MessageAttachment>?>(5))));
     }
 
     [Fact]
@@ -147,7 +149,65 @@ public sealed class ConversationChatHistoryProviderTests
 
         await agent.RunAsync(new ChatMessage(ChatRole.User, "hello"), session, cancellationToken: ct);
 
-        await _conversations.DidNotReceive().AddMessageAsync(foreign, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<IReadOnlyList<MessageStep>?>(), Arg.Any<CancellationToken>());
+        await _conversations.DidNotReceive().AddMessageAsync(foreign, Arg.Any<string>(), Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<IReadOnlyList<MessageStep>?>(), Arg.Any<IReadOnlyList<MessageAttachment>?>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task AttachedFiles_ReachTheModel_SurviveAnApprovalPause_AndArePersistedWithTheUserTurn()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var file = new MessageAttachment(Guid.NewGuid(), "budget.xlsx.md");
+        _host.WorkspaceContext.BuildAsync(_userId, null, Arg.Is<IReadOnlyList<Guid>>(ids => ids.SequenceEqual(new[] { file.FileId })), Arg.Any<int>(), Arg.Any<CancellationToken>())
+            .Returns("### ATTACHED FILES\nbudget contents");
+
+        var tool = new ApprovalTool();
+        _host.Tools.Add(tool.CreateFunction());
+        _host.Model.Script(new ChatResponse(new ChatMessage(ChatRole.Assistant, [new FunctionCallContent("call-2", "run_report")])));
+        _host.Model.Script(new ChatResponse(new ChatMessage(ChatRole.Assistant, "report done")));
+
+        var history1 = CreateProvider();
+        var agent1 = await _host.CreateFactory().CreateAsync(AgentRole.GeneralAssistant, chatHistory: history1, ct: ct);
+        var session1 = await agent1.CreateSessionAsync(ct);
+        history1.Attach(session1, _conversationId);
+        WorkspaceContextProvider.Attach(session1, null, [file.FileId]);
+
+        var turn = new ChatMessage(ChatRole.User, "summarise the budget") { AdditionalProperties = [] };
+        ConversationChatHistoryProvider.WithAttachments(turn.AdditionalProperties, [file]);
+
+        var paused = await agent1.RunAsync(turn, session1, cancellationToken: ct);
+        var request = paused.Messages.SelectMany(m => m.Contents).OfType<ToolApprovalRequestContent>().Single();
+        var serialized = await agent1.SerializeSessionAsync(session1, cancellationToken: ct);
+
+        var agent2 = await _host.CreateFactory().CreateAsync(AgentRole.GeneralAssistant, chatHistory: CreateProvider(), ct: ct);
+        var session2 = await agent2.DeserializeSessionAsync(serialized, cancellationToken: ct);
+        await agent2.RunAsync(new ChatMessage(ChatRole.User, [request.CreateResponse(true)]), session2, cancellationToken: ct);
+
+        _host.Model.Requests.Should().HaveCountGreaterThanOrEqualTo(2);
+        _host.Model.Requests[0].Options!.Instructions.Should().Contain("budget contents");
+        _host.Model.Requests[^1].Options!.Instructions.Should().Contain("budget contents", "the resumed run is built from the serialized session");
+
+        var userTurn = _transcript.Should().ContainSingle(m => m.Role == "user").Subject;
+        userTurn.Content.Should().Be("summarise the budget");
+        userTurn.Attachments.Should().ContainSingle().Which.Should().Be(file);
+    }
+
+    [Fact]
+    public async Task EarlierAttachments_AreListedInLaterTurns_ByNameAndId()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var file = new MessageAttachment(Guid.NewGuid(), "notes.md");
+        _transcript.Add(new MessageResponse(Guid.NewGuid(), "user", "read this", DateTime.UtcNow, Attachments: [file]));
+        _transcript.Add(new MessageResponse(Guid.NewGuid(), "assistant", "done", DateTime.UtcNow));
+
+        var history = CreateProvider();
+        var agent = await _host.CreateFactory().CreateAsync(AgentRole.GeneralAssistant, chatHistory: history, ct: ct);
+        var session = await agent.CreateSessionAsync(ct);
+        history.Attach(session, _conversationId);
+
+        await agent.RunAsync(new ChatMessage(ChatRole.User, "and now?"), session, cancellationToken: ct);
+
+        _host.Model.Requests[^1].Messages.Should().Contain(m => m.Text.Contains($"notes.md (ID: {file.FileId})"));
+        await _host.WorkspaceContext.DidNotReceive().BuildAsync(Arg.Any<Guid>(), Arg.Any<Guid?>(), Arg.Any<IReadOnlyList<Guid>>(), Arg.Any<int>(), Arg.Any<CancellationToken>());
     }
 
     private ConversationChatHistoryProvider CreateProvider() =>

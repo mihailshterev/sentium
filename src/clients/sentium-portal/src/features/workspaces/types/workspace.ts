@@ -8,6 +8,8 @@ export interface WorkspaceFile {
   workspaceId: string | null;
   processingStatus: FileProcessingStatus;
   createdAt: string;
+  /** Why the last ingestion attempt failed. */
+  processingError?: string | null;
 }
 
 export interface Workspace {
@@ -27,4 +29,19 @@ export interface CreateWorkspacePayload {
 export interface UpdateWorkspacePayload {
   name: string;
   description?: string;
+}
+
+/** What the server accepts for upload; the single source of truth for client-side checks. */
+export interface UploadRules {
+  extensions: string[];
+  maxFileSizeBytes: number;
+}
+
+/** A file's extracted text for previewing, cut at the requested length when `truncated`. */
+export interface WorkspaceFileText {
+  fileId: string;
+  fileName: string;
+  text: string;
+  truncated: boolean;
+  totalChars: number;
 }

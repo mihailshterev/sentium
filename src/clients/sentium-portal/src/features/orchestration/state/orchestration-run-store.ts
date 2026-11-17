@@ -11,11 +11,13 @@ interface StartPredefinedArgs {
   workflowId: string;
   scenario: string;
   workspaceId?: string;
+  fileIds?: string[];
 }
 
 interface StartDynamicArgs {
   activity: string;
   workspaceId?: string;
+  fileIds?: string[];
 }
 
 export type RunConnection = "idle" | "starting" | "connecting" | "waiting" | "streaming" | "stopping";
@@ -203,7 +205,7 @@ export const useOrchestrationRunStore = create<OrchestrationRunState>((set, get)
     runStartedAt: null,
     lastOutcome: null,
 
-    startPredefined: async ({ workflowId, scenario, workspaceId }) => {
+    startPredefined: async ({ workflowId, scenario, workspaceId, fileIds }) => {
       beginRun();
       set({ isDynamicRun: false });
       try {
@@ -211,6 +213,7 @@ export const useOrchestrationRunStore = create<OrchestrationRunState>((set, get)
           workflowId,
           scenario,
           ...(workspaceId && { workspaceId }),
+          ...(fileIds?.length && { fileIds }),
         });
         set({ connection: "connecting" });
         openStream(eventId);
@@ -219,13 +222,14 @@ export const useOrchestrationRunStore = create<OrchestrationRunState>((set, get)
       }
     },
 
-    startDynamic: async ({ activity, workspaceId }) => {
+    startDynamic: async ({ activity, workspaceId, fileIds }) => {
       beginRun();
       set({ isDynamicRun: true });
       try {
         const { eventId } = await runDynamicWorkflow({
           activity,
           ...(workspaceId && { workspaceId }),
+          ...(fileIds?.length && { fileIds }),
         });
         set({ connection: "connecting" });
         openStream(eventId);

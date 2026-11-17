@@ -87,6 +87,11 @@ internal sealed class PraxisDbContext : DbContext
                 .HasMaxLength(255);
             entity.Property(e => e.AgentName)
                 .HasMaxLength(255);
+            entity.HasOne(e => e.Workspace)
+                .WithMany()
+                .HasForeignKey(e => e.WorkspaceId)
+                .OnDelete(DeleteBehavior.SetNull)
+                .IsRequired(false);
             entity.HasMany(c => c.Messages)
                 .WithOne(m => m.Conversation)
                 .HasForeignKey(m => m.ConversationId)
@@ -103,6 +108,8 @@ internal sealed class PraxisDbContext : DbContext
             entity.Property(e => e.Content)
                 .IsRequired();
             entity.Property(e => e.Steps)
+                .HasColumnType("jsonb");
+            entity.Property(e => e.Attachments)
                 .HasColumnType("jsonb");
             entity.HasOne(e => e.Conversation)
                 .WithMany(c => c.Messages)
@@ -168,6 +175,7 @@ internal sealed class PraxisDbContext : DbContext
             entity.Property(e => e.Extension).IsRequired().HasMaxLength(32);
             entity.Property(e => e.SizeBytes).IsRequired();
             entity.Property(e => e.ProcessingStatus).IsRequired();
+            entity.Property(e => e.ProcessingError).HasMaxLength(1000);
             entity.HasIndex(e => e.WorkspaceId);
             entity.HasIndex(e => e.CreatedAt);
             entity.HasIndex(e => e.UserId);

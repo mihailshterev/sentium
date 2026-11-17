@@ -5,4 +5,6 @@ internal sealed record ConversationSummary(
     string Title,
     string Model,
     DateTime CreatedAt,
-    string? AgentName = null);
+    string? AgentName = null,
+    Guid? WorkspaceId = null,
+    string? WorkspaceName = null);

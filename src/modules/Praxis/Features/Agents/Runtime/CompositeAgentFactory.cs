@@ -9,6 +9,7 @@ using Sentium.Praxis.Features.Registry;
 using Sentium.Praxis.Features.Sentinel;
 using Sentium.Praxis.Features.Skills;
 using Sentium.Praxis.Features.Tools;
+using Sentium.Praxis.Features.Workspaces;
 
 namespace Sentium.Praxis.Features.Agents.Runtime;
 
@@ -17,7 +18,7 @@ namespace Sentium.Praxis.Features.Agents.Runtime;
 /// invocation and context-window compaction (see <see cref="AgentChatPipeline"/>). Everything else that varies per agent
 /// is expressed through native Agent Framework / Microsoft.Extensions.AI options: the model via
 /// <see cref="ChatOptions.ModelId"/>, the composed instructions via <see cref="ChatOptions.Instructions"/> (one system
-/// message), skills / learnings via <see cref="ChatClientAgentOptions.AIContextProviders"/>, and the Sentinel tool guard
+/// message), skills / learnings / workspace files via <see cref="ChatClientAgentOptions.AIContextProviders"/>, and the Sentinel tool guard
 /// as function-calling middleware.
 /// </summary>
 internal sealed class CompositeAgentFactory(
@@ -31,6 +32,7 @@ internal sealed class CompositeAgentFactory(
     IRegistrySettingsService registrySettingsService,
     AgentSkillsProviderFactory skillsProviderFactory,
     LearningsContextProvider learningsProvider,
+    WorkspaceContextProviderFactory workspaceContextFactory,
     SentinelFunctionMiddleware sentinelMiddleware,
     IPdpContextAccessor runContext,
     IServiceProvider serviceProvider,
@@ -66,7 +68,7 @@ internal sealed class CompositeAgentFactory(
             Description = definition.Description,
             ChatOptions = chatOptions,
             ChatHistoryProvider = chatHistory,
-            AIContextProviders = [skillsProviderFactory.Create(), learningsProvider],
+            AIContextProviders = [skillsProviderFactory.Create(), learningsProvider, workspaceContextFactory.Create(contextWindow)],
         };
 
         var chatClient = AgentChatPipeline.Build(baseChatClient, contextWindow, loggerFactory, serviceProvider);

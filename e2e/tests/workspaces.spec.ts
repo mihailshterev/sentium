@@ -43,4 +43,31 @@ test.describe("Workspaces", () => {
       await workspacesPage.expectWorkspaceNotVisible(name);
     });
   });
+
+  test("uploads, previews and removes a file", { tag: "@regression" }, async ({ workspacesPage, page }) => {
+    const name = uniqueName("e2e-files");
+    const fileName = `${uniqueName("notes")}.md`;
+
+    await workspacesPage.createWorkspace(name, "Files round trip");
+    await workspacesPage.selectWorkspace(name);
+
+    await test.step("upload", async () => {
+      await workspacesPage.uploadTextFile(fileName, "# Release notes\nThe e2e marker line.");
+      await workspacesPage.expectFileVisible(fileName);
+    });
+
+    await test.step("preview its text", async () => {
+      await workspacesPage.previewFile();
+      const dialog = page.getByRole("dialog");
+      await expect(dialog.getByTestId("file-preview-text")).toContainText("The e2e marker line.");
+      await expect(dialog.getByRole("link", { name: /download original/i })).toBeVisible();
+      await page.keyboard.press("Escape");
+    });
+
+    await test.step("remove it", async () => {
+      await page.getByTitle("Remove file").click();
+      await page.getByTestId("confirm-dialog-confirm").click();
+      await expect(page.getByText(fileName, { exact: true })).not.toBeVisible();
+    });
+  });
 });

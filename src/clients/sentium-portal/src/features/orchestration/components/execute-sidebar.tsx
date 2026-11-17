@@ -1,5 +1,17 @@
-import { useState } from "react";
-import { FolderOpen, GitBranch, History, Layers, Pencil, Play, Sparkles, Square } from "lucide-react";
+import { useCallback, useRef, useState } from "react";
+import {
+  FileText,
+  FolderOpen,
+  GitBranch,
+  History,
+  Layers,
+  Paperclip,
+  Pencil,
+  Play,
+  Sparkles,
+  Square,
+  X,
+} from "lucide-react";
 import styles from "../agent-orchestration.module.css";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
@@ -11,6 +23,8 @@ import type { WorkflowRecord } from "@/features/workflows/types/workflows";
 import type { WorkflowRun } from "@/features/workflows/types/workflows";
 import type { Phase } from "@/features/orchestration/types/orchestration";
 import type { RunConnection } from "@/features/orchestration/state/orchestration-run-store";
+import { FilePickerPopover } from "@/features/workspaces/components/file-picker-popover";
+import type { WorkspaceFile } from "@/features/workspaces/types/workspace";
 
 interface Workspace {
   id: string;
@@ -19,6 +33,12 @@ interface Workspace {
 }
 
 export type ExecuteMode = "predefined" | "dynamic";
+
+/** A workspace file attached to the run. */
+export interface AttachedFile {
+  id: string;
+  fileName: string;
+}
 
 interface ExecuteSidebarProps {
   sidebarView: "execute" | "history";
@@ -34,6 +54,9 @@ interface ExecuteSidebarProps {
   onLoadMoreRuns: () => void;
   selectedWorkflow: WorkflowRecord | null;
   selectedWorkspaceId: string;
+  attachedFiles: AttachedFile[];
+  onToggleAttachedFile: (file: WorkspaceFile) => void;
+  onRemoveAttachedFile: (id: string) => void;
   scenarioInput: string;
   activeRunId?: string;
   isRunning: boolean;
@@ -105,6 +128,9 @@ export function ExecuteSidebar({
   onLoadMoreRuns,
   selectedWorkflow,
   selectedWorkspaceId,
+  attachedFiles,
+  onToggleAttachedFile,
+  onRemoveAttachedFile,
   scenarioInput,
   activeRunId,
   isRunning,
@@ -173,6 +199,13 @@ export function ExecuteSidebar({
           Agents can read and write files in this workspace
         </p>
       )}
+      <RunFilesField
+        attachedFiles={attachedFiles}
+        preferredWorkspaceId={selectedWorkspaceId || null}
+        onToggle={onToggleAttachedFile}
+        onRemove={onRemoveAttachedFile}
+        disabled={isRunning}
+      />
     </div>
   );
 
@@ -403,5 +436,68 @@ export function ExecuteSidebar({
         </div>
       </dl>
     </aside>
+  );
+}
+
+/** Files attached to the run: their text reaches the agents up front. */
+function RunFilesField({
+  attachedFiles,
+  preferredWorkspaceId,
+  onToggle,
+  onRemove,
+  disabled,
+}: {
+  attachedFiles: AttachedFile[];
+  preferredWorkspaceId: string | null;
+  onToggle: (file: WorkspaceFile) => void;
+  onRemove: (id: string) => void;
+  disabled: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const anchorRef = useRef<HTMLDivElement>(null);
+  const close = useCallback(() => setOpen(false), []);
+
+  return (
+    <div className={styles.runFiles}>
+      <div ref={anchorRef} className={styles.runFilesAnchor}>
+        <Button
+          variant="secondary"
+          size="sm"
+          icon={<Paperclip size={13} />}
+          onClick={() => setOpen((v) => !v)}
+          disabled={disabled}
+          aria-expanded={open}
+        >
+          Attach files
+        </Button>
+        <FilePickerPopover
+          open={open}
+          onClose={close}
+          anchorRef={anchorRef}
+          preferredWorkspaceId={preferredWorkspaceId}
+          selectedIds={attachedFiles.map((f) => f.id)}
+          onToggleFile={onToggle}
+          className={styles.runFilesPopover}
+        />
+      </div>
+      {attachedFiles.length > 0 && (
+        <ul className={styles.runFileList} aria-label="Attached files">
+          {attachedFiles.map((f) => (
+            <li key={f.id} className={styles.runFile}>
+              <FileText size={12} aria-hidden="true" />
+              <span>{f.fileName}</span>
+              <button
+                type="button"
+                onClick={() => onRemove(f.id)}
+                aria-label={`Remove ${f.fileName}`}
+                disabled={disabled}
+              >
+                <X size={12} />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }

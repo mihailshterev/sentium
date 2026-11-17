@@ -1,27 +1,23 @@
 namespace Sentium.Praxis.Features.Files;
 
 /// <summary>
-/// Defines the file extensions accepted for workspace upload and RAG ingestion.
+/// Defines the file extensions accepted for workspace upload and RAG ingestion: text-readable formats plus PDF and
+/// DOCX, whose text is extracted by <see cref="IFileTextExtractor"/>. Other binary formats (e.g. XLSX) need a parser
+/// and are excluded.
 /// </summary>
-/// <remarks>
-/// <para>
-/// Only plain-text–readable formats are supported; binary-only formats (e.g., XLSX)
-/// require a dedicated parser and are excluded.
-/// </para>
-/// <para>
-/// Supported categories include:
-/// <list type="bullet">
-/// <item><description>Documents: .txt, .md, .markdown</description></item>
-/// <item><description>Data formats: .json, .jsonl, .csv, .xml, .yaml, .yml, .toml, .ini</description></item>
-/// <item><description>Markup: .html, .htm</description></item>
-/// <item><description>Logs: .log</description></item>
-/// <item><description>Source code: .py, .js, .ts, .cs, .java, .sql, .sh, .bat, .ps1</description></item>
-/// <item><description>Configuration: .conf, .cfg, .env</description></item>
-/// </list>
-/// </para>
-/// </remarks>
 internal static class AllowedFileTypes
 {
+    public const string Pdf = ".pdf";
+
+    public const string Docx = ".docx";
+
+    public const long MaxFileSizeBytes = 100 * 1024 * 1024;
+
+    /// <summary>
+    /// The database column limit of <see cref="Entities.ProjectFile.FileName"/>.
+    /// </summary>
+    public const int MaxFileNameLength = 512;
+
     /// <summary>
     /// Case-insensitive; each extension includes the leading dot (e.g., ".txt", ".json").
     /// </summary>
@@ -53,22 +49,23 @@ internal static class AllowedFileTypes
         ".ps1",
         ".conf",
         ".cfg",
+        Pdf,
+        Docx,
     };
 
     /// <summary>
-    /// Checks whether the specified file extension is allowed for upload and ingestion.
+    /// A comma-separated, alphabetically sorted list for user-facing error messages.
     /// </summary>
-    /// <param name="extension">The file extension to validate (e.g., ".txt", ".json").</param>
-    /// <remarks>
-    /// The comparison is case-insensitive.
-    /// </remarks>
+    public static string AllowedList => string.Join(", ", Extensions.Order());
+
     public static bool IsAllowed(string extension) => Extensions.Contains(extension);
 
     /// <summary>
-    /// Returns a human-readable comma-separated list of allowed extensions for error messages.
+    /// Whether agents may create a file of this type from plain text: document formats would be stored as invalid
+    /// documents.
     /// </summary>
-    /// <remarks>
-    /// Extensions are sorted alphabetically and suitable for display in user-facing error messages.
-    /// </remarks>
-    public static string AllowedList => string.Join(", ", Extensions.Order());
+    public static bool IsWritableAsText(string extension) => IsAllowed(extension) && !IsDocument(extension);
+
+    public static bool IsDocument(string extension) =>
+        string.Equals(extension, Pdf, StringComparison.OrdinalIgnoreCase) || string.Equals(extension, Docx, StringComparison.OrdinalIgnoreCase);
 }

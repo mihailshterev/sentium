@@ -39,6 +39,11 @@ internal sealed class ProjectFile : IUserOwned
     /// </summary>
     public FileProcessingStatus ProcessingStatus { get; set; }
 
+    /// <summary>
+    /// Why the last ingestion attempt failed; cleared when the file is queued again.
+    /// </summary>
+    public string? ProcessingError { get; set; }
+
     public DateTime CreatedAt { get; set; }
 
     public Workspace? Workspace { get; set; }
