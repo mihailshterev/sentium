@@ -15,6 +15,10 @@ use crate::store::Paired;
 
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
 
+/// A vault batch can carry several megabytes of notes and parses them on the server.
+const VAULT_REQUEST_TIMEOUT: Duration = Duration::from_secs(120);
+const VAULT_PATH: &str = "api/memoria/device/vault";
+
 /// The server sends a heartbeat comment every 20 seconds; this much silence means the connection is dead (for
 /// example after the PC woke from sleep).
 const STREAM_IDLE_TIMEOUT: Duration = Duration::from_secs(60);
@@ -87,14 +91,80 @@ pub struct Notification {
     pub read_at: Option<String>,
 }
 
+/// The user's vault as this Device sees it.
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DeviceVault {
+    pub is_this_device: bool,
+    pub note_count: u32,
+}
+
+#[derive(Serialize)]
+struct ClaimVault<'a> {
+    name: &'a str,
+    takeover: bool,
+}
+
+#[derive(Serialize)]
+pub struct ManifestEntry {
+    pub path: String,
+    pub hash: String,
+}
+
+#[derive(Serialize)]
+struct VaultManifest<'a> {
+    notes: &'a [ManifestEntry],
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ManifestResult {
+    /// Paths the server lacks or holds in another version.
+    pub upload: Vec<String>,
+    pub note_count: u32,
+}
+
+#[derive(Serialize)]
+pub struct NoteUpload {
+    pub path: String,
+    pub hash: String,
+    pub content: String,
+}
+
+#[derive(Serialize)]
+struct UploadNotes<'a> {
+    notes: &'a [NoteUpload],
+}
+
+#[derive(Serialize)]
+struct RemoveNotes<'a> {
+    paths: &'a [String],
+}
+
+#[derive(Serialize)]
+struct MoveNote<'a> {
+    from: &'a str,
+    to: &'a str,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct VaultSyncResult {
+    pub note_count: u32,
+}
+
 #[derive(Debug)]
 pub enum ApiError {
     /// 401: the Device was removed (in the portal, by a Sovereign, or with its owner) and its token is dead.
     Unpaired,
     /// The operating system does not trust the server's certificate.
     Untrusted,
-    /// The server refused a pairing code; the text is the server's explanation.
+    /// 400, or a refused pairing code; the text is the server's explanation.
     Rejected(String),
+    /// 409: the request conflicts with the server's state (another Device holds the vault).
+    Conflict(String),
+    /// 404: the thing the request names does not exist (the vault was forgotten in the portal).
+    NotFound,
     /// Anything else: unreachable, timed out, a 5xx. Retried with backoff.
     Failed(String),
 }
@@ -107,7 +177,12 @@ impl std::fmt::Display for ApiError {
                 f,
                 "This PC does not trust the server's certificate. Install the Sentium root certificate (see the installation guide) and try again."
             ),
-            ApiError::Rejected(message) | ApiError::Failed(message) => write!(f, "{message}"),
+            ApiError::Rejected(message)
+            | ApiError::Conflict(message)
+            | ApiError::Failed(message) => {
+                write!(f, "{message}")
+            }
+            ApiError::NotFound => write!(f, "The server does not know this item."),
         }
     }
 }
@@ -251,6 +326,86 @@ impl Api {
         }
     }
 
+    /// Claims the user's vault for this Device; `takeover` moves it here from another paired Device.
+    pub async fn claim_vault(
+        &self,
+        paired: &Paired,
+        name: &str,
+        takeover: bool,
+    ) -> Result<DeviceVault, ApiError> {
+        let response = self
+            .send(
+                self.vault_request(paired, Method::PUT, VAULT_PATH)
+                    .json(&ClaimVault { name, takeover }),
+            )
+            .await?;
+        Ok(response.json().await?)
+    }
+
+    /// Sends every note's path and hash; the server drops notes not listed and answers which ones to upload.
+    pub async fn vault_manifest(
+        &self,
+        paired: &Paired,
+        notes: &[ManifestEntry],
+    ) -> Result<ManifestResult, ApiError> {
+        let response = self
+            .send(
+                self.vault_request(paired, Method::POST, &format!("{VAULT_PATH}/manifest"))
+                    .json(&VaultManifest { notes }),
+            )
+            .await?;
+        Ok(response.json().await?)
+    }
+
+    pub async fn upload_notes(
+        &self,
+        paired: &Paired,
+        notes: &[NoteUpload],
+    ) -> Result<VaultSyncResult, ApiError> {
+        let response = self
+            .send(
+                self.vault_request(paired, Method::PUT, &format!("{VAULT_PATH}/notes"))
+                    .json(&UploadNotes { notes }),
+            )
+            .await?;
+        Ok(response.json().await?)
+    }
+
+    pub async fn remove_notes(
+        &self,
+        paired: &Paired,
+        paths: &[String],
+    ) -> Result<VaultSyncResult, ApiError> {
+        let response = self
+            .send(
+                self.vault_request(paired, Method::POST, &format!("{VAULT_PATH}/notes/remove"))
+                    .json(&RemoveNotes { paths }),
+            )
+            .await?;
+        Ok(response.json().await?)
+    }
+
+    /// Renames a note on the server, keeping its links; `NotFound` when the server never had it.
+    pub async fn move_note(
+        &self,
+        paired: &Paired,
+        from: &str,
+        to: &str,
+    ) -> Result<VaultSyncResult, ApiError> {
+        let response = self
+            .send(
+                self.vault_request(paired, Method::POST, &format!("{VAULT_PATH}/notes/move"))
+                    .json(&MoveNote { from, to }),
+            )
+            .await?;
+        Ok(response.json().await?)
+    }
+
+    fn vault_request(&self, paired: &Paired, method: Method, path: &str) -> RequestBuilder {
+        self.request(paired, method, path)
+            .timeout(VAULT_REQUEST_TIMEOUT)
+    }
+
     fn request(&self, paired: &Paired, method: Method, path: &str) -> RequestBuilder {
         self.http
             .request(method, join(&paired.server, path))
@@ -262,11 +417,24 @@ impl Api {
         let response = request.send().await?;
         match response.status() {
             StatusCode::UNAUTHORIZED => Err(ApiError::Unpaired),
+            StatusCode::NOT_FOUND => Err(ApiError::NotFound),
+            StatusCode::CONFLICT => Err(ApiError::Conflict(problem_detail(response).await)),
+            StatusCode::BAD_REQUEST => Err(ApiError::Rejected(problem_detail(response).await)),
             status if !status.is_success() => {
                 Err(ApiError::Failed(format!("The server answered {status}.")))
             }
             _ => Ok(response),
         }
+    }
+}
+
+async fn problem_detail(response: Response) -> String {
+    let status = response.status();
+    match response.json::<Problem>().await {
+        Ok(Problem {
+            detail: Some(detail),
+        }) if !detail.is_empty() => detail,
+        _ => format!("The server answered {status}."),
     }
 }
 

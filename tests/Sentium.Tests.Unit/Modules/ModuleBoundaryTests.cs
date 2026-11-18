@@ -5,6 +5,7 @@ using Sentium.Codex;
 using Sentium.Identity;
 using Sentium.Locus;
 using Sentium.Mcp;
+using Sentium.Memoria;
 using Sentium.Nuntius;
 using Sentium.Praxis;
 using Sentium.Probatio;
@@ -32,6 +33,7 @@ public sealed class ModuleBoundaryTests
         typeof(CodexModuleExtensions).Assembly,
         typeof(LocusModuleExtensions).Assembly,
         typeof(TempusModuleExtensions).Assembly,
+        typeof(MemoriaModuleExtensions).Assembly,
         typeof(PraxisModuleExtensions).Assembly,
         typeof(SchedulingModuleExtensions).Assembly,
         typeof(McpModuleExtensions).Assembly,

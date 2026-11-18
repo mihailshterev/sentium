@@ -12,5 +12,6 @@ public enum ToolResource
     External,
     Inventory,
     Timeline,
+    Vault,
     Any
 }

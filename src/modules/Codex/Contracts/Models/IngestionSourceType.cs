@@ -43,5 +43,10 @@ public enum IngestionSourceType
     /// <summary>
     /// Household assets the Locus module shares with assistants (one source per asset).
     /// </summary>
-    Inventory
+    Inventory,
+
+    /// <summary>
+    /// Notes from a user's Obsidian vault, synced by the Memoria module (one document per note).
+    /// </summary>
+    Obsidian
 }

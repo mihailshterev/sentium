@@ -23,6 +23,7 @@
     <ProjectReference Include="..\..\modules\Codex\Sentium.Codex.csproj" />
     <ProjectReference Include="..\..\modules\Locus\Sentium.Locus.csproj" />
     <ProjectReference Include="..\..\modules\Tempus\Sentium.Tempus.csproj" />
+    <ProjectReference Include="..\..\modules\Memoria\Sentium.Memoria.csproj" />
     <ProjectReference Include="..\..\modules\Praxis\Sentium.Praxis.csproj" />
     <ProjectReference Include="..\..\modules\Mcp\Sentium.Mcp.csproj" />
     <ProjectReference Include="..\..\modules\Probatio\Sentium.Probatio.csproj" />

@@ -28,6 +28,7 @@ public static class VigilModuleExtensions
         ("Codex",    "codex"),
         ("Locus",    "locus"),
         ("Tempus",   "tempus"),
+        ("Memoria",  "memoria"),
         ("Nuntius",  "nuntius"),
         ("Registry", "registry")
     ];

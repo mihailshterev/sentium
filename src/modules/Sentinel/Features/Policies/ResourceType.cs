@@ -13,5 +13,6 @@ internal enum ResourceType
     Code,
     Inventory,
     Timeline,
+    Vault,
     Any
 }

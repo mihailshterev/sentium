@@ -11,7 +11,8 @@
     <main>
       <h1>Sentium Satelles</h1>
       <p class="muted">
-        Reports this PC's health to Vigil and shows your notifications. The server can never control this PC.
+        Reports this PC's health to Vigil, shows your notifications and syncs your Obsidian vault. The server can never
+        control this PC.
       </p>
 
       <section class="panel" id="pair-panel" hidden>
@@ -48,10 +49,50 @@
       <section class="panel" id="paired-panel" hidden>
         <p id="status" class="status"></p>
         <p class="muted">
-          Sentium Satelles keeps running in the notification area. Use its icon to open Sentium, start it at sign-in, or
-          unpair.
+          Sentium Satelles keeps running in the notification area. Click its icon to come back to this window; its menu
+          opens Sentium, starts it at sign-in, or unpairs.
         </p>
         <button id="close" type="button" class="secondary">Close window</button>
+      </section>
+
+      <section class="panel" id="vault-panel" hidden>
+        <h2>Obsidian vault</h2>
+        <p class="muted">
+          Sentium reads the notes in one vault so your assistants can search and link them. It never changes your notes.
+        </p>
+
+        <div id="vault-none">
+          <button id="vault-choose" type="button">Choose vault folder…</button>
+        </div>
+
+        <div id="vault-set" hidden>
+          <p class="vault-name"><strong id="vault-name"></strong></p>
+          <p id="vault-folder" class="muted path"></p>
+          <p id="vault-status" class="status"></p>
+          <p id="vault-synced" class="muted"></p>
+
+          <div class="row">
+            <button id="vault-sync" type="button" class="secondary">Sync now</button>
+            <button id="vault-pause" type="button" class="secondary">Pause</button>
+            <button id="vault-takeover" type="button" hidden>Take over</button>
+          </div>
+
+          <label for="vault-excludes">Skip these folders or files <span class="muted">(one pattern per line)</span></label>
+          <textarea
+            id="vault-excludes"
+            rows="3"
+            spellcheck="false"
+            placeholder="Private/&#10;Templates/&#10;*.excalidraw.md"
+          ></textarea>
+
+          <div class="row">
+            <button id="vault-save" type="button" class="secondary">Save</button>
+            <button id="vault-change" type="button" class="secondary">Change folder…</button>
+            <button id="vault-stop" type="button" class="secondary">Stop syncing</button>
+          </div>
+        </div>
+
+        <p id="vault-error" class="error" role="alert"></p>
       </section>
     </main>
   </body>

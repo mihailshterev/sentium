@@ -507,6 +507,7 @@
           "Sentium.Core": "[1.0.0, )",
           "Sentium.Infrastructure": "[1.0.0, )",
           "Sentium.Locus": "[1.0.0, )",
+          "Sentium.Memoria": "[1.0.0, )",
           "Sentium.Praxis": "[1.0.0, )",
           "Sentium.Tempus": "[1.0.0, )"
         }
@@ -559,6 +560,17 @@
           "Sentium.Registry": "[1.0.0, )"
         }
       },
+      "sentium.memoria": {
+        "type": "Project",
+        "dependencies": {
+          "Markdig": "[1.5.1, )",
+          "Sentium.Codex": "[1.0.0, )",
+          "Sentium.Core": "[1.0.0, )",
+          "Sentium.Identity": "[1.0.0, )",
+          "Sentium.Infrastructure": "[1.0.0, )",
+          "YamlDotNet": "[18.1.0, )"
+        }
+      },
       "sentium.nuntius": {
         "type": "Project",
         "dependencies": {
@@ -579,6 +591,7 @@
           "Sentium.Core": "[1.0.0, )",
           "Sentium.Infrastructure": "[1.0.0, )",
           "Sentium.Locus": "[1.0.0, )",
+          "Sentium.Memoria": "[1.0.0, )",
           "Sentium.Nuntius": "[1.0.0, )",
           "Sentium.Registry": "[1.0.0, )",
           "Sentium.Sentinel": "[1.0.0, )",
@@ -697,6 +710,12 @@
         "dependencies": {
           "FluentValidation": "12.1.1"
         }
+      },
+      "Markdig": {
+        "type": "CentralTransitive",
+        "requested": "[1.5.1, )",
+        "resolved": "1.5.1",
+        "contentHash": "NtHwU5t5yKr6Gnylhs8/hlR0mOAftTFQURDz2ID8bkunxps1neOzKw0dYKKlwNuwiYIGLHjJTXK91f809Ko1ww=="
       },
       "Microsoft.Agents.AI": {
         "type": "CentralTransitive",
@@ -980,6 +999,12 @@
           "Grpc.Net.Client": "2.70.0",
           "Serilog": "4.2.0"
         }
+      },
+      "YamlDotNet": {
+        "type": "CentralTransitive",
+        "requested": "[18.1.0, )",
+        "resolved": "18.1.0",
+        "contentHash": "5K+9KFg2TdTl7VXv88Qzi/0lqK6JFoNP3lRuImPYGRV7K/QYklDyTrj4+A+KAki1JsQi6qKY+hDyY7d6WRqjrw=="
       }
     },
     "net10.0/linux-x64": {},

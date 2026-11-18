@@ -36,6 +36,8 @@
 
     <!-- ASP.NET Core -->
     <PackageVersion Include="FluentValidation" Version="12.1.1" />
+    <PackageVersion Include="Markdig" Version="1.5.1" />
+    <PackageVersion Include="YamlDotNet" Version="18.1.0" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.1" />
     <PackageVersion Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="$(EntityFrameworkCoreVersion)" />
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.1" />

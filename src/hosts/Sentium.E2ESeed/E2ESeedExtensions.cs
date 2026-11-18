@@ -14,6 +14,7 @@ public static class E2ESeedExtensions
 
         services.AddSingleton<IE2ESeeder, LocusE2EDataSeeder>();
         services.AddSingleton<IE2ESeeder, TempusE2EDataSeeder>();
+        services.AddSingleton<IE2ESeeder, MemoriaE2EDataSeeder>();
         services.AddSingleton<IE2ESeeder, PraxisE2EDataSeeder>();
 
         return services;

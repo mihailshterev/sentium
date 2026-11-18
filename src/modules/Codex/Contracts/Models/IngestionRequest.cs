@@ -37,4 +37,10 @@ public sealed class IngestionRequest
     /// The owning user when <see cref="Scope"/> is <see cref="KnowledgeScope.User"/>.
     /// </summary>
     public Guid? UserId { get; init; }
+
+    /// <summary>
+    /// Chunks the source already split along its own structure (e.g. markdown headings). When set, they are embedded
+    /// as given and <see cref="Content"/> is not chunked.
+    /// </summary>
+    public IReadOnlyList<string>? Chunks { get; init; }
 }

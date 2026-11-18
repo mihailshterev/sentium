@@ -19,6 +19,7 @@
     <ProjectReference Include="..\..\shared\Sentium.Infrastructure\Sentium.Infrastructure.csproj" />
     <ProjectReference Include="..\..\modules\Locus\Sentium.Locus.csproj" />
     <ProjectReference Include="..\..\modules\Tempus\Sentium.Tempus.csproj" />
+    <ProjectReference Include="..\..\modules\Memoria\Sentium.Memoria.csproj" />
     <ProjectReference Include="..\..\modules\Praxis\Sentium.Praxis.csproj" />
   </ItemGroup>
 

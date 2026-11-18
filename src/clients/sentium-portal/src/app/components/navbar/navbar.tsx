@@ -14,6 +14,7 @@ import {
   FolderOpen,
   GitBranch,
   LayoutDashboard,
+  Library,
   LogOut,
   Orbit,
   Package,
@@ -65,6 +66,7 @@ const NAV_GROUPS: NavGroup[] = [
     links: [
       { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
       { to: "/timeline", label: "Timeline", icon: CalendarRange },
+      { to: "/vault", label: "Vault", icon: Library },
     ],
   },
   {

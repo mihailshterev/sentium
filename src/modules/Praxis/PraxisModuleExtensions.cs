@@ -32,6 +32,7 @@ using Sentium.Praxis.Features.Titles;
 using Sentium.Praxis.Features.Tools;
 using Sentium.Praxis.Features.Tools.Inventory;
 using Sentium.Praxis.Features.Tools.Timeline;
+using Sentium.Praxis.Features.Tools.Vault;
 using Sentium.Praxis.Features.Tools.Workspace;
 using Sentium.Praxis.Features.Users;
 using Sentium.Praxis.Features.WorkflowManagement;
@@ -128,6 +129,12 @@ public static class PraxisModuleExtensions
         services.AddTransient<IAgentTool, ProposeTimelineEventTool>();
         services.AddTransient<IAgentTool, ProposeTaskRescheduleTool>();
         services.AddTransient<IAgentTool, AddTimelineNoteTool>();
+        services.AddTransient<IAgentTool, VaultOverviewTool>();
+        services.AddTransient<IAgentTool, SearchVaultTool>();
+        services.AddTransient<IAgentTool, ReadVaultNoteTool>();
+        services.AddTransient<IAgentTool, VaultBacklinksTool>();
+        services.AddTransient<IAgentTool, RelatedVaultNotesTool>();
+        services.AddTransient<IAgentTool, SuggestVaultLinksTool>();
 
         services.AddScoped<IConversationRepository, ConversationRepository>();
         services.AddScoped<ConversationChatHistoryProvider>();
