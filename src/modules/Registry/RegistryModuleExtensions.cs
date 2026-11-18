@@ -55,6 +55,10 @@ public static class RegistryModuleExtensions
             SettingsKeys.Companion, SettingsScope.PerUser, c => c.Companion, (c, v) => c.Companion = v)
         );
 
+        services.AddSingleton<ISettingsDescriptor>(new SettingsDescriptor<EvaluationSettings>(
+            SettingsKeys.Evaluation, SettingsScope.PerUser, c => c.Evaluation, (c, v) => c.Evaluation = v)
+        );
+
         services.AddSingleton<ISettingsCatalog, SettingsCatalog>();
         services.AddScoped<SettingsService>();
         services.AddSingleton<ISettingsService, ScopedSettingsService>();

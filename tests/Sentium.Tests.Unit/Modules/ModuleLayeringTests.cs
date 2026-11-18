@@ -9,6 +9,7 @@ using Sentium.Locus;
 using Sentium.Mcp;
 using Sentium.Nuntius;
 using Sentium.Praxis;
+using Sentium.Probatio;
 using Sentium.Registry;
 using Sentium.Scheduling;
 using Sentium.Sentinel;
@@ -37,6 +38,7 @@ public sealed class ModuleLayeringTests
         typeof(PraxisModuleExtensions).Assembly,
         typeof(SchedulingModuleExtensions).Assembly,
         typeof(McpModuleExtensions).Assembly,
+        typeof(ProbatioModuleExtensions).Assembly,
         typeof(VigilModuleExtensions).Assembly,
     ];
 

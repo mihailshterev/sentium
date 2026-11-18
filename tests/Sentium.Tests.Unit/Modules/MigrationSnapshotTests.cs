@@ -6,6 +6,7 @@ using Sentium.Locus.Data;
 using Sentium.Mcp.Data;
 using Sentium.Nuntius.Data;
 using Sentium.Praxis.Data;
+using Sentium.Probatio.Data;
 using Sentium.Registry.Data;
 using Sentium.Sentinel.Data;
 using Sentium.Tempus.Data;
@@ -31,6 +32,7 @@ public sealed class MigrationSnapshotTests
         ["Tempus"] = () => new TempusDbContextFactory().CreateDbContext([]),
         ["Praxis"] = () => new PraxisDbContextFactory().CreateDbContext([]),
         ["Mcp"] = () => new McpDbContextFactory().CreateDbContext([]),
+        ["Probatio"] = () => new ProbatioDbContextFactory().CreateDbContext([]),
     };
 
     public static TheoryData<string> ModuleNames() => [.. Contexts.Keys];

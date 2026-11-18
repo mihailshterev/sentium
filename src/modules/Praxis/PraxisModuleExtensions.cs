@@ -102,6 +102,7 @@ public static class PraxisModuleExtensions
         services.AddScoped<IAgentToolReferenceCleaner, AgentToolReferenceCleaner>();
         services.AddScoped<IBuiltInAgentService, BuiltInAgentService>();
         services.AddScoped<IAgentFactory, CompositeAgentFactory>();
+        services.AddScoped<IEvaluationAgentBuilder, EvaluationAgentBuilder>();
         services.AddScoped<IPromptEnhancementService, PromptEnhancementService>();
         services.AddScoped<ITitleGenerator, TitleGenerator>();
         services.AddScoped<IAgentRepository, AgentRepository>();

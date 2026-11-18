@@ -21,6 +21,12 @@ import { SettingsView as SettingsPage } from "../../features/registry";
 import { KnowledgeBaseView as KnowledgeBase } from "../../features/knowledge-base";
 import { SkillsView as Skills } from "../../features/skills";
 import { McpServersView as McpServers } from "../../features/mcp";
+import {
+  BenchmarkView as BenchmarkDetail,
+  EvalSuiteEditorView as EvalSuiteEditor,
+  EvalSuitesView as EvalSuites,
+  EvaluationView as EvaluationDetail,
+} from "../../features/evaluations";
 import { SentinelView as Sentinel } from "../../features/sentinel";
 import { SandboxView as Sandbox } from "../../features/sandbox";
 import { SandboxRunDetailView as SandboxRunDetail } from "../../features/sandbox/views/sandbox-run-detail-view";
@@ -62,6 +68,10 @@ export const routes: RouteObject[] = [
       { path: "scheduler", element: <Scheduler /> },
       { path: "skills", element: <Skills /> },
       { path: "mcp", element: <McpServers /> },
+      { path: "evaluations", element: <EvalSuites /> },
+      { path: "evaluations/suites/:suiteId", element: <EvalSuiteEditor /> },
+      { path: "evaluations/benchmarks/:benchmarkId", element: <BenchmarkDetail /> },
+      { path: "evaluations/:evaluationId", element: <EvaluationDetail /> },
       { path: "sentinel", element: <Sentinel /> },
       { path: "sandbox", element: <Sandbox /> },
       { path: "sandbox/:jobId", element: <SandboxRunDetail /> },

@@ -27,4 +27,9 @@ public static class SettingsKeys
     /// A user's own Companion and voice preferences.
     /// </summary>
     public const string Companion = "companion";
+
+    /// <summary>
+    /// A user's own Evaluation preferences, such as the Judge model.
+    /// </summary>
+    public const string Evaluation = "evaluation";
 }

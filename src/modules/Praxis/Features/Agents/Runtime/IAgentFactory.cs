@@ -30,6 +30,23 @@ internal interface IAgentFactory
         CancellationToken ct = default);
 
     /// <summary>
+    /// What <see cref="CreateAsync"/> would build the agent from, without building it; <see langword="null"/> when
+    /// <paramref name="agentName"/> matches neither a native nor a database agent.
+    /// </summary>
+    Task<AgentBlueprint?> ResolveBlueprintAsync(
+        string agentName,
+        string? overrideModel,
+        Guid? actingUserId,
+        bool allowApprovalTools,
+        CancellationToken ct = default);
+
+    /// <summary>
+    /// The model an agent run on <paramref name="overrideModel"/> would use: the override, else the user's Registry
+    /// default, else the configured default.
+    /// </summary>
+    Task<string> ResolveModelAsync(string? overrideModel, Guid? actingUserId, CancellationToken ct = default);
+
+    /// <summary>
     /// Constructs a lean <em>control</em> agent for a structured decision (planning, reviewing, synthesizing): no harness,
     /// tools, skills, or learnings, and temperature 0. Pair runs with a JSON-schema response format so small models are
     /// constrained to a valid answer.

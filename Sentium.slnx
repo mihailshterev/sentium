@@ -27,6 +27,7 @@
     <Project Path="src/modules/Nuntius/Sentium.Nuntius.csproj" />
     <Project Path="src/modules/Tempus/Sentium.Tempus.csproj" />
     <Project Path="src/modules/Praxis/Sentium.Praxis.csproj" />
+    <Project Path="src/modules/Probatio/Sentium.Probatio.csproj" />
     <Project Path="src/modules/Registry/Sentium.Registry.csproj" />
     <Project Path="src/modules/Scheduling/Sentium.Scheduling.csproj" />
     <Project Path="src/modules/Sentinel/Sentium.Sentinel.csproj" />

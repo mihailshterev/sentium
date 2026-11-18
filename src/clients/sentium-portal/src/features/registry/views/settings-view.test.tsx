@@ -19,6 +19,7 @@ const VALUES: Record<SettingsKey, Record<string, unknown>> = {
     isReviewBeforeSendingEnabled: false,
     isSpeakTypedRepliesEnabled: false,
   },
+  evaluation: { judgeModel: null },
   inference: { defaultModel: "gemma-4-e4b", agentTemperature: 0.3 },
   calendar: { timeZone: "Europe/Sofia", dayStart: "08:00:00" },
   pdp: {
@@ -101,7 +102,9 @@ describe("Settings layout", () => {
 
     expect(screen.getByRole("heading", { level: 2, name: "Calendar" })).toBeInTheDocument();
     expect(screen.queryByRole("heading", { level: 2, name: "Security" })).not.toBeInTheDocument();
-    expect(fetchGroup.mock.calls.map(([key]) => key).sort()).toEqual(["calendar-user", "companion", "harness"]);
+    expect(fetchGroup.mock.calls.map(([key]) => key).sort()).toEqual(["calendar-user", "companion", "evaluation", "harness"]);
+    expect(screen.getByRole("heading", { level: 2, name: "Evaluations" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Judge model")).toHaveValue("");
   });
 
   it("adds the household sections for a Sovereign, including settings that used to live on feature pages", async () => {
@@ -116,7 +119,7 @@ describe("Settings layout", () => {
     expect(screen.getByTestId("semantic-intent-toggle")).toBeChecked();
     expect(screen.getByTestId("autonomy-slider")).toHaveValue("5");
     expect(screen.getByLabelText("Intent check model")).toHaveValue("");
-    expect(screen.getByRole("option", { name: "Default model" })).toBeInTheDocument();
+    expect(within(screen.getByLabelText("Intent check model")).getByRole("option", { name: "Default model" })).toBeInTheDocument();
   });
 
   it("shows who last saved a group", async () => {
