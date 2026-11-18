@@ -49,5 +49,5 @@ function toLink(inner: string): string {
 }
 
 function escapeLabel(label: string): string {
-  return label.replace(/[[\]]/g, "\\$&");
+  return label.replace(/[\\[\]]/g, "\\$&");
 }

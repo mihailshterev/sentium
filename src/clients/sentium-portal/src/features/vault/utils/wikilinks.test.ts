@@ -14,6 +14,10 @@ describe("wikilinksToMarkdown", () => {
     expect(wikilinksToMarkdown(content)).toBe("```\n[[Not a link]]\n```\n[Link](vault-note:Link)");
   });
 
+  it("escapes backslashes in the label so they cannot break the link", () => {
+    expect(wikilinksToMarkdown("[[Note|ends in \\]]")).toBe("[ends in \\\\](vault-note:Note)");
+  });
+
   it("keeps a heading-only link as plain text", () => {
     expect(wikilinksToMarkdown("Jump to [[#Section]]")).toBe("Jump to Section");
   });
