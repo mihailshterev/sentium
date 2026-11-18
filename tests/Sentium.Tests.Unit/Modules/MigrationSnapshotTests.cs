@@ -4,6 +4,7 @@ using Sentium.Codex.Data;
 using Sentium.Identity.Data;
 using Sentium.Locus.Data;
 using Sentium.Mcp.Data;
+using Sentium.Memoria.Data;
 using Sentium.Nuntius.Data;
 using Sentium.Praxis.Data;
 using Sentium.Probatio.Data;
@@ -30,6 +31,7 @@ public sealed class MigrationSnapshotTests
         ["Codex"] = () => new CodexDbContextFactory().CreateDbContext([]),
         ["Locus"] = () => new LocusDbContextFactory().CreateDbContext([]),
         ["Tempus"] = () => new TempusDbContextFactory().CreateDbContext([]),
+        ["Memoria"] = () => new MemoriaDbContextFactory().CreateDbContext([]),
         ["Praxis"] = () => new PraxisDbContextFactory().CreateDbContext([]),
         ["Mcp"] = () => new McpDbContextFactory().CreateDbContext([]),
         ["Probatio"] = () => new ProbatioDbContextFactory().CreateDbContext([]),

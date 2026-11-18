@@ -25,4 +25,10 @@ internal static class ToolNames
     public const string ProposeTimelineEvent = "propose_timeline_event";
     public const string ProposeTaskReschedule = "propose_task_reschedule";
     public const string AddTimelineNote = "add_timeline_note";
+    public const string VaultOverview = "vault_overview";
+    public const string SearchVault = "vault_search";
+    public const string ReadVaultNote = "vault_read_note";
+    public const string VaultBacklinks = "vault_backlinks";
+    public const string RelatedVaultNotes = "vault_related";
+    public const string SuggestVaultLinks = "vault_suggest_links";
 }

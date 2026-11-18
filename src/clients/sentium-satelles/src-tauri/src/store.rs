@@ -19,13 +19,29 @@ pub struct Paired {
     pub token: String,
 }
 
+/// The Obsidian vault this PC syncs. Kept across unpairing, so pairing again resumes the same folder.
+#[derive(Clone, Serialize, Deserialize, PartialEq, Eq, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct VaultSettings {
+    pub path: String,
+    /// The vault's name in Obsidian, used for `obsidian://` links back to its notes.
+    pub name: String,
+    #[serde(default)]
+    pub excludes: Vec<String>,
+    #[serde(default)]
+    pub paused: bool,
+}
+
 #[derive(Serialize, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 struct Settings {
     server_url: Option<Url>,
     device_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    vault: Option<VaultSettings>,
 }
 
+#[derive(Clone)]
 pub struct Store {
     folder: PathBuf,
 }
@@ -67,6 +83,18 @@ impl Store {
         self.write_settings(&Settings {
             server_url: Some(paired.server.clone()),
             device_id: Some(paired.device_id.clone()),
+            ..self.read_settings()
+        })
+    }
+
+    pub fn vault(&self) -> Option<VaultSettings> {
+        self.read_settings().vault
+    }
+
+    pub fn save_vault(&self, vault: Option<VaultSettings>) -> Result<(), String> {
+        self.write_settings(&Settings {
+            vault,
+            ..self.read_settings()
         })
     }
 

@@ -21,7 +21,7 @@ internal sealed class SemanticMapController(
     IOptions<RagOptions> ragOptions,
     ICurrentUser currentUser) : ControllerBase
 {
-    private static readonly HashSet<string> ScopedCollections = ["knowledge_base", "agent_learnings", "user_memories"];
+    private static readonly HashSet<string> ScopedCollections = [.. KnowledgeCollections.All];
 
     /// <summary>
     /// Returns a page of nodes from the specified collections for graph rendering.

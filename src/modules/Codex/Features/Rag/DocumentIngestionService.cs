@@ -139,7 +139,9 @@ internal sealed class DocumentIngestionService(
     /// </summary>
     private async IAsyncEnumerable<IReadOnlyList<EmbeddedChunk>> EmbedAsync(IngestionRequest request, [EnumeratorCancellation] CancellationToken ct)
     {
-        var chunks = TextChunker.Chunk(request.Content, ragOptions.ChunkSize, ragOptions.ChunkOverlap);
+        IReadOnlyList<string> chunks = request.Chunks is { Count: > 0 } prechunked
+            ? prechunked
+            : TextChunker.Chunk(request.Content, ragOptions.ChunkSize, ragOptions.ChunkOverlap);
 
         if (logger.IsEnabled(LogLevel.Information))
         {

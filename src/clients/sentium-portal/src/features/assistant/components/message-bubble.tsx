@@ -1,5 +1,6 @@
 import { memo, useState } from "react";
 import Markdown from "react-markdown";
+import { markdownUrlTransform } from "@/shared/utils/markdown-url";
 import { Check, ChevronDown, Copy, FileText, ShieldAlert, Sparkles } from "lucide-react";
 import styles from "../assistant.module.css";
 import { Button } from "@/shared/ui/button";
@@ -82,7 +83,7 @@ export const MessageBubble = memo(function MessageBubble({
             </div>
           )}
           <div className={styles.content}>
-            <Markdown>{msg.content}</Markdown>
+            <Markdown urlTransform={markdownUrlTransform}>{msg.content}</Markdown>
           </div>
           {msg.enhancedPrompt && (
             <div className={styles.enhanced}>
@@ -98,7 +99,7 @@ export const MessageBubble = memo(function MessageBubble({
               </button>
               {enhancedOpen && (
                 <div className={`${styles.content} ${styles.enhancedContent}`}>
-                  <Markdown>{msg.enhancedPrompt}</Markdown>
+                  <Markdown urlTransform={markdownUrlTransform}>{msg.enhancedPrompt}</Markdown>
                 </div>
               )}
             </div>
@@ -184,7 +185,7 @@ export const MessageBubble = memo(function MessageBubble({
         ) : (
           msg.content && (
             <div className={styles.content}>
-              <Markdown>{msg.content}</Markdown>
+              <Markdown urlTransform={markdownUrlTransform}>{msg.content}</Markdown>
             </div>
           )
         )}

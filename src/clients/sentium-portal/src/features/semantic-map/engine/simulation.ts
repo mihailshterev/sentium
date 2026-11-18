@@ -84,6 +84,7 @@ export function createSimulation(
     knowledge_base: { x: width * 0.35, y: height * 0.4 },
     agent_learnings: { x: width * 0.65, y: height * 0.4 },
     user_memories: { x: width * 0.5, y: height * 0.7 },
+    vault_notes: { x: width * 0.5, y: height * 0.15 },
   };
 
   const chargeStrength = mode === "cluster" ? -120 : mode === "neural" ? -60 : -80;

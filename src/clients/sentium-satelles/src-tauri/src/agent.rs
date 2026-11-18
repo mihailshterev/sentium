@@ -3,7 +3,7 @@
 //! only ever make this app show a toast; nothing it sends is executed.
 
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
 
 use serde::Serialize;
@@ -13,6 +13,7 @@ use url::Url;
 use crate::api::{Api, ApiError, Frame, Notification};
 use crate::metrics::Metrics;
 use crate::store::{Paired, Store};
+use crate::vault::{VaultSnapshot, VaultSync};
 
 const DEFAULT_REPORT_INTERVAL: Duration = Duration::from_secs(30);
 const MIN_REPORT_INTERVAL: Duration = Duration::from_secs(10);
@@ -38,6 +39,7 @@ pub struct Snapshot {
     pub server: Option<String>,
     pub last_server: Option<String>,
     pub unread: u32,
+    pub vault: VaultSnapshot,
 }
 
 /// Receives the agent's changes; called from background tasks.
@@ -62,6 +64,7 @@ pub struct Agent {
     inner: Mutex<Inner>,
     observer: Arc<dyn Observer>,
     app_version: String,
+    vault: Arc<VaultSync>,
 }
 
 impl Agent {
@@ -71,20 +74,38 @@ impl Agent {
         app_version: String,
         observer: Arc<dyn Observer>,
     ) -> Arc<Self> {
-        Arc::new(Self {
-            api,
-            store,
-            metrics: Mutex::new(Metrics::new()),
-            inner: Mutex::new(Inner {
-                status: Status::NotPaired,
-                paired: None,
-                unread: 0,
-                generation: 0,
-                cancel: None,
-            }),
-            observer,
-            app_version,
+        Arc::new_cyclic(|agent: &Weak<Self>| {
+            let agent = agent.clone();
+            let vault = VaultSync::new(
+                api.clone(),
+                store.clone(),
+                Box::new(move || {
+                    if let Some(agent) = agent.upgrade() {
+                        agent.publish();
+                    }
+                }),
+            );
+
+            Self {
+                api,
+                store,
+                metrics: Mutex::new(Metrics::new()),
+                inner: Mutex::new(Inner {
+                    status: Status::NotPaired,
+                    paired: None,
+                    unread: 0,
+                    generation: 0,
+                    cancel: None,
+                }),
+                observer,
+                app_version,
+                vault,
+            }
         })
+    }
+
+    pub fn vault(&self) -> &Arc<VaultSync> {
+        &self.vault
     }
 
     /// Resumes the stored pairing, if any.
@@ -104,6 +125,8 @@ impl Agent {
     }
 
     pub fn snapshot(&self) -> Snapshot {
+        // Read before taking the agent lock: the vault reports its changes through this snapshot.
+        let vault = self.vault.snapshot();
         let inner = self.lock();
         let server = inner.paired.as_ref().map(|p| p.server.clone());
         let host = server.as_ref().map(authority).unwrap_or_default();
@@ -126,6 +149,7 @@ impl Agent {
                 .map(|u| u.as_str().trim_end_matches('/').to_string()),
             server: server.map(|u| u.to_string()),
             unread: inner.unread,
+            vault,
         }
     }
 
@@ -187,16 +211,27 @@ impl Agent {
             generation,
             cancel.clone(),
         ));
-        tauri::async_runtime::spawn(Arc::clone(self).stream_loop(paired, generation, cancel));
+        tauri::async_runtime::spawn(Arc::clone(self).stream_loop(
+            paired.clone(),
+            generation,
+            cancel,
+        ));
+        self.vault.start(paired);
     }
 
     fn stop_loops(&self) -> Option<Paired> {
-        let mut inner = self.lock();
-        inner.generation += 1;
-        if let Some(cancel) = inner.cancel.take() {
-            cancel.cancel();
-        }
-        inner.paired.clone()
+        let paired = {
+            let mut inner = self.lock();
+            inner.generation += 1;
+            if let Some(cancel) = inner.cancel.take() {
+                cancel.cancel();
+            }
+            inner.paired.clone()
+        };
+
+        // Outside the agent lock: the vault publishes its change through this agent.
+        self.vault.stop();
+        paired
     }
 
     async fn report_loop(
@@ -347,6 +382,7 @@ impl Agent {
         }
 
         log::info!("the server no longer accepts this device; it was removed");
+        self.vault.stop();
         self.forget();
     }
 
@@ -403,7 +439,7 @@ fn authority(url: &Url) -> String {
 /// Capped exponential backoff with jitter, so a household of PCs waking together does not hit a restarting server
 /// in lockstep.
 #[derive(Default)]
-struct Backoff {
+pub(crate) struct Backoff {
     attempt: u32,
 }
 
@@ -411,7 +447,7 @@ impl Backoff {
     const INITIAL: Duration = Duration::from_secs(2);
     const CAP: Duration = Duration::from_secs(120);
 
-    fn next(&mut self) -> Duration {
+    pub(crate) fn next(&mut self) -> Duration {
         let exponential = Self::INITIAL.saturating_mul(1 << self.attempt.min(10));
         self.attempt = self.attempt.saturating_add(1);
         exponential
@@ -419,7 +455,7 @@ impl Backoff {
             .mul_f64(0.5 + fastrand::f64() / 2.0)
     }
 
-    fn reset(&mut self) {
+    pub(crate) fn reset(&mut self) {
         self.attempt = 0;
     }
 }

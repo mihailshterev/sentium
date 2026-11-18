@@ -19,6 +19,8 @@ allow = [
     "Apache-2.0",
     "Apache-2.0 WITH LLVM-exception",
     "BSD-3-Clause",
+    # notify (the vault watcher, via notify-debouncer-full) is public domain.
+    "CC0-1.0",
     "ISC",
     "MIT",
     "MPL-2.0",

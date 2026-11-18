@@ -73,6 +73,12 @@ export const COLLECTION_COLORS: Record<string, CollectionTheme> = {
     glow: "rgba(245,158,11,0.6)",
     label: "User Memories",
   },
+  vault_notes: {
+    color: "#10b981",
+    colorHex: 0x10b981,
+    glow: "rgba(16,185,129,0.6)",
+    label: "Vault Notes",
+  },
   default: {
     color: "#64748b",
     colorHex: 0x64748b,

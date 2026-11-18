@@ -67,7 +67,13 @@ public sealed partial class DeviceTokenScopeTests(RealAuthWebApplicationFactory 
             "DELETE /api/identity/devices/current",
             "POST /api/vigil/devices/report",
             "GET /api/nuntius/devices/stream",
-            "GET /api/nuntius/devices/unread-count");
+            "GET /api/nuntius/devices/unread-count",
+            "GET /api/memoria/device/vault",
+            "PUT /api/memoria/device/vault",
+            "POST /api/memoria/device/vault/manifest",
+            "PUT /api/memoria/device/vault/notes",
+            "POST /api/memoria/device/vault/notes/remove",
+            "POST /api/memoria/device/vault/notes/move");
 
         (await client.GetAsync("/api/nuntius/devices/unread-count", Ct)).StatusCode.Should().Be(HttpStatusCode.OK);
         (await client.DeleteAsync("/api/identity/devices/current", Ct)).StatusCode.Should().Be(HttpStatusCode.NoContent);

@@ -34,7 +34,7 @@ internal sealed class KnowledgeBaseSearchTool(
             this,
             SearchAsync,
             ToolNames.KnowledgeBaseSearch,
-            "Search ALL of your knowledge - the shared knowledge base, your captured learnings, and your saved memories - for relevant context. " +
+            "Search ALL of your knowledge - the shared knowledge base, your captured learnings, your saved memories, and the user's Obsidian vault notes - for relevant context. " +
             "Pass a workspace (name or ID) to search only the files in that workspace.");
     }
 
@@ -112,7 +112,7 @@ internal sealed class KnowledgeBaseSearchTool(
     private static string FormatResults(IReadOnlyList<(string Collection, VectorSearchResult Result)> results)
     {
         var sb = new StringBuilder();
-        sb.AppendLine($"[Knowledge - {results.Count} relevant snippet(s) across your knowledge base, learnings, and memories]");
+        sb.AppendLine($"[Knowledge - {results.Count} relevant snippet(s) across your knowledge base, learnings, memories, and vault notes]");
         sb.AppendLine();
 
         for (var i = 0; i < results.Count; i++)
@@ -146,6 +146,7 @@ internal sealed class KnowledgeBaseSearchTool(
             KnowledgeCollections.KnowledgeBase => "Knowledge Base",
             KnowledgeCollections.AgentLearnings => "Captured Learning",
             KnowledgeCollections.UserMemories => "Saved Memory",
+            KnowledgeCollections.VaultNotes => "Vault Note",
             _ => collection
         };
     }

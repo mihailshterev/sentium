@@ -9,7 +9,7 @@ use crate::agent::Snapshot;
 use crate::icon;
 
 const OPEN: &str = "open";
-const PAIR: &str = "pair";
+const SETTINGS: &str = "settings";
 const UNPAIR: &str = "unpair";
 const AUTOSTART: &str = "autostart";
 const EXIT: &str = "exit";
@@ -19,7 +19,7 @@ pub struct Tray {
     icon: TrayIcon,
     status: MenuItem<Wry>,
     unread: MenuItem<Wry>,
-    pair: MenuItem<Wry>,
+    settings: MenuItem<Wry>,
     unpair: MenuItem<Wry>,
 }
 
@@ -35,7 +35,8 @@ impl Tray {
         let status = MenuItem::with_id(app, "status", "Not paired", false, None::<&str>)?;
         let unread = MenuItem::with_id(app, "unread", "", false, None::<&str>)?;
         let open = MenuItem::with_id(app, OPEN, "Open Sentium", true, None::<&str>)?;
-        let pair = MenuItem::with_id(app, PAIR, "Pair this PC…", true, None::<&str>)?;
+        // Always enabled: the window is where pairing and the vault folder are set up.
+        let settings = MenuItem::with_id(app, SETTINGS, "Pair this PC…", true, None::<&str>)?;
         let unpair = MenuItem::with_id(app, UNPAIR, "Unpair", true, None::<&str>)?;
         let autostart_enabled = app.autolaunch().is_enabled().unwrap_or(false);
         let autostart = CheckMenuItem::with_id(
@@ -54,8 +55,8 @@ impl Tray {
                 &status,
                 &unread,
                 &PredefinedMenuItem::separator(app)?,
+                &settings,
                 &open,
-                &pair,
                 &unpair,
                 &autostart,
                 &PredefinedMenuItem::separator(app)?,
@@ -74,7 +75,7 @@ impl Tray {
             .show_menu_on_left_click(false)
             .on_menu_event(move |app, event| match event.id().as_ref() {
                 OPEN => menu_commands.open_sentium(app),
-                PAIR => menu_commands.show_window(app),
+                SETTINGS => menu_commands.show_window(app),
                 UNPAIR => menu_commands.unpair(app),
                 AUTOSTART => toggle_autostart(app, &autostart_item),
                 EXIT => menu_commands.exit(app),
@@ -87,7 +88,7 @@ impl Tray {
                     ..
                 } = event
                 {
-                    commands.open_sentium(tray.app_handle());
+                    commands.show_window(tray.app_handle());
                 }
             })
             .build(app)?;
@@ -96,7 +97,7 @@ impl Tray {
             icon,
             status,
             unread,
-            pair,
+            settings,
             unpair,
         })
     }
@@ -119,7 +120,11 @@ impl Tray {
             } else {
                 ""
             }),
-            self.pair.set_enabled(!snapshot.paired),
+            self.settings.set_text(if snapshot.paired {
+                "Satelles settings…"
+            } else {
+                "Pair this PC…"
+            }),
             self.unpair.set_enabled(snapshot.paired),
             self.icon.set_icon(Some(icon::render(
                 snapshot.status,

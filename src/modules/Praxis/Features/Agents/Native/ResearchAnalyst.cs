@@ -12,7 +12,7 @@ internal sealed class ResearchAnalyst : IAgent
 {
     public string Name => AgentRole.ResearchAnalyst;
 
-    public string Description => "Finds, verifies, and summarises information from the knowledge base, learnings, workspace files, and household inventory, with sources.";
+    public string Description => "Finds, verifies, and summarises information from the knowledge base, learnings, workspace files, household inventory, and the user's Obsidian vault, with sources.";
 
     public IReadOnlyList<string>? Tools =>
     [
@@ -24,6 +24,9 @@ internal sealed class ResearchAnalyst : IAgent
         ToolNames.FindAssets,
         ToolNames.GetAsset,
         ToolNames.ListLocationContents,
+        ToolNames.SearchVault,
+        ToolNames.ReadVaultNote,
+        ToolNames.RelatedVaultNotes,
         ToolNames.CaptureAgentLearning,
     ];
 

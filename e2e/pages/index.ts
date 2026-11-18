@@ -20,3 +20,4 @@ export { SystemPage } from "./SystemPage";
 export { UsersPage } from "./UsersPage";
 export { SemanticMapPage } from "./SemanticMapPage";
 export { TimelinePage } from "./TimelinePage";
+export { VaultPage } from "./VaultPage";
