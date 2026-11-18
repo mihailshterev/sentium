@@ -1519,6 +1519,16 @@
           "Sentium.Tempus": "[1.0.0, )"
         }
       },
+      "sentium.probatio": {
+        "type": "Project",
+        "dependencies": {
+          "Microsoft.Extensions.AI.Evaluation.Quality": "[10.10.0, )",
+          "Sentium.Core": "[1.0.0, )",
+          "Sentium.Infrastructure": "[1.0.0, )",
+          "Sentium.Praxis": "[1.0.0, )",
+          "Sentium.Registry": "[1.0.0, )"
+        }
+      },
       "sentium.registry": {
         "type": "Project",
         "dependencies": {
@@ -1590,6 +1600,7 @@
           "Sentium.Mcp": "[1.0.0, )",
           "Sentium.Nuntius": "[1.0.0, )",
           "Sentium.Praxis": "[1.0.0, )",
+          "Sentium.Probatio": "[1.0.0, )",
           "Sentium.Registry": "[1.0.0, )",
           "Sentium.Scheduling": "[1.0.0, )",
           "Sentium.Sentinel": "[1.0.0, )",
@@ -1933,6 +1944,15 @@
           "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.12",
           "Microsoft.Extensions.Logging.Abstractions": "10.0.12",
           "System.Numerics.Tensors": "10.0.12"
+        }
+      },
+      "Microsoft.Extensions.AI.Evaluation.Quality": {
+        "type": "CentralTransitive",
+        "requested": "[10.10.0, )",
+        "resolved": "10.10.0",
+        "contentHash": "RcYLnPwShmerXorN23xSGIb/n8pn/NZ34d3nRksdsdYi13tNMNW2N+k+VJmQNZXDUUTXztbs8RyHxVJg3Lhhzw==",
+        "dependencies": {
+          "Microsoft.Extensions.AI.Evaluation": "10.10.0"
         }
       },
       "Microsoft.Extensions.AI.OpenAI": {

@@ -9,6 +9,7 @@ using Sentium.Locus;
 using Sentium.Mcp;
 using Sentium.Nuntius;
 using Sentium.Praxis;
+using Sentium.Probatio;
 using Sentium.Registry;
 using Sentium.Scheduling;
 using Sentium.Sentinel;
@@ -38,6 +39,7 @@ internal static class SentiumModules
         new(typeof(PraxisModuleExtensions), b => b.AddPraxisModule(), a => a.InitializePraxisModuleAsync()),
         new(typeof(SchedulingModuleExtensions), b => b.AddSchedulingModule()),
         new(typeof(McpModuleExtensions), b => b.AddMcpModule(), a => a.InitializeMcpModuleAsync()),
+        new(typeof(ProbatioModuleExtensions), b => b.AddProbatioModule(), a => a.InitializeProbatioModuleAsync()),
         new(typeof(VigilModuleExtensions), b => b.AddVigilModule()),
     ];
 

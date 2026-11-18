@@ -166,6 +166,12 @@ public sealed class SquadWorkflowRunnerTests
             }));
         }
 
+        public Task<AgentBlueprint?> ResolveBlueprintAsync(string agentName, string? overrideModel, Guid? actingUserId, bool allowApprovalTools, CancellationToken ct = default)
+            => throw new NotSupportedException("Squad workflows build agents, never blueprints.");
+
+        public Task<string> ResolveModelAsync(string? overrideModel, Guid? actingUserId, CancellationToken ct = default)
+            => throw new NotSupportedException("Squad workflows build agents, never resolve models.");
+
         public Task<AIAgent> CreateControlAgentAsync(string agentName, string? overrideInstructions = null, string? overrideModel = null, Guid? actingUserId = null, CancellationToken ct = default)
         {
             Created.Add((agentName, true, false));

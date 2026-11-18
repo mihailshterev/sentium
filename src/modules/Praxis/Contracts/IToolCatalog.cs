@@ -1,12 +1,10 @@
-using Sentium.Praxis.Contracts;
-
-
-namespace Sentium.Praxis.Features.Tools;
+namespace Sentium.Praxis.Contracts;
 
 /// <summary>
-/// The registered tools, described for assignment to agents.
+/// The registered tools, described for assignment to agents. Built-in tools and the approved tools of every
+/// <see cref="IAgentToolSource"/> are both listed.
 /// </summary>
-internal interface IToolCatalog
+public interface IToolCatalog
 {
     /// <summary>
     /// Every registered tool, ordered by resource then name.

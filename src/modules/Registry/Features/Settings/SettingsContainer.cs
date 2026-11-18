@@ -51,4 +51,9 @@ internal sealed class SettingsContainer
     /// Per-user Companion and voice preferences.
     /// </summary>
     public CompanionSettings Companion { get; set; } = new();
+
+    /// <summary>
+    /// Per-user Evaluation preferences.
+    /// </summary>
+    public EvaluationSettings Evaluation { get; set; } = new();
 }

@@ -47,37 +47,58 @@ internal sealed class CompositeAgentFactory(
         bool allowApprovalTools = true,
         CancellationToken ct = default)
     {
-        var definition = await ResolveDefinitionAsync(agentName, actingUserId, ct)
+        var blueprint = await ResolveBlueprintAsync(agentName, overrideModel, actingUserId, allowApprovalTools, ct)
             ?? throw new InvalidOperationException($"Agent '{agentName}' could not be resolved.");
-
-        var (settings, model, contextWindow) = await ResolveSettingsAsync(overrideModel, actingUserId, ct);
-
-        var tools = await SelectToolsAsync(definition, allowApprovalTools, ct);
 
         var chatOptions = new ChatOptions
         {
-            ModelId = model,
-            Instructions = AgentInstructions.Compose(settings.Harness, overrideInstructions ?? definition.Instructions, [.. tools.OfType<AIFunction>()]),
-            Tools = tools,
-            Temperature = settings.Inference?.AgentTemperature ?? InferenceSettingsSnapshot.Default.AgentTemperature,
+            ModelId = blueprint.Model,
+            Instructions = blueprint.ComposeInstructions(overrideInstructions),
+            Tools = blueprint.Tools,
+            Temperature = blueprint.Temperature,
         };
 
         var options = new ChatClientAgentOptions
         {
-            Name = definition.Name,
-            Description = definition.Description,
+            Name = blueprint.Definition.Name,
+            Description = blueprint.Definition.Description,
             ChatOptions = chatOptions,
             ChatHistoryProvider = chatHistory,
-            AIContextProviders = [skillsProviderFactory.Create(), learningsProvider, workspaceContextFactory.Create(contextWindow)],
+            AIContextProviders = [skillsProviderFactory.Create(), learningsProvider, workspaceContextFactory.Create(blueprint.ContextWindow)],
         };
 
-        var chatClient = AgentChatPipeline.Build(baseChatClient, contextWindow, loggerFactory, serviceProvider);
+        var chatClient = AgentChatPipeline.Build(baseChatClient, blueprint.ContextWindow, loggerFactory, serviceProvider);
 
         // Every Sentium tool call passes the Sentinel policy check (function-calling middleware, after approval).
         return new ChatClientAgent(chatClient, options, loggerFactory, serviceProvider)
             .AsBuilder()
             .Use(sentinelMiddleware.InvokeAsync)
             .Build(serviceProvider);
+    }
+
+    public async Task<AgentBlueprint?> ResolveBlueprintAsync(
+        string agentName,
+        string? overrideModel,
+        Guid? actingUserId,
+        bool allowApprovalTools,
+        CancellationToken ct = default)
+    {
+        var definition = await ResolveDefinitionAsync(agentName, actingUserId, ct);
+        if (definition is null)
+        {
+            return null;
+        }
+
+        var (settings, model, contextWindow) = await ResolveSettingsAsync(overrideModel, actingUserId, ct);
+        var tools = await SelectToolsAsync(definition, allowApprovalTools, ct);
+
+        return new AgentBlueprint(definition, settings, model, contextWindow, tools);
+    }
+
+    public async Task<string> ResolveModelAsync(string? overrideModel, Guid? actingUserId, CancellationToken ct = default)
+    {
+        var settings = await registrySettingsService.GetAsync(actingUserId ?? runContext.UserId, ct);
+        return ResolveModel(overrideModel, settings.Inference);
     }
 
     public async Task<AIAgent> CreateControlAgentAsync(

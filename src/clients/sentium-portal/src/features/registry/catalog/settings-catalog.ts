@@ -1,4 +1,4 @@
-import { Activity, AudioLines, Bot, CalendarClock, Cpu, Home, Plug, ShieldCheck, UserPlus } from "lucide-react";
+import { Activity, AudioLines, Bot, CalendarClock, Cpu, FlaskConical, Home, Plug, ShieldCheck, UserPlus } from "lucide-react";
 import type { SettingDefinition, SettingScope, SettingsSection, SettingValue } from "../types/settings";
 
 export const PROMPT_LIMIT = 16000;
@@ -170,6 +170,27 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
         keywords: ["speech", "tts", "read aloud"],
         control: { kind: "switch" },
         defaultValue: false,
+      }),
+    ],
+  },
+  {
+    id: "evaluations",
+    scope: "personal",
+    group: "evaluation",
+    title: "Evaluations",
+    description:
+      "How your Evaluations are graded. Each Evaluation keeps the Judge it started with, so changing this only affects new ones.",
+    icon: FlaskConical,
+    settings: [
+      setting("evaluation", "judgeModel", {
+        title: "Judge model",
+        description:
+          "The model that scores quality Checks (relevance, coherence, groundedness, completeness). Pick a different model from the one you evaluate: a model tends to rate its own answers too kindly.",
+        keywords: ["judge", "grader", "evaluation", "probatio", "quality", "llm"],
+        control: { kind: "model", emptyLabel: "Default model" },
+        defaultValue: "",
+        fromServer: nullToEmpty,
+        toServer: emptyToNull,
       }),
     ],
   },

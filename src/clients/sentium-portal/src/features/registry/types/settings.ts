@@ -5,6 +5,7 @@ export type SettingsKey =
   | "harness"
   | "calendar-user"
   | "companion"
+  | "evaluation"
   | "inference"
   | "calendar"
   | "pdp"

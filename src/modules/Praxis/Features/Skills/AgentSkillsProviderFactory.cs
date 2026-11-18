@@ -25,12 +25,27 @@ internal sealed class AgentSkillsProviderFactory(
             .UseLoggerFactory(loggerFactory)
             .UseSkills(builtInCatalog.Skills)
             .UseSource(_ => new UserSkillsSource(skillRepository, runContext))
-            .UseOptions(options =>
-            {
-                options.DisableLoadSkillApproval = true;
-                options.DisableReadSkillResourceApproval = true;
-                options.DisableRunSkillScriptApproval = true;
-            })
+            .UseOptions(DisableApprovals)
             .Build();
+    }
+
+    /// <summary>
+    /// The built-in skills plus user skills frozen in an Evaluation snapshot, instead of the user's current ones.
+    /// </summary>
+    public AgentSkillsProvider CreateFrozen(IEnumerable<EvaluationSkill> userSkills)
+    {
+        return new AgentSkillsProviderBuilder()
+            .UseLoggerFactory(loggerFactory)
+            .UseSkills(builtInCatalog.Skills)
+            .UseSkills(userSkills.Select(s => new AgentInlineSkill(name: s.Name, description: s.Description, instructions: s.Instructions)))
+            .UseOptions(DisableApprovals)
+            .Build();
+    }
+
+    private static void DisableApprovals(AgentSkillsProviderOptions options)
+    {
+        options.DisableLoadSkillApproval = true;
+        options.DisableReadSkillResourceApproval = true;
+        options.DisableRunSkillScriptApproval = true;
     }
 }
