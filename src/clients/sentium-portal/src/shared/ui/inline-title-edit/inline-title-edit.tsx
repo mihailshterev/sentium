@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { isImeComposing } from "@/shared/utils/keyboard";
 import styles from "./inline-title-edit.module.css";
 
 const MAX_TITLE_LENGTH = 255;
@@ -47,6 +48,10 @@ export function InlineTitleEdit({ value, ariaLabel, onSave, onCancel, className 
       onClick={(e) => e.stopPropagation()}
       onKeyDown={(e) => {
         e.stopPropagation();
+        // Enter/Escape during IME composition confirm or cancel the conversion, not the edit.
+        if (isImeComposing(e)) {
+          return;
+        }
         if (e.key === "Enter") {
           e.preventDefault();
           settle(true);

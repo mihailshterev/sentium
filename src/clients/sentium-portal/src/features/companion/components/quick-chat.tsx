@@ -13,6 +13,7 @@ import { markSpokenTurn } from "../audio/reply-speaker";
 import { speechPlayer } from "../audio/speech-player";
 import { useCompanionStore, useVoiceHint } from "../state/companion-store";
 import { useQuickChatStore } from "../state/quick-chat-store";
+import { isImeComposing } from "@/shared/utils/keyboard";
 import { PushToTalkButton } from "./push-to-talk-button";
 import styles from "./quick-chat.module.css";
 
@@ -157,7 +158,14 @@ export function QuickChat({ anchor, position, onClose }: QuickChatProps) {
             onClick={startOver}
             disabled={messages.length === 0}
           />
-          <Button variant="ghost" size="sm" iconOnly icon={<X size={15} />} aria-label="Close quick chat" onClick={onClose} />
+          <Button
+            variant="ghost"
+            size="sm"
+            iconOnly
+            icon={<X size={15} />}
+            aria-label="Close quick chat"
+            onClick={onClose}
+          />
         </span>
       </header>
 
@@ -221,7 +229,7 @@ export function QuickChat({ anchor, position, onClose }: QuickChatProps) {
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
-                void send(input);
+                if (!isImeComposing(e)) void send(input);
               }
             }}
           />

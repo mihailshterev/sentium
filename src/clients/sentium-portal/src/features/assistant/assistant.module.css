@@ -685,6 +685,7 @@
   font-family: inherit;
   font-size: var(--text-base);
   line-height: 1.55;
+  field-sizing: content;
 
   &::placeholder {
     color: var(--text-dim);

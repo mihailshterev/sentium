@@ -12,6 +12,7 @@ import { markSpokenTurn } from "@/features/companion/audio/reply-speaker";
 import { PushToTalkButton } from "@/features/companion/components/push-to-talk-button";
 import { useCompanionStore, useVoiceHint } from "@/features/companion/state/companion-store";
 import { SUGGESTIONS_POOL } from "@/shared/utils/constants";
+import { isImeComposing } from "@/shared/utils/keyboard";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/shared/ui/button";
 import { Page } from "@/shared/ui/page";
@@ -203,13 +204,6 @@ export function AssistantView() {
     }
   };
 
-  const resizeTextarea = () => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 160) + "px";
-    }
-  };
-
   const loadConversation = (conv: ConversationSummary) => {
     if (conv.id !== activeConversationId) {
       navigate(`/assistant/${conv.id}`);
@@ -295,9 +289,6 @@ export function AssistantView() {
 
     setInput("");
     composer.clear();
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-    }
     resetStatus();
 
     void sendMessage({ conversationId, model, userContent: text.trim(), attachments });
@@ -305,7 +296,7 @@ export function AssistantView() {
 
   const handleTranscript = (transcript: string) => {
     if (reviewTranscripts) {
-      resizeTextareaOnInput(input.trim() ? `${input.trim()} ${transcript}` : transcript);
+      setInput(input.trim() ? `${input.trim()} ${transcript}` : transcript);
       textareaRef.current?.focus();
       return;
     }
@@ -320,7 +311,9 @@ export function AssistantView() {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      submitMessage();
+      if (!isImeComposing(e)) {
+        submitMessage();
+      }
     }
     if ((e.metaKey || e.ctrlKey) && e.key === "k") {
       e.preventDefault();
@@ -331,7 +324,6 @@ export function AssistantView() {
       if (lastUserMsg) {
         e.preventDefault();
         setInput(lastUserMsg.content);
-        setTimeout(() => resizeTextarea(), 0);
       }
     }
   };
@@ -339,14 +331,6 @@ export function AssistantView() {
   const isEmpty = messages.length === 0 && !isTyping;
   const isLoadingConversation = !!routeConversationId && routeConversationId !== activeConversationId;
   const conversationGroups = groupConversationsByDate(conversations);
-
-  const resizeTextareaOnInput = (value: string) => {
-    setInput(value);
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 160) + "px";
-    }
-  };
 
   return (
     <Page
@@ -417,7 +401,7 @@ export function AssistantView() {
               isTyping={isTyping}
               model={model}
               models={models}
-              onInputChange={resizeTextareaOnInput}
+              onInputChange={setInput}
               onKeyDown={handleKeyDown}
               onSubmit={handleSubmit}
               onStop={handleStop}

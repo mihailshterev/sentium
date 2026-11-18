@@ -17,6 +17,7 @@ import { MODELS_QUERY_KEY } from "@/features/models/hooks/useModelCatalog";
 import { fetchModelCatalog } from "@/features/models/api/models.service";
 import { useTimelineChatStore, timelineThreads } from "../state/timeline-chat-store";
 import { timelineKeys } from "../hooks/useTimeline";
+import { isImeComposing } from "@/shared/utils/keyboard";
 import type { AgentChatContext } from "../types/timeline";
 import { contextAgent, contextKey, contextLabel, contextPrefix, starterPrompts } from "../utils/agent-context";
 
@@ -220,7 +221,7 @@ export function AgentChatDrawer({ context, today, onClose }: AgentChatDrawerProp
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
-              void send(input);
+              if (!isImeComposing(e)) void send(input);
             }
           }}
           onSubmit={(e) => {
