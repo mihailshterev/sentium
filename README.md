@@ -4,13 +4,15 @@
 
 # Sentium
 
-**A self-hostable, security-first platform for building, orchestrating and governing autonomous AI agents - powered entirely by local LLMs.**
+**A private, self-hosted AI home for you and your household - assistants that know your notes, your things and your year, running entirely on local models.**
 
 </div>
 
-Sentium is a multi-agent platform built on **.NET 10** - a modular monolith orchestrated by **Aspire** - and a **React** front-end. It lets you create AI agents, compose them into multi-agent workflows, give them tools (code execution, knowledge retrieval, scheduling, memory), and run the whole thing **on your own hardware** against **local models served by llama.cpp** (`llama-server`) - no data ever leaves the machine.
+Sentium is a personal AI hub you run **on your own hardware**. It gathers a household's knowledge and everyday life in one place - documents and your Obsidian vault, a shared home inventory, each person's year timeline, a notification inbox, a desktop companion - and puts assistants on top that can search it, plan with you and act through tools, by text or by voice. Everything, from chat and embeddings (**llama.cpp**) to speech and file storage, runs locally: no data leaves your network.
 
-What sets Sentium apart is that every agent action is **mediated by a security control plane**: a dedicated Policy Decision Point (Sentinel) authorizes each tool call, a hardened Docker sandbox isolates all code execution, and a continuous self-improvement loop lets agents learn from past runs.
+Underneath is a full agent platform: custom agents, multi-agent workflows, scheduled jobs, MCP tools, sandboxed code execution and evaluations. Because those agents live next to your private data, every action they take is **mediated by a security control plane**: a Policy Decision Point (Sentinel) authorizes each tool call, risky tools wait for your approval, and all code runs in a hardened, network-disabled Docker sandbox.
+
+It is built on **.NET 10** as a modular monolith orchestrated by **Aspire**, with a **React** portal and a **Tauri** desktop app (Satelles).
 
 ---
 
@@ -36,6 +38,7 @@ What sets Sentium apart is that every agent action is **mediated by a security c
 | **Visual workflow builder**              | Compose reusable, ordered multi-agent workflows; run them on demand and replay every run from a persisted log.                                                                                                                                                                                                       |
 | **Retrieval-Augmented Generation (RAG)** | Document ingestion (chunk → embed → store in PostgreSQL/pgvector) across three vector collections: knowledge base, agent learnings, and user memories (the Codex module).                                                                                                                                            |
 | **Self-improvement loop**                | Agents capture reusable learnings that are automatically, semantically recalled and injected into future runs.                                                                                                                                                                                                       |
+| **Evaluations (Probatio)**               | Write versioned test suites for your agents, run them with stubbed tools, score the answers with checks and an LLM judge, and benchmark one agent across several models.                                                                                                                                             |
 | **Isolated code execution**              | Agents can run Python / Node.js in a heavily hardened, network-disabled Docker sandbox; output artifacts are harvested to blob storage.                                                                                                                                                                              |
 | **MCP servers**                          | Agents can use tools from Model Context Protocol servers on your local network - Streamable HTTP servers, or stdio servers the Sandbox runs in hardened containers. A Sovereign approves each tool (changed tools need re-approval), and tools are opt-in per agent. See [docs/mcp-servers.md](docs/mcp-servers.md). |
 | **Skills**                               | Built-in skills plus user-defined and uploaded-Markdown skills, unlocked on demand via a `load_skill` mechanism.                                                                                                                                                                                                     |
@@ -43,6 +46,7 @@ What sets Sentium apart is that every agent action is **mediated by a security c
 | **Workspaces & files**                   | Upload files into workspaces; they are asynchronously vectorized and made available to agents as context.                                                                                                                                                                                                            |
 | **Household inventory (Locus)**          | A shared location tree (Home → Garage → Shelf) and asset catalogue with search, tags and photo/manual/receipt attachments; items shared with assistants are synced to the knowledge base and answerable through read-only tools ("where is the drill?").                                                             |
 | **Year timeline (Tempus)**               | A private year planner drawn as a glowing path through twelve month nodes: expand a month into a calendar, drag tasks between days or pin them to the month, and let agents read the workload, suggest tasks and moves (which you accept or reject) and leave progress notes.                                        |
+| **Obsidian vault (Memoria)**             | Point the Satelles desktop app at your Obsidian vault and it syncs one way into Sentium: chat with your notes, browse backlinks and an interactive link graph, and let agents search, read and suggest links between notes.                                                                                          |
 | **Notifications (Nuntius)**              | A personal inbox behind a bell in the sidebar: incidents (for Sovereigns), timeline suggestions and finished workflow runs arrive live, and repeats of the same alert fold into one entry instead of flooding it.                                                                                                    |
 | **Security control plane (Sentinel)**    | Every tool call passes a Policy Decision Point that performs rate-limiting and an LLM-based semantic-intent / prompt-injection check, with a fail-closed posture and full forensic audit.                                                                                                                            |
 | **Health monitoring (Vigil)**            | Continuous probing of every module, the sandbox and the infrastructure, incident tracking, and a live status stream.                                                                                                                                                                                                 |
@@ -70,17 +74,21 @@ flowchart TB
         Codex["Codex<br/>(RAG · knowledge base)"]
         Locus["Locus<br/>(household inventory)"]
         Tempus["Tempus<br/>(year timeline)"]
+        Memoria["Memoria<br/>(Obsidian vault)"]
+        Probatio["Probatio<br/>(evaluations · benchmarks)"]
         Nuntius["Nuntius<br/>(notifications · inbox)"]
         Sentinel["Sentinel<br/>(Policy Decision Point)"]
         Registry["Registry<br/>(settings)"]
         Vigil["Vigil<br/>(health)"]
     end
 
-    Praxis -->|Contracts| Codex & Sentinel & Registry & Locus & Tempus & Nuntius
+    Praxis -->|Contracts| Codex & Sentinel & Registry & Locus & Tempus & Nuntius & Memoria
     Mcp -->|Contracts| Praxis & Registry
     Scheduling -->|Contracts| Praxis
     Locus -->|Contracts| Codex
     Tempus -->|Contracts| Nuntius
+    Memoria -->|Contracts| Codex & Identity
+    Probatio -->|Contracts| Praxis & Registry
     Nuntius -->|Contracts| Identity
     Sentinel -->|Contracts| Registry
     Vigil -->|Contracts| Registry & Nuntius
@@ -105,11 +113,13 @@ flowchart TB
 | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Identity**   | ASP.NET Core Identity: users, roles, profile and registration, plus the cookie session endpoints the portal uses (`/api/identity/account/login`, `/session`, `/logout`). The browser only ever holds an HttpOnly cookie.                                                                                                                                                                                                                                   |
 | **Praxis**     | The core engine: agents, the streaming assistant, conversations, multi-agent orchestration, workflows, learnings, skills, tools, workspaces, and the sandbox execution history. MCP and the scheduler plug into it through `Praxis.Contracts`.                                                                                                                                                                                                             |
+| **Probatio**   | Evaluations (`probatio` schema): versioned Eval Suites of test cases, Evaluations that run an agent against a frozen copy of a suite with stubbed tools and grade each case (checks plus an LLM Judge), and Benchmarks that run one agent on several models over the same suite. It builds evaluation agents through `Praxis.Contracts`.                                                                                                                   |
 | **Mcp**        | Model Context Protocol integration (`mcp` schema): the registry of MCP servers, the hash-pinned approved tool catalogue and the client for HTTP and Sandbox-hosted stdio servers. It offers its tools to Praxis through `IAgentToolSource`; agents only get tools their tool list names. See [docs/mcp-servers.md](docs/mcp-servers.md).                                                                                                                   |
 | **Scheduling** | Agent-scheduled recurring jobs: a persistent Quartz scheduler (tables in the `praxis` schema), the approval-gated `schedule_recurring_task` tool and the scheduler endpoints. Jobs run code through the sandbox.                                                                                                                                                                                                                                           |
 | **Codex**      | The knowledge base: embeddings, the pgvector store (`codex` schema), document ingestion and the knowledge map. Other modules push their content (learnings, memories, workspace files) through it.                                                                                                                                                                                                                                                         |
 | **Locus**      | The household inventory (`locus` schema): a location tree, assets with tags and search, and attachments in blob storage. Shared by every household member; items marked as shared are synced to the knowledge base through a durable outbox and exposed to agents read-only (`find_assets`, `get_asset`, `list_location_contents`).                                                                                                                        |
 | **Tempus**     | Each user's private year timeline (`tempus` schema): tasks on days or pinned to months (priority, due date, tags, assigned agent), notes, and the changes agents propose. Agents use it through `ITimelineAgentAccess` (`get_timeline_overview`, `list_timeline_tasks`, `get_timeline_task`, `propose_timeline_task`, `propose_task_reschedule`, `add_timeline_note`): they read and annotate, but every new task or move waits for the user to accept it. |
+| **Memoria**    | Each user's Obsidian vault (`memoria` schema), synced one way from the Satelles desktop app (file watcher plus periodic manifest reconcile): notes, frontmatter and tags, and a wikilink graph resolved by Obsidian's rules. Notes are chunked by heading into a private Codex collection; agents read them through `IVaultAgentAccess` (`vault_*` tools), and Sentium never writes to the vault.                                                          |
 | **Nuntius**    | Notifications and each user's private Inbox (`nuntius` schema). Other modules publish through `INotifier` to a user, every Sovereign or the whole household; each Notification lands in the recipient's Inbox and is pushed live to their open portal sessions over SSE. A repeated alert with the same dedupe key updates the unread entry; entries are swept after 90 days.                                                                              |
 | **Sentinel**   | The Policy Decision Point (PDP). Every agent tool call and sandbox execution is authorized through a defence-in-depth policy stack, with forensic auditing and a fail-closed default.                                                                                                                                                                                                                                                                      |
 | **Registry**   | Centralized, key-based runtime settings with per-user and global scopes, two-tier caching and in-process invalidation.                                                                                                                                                                                                                                                                                                                                     |
@@ -335,8 +345,10 @@ src/
     Identity/                      # users, roles, session cookie
     Locus/                         # household inventory (locations, assets, attachments)
     Mcp/                           # MCP server registry and approved tool catalogue
+    Memoria/                       # Obsidian vault sync, notes and wikilink graph
     Nuntius/                       # notifications and each user's inbox
     Praxis/                        # core engine (agents, orchestration, workflows)
+    Probatio/                      # eval suites, evaluations and benchmarks
     Registry/                      # centralized configuration
     Scheduling/                    # Quartz scheduler and agent-scheduled jobs
     Sentinel/                      # Policy Decision Point
@@ -344,6 +356,7 @@ src/
     Vigil/                         # health monitoring
   clients/
     sentium-portal/                # React app (including the login page)
+    sentium-satelles/              # Satelles desktop app (Tauri 2 + Rust)
   shared/                          # Sentium.Core (constants, results), infrastructure, service defaults
 tests/
   Sentium.Tests.Unit/
