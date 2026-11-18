@@ -1,6 +1,7 @@
 import { useId, useState } from "react";
 import { X } from "lucide-react";
 import { normalizeTag } from "@/shared/utils/tags";
+import { isImeComposing } from "@/shared/utils/keyboard";
 import styles from "./tag-input.module.css";
 
 interface TagInputProps {
@@ -72,7 +73,7 @@ export function TagInput({
         onKeyDown={(e) => {
           if (e.key === "Enter") {
             e.preventDefault();
-            if (draft.trim()) add(draft);
+            if (draft.trim() && !isImeComposing(e)) add(draft);
           } else if (e.key === "Backspace" && draft === "" && value.length > 0) {
             remove(value[value.length - 1]);
           }

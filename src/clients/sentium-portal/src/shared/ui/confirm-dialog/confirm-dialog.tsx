@@ -3,6 +3,7 @@ import { AlertTriangle, Check, Trash2 } from "lucide-react";
 import { Button } from "@/shared/ui/button";
 import { Dialog } from "@/shared/ui/dialog";
 import { Input } from "@/shared/ui/form-controls";
+import { isImeComposing } from "@/shared/utils/keyboard";
 import styles from "./confirm-dialog.module.css";
 
 export type ConfirmDialogVariant = "danger" | "safe";
@@ -53,7 +54,7 @@ export function ConfirmDialog({
 
   // Enter confirms from anywhere in the dialog (Escape is handled by Dialog).
   const onEnter = useEffectEvent((e: KeyboardEvent) => {
-    if (e.key === "Enter" && isConfirmEnabled) {
+    if (e.key === "Enter" && isConfirmEnabled && !isImeComposing(e)) {
       e.preventDefault();
       e.stopPropagation();
       handleConfirm();
