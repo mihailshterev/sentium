@@ -16,20 +16,11 @@
     "infra:logs": "docker compose -f compose.e2e.yaml logs --no-color",
     "install:browsers": "playwright install --with-deps"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "12.9.1",
-      "onFail": "download"
-    }
-  },
   "type": "module",
   "devDependencies": {
-    "@playwright/test": "1.64.1",
-    "@types/node": "24.12.0",
-    "typescript": "5.9.3"
-  }
+    "@playwright/test": "catalog:",
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
+  },
+  "private": true
 }

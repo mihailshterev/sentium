@@ -11,7 +11,6 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
 ENV_FILE=".env"
 ENV_TEMPLATE=".env.example"
 PLACEHOLDER_PREFIX="change-me-"
-JS_PROJECTS=("src/clients/sentium-portal" "src/clients/sentium-satelles" "e2e")
 
 # Secrets in .env: base64 values, except the S3 credentials, which must be hex to fit in a connection string.
 BASE64_SECRETS=(POSTGRES_PASSWORD INTERNAL_API_KEY LLM_API_KEY SEARXNG_SECRET)
@@ -100,11 +99,8 @@ create_env() {
 }
 
 install_js_dependencies() {
-  local project
-  for project in "${JS_PROJECTS[@]}"; do
-    step "pnpm install in $project"
-    (cd "$project" && pnpm install --frozen-lockfile)
-  done
+  step "pnpm install (whole workspace)"
+  pnpm install --frozen-lockfile
 }
 
 check_prerequisites

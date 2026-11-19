@@ -2,11 +2,15 @@
 # Portal: built into src/hosts/Sentium.Web/wwwroot (vite's outDir), served by Sentium.Web itself.
 FROM node:22-alpine AS portal
 RUN npm install -g pnpm@12.9.1
-WORKDIR /src/src/clients/sentium-portal
-COPY src/clients/sentium-portal/package.json src/clients/sentium-portal/pnpm-lock.yaml src/clients/sentium-portal/pnpm-workspace.yaml ./
-RUN pnpm install --frozen-lockfile
-COPY src/clients/sentium-portal/ ./
-RUN pnpm build
+WORKDIR /src
+# The lockfile covers the whole pnpm workspace, so every member's manifest must be present for a frozen install.
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY src/clients/sentium-portal/package.json src/clients/sentium-portal/
+COPY src/clients/sentium-satelles/package.json src/clients/sentium-satelles/
+COPY e2e/package.json e2e/
+RUN pnpm install --frozen-lockfile --filter sentium-portal
+COPY src/clients/sentium-portal/ src/clients/sentium-portal/
+RUN pnpm --filter sentium-portal build
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src

@@ -9,7 +9,6 @@
     "build": "tauri build"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "2.12.4"
-  },
-  "packageManager": "pnpm@12.9.1"
+    "@tauri-apps/cli": "catalog:"
+  }
 }

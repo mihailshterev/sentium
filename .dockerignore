@@ -16,6 +16,7 @@
 *.swp
 
 e2e/
+!e2e/package.json
 docs/
 tests/
 **/*.md

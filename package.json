@@ -1,0 +1,19 @@
+{
+  "name": "sentium",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "portal": "pnpm --filter sentium-portal",
+    "satelles": "pnpm --filter sentium-satelles",
+    "e2e": "pnpm --filter sentium-e2e",
+    "audit:all": "pnpm audit --prod"
+  },
+  "packageManager": "pnpm@12.9.1",
+  "devEngines": {
+    "packageManager": {
+      "name": "pnpm",
+      "version": "12.9.1",
+      "onFail": "download"
+    }
+  }
+}
