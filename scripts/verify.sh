@@ -64,7 +64,7 @@ verify_portal() {
   has pnpm || die "pnpm is not on PATH."
 
   step "Portal install (frozen lockfile)"
-  (cd "$PORTAL_DIR" && pnpm install --frozen-lockfile)
+  pnpm install --frozen-lockfile --filter sentium-portal
   step "Portal lint"
   (cd "$PORTAL_DIR" && pnpm run lint)
   step "Portal build"

@@ -197,7 +197,7 @@ Modules reference each other only through `Contracts`; a unit test (`ModuleBound
 ### Prerequisites
 
 - **.NET 10 SDK**
-- **pnpm** (11.x)
+- **pnpm** (12.x) - one workspace at the repo root (`pnpm-workspace.yaml` holds every JS dependency version, the supply-chain settings and the single lockfile)
 - **Docker** - required for the code-execution sandbox, Testcontainers, and the Aspire-managed infrastructure containers
 - An NVIDIA GPU is recommended for usable local-LLM latency (the AppHost runs the CUDA build of llama-server by default; set `Llm:UseGpu=false` for CPU), but not strictly required
 
@@ -251,8 +251,8 @@ Sentium.Web applies every module's EF Core migrations automatically on first sta
 ### Front-end only (against a running Sentium.Web)
 
 ```bash
+pnpm install      # once, at the repo root (installs portal, e2e and Satelles)
 cd src/clients/sentium-portal
-pnpm install
 pnpm dev          # Vite dev server on :5173 (proxies /api to Sentium.Web)
 pnpm lint
 pnpm build        # outputs into src/hosts/Sentium.Web/wwwroot
@@ -293,8 +293,9 @@ pnpm test:coverage
 **End-to-end (Playwright)** - independent of Aspire. Playwright starts PostgreSQL and SeaweedFS from `e2e/compose.e2e.yaml` (tmpfs, ports offset from the dev stack), builds the portal into `Sentium.Web/wwwroot`, and runs Sentium.Web in the `Testing` environment on `http://localhost:5180` - one origin, exactly like production. Each boot drops and re-seeds `sentiumdb_e2e`. The inference servers are replaced by a deterministic stub (`e2e/support/llm-stub.ts`) that declares no models. Needs Docker, .NET and pnpm:
 
 ```bash
+pnpm install                                   # once, at the repo root
 cd e2e
-pnpm install && pnpm exec playwright install   # once
+pnpm exec playwright install                   # once
 pnpm test                 # all browsers, headless
 pnpm test:chromium        # one browser
 pnpm test:ui              # visual mode (reuses an already running app)
