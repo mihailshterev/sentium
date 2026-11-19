@@ -10,8 +10,7 @@ const apiTarget = process.env.API_PROXY_TARGET ?? "https://localhost:7254";
 // so cookies, SSE streams and redirects behave exactly as in production.
 const proxy = { target: apiTarget, changeOrigin: true, secure: false };
 
-const MAP_ONLY_PACKAGES =
-  /node_modules\/(pixi\.js|@pixi|earcut|eventemitter3|ismobilejs|parse-svg-path|tiny-lru|gifuct-js|d3|d3-[a-z-]+|internmap|delaunator|robust-predicates)\//;
+const MAP_ONLY_PACKAGES = /node_modules\/(d3-[a-z-]+)\//;
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -39,9 +38,9 @@ export default defineConfig({
     assetsInlineLimit: (file) => (/\.woff2?$/.test(file) ? false : undefined),
     rollupOptions: {
       output: {
-        // Pixi and d3 are only used by the lazily loaded semantic map. Leaving them out of the shared vendor
-        // chunk lets the bundler place them with that page, off the initial load. (Naming them as manual
-        // chunks instead pulls shared runtime helpers into them, which makes every page load Pixi.)
+        // d3-force is only used by the lazily loaded semantic map and vault graph. Leaving it out of the shared
+        // vendor chunk lets the bundler place it with those pages, off the initial load. (Naming it as a manual
+        // chunk instead pulls shared runtime helpers into it, which makes every page load it.)
         manualChunks(id) {
           if (!id.includes("node_modules") || MAP_ONLY_PACKAGES.test(id)) {
             return undefined;

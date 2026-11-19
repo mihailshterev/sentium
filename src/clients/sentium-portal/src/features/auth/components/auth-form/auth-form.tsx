@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { zodResolver } from "@/shared/forms/zod-resolver";
 import { AlertCircle, ArrowRight, Lock, User } from "lucide-react";
 import styles from "./auth-form.module.css";
 import { BASE_URL } from "@/shared/api/config";

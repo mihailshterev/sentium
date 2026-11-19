@@ -1,4 +1,4 @@
-import { motion, AnimatePresence } from "framer-motion";
+import { Animated, EASE_IN, EASE_OUT_EXPO, Presence } from "@/shared/ui/motion";
 import {
   Waypoints,
   Search,
@@ -23,23 +23,28 @@ import type { KnowledgeMapSearchResult } from "@/features/semantic-map/types/kno
  * Panel transitions animate opacity and transform only. Both stay on the compositor; a `filter: blur()`
  * transition would re-rasterise the panel every frame on top of the canvas animating underneath.
  */
-const panelVariants = {
-  hidden: { opacity: 0, y: 8 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.22, ease: [0.16, 1, 0.3, 1] as const } },
-  exit: { opacity: 0, y: 8, transition: { duration: 0.15, ease: "easeIn" as const } },
+const PANEL_MOTION = {
+  from: { opacity: 0, y: 8 },
+  exitTo: { opacity: 0, y: 8 },
+  enter: { duration: 220, easing: EASE_OUT_EXPO },
+  exit: { duration: 150, easing: EASE_IN },
 };
 
-const slideInRight = {
-  hidden: { opacity: 0, x: 16 },
-  visible: { opacity: 1, x: 0, transition: { duration: 0.24, ease: [0.16, 1, 0.3, 1] as const } },
-  exit: { opacity: 0, x: 16, transition: { duration: 0.15, ease: "easeIn" as const } },
+const SLIDE_IN_RIGHT_MOTION = {
+  from: { opacity: 0, x: 16 },
+  exitTo: { opacity: 0, x: 16 },
+  enter: { duration: 240, easing: EASE_OUT_EXPO },
+  exit: { duration: 150, easing: EASE_IN },
 };
 
-const fadeIn = {
-  initial: { opacity: 0 },
-  animate: { opacity: 1, transition: { duration: 0.2 } },
-  exit: { opacity: 0, transition: { duration: 0.15 } },
+const FADE_MOTION = {
+  from: { opacity: 0 },
+  exitTo: { opacity: 0 },
+  enter: { duration: 200 },
+  exit: { duration: 150 },
 };
+
+const ENTER_FROM_EDGE = { duration: 300, easing: EASE_OUT_EXPO };
 
 const MODES: VisualizationMode[] = ["constellation", "neural", "cluster"];
 
@@ -47,13 +52,12 @@ const formatScore = (score: number) => `${Math.round(score * 100)}%`;
 
 export function LoadingOverlay({ visible }: { visible: boolean }) {
   return (
-    <AnimatePresence>
+    <Presence>
       {visible && (
-        <motion.div
+        <Animated
           className={styles.loadingOverlay}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0, transition: { duration: 0.3 } }}
+          from={{ opacity: 0 }}
+          exitTo={{ opacity: 0 }}
           role="status"
         >
           <div className={styles.loadingInner}>
@@ -61,9 +65,9 @@ export function LoadingOverlay({ visible }: { visible: boolean }) {
             <Loader2 size={22} className={styles.loadingSpinner} aria-hidden="true" />
             <p className={styles.loadingText}>Loading knowledge map…</p>
           </div>
-        </motion.div>
+        </Animated>
       )}
-    </AnimatePresence>
+    </Presence>
   );
 }
 
@@ -91,26 +95,21 @@ export function Toolbar({
   onModeChange,
 }: ToolbarProps) {
   return (
-    <motion.div
-      className={styles.toolbar}
-      initial={{ y: -16, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-    >
+    <Animated className={styles.toolbar} from={{ y: -16, opacity: 0 }} enter={ENTER_FROM_EDGE}>
       <div className={styles.toolbarLeft}>
         <div className={styles.brandBadge}>
           <Waypoints size={15} aria-hidden="true" />
           <span>sentium / semantic-map</span>
         </div>
 
-        <AnimatePresence>
+        <Presence>
           {isDemo && (
-            <motion.div className={styles.demoBadge} title="No indexed knowledge yet — showing sample data" {...fadeIn}>
+            <Animated className={styles.demoBadge} title="No indexed knowledge yet — showing sample data" {...FADE_MOTION}>
               <Sparkles size={12} aria-hidden="true" />
               <span>Demo</span>
-            </motion.div>
+            </Animated>
           )}
-        </AnimatePresence>
+        </Presence>
 
         <div className={styles.statsRow}>
           <span className={styles.statChip} title="Knowledge base chunks">
@@ -176,7 +175,7 @@ export function Toolbar({
           ))}
         </div>
       </div>
-    </motion.div>
+    </Animated>
   );
 }
 
@@ -190,11 +189,10 @@ interface ZoomControlsProps {
 
 export function ZoomControls({ legendVisible, onZoomIn, onZoomOut, onReset, onToggleLegend }: ZoomControlsProps) {
   return (
-    <motion.div
+    <Animated
       className={styles.zoomControls}
-      initial={{ x: -16, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+      from={{ x: -16, opacity: 0 }}
+      enter={ENTER_FROM_EDGE}
     >
       <button type="button" className={styles.zoomBtn} onClick={onZoomIn} title="Zoom in" aria-label="Zoom in">
         <ZoomIn size={16} />
@@ -215,15 +213,15 @@ export function ZoomControls({ legendVisible, onZoomIn, onZoomOut, onReset, onTo
       >
         <Layers size={16} />
       </button>
-    </motion.div>
+    </Animated>
   );
 }
 
 export function Legend({ visible }: { visible: boolean }) {
   return (
-    <AnimatePresence>
+    <Presence>
       {visible && (
-        <motion.div className={styles.legend} variants={panelVariants} initial="hidden" animate="visible" exit="exit">
+        <Animated className={styles.legend} {...PANEL_MOTION}>
           <p className={styles.legendTitle}>Collections</p>
           {Object.entries(COLLECTION_COLORS)
             .filter(([k]) => k !== "default")
@@ -236,9 +234,9 @@ export function Legend({ visible }: { visible: boolean }) {
           <div className={styles.legendDivider} />
           <p className={styles.legendHint}>Scroll to zoom · Drag to pan</p>
           <p className={styles.legendHint}>Click a node to inspect · Esc to close</p>
-        </motion.div>
+        </Animated>
       )}
-    </AnimatePresence>
+    </Presence>
   );
 }
 
@@ -251,15 +249,13 @@ interface ResultsPanelProps {
 
 export function ResultsPanel({ results, onClose, onSelectResult }: ResultsPanelProps) {
   return (
-    <AnimatePresence>
+    <Presence>
       {results && (
-        <motion.section
+        <Animated
+          as="section"
           className={styles.resultsPanel}
           aria-label="Search results"
-          variants={slideInRight}
-          initial="hidden"
-          animate="visible"
-          exit="exit"
+          {...SLIDE_IN_RIGHT_MOTION}
         >
           <div className={styles.resultsPanelHeader}>
             <span className={styles.resultsPanelTitle} role="status">
@@ -299,9 +295,9 @@ export function ResultsPanel({ results, onClose, onSelectResult }: ResultsPanelP
               })}
             </ul>
           )}
-        </motion.section>
+        </Animated>
       )}
-    </AnimatePresence>
+    </Presence>
   );
 }
 
@@ -312,15 +308,13 @@ interface DetailPanelProps {
 
 export function DetailPanel({ node, onClose }: DetailPanelProps) {
   return (
-    <AnimatePresence>
+    <Presence>
       {node && (
-        <motion.section
+        <Animated
+          as="section"
           className={styles.detailPanel}
           aria-label="Selected node"
-          variants={panelVariants}
-          initial="hidden"
-          animate="visible"
-          exit="exit"
+          {...PANEL_MOTION}
           key={node.id}
         >
           <div className={styles.detailHeader}>
@@ -372,22 +366,19 @@ export function DetailPanel({ node, onClose }: DetailPanelProps) {
             <ChevronRight size={12} aria-hidden="true" />
             Ingested {new Date(node.createdAt).toLocaleString()}
           </p>
-        </motion.section>
+        </Animated>
       )}
-    </AnimatePresence>
+    </Presence>
   );
 }
 
 export function ErrorToast({ error, onDismiss }: { error: string | null; onDismiss: () => void }) {
   return (
-    <AnimatePresence>
+    <Presence>
       {error && (
-        <motion.div
+        <Animated
           className={styles.errorToast}
-          variants={panelVariants}
-          initial="hidden"
-          animate="visible"
-          exit="exit"
+          {...PANEL_MOTION}
           role="alert"
         >
           <Info size={14} aria-hidden="true" />
@@ -395,8 +386,8 @@ export function ErrorToast({ error, onDismiss }: { error: string | null; onDismi
           <button type="button" onClick={onDismiss} aria-label="Dismiss">
             <X size={14} />
           </button>
-        </motion.div>
+        </Animated>
       )}
-    </AnimatePresence>
+    </Presence>
   );
 }

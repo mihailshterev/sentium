@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { useReducedMotion } from "framer-motion";
+import { useReducedMotion } from "@/shared/ui/motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import styles from "../timeline.module.css";
 import { Button } from "@/shared/ui/button";

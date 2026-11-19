@@ -7,14 +7,10 @@ namespace Sentium.Web;
 /// </summary>
 internal static class PortalStaticFiles
 {
-    // The hash is that of an empty <style> element. framer-motion's AnimatePresence "popLayout" mode inserts one
-    // and fills it through CSSOM (insertRule), which CSP does not restrict.
-    private const string EmptyStyleElementHash = "'sha256-47DEQpj8HBSa+/TImW+5JCeuQeRkm5NMpJWZG3hSuFU='";
-
     private const string ContentSecurityPolicy =
         "default-src 'self'; " +
         "script-src 'self'; " +
-        $"style-src 'self' {EmptyStyleElementHash}; " +
+        "style-src 'self'; " +
         "font-src 'self'; " +
         "img-src 'self'; " +
         "connect-src 'self'; " +

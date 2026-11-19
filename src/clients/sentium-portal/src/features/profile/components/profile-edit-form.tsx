@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { zodResolver } from "@/shared/forms/zod-resolver";
 import { AlertCircle, CheckCircle2, Save } from "lucide-react";
 import styles from "../profile.module.css";
 import type { UserProfile } from "../../auth/api/identity.service";

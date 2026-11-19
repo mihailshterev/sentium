@@ -1,5 +1,4 @@
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createPersistedStore } from "@/shared/state/create-store";
 
 interface UiState {
   /** User's choice for the sidebar; narrow windows force the rail regardless. */
@@ -8,16 +7,14 @@ interface UiState {
   setSidebarCollapsed: (collapsed: boolean) => void;
 }
 
-export const useUiStore = create<UiState>()(
-  persist(
-    (set) => ({
-      sidebarCollapsed: false,
-      toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
-      setSidebarCollapsed: (sidebarCollapsed) => set({ sidebarCollapsed }),
-    }),
-    {
-      name: "sentium-ui",
-      partialize: (state) => ({ sidebarCollapsed: state.sidebarCollapsed }),
-    },
-  ),
+export const useUiStore = createPersistedStore<UiState, Pick<UiState, "sidebarCollapsed">>(
+  (set) => ({
+    sidebarCollapsed: false,
+    toggleSidebar: () => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
+    setSidebarCollapsed: (sidebarCollapsed) => set({ sidebarCollapsed }),
+  }),
+  {
+    name: "sentium-ui",
+    partialize: (state) => ({ sidebarCollapsed: state.sidebarCollapsed }),
+  },
 );

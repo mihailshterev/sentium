@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useDroppable } from "@dnd-kit/core";
-import Markdown from "react-markdown";
+import { Markdown } from "@/shared/markdown";
 import { Bot, Pin, Plus, Trash2, User } from "lucide-react";
 import styles from "../timeline.module.css";
 import { Button } from "@/shared/ui/button";

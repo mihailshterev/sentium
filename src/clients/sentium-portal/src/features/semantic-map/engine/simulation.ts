@@ -1,4 +1,4 @@
-import * as d3 from "d3";
+import { forceCenter, forceCollide, forceLink, forceManyBody, forceSimulation, type Simulation } from "d3-force";
 import type { GraphNode, GraphLink, VisualizationMode } from "./types";
 import { getCollectionTheme } from "./types";
 import type { KnowledgeMapNode } from "@/features/semantic-map/types/knowledge-map";
@@ -79,7 +79,7 @@ export function createSimulation(
   width: number,
   height: number,
   mode: VisualizationMode,
-): d3.Simulation<GraphNode, GraphLink> {
+): Simulation<GraphNode, GraphLink> {
   const clusterCentres: Record<string, { x: number; y: number }> = {
     knowledge_base: { x: width * 0.35, y: height * 0.4 },
     agent_learnings: { x: width * 0.65, y: height * 0.4 },
@@ -91,22 +91,20 @@ export function createSimulation(
   const clusterPull = mode === "cluster" ? 0.04 : mode === "neural" ? 0.01 : 0.02;
   const linkDist = mode === "neural" ? 30 : mode === "cluster" ? 55 : 40;
 
-  const sim = d3
-    .forceSimulation<GraphNode>(nodes)
+  const sim = forceSimulation<GraphNode>(nodes)
     .force(
       "link",
-      d3
-        .forceLink<GraphNode, GraphLink>(links)
+      forceLink<GraphNode, GraphLink>(links)
         .id((d) => d.id)
         .strength((l) => l.strength)
         .distance(linkDist),
     )
-    .force("charge", d3.forceManyBody<GraphNode>().strength(chargeStrength).distanceMax(250))
+    .force("charge", forceManyBody<GraphNode>().strength(chargeStrength).distanceMax(250))
     .force(
       "collide",
-      d3.forceCollide<GraphNode>((d) => d.radius + 4),
+      forceCollide<GraphNode>((d) => d.radius + 4),
     )
-    .force("center", d3.forceCenter(width / 2, height / 2).strength(0.03))
+    .force("center", forceCenter(width / 2, height / 2).strength(0.03))
     .force("cluster", () => {
       const alpha = sim.alpha();
       for (const n of nodes) {

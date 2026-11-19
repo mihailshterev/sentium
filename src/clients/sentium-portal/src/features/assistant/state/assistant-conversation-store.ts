@@ -1,4 +1,4 @@
-import { create } from "zustand";
+import { createStore } from "@/shared/state/create-store";
 import type { ConversationMessage, MessageAttachment } from "@/features/assistant/types/assistant";
 import { DEFAULT_ASSISTANT_MODEL } from "@/shared/utils/constants";
 import { sendChatMessage, approveToolCall } from "@/features/assistant/api/assistant.service";
@@ -91,7 +91,7 @@ const STREAM_KEY = "active";
 export const createConversationStore = () => {
   const controllers = new Map<string, AbortController>();
 
-  return create<ConversationState>((set, get) => {
+  return createStore<ConversationState>((set, get) => {
     const STALL_TIMEOUT_MS = 120_000;
 
     const consumeStream = async (

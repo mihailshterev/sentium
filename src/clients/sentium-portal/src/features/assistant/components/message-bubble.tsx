@@ -1,5 +1,5 @@
 import { memo, useState } from "react";
-import Markdown from "react-markdown";
+import { Markdown } from "@/shared/markdown";
 import { markdownUrlTransform } from "@/shared/utils/markdown-url";
 import { Check, ChevronDown, Copy, FileText, ShieldAlert, Sparkles } from "lucide-react";
 import styles from "../assistant.module.css";

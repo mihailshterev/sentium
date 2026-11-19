@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useForm, useWatch } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { zodResolver } from "@/shared/forms/zod-resolver";
 import { MapPin } from "lucide-react";
 import styles from "../inventory.module.css";
 import { Button } from "@/shared/ui/button";

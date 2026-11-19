@@ -1,5 +1,5 @@
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { zodResolver } from "@/shared/forms/zod-resolver";
 import { FolderOpen } from "lucide-react";
 import styles from "../workspaces.module.css";
 import { Button } from "@/shared/ui/button";

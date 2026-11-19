@@ -13,7 +13,7 @@ interface VaultGraphTabProps {
   onSelect: (id: string) => void;
 }
 
-/** Loaded on demand (d3 is one of the largest libraries in the app). */
+/** Loaded on demand, so the force layout stays out of the first page load. */
 export default function VaultGraphTab({ selectedId, onSelect }: VaultGraphTabProps) {
   const [tag, setTag] = useState("");
   const { data: tags = [] } = useVaultTags(true);

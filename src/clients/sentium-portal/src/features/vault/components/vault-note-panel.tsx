@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import Markdown from "react-markdown";
+import { Markdown } from "@/shared/markdown";
 import { ExternalLink, FileText, Link2, Unlink } from "lucide-react";
 import { Badge } from "@/shared/ui/badge";
 import { Card } from "@/shared/ui/card";

@@ -1,7 +1,7 @@
 import { lazy } from "react";
 
-// The map is the only page that needs the WebGL renderer and the force simulation (Pixi + d3, the largest
-// libraries in the app), so its code loads on demand instead of with the first page.
+// The map is the only page that needs the canvas renderer and the force simulation, so its code loads on demand
+// instead of with the first page.
 const SemanticMapView = lazy(() =>
   import("../../features/semantic-map").then((module) => ({ default: module.SemanticMapView })),
 );

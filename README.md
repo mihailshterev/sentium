@@ -177,8 +177,9 @@ Modules reference each other only through `Contracts`; a unit test (`ModuleBound
 **Frontend**
 
 - React 19 + TypeScript + Vite (`sentium-portal`)
-- TanStack Query v5 (server state) · Zustand v5 (client/streaming state)
-- SCSS modules · pnpm
+- TanStack Query v5 (server state) · in-house stores on `useSyncExternalStore` (client/streaming state)
+- CSS modules · pnpm workspace (one root lockfile and version catalog in `pnpm-workspace.yaml`)
+- Few runtime dependencies by design: markdown rendering, motion, the semantic-map canvas renderer, pan/zoom, form validation glue and fonts are in-house or vendored
 
 **Testing**
 
@@ -251,7 +252,7 @@ Sentium.Web applies every module's EF Core migrations automatically on first sta
 ### Front-end only (against a running Sentium.Web)
 
 ```bash
-pnpm install      # once, at the repo root (installs portal, e2e and Satelles)
+pnpm install      # once, at the repo root (installs the portal and e2e)
 cd src/clients/sentium-portal
 pnpm dev          # Vite dev server on :5173 (proxies /api to Sentium.Web)
 pnpm lint

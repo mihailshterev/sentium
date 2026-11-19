@@ -1,4 +1,4 @@
-import { create } from "zustand";
+import { createStore } from "@/shared/state/create-store";
 import type { AuthStatus, User } from "@/shared/auth/types";
 import { BASE_URL } from "@/shared/api/config";
 import { AUTH_STATUS } from "@/shared/utils/constants";
@@ -12,7 +12,7 @@ interface AuthState {
   updateUser: (patch: Partial<Pick<User, "name">>) => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = createStore<AuthState>((set) => ({
   user: null,
   status: AUTH_STATUS.IDLE,
 

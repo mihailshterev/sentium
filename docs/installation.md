@@ -484,13 +484,14 @@ else.
 ### Build the app
 
 It is a [Tauri 2](https://tauri.app) app in `src/clients/sentium-satelles`. Build it on the platform you want it for,
-with [Rust](https://rustup.rs) and pnpm installed (on Linux also the
-[Tauri system packages](https://tauri.app/start/prerequisites/#linux)):
+with [Rust](https://rustup.rs) installed (on Linux also the
+[Tauri system packages](https://tauri.app/start/prerequisites/#linux)). The Tauri CLI comes from crates.io, like the
+rest of the app, so no Node.js is needed:
 
 ```bash
+cargo install tauri-cli --version 2.12.4 --locked   # once
 cd src/clients/sentium-satelles
-pnpm install
-pnpm tauri build
+cargo tauri build
 ```
 
 The output is in `src-tauri/target/release/bundle/`:

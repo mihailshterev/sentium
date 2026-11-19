@@ -1,8 +1,8 @@
-import type * as d3 from "d3";
+import type { SimulationLinkDatum, SimulationNodeDatum } from "d3-force";
 
 export type VisualizationMode = "constellation" | "neural" | "cluster";
 
-export interface GraphNode extends d3.SimulationNodeDatum {
+export interface GraphNode extends SimulationNodeDatum {
   id: string;
   content: string;
   fullContent: string;
@@ -21,7 +21,7 @@ export interface GraphNode extends d3.SimulationNodeDatum {
   _spriteIdx?: number;
 }
 
-export interface GraphLink extends d3.SimulationLinkDatum<GraphNode> {
+export interface GraphLink extends SimulationLinkDatum<GraphNode> {
   strength: number;
   _id?: string;
 }
