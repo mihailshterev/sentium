@@ -12,12 +12,11 @@ on:
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened, ready_for_review]
-    paths-ignore:
-      - "**.md"
-      - "docs/**"
-      - "scripts/**"
-      - ".vscode/**"
-      - "LICENSE"
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "e2e/**"
+      - ".github/**"
   schedule:
     - cron: "0 4 * * 1"
   workflow_dispatch:
@@ -30,41 +29,9 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  changes:
-    name: Detect Changes
-    if: github.event.pull_request.draft != true
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    permissions:
-      contents: read
-      pull-requests: read
-    outputs:
-      languages: ${{ steps.languages.outputs.languages }}
-    steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
-        with:
-          persist-credentials: false
-          sparse-checkout: .github
-
-      - id: changes
-        uses: $/.github/actions/changes
-
-      - id: languages
-        env:
-          ACTIONS: ${{ steps.changes.outputs.workflows }}
-          CSHARP: ${{ steps.changes.outputs.dotnet }}
-          JS: ${{ steps.changes.outputs.js }}
-        run: |
-          languages=()
-          [ "$ACTIONS" = true ] && languages+=('"actions"')
-          [ "$CSHARP" = true ] && languages+=('"csharp"')
-          [ "$JS" = true ] && languages+=('"javascript-typescript"')
-          echo "languages=[$(IFS=,; echo "${languages[*]}")]" >> "$GITHUB_OUTPUT"
-
   analyze:
     name: Analyze (${{ matrix.language }})
-    needs: changes
-    if: needs.changes.outputs.languages != '[]'
+    if: github.event.pull_request.draft != true
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -73,7 +40,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: ${{ fromJSON(needs.changes.outputs.languages) }}
+        language: [actions, csharp, javascript-typescript]
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
