@@ -10,9 +10,9 @@ public static class LoggingExtensions
     private const string ConsoleTimestampFormat = "HH:mm:ss ";
 
     /// <summary>
-    /// Writes console logs one line per entry with a timestamp. Export to the OTLP collector comes from the
-    /// OpenTelemetry logger provider that <c>AddServiceDefaults</c> registers, and the <c>Logging:LogLevel</c>
-    /// configuration filters both.
+    /// Writes timestamped console logs with the category on its own line and the message below it, for readability.
+    /// Export to the OTLP collector comes from the OpenTelemetry logger provider that <c>AddServiceDefaults</c>
+    /// registers, and the <c>Logging:LogLevel</c> configuration filters both.
     /// </summary>
     public static void AddSentiumAuditLogging(this IHostApplicationBuilder builder)
     {
