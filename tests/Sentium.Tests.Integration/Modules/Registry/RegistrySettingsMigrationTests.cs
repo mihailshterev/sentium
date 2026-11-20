@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.Extensions.DependencyInjection;
+using Sentium.Registry.Contracts.Settings;
 using Sentium.Registry.Data;
 using Sentium.Tests.Integration.Common;
 using Xunit;
@@ -84,8 +85,9 @@ public sealed class RegistrySettingsMigrationTests(MonolithWebApplicationFactory
 
         var entity = await db.SystemSettings.AsNoTracking().SingleAsync(s => s.Id == globalId, Ct);
         // the application reads the migrated group
-        Assert.Equal("qwen3:4b", entity.Settings.Inference.DefaultModel);
-        Assert.Equal(0.7f, entity.Settings.Inference.AgentTemperature, tolerance: 1e-6f);
+        var stored = entity.Settings["inference"].Deserialize<InferenceSettings>(JsonSerializerOptions.Web)!;
+        Assert.Equal("qwen3:4b", stored.DefaultModel);
+        Assert.Equal(0.7f, stored.AgentTemperature, tolerance: 1e-6f);
     }
 
     [Fact]

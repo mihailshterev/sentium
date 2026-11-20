@@ -3,8 +3,8 @@ using System.Text.Json;
 namespace Sentium.Registry.Contracts;
 
 /// <summary>
-/// Centralized, key-based settings operations. New settings types are added by registering an
-/// <see cref="Features.Settings.ISettingsDescriptor"/>.
+/// Centralized, key-based settings operations. A new settings group is a contract class marked with
+/// <see cref="Settings.SettingsGroupAttribute"/>; the Registry discovers it.
 /// </summary>
 public interface ISettingsService
 {

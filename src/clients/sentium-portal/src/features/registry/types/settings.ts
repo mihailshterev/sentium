@@ -1,17 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 
-/** A Registry settings group: one `/registry/settings/{key}` endpoint. */
-export type SettingsKey =
-  | "harness"
-  | "calendar-user"
-  | "companion"
-  | "evaluation"
-  | "inference"
-  | "calendar"
-  | "pdp"
-  | "access"
-  | "mcp"
-  | "vigil";
+/** A Registry settings group: one `/registry/settings/{key}` endpoint. The server's schema lists them. */
+export type SettingsKey = string;
 
 export interface SettingsEnvelope<T> {
   key: string;
@@ -27,9 +17,49 @@ export type SettingScope = "personal" | "household";
 
 export type SettingValue = string | number | boolean;
 
+/** `GET /registry/settings/schema`: built on the server from the settings contracts' attributes. */
+export interface SettingsSectionSchema {
+  id: string;
+  key: SettingsKey;
+  scope: SettingScope;
+  title: string;
+  description: string;
+  settings: SettingSchema[];
+}
+
+export interface SettingSchema {
+  /** `{key}.{field}`. */
+  id: string;
+  field: string;
+  title: string;
+  description: string;
+  keywords: string[];
+  control: SettingControlSchema;
+  /** Null is a meaningful value ("inherit", "use the default"); the controls show it as empty. */
+  nullable: boolean;
+  /** In server form, i.e. before `fromServer`. */
+  defaultValue: unknown;
+}
+
+export interface SettingControlSchema {
+  kind: SettingControl["kind"];
+  required: boolean;
+  min?: number | null;
+  /** Missing on a number means no upper bound. */
+  max?: number | null;
+  step?: number | null;
+  unit?: string | null;
+  minLabel?: string | null;
+  maxLabel?: string | null;
+  maxLength?: number | null;
+  rows?: number | null;
+  placeholder?: string | null;
+  emptyLabel?: string | null;
+}
+
 export type SettingControl =
   | { kind: "switch" }
-  | { kind: "number"; min: number; max?: number; unit: string }
+  | { kind: "number"; min?: number; max?: number; unit: string }
   | {
       kind: "range";
       min: number;

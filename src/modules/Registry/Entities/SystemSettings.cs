@@ -1,4 +1,4 @@
-using Sentium.Registry.Features.Settings;
+using System.Text.Json;
 
 namespace Sentium.Registry.Entities;
 
@@ -6,7 +6,10 @@ internal sealed class SystemSettings
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public Guid? UserId { get; set; }
-    public SettingsContainer Settings { get; set; } = new();
+    /// <summary>
+    /// Each settings key's value as JSON, under the key itself. Keys the catalog no longer knows are kept as they are.
+    /// </summary>
+    public Dictionary<string, JsonElement> Settings { get; set; } = [];
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
     public string? UpdatedBy { get; set; }
 

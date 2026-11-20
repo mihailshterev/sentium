@@ -7,6 +7,7 @@ import * as registryService from "../api/registry.service";
 import * as modelsHook from "@/features/models/hooks/useModels";
 import * as useRoleHook from "@/shared/auth/hooks/useRole";
 import type { SettingsKey } from "../types/settings";
+import { SETTINGS_SCHEMA } from "./settings-schema.fixture";
 
 const VALUES: Record<SettingsKey, Record<string, unknown>> = {
   harness: { userHarnessPrompt: "Be concise.", isBuiltInHarnessEnabled: true, isPromptEnhancementEnabled: false },
@@ -59,6 +60,9 @@ const role = (isSovereign: boolean) =>
     typeof useRoleHook.useRole
   >;
 
+/** Like the server: household sections only for a Sovereign. */
+const schemaFor = (isSovereign: boolean) => SETTINGS_SCHEMA.filter((s) => isSovereign || s.scope === "personal");
+
 let fetchGroup: ReturnType<typeof spyFetch>;
 let updateGroup: ReturnType<typeof spyUpdate>;
 const spyFetch = () => vi.spyOn(registryService, "fetchSettingsGroup");
@@ -83,6 +87,9 @@ beforeEach(() => {
   Element.prototype.scrollIntoView = vi.fn();
   vi.spyOn(useRoleHook, "useRole").mockReturnValue(role(false));
   vi.spyOn(modelsHook, "useModels").mockReturnValue({ models: ["gemma-4-e4b", "qwen"], defaultModel: "gemma-4-e4b" });
+  vi.spyOn(registryService, "fetchSettingsSchema").mockImplementation(async () =>
+    schemaFor(vi.mocked(useRoleHook.useRole)().isSovereign),
+  );
   fetchGroup = spyFetch().mockImplementation(async (key) => envelope(key) as never);
   updateGroup = spyUpdate().mockImplementation(
     async (key, patch) => envelope(key, { ...VALUES[key], ...patch }) as never,
