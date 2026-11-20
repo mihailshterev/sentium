@@ -61,7 +61,7 @@ jobs:
           sparse-checkout: .github
 
       - id: changes
-        uses: ./.github/actions/changes
+        uses: $/.github/actions/changes
 
       - id: satelles-os
         env:
