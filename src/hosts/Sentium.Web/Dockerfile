@@ -6,7 +6,6 @@ WORKDIR /src
 # The lockfile covers the whole pnpm workspace, so every member's manifest must be present for a frozen install.
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY src/clients/sentium-portal/package.json src/clients/sentium-portal/
-COPY src/clients/sentium-satelles/package.json src/clients/sentium-satelles/
 COPY e2e/package.json e2e/
 RUN pnpm install --frozen-lockfile --filter sentium-portal
 COPY src/clients/sentium-portal/ src/clients/sentium-portal/
