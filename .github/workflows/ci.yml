@@ -11,12 +11,21 @@ on:
       - "LICENSE"
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
     paths-ignore:
       - "**.md"
       - "docs/**"
       - "scripts/**"
       - ".vscode/**"
       - "LICENSE"
+  # Runs every job, Satelles on all platforms, and E2E on the chosen browsers.
+  workflow_dispatch:
+    inputs:
+      browser:
+        description: "E2E browser to run"
+        type: choice
+        options: [all, chromium, firefox, webkit]
+        default: all
 
 permissions:
   contents: read
@@ -31,8 +40,43 @@ env:
   BUILD_CONFIGURATION: "Release"
 
 jobs:
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      dotnet: ${{ steps.changes.outputs.dotnet }}
+      portal: ${{ steps.changes.outputs.portal }}
+      satelles: ${{ steps.changes.outputs.satelles }}
+      e2e: ${{ steps.changes.outputs.e2e }}
+      draft: ${{ steps.changes.outputs.draft }}
+      satelles-os: ${{ steps.satelles-os.outputs.os }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+          sparse-checkout: .github
+
+      - id: changes
+        uses: ./.github/actions/changes
+
+      - id: satelles-os
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            echo 'os=["ubuntu-latest"]' >> "$GITHUB_OUTPUT"
+          else
+            echo 'os=["windows-latest","macos-latest","ubuntu-latest"]' >> "$GITHUB_OUTPUT"
+          fi
+
   dotnet-build-test:
     name: .NET Build & Test
+    needs: changes
+    if: needs.changes.outputs.dotnet == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -58,13 +102,14 @@ jobs:
 
   satelles-build:
     name: Sentium Satelles (${{ matrix.os }})
-    # Satelles builds on every desktop platform it supports, so platform-specific code cannot rot unseen.
+    needs: changes
+    if: needs.changes.outputs.satelles == 'true' && needs.changes.outputs.draft != 'true'
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest, ubuntu-latest]
+        os: ${{ fromJSON(needs.changes.outputs.satelles-os) }}
     defaults:
       run:
         working-directory: ./src/clients/sentium-satelles
@@ -104,6 +149,8 @@ jobs:
   satelles-deny:
     name: Sentium Satelles Supply Chain
     # cargo-deny checks the crate graph (all platforms) against RustSec advisories, licenses and allowed sources.
+    needs: changes
+    if: needs.changes.outputs.satelles == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -120,6 +167,8 @@ jobs:
 
   react-build-test:
     name: React Build & Test
+    needs: changes
+    if: needs.changes.outputs.portal == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
@@ -158,3 +207,110 @@ jobs:
         with:
           name: vitest-coverage-report
           path: ./src/clients/sentium-portal/coverage
+          retention-days: 7
+
+  e2e:
+    name: E2E Tests (Playwright)
+    needs: [changes, dotnet-build-test, react-build-test]
+    if: >-
+      !cancelled() && !failure()
+      && github.event_name != 'push'
+      && needs.changes.outputs.e2e == 'true'
+      && needs.changes.outputs.draft != 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    env:
+      CI: "true"
+      E2E_SKIP_BUILD: "1"
+      BROWSER: ${{ github.event_name == 'workflow_dispatch' && inputs.browser || 'chromium' }}
+
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          cache: true
+          cache-dependency-path: "**/packages.lock.json"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+
+      - name: Setup Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+          cache-dependency-path: "./pnpm-lock.yaml"
+
+      - name: Install dependencies (portal + e2e)
+        run: pnpm install --frozen-lockfile --filter sentium-portal --filter sentium-e2e
+
+      - name: Build portal (into Sentium.Web/wwwroot)
+        working-directory: ./src/clients/sentium-portal
+        run: pnpm exec vite build
+
+      - name: Build Sentium.Web
+        run: dotnet build src/hosts/Sentium.Web/Sentium.Web.csproj -c Release
+
+      - name: Typecheck E2E suite
+        working-directory: ./e2e
+        run: pnpm typecheck
+
+      - name: Resolve Playwright version
+        id: playwright-version
+        working-directory: ./e2e
+        run: echo "version=$(pnpm exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ env.BROWSER }}-${{ steps.playwright-version.outputs.version }}
+
+      - name: Install Playwright browsers + OS deps
+        working-directory: ./e2e
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: |
+          if [ "$BROWSER" = "all" ]; then pnpm exec playwright install --with-deps; else pnpm exec playwright install --with-deps "$BROWSER"; fi
+
+      - name: Install Playwright OS deps (cache hit)
+        working-directory: ./e2e
+        if: steps.playwright-cache.outputs.cache-hit == 'true'
+        run: |
+          if [ "$BROWSER" = "all" ]; then pnpm exec playwright install-deps; else pnpm exec playwright install-deps "$BROWSER"; fi
+
+      - name: Start backing services
+        working-directory: ./e2e
+        run: pnpm infra:up
+
+      - name: Run Playwright E2E tests
+        working-directory: ./e2e
+        run: |
+          if [ "$BROWSER" = "all" ]; then pnpm test; else pnpm test --project="$BROWSER"; fi
+
+      - name: Dump backing service logs
+        if: failure()
+        working-directory: ./e2e
+        run: pnpm infra:logs
+
+      - name: Upload Playwright report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: playwright-report
+          path: ./e2e/playwright-report
+          retention-days: 7
+
+      - name: Upload Playwright test results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: playwright-test-results
+          path: ./e2e/test-results
+          retention-days: 7
