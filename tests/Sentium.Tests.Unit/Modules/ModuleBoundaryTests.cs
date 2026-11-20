@@ -1,6 +1,4 @@
 using System.Reflection;
-using FluentAssertions;
-using NetArchTest.Rules;
 using Sentium.Codex;
 using Sentium.Identity;
 using Sentium.Locus;
@@ -54,27 +52,22 @@ public sealed class ModuleBoundaryTests
             .SelectMany(ImplementationTypeNames)
             .ToArray();
 
-        var result = Types.InAssembly(module)
-            .ShouldNot()
-            .HaveDependencyOnAny(forbidden)
-            .GetResult();
+        var failing = TypeDependencyScanner.TypesDependingOnAny(module, module.GetTypes(), forbidden);
 
-        result.IsSuccessful.Should().BeTrue(
-            "{0} must reach other modules only through their Contracts, but these types do not: {1}",
-            moduleName,
-            string.Join(", ", result.FailingTypeNames ?? []));
+        Assert.True(
+            failing.Count == 0,
+            $"{moduleName} must reach other modules only through their Contracts, but these types do not: {string.Join(", ", failing)}");
     }
 
     [Fact]
     public void DependencyScan_DetectsKnownContractDependency()
     {
         // Guards against the boundary test passing vacuously: Praxis really does use the Registry contract.
-        var result = Types.InAssembly(typeof(PraxisModuleExtensions).Assembly)
-            .ShouldNot()
-            .HaveDependencyOnAny("Sentium.Registry.Contracts.ISettingsService")
-            .GetResult();
+        var praxis = typeof(PraxisModuleExtensions).Assembly;
 
-        result.IsSuccessful.Should().BeFalse();
+        var dependents = TypeDependencyScanner.TypesDependingOnAny(praxis, praxis.GetTypes(), ["Sentium.Registry.Contracts.ISettingsService"]);
+
+        Assert.NotEmpty(dependents);
     }
 
     private static IEnumerable<string> ImplementationTypeNames(Assembly module)

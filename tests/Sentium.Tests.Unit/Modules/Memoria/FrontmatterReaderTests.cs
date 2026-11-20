@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Sentium.Memoria.Features.Parsing;
 using Xunit;
 
@@ -11,8 +10,8 @@ public sealed class FrontmatterReaderTests
     {
         var frontmatter = FrontmatterReader.Read("tags: \"#one, two three\"\nalias: Solo");
 
-        frontmatter.Tags.Should().Equal("one", "two", "three");
-        frontmatter.Aliases.Should().Equal("Solo");
+        Assert.Equal(new string[] { "one", "two", "three" }, frontmatter.Tags);
+        Assert.Equal(new string[] { "Solo" }, frontmatter.Aliases);
     }
 
     [Fact]
@@ -28,13 +27,13 @@ public sealed class FrontmatterReaderTests
 
         var frontmatter = FrontmatterReader.Read(yaml);
 
-        frontmatter.Json.Should().NotBeNull();
-        frontmatter.Json!.Length.Should().BeLessThan(100_000);
+        Assert.NotNull(frontmatter.Json);
+        Assert.True(frontmatter.Json!.Length < 100_000);
     }
 
     [Fact]
     public void Read_IgnoresNonMappingDocuments()
     {
-        FrontmatterReader.Read("- just\n- a list").Should().Be(Frontmatter.Empty);
+        Assert.Equal(Frontmatter.Empty, FrontmatterReader.Read("- just\n- a list"));
     }
 }

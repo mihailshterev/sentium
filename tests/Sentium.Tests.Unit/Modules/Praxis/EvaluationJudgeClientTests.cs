@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
@@ -27,8 +26,8 @@ public sealed class EvaluationJudgeClientTests
         var judge = builder.CreateJudgeClient("judge-model");
         await judge.GetResponseAsync("score this", new ChatOptions { MaxOutputTokens = 800 }, TestContext.Current.CancellationToken);
 
-        baseClient.Options!.ModelId.Should().Be("judge-model");
-        baseClient.Options.MaxOutputTokens.Should().BeGreaterThan(800, "a reasoning Judge spends the evaluators' 800 tokens before it scores");
+        Assert.Equal("judge-model", baseClient.Options!.ModelId);
+        Assert.True(baseClient.Options.MaxOutputTokens > 800, "a reasoning Judge spends the evaluators' 800 tokens before it scores");
     }
 
     private sealed class RecordingClient : IChatClient

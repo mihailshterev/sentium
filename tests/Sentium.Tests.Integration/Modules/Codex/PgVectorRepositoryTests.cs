@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Sentium.Codex.Contracts;
 using Sentium.Codex.Contracts.Models;
@@ -30,9 +29,9 @@ public sealed class PgVectorRepositoryTests(MonolithWebApplicationFactory factor
 
             var hits = await repo.SearchAsync(collection, Basis(0), topK: 3, ct: Ct);
 
-            hits.Select(h => h.Chunk.Content).Should().ContainInOrder("exact", "close", "orthogonal");
-            hits[0].Score.Should().BeApproximately(1f, 0.0001f);
-            hits[2].Score.Should().BeApproximately(0f, 0.0001f);
+            Assert.Equal(new[] { "exact", "close", "orthogonal" }, hits.Select(h => h.Chunk.Content));
+            Assert.Equal(1f, hits[0].Score, tolerance: 0.0001f);
+            Assert.Equal(0f, hits[2].Score, tolerance: 0.0001f);
         });
     }
 
@@ -46,9 +45,9 @@ public sealed class PgVectorRepositoryTests(MonolithWebApplicationFactory factor
             await repo.UpsertAsync(collection, Chunk("b"), Mix(0, 1, 0.9f), Ct);
             await repo.UpsertAsync(collection, Chunk("c"), Basis(1), Ct);
 
-            (await repo.SearchAsync(collection, Basis(0), topK: 1, ct: Ct)).Should().ContainSingle(h => h.Chunk.Content == "a");
-            (await repo.SearchAsync(collection, Basis(0), topK: 5, scoreThreshold: 0.5f, ct: Ct))
-                .Select(h => h.Chunk.Content).Should().BeEquivalentTo("a", "b");
+            Assert.Single(await repo.SearchAsync(collection, Basis(0), topK: 1, ct: Ct), h => h.Chunk.Content == "a");
+            Assert.Equivalent(new string[] { "a", "b" }, (await repo.SearchAsync(collection, Basis(0), topK: 5, scoreThreshold: 0.5f, ct: Ct))
+                .Select(h => h.Chunk.Content));
         });
     }
 
@@ -68,12 +67,12 @@ public sealed class PgVectorRepositoryTests(MonolithWebApplicationFactory factor
             async Task<IEnumerable<string>> Visible(KnowledgeScopeFilter? scope) =>
                 (await repo.SearchAsync(collection, Basis(0), topK: 10, scope: scope, ct: Ct)).Select(h => h.Chunk.Content);
 
-            (await Visible(new KnowledgeScopeFilter(alice))).Should().BeEquivalentTo("shared", "alice");
-            (await Visible(new KnowledgeScopeFilter(null))).Should().BeEquivalentTo("shared");
-            (await Visible(null)).Should().BeEquivalentTo("shared", "alice", "bob");
+            Assert.Equivalent(new string[] { "shared", "alice" }, await Visible(new KnowledgeScopeFilter(alice)));
+            Assert.Equivalent(new string[] { "shared" }, await Visible(new KnowledgeScopeFilter(null)));
+            Assert.Equivalent(new string[] { "shared", "alice", "bob" }, await Visible(null));
 
             var page = await repo.GetPageAsync(collection, scope: new KnowledgeScopeFilter(bob), ct: Ct);
-            page.Select(c => c.Content).Should().BeEquivalentTo("shared", "bob");
+            Assert.Equivalent(new string[] { "shared", "bob" }, page.Select(c => c.Content));
         });
     }
 
@@ -93,7 +92,7 @@ public sealed class PgVectorRepositoryTests(MonolithWebApplicationFactory factor
 
             var hits = await repo.SearchAsync(collection, Basis(0), topK: 10, scope: new KnowledgeScopeFilter(alice, "WorkspaceId", "ws-1"), ct: Ct);
 
-            hits.Select(h => h.Chunk.Content).Should().Equal("alice ws-1");
+            Assert.Equal(new string[] { "alice ws-1" }, hits.Select(h => h.Chunk.Content));
         });
     }
 
@@ -127,14 +126,14 @@ public sealed class PgVectorRepositoryTests(MonolithWebApplicationFactory factor
                 UserId = original.UserId
             }, Basis(1), Ct);
 
-            var hit = (await repo.SearchAsync(collection, Basis(1), topK: 5, ct: Ct)).Should().ContainSingle().Subject;
-            hit.Score.Should().BeApproximately(1f, 0.0001f);
-            hit.Chunk.Id.Should().Be(original.Id);
-            hit.Chunk.Content.Should().Be("v2");
-            hit.Chunk.SourceType.Should().Be(IngestionSourceType.File);
-            hit.Chunk.Metadata.Should().Contain("filename", "notes.md");
-            hit.Chunk.Scope.Should().Be(KnowledgeScope.User);
-            hit.Chunk.UserId.Should().Be(userId);
+            var hit = Assert.Single(await repo.SearchAsync(collection, Basis(1), topK: 5, ct: Ct));
+            Assert.Equal(1f, hit.Score, tolerance: 0.0001f);
+            Assert.Equal(original.Id, hit.Chunk.Id);
+            Assert.Equal("v2", hit.Chunk.Content);
+            Assert.Equal(IngestionSourceType.File, hit.Chunk.SourceType);
+            Assert.Equal("notes.md", Assert.Contains("filename", hit.Chunk.Metadata));
+            Assert.Equal(KnowledgeScope.User, hit.Chunk.Scope);
+            Assert.Equal(userId, hit.Chunk.UserId);
         });
     }
 
@@ -144,7 +143,7 @@ public sealed class PgVectorRepositoryTests(MonolithWebApplicationFactory factor
         await WithRepositoryAsync(async repo =>
         {
             var act = () => repo.UpsertAsync(NewCollection(), Chunk("x"), new float[3], Ct);
-            await act.Should().ThrowAsync<ArgumentException>();
+            await Assert.ThrowsAnyAsync<ArgumentException>(act);
         });
     }
 
@@ -163,8 +162,8 @@ public sealed class PgVectorRepositoryTests(MonolithWebApplicationFactory factor
 
             await repo.DeleteBySourceAsync(collection, "a", Ct);
 
-            (await repo.GetPageAsync(collection, ct: Ct)).Select(c => c.Content).Should().BeEquivalentTo("b1");
-            (await repo.GetPageAsync(other, ct: Ct)).Should().ContainSingle();
+            Assert.Equivalent(new string[] { "b1" }, (await repo.GetPageAsync(collection, ct: Ct)).Select(c => c.Content));
+            Assert.Single(await repo.GetPageAsync(other, ct: Ct));
         });
     }
 
@@ -180,7 +179,7 @@ public sealed class PgVectorRepositoryTests(MonolithWebApplicationFactory factor
             await repo.ReplaceByMetadataAsync(collection, FileIdKey, "file-1", Batches([Embedded("new-1", "file-1", 3)], [Embedded("new-2", "file-1", 4)]), Ct);
             await repo.ReplaceByMetadataAsync(collection, FileIdKey, "file-1", Batches([Embedded("new-1", "file-1", 3)], [Embedded("new-2", "file-1", 4)]), Ct);
 
-            (await repo.GetPageAsync(collection, ct: Ct)).Select(c => c.Content).Should().BeEquivalentTo("keep", "new-1", "new-2");
+            Assert.Equivalent(new string[] { "keep", "new-1", "new-2" }, (await repo.GetPageAsync(collection, ct: Ct)).Select(c => c.Content));
         });
     }
 
@@ -195,8 +194,8 @@ public sealed class PgVectorRepositoryTests(MonolithWebApplicationFactory factor
 
             var act = () => repo.ReplaceByMetadataAsync(collection, FileIdKey, "file-1", FailingBatches(Embedded("new", "file-1", 1)), Ct);
 
-            await act.Should().ThrowAsync<InvalidOperationException>();
-            (await repo.GetPageAsync(collection, ct: Ct)).Select(c => c.Content).Should().Equal("old");
+            await Assert.ThrowsAnyAsync<InvalidOperationException>(act);
+            Assert.Equal(new string[] { "old" }, (await repo.GetPageAsync(collection, ct: Ct)).Select(c => c.Content));
         });
     }
 
@@ -211,8 +210,8 @@ public sealed class PgVectorRepositoryTests(MonolithWebApplicationFactory factor
 
             var deleted = await repo.DeleteByMetadataAsync(collection, FileIdKey, "file-1", Ct);
 
-            deleted.Should().Be(1);
-            (await repo.GetPageAsync(collection, ct: Ct)).Select(c => c.Content).Should().Equal("b");
+            Assert.Equal(1, deleted);
+            Assert.Equal(new string[] { "b" }, (await repo.GetPageAsync(collection, ct: Ct)).Select(c => c.Content));
         });
     }
 
@@ -223,16 +222,16 @@ public sealed class PgVectorRepositoryTests(MonolithWebApplicationFactory factor
 
         await WithRepositoryAsync(async repo =>
         {
-            (await repo.GetCollectionStatsAsync(collection, Ct)).Should().BeNull();
+            Assert.Null(await repo.GetCollectionStatsAsync(collection, Ct));
 
             await repo.UpsertAsync(collection, Chunk("a"), Basis(0), Ct);
             await repo.UpsertAsync(collection, Chunk("b"), Basis(1), Ct);
 
             var stats = await repo.GetCollectionStatsAsync(collection, Ct);
-            stats.Should().Be(new CollectionStats(collection, 2, CodexDbContext.EmbeddingDimensions, CodexDbContext.DistanceMetric));
+            Assert.Equal(new CollectionStats(collection, 2, CodexDbContext.EmbeddingDimensions, CodexDbContext.DistanceMetric), stats);
 
             await repo.DeleteCollectionAsync(collection, Ct);
-            (await repo.GetCollectionStatsAsync(collection, Ct)).Should().BeNull();
+            Assert.Null(await repo.GetCollectionStatsAsync(collection, Ct));
         });
     }
 
@@ -249,9 +248,9 @@ public sealed class PgVectorRepositoryTests(MonolithWebApplicationFactory factor
                 await repo.UpsertAsync(collection, Chunk($"c{i}", createdAt: start.AddMinutes(i)), Basis(i), Ct);
             }
 
-            (await repo.GetPageAsync(collection, limit: 2, ct: Ct)).Select(c => c.Content).Should().Equal("c0", "c1");
-            (await repo.GetPageAsync(collection, limit: 2, offset: 2, ct: Ct)).Select(c => c.Content).Should().Equal("c2", "c3");
-            (await repo.GetPageAsync(collection, limit: 2, offset: 4, ct: Ct)).Select(c => c.Content).Should().Equal("c4");
+            Assert.Equal(new string[] { "c0", "c1" }, (await repo.GetPageAsync(collection, limit: 2, ct: Ct)).Select(c => c.Content));
+            Assert.Equal(new string[] { "c2", "c3" }, (await repo.GetPageAsync(collection, limit: 2, offset: 2, ct: Ct)).Select(c => c.Content));
+            Assert.Equal(new string[] { "c4" }, (await repo.GetPageAsync(collection, limit: 2, offset: 4, ct: Ct)).Select(c => c.Content));
         });
     }
 

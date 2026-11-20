@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Sentium.Vigil.Features.Monitoring;
 using Xunit;
 
@@ -13,10 +12,10 @@ public sealed class IncidentStoreTests
     {
         var incident = _sut.Open("Identity", ComponentKind.Service, IncidentSeverity.Critical, ServiceStatus.Unhealthy, "down");
 
-        incident.Should().NotBeNull();
-        incident!.Status.Should().Be(IncidentStatus.Open);
-        _sut.OpenCount.Should().Be(1);
-        _sut.GetOpen("Identity").Should().NotBeNull();
+        Assert.NotNull(incident);
+        Assert.Equal(IncidentStatus.Open, incident!.Status);
+        Assert.Equal(1, _sut.OpenCount);
+        Assert.NotNull(_sut.GetOpen("Identity"));
     }
 
     [Fact]
@@ -25,8 +24,8 @@ public sealed class IncidentStoreTests
         _sut.Open("Identity", ComponentKind.Service, IncidentSeverity.Critical, ServiceStatus.Unhealthy, null);
         var second = _sut.Open("Identity", ComponentKind.Service, IncidentSeverity.Warning, ServiceStatus.Degraded, null);
 
-        second.Should().BeNull();
-        _sut.OpenCount.Should().Be(1);
+        Assert.Null(second);
+        Assert.Equal(1, _sut.OpenCount);
     }
 
     [Fact]
@@ -36,18 +35,18 @@ public sealed class IncidentStoreTests
 
         var resolved = _sut.Resolve("Redis");
 
-        resolved.Should().NotBeNull();
-        resolved!.Status.Should().Be(IncidentStatus.Resolved);
-        resolved.ResolvedAt.Should().NotBeNull();
-        resolved.DurationMs.Should().NotBeNull();
-        _sut.OpenCount.Should().Be(0);
-        _sut.GetOpen("Redis").Should().BeNull();
+        Assert.NotNull(resolved);
+        Assert.Equal(IncidentStatus.Resolved, resolved!.Status);
+        Assert.NotNull(resolved.ResolvedAt);
+        Assert.NotNull(resolved.DurationMs);
+        Assert.Equal(0, _sut.OpenCount);
+        Assert.Null(_sut.GetOpen("Redis"));
     }
 
     [Fact]
     public void Resolve_ReturnsNull_WhenNoneOpen()
     {
-        _sut.Resolve("Unknown").Should().BeNull();
+        Assert.Null(_sut.Resolve("Unknown"));
     }
 
     [Fact]
@@ -59,9 +58,9 @@ public sealed class IncidentStoreTests
 
         var all = _sut.GetAll();
 
-        all.Should().HaveCount(2);
-        all.Count(i => i.Status == IncidentStatus.Open).Should().Be(1);
-        all.Count(i => i.Status == IncidentStatus.Resolved).Should().Be(1);
+        Assert.Equal(2, all.Count);
+        Assert.Equal(1, all.Count(i => i.Status == IncidentStatus.Open));
+        Assert.Equal(1, all.Count(i => i.Status == IncidentStatus.Resolved));
     }
 
     [Fact]
@@ -72,7 +71,7 @@ public sealed class IncidentStoreTests
 
         var reopened = _sut.Open("A", ComponentKind.Service, IncidentSeverity.Critical, ServiceStatus.Unhealthy, null);
 
-        reopened.Should().NotBeNull();
-        _sut.OpenCount.Should().Be(1);
+        Assert.NotNull(reopened);
+        Assert.Equal(1, _sut.OpenCount);
     }
 }

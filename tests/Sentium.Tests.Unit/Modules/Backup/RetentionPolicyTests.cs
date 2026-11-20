@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Sentium.Backup.Archives;
 using Xunit;
 
@@ -11,7 +10,7 @@ public sealed class RetentionPolicyTests
     [Fact]
     public void NoArchives_DeletesNothing()
     {
-        RetentionPolicy.SelectForDeletion([], keepDaily: 7, keepWeekly: 4).Should().BeEmpty();
+        Assert.Empty(RetentionPolicy.SelectForDeletion([], keepDaily: 7, keepWeekly: 4));
     }
 
     [Fact]
@@ -24,7 +23,7 @@ public sealed class RetentionPolicyTests
 
         // 2026-11-15 is a Sunday: the newest backup of each of the last four ISO weeks is a Sunday, and the most
         // recent of those weeks is already covered by the seven daily ones.
-        kept.Select(a => a.CreatedAt.Day).Should().Equal(15, 14, 13, 12, 11, 10, 9, 8, 1, 25);
+        Assert.Equal(new int[] { 15, 14, 13, 12, 11, 10, 9, 8, 1, 25 }, kept.Select(a => a.CreatedAt.Day));
     }
 
     [Fact]
@@ -36,7 +35,7 @@ public sealed class RetentionPolicyTests
 
         var deleted = RetentionPolicy.SelectForDeletion([morning, noon, evening], keepDaily: 7, keepWeekly: 4);
 
-        deleted.Should().BeEquivalentTo([morning, noon]);
+        Assert.Equivalent(new[] { morning, noon }, deleted);
     }
 
     [Fact]
@@ -47,7 +46,7 @@ public sealed class RetentionPolicyTests
 
         var deleted = RetentionPolicy.SelectForDeletion([older, newest], keepDaily: 0, keepWeekly: 0);
 
-        deleted.Should().Equal(older);
+        Assert.Equal(new BackupArchive[] { older }, deleted);
     }
 
     [Fact]
@@ -57,8 +56,8 @@ public sealed class RetentionPolicyTests
 
         var deleted = RetentionPolicy.SelectForDeletion(archives, keepDaily: 3, keepWeekly: 0);
 
-        deleted.Should().HaveCount(7);
-        deleted.Should().OnlyContain(a => a.CreatedAt < Newest.AddDays(-2));
+        Assert.Equal(7, deleted.Count);
+        Assert.All(deleted, a => Assert.True(a.CreatedAt < Newest.AddDays(-2)));
     }
 
     private static BackupArchive Archive(DateTimeOffset createdAt)

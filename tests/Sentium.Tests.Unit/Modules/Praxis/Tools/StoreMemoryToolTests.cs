@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
 using Sentium.Codex.Contracts;
@@ -24,7 +23,7 @@ public sealed class StoreMemoryToolTests
 
         var result = await CreateTool().StoreAsync("My favourite colour is green.", ct);
 
-        result.Should().StartWith("Error:");
+        Assert.StartsWith("Error:", result, StringComparison.Ordinal);
         await _ingestion.DidNotReceive().IngestAsync(Arg.Any<IngestionRequest>(), Arg.Any<string?>(), Arg.Any<CancellationToken>());
     }
 

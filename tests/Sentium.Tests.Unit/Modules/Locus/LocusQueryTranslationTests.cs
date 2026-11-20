@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Sentium.Infrastructure.Extensions;
 using Sentium.Locus.Data;
@@ -32,8 +31,9 @@ public sealed class LocusQueryTranslationTests : IDisposable
 
         var sql = AssetSearch.ApplyTerms(_db.Assets, ["100%"], tree).ToQueryString();
 
-        sql.Should().Contain("LIKE").And.Contain("ESCAPE");
-        sql.Should().Contain("\"SearchText\"");
+        Assert.Contains("LIKE", sql, StringComparison.Ordinal);
+        Assert.Contains("ESCAPE", sql, StringComparison.Ordinal);
+        Assert.Contains("\"SearchText\"", sql, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -44,7 +44,7 @@ public sealed class LocusQueryTranslationTests : IDisposable
 
         var sql = AssetSearch.ApplyTerms(_db.Assets, ["garage"], tree).ToQueryString();
 
-        sql.Should().Contain("\"LocationId\" = ANY");
+        Assert.Contains("\"LocationId\" = ANY", sql, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -54,6 +54,7 @@ public sealed class LocusQueryTranslationTests : IDisposable
 
         var sql = _db.Assets.Where(a => a.Tags.Contains(tag)).ToQueryString();
 
-        sql.Should().Contain("a.\"Tags\" @>", "array containment can use the GIN index");
+        // array containment can use the GIN index
+        Assert.Contains("a.\"Tags\" @>", sql, StringComparison.Ordinal);
     }
 }

@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Sentium.Vigil.Features.Monitoring;
 using Xunit;
 
@@ -22,9 +21,9 @@ public sealed class HealthAggregatorTests
     {
         var overview = HealthAggregator.BuildOverview([Status(ServiceStatus.Healthy), Status(ServiceStatus.Healthy)], 0);
 
-        overview.OverallStatus.Should().Be(ServiceStatus.Healthy);
-        overview.Healthy.Should().Be(2);
-        overview.Total.Should().Be(2);
+        Assert.Equal(ServiceStatus.Healthy, overview.OverallStatus);
+        Assert.Equal(2, overview.Healthy);
+        Assert.Equal(2, overview.Total);
     }
 
     [Fact]
@@ -33,8 +32,8 @@ public sealed class HealthAggregatorTests
         var overview = HealthAggregator.BuildOverview(
             [Status(ServiceStatus.Healthy), Status(ServiceStatus.Degraded), Status(ServiceStatus.Unhealthy)], 2);
 
-        overview.OverallStatus.Should().Be(ServiceStatus.Unhealthy);
-        overview.OpenIncidents.Should().Be(2);
+        Assert.Equal(ServiceStatus.Unhealthy, overview.OverallStatus);
+        Assert.Equal(2, overview.OpenIncidents);
     }
 
     [Fact]
@@ -42,7 +41,7 @@ public sealed class HealthAggregatorTests
     {
         var overview = HealthAggregator.BuildOverview([Status(ServiceStatus.Healthy), Status(ServiceStatus.Degraded)], 0);
 
-        overview.OverallStatus.Should().Be(ServiceStatus.Degraded);
+        Assert.Equal(ServiceStatus.Degraded, overview.OverallStatus);
     }
 
     [Fact]
@@ -50,8 +49,8 @@ public sealed class HealthAggregatorTests
     {
         var overview = HealthAggregator.BuildOverview([], 0);
 
-        overview.OverallStatus.Should().Be(ServiceStatus.Unknown);
-        overview.Total.Should().Be(0);
+        Assert.Equal(ServiceStatus.Unknown, overview.OverallStatus);
+        Assert.Equal(0, overview.Total);
     }
 
     [Fact]
@@ -59,6 +58,6 @@ public sealed class HealthAggregatorTests
     {
         var overview = HealthAggregator.BuildOverview([Status(ServiceStatus.Healthy), Status(ServiceStatus.Unknown)], 0);
 
-        overview.OverallStatus.Should().Be(ServiceStatus.Unknown);
+        Assert.Equal(ServiceStatus.Unknown, overview.OverallStatus);
     }
 }

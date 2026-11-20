@@ -1,5 +1,4 @@
 using System.Text.Json;
-using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
@@ -36,8 +35,8 @@ public sealed class RegistrySettingsServiceTests
 
         var snapshot = await _sut.GetAsync(UserId, Ct);
 
-        snapshot.Harness.Should().Be(new HarnessSettingsSnapshot("be brief", IsBuiltInHarnessEnabled: false, IsPromptEnhancementEnabled: true));
-        snapshot.Inference.Should().Be(new InferenceSettingsSnapshot("qwen3:4b", 0.7f));
+        Assert.Equal(new HarnessSettingsSnapshot("be brief", IsBuiltInHarnessEnabled: false, IsPromptEnhancementEnabled: true), snapshot.Harness);
+        Assert.Equal(new InferenceSettingsSnapshot("qwen3:4b", 0.7f), snapshot.Inference);
     }
 
     [Fact]
@@ -48,7 +47,7 @@ public sealed class RegistrySettingsServiceTests
 
         var snapshot = await _sut.GetAsync(UserId, Ct);
 
-        snapshot.Should().Be(SettingsSnapshot.Default);
+        Assert.Equal(SettingsSnapshot.Default, snapshot);
     }
 
     [Fact]
@@ -61,7 +60,7 @@ public sealed class RegistrySettingsServiceTests
 
         var snapshot = await _sut.GetAsync(UserId, Ct);
 
-        snapshot.Harness.UserHarnessPrompt.Should().Be("custom");
-        snapshot.Inference.Should().BeNull();
+        Assert.Equal("custom", snapshot.Harness.UserHarnessPrompt);
+        Assert.Null(snapshot.Inference);
     }
 }

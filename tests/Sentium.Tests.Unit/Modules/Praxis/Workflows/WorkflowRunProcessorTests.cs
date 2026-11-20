@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -41,7 +40,7 @@ public sealed class WorkflowRunProcessorTests : IAsyncDisposable
         var trigger = await EnqueueAsync(ct);
         var frames = await ReadUntilTerminalAsync(trigger.StreamId, ct);
 
-        frames[^1].Type.Should().Be(AgentUpdateTypes.Done);
+        Assert.Equal(AgentUpdateTypes.Done, frames[^1].Type);
         await _runs.Received(1).AddAsync(Arg.Is<WorkflowRun>(r => r.Explanation == "ok" && r.TriggerPayload == trigger.ToPayloadJson()), Arg.Any<CancellationToken>());
     }
 
@@ -95,9 +94,9 @@ public sealed class WorkflowRunProcessorTests : IAsyncDisposable
         var trigger = await EnqueueAsync(ct, userId);
         await ReadUntilTerminalAsync(trigger.StreamId, ct);
 
-        seenUser.Should().Be(userId);
-        seenCorrelation.Should().Be(trigger.StreamId);
-        seenPrompt.Should().Be("test");
+        Assert.Equal(userId, seenUser);
+        Assert.Equal(trigger.StreamId, seenCorrelation);
+        Assert.Equal("test", seenPrompt);
     }
 
     [Fact]
@@ -111,8 +110,8 @@ public sealed class WorkflowRunProcessorTests : IAsyncDisposable
         var trigger = await EnqueueAsync(ct);
         var frames = await ReadUntilTerminalAsync(trigger.StreamId, ct);
 
-        frames.Should().Contain(f => f.Type == AgentUpdateTypes.Status && f.Text.StartsWith("Attempt 1 failed", StringComparison.Ordinal));
-        frames[^1].Type.Should().Be(AgentUpdateTypes.Done);
+        Assert.Contains(frames, f => f.Type == AgentUpdateTypes.Status && f.Text.StartsWith("Attempt 1 failed", StringComparison.Ordinal));
+        Assert.Equal(AgentUpdateTypes.Done, frames[^1].Type);
         await _orchestrator.Received(2).RunAsync(Arg.Any<WorkflowTrigger>(), Arg.Any<CancellationToken>());
     }
 
@@ -127,7 +126,7 @@ public sealed class WorkflowRunProcessorTests : IAsyncDisposable
         await WaitUntilAsync(() => _registry.Cancel(trigger.StreamId), ct);
         var frames = await ReadUntilTerminalAsync(trigger.StreamId, ct);
 
-        frames[^1].Type.Should().Be(AgentUpdateTypes.Cancelled);
+        Assert.Equal(AgentUpdateTypes.Cancelled, frames[^1].Type);
         await _runs.Received(1).AddAsync(Arg.Is<WorkflowRun>(r => r.Explanation.StartsWith("[CANCELLED] Stopped by user") && r.Title == "test"), Arg.Any<CancellationToken>());
     }
 
@@ -141,7 +140,7 @@ public sealed class WorkflowRunProcessorTests : IAsyncDisposable
         var trigger = await EnqueueAsync(ct);
         var frames = await ReadUntilTerminalAsync(trigger.StreamId, ct);
 
-        frames[^1].Type.Should().Be(AgentUpdateTypes.Error);
+        Assert.Equal(AgentUpdateTypes.Error, frames[^1].Type);
         await _orchestrator.Received(1).RunAsync(Arg.Any<WorkflowTrigger>(), Arg.Any<CancellationToken>());
         await _runs.Received(1).AddAsync(Arg.Is<WorkflowRun>(r => r.Explanation.StartsWith("[TIMEOUT]")), Arg.Any<CancellationToken>());
     }
@@ -159,8 +158,8 @@ public sealed class WorkflowRunProcessorTests : IAsyncDisposable
 
         await _processor!.StopAsync(ct);
 
-        (await ReadUntilTerminalAsync(running.StreamId, ct))[^1].Type.Should().Be(AgentUpdateTypes.Error);
-        (await ReadUntilTerminalAsync(queued.StreamId, ct))[^1].Type.Should().Be(AgentUpdateTypes.Error);
+        Assert.Equal(AgentUpdateTypes.Error, (await ReadUntilTerminalAsync(running.StreamId, ct))[^1].Type);
+        Assert.Equal(AgentUpdateTypes.Error, (await ReadUntilTerminalAsync(queued.StreamId, ct))[^1].Type);
         await _runs.Received(1).AddAsync(Arg.Is<WorkflowRun>(r => r.Explanation.StartsWith("[CANCELLED] Interrupted by application shutdown")), Arg.Any<CancellationToken>());
         await _runs.Received(1).AddAsync(Arg.Is<WorkflowRun>(r => r.Explanation.StartsWith("[CANCELLED] Not started")), Arg.Any<CancellationToken>());
     }

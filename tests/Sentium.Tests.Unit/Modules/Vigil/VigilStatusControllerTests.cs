@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
 using Sentium.Vigil.Features.Monitoring;
@@ -40,8 +39,7 @@ public sealed class VigilStatusControllerTests
 
         var result = _controller.GetAll();
 
-        result.Should().BeOfType<OkObjectResult>()
-            .Which.Value.Should().BeEquivalentTo(statuses);
+        Assert.Equivalent(statuses, Assert.IsType<OkObjectResult>(result).Value);
     }
 
     [Fact]
@@ -54,9 +52,9 @@ public sealed class VigilStatusControllerTests
 
         var result = await _controller.Get("agentruntime", CancellationToken.None);
 
-        var detail = result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeOfType<ServiceHealthDetail>().Subject;
-        detail.Status.Should().Be(status);
-        detail.Samples.Should().BeEquivalentTo(samples);
+        var detail = Assert.IsType<ServiceHealthDetail>(Assert.IsType<OkObjectResult>(result).Value);
+        Assert.Equal(status, detail.Status);
+        Assert.Equivalent(samples, detail.Samples);
     }
 
     [Fact]
@@ -66,7 +64,7 @@ public sealed class VigilStatusControllerTests
 
         var result = await _controller.Get("nonexistent", CancellationToken.None);
 
-        result.Should().BeOfType<NotFoundResult>();
+        Assert.IsType<NotFoundResult>(result);
     }
 
     [Fact]
@@ -81,10 +79,10 @@ public sealed class VigilStatusControllerTests
 
         var result = _controller.GetOverview();
 
-        var overview = result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeOfType<SystemHealthOverview>().Subject;
-        overview.Total.Should().Be(2);
-        overview.Unhealthy.Should().Be(1);
-        overview.OverallStatus.Should().Be(ServiceStatus.Unhealthy);
-        overview.OpenIncidents.Should().Be(1);
+        var overview = Assert.IsType<SystemHealthOverview>(Assert.IsType<OkObjectResult>(result).Value);
+        Assert.Equal(2, overview.Total);
+        Assert.Equal(1, overview.Unhealthy);
+        Assert.Equal(ServiceStatus.Unhealthy, overview.OverallStatus);
+        Assert.Equal(1, overview.OpenIncidents);
     }
 }

@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Sentium.Nuntius.Contracts;
@@ -66,18 +65,19 @@ public sealed class MonitoringWorkerNotificationTests
             sent = [.. _sent];
         }
 
-        sent.Should().HaveCount(2);
-        sent.Should().OnlyContain(s => s.Recipient == NotificationRecipient.Sovereigns && s.Message.Category == NotificationCategories.SystemIncident);
+        Assert.Equal(2, sent.Count);
+        Assert.All(sent, s => Assert.True(s.Recipient == NotificationRecipient.Sovereigns && s.Message.Category == NotificationCategories.SystemIncident));
 
         var (_, opened) = sent[0];
-        opened.Severity.Should().Be(NotificationSeverity.Critical);
-        opened.Title.Should().Contain(Target);
-        opened.Link.Should().Be("/vigil");
+        Assert.Equal(NotificationSeverity.Critical, opened.Severity);
+        Assert.Contains(Target, opened.Title, StringComparison.Ordinal);
+        Assert.Equal("/vigil", opened.Link);
 
         var (_, resolved) = sent[1];
-        resolved.Severity.Should().Be(NotificationSeverity.Info);
-        resolved.Title.Should().Contain(Target);
-        resolved.DedupeKey.Should().NotBe(opened.DedupeKey, "a recovery must not overwrite the unread outage");
+        Assert.Equal(NotificationSeverity.Info, resolved.Severity);
+        Assert.Contains(Target, resolved.Title, StringComparison.Ordinal);
+        // a recovery must not overwrite the unread outage
+        Assert.NotEqual(opened.DedupeKey, resolved.DedupeKey);
     }
 
     [Fact]
@@ -101,9 +101,9 @@ public sealed class MonitoringWorkerNotificationTests
 
         lock (_sent)
         {
-            _sent.Should().HaveCount(2);
-            _sent.Should().OnlyContain(s => s.Message.Category == NotificationCategories.SystemBackup
-                && s.Message.DedupeKey!.StartsWith(NotificationCategories.SystemBackup + ":", StringComparison.Ordinal));
+            Assert.Equal(2, _sent.Count);
+            Assert.All(_sent, s => Assert.True(s.Message.Category == NotificationCategories.SystemBackup
+                && s.Message.DedupeKey!.StartsWith(NotificationCategories.SystemBackup + ":", StringComparison.Ordinal)));
         }
     }
 

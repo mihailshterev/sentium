@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Sentium.Mcp.Entities;
 using Sentium.Mcp.Features.Servers;
 using Xunit;
@@ -25,7 +24,7 @@ public sealed class McpServerRequestValidatorTests
     {
         var result = _validator.Validate(Http(endpoint));
 
-        result.IsValid.Should().Be(valid, string.Join("; ", result.Errors.Select(e => e.ErrorMessage)));
+        Assert.True(result.IsValid == valid, string.Join("; ", result.Errors.Select(e => e.ErrorMessage)));
     }
 
     [Theory]
@@ -34,7 +33,7 @@ public sealed class McpServerRequestValidatorTests
     [InlineData("mcp/time:latest", false)]
     [InlineData("mcp/time", false)]
     public void SandboxImage_MustBePinnedByDigest(string image, bool valid) =>
-        _validator.Validate(Stdio(image)).IsValid.Should().Be(valid);
+        Assert.Equal(valid, _validator.Validate(Stdio(image)).IsValid);
 
     [Theory]
     [InlineData("Authorization", true)]
@@ -46,21 +45,21 @@ public sealed class McpServerRequestValidatorTests
     [InlineData("Bad Header", false)]
     public void HttpSecrets_AreHeaders_NotReservedTransportHeaders(string header, bool valid)
     {
-        _validator.Validate(Http("http://192.168.1.10/mcp") with { Secrets = new Dictionary<string, string> { [header] = "value" } })
-            .IsValid.Should().Be(valid);
+        Assert.Equal(valid, _validator.Validate(Http("http://192.168.1.10/mcp") with { Secrets = new Dictionary<string, string> { [header] = "value" } })
+            .IsValid);
     }
 
     [Fact]
     public void Secrets_RejectMultiLineValues_AndStdioSecretsMustBeEnvironmentNames()
     {
-        _validator.Validate(Http("http://192.168.1.10/mcp") with { Secrets = new Dictionary<string, string> { ["Authorization"] = "a\r\nX-Injected: 1" } })
-            .IsValid.Should().BeFalse();
+        Assert.False(_validator.Validate(Http("http://192.168.1.10/mcp") with { Secrets = new Dictionary<string, string> { ["Authorization"] = "a\r\nX-Injected: 1" } })
+            .IsValid);
 
-        _validator.Validate(Stdio("mcp/time@sha256:" + Digest) with { Secrets = new Dictionary<string, string> { ["API_KEY"] = "v" } })
-            .IsValid.Should().BeTrue();
+        Assert.True(_validator.Validate(Stdio("mcp/time@sha256:" + Digest) with { Secrets = new Dictionary<string, string> { ["API_KEY"] = "v" } })
+            .IsValid);
 
-        _validator.Validate(Stdio("mcp/time@sha256:" + Digest) with { Secrets = new Dictionary<string, string> { ["api-key"] = "v" } })
-            .IsValid.Should().BeFalse();
+        Assert.False(_validator.Validate(Stdio("mcp/time@sha256:" + Digest) with { Secrets = new Dictionary<string, string> { ["api-key"] = "v" } })
+            .IsValid);
     }
 
     [Fact]
@@ -68,8 +67,8 @@ public sealed class McpServerRequestValidatorTests
     {
         var update = new UpdateMcpServerRequest("Docs", null, Endpoint: null, Image: "mcp/time@sha256:" + Digest, Args: null, Network: null, MemoryMb: null, CpuLimit: null, Secrets: null, Enabled: true);
 
-        McpRequestRules.ValidateForTransport(McpTransport.Http, update).Should().Contain("endpoint");
-        McpRequestRules.ValidateForTransport(McpTransport.SandboxStdio, update).Should().BeNull();
+        Assert.Contains("endpoint", McpRequestRules.ValidateForTransport(McpTransport.Http, update), StringComparison.Ordinal);
+        Assert.Null(McpRequestRules.ValidateForTransport(McpTransport.SandboxStdio, update));
     }
 
     private static CreateMcpServerRequest Http(string endpoint) =>

@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -75,12 +74,13 @@ public sealed class SentinelInventoryToolTests
             (_, _) => ValueTask.FromResult<object?>("result"),
             Ct);
 
-        result.Should().Be("result");
-        _captured.Should().NotBeNull();
-        _captured!.SkillName.Should().Be(toolName);
-        _captured.ResourceType.Should().Be("Inventory");
-        _captured.Action.Should().Be(expectedAction);
-        _captured.ResourceId.Should().Be(value);
-        _captured.Metadata.Should().BeEmpty("reads and searches never forward an egress payload");
+        Assert.Equal("result", result);
+        Assert.NotNull(_captured);
+        Assert.Equal(toolName, _captured!.SkillName);
+        Assert.Equal("Inventory", _captured.ResourceType);
+        Assert.Equal(expectedAction, _captured.Action);
+        Assert.Equal(value, _captured.ResourceId);
+        // reads and searches never forward an egress payload
+        Assert.Empty(_captured.Metadata);
     }
 }

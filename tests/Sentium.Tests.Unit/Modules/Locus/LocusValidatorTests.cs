@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Sentium.Locus.Features.Assets;
 using Sentium.Locus.Features.Locations;
 using Xunit;
@@ -12,9 +11,9 @@ public sealed class LocusValidatorTests
     {
         var validator = new SaveLocationRequestValidator();
 
-        validator.Validate(new SaveLocationRequest("  ", null, null, null)).IsValid.Should().BeFalse();
-        validator.Validate(new SaveLocationRequest("Garage", null, null, null)).IsValid.Should().BeTrue();
-        validator.Validate(new SaveLocationRequest(new string('x', 101), null, null, null)).IsValid.Should().BeFalse();
+        Assert.False(validator.Validate(new SaveLocationRequest("  ", null, null, null)).IsValid);
+        Assert.True(validator.Validate(new SaveLocationRequest("Garage", null, null, null)).IsValid);
+        Assert.False(validator.Validate(new SaveLocationRequest(new string('x', 101), null, null, null)).IsValid);
     }
 
     [Fact]
@@ -22,9 +21,9 @@ public sealed class LocusValidatorTests
     {
         var validator = new SaveAssetRequestValidator();
 
-        validator.Validate(new SaveAssetRequest("Drill", Guid.NewGuid())).IsValid.Should().BeTrue();
-        validator.Validate(new SaveAssetRequest("", Guid.NewGuid())).IsValid.Should().BeFalse();
-        validator.Validate(new SaveAssetRequest("Drill", Guid.Empty)).IsValid.Should().BeFalse();
+        Assert.True(validator.Validate(new SaveAssetRequest("Drill", Guid.NewGuid())).IsValid);
+        Assert.False(validator.Validate(new SaveAssetRequest("", Guid.NewGuid())).IsValid);
+        Assert.False(validator.Validate(new SaveAssetRequest("Drill", Guid.Empty)).IsValid);
     }
 
     [Fact]
@@ -33,10 +32,10 @@ public sealed class LocusValidatorTests
         var validator = new SaveAssetRequestValidator();
         var location = Guid.NewGuid();
 
-        validator.Validate(new SaveAssetRequest("Drill", location, Tags: ["tools", "power"])).IsValid.Should().BeTrue();
-        validator.Validate(new SaveAssetRequest("Drill", location, Tags: ["a,b"])).IsValid.Should().BeFalse();
-        validator.Validate(new SaveAssetRequest("Drill", location, Tags: [new string('t', 33)])).IsValid.Should().BeFalse();
-        validator.Validate(new SaveAssetRequest("Drill", location, Tags: [.. Enumerable.Range(0, 21).Select(i => $"t{i}")])).IsValid.Should().BeFalse();
+        Assert.True(validator.Validate(new SaveAssetRequest("Drill", location, Tags: ["tools", "power"])).IsValid);
+        Assert.False(validator.Validate(new SaveAssetRequest("Drill", location, Tags: ["a,b"])).IsValid);
+        Assert.False(validator.Validate(new SaveAssetRequest("Drill", location, Tags: [new string('t', 33)])).IsValid);
+        Assert.False(validator.Validate(new SaveAssetRequest("Drill", location, Tags: [.. Enumerable.Range(0, 21).Select(i => $"t{i}")])).IsValid);
     }
 
     [Fact]
@@ -46,7 +45,7 @@ public sealed class LocusValidatorTests
 
         var request = new SaveAssetRequest("Drill", Guid.NewGuid(), PurchaseDate: new DateOnly(2025, 5, 1), LastServicedDate: new DateOnly(2024, 1, 1));
 
-        validator.Validate(request).IsValid.Should().BeFalse();
+        Assert.False(validator.Validate(request).IsValid);
     }
 
     [Fact]
@@ -54,8 +53,8 @@ public sealed class LocusValidatorTests
     {
         var validator = new AssetSearchQueryValidator();
 
-        validator.Validate(new AssetSearchQuery { PageSize = 50 }).IsValid.Should().BeTrue();
-        validator.Validate(new AssetSearchQuery { PageSize = 500 }).IsValid.Should().BeFalse();
-        validator.Validate(new AssetSearchQuery { Q = new string('q', 201) }).IsValid.Should().BeFalse();
+        Assert.True(validator.Validate(new AssetSearchQuery { PageSize = 50 }).IsValid);
+        Assert.False(validator.Validate(new AssetSearchQuery { PageSize = 500 }).IsValid);
+        Assert.False(validator.Validate(new AssetSearchQuery { Q = new string('q', 201) }).IsValid);
     }
 }

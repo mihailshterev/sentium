@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using NSubstitute;
@@ -52,14 +51,16 @@ public sealed class KnowledgeBaseSearchToolTests
 
         var result = await CreateTool().SearchAsync("clean architecture", ct: ct);
 
-        result.Should().Contain("kb snippet").And.Contain("learning snippet").And.Contain("memory snippet");
-        result.Should().Contain("Knowledge Base").And.Contain("Captured Learning").And.Contain("Saved Memory");
+        Assert.Contains("kb snippet", result, StringComparison.Ordinal);
+        Assert.Contains("learning snippet", result, StringComparison.Ordinal);
+        Assert.Contains("memory snippet", result, StringComparison.Ordinal);
+        Assert.Contains("Knowledge Base", result, StringComparison.Ordinal);
+        Assert.Contains("Captured Learning", result, StringComparison.Ordinal);
+        Assert.Contains("Saved Memory", result, StringComparison.Ordinal);
 
         // Highest score first: learning (0.95) > kb (0.90) > memory (0.80).
-        result.IndexOf("learning snippet", StringComparison.Ordinal)
-            .Should().BeLessThan(result.IndexOf("kb snippet", StringComparison.Ordinal));
-        result.IndexOf("kb snippet", StringComparison.Ordinal)
-            .Should().BeLessThan(result.IndexOf("memory snippet", StringComparison.Ordinal));
+        Assert.True(result.IndexOf("learning snippet", StringComparison.Ordinal) < result.IndexOf("kb snippet", StringComparison.Ordinal));
+        Assert.True(result.IndexOf("kb snippet", StringComparison.Ordinal) < result.IndexOf("memory snippet", StringComparison.Ordinal));
 
         foreach (var collection in KnowledgeCollections.All)
         {
@@ -77,7 +78,7 @@ public sealed class KnowledgeBaseSearchToolTests
 
         var result = await CreateTool().SearchAsync("query", ct: ct);
 
-        result.Should().Contain("kb snippet");
+        Assert.Contains("kb snippet", result, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -87,7 +88,7 @@ public sealed class KnowledgeBaseSearchToolTests
 
         var result = await CreateTool().SearchAsync("query", ct: ct);
 
-        result.Should().Contain("No relevant information");
+        Assert.Contains("No relevant information", result, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -100,8 +101,9 @@ public sealed class KnowledgeBaseSearchToolTests
 
         var result = await CreateTool().SearchAsync("x", 1, ct: ct);
 
-        result.Should().Contain("Snippet 1").And.NotContain("Snippet 2");
-        result.Should().Contain("learning snippet");
-        result.Should().NotContain("memory snippet");
+        Assert.Contains("Snippet 1", result, StringComparison.Ordinal);
+        Assert.DoesNotContain("Snippet 2", result, StringComparison.Ordinal);
+        Assert.Contains("learning snippet", result, StringComparison.Ordinal);
+        Assert.DoesNotContain("memory snippet", result, StringComparison.Ordinal);
     }
 }

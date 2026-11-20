@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Sentium.Infrastructure.Security;
 using Sentium.Nuntius.Contracts;
@@ -42,15 +41,15 @@ public sealed class TempusEntriesTests(MonolithWebApplicationFactory factory) : 
         var task = await CreateAsync(client, Task("Pay rent", yesterday));
 
         var month = await MonthAsync(client, yesterday.Year, yesterday.Month);
-        month.Tasks.Single(t => t.Id == calendarEvent.Id).IsPast.Should().BeTrue();
-        month.Tasks.Single(t => t.Id == task.Id).IsPast.Should().BeFalse();
+        Assert.True(month.Tasks.Single(t => t.Id == calendarEvent.Id).IsPast);
+        Assert.False(month.Tasks.Single(t => t.Id == task.Id).IsPast);
 
         var upcoming = await UpcomingAsync(client);
-        upcoming.Overdue.Select(t => t.Id).Should().Equal(task.Id);
+        Assert.Equal(new Guid[] { task.Id }, upcoming.Overdue.Select(t => t.Id));
 
         var tick = await client.PutAsJsonAsync($"{Tasks}/{task.Id}/status", new SetTimelineTaskStatusRequest(TimelineTaskStatus.Done), Ct);
-        tick.StatusCode.Should().Be(HttpStatusCode.OK);
-        (await UpcomingAsync(client)).Overdue.Should().BeEmpty();
+        Assert.Equal(HttpStatusCode.OK, tick.StatusCode);
+        Assert.Empty((await UpcomingAsync(client)).Overdue);
     }
 
     [Fact]
@@ -60,10 +59,10 @@ public sealed class TempusEntriesTests(MonolithWebApplicationFactory factory) : 
         var calendarEvent = await CreateAsync(client, Event("Wedding", Today.AddDays(3)));
 
         var tick = await client.PutAsJsonAsync($"{Tasks}/{calendarEvent.Id}/status", new SetTimelineTaskStatusRequest(TimelineTaskStatus.Done), Ct);
-        tick.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        Assert.Equal(HttpStatusCode.BadRequest, tick.StatusCode);
 
         var withPriority = await client.PostAsJsonAsync(Tasks, Event("Party", Today) with { Priority = TimelineTaskPriority.High }, Ct);
-        withPriority.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        Assert.Equal(HttpStatusCode.BadRequest, withPriority.StatusCode);
     }
 
     [Fact]
@@ -75,8 +74,8 @@ public sealed class TempusEntriesTests(MonolithWebApplicationFactory factory) : 
         var past = await CreateAsync(client, Event("Holiday", null, lastMonth.Year, lastMonth.Month));
         var current = await CreateAsync(client, Event("Festival", null, Today.Year, Today.Month));
 
-        (await MonthAsync(client, lastMonth.Year, lastMonth.Month)).Tasks.Single(t => t.Id == past.Id).IsPast.Should().BeTrue();
-        (await MonthAsync(client, Today.Year, Today.Month)).Tasks.Single(t => t.Id == current.Id).IsPast.Should().BeFalse();
+        Assert.True((await MonthAsync(client, lastMonth.Year, lastMonth.Month)).Tasks.Single(t => t.Id == past.Id).IsPast);
+        Assert.False((await MonthAsync(client, Today.Year, Today.Month)).Tasks.Single(t => t.Id == current.Id).IsPast);
     }
 
     [Fact]
@@ -91,10 +90,12 @@ public sealed class TempusEntriesTests(MonolithWebApplicationFactory factory) : 
         var after = await YearAsync(client, day.Year);
         var month = after.Months.Single(m => m.Month == day.Month);
 
-        month.TaskCount.Should().Be(before.TaskCount);
-        month.OpenCount.Should().Be(before.OpenCount);
-        month.EventCount.Should().Be(1);
-        after.Days.Single(d => d.Date == day).Should().Match<DaySummaryDto>(d => d.Open == 1 && d.Events == 1);
+        Assert.Equal(before.TaskCount, month.TaskCount);
+        Assert.Equal(before.OpenCount, month.OpenCount);
+        Assert.Equal(1, month.EventCount);
+        var summary = after.Days.Single(d => d.Date == day);
+        Assert.Equal(1, summary.Open);
+        Assert.Equal(1, summary.Events);
     }
 
     [Fact]
@@ -103,23 +104,23 @@ public sealed class TempusEntriesTests(MonolithWebApplicationFactory factory) : 
         var client = ClientFor(Guid.NewGuid());
         var first = await CreateAsync(client, Task("Water plants", Today.AddDays(1)) with { Repeat = Weekly() });
 
-        first.SeriesId.Should().NotBeNull();
-        first.Repeat!.Frequency.Should().Be(TimelineRepeatFrequency.Weekly);
+        Assert.NotNull(first.SeriesId);
+        Assert.Equal(TimelineRepeatFrequency.Weekly, first.Repeat!.Frequency);
 
         var occurrences = await OccurrencesAsync(client, first.SeriesId!.Value);
-        occurrences.Should().HaveCountGreaterThanOrEqualTo(52);
-        occurrences[^1].Date.Should().BeOnOrAfter(Today.AddMonths(12).AddDays(-7));
+        Assert.True(occurrences.Count >= 52);
+        Assert.True(occurrences[^1].Date >= Today.AddMonths(12).AddDays(-7));
 
         var third = occurrences[2];
         var sixth = occurrences[5];
         await client.PutAsJsonAsync($"{Tasks}/{sixth.Id}/status", new SetTimelineTaskStatusRequest(TimelineTaskStatus.Done), Ct);
-        (await OccurrencesAsync(client, first.SeriesId.Value)).Count(o => o.Status == TimelineTaskStatus.Done).Should().Be(1);
+        Assert.Equal(1, (await OccurrencesAsync(client, first.SeriesId.Value)).Count(o => o.Status == TimelineTaskStatus.Done));
 
         var delete = await client.DeleteAsync($"{Tasks}/{third.Id}?scope=Following", Ct);
-        delete.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        Assert.Equal(HttpStatusCode.NoContent, delete.StatusCode);
 
         var left = await OccurrencesAsync(client, first.SeriesId.Value);
-        left.Select(o => o.Id).Should().Equal(occurrences[0].Id, occurrences[1].Id, sixth.Id);
+        Assert.Equal(new Guid[] { occurrences[0].Id, occurrences[1].Id, sixth.Id }, left.Select(o => o.Id));
     }
 
     [Fact]
@@ -129,10 +130,10 @@ public sealed class TempusEntriesTests(MonolithWebApplicationFactory factory) : 
         var first = await CreateAsync(client, Task("Gym", Today.AddDays(1)) with { Repeat = Weekly() });
         var second = (await OccurrencesAsync(client, first.SeriesId!.Value))[1];
 
-        (await client.DeleteAsync($"{Tasks}/{second.Id}?scope=One", Ct)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        Assert.Equal(HttpStatusCode.NoContent, (await client.DeleteAsync($"{Tasks}/{second.Id}?scope=One", Ct)).StatusCode);
         await MaterializeAsync(DateTimeOffset.UtcNow.AddDays(10));
 
-        (await OccurrencesAsync(client, first.SeriesId.Value)).Should().NotContain(o => o.OccurrenceDate == second.OccurrenceDate);
+        Assert.DoesNotContain(await OccurrencesAsync(client, first.SeriesId.Value), o => o.OccurrenceDate == second.OccurrenceDate);
     }
 
     [Fact]
@@ -145,15 +146,16 @@ public sealed class TempusEntriesTests(MonolithWebApplicationFactory factory) : 
 
         var renamed = Task("Team sync", fourth.Date) with { Repeat = Weekly() };
         var response = await client.PutAsJsonAsync($"{Tasks}/{fourth.Id}?scope=Following", renamed, Ct);
-        response.StatusCode.Should().Be(HttpStatusCode.OK, await response.Content.ReadAsStringAsync(Ct));
+        Assert.True(response.StatusCode == HttpStatusCode.OK, $"{response.StatusCode}: {await response.Content.ReadAsStringAsync(Ct)}");
         var edited = (await response.Content.ReadFromJsonAsync<TimelineTaskDto>(Ct))!;
 
-        edited.SeriesId.Should().NotBe(first.SeriesId!.Value);
-        (await OccurrencesAsync(client, first.SeriesId.Value)).Select(o => o.Title).Should().Equal("Standup", "Standup", "Standup");
+        Assert.NotEqual(first.SeriesId!.Value, edited.SeriesId);
+        Assert.Equal(new string[] { "Standup", "Standup", "Standup" }, (await OccurrencesAsync(client, first.SeriesId.Value)).Select(o => o.Title));
 
         var renamedOccurrences = await OccurrencesAsync(client, edited.SeriesId!.Value);
-        renamedOccurrences.Should().HaveCountGreaterThan(40).And.OnlyContain(o => o.Title == "Team sync");
-        renamedOccurrences[0].Id.Should().Be(fourth.Id);
+        Assert.True(renamedOccurrences.Count > 40);
+        Assert.All(renamedOccurrences, o => Assert.True(o.Title == "Team sync"));
+        Assert.Equal(fourth.Id, renamedOccurrences[0].Id);
     }
 
     [Fact]
@@ -166,9 +168,9 @@ public sealed class TempusEntriesTests(MonolithWebApplicationFactory factory) : 
         var response = await client.PutAsJsonAsync($"{Tasks}/{second.Id}?scope=One", Task("Laundry + ironing", second.Date), Ct);
         var edited = (await response.Content.ReadFromJsonAsync<TimelineTaskDto>(Ct))!;
 
-        edited.IsDetached.Should().BeTrue();
-        edited.SeriesId.Should().Be(first.SeriesId);
-        (await OccurrencesAsync(client, first.SeriesId.Value)).Count(o => o.Title == "Laundry").Should().BeGreaterThan(40);
+        Assert.True(edited.IsDetached);
+        Assert.Equal(first.SeriesId, edited.SeriesId);
+        Assert.True((await OccurrencesAsync(client, first.SeriesId.Value)).Count(o => o.Title == "Laundry") > 40);
     }
 
     [Fact]
@@ -180,10 +182,10 @@ public sealed class TempusEntriesTests(MonolithWebApplicationFactory factory) : 
 
         await MaterializeAsync(DateTimeOffset.UtcNow);
         await MaterializeAsync(DateTimeOffset.UtcNow);
-        (await OccurrencesAsync(client, first.SeriesId.Value)).Should().HaveCount(count);
+        Assert.Equal(count, (await OccurrencesAsync(client, first.SeriesId.Value)).Count);
 
         await MaterializeAsync(DateTimeOffset.UtcNow.AddDays(14));
-        (await OccurrencesAsync(client, first.SeriesId.Value)).Should().HaveCount(count + 2);
+        Assert.Equal(count + 2, (await OccurrencesAsync(client, first.SeriesId.Value)).Count);
     }
 
     [Fact]
@@ -196,8 +198,8 @@ public sealed class TempusEntriesTests(MonolithWebApplicationFactory factory) : 
         await MaterializeAsync(DateTimeOffset.UtcNow.AddDays(14));
 
         var month = await MonthAsync(other, first.Year, first.Month);
-        month.Tasks.Should().NotContain(t => t.SeriesId == first.SeriesId);
-        (await other.GetAsync($"{Tasks}/{first.Id}", Ct)).StatusCode.Should().Be(HttpStatusCode.NotFound);
+        Assert.DoesNotContain(month.Tasks, t => t.SeriesId == first.SeriesId);
+        Assert.Equal(HttpStatusCode.NotFound, (await other.GetAsync($"{Tasks}/{first.Id}", Ct)).StatusCode);
     }
 
     [Fact]
@@ -212,17 +214,17 @@ public sealed class TempusEntriesTests(MonolithWebApplicationFactory factory) : 
         var dueAt = new DateTimeOffset(day.AddDays(-1).ToDateTime(new TimeOnly(8, 0)), TimeSpan.Zero);
 
         await SweepAsync(dueAt.AddMinutes(-1));
-        (await ReminderInboxAsync(client)).Should().BeEmpty();
+        Assert.Empty(await ReminderInboxAsync(client));
 
         await SweepAsync(dueAt);
         await SweepAsync(dueAt.AddMinutes(5));
 
-        var reminder = (await ReminderInboxAsync(client)).Should().ContainSingle().Subject;
-        reminder.Title.Should().Be("Dentist");
-        reminder.Occurrences.Should().Be(1);
-        reminder.Link.Should().Contain($"day={day:yyyy-MM-dd}");
-        (await ReminderInboxAsync(bystander)).Should().BeEmpty();
-        task.ReminderOffsetMinutes.Should().Be(ReminderSchedule.DayBefore);
+        var reminder = Assert.Single(await ReminderInboxAsync(client));
+        Assert.Equal("Dentist", reminder.Title);
+        Assert.Equal(1, reminder.Occurrences);
+        Assert.Contains($"day={day:yyyy-MM-dd}", reminder.Link, StringComparison.Ordinal);
+        Assert.Empty(await ReminderInboxAsync(bystander));
+        Assert.Equal(ReminderSchedule.DayBefore, task.ReminderOffsetMinutes);
     }
 
     [Fact]
@@ -235,7 +237,7 @@ public sealed class TempusEntriesTests(MonolithWebApplicationFactory factory) : 
         await client.PutAsJsonAsync($"{Tasks}/{task.Id}/status", new SetTimelineTaskStatusRequest(TimelineTaskStatus.Done), Ct);
         await SweepAsync(new DateTimeOffset(day.ToDateTime(new TimeOnly(9, 0)), TimeSpan.Zero));
 
-        (await ReminderInboxAsync(client)).Should().BeEmpty();
+        Assert.Empty(await ReminderInboxAsync(client));
     }
 
     [Fact]
@@ -248,7 +250,7 @@ public sealed class TempusEntriesTests(MonolithWebApplicationFactory factory) : 
         // The system was off from before the Reminder until after the event.
         await SweepAsync(new DateTimeOffset(day.AddDays(2).ToDateTime(TimeOnly.MinValue), TimeSpan.Zero));
 
-        (await ReminderInboxAsync(client)).Should().BeEmpty();
+        Assert.Empty(await ReminderInboxAsync(client));
     }
 
     [Fact]
@@ -262,8 +264,8 @@ public sealed class TempusEntriesTests(MonolithWebApplicationFactory factory) : 
         // Other tests' Reminders may fire too; only this user's Inbox is checked for the count.
         var sent = await System.Threading.Tasks.Task.WhenAll(SweepAsync(now), SweepAsync(now));
 
-        sent.Sum().Should().BeGreaterThanOrEqualTo(1);
-        (await ReminderInboxAsync(client)).Should().ContainSingle().Which.Occurrences.Should().Be(1);
+        Assert.True(sent.Sum() >= 1);
+        Assert.Equal(1, Assert.Single(await ReminderInboxAsync(client)).Occurrences);
     }
 
     [Fact]
@@ -274,12 +276,12 @@ public sealed class TempusEntriesTests(MonolithWebApplicationFactory factory) : 
         await CreateAsync(client, Task("Vet", day) with { ReminderOffsetMinutes = ReminderSchedule.OnTheDay });
 
         var put = await client.PutAsJsonAsync("/api/registry/settings/calendar-user", new { timeZone = "Europe/Sofia" }, Ct);
-        put.StatusCode.Should().Be(HttpStatusCode.OK, await put.Content.ReadAsStringAsync(Ct));
+        Assert.True(put.StatusCode == HttpStatusCode.OK, $"{put.StatusCode}: {await put.Content.ReadAsStringAsync(Ct)}");
 
         // 08:00 in Sofia is 05:00 or 06:00 UTC, before the 08:00 UTC the Reminder was first armed for.
         await SweepAsync(new DateTimeOffset(day.ToDateTime(new TimeOnly(6, 0)), TimeSpan.Zero));
 
-        (await ReminderInboxAsync(client)).Should().ContainSingle();
+        Assert.Single(await ReminderInboxAsync(client));
     }
 
     [Fact]
@@ -292,10 +294,10 @@ public sealed class TempusEntriesTests(MonolithWebApplicationFactory factory) : 
         var withoutKind = new { title = "Longer trip", year = day.Year, month = day.Month, date = day, endDate = day.AddDays(4) };
         var response = await client.PutAsJsonAsync($"{Tasks}/{trip.Id}", withoutKind, Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.OK, await response.Content.ReadAsStringAsync(Ct));
+        Assert.True(response.StatusCode == HttpStatusCode.OK, $"{response.StatusCode}: {await response.Content.ReadAsStringAsync(Ct)}");
         var updated = (await response.Content.ReadFromJsonAsync<TimelineTaskDto>(Ct))!;
-        updated.Kind.Should().Be(TimelineEntryKind.CalendarEvent);
-        updated.EndDate.Should().Be(day.AddDays(4));
+        Assert.Equal(TimelineEntryKind.CalendarEvent, updated.Kind);
+        Assert.Equal(day.AddDays(4), updated.EndDate);
     }
 
     [Fact]
@@ -307,7 +309,7 @@ public sealed class TempusEntriesTests(MonolithWebApplicationFactory factory) : 
         var asEvent = Event("Pay bills", Today.AddDays(2));
         var response = await client.PutAsJsonAsync($"{Tasks}/{task.Id}", asEvent, Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
@@ -319,7 +321,7 @@ public sealed class TempusEntriesTests(MonolithWebApplicationFactory factory) : 
 
         var overview = await Agents.GetOverviewAsync(userId, upcomingDays: 3, ct: Ct);
 
-        overview.UpcomingDays.Select(d => d.Events).Should().Equal(1, 1, 0);
+        Assert.Equal(new int[] { 1, 1, 0 }, overview.UpcomingDays.Select(d => d.Events));
     }
 
     [Fact]
@@ -334,18 +336,18 @@ public sealed class TempusEntriesTests(MonolithWebApplicationFactory factory) : 
             "TimelinePlanner",
             new TimelineEventProposal("Maria's birthday", null, day.Year, day.Month, day, new TimeOnly(18, 0), null, ["family"], "She mentioned it."),
             Ct);
-        proposal.IsSuccess.Should().BeTrue(proposal.Error);
+        Assert.True(proposal.IsSuccess, proposal.Error);
 
         var accept = await client.PostAsync($"/api/tempus/proposals/{proposal.Value!.ProposalId}/accept", null, Ct);
-        accept.StatusCode.Should().Be(HttpStatusCode.OK, await accept.Content.ReadAsStringAsync(Ct));
+        Assert.True(accept.StatusCode == HttpStatusCode.OK, $"{accept.StatusCode}: {await accept.Content.ReadAsStringAsync(Ct)}");
         var created = (await accept.Content.ReadFromJsonAsync<TimelineTaskDto>(Ct))!;
 
-        created.Kind.Should().Be(TimelineEntryKind.CalendarEvent);
-        created.StartTime.Should().Be(new TimeOnly(18, 0));
-        created.CreatedByAgent.Should().Be("TimelinePlanner");
+        Assert.Equal(TimelineEntryKind.CalendarEvent, created.Kind);
+        Assert.Equal(new TimeOnly(18, 0), created.StartTime);
+        Assert.Equal("TimelinePlanner", created.CreatedByAgent);
 
         var listed = await Agents.ListTasksAsync(userId, new TimelineTaskQuery(day, day, Kind: TimelineEntryKind.CalendarEvent), Ct);
-        listed.Should().ContainSingle().Which.Kind.Should().Be(TimelineEntryKind.CalendarEvent);
+        Assert.Equal(TimelineEntryKind.CalendarEvent, Assert.Single(listed).Kind);
     }
 
     private static SaveTimelineTaskRequest Task(string title, DateOnly? date)
@@ -379,7 +381,7 @@ public sealed class TempusEntriesTests(MonolithWebApplicationFactory factory) : 
     private static async Task<TimelineTaskDto> CreateAsync(HttpClient client, SaveTimelineTaskRequest request)
     {
         var response = await client.PostAsJsonAsync(Tasks, request, Ct);
-        response.StatusCode.Should().Be(HttpStatusCode.Created, await response.Content.ReadAsStringAsync(Ct));
+        Assert.True(response.StatusCode == HttpStatusCode.Created, $"{response.StatusCode}: {await response.Content.ReadAsStringAsync(Ct)}");
         return (await response.Content.ReadFromJsonAsync<TimelineTaskDto>(Ct))!;
     }
 

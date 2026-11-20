@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using FluentAssertions;
 using Sentium.Core.Results;
 using Sentium.Praxis.Features.Workspaces;
 using Xunit;
@@ -19,10 +18,10 @@ public sealed class WorkspaceApiTests(WorkspaceApiFactory factory) : IClassFixtu
 
         var response = await _client.PostAsJsonAsync("/api/praxis/workspaces", request, Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var dto = await response.Content.ReadFromJsonAsync<WorkspaceDto>(Ct);
-        dto.Should().NotBeNull();
-        dto!.Name.Should().Be(request.Name);
+        Assert.NotNull(dto);
+        Assert.Equal(request.Name, dto!.Name);
     }
 
     [Fact]
@@ -33,9 +32,9 @@ public sealed class WorkspaceApiTests(WorkspaceApiFactory factory) : IClassFixtu
 
         var response = await _client.GetAsync("/api/praxis/workspaces", Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var paged = await response.Content.ReadFromJsonAsync<PagedResponse<WorkspaceDto>>(Ct);
-        paged!.Items.Should().Contain(w => w.Name == name);
+        Assert.Contains(paged!.Items, w => w.Name == name);
     }
 
     [Fact]
@@ -46,7 +45,7 @@ public sealed class WorkspaceApiTests(WorkspaceApiFactory factory) : IClassFixtu
 
         var response = await _client.PostAsJsonAsync("/api/praxis/workspaces", new CreateWorkspaceRequest(name, null), Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
     }
 
     [Fact]
@@ -58,9 +57,9 @@ public sealed class WorkspaceApiTests(WorkspaceApiFactory factory) : IClassFixtu
         var newName = $"Updated-{Guid.NewGuid()}";
         var response = await _client.PutAsJsonAsync($"/api/praxis/workspaces/{created!.Id}", new UpdateWorkspaceRequest(newName, "updated desc"), Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var updated = await response.Content.ReadFromJsonAsync<WorkspaceDto>(Ct);
-        updated!.Name.Should().Be(newName);
+        Assert.Equal(newName, updated!.Name);
     }
 
     [Fact]
@@ -70,10 +69,10 @@ public sealed class WorkspaceApiTests(WorkspaceApiFactory factory) : IClassFixtu
         var created = await createResp.Content.ReadFromJsonAsync<WorkspaceDto>(Ct);
 
         var deleteResp = await _client.DeleteAsync($"/api/praxis/workspaces/{created!.Id}", Ct);
-        deleteResp.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        Assert.Equal(HttpStatusCode.NoContent, deleteResp.StatusCode);
 
         var getResp = await _client.GetAsync($"/api/praxis/workspaces/{created.Id}", Ct);
-        getResp.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        Assert.Equal(HttpStatusCode.NotFound, getResp.StatusCode);
     }
 
     [Fact]
@@ -84,13 +83,13 @@ public sealed class WorkspaceApiTests(WorkspaceApiFactory factory) : IClassFixtu
 
         var response = await _client.GetAsync($"/api/praxis/workspaces/{created!.Id}/files", Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     [Fact]
     public async Task GetWorkspaceFiles_Returns404_WhenWorkspaceNotFound()
     {
         var response = await _client.GetAsync($"/api/praxis/workspaces/{Guid.NewGuid()}/files", Ct);
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 }

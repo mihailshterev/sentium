@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Sentium.Codex.Contracts;
 using Sentium.Codex.Contracts.Models;
@@ -31,9 +30,9 @@ public sealed class CodexApiTests(MonolithWebApplicationFactory factory) : IClas
 
         var response = await _client.GetAsync("/api/codex/knowledge-base/stats", Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var stats = await response.Content.ReadFromJsonAsync<List<CollectionStats>>(Ct);
-        stats!.Select(s => s.CollectionName).Should().BeEquivalentTo(KnowledgeCollections.All);
-        stats.Should().OnlyContain(s => s.PointCount >= 1 && s.VectorSize == CodexDbContext.EmbeddingDimensions);
+        Assert.Equivalent(KnowledgeCollections.All, stats!.Select(s => s.CollectionName));
+        Assert.All(stats!, s => Assert.True(s.PointCount >= 1 && s.VectorSize == CodexDbContext.EmbeddingDimensions));
     }
 }

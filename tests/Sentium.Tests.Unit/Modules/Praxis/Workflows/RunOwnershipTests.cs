@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
 using Sentium.Praxis.Features.Orchestration;
@@ -29,9 +28,9 @@ public sealed class RunOwnershipTests : IDisposable
     {
         _relay.Claim("stream-1", Owner);
 
-        _relay.IsVisibleTo("stream-1", Owner).Should().BeTrue();
-        _relay.IsVisibleTo("stream-1", Stranger).Should().BeFalse();
-        _relay.IsVisibleTo("unknown", Stranger).Should().BeTrue();
+        Assert.True(_relay.IsVisibleTo("stream-1", Owner));
+        Assert.False(_relay.IsVisibleTo("stream-1", Stranger));
+        Assert.True(_relay.IsVisibleTo("unknown", Stranger));
     }
 
     [Fact]
@@ -39,10 +38,10 @@ public sealed class RunOwnershipTests : IDisposable
     {
         _registry.Register("stream-1", Owner, _run);
 
-        _registry.CancelOwned("stream-1", Stranger).Should().BeFalse();
-        _run.IsCancellationRequested.Should().BeFalse();
+        Assert.False(_registry.CancelOwned("stream-1", Stranger));
+        Assert.False(_run.IsCancellationRequested);
 
-        _registry.CancelOwned("stream-1", Owner).Should().BeTrue();
-        _run.IsCancellationRequested.Should().BeTrue();
+        Assert.True(_registry.CancelOwned("stream-1", Owner));
+        Assert.True(_run.IsCancellationRequested);
     }
 }

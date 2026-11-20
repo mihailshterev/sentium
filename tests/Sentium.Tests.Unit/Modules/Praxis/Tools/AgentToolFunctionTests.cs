@@ -1,6 +1,5 @@
 using System.ComponentModel;
 using System.Text.Json;
-using FluentAssertions;
 using Microsoft.Extensions.AI;
 using Sentium.Praxis.Contracts;
 using Xunit;
@@ -14,12 +13,12 @@ public sealed class AgentToolFunctionTests
     {
         var function = new SearchTool().CreateFunction();
 
-        function.Name.Should().Be("fake_search");
+        Assert.Equal("fake_search", function.Name);
         var schema = function.JsonSchema;
-        schema.GetProperty("properties").TryGetProperty("query", out _).Should().BeTrue();
-        schema.GetProperty("properties").TryGetProperty("topK", out _).Should().BeTrue();
-        schema.GetProperty("properties").TryGetProperty("ct", out _).Should().BeFalse("CancellationToken is bound by the framework, not the model");
-        schema.GetProperty("required").EnumerateArray().Select(e => e.GetString()).Should().Equal("query");
+        Assert.True(schema.GetProperty("properties").TryGetProperty("query", out _));
+        Assert.True(schema.GetProperty("properties").TryGetProperty("topK", out _));
+        Assert.False(schema.GetProperty("properties").TryGetProperty("ct", out _), "CancellationToken is bound by the framework, not the model");
+        Assert.Equal(new string[] { "query" }, schema.GetProperty("required").EnumerateArray().Select(e => e.GetString()));
     }
 
     [Fact]
@@ -35,7 +34,7 @@ public sealed class AgentToolFunctionTests
             ["topK"] = JsonDocument.Parse("\"3\"").RootElement,
         }, ct);
 
-        result?.ToString().Should().Be("vectors:3");
+        Assert.Equal("vectors:3", result?.ToString());
     }
 
     [Fact]
@@ -43,10 +42,10 @@ public sealed class AgentToolFunctionTests
     {
         var function = new WriteTool().CreateFunction();
 
-        function.Should().BeOfType<ApprovalRequiredAIFunction>();
-        AgentToolFunction.TryGetClassification(function, out var resource, out var action).Should().BeTrue();
-        resource.Should().Be(nameof(ToolResource.File));
-        action.Should().Be(nameof(ToolAction.Write));
+        Assert.IsType<ApprovalRequiredAIFunction>(function);
+        Assert.True(AgentToolFunction.TryGetClassification(function, out var resource, out var action));
+        Assert.Equal(nameof(ToolResource.File), resource);
+        Assert.Equal(nameof(ToolAction.Write), action);
     }
 
     [Fact]
@@ -54,7 +53,7 @@ public sealed class AgentToolFunctionTests
     {
         var foreign = AIFunctionFactory.Create(() => "x", "load_skill");
 
-        AgentToolFunction.TryGetClassification(foreign, out _, out _).Should().BeFalse();
+        Assert.False(AgentToolFunction.TryGetClassification(foreign, out _, out _));
     }
 
     [AgentToolPolicy(Resource = ToolResource.VectorDb, Action = ToolAction.Search)]

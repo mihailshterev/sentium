@@ -165,8 +165,9 @@ Modules reference each other only through `Contracts`; a unit test (`ModuleBound
 - Entity Framework Core (PostgreSQL via Npgsql) · pgvector (vector store)
 - ASP.NET Core Identity (cookie authentication)
 - HybridCache (in-process) · Quartz.NET (scheduling)
-- Docker.DotNet (sandbox)
-- FluentValidation · Polly · Serilog → OpenTelemetry
+- Docker.DotNet.Enhanced (sandbox; the maintained fork Testcontainers also uses)
+- FluentValidation · Polly · `Microsoft.Extensions.Logging` → OpenTelemetry
+- NuGet: every version in `Directory.Packages.props` (with transitive pinning), lock files restored in locked mode, nuget.org as the only mapped source (`nuget.config`), and NuGet audit failing the build on any advisory
 
 **Models (default, all local via llama.cpp)**
 
@@ -183,7 +184,7 @@ Modules reference each other only through `Contracts`; a unit test (`ModuleBound
 
 **Testing**
 
-- xUnit v3 · Testcontainers · `Aspire.Hosting.Testing` (backend)
+- xUnit v3 (built-in assertions, Microsoft Testing Platform) · NSubstitute · Testcontainers · `Aspire.Hosting.Testing` (backend)
 - Vitest (frontend) · Playwright (E2E)
 
 ---
@@ -275,12 +276,14 @@ dotnet ef migrations add <Name> \
 
 ## Running the tests
 
-**Backend (xUnit v3)**
+**Backend (xUnit v3 on Microsoft Testing Platform, opted in by `global.json`)**
 
 ```bash
 dotnet test                                                            # everything
-dotnet test tests/Sentium.Tests.Unit/Sentium.Tests.Unit.csproj        # unit
-dotnet test tests/Sentium.Tests.Integration/...                       # integration (needs Docker: PostgreSQL Testcontainer)
+dotnet test --project tests/Sentium.Tests.Unit                         # unit
+dotnet test --project tests/Sentium.Tests.Integration                  # integration (needs Docker: PostgreSQL Testcontainer)
+dotnet test --project tests/Sentium.Tests.Unit --explicit only         # real-Docker sandbox tests (needs Docker)
+dotnet test --project tests/Sentium.Tests.Unit --filter-class "*.MigrationSnapshotTests"   # one test class
 ```
 
 **Frontend (Vitest)**

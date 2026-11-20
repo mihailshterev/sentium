@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
@@ -23,7 +22,7 @@ public sealed class RegistryVigilSettingsProviderTests
         var settings = await sut.GetAsync(CancellationToken.None);
 
         // Falls back to the class defaults rather than throwing.
-        settings.Should().BeEquivalentTo(new VigilRuntimeSettings());
+        Assert.Equivalent(new VigilRuntimeSettings(), settings);
     }
 
     [Fact]
@@ -37,6 +36,6 @@ public sealed class RegistryVigilSettingsProviderTests
 
         var settings = await sut.GetAsync(CancellationToken.None);
 
-        settings.Should().BeEquivalentTo(new VigilRuntimeSettings());
+        Assert.Equivalent(new VigilRuntimeSettings(), settings);
     }
 }

@@ -1,4 +1,3 @@
-using FluentAssertions;
 using NSubstitute;
 using Sentium.Praxis.Common.Streaming;
 using Sentium.Praxis.Features.Orchestration;
@@ -18,8 +17,7 @@ public sealed class WorkflowTimelineTests
         timeline.Post(WorkflowTimeline.SystemAuthor, "Planning", AgentUpdateTypes.Status);
 
         _stream.Received(1).Publish("s1", new AgentStreamUpdate(WorkflowTimeline.SystemAuthor, "Planning", AgentUpdateTypes.Status));
-        timeline.Entries.Select(e => (e.Author, e.Text, e.Type)).Should().Equal(
-            (WorkflowTimeline.SystemAuthor, "Planning", AgentUpdateTypes.Status));
+        Assert.Equal(new (string Author, string Text, string Type)[] { (WorkflowTimeline.SystemAuthor, "Planning", AgentUpdateTypes.Status) }, timeline.Entries.Select(e => (e.Author, e.Text, e.Type)));
     }
 
     [Fact]
@@ -35,8 +33,6 @@ public sealed class WorkflowTimelineTests
 
         _stream.Received(1).Publish("s1", new AgentStreamUpdate("Researcher", "Hel", AgentUpdateTypes.Message));
         _stream.Received(1).Publish("s1", new AgentStreamUpdate("Researcher", "{}", AgentUpdateTypes.ToolCall));
-        timeline.Entries.Select(e => (e.Author, e.Text, e.Type)).Should().Equal(
-            ("Researcher", "Hello", AgentUpdateTypes.Message),
-            ("Researcher", "{}", AgentUpdateTypes.ToolCall));
+        Assert.Equal(new (string Author, string Text, string Type)[] { ("Researcher", "Hello", AgentUpdateTypes.Message), ("Researcher", "{}", AgentUpdateTypes.ToolCall) }, timeline.Entries.Select(e => (e.Author, e.Text, e.Type)));
     }
 }

@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Sentium.Tempus.Common;
 using Sentium.Tempus.Contracts.Models;
 using Xunit;
@@ -17,8 +16,7 @@ public sealed class SeriesExpanderTests
     {
         var rule = new TimelineRepeat(TimelineRepeatFrequency.Daily, 3, null, D(2026, 11, 10));
 
-        Expand(rule, D(2026, 11, 1), D(2026, 11, 1), D(2026, 12, 31))
-            .Should().Equal(D(2026, 11, 1), D(2026, 11, 4), D(2026, 11, 7), D(2026, 11, 10));
+        Assert.Equal(new DateOnly[] { D(2026, 11, 1), D(2026, 11, 4), D(2026, 11, 7), D(2026, 11, 10) }, Expand(rule, D(2026, 11, 1), D(2026, 11, 1), D(2026, 12, 31)));
     }
 
     [Fact]
@@ -26,8 +24,7 @@ public sealed class SeriesExpanderTests
     {
         var rule = new TimelineRepeat(TimelineRepeatFrequency.Monthly, 1, null, null);
 
-        Expand(rule, D(2027, 1, 31), D(2027, 1, 1), D(2027, 4, 30))
-            .Should().Equal(D(2027, 1, 31), D(2027, 2, 28), D(2027, 3, 31), D(2027, 4, 30));
+        Assert.Equal(new DateOnly[] { D(2027, 1, 31), D(2027, 2, 28), D(2027, 3, 31), D(2027, 4, 30) }, Expand(rule, D(2027, 1, 31), D(2027, 1, 1), D(2027, 4, 30)));
     }
 
     [Fact]
@@ -35,8 +32,7 @@ public sealed class SeriesExpanderTests
     {
         var rule = new TimelineRepeat(TimelineRepeatFrequency.Yearly, 1, null, null);
 
-        Expand(rule, D(2028, 2, 29), D(2028, 1, 1), D(2032, 12, 31))
-            .Should().Equal(D(2028, 2, 29), D(2029, 2, 28), D(2030, 2, 28), D(2031, 2, 28), D(2032, 2, 29));
+        Assert.Equal(new DateOnly[] { D(2028, 2, 29), D(2029, 2, 28), D(2030, 2, 28), D(2031, 2, 28), D(2032, 2, 29) }, Expand(rule, D(2028, 2, 29), D(2028, 1, 1), D(2032, 12, 31)));
     }
 
     [Fact]
@@ -45,8 +41,7 @@ public sealed class SeriesExpanderTests
         // 2026-11-04 is a Wednesday.
         var rule = new TimelineRepeat(TimelineRepeatFrequency.Weekly, 2, [DayOfWeek.Monday, DayOfWeek.Wednesday, DayOfWeek.Friday], null);
 
-        Expand(rule, D(2026, 11, 4), D(2026, 11, 1), D(2026, 11, 30))
-            .Should().Equal(D(2026, 11, 4), D(2026, 11, 6), D(2026, 11, 16), D(2026, 11, 18), D(2026, 11, 20), D(2026, 11, 30));
+        Assert.Equal(new DateOnly[] { D(2026, 11, 4), D(2026, 11, 6), D(2026, 11, 16), D(2026, 11, 18), D(2026, 11, 20), D(2026, 11, 30) }, Expand(rule, D(2026, 11, 4), D(2026, 11, 1), D(2026, 11, 30)));
     }
 
     [Fact]
@@ -54,8 +49,7 @@ public sealed class SeriesExpanderTests
     {
         var rule = new TimelineRepeat(TimelineRepeatFrequency.Weekly, 1, null, null);
 
-        Expand(rule, D(2026, 11, 4), D(2026, 11, 1), D(2026, 11, 30))
-            .Should().Equal(D(2026, 11, 4), D(2026, 11, 11), D(2026, 11, 18), D(2026, 11, 25));
+        Assert.Equal(new DateOnly[] { D(2026, 11, 4), D(2026, 11, 11), D(2026, 11, 18), D(2026, 11, 25) }, Expand(rule, D(2026, 11, 4), D(2026, 11, 1), D(2026, 11, 30)));
     }
 
     [Fact]
@@ -63,8 +57,7 @@ public sealed class SeriesExpanderTests
     {
         var rule = new TimelineRepeat(TimelineRepeatFrequency.Daily, 2, null, null);
 
-        Expand(rule, D(2026, 11, 1), D(2026, 11, 4), D(2026, 11, 8))
-            .Should().Equal(D(2026, 11, 5), D(2026, 11, 7));
+        Assert.Equal(new DateOnly[] { D(2026, 11, 5), D(2026, 11, 7) }, Expand(rule, D(2026, 11, 1), D(2026, 11, 4), D(2026, 11, 8)));
     }
 
     [Fact]
@@ -72,7 +65,6 @@ public sealed class SeriesExpanderTests
     {
         var rule = new TimelineRepeat(TimelineRepeatFrequency.Yearly, 1, null, null);
 
-        Expand(rule, D(2099, 6, 1), D(2099, 1, 1), DateOnly.MaxValue)
-            .Should().Equal(D(2099, 6, 1), D(2100, 6, 1));
+        Assert.Equal(new DateOnly[] { D(2099, 6, 1), D(2100, 6, 1) }, Expand(rule, D(2099, 6, 1), D(2099, 1, 1), DateOnly.MaxValue));
     }
 }

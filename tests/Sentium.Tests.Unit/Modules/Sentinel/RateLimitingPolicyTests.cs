@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Sentium.Sentinel.Features.Policies;
 using Sentium.Sentinel.Features.RateLimiting;
 using Sentium.Sentinel.Features.Settings;
@@ -40,7 +39,7 @@ public sealed class RateLimitingPolicyTests
         var result = await sut.EvaluateAsync(MakeRequest(), ct);
 
         // Assert
-        result.Should().BeNull();
+        Assert.Null(result);
     }
 
     [Fact]
@@ -60,10 +59,10 @@ public sealed class RateLimitingPolicyTests
         var result = await sut.EvaluateAsync(MakeRequest("burst-agent"), ct);
 
         // Assert
-        result.Should().NotBeNull();
-        result!.Allowed.Should().BeFalse();
-        result.Effect.Should().Be(PolicyEffect.Deny);
-        result.Risk.Should().Be(PolicyRiskLevel.High);
+        Assert.NotNull(result);
+        Assert.False(result!.Allowed);
+        Assert.Equal(PolicyEffect.Deny, result.Effect);
+        Assert.Equal(PolicyRiskLevel.High, result.Risk);
     }
 
     [Fact]
@@ -77,7 +76,7 @@ public sealed class RateLimitingPolicyTests
         var act = async () => await sut.EvaluateAsync(null!, ct);
 
         // Assert
-        await act.Should().ThrowAsync<ArgumentNullException>();
+        await Assert.ThrowsAnyAsync<ArgumentNullException>(act);
     }
 
     [Fact]
@@ -90,7 +89,7 @@ public sealed class RateLimitingPolicyTests
 
         await sut.EvaluateAsync(busy, ct);
 
-        (await sut.EvaluateAsync(busy, ct)).Should().NotBeNull();
-        (await sut.EvaluateAsync(other, ct)).Should().BeNull();
+        Assert.NotNull(await sut.EvaluateAsync(busy, ct));
+        Assert.Null(await sut.EvaluateAsync(other, ct));
     }
 }

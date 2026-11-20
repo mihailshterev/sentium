@@ -1,5 +1,4 @@
 using System.Text.Json;
-using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Sentium.Codex.Contracts;
@@ -34,11 +33,11 @@ public sealed class UserRemovalTests(MonolithWebApplicationFactory factory) : IC
         await using (var scope = factory.Services.CreateAsyncScope())
         {
             var (succeeded, errors) = await scope.ServiceProvider.GetRequiredService<IUserService>().DeleteUserAsync(Guid.NewGuid(), userId, Ct);
-            succeeded.Should().BeTrue(string.Join(", ", errors));
+            Assert.True(succeeded, string.Join(", ", errors));
         }
 
-        (await CountAsync(userId)).Should().Be((0, 0, false));
-        (await CountAsync(bystander)).Should().Be((1, 1, true));
+        Assert.Equal((0, 0, false), await CountAsync(userId));
+        Assert.Equal((1, 1, true), await CountAsync(bystander));
     }
 
     private async Task SeedAsync(Guid userId)

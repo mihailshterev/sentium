@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Sentium.Core.Text;
 using Sentium.Locus.Entities;
 using Sentium.Locus.Features.Assets;
@@ -12,10 +11,10 @@ public sealed class AssetSearchTests
     [Fact]
     public void ParseTerms_LowercasesDeduplicatesAndCaps()
     {
-        AssetSearch.ParseTerms("  Garage  DRILL garage ").Should().Equal("garage", "drill");
-        AssetSearch.ParseTerms(null).Should().BeEmpty();
-        AssetSearch.ParseTerms("   ").Should().BeEmpty();
-        AssetSearch.ParseTerms("a b c d e f g h i j").Should().HaveCount(8);
+        Assert.Equal(new string[] { "garage", "drill" }, AssetSearch.ParseTerms("  Garage  DRILL garage "));
+        Assert.Empty(AssetSearch.ParseTerms(null));
+        Assert.Empty(AssetSearch.ParseTerms("   "));
+        Assert.Equal(8, AssetSearch.ParseTerms("a b c d e f g h i j").Count);
     }
 
     [Theory]
@@ -25,7 +24,7 @@ public sealed class AssetSearchTests
     [InlineData("c:\\temp", "%c:\\\\temp%")]
     public void ToContainsPattern_EscapesLikeWildcards(string term, string expected)
     {
-        AssetSearch.ToContainsPattern(term).Should().Be(expected);
+        Assert.Equal(expected, AssetSearch.ToContainsPattern(term));
     }
 
     [Fact]
@@ -45,24 +44,29 @@ public sealed class AssetSearchTests
 
         var text = AssetSearch.BuildSearchText(asset);
 
-        text.Should().Contain("cordless drill").And.Contain("bosch").And.Contain("gsr-12v").And.Contain("sn123")
-            .And.Contain("green case").And.Contain("power").And.Contain("garage");
-        text.Should().NotContain("not searchable");
-        text.Should().Be(text.ToLowerInvariant());
+        Assert.Contains("cordless drill", text, StringComparison.Ordinal);
+        Assert.Contains("bosch", text, StringComparison.Ordinal);
+        Assert.Contains("gsr-12v", text, StringComparison.Ordinal);
+        Assert.Contains("sn123", text, StringComparison.Ordinal);
+        Assert.Contains("green case", text, StringComparison.Ordinal);
+        Assert.Contains("power", text, StringComparison.Ordinal);
+        Assert.Contains("garage", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("not searchable", text, StringComparison.Ordinal);
+        Assert.Equal(text.ToLowerInvariant(), text);
     }
 
     [Fact]
     public void TagNormalizer_TrimsCollapsesLowercasesAndDeduplicates()
     {
-        TagNormalizer.Normalize([" Power  Tools ", "power tools", "", "  ", "Garage"]).Should().Equal("power tools", "garage");
-        TagNormalizer.Normalize(null).Should().BeEmpty();
-        TagNormalizer.NormalizeOne("  ").Should().BeNull();
+        Assert.Equal(new string[] { "power tools", "garage" }, TagNormalizer.Normalize([" Power  Tools ", "power tools", "", "  ", "Garage"]));
+        Assert.Empty(TagNormalizer.Normalize(null));
+        Assert.Null(TagNormalizer.NormalizeOne("  "));
     }
 
     [Fact]
     public void LocationNames_NormalizeIgnoresCaseAndExtraWhitespace()
     {
-        LocationNames.Normalize("  Shelf   B ").Should().Be("shelf b");
-        LocationNames.Clean("  Shelf   B ").Should().Be("Shelf B");
+        Assert.Equal("shelf b", LocationNames.Normalize("  Shelf   B "));
+        Assert.Equal("Shelf B", LocationNames.Clean("  Shelf   B "));
     }
 }

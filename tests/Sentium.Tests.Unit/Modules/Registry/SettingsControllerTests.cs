@@ -1,6 +1,5 @@
 using System.Security.Claims;
 using System.Text.Json;
-using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
@@ -44,7 +43,7 @@ public sealed class SettingsControllerTests
     {
         var controller = NewController(new Claim(ClaimTypes.Name, "member"));
         var result = await controller.Get("nope", TestContext.Current.CancellationToken);
-        result.Result.Should().BeOfType<NotFoundResult>();
+        Assert.IsType<NotFoundResult>(result.Result);
     }
 
     [Fact]
@@ -56,7 +55,7 @@ public sealed class SettingsControllerTests
 
         var result = await controller.Get(SettingsKeys.Harness, ct);
 
-        result.Result.Should().BeOfType<OkObjectResult>();
+        Assert.IsType<OkObjectResult>(result.Result);
     }
 
     [Fact]
@@ -79,7 +78,7 @@ public sealed class SettingsControllerTests
     {
         var controller = NewController(new Claim(ClaimTypes.Name, "member"));
         var result = await controller.Get(SettingsKeys.Pdp, TestContext.Current.CancellationToken);
-        result.Result.Should().BeOfType<ForbidResult>();
+        Assert.IsType<ForbidResult>(result.Result);
     }
 
     [Fact]
@@ -91,7 +90,7 @@ public sealed class SettingsControllerTests
 
         var result = await controller.Get(SettingsKeys.Pdp, ct);
 
-        result.Result.Should().BeOfType<OkObjectResult>();
+        Assert.IsType<OkObjectResult>(result.Result);
     }
 
     [Fact]
@@ -100,7 +99,7 @@ public sealed class SettingsControllerTests
         var ct = TestContext.Current.CancellationToken;
         var controller = NewController(new Claim(ClaimTypes.Name, "member"));
         var result = await controller.Update(SettingsKeys.Pdp, Payload(new { lockdownMode = true }), ct);
-        result.Result.Should().BeOfType<ForbidResult>();
+        Assert.IsType<ForbidResult>(result.Result);
     }
 
     [Fact]
@@ -113,7 +112,7 @@ public sealed class SettingsControllerTests
 
         var result = await controller.Update(SettingsKeys.Pdp, Payload(new { lockdownMode = true }), ct);
 
-        result.Result.Should().BeOfType<OkObjectResult>();
+        Assert.IsType<OkObjectResult>(result.Result);
     }
 
     [Fact]

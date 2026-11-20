@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Sentium.Praxis.Features.Workflows.Squad;
 using Xunit;
 
@@ -12,19 +11,19 @@ public sealed class OutputSimilarityTests
 {
     [Fact]
     public void NullPrevious_IsNotStuck()
-        => OutputSimilarity.IsStuck(null, "anything").Should().BeFalse();
+        => Assert.False(OutputSimilarity.IsStuck(null, "anything"));
 
     [Fact]
     public void IdenticalText_IsStuck()
-        => OutputSimilarity.IsStuck("the quick brown fox", "the quick brown fox").Should().BeTrue();
+        => Assert.True(OutputSimilarity.IsStuck("the quick brown fox", "the quick brown fox"));
 
     [Fact]
     public void IdenticalIgnoringPunctuationAndCase_IsStuck()
-        => OutputSimilarity.IsStuck("The quick, BROWN fox!", "the quick brown fox").Should().BeTrue();
+        => Assert.True(OutputSimilarity.IsStuck("The quick, BROWN fox!", "the quick brown fox"));
 
     [Fact]
     public void DisjointText_IsNotStuck()
-        => OutputSimilarity.IsStuck("the quick brown fox", "completely separate unrelated phrasing entirely").Should().BeFalse();
+        => Assert.False(OutputSimilarity.IsStuck("the quick brown fox", "completely separate unrelated phrasing entirely"));
 
     [Fact]
     public void NearIdenticalAboveThreshold_IsStuck()
@@ -32,7 +31,7 @@ public sealed class OutputSimilarityTests
         // 20 shared tokens; current adds one extra -> Jaccard 20/21 ≈ 0.952 (>= 0.95) yet not byte-identical.
         var prev = string.Join(' ', Enumerable.Range(0, 20).Select(i => $"word{i}"));
         var curr = prev + " extraword";
-        OutputSimilarity.IsStuck(prev, curr).Should().BeTrue();
+        Assert.True(OutputSimilarity.IsStuck(prev, curr));
     }
 
     [Fact]
@@ -40,6 +39,6 @@ public sealed class OutputSimilarityTests
     {
         var prev = string.Join(' ', Enumerable.Range(0, 10).Select(i => $"word{i}"));
         var curr = string.Join(' ', Enumerable.Range(5, 10).Select(i => $"word{i}")); // ~33% Jaccard
-        OutputSimilarity.IsStuck(prev, curr).Should().BeFalse();
+        Assert.False(OutputSimilarity.IsStuck(prev, curr));
     }
 }

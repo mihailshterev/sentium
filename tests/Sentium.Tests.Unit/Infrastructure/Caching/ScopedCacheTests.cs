@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Sentium.Infrastructure.Caching;
@@ -40,7 +39,7 @@ public sealed class ScopedCacheTests : IDisposable
         await ReadAsync(User(Owner));
         await ReadAsync(Sovereign());
 
-        _loads.Should().Be(2);
+        Assert.Equal(2, _loads);
     }
 
     [Fact]
@@ -51,7 +50,7 @@ public sealed class ScopedCacheTests : IDisposable
         await CacheFor(Sovereign()).InvalidateTagAsync(Tag, TestContext.Current.CancellationToken);
         await ReadAsync(User(Owner));
 
-        _loads.Should().Be(2);
+        Assert.Equal(2, _loads);
     }
 
     [Fact]
@@ -62,7 +61,7 @@ public sealed class ScopedCacheTests : IDisposable
         await CacheFor(Background()).RemoveAsync(Key, TestContext.Current.CancellationToken);
         await ReadAsync(User(Owner));
 
-        _loads.Should().Be(2);
+        Assert.Equal(2, _loads);
     }
 
     private async Task ReadAsync(ICurrentUser user)

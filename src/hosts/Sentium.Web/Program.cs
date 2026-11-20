@@ -1,6 +1,5 @@
 using FluentValidation;
 using Microsoft.Extensions.Caching.Hybrid;
-using Scalar.AspNetCore;
 using Sentium.Core.Constants;
 using Sentium.Infrastructure.Extensions;
 using Sentium.Infrastructure.Mvc;
@@ -51,13 +50,6 @@ await app.InitializeSentiumModulesAsync();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
-
-    app.MapScalarApiReference(options =>
-    {
-        options.WithTitle("Sentium")
-               .WithTheme(ScalarTheme.DeepSpace)
-               .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
-    });
 }
 
 app.UseStaticFiles(PortalStaticFiles.Options);

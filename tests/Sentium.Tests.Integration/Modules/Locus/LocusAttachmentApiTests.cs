@@ -2,7 +2,6 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
-using FluentAssertions;
 using Sentium.Locus.Entities;
 using Sentium.Locus.Features.Assets;
 using Sentium.Locus.Features.Attachments;
@@ -41,25 +40,26 @@ public sealed class LocusAttachmentApiTests(LocusApiFactory factory) : IClassFix
 
         var upload = await UploadAsync(asset.Id, PngBytes, "front ☺.png", "application/octet-stream");
 
-        upload.StatusCode.Should().Be(HttpStatusCode.Created);
+        Assert.Equal(HttpStatusCode.Created, upload.StatusCode);
         var attachment = await upload.Content.ReadFromJsonAsync<AttachmentDto>(Ct);
-        attachment!.ContentType.Should().Be("image/png", "the type comes from the bytes, not the client");
-        attachment.IsImage.Should().BeTrue();
-        attachment.FileName.Should().Be("front ☺.png");
-        attachment.Kind.Should().Be(AttachmentKind.Photo);
+        // the type comes from the bytes, not the client
+        Assert.Equal("image/png", attachment!.ContentType);
+        Assert.True(attachment.IsImage);
+        Assert.Equal("front ☺.png", attachment.FileName);
+        Assert.Equal(AttachmentKind.Photo, attachment.Kind);
 
         var content = await _client.GetAsync(attachment.ContentUrl, Ct);
-        content.StatusCode.Should().Be(HttpStatusCode.OK);
-        content.Content.Headers.ContentType!.MediaType.Should().Be("image/png");
-        content.Headers.GetValues("X-Content-Type-Options").Should().ContainSingle().Which.Should().Be("nosniff");
-        content.Headers.GetValues("Content-Security-Policy").Single().Should().Contain("sandbox");
-        (await content.Content.ReadAsByteArrayAsync(Ct)).Should().Equal(PngBytes);
+        Assert.Equal(HttpStatusCode.OK, content.StatusCode);
+        Assert.Equal("image/png", content.Content.Headers.ContentType!.MediaType);
+        Assert.Equal("nosniff", Assert.Single(content.Headers.GetValues("X-Content-Type-Options")));
+        Assert.Contains("sandbox", content.Headers.GetValues("Content-Security-Policy").Single(), StringComparison.Ordinal);
+        Assert.Equal(PngBytes, await content.Content.ReadAsByteArrayAsync(Ct));
 
         var listed = await _client.GetFromJsonAsync<List<AttachmentDto>>($"/api/locus/assets/{asset.Id}/attachments", Ct);
-        listed.Should().ContainSingle().Which.Id.Should().Be(attachment.Id);
+        Assert.Equal(attachment.Id, Assert.Single(listed!).Id);
 
         var summary = await _client.GetFromJsonAsync<AssetDto>($"/api/locus/assets/{asset.Id}", Ct);
-        summary!.Attachments.Should().ContainSingle();
+        Assert.Single(summary!.Attachments);
     }
 
     [Fact]
@@ -71,7 +71,7 @@ public sealed class LocusAttachmentApiTests(LocusApiFactory factory) : IClassFix
 
         var content = await _client.GetAsync(attachment!.ContentUrl, Ct);
 
-        content.Content.Headers.ContentDisposition!.DispositionType.Should().Be("attachment");
+        Assert.Equal("attachment", content.Content.Headers.ContentDisposition!.DispositionType);
     }
 
     [Theory]
@@ -83,7 +83,7 @@ public sealed class LocusAttachmentApiTests(LocusApiFactory factory) : IClassFix
 
         var upload = await UploadAsync(asset.Id, Encoding.UTF8.GetBytes(content), fileName, claimedType);
 
-        upload.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        Assert.Equal(HttpStatusCode.BadRequest, upload.StatusCode);
     }
 
     [Fact]
@@ -91,7 +91,7 @@ public sealed class LocusAttachmentApiTests(LocusApiFactory factory) : IClassFix
     {
         var upload = await UploadAsync(Guid.NewGuid(), PngBytes, "x.png", "image/png");
 
-        upload.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        Assert.Equal(HttpStatusCode.NotFound, upload.StatusCode);
     }
 
     [Fact]
@@ -102,9 +102,9 @@ public sealed class LocusAttachmentApiTests(LocusApiFactory factory) : IClassFix
 
         var delete = await _client.DeleteAsync($"/api/locus/assets/{asset.Id}/attachments/{attachment!.Id}", Ct);
 
-        delete.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        factory.AttachmentStore.Blobs.Keys.Should().NotContain($"{asset.Id}/{attachment.Id}");
-        (await _client.GetAsync(attachment.ContentUrl, Ct)).StatusCode.Should().Be(HttpStatusCode.NotFound);
+        Assert.Equal(HttpStatusCode.NoContent, delete.StatusCode);
+        Assert.DoesNotContain($"{asset.Id}/{attachment.Id}", factory.AttachmentStore.Blobs.Keys);
+        Assert.Equal(HttpStatusCode.NotFound, (await _client.GetAsync(attachment.ContentUrl, Ct)).StatusCode);
     }
 
     [Fact]
@@ -113,11 +113,11 @@ public sealed class LocusAttachmentApiTests(LocusApiFactory factory) : IClassFix
         var asset = await CreateAssetAsync();
         await UploadAsync(asset.Id, PngBytes, "a.png", "image/png");
         await UploadAsync(asset.Id, PngBytes, "b.png", "image/png");
-        factory.AttachmentStore.Blobs.Keys.Count(k => k.StartsWith($"{asset.Id}/", StringComparison.Ordinal)).Should().Be(2);
+        Assert.Equal(2, factory.AttachmentStore.Blobs.Keys.Count(k => k.StartsWith($"{asset.Id}/", StringComparison.Ordinal)));
 
-        (await _client.DeleteAsync($"/api/locus/assets/{asset.Id}", Ct)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        Assert.Equal(HttpStatusCode.NoContent, (await _client.DeleteAsync($"/api/locus/assets/{asset.Id}", Ct)).StatusCode);
 
-        factory.AttachmentStore.Blobs.Keys.Should().NotContain(k => k.StartsWith($"{asset.Id}/", StringComparison.Ordinal));
+        Assert.DoesNotContain(factory.AttachmentStore.Blobs.Keys, k => k.StartsWith($"{asset.Id}/", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -129,8 +129,8 @@ public sealed class LocusAttachmentApiTests(LocusApiFactory factory) : IClassFix
 
         var page = await _client.GetFromJsonAsync<Sentium.Core.Results.PagedResponse<AssetSummaryDto>>($"/api/locus/assets?locationId={asset.LocationId}", Ct);
 
-        var summary = page!.Items.Should().ContainSingle().Subject;
-        summary.AttachmentCount.Should().Be(2);
-        summary.CoverImageUrl.Should().Be(image!.ContentUrl);
+        var summary = Assert.Single(page!.Items);
+        Assert.Equal(2, summary.AttachmentCount);
+        Assert.Equal(image!.ContentUrl, summary.CoverImageUrl);
     }
 }

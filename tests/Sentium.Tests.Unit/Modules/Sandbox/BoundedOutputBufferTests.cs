@@ -1,5 +1,4 @@
 using System.Text;
-using FluentAssertions;
 using Sentium.Sandbox.Docker;
 using Xunit;
 
@@ -14,7 +13,7 @@ public sealed class BoundedOutputBufferTests
 
         await buffer.WriteAsync(Encoding.UTF8.GetBytes("hello"), TestContext.Current.CancellationToken);
 
-        buffer.ToText("stdout").Should().Be("hello");
+        Assert.Equal("hello", buffer.ToText("stdout"));
     }
 
     [Fact]
@@ -27,7 +26,7 @@ public sealed class BoundedOutputBufferTests
             await buffer.WriteAsync(Encoding.UTF8.GetBytes("abc"), TestContext.Current.CancellationToken);
         }
 
-        buffer.TotalBytes.Should().Be(3000);
-        buffer.ToText("stdout").Should().Be("abca\n[stdout truncated at 4 bytes]");
+        Assert.Equal(3000, buffer.TotalBytes);
+        Assert.Equal("abca\n[stdout truncated at 4 bytes]", buffer.ToText("stdout"));
     }
 }

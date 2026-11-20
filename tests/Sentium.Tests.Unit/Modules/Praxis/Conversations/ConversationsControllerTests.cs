@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
 using Sentium.Core.Results;
@@ -29,8 +28,7 @@ public sealed class ConversationsControllerTests
 
         var result = await _controller.GetConversations(1, 20, null, TestContext.Current.CancellationToken);
 
-        result.Result.Should().BeOfType<OkObjectResult>()
-            .Which.Value.Should().Be(paged);
+        Assert.Equal(paged, Assert.IsType<OkObjectResult>(result.Result).Value);
     }
 
     [Fact]
@@ -42,8 +40,7 @@ public sealed class ConversationsControllerTests
 
         var result = await _controller.GetConversation(id, TestContext.Current.CancellationToken);
 
-        result.Result.Should().BeOfType<OkObjectResult>()
-            .Which.Value.Should().Be(expected);
+        Assert.Equal(expected, Assert.IsType<OkObjectResult>(result.Result).Value);
     }
 
     [Fact]
@@ -55,8 +52,7 @@ public sealed class ConversationsControllerTests
 
         var result = await _controller.CreateConversation(request, TestContext.Current.CancellationToken);
 
-        result.Should().BeOfType<CreatedAtActionResult>()
-            .Which.Value.Should().Be(created);
+        Assert.Equal(created, Assert.IsType<CreatedAtActionResult>(result).Value);
     }
 
     [Fact]
@@ -67,7 +63,7 @@ public sealed class ConversationsControllerTests
 
         var result = await _controller.CreateConversation(request, TestContext.Current.CancellationToken);
 
-        result.Should().BeOfType<BadRequestObjectResult>();
+        Assert.IsType<BadRequestObjectResult>(result);
     }
 
     [Fact]
@@ -78,7 +74,7 @@ public sealed class ConversationsControllerTests
 
         var result = await _controller.DeleteConversation(id, TestContext.Current.CancellationToken);
 
-        result.Should().BeOfType<NoContentResult>();
+        Assert.IsType<NoContentResult>(result);
     }
 
     [Theory]
@@ -93,11 +89,11 @@ public sealed class ConversationsControllerTests
 
         if (renamed)
         {
-            result.Should().BeOfType<NoContentResult>();
+            Assert.IsType<NoContentResult>(result);
         }
         else
         {
-            result.Should().BeOfType<NotFoundResult>();
+            Assert.IsType<NotFoundResult>(result);
         }
     }
 }

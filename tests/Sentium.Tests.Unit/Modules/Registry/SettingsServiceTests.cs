@@ -1,5 +1,4 @@
 using System.Text.Json;
-using FluentAssertions;
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
@@ -49,7 +48,7 @@ public sealed class SettingsServiceTests
     {
         var ct = TestContext.Current.CancellationToken;
         var result = await _sut.GetAsync("nope", UserId, ct);
-        result.Should().BeNull();
+        Assert.Null(result);
     }
 
     [Fact]
@@ -65,9 +64,9 @@ public sealed class SettingsServiceTests
 
         var result = await _sut.GetAsync(SettingsKeys.Harness, UserId, ct);
 
-        result.Should().NotBeNull();
-        result!.Key.Should().Be(SettingsKeys.Harness);
-        result.Value.Deserialize<HarnessSettings>(WebOptions)!.UserHarnessPrompt.Should().Be("existing");
+        Assert.NotNull(result);
+        Assert.Equal(SettingsKeys.Harness, result!.Key);
+        Assert.Equal("existing", result.Value.Deserialize<HarnessSettings>(WebOptions)!.UserHarnessPrompt);
     }
 
     [Fact]
@@ -78,7 +77,7 @@ public sealed class SettingsServiceTests
 
         var result = await _sut.GetAsync(SettingsKeys.Harness, UserId, ct);
 
-        result!.Value.Deserialize<HarnessSettings>(WebOptions)!.UserHarnessPrompt.Should().BeEmpty();
+        Assert.Empty(result!.Value.Deserialize<HarnessSettings>(WebOptions)!.UserHarnessPrompt);
         await _repository.DidNotReceive().TryAddAsync(Arg.Any<SystemSettings>(), Arg.Any<CancellationToken>());
     }
 
@@ -98,9 +97,9 @@ public sealed class SettingsServiceTests
             "admin", ct);
 
         await _repository.Received(1).TryUpdateAsync(Arg.Any<SystemSettings>(), ct);
-        entity.Settings.Harness.UserHarnessPrompt.Should().Be("custom");
-        entity.UpdatedBy.Should().Be("admin");
-        result.Value.Deserialize<HarnessSettings>(WebOptions)!.UserHarnessPrompt.Should().Be("custom");
+        Assert.Equal("custom", entity.Settings.Harness.UserHarnessPrompt);
+        Assert.Equal("admin", entity.UpdatedBy);
+        Assert.Equal("custom", result.Value.Deserialize<HarnessSettings>(WebOptions)!.UserHarnessPrompt);
         await cache.Received(1).RemoveAsync(RegistrySettingsCacheKeys.Envelope(SettingsKeys.Harness, UserId), ct);
     }
 
@@ -117,8 +116,8 @@ public sealed class SettingsServiceTests
             Payload(new { lockdownMode = true, autonomyLevel = 3, semanticIntentCheckEnabled = false, intentCheckModel = "m", rateLimitMaxRequests = 50, rateLimitWindowSeconds = 30 }),
             "admin", ct);
 
-        globalRow.Settings.Pdp.LockdownMode.Should().BeTrue();
-        globalRow.Settings.Pdp.AutonomyLevel.Should().Be(3);
+        Assert.True(globalRow.Settings.Pdp.LockdownMode);
+        Assert.Equal(3, globalRow.Settings.Pdp.AutonomyLevel);
         await _repository.Received(1).FindAsync(null, ct);
     }
 
@@ -127,7 +126,7 @@ public sealed class SettingsServiceTests
     {
         var ct = TestContext.Current.CancellationToken;
         var act = async () => await _sut.UpdateAsync("nope", UserId, Payload(new { }), null, ct);
-        await act.Should().ThrowAsync<KeyNotFoundException>();
+        await Assert.ThrowsAnyAsync<KeyNotFoundException>(act);
     }
 
     [Fact]
@@ -147,7 +146,7 @@ public sealed class SettingsServiceTests
 
         await _sut.UpdateAsync(SettingsKeys.Harness, UserId, Payload(new { userHarnessPrompt = "mine" }), "admin", ct);
 
-        fresh.Settings.Harness.UserHarnessPrompt.Should().Be("mine");
-        fresh.Settings.Harness.IsPromptEnhancementEnabled.Should().BeTrue();
+        Assert.Equal("mine", fresh.Settings.Harness.UserHarnessPrompt);
+        Assert.True(fresh.Settings.Harness.IsPromptEnhancementEnabled);
     }
 }

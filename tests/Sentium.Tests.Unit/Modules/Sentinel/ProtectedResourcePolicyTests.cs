@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.Extensions.Options;
 using Sentium.Sentinel.Features.Policies;
 using Sentium.Sentinel.Features.Options;
@@ -38,10 +37,10 @@ public sealed class ProtectedResourcePolicyTests
 
         var result = await sut.EvaluateAsync(MakeRequest(resourceId: resourceId), ct);
 
-        result.Should().NotBeNull();
-        result!.Allowed.Should().BeFalse();
-        result.Risk.Should().Be(PolicyRiskLevel.High);
-        result.TriggeredPolicies.Should().Contain("ProtectedResource");
+        Assert.NotNull(result);
+        Assert.False(result!.Allowed);
+        Assert.Equal(PolicyRiskLevel.High, result.Risk);
+        Assert.Contains("ProtectedResource", result.TriggeredPolicies);
     }
 
     [Theory]
@@ -55,8 +54,8 @@ public sealed class ProtectedResourcePolicyTests
 
         var result = await sut.EvaluateAsync(MakeRequest(action: action, resourceId: resourceId), ct);
 
-        result.Should().NotBeNull();
-        result!.Allowed.Should().BeFalse();
+        Assert.NotNull(result);
+        Assert.False(result!.Allowed);
     }
 
     [Theory]
@@ -69,8 +68,8 @@ public sealed class ProtectedResourcePolicyTests
 
         var result = await sut.EvaluateAsync(MakeRequest(resourceId: resourceId), ct);
 
-        result.Should().NotBeNull();
-        result!.Allowed.Should().BeFalse();
+        Assert.NotNull(result);
+        Assert.False(result!.Allowed);
     }
 
     [Theory]
@@ -83,7 +82,7 @@ public sealed class ProtectedResourcePolicyTests
 
         var result = await sut.EvaluateAsync(MakeRequest(action: "read", resourceId: resourceId), ct);
 
-        result.Should().BeNull();
+        Assert.Null(result);
     }
 
     [Theory]
@@ -96,10 +95,10 @@ public sealed class ProtectedResourcePolicyTests
 
         var result = await sut.EvaluateAsync(MakeRequest(resourceId: resourceId), ct);
 
-        result.Should().NotBeNull();
-        result!.Allowed.Should().BeFalse();
-        result.Risk.Should().Be(PolicyRiskLevel.High);
-        result.TriggeredPolicies.Should().Contain("ProtectedResource");
+        Assert.NotNull(result);
+        Assert.False(result!.Allowed);
+        Assert.Equal(PolicyRiskLevel.High, result.Risk);
+        Assert.Contains("ProtectedResource", result.TriggeredPolicies);
     }
 
     [Fact]
@@ -110,7 +109,7 @@ public sealed class ProtectedResourcePolicyTests
 
         var result = await sut.EvaluateAsync(MakeRequest(action: "read", resourceId: "reports/summary.md"), ct);
 
-        result.Should().BeNull();
+        Assert.Null(result);
     }
 
     [Fact]
@@ -121,6 +120,6 @@ public sealed class ProtectedResourcePolicyTests
 
         var act = async () => await sut.EvaluateAsync(null!, ct);
 
-        await act.Should().ThrowAsync<ArgumentNullException>();
+        await Assert.ThrowsAnyAsync<ArgumentNullException>(act);
     }
 }

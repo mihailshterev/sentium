@@ -1,7 +1,6 @@
 using Docker.DotNet;
 using FluentValidation;
 using Microsoft.Extensions.Options;
-using Scalar.AspNetCore;
 using Sentium.Core.Constants;
 using Sentium.Infrastructure.Diagnostics;
 using Sentium.Infrastructure.Extensions;
@@ -34,7 +33,7 @@ builder.Services.AddSingleton<IArtifactService, ArtifactService>();
 builder.Services.AddSingleton<IDockerClient>(sp =>
 {
     var endpoint = DockerEndpoint.Resolve(sp.GetRequiredService<IOptions<SandboxOptions>>().Value);
-    return new DockerClientConfiguration(endpoint).CreateClient();
+    return new DockerClientBuilder().WithEndpoint(endpoint).Build();
 });
 
 builder.Services.AddSingleton<ContainerConfigBuilder>();
@@ -59,13 +58,6 @@ app.UseExceptionHandler();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
-
-    app.MapScalarApiReference(options =>
-    {
-        options.WithTitle("Sentium Sandbox")
-               .WithTheme(ScalarTheme.DeepSpace)
-               .WithDefaultHttpClient(ScalarTarget.CSharp, ScalarClient.HttpClient);
-    });
 }
 
 app.MapDefaultEndpoints();

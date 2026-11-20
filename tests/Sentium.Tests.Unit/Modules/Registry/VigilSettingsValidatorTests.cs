@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Sentium.Registry.Contracts.Settings;
 using Sentium.Registry.Features.Settings;
 using Xunit;
@@ -12,7 +11,7 @@ public sealed class VigilSettingsValidatorTests
     [Fact]
     public void Valid_Defaults_Pass()
     {
-        _sut.Validate(new VigilSettings()).IsValid.Should().BeTrue();
+        Assert.True(_sut.Validate(new VigilSettings()).IsValid);
     }
 
     [Theory]
@@ -21,14 +20,14 @@ public sealed class VigilSettingsValidatorTests
     public void Invalid_PollInterval_Fails(int seconds)
     {
         var result = _sut.Validate(new VigilSettings { PollIntervalSeconds = seconds });
-        result.IsValid.Should().BeFalse();
+        Assert.False(result.IsValid);
     }
 
     [Fact]
     public void ProbeTimeout_GreaterThanPollInterval_Fails()
     {
         var result = _sut.Validate(new VigilSettings { PollIntervalSeconds = 5, ProbeTimeoutSeconds = 10 });
-        result.IsValid.Should().BeFalse();
+        Assert.False(result.IsValid);
     }
 
     [Theory]
@@ -37,19 +36,19 @@ public sealed class VigilSettingsValidatorTests
     public void Invalid_ProbeTimeout_Fails(int seconds)
     {
         var result = _sut.Validate(new VigilSettings { ProbeTimeoutSeconds = seconds });
-        result.IsValid.Should().BeFalse();
+        Assert.False(result.IsValid);
     }
 
     [Fact]
     public void Invalid_SampleHistorySize_Fails()
     {
-        _sut.Validate(new VigilSettings { SampleHistorySize = 5 }).IsValid.Should().BeFalse();
-        _sut.Validate(new VigilSettings { SampleHistorySize = 500 }).IsValid.Should().BeFalse();
+        Assert.False(_sut.Validate(new VigilSettings { SampleHistorySize = 5 }).IsValid);
+        Assert.False(_sut.Validate(new VigilSettings { SampleHistorySize = 500 }).IsValid);
     }
 
     [Fact]
     public void Invalid_ConsecutiveFailures_Fails()
     {
-        _sut.Validate(new VigilSettings { ConsecutiveFailuresToOpenIncident = 0 }).IsValid.Should().BeFalse();
+        Assert.False(_sut.Validate(new VigilSettings { ConsecutiveFailuresToOpenIncident = 0 }).IsValid);
     }
 }

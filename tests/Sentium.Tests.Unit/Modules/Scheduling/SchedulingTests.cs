@@ -1,5 +1,4 @@
 using System.Collections.Specialized;
-using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.AI;
@@ -83,10 +82,11 @@ public sealed class SchedulingTests : IAsyncLifetime
     {
         var policy = ToolPolicyReader.GetPolicy(CreateTool(Alice));
 
-        policy.RequiresApproval.Should().BeTrue();
-        policy.RiskLevel.Should().Be(ToolRiskLevel.High);
-        policy.Resource.Should().Be(ToolResource.Code, "Sentinel must inspect the scheduled script like any code execution");
-        CreateTool(Alice).CreateFunction().Should().BeOfType<ApprovalRequiredAIFunction>();
+        Assert.True(policy.RequiresApproval);
+        Assert.Equal(ToolRiskLevel.High, policy.RiskLevel);
+        // Sentinel must inspect the scheduled script like any code execution
+        Assert.Equal(ToolResource.Code, policy.Resource);
+        Assert.IsType<ApprovalRequiredAIFunction>(CreateTool(Alice).CreateFunction());
     }
 
     [Fact]
@@ -94,19 +94,20 @@ public sealed class SchedulingTests : IAsyncLifetime
     {
         var result = await ScheduleAs(Alice, "ResearchAnalyst", code: "print(1)", language: ScheduledJobLanguage.NodeJs);
 
-        result.Should().StartWith("Success");
-        var key = (await JobsOf(Alice)).Should().ContainSingle().Subject;
+        Assert.StartsWith("Success", result, StringComparison.Ordinal);
+        var key = Assert.Single(await JobsOf(Alice));
 
         var detail = await _scheduler.GetJobDetail(key, Ct);
-        detail!.JobType.Should().Be<ExecuteJob>();
-        detail.JobDataMap.GetString(ScheduledJobData.AgentId).Should().Be("ResearchAnalyst");
-        detail.JobDataMap.GetString(ScheduledJobData.Language).Should().Be("NodeJs");
-        detail.JobDataMap.GetString(ScheduledJobData.Code).Should().Be("print(1)");
-        detail.JobDataMap.Values.Should().AllBeOfType<string>("the persistent store runs with UseProperties = true");
+        Assert.Equal(typeof(ExecuteJob), detail!.JobType);
+        Assert.Equal("ResearchAnalyst", detail.JobDataMap.GetString(ScheduledJobData.AgentId));
+        Assert.Equal("NodeJs", detail.JobDataMap.GetString(ScheduledJobData.Language));
+        Assert.Equal("print(1)", detail.JobDataMap.GetString(ScheduledJobData.Code));
+        // The persistent store runs with UseProperties = true.
+        Assert.All(detail.JobDataMap.Values, value => Assert.IsType<string>(value));
 
-        var trigger = (await _scheduler.GetTriggersOfJob(key, Ct)).Should().ContainSingle().Subject.As<ICronTrigger>();
-        trigger.TimeZone.Should().Be(TimeZoneInfo.Utc);
-        trigger.MisfireInstruction.Should().Be(MisfireInstruction.CronTrigger.FireOnceNow);
+        var trigger = Assert.IsAssignableFrom<ICronTrigger>(Assert.Single(await _scheduler.GetTriggersOfJob(key, Ct)));
+        Assert.Equal(TimeZoneInfo.Utc, trigger.TimeZone);
+        Assert.Equal(MisfireInstruction.CronTrigger.FireOnceNow, trigger.MisfireInstruction);
     }
 
     [Fact]
@@ -114,16 +115,16 @@ public sealed class SchedulingTests : IAsyncLifetime
     {
         var properties = CreateTool(Alice).CreateFunction().JsonSchema.GetProperty("properties");
 
-        properties.EnumerateObject().Select(p => p.Name).Should().BeEquivalentTo("jobName", "cronExpression", "code", "language");
+        Assert.Equivalent(new string[] { "jobName", "cronExpression", "code", "language" }, properties.EnumerateObject().Select(p => p.Name));
     }
 
     [Fact]
     public async Task Tool_OutsideAnAgentRun_AttributesTheJobToAGenericAgent()
     {
-        (await CreateTool(Alice).ScheduleAsync("Report", Hourly, "print(1)", ct: Ct)).Should().StartWith("Success");
+        Assert.StartsWith("Success", await CreateTool(Alice).ScheduleAsync("Report", Hourly, "print(1)", ct: Ct), StringComparison.Ordinal);
 
         var detail = await _scheduler.GetJobDetail((await JobsOf(Alice)).Single(), Ct);
-        detail!.JobDataMap.GetString(ScheduledJobData.AgentId).Should().Be("Agent");
+        Assert.Equal("Agent", detail!.JobDataMap.GetString(ScheduledJobData.AgentId));
     }
 
     [Fact]
@@ -131,8 +132,9 @@ public sealed class SchedulingTests : IAsyncLifetime
     {
         var result = await CreateTool(userId: null).ScheduleAsync("Report", Hourly, "print('hi')", ct: Ct);
 
-        result.Should().StartWith("Error").And.Contain("signed-in user");
-        (await _scheduler.GetJobKeys(GroupMatcher<JobKey>.AnyGroup(), Ct)).Should().BeEmpty();
+        Assert.StartsWith("Error", result, StringComparison.Ordinal);
+        Assert.Contains("signed-in user", result, StringComparison.Ordinal);
+        Assert.Empty(await _scheduler.GetJobKeys(GroupMatcher<JobKey>.AnyGroup(), Ct));
     }
 
     [Theory]
@@ -143,8 +145,9 @@ public sealed class SchedulingTests : IAsyncLifetime
     {
         var result = await CreateTool(Alice).ScheduleAsync("Report", cron, "print('hi')", ct: Ct);
 
-        result.Should().StartWith("Error").And.Contain("at least");
-        (await JobsOf(Alice)).Should().BeEmpty();
+        Assert.StartsWith("Error", result, StringComparison.Ordinal);
+        Assert.Contains("at least", result, StringComparison.Ordinal);
+        Assert.Empty(await JobsOf(Alice));
     }
 
     [Theory]
@@ -154,8 +157,8 @@ public sealed class SchedulingTests : IAsyncLifetime
     {
         var result = await CreateTool(Alice).ScheduleAsync("Report", cron, "print('hi')", ct: Ct);
 
-        result.Should().StartWith("Error");
-        (await JobsOf(Alice)).Should().BeEmpty();
+        Assert.StartsWith("Error", result, StringComparison.Ordinal);
+        Assert.Empty(await JobsOf(Alice));
     }
 
     [Fact]
@@ -164,13 +167,14 @@ public sealed class SchedulingTests : IAsyncLifetime
         var tool = CreateTool(Alice);
         for (var i = 0; i < SchedulerDefaults.MaxJobsPerUser; i++)
         {
-            (await tool.ScheduleAsync($"job-{i}", Hourly, "print('hi')", ct: Ct)).Should().StartWith("Success");
+            Assert.StartsWith("Success", await tool.ScheduleAsync($"job-{i}", Hourly, "print('hi')", ct: Ct), StringComparison.Ordinal);
         }
 
         var result = await tool.ScheduleAsync("one-too-many", Hourly, "print('hi')", ct: Ct);
 
-        result.Should().StartWith("Error").And.Contain("limit");
-        (await JobsOf(Alice)).Should().HaveCount(SchedulerDefaults.MaxJobsPerUser);
+        Assert.StartsWith("Error", result, StringComparison.Ordinal);
+        Assert.Contains("limit", result, StringComparison.Ordinal);
+        Assert.Equal(SchedulerDefaults.MaxJobsPerUser, (await JobsOf(Alice)).Count);
     }
 
     [Fact]
@@ -182,9 +186,11 @@ public sealed class SchedulingTests : IAsyncLifetime
         var aliceView = await CreateController(Alice).GetAllActiveJobsAsync(Ct);
         var sovereignView = await CreateController(Guid.NewGuid(), sovereign: true).GetAllActiveJobsAsync(Ct);
 
-        Jobs(aliceView).Should().ContainSingle()
-            .Which.Should().Match<ScheduledJobResponse>(j => j.JobName == "alice-job" && j.AgentId == "AliceAgent" && j.CronExpression == Hourly);
-        Jobs(sovereignView).Select(j => j.JobName).Should().BeEquivalentTo("alice-job", "bob-job");
+        var aliceJob = Assert.Single(Jobs(aliceView));
+        Assert.Equal("alice-job", aliceJob.JobName);
+        Assert.Equal("AliceAgent", aliceJob.AgentId);
+        Assert.Equal(Hourly, aliceJob.CronExpression);
+        Assert.Equivalent(new string[] { "alice-job", "bob-job" }, Jobs(sovereignView).Select(j => j.JobName));
     }
 
     [Fact]
@@ -195,8 +201,8 @@ public sealed class SchedulingTests : IAsyncLifetime
 
         var result = await CreateController(Alice).DeleteScheduledJobAsync("BobAgent", bobJob.Name, Ct);
 
-        result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(404);
-        (await _scheduler.CheckExists(bobJob, Ct)).Should().BeTrue();
+        Assert.Equal(404, Assert.IsType<ObjectResult>(result).StatusCode);
+        Assert.True(await _scheduler.CheckExists(bobJob, Ct));
     }
 
     [Fact]
@@ -207,12 +213,14 @@ public sealed class SchedulingTests : IAsyncLifetime
         var aliceJob = (await JobsOf(Alice)).Single();
         var bobJob = (await JobsOf(Bob)).Single();
 
-        (await CreateController(Alice).DeleteScheduledJobAsync("AliceAgent", aliceJob.Name, Ct)).Should().BeOfType<NoContentResult>();
-        (await CreateController(Guid.NewGuid(), sovereign: true).DeleteScheduledJobAsync("BobAgent", bobJob.Name, Ct)).Should().BeOfType<NoContentResult>();
+        Assert.IsType<NoContentResult>(await CreateController(Alice).DeleteScheduledJobAsync("AliceAgent", aliceJob.Name, Ct));
+        Assert.IsType<NoContentResult>(await CreateController(Guid.NewGuid(), sovereign: true).DeleteScheduledJobAsync("BobAgent", bobJob.Name, Ct));
 
-        (await _scheduler.GetJobKeys(GroupMatcher<JobKey>.AnyGroup(), Ct)).Should().BeEmpty();
+        Assert.Empty(await _scheduler.GetJobKeys(GroupMatcher<JobKey>.AnyGroup(), Ct));
     }
 
-    private static IReadOnlyList<ScheduledJobResponse> Jobs(ActionResult<IReadOnlyList<ScheduledJobResponse>> result) =>
-        result.Result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeAssignableTo<IReadOnlyList<ScheduledJobResponse>>().Subject;
+    private static IReadOnlyList<ScheduledJobResponse> Jobs(ActionResult<IReadOnlyList<ScheduledJobResponse>> result)
+    {
+        return Assert.IsAssignableFrom<IReadOnlyList<ScheduledJobResponse>>(Assert.IsType<OkObjectResult>(result.Result).Value);
+    }
 }

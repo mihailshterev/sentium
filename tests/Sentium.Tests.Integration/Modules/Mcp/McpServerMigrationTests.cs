@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
@@ -29,7 +28,7 @@ public sealed class McpServerMigrationTests(MonolithWebApplicationFactory factor
 
         // The pre-split state: the table sits in the praxis schema.
         await migrator.MigrateAsync("0", Ct);
-        (await TableSchemasAsync(db)).Should().BeEquivalentTo(["praxis"]);
+        Assert.Equivalent(new[] { "praxis" }, await TableSchemasAsync(db));
 
         await db.Database.ExecuteSqlAsync(
             $"""
@@ -42,8 +41,8 @@ public sealed class McpServerMigrationTests(MonolithWebApplicationFactory factor
         {
             await migrator.MigrateAsync(cancellationToken: Ct);
 
-            (await TableSchemasAsync(db)).Should().BeEquivalentTo(["mcp"]);
-            (await db.McpServers.AsNoTracking().SingleAsync(s => s.Id == id, Ct)).Name.Should().Be(name);
+            Assert.Equivalent(new[] { "mcp" }, await TableSchemasAsync(db));
+            Assert.Equal(name, (await db.McpServers.AsNoTracking().SingleAsync(s => s.Id == id, Ct)).Name);
         }
         finally
         {

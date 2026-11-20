@@ -1,7 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Sentium.Core.Constants;
@@ -28,18 +27,18 @@ public sealed class RegistrationTests(RealAuthWebApplicationFactory factory) : I
     {
         using var client = factory.CreateClient();
 
-        (await StatusAsync(client)).Should().Be(new RegistrationStatusResponse(Open: true, Bootstrap: true));
+        Assert.Equal(new RegistrationStatusResponse(Open: true, Bootstrap: true), await StatusAsync(client));
 
-        (await RegisterAsync(client, "founder")).StatusCode.Should().Be(HttpStatusCode.OK);
-        (await RolesOfAsync("founder")).Should().BeEquivalentTo(SecurityRoles.Member, SecurityRoles.Sovereign);
+        Assert.Equal(HttpStatusCode.OK, (await RegisterAsync(client, "founder")).StatusCode);
+        Assert.Equivalent(new string[] { SecurityRoles.Member, SecurityRoles.Sovereign }, await RolesOfAsync("founder"));
 
-        (await StatusAsync(client)).Should().Be(new RegistrationStatusResponse(Open: false, Bootstrap: false));
-        (await RegisterAsync(client, "visitor")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        Assert.Equal(new RegistrationStatusResponse(Open: false, Bootstrap: false), await StatusAsync(client));
+        Assert.Equal(HttpStatusCode.Forbidden, (await RegisterAsync(client, "visitor")).StatusCode);
 
         await OpenRegistrationAsync();
 
-        (await RegisterAsync(client, "member")).StatusCode.Should().Be(HttpStatusCode.OK);
-        (await RolesOfAsync("member")).Should().BeEquivalentTo(SecurityRoles.Member);
+        Assert.Equal(HttpStatusCode.OK, (await RegisterAsync(client, "member")).StatusCode);
+        Assert.Equivalent(new string[] { SecurityRoles.Member }, await RolesOfAsync("member"));
     }
 
     private static async Task<RegistrationStatusResponse> StatusAsync(HttpClient client)

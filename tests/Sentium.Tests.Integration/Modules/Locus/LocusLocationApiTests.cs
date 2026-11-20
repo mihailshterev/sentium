@@ -1,7 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Sentium.Locus.Data;
@@ -22,13 +21,13 @@ public sealed class LocusLocationApiTests(LocusApiFactory factory) : IClassFixtu
         var home = await _client.CreateLocationAsync(LocusApi.Unique("Home"), ct: Ct);
         var garage = await _client.CreateLocationAsync("Garage", home.Id, Ct);
 
-        garage.Path.Should().Be($"{home.Name} › Garage");
-        garage.Depth.Should().Be(2);
-        garage.ParentLocationId.Should().Be(home.Id);
-        garage.UpdatedBy.Should().Be("TestUser");
+        Assert.Equal($"{home.Name} › Garage", garage.Path);
+        Assert.Equal(2, garage.Depth);
+        Assert.Equal(home.Id, garage.ParentLocationId);
+        Assert.Equal("TestUser", garage.UpdatedBy);
 
         var all = await _client.GetFromJsonAsync<List<LocationDto>>("/api/locus/locations", Ct);
-        all!.Single(l => l.Id == home.Id).ChildCount.Should().Be(1);
+        Assert.Equal(1, all!.Single(l => l.Id == home.Id).ChildCount);
     }
 
     [Fact]
@@ -39,7 +38,7 @@ public sealed class LocusLocationApiTests(LocusApiFactory factory) : IClassFixtu
 
         var duplicate = await _client.PostAsJsonAsync("/api/locus/locations", new SaveLocationRequest("  KITCHEN ", null, null, home.Id), Ct);
 
-        duplicate.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        Assert.Equal(HttpStatusCode.Conflict, duplicate.StatusCode);
     }
 
     [Fact]
@@ -50,7 +49,7 @@ public sealed class LocusLocationApiTests(LocusApiFactory factory) : IClassFixtu
 
         var duplicate = await _client.PostAsJsonAsync("/api/locus/locations", new SaveLocationRequest(name.ToUpperInvariant(), null, null, null), Ct);
 
-        duplicate.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        Assert.Equal(HttpStatusCode.Conflict, duplicate.StatusCode);
     }
 
     [Fact]
@@ -62,7 +61,7 @@ public sealed class LocusLocationApiTests(LocusApiFactory factory) : IClassFixtu
         await _client.CreateLocationAsync("Kitchen", home.Id, Ct);
         var second = await _client.PostAsJsonAsync("/api/locus/locations", new SaveLocationRequest("Kitchen", null, null, cabin.Id), Ct);
 
-        second.StatusCode.Should().Be(HttpStatusCode.Created);
+        Assert.Equal(HttpStatusCode.Created, second.StatusCode);
     }
 
     [Fact]
@@ -70,7 +69,7 @@ public sealed class LocusLocationApiTests(LocusApiFactory factory) : IClassFixtu
     {
         var response = await _client.PostAsJsonAsync("/api/locus/locations", new SaveLocationRequest("Orphan", null, null, Guid.NewGuid()), Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
@@ -82,7 +81,7 @@ public sealed class LocusLocationApiTests(LocusApiFactory factory) : IClassFixtu
 
         var response = await _client.PutAsJsonAsync($"/api/locus/locations/{home.Id}", new SaveLocationRequest(home.Name, null, null, shelf.Id), Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
     }
 
     [Fact]
@@ -95,9 +94,9 @@ public sealed class LocusLocationApiTests(LocusApiFactory factory) : IClassFixtu
 
         var response = await _client.PutAsJsonAsync($"/api/locus/locations/{garage.Id}", new SaveLocationRequest("Garage", null, null, shed.Id), Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var moved = await _client.GetFromJsonAsync<LocationDto>($"/api/locus/locations/{shelf.Id}", Ct);
-        moved!.Path.Should().Be($"{home.Name} › Shed › Garage › Shelf");
+        Assert.Equal($"{home.Name} › Shed › Garage › Shelf", moved!.Path);
     }
 
     [Fact]
@@ -110,10 +109,10 @@ public sealed class LocusLocationApiTests(LocusApiFactory factory) : IClassFixtu
 
         var response = await _client.DeleteAsync($"/api/locus/locations/{garage.Id}", Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
         using var problem = JsonDocument.Parse(await response.Content.ReadAsStringAsync(Ct));
-        problem.RootElement.GetProperty("childCount").GetInt32().Should().Be(1);
-        problem.RootElement.GetProperty("assetCount").GetInt32().Should().Be(1);
+        Assert.Equal(1, problem.RootElement.GetProperty("childCount").GetInt32());
+        Assert.Equal(1, problem.RootElement.GetProperty("assetCount").GetInt32());
     }
 
     [Fact]
@@ -126,14 +125,14 @@ public sealed class LocusLocationApiTests(LocusApiFactory factory) : IClassFixtu
 
         var response = await _client.DeleteAsync($"/api/locus/locations/{garage.Id}?moveContentsTo={home.Id}", Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        (await _client.GetAsync($"/api/locus/locations/{garage.Id}", Ct)).StatusCode.Should().Be(HttpStatusCode.NotFound);
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await _client.GetAsync($"/api/locus/locations/{garage.Id}", Ct)).StatusCode);
 
         var movedShelf = await _client.GetFromJsonAsync<LocationDto>($"/api/locus/locations/{shelf.Id}", Ct);
-        movedShelf!.ParentLocationId.Should().Be(home.Id);
+        Assert.Equal(home.Id, movedShelf!.ParentLocationId);
 
         var movedDrill = await _client.GetFromJsonAsync<AssetDto>($"/api/locus/assets/{drill.Id}", Ct);
-        movedDrill!.LocationId.Should().Be(home.Id);
+        Assert.Equal(home.Id, movedDrill!.LocationId);
     }
 
     [Fact]
@@ -145,7 +144,7 @@ public sealed class LocusLocationApiTests(LocusApiFactory factory) : IClassFixtu
 
         var response = await _client.DeleteAsync($"/api/locus/locations/{garage.Id}?moveContentsTo={shelf.Id}", Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
     }
 
     [Fact]
@@ -158,7 +157,7 @@ public sealed class LocusLocationApiTests(LocusApiFactory factory) : IClassFixtu
 
         var response = await _client.DeleteAsync($"/api/locus/locations/{garage.Id}?moveContentsTo={home.Id}", Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
     }
 
     [Fact]
@@ -177,13 +176,13 @@ public sealed class LocusLocationApiTests(LocusApiFactory factory) : IClassFixtu
         }
 
         var response = await _client.PutAsJsonAsync($"/api/locus/locations/{home.Id}", new SaveLocationRequest(home.Name + "-renamed", null, null, null), Ct);
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
         await using (var scope = factory.Services.CreateAsyncScope())
         {
             var db = scope.ServiceProvider.GetRequiredService<LocusDbContext>();
-            (await db.KnowledgeSyncEntries.SingleAsync(e => e.AssetId == shared.Id, Ct)).Version.Should().BeGreaterThan(versionBefore);
-            (await db.KnowledgeSyncEntries.AnyAsync(e => e.AssetId == hidden.Id, Ct)).Should().BeFalse();
+            Assert.True((await db.KnowledgeSyncEntries.SingleAsync(e => e.AssetId == shared.Id, Ct)).Version > versionBefore);
+            Assert.False(await db.KnowledgeSyncEntries.AnyAsync(e => e.AssetId == hidden.Id, Ct));
         }
     }
 }

@@ -142,8 +142,8 @@ var web = builder.AddProject<Projects.Sentium_Web>(ServiceNames.Web)
     .WithExternalHttpEndpoints()
     .WithUrlForEndpoint("https", url =>
     {
-        url.DisplayText = "Scalar API (Docs)";
-        url.Url = "/scalar/v1";
+        url.DisplayText = "OpenAPI document";
+        url.Url = "/openapi/v1.json";
     });
 
 if (backup is not null)

@@ -1,5 +1,4 @@
 using System.Text.Json;
-using FluentAssertions;
 using Microsoft.Extensions.AI;
 using Sentium.Praxis.Features.Agents.Approvals;
 using Xunit;
@@ -35,8 +34,8 @@ public sealed class PendingApprovalStoreTests
         var found = _store.TryTake("req-1", OwnerId, out var taken);
 
         // Assert
-        found.Should().BeTrue();
-        taken.Should().BeSameAs(approval);
+        Assert.True(found);
+        Assert.Same(approval, taken);
     }
 
     [Fact]
@@ -49,10 +48,10 @@ public sealed class PendingApprovalStoreTests
         _store.TryTake("req-2", OwnerId, out var taken);
 
         // Assert
-        taken.Should().NotBeNull();
-        taken.Session.GetProperty("stateBag").GetProperty("ConversationChatHistoryProvider").GetProperty("conversationId").GetString().Should().Be("c1");
-        taken.ApprovalRequest.RequestId.Should().Be("req-2");
-        taken.ApprovalRequest.ToolCall.Should().BeOfType<FunctionCallContent>().Which.Name.Should().Be("execute_code_sandbox");
+        Assert.NotNull(taken);
+        Assert.Equal("c1", taken.Session.GetProperty("stateBag").GetProperty("ConversationChatHistoryProvider").GetProperty("conversationId").GetString());
+        Assert.Equal("req-2", taken.ApprovalRequest.RequestId);
+        Assert.Equal("execute_code_sandbox", Assert.IsType<FunctionCallContent>(taken.ApprovalRequest.ToolCall).Name);
     }
 
     [Fact]
@@ -62,8 +61,8 @@ public sealed class PendingApprovalStoreTests
         var found = _store.TryTake("missing", OwnerId, out var taken);
 
         // Assert
-        found.Should().BeFalse();
-        taken.Should().BeNull();
+        Assert.False(found);
+        Assert.Null(taken);
     }
 
     [Fact]
@@ -77,8 +76,8 @@ public sealed class PendingApprovalStoreTests
         var foundAgain = _store.TryTake("req-3", OwnerId, out var taken);
 
         // Assert
-        foundAgain.Should().BeFalse();
-        taken.Should().BeNull();
+        Assert.False(foundAgain);
+        Assert.Null(taken);
     }
 
     [Fact]
@@ -93,9 +92,9 @@ public sealed class PendingApprovalStoreTests
         var foundByOwner = _store.TryTake("req-4", OwnerId, out var ownerTaken);
 
         // Assert
-        foundByStranger.Should().BeFalse();
-        strangerTaken.Should().BeNull();
-        foundByOwner.Should().BeTrue();
-        ownerTaken.Should().BeSameAs(approval);
+        Assert.False(foundByStranger);
+        Assert.Null(strangerTaken);
+        Assert.True(foundByOwner);
+        Assert.Same(approval, ownerTaken);
     }
 }

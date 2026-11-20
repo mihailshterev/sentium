@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 using Sentium.Core.Results;
 using Sentium.Sentinel.Features.Audit;
@@ -51,8 +50,7 @@ public sealed class PolicyControllerTests
         var result = await _controller.GetAudit(1, 10, ct);
 
         // Assert
-        result.Should().BeOfType<OkObjectResult>()
-            .Which.Value.As<PagedResponse<AuditRecord>>().Items.Should().HaveCount(1);
+        Assert.Single(Assert.IsAssignableFrom<PagedResponse<AuditRecord>>(Assert.IsType<OkObjectResult>(result).Value).Items);
     }
 
     [Fact]
@@ -65,8 +63,7 @@ public sealed class PolicyControllerTests
         var result = await _controller.GetAudit(1, 999, ct);
 
         // Assert
-        result.Should().BeOfType<OkObjectResult>()
-            .Which.Value.As<PagedResponse<AuditRecord>>().PageSize.Should().Be(100);
+        Assert.Equal(100, Assert.IsAssignableFrom<PagedResponse<AuditRecord>>(Assert.IsType<OkObjectResult>(result).Value).PageSize);
     }
 
     [Fact]
@@ -81,8 +78,7 @@ public sealed class PolicyControllerTests
         var result = await _controller.GetAuditByAgent(record.AgentId, 1, 50, ct);
 
         // Assert
-        result.Should().BeOfType<OkObjectResult>()
-            .Which.Value.As<PagedResponse<AuditRecord>>().Items.Should().ContainSingle();
+        Assert.Single(Assert.IsAssignableFrom<PagedResponse<AuditRecord>>(Assert.IsType<OkObjectResult>(result).Value).Items);
     }
 
     [Fact]
@@ -95,9 +91,8 @@ public sealed class PolicyControllerTests
         var result = await _controller.GetAuditStats(ct);
 
         // Assert
-        var stats = result.Should().BeOfType<OkObjectResult>()
-            .Which.Value.As<AuditStatsDto>();
-        stats.Total.Should().Be(0);
+        var stats = Assert.IsAssignableFrom<AuditStatsDto>(Assert.IsType<OkObjectResult>(result).Value);
+        Assert.Equal(0, stats.Total);
     }
 
     [Fact]
@@ -112,10 +107,9 @@ public sealed class PolicyControllerTests
         var result = await _controller.GetAuditStats(ct);
 
         // Assert
-        var stats = result.Should().BeOfType<OkObjectResult>()
-            .Which.Value.As<AuditStatsDto>();
-        stats.Total.Should().Be(2);
-        stats.Allowed.Should().Be(1);
-        stats.Denied.Should().Be(1);
+        var stats = Assert.IsAssignableFrom<AuditStatsDto>(Assert.IsType<OkObjectResult>(result).Value);
+        Assert.Equal(2, stats.Total);
+        Assert.Equal(1, stats.Allowed);
+        Assert.Equal(1, stats.Denied);
     }
 }

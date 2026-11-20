@@ -1,10 +1,14 @@
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using Sentium.Core.Constants;
-using Serilog.Context;
 
 namespace Sentium.Infrastructure.Middleware;
 
-internal class RequestTracingMiddleware(RequestDelegate next)
+/// <summary>
+/// Echoes the caller's correlation id (or the trace identifier) and puts it in a logging scope, so every log entry
+/// written while handling the request carries it; the OpenTelemetry exporter sends scope values as attributes.
+/// </summary>
+internal class RequestTracingMiddleware(RequestDelegate next, ILogger<RequestTracingMiddleware> logger)
 {
     public async Task InvokeAsync(HttpContext context)
     {
@@ -17,7 +21,9 @@ internal class RequestTracingMiddleware(RequestDelegate next)
 
         context.Response.Headers[CommonHeaderNames.CorrelationId] = correlationId;
 
-        using (LogContext.PushProperty(CommonHeaderNames.CorrelationId, correlationId))
+        var scope = new Dictionary<string, object> { [CommonHeaderNames.CorrelationId] = correlationId.ToString() };
+
+        using (logger.BeginScope(scope))
         {
             await next(context);
         }

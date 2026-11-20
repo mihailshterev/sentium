@@ -1,6 +1,5 @@
 using System.Net;
 using System.Text;
-using FluentAssertions;
 using NSubstitute;
 using Sentium.Vigil.Features.Monitoring.Probes;
 using Sentium.Vigil.Features.Monitoring;
@@ -36,10 +35,10 @@ public sealed class HttpHealthProbeTests
 
         var result = await probe.ProbeAsync(CancellationToken.None);
 
-        result.Status.Should().Be(ServiceStatus.Healthy);
-        result.Kind.Should().Be(ComponentKind.Service);
-        result.Checks.Should().HaveCount(2);
-        result.Details.Should().BeNull();
+        Assert.Equal(ServiceStatus.Healthy, result.Status);
+        Assert.Equal(ComponentKind.Service, result.Kind);
+        Assert.Equal(2, result.Checks.Count);
+        Assert.Null(result.Details);
     }
 
     [Fact]
@@ -49,8 +48,8 @@ public sealed class HttpHealthProbeTests
 
         var result = await probe.ProbeAsync(CancellationToken.None);
 
-        result.Status.Should().Be(ServiceStatus.Degraded);
-        result.Details.Should().Contain("cache");
+        Assert.Equal(ServiceStatus.Degraded, result.Status);
+        Assert.Contains("cache", result.Details, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -60,8 +59,8 @@ public sealed class HttpHealthProbeTests
 
         var result = await probe.ProbeAsync(CancellationToken.None);
 
-        result.Status.Should().Be(ServiceStatus.Unhealthy);
-        result.Details.Should().Contain("db");
+        Assert.Equal(ServiceStatus.Unhealthy, result.Status);
+        Assert.Contains("db", result.Details, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -71,7 +70,7 @@ public sealed class HttpHealthProbeTests
 
         var result = await probe.ProbeAsync(CancellationToken.None);
 
-        result.Status.Should().Be(ServiceStatus.Healthy);
+        Assert.Equal(ServiceStatus.Healthy, result.Status);
     }
 
     [Fact]
@@ -85,8 +84,8 @@ public sealed class HttpHealthProbeTests
 
         var result = await probe.ProbeAsync(CancellationToken.None);
 
-        result.Status.Should().Be(ServiceStatus.Unhealthy);
-        result.Details.Should().NotBeNull();
+        Assert.Equal(ServiceStatus.Unhealthy, result.Status);
+        Assert.NotNull(result.Details);
     }
 
     private sealed class StubHandler(HttpStatusCode statusCode, string body) : HttpMessageHandler

@@ -1,5 +1,4 @@
 using System.Net;
-using FluentAssertions;
 using Sentium.Infrastructure.Net;
 using Xunit;
 
@@ -25,8 +24,8 @@ public sealed class NetworkAddressPolicyTests
     [InlineData("::ffff:192.168.1.20")]
     public void PrivateOnly_AllowsLoopbackAndPrivateRanges(string address)
     {
-        NetworkAddressPolicy.IsAllowed(IPAddress.Parse(address), NetworkAddressScope.PrivateOnly).Should().BeTrue();
-        NetworkAddressPolicy.IsAllowed(IPAddress.Parse(address), NetworkAddressScope.PublicOnly).Should().BeFalse();
+        Assert.True(NetworkAddressPolicy.IsAllowed(IPAddress.Parse(address), NetworkAddressScope.PrivateOnly));
+        Assert.False(NetworkAddressPolicy.IsAllowed(IPAddress.Parse(address), NetworkAddressScope.PublicOnly));
     }
 
     [Theory]
@@ -38,8 +37,8 @@ public sealed class NetworkAddressPolicyTests
     [InlineData("::ffff:8.8.8.8")]
     public void PublicAddresses_AreOnlyAllowedForPublicScope(string address)
     {
-        NetworkAddressPolicy.IsAllowed(IPAddress.Parse(address), NetworkAddressScope.PrivateOnly).Should().BeFalse();
-        NetworkAddressPolicy.IsAllowed(IPAddress.Parse(address), NetworkAddressScope.PublicOnly).Should().BeTrue();
+        Assert.False(NetworkAddressPolicy.IsAllowed(IPAddress.Parse(address), NetworkAddressScope.PrivateOnly));
+        Assert.True(NetworkAddressPolicy.IsAllowed(IPAddress.Parse(address), NetworkAddressScope.PublicOnly));
     }
 
     [Theory]
@@ -53,8 +52,8 @@ public sealed class NetworkAddressPolicyTests
     [InlineData("::ffff:169.254.169.254")]
     public void LinkLocalAndUnusableAddresses_AreNeverAllowed(string address)
     {
-        NetworkAddressPolicy.IsAllowed(IPAddress.Parse(address), NetworkAddressScope.PrivateOnly).Should().BeFalse();
-        NetworkAddressPolicy.IsAllowed(IPAddress.Parse(address), NetworkAddressScope.PublicOnly).Should().BeFalse();
+        Assert.False(NetworkAddressPolicy.IsAllowed(IPAddress.Parse(address), NetworkAddressScope.PrivateOnly));
+        Assert.False(NetworkAddressPolicy.IsAllowed(IPAddress.Parse(address), NetworkAddressScope.PublicOnly));
     }
 
     [Fact]
@@ -73,9 +72,10 @@ public sealed class NetworkAddressPolicyTests
 
         var act = () => client.GetAsync(new Uri("http://mcp.example.test:8080/mcp"), ct);
 
-        var error = await act.Should().ThrowAsync<HttpRequestException>();
-        FindBlocked(error.Which).Should().NotBeNull();
-        resolverCalls.Should().Be(1, "the guard resolves the host itself instead of trusting a later lookup");
+        var error = await Assert.ThrowsAnyAsync<HttpRequestException>(act);
+        Assert.NotNull(FindBlocked(error));
+        // the guard resolves the host itself instead of trusting a later lookup
+        Assert.Equal(1, resolverCalls);
     }
 
     [Fact]
@@ -89,8 +89,8 @@ public sealed class NetworkAddressPolicyTests
 
         var act = () => client.GetAsync(new Uri("http://8.8.8.8/mcp"), ct);
 
-        var error = await act.Should().ThrowAsync<HttpRequestException>();
-        FindBlocked(error.Which).Should().NotBeNull();
+        var error = await Assert.ThrowsAnyAsync<HttpRequestException>(act);
+        Assert.NotNull(FindBlocked(error));
     }
 
     [Fact]
@@ -98,9 +98,9 @@ public sealed class NetworkAddressPolicyTests
     {
         using var handler = NetworkAddressPolicy.CreateHandler(NetworkAddressScope.PrivateOnly);
 
-        handler.UseProxy.Should().BeFalse("a proxy would make the connect-time check meaningless");
-        handler.AllowAutoRedirect.Should().BeFalse("a redirect must not lead outside the allowed scope");
-        handler.ConnectCallback.Should().NotBeNull();
+        Assert.False(handler.UseProxy, "a proxy would make the connect-time check meaningless");
+        Assert.False(handler.AllowAutoRedirect, "a redirect must not lead outside the allowed scope");
+        Assert.NotNull(handler.ConnectCallback);
     }
 
     private static NetworkAddressBlockedException? FindBlocked(Exception? ex)

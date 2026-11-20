@@ -1,7 +1,6 @@
 using System.Text;
 using System.Threading.Channels;
 using Docker.DotNet;
-using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NSubstitute;
@@ -30,26 +29,29 @@ public sealed class McpHostTests
 
         var config = builder.BuildMcp("time", new McpServerLaunchSpec(Image, ["--local-timezone=UTC"], new Dictionary<string, string> { ["API_KEY"] = "k" }, null, 4_096, 4));
 
-        config.Image.Should().Be(Image);
-        config.Cmd.Should().Equal("--local-timezone=UTC");
-        config.Env.Should().Contain("API_KEY=k").And.Contain("HOME=/tmp");
-        config.OpenStdin.Should().BeTrue();
-        config.AttachStdin.Should().BeTrue();
-        config.StdinOnce.Should().BeFalse();
-        config.Tty.Should().BeFalse("a TTY would merge stdout and stderr and corrupt the JSON-RPC stream");
-        config.NetworkDisabled.Should().BeTrue();
-        config.User.Should().BeNull("by default the image's own user runs the server");
-        config.Labels.Should().Contain(ContainerConfigBuilder.McpServerLabel, "time");
+        Assert.Equal(Image, config.Image);
+        Assert.Equal(new string[] { "--local-timezone=UTC" }, config.Cmd);
+        Assert.Contains("API_KEY=k", config.Env);
+        Assert.Contains("HOME=/tmp", config.Env);
+        Assert.True(config.OpenStdin);
+        Assert.True(config.AttachStdin);
+        Assert.False(config.StdinOnce);
+        Assert.False(config.Tty, "a TTY would merge stdout and stderr and corrupt the JSON-RPC stream");
+        Assert.True(config.NetworkDisabled);
+        // by default the image's own user runs the server
+        Assert.Null(config.User);
+        Assert.Equal("time", Assert.Contains(ContainerConfigBuilder.McpServerLabel, config.Labels));
 
-        var host = config.HostConfig;
-        host.NetworkMode.Should().Be("none");
-        host.ReadonlyRootfs.Should().BeTrue();
-        host.CapDrop.Should().Equal("ALL");
-        host.Privileged.Should().BeFalse();
-        host.SecurityOpt.Should().Contain("no-new-privileges:true");
-        host.Memory.Should().Be(512L * 1024 * 1024, "requests are clamped to the operator maximum");
-        host.NanoCPUs.Should().Be(1_000_000_000L);
-        host.Mounts.Should().BeNullOrEmpty("an MCP server gets no host directory");
+        var host = config.HostConfig!;
+        Assert.Equal("none", host.NetworkMode);
+        Assert.True(host.ReadonlyRootfs);
+        Assert.Equal(new string[] { "ALL" }, host.CapDrop);
+        Assert.False(host.Privileged);
+        Assert.Contains("no-new-privileges:true", host.SecurityOpt);
+        // requests are clamped to the operator maximum
+        Assert.Equal(512L * 1024 * 1024, host.Memory);
+        Assert.Equal(1_000_000_000L, host.NanoCPUs);
+        Assert.True(host.Mounts is null || host.Mounts.Count == 0, "an MCP server gets no host directory");
     }
 
     [Fact]
@@ -57,7 +59,7 @@ public sealed class McpHostTests
     {
         var config = CreateBuilder(new McpHostOptions { RunAsUser = "65534:65534" }).BuildMcp("time", new McpServerLaunchSpec(Image, null, null, null, null, null));
 
-        config.User.Should().Be("65534:65534");
+        Assert.Equal("65534:65534", config.User);
     }
 
     [Fact]
@@ -65,9 +67,10 @@ public sealed class McpHostTests
     {
         var config = CreateBuilder(new McpHostOptions()).BuildMcp("search", new McpServerLaunchSpec(Image, null, null, "sentium-egress", null, null));
 
-        config.NetworkDisabled.Should().BeFalse();
-        config.HostConfig.NetworkMode.Should().Be("sentium-egress");
-        config.Cmd.Should().BeNull("an empty argument list keeps the image's default command");
+        Assert.False(config.NetworkDisabled);
+        Assert.Equal("sentium-egress", config.HostConfig!.NetworkMode);
+        // an empty argument list keeps the image's default command
+        Assert.Null(config.Cmd);
     }
 
     [Theory]
@@ -80,8 +83,8 @@ public sealed class McpHostTests
     {
         var (actualName, actualTag) = DockerImageService.SplitImageRef(reference);
 
-        actualName.Should().Be(name);
-        actualTag.Should().Be(tag);
+        Assert.Equal(name, actualName);
+        Assert.Equal(tag, actualTag);
     }
 
     [Theory]
@@ -97,8 +100,8 @@ public sealed class McpHostTests
 
         var act = () => manager.EnsureAsync("time", new McpServerLaunchSpec(image, null, null, network, null, null), Ct);
 
-        (await act.Should().ThrowAsync<McpHostRejectedException>()).Which.Message.Should().Contain(expected);
-        docker.ReceivedCalls().Should().BeEmpty();
+        Assert.Contains(expected, (await Assert.ThrowsAnyAsync<McpHostRejectedException>(act)).Message, StringComparison.Ordinal);
+        Assert.Empty(docker.ReceivedCalls());
     }
 
     [Fact]
@@ -106,9 +109,9 @@ public sealed class McpHostTests
     {
         await using var manager = CreateManager(Substitute.For<IDockerClient>(), new McpHostOptions { Enabled = true });
 
-        (await manager.ListToolsAsync("missing", Ct)).Should().BeNull();
-        manager.GetStatus("missing").Should().BeNull();
-        (await manager.StopAsync("missing")).Should().BeFalse();
+        Assert.Null(await manager.ListToolsAsync("missing", Ct));
+        Assert.Null(manager.GetStatus("missing"));
+        Assert.False(await manager.StopAsync("missing"));
     }
 
     [Fact]
@@ -121,16 +124,17 @@ public sealed class McpHostTests
         stdio.Emit(StdioTarget.Stdout, "{\"jsonrpc\":\"2.0\",\"id\":1}\n");
 
         using var reader = new StreamReader(bridge.ServerOutput, Encoding.UTF8, leaveOpen: true);
-        (await reader.ReadLineAsync(Ct)).Should().Be("{\"jsonrpc\":\"2.0\",\"id\":1}");
+        Assert.Equal("{\"jsonrpc\":\"2.0\",\"id\":1}", await reader.ReadLineAsync(Ct));
 
-        bridge.StderrTail.Should().Equal("line two", "line three");
+        Assert.Equal(new string[] { "line two", "line three" }, bridge.StderrTail);
 
         await bridge.ServerInput.WriteAsync(Encoding.UTF8.GetBytes("ping\n"), Ct);
-        stdio.Written.ToString().Should().Be("ping\n");
+        Assert.Equal("ping\n", stdio.Written.ToString());
 
         stdio.End();
         await bridge.Completion.WaitAsync(TimeSpan.FromSeconds(5), Ct);
-        (await reader.ReadLineAsync(Ct)).Should().BeNull("the container's EOF ends the client's input");
+        // the container's EOF ends the client's input
+        Assert.Null(await reader.ReadLineAsync(Ct));
     }
 
     [Fact]
@@ -142,14 +146,14 @@ public sealed class McpHostTests
         stdio.Emit(StdioTarget.Stdout, new string('x', 64));
 
         await bridge.Completion.WaitAsync(TimeSpan.FromSeconds(5), Ct);
-        bridge.StderrTail.Should().ContainSingle(l => l.Contains("larger than 16 bytes"));
+        Assert.Single(bridge.StderrTail, l => l.Contains("larger than 16 bytes"));
 
         var read = async () =>
         {
             using var reader = new StreamReader(bridge.ServerOutput, Encoding.UTF8, leaveOpen: true);
             await reader.ReadToEndAsync(Ct);
         };
-        await read.Should().ThrowAsync<InvalidDataException>();
+        await Assert.ThrowsAnyAsync<InvalidDataException>(read);
     }
 
     [Fact]
@@ -160,8 +164,8 @@ public sealed class McpHostTests
 
         await bridge.DisposeAsync();
 
-        stdio.InputClosed.Should().BeTrue();
-        stdio.Disposed.Should().BeTrue();
+        Assert.True(stdio.InputClosed);
+        Assert.True(stdio.Disposed);
     }
 
     [Fact]
@@ -189,8 +193,8 @@ public sealed class McpHostTests
             (chunk.Target == StdioTarget.Stderr ? stderr : stdout).Append(Encoding.UTF8.GetString(buffer, 0, chunk.Count));
         }
 
-        stdout.ToString().Should().Be("{\"id\":1}\ntail");
-        stderr.ToString().Should().Be("warning\n");
+        Assert.Equal("{\"id\":1}\ntail", stdout.ToString());
+        Assert.Equal("warning\n", stderr.ToString());
     }
 
     private static void WriteFrame(Stream stream, byte target, string text)

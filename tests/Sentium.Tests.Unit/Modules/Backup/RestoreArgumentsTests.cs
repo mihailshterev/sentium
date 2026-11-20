@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Sentium.Backup.Restore;
 using Xunit;
 
@@ -9,15 +8,13 @@ public sealed class RestoreArgumentsTests
     [Fact]
     public void Restore_WithIdentityAndReplace()
     {
-        RestoreArguments.Parse(["restore", "/backups/a.tar.age", "--identity", "/id.txt", "--replace"])
-            .Should().Be(new RestoreArguments("/backups/a.tar.age", "/id.txt", Replace: true, VerifyOnly: false));
+        Assert.Equal(new RestoreArguments("/backups/a.tar.age", "/id.txt", Replace: true, VerifyOnly: false), RestoreArguments.Parse(["restore", "/backups/a.tar.age", "--identity", "/id.txt", "--replace"]));
     }
 
     [Fact]
     public void Verify_IsVerifyOnly()
     {
-        RestoreArguments.Parse(["verify", "/backups/a.tar"])
-            .Should().Be(new RestoreArguments("/backups/a.tar", null, Replace: false, VerifyOnly: true));
+        Assert.Equal(new RestoreArguments("/backups/a.tar", null, Replace: false, VerifyOnly: true), RestoreArguments.Parse(["verify", "/backups/a.tar"]));
     }
 
     [Theory]
@@ -28,12 +25,12 @@ public sealed class RestoreArgumentsTests
     [InlineData("backup", "/a.tar")]
     public void InvalidArguments_AreRejected(params string[] args)
     {
-        RestoreArguments.Parse(args).Should().BeNull();
+        Assert.Null(RestoreArguments.Parse(args));
     }
 
     [Fact]
     public void NoArguments_StartTheService()
     {
-        RestoreArguments.IsCommand([]).Should().BeFalse();
+        Assert.False(RestoreArguments.IsCommand([]));
     }
 }

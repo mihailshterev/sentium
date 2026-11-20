@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using FluentAssertions;
 using Sentium.Praxis.Features.Skills;
 using Sentium.Core.Results;
 using Sentium.Tests.Integration.Common;
@@ -19,9 +18,9 @@ public sealed class SkillsApiTests(MonolithWebApplicationFactory factory)
     {
         var response = await _client.GetAsync("/api/praxis/skills/built-in", Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var skills = await response.Content.ReadFromJsonAsync<List<BuiltInSkillInfo>>(Ct);
-        skills.Should().NotBeNull();
+        Assert.NotNull(skills);
     }
 
     [Fact]
@@ -31,10 +30,10 @@ public sealed class SkillsApiTests(MonolithWebApplicationFactory factory)
 
         var response = await _client.PostAsJsonAsync("/api/praxis/skills", request, Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var dto = await response.Content.ReadFromJsonAsync<AgentSkillDto>(Ct);
-        dto.Should().NotBeNull();
-        dto!.Name.Should().Be(request.Name);
+        Assert.NotNull(dto);
+        Assert.Equal(request.Name, dto!.Name);
     }
 
     [Fact]
@@ -45,9 +44,9 @@ public sealed class SkillsApiTests(MonolithWebApplicationFactory factory)
 
         var response = await _client.GetAsync("/api/praxis/skills", Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var paged = await response.Content.ReadFromJsonAsync<PagedResponse<AgentSkillDto>>(Ct);
-        paged!.Items.Should().Contain(s => s.Name == name);
+        Assert.Contains(paged!.Items, s => s.Name == name);
     }
 
     [Fact]
@@ -58,7 +57,7 @@ public sealed class SkillsApiTests(MonolithWebApplicationFactory factory)
 
         var response = await _client.PostAsJsonAsync("/api/praxis/skills", new CreateAgentSkillRequest(name, "desc2", "inst2", AgentSkillType.Custom), Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
     }
 
     [Fact]
@@ -69,7 +68,7 @@ public sealed class SkillsApiTests(MonolithWebApplicationFactory factory)
 
         var response = await _client.PutAsJsonAsync($"/api/praxis/skills/{created!.Id}", new UpdateAgentSkillRequest("Updated Skill", "updated desc", "updated instructions"), Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
     }
 
     [Fact]
@@ -79,9 +78,9 @@ public sealed class SkillsApiTests(MonolithWebApplicationFactory factory)
         var created = await createResp.Content.ReadFromJsonAsync<AgentSkillDto>(Ct);
 
         var deleteResp = await _client.DeleteAsync($"/api/praxis/skills/{created!.Id}", Ct);
-        deleteResp.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        Assert.Equal(HttpStatusCode.NoContent, deleteResp.StatusCode);
 
         var getResp = await _client.GetAsync($"/api/praxis/skills/{created.Id}", Ct);
-        getResp.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        Assert.Equal(HttpStatusCode.NotFound, getResp.StatusCode);
     }
 }

@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Sentium.Sentinel.Features.Audit;
 using Xunit;
 
@@ -13,8 +12,9 @@ public sealed class AuditHashTests
 
         var hash = AuditHash.Of(input);
 
-        hash.Should().Be(AuditHash.Of(input));
-        hash.Should().HaveLength(64).And.MatchRegex("^[0-9a-f]+$");
-        AuditHash.Of("other").Should().NotBe(hash);
+        Assert.Equal(AuditHash.Of(input), hash);
+        Assert.Equal(64, hash.Length);
+        Assert.Matches("^[0-9a-f]+$", hash);
+        Assert.NotEqual(hash, AuditHash.Of("other"));
     }
 }

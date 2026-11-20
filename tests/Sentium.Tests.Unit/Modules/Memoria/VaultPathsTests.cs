@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Sentium.Memoria.Common;
 using Xunit;
 
@@ -12,7 +11,7 @@ public sealed class VaultPathsTests
     [InlineData("  Top.md ", "Top.md")]
     public void Normalize_AcceptsRelativeMarkdownPaths(string raw, string expected)
     {
-        VaultPaths.Normalize(raw).Should().Be(expected);
+        Assert.Equal(expected, VaultPaths.Normalize(raw));
     }
 
     [Theory]
@@ -26,13 +25,13 @@ public sealed class VaultPathsTests
     [InlineData("")]
     public void Normalize_RejectsUnsafeOrNonNotePaths(string raw)
     {
-        VaultPaths.Normalize(raw).Should().BeNull();
+        Assert.Null(VaultPaths.Normalize(raw));
     }
 
     [Fact]
     public void ToKey_LowerCasesAndDropsTheExtension()
     {
-        VaultPaths.ToKey("Areas/Health.md").Should().Be("areas/health");
+        Assert.Equal("areas/health", VaultPaths.ToKey("Areas/Health.md"));
     }
 
     [Theory]
@@ -41,6 +40,6 @@ public sealed class VaultPathsTests
     [InlineData("", "../c.md", null)]
     public void Combine_ResolvesRelativeLinks(string folder, string relative, string? expected)
     {
-        VaultPaths.Combine(folder, relative).Should().Be(expected);
+        Assert.Equal(expected, VaultPaths.Combine(folder, relative));
     }
 }

@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
@@ -44,8 +43,8 @@ public sealed class SentinelPolicyEngineTests
         var result = await engine.EvaluateAsync(MakeRequest(), ct);
 
         // Assert
-        result.Allowed.Should().BeTrue();
-        result.Effect.Should().Be(PolicyEffect.Allow);
+        Assert.True(result.Allowed);
+        Assert.Equal(PolicyEffect.Allow, result.Effect);
     }
 
     [Fact]
@@ -67,7 +66,7 @@ public sealed class SentinelPolicyEngineTests
         var result = await engine.EvaluateAsync(MakeRequest(), ct);
 
         // Assert
-        result.Allowed.Should().BeFalse();
+        Assert.False(result.Allowed);
         await secondPolicy.DidNotReceive().EvaluateAsync(Arg.Any<PolicyRequest>(), Arg.Any<CancellationToken>());
     }
 
@@ -103,8 +102,8 @@ public sealed class SentinelPolicyEngineTests
         var result = await engine.EvaluateAsync(MakeRequest(), ct);
 
         // Assert
-        result.Allowed.Should().BeFalse();
-        result.Risk.Should().Be(PolicyRiskLevel.Critical);
+        Assert.False(result.Allowed);
+        Assert.Equal(PolicyRiskLevel.Critical, result.Risk);
     }
 
     [Fact]
@@ -127,7 +126,7 @@ public sealed class SentinelPolicyEngineTests
         var result = await engine.EvaluateAsync(MakeRequest(), ct);
 
         // Assert
-        result.AlignmentVerdict.Should().Be("Aligned");
+        Assert.Equal("Aligned", result.AlignmentVerdict);
     }
 
     [Fact]
@@ -149,8 +148,8 @@ public sealed class SentinelPolicyEngineTests
         var result = await engine.EvaluateAsync(MakeRequest(), ct);
 
         // Assert
-        result.Allowed.Should().BeFalse();
-        result.Risk.Should().Be(PolicyRiskLevel.Critical);
+        Assert.False(result.Allowed);
+        Assert.Equal(PolicyRiskLevel.Critical, result.Risk);
         await laterPolicy.DidNotReceive().EvaluateAsync(Arg.Any<PolicyRequest>(), Arg.Any<CancellationToken>());
     }
 
@@ -165,7 +164,7 @@ public sealed class SentinelPolicyEngineTests
         var act = async () => await engine.EvaluateAsync(null!, ct);
 
         // Assert
-        await act.Should().ThrowAsync<ArgumentNullException>();
+        await Assert.ThrowsAnyAsync<ArgumentNullException>(act);
     }
 
     [Fact]
@@ -183,8 +182,8 @@ public sealed class SentinelPolicyEngineTests
         await engine.EvaluateAsync(request, ct);
 
         // Assert
-        captured.Should().NotBeNull();
-        captured!.AgentId.Should().Be(request.AgentId);
+        Assert.NotNull(captured);
+        Assert.Equal(request.AgentId, captured!.AgentId);
     }
 
     [Fact]

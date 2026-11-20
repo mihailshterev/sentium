@@ -3,7 +3,7 @@ namespace Sentium.Web;
 /// <summary>
 /// Serves the built portal with a Content-Security-Policy that allows only the portal's own origin, so any
 /// third-party request the portal starts making fails loudly instead of leaking to another host. The policy
-/// covers only the portal's files; API responses and the development-only Scalar UI are left alone.
+/// covers only the portal's files; API responses and the development-only OpenAPI document are left alone.
 /// </summary>
 internal static class PortalStaticFiles
 {

@@ -1,5 +1,4 @@
 using System.Security.Claims;
-using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
@@ -47,8 +46,7 @@ public sealed class RolesControllerTests
         var result = _controller.GetRoles();
 
         // Assert
-        result.Should().BeOfType<OkObjectResult>()
-            .Which.Value.Should().NotBeNull();
+        Assert.NotNull(Assert.IsType<OkObjectResult>(result).Value);
     }
 
     [Fact]
@@ -63,8 +61,7 @@ public sealed class RolesControllerTests
         var result = await _controller.GetUserRoles(userId, ct);
 
         // Assert
-        result.Should().BeOfType<OkObjectResult>()
-            .Which.Value.As<IList<string>>().Should().ContainSingle("Admin");
+        Assert.Equal("Admin", Assert.Single(Assert.IsAssignableFrom<IList<string>>(Assert.IsType<OkObjectResult>(result).Value)));
     }
 
     [Fact]
@@ -82,7 +79,7 @@ public sealed class RolesControllerTests
         var result = await _controller.AssignRole(request, ct);
 
         // Assert
-        result.Should().BeOfType<NoContentResult>();
+        Assert.IsType<NoContentResult>(result);
     }
 
     [Fact]
@@ -100,8 +97,7 @@ public sealed class RolesControllerTests
         var result = await _controller.AssignRole(request, ct);
 
         // Assert
-        result.Should().BeAssignableTo<ObjectResult>()
-            .Which.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
+        Assert.Equal(StatusCodes.Status400BadRequest, Assert.IsAssignableFrom<ObjectResult>(result).StatusCode);
     }
 
     [Fact]
@@ -119,7 +115,7 @@ public sealed class RolesControllerTests
         var result = await _controller.RemoveRole(request, ct);
 
         // Assert
-        result.Should().BeOfType<NoContentResult>();
+        Assert.IsType<NoContentResult>(result);
     }
 
     [Fact]
@@ -137,7 +133,6 @@ public sealed class RolesControllerTests
         var result = await _controller.RemoveRole(request, ct);
 
         // Assert
-        result.Should().BeAssignableTo<ObjectResult>()
-            .Which.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
+        Assert.Equal(StatusCodes.Status400BadRequest, Assert.IsAssignableFrom<ObjectResult>(result).StatusCode);
     }
 }

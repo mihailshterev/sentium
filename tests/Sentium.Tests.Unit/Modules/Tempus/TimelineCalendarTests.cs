@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Sentium.Tempus.Common;
 using Sentium.Tempus.Contracts.Models;
 using Xunit;
@@ -12,10 +11,10 @@ public sealed class TimelineCalendarTests
     [Fact]
     public void EffectiveDeadline_PrefersTheDueDate_ThenThePlannedDay_ThenTheMonthEnd()
     {
-        TimelineCalendar.EffectiveDeadline(new DateOnly(2026, 11, 20), new DateOnly(2026, 11, 3), 2026, 11).Should().Be(new DateOnly(2026, 11, 20));
-        TimelineCalendar.EffectiveDeadline(null, new DateOnly(2026, 11, 3), 2026, 11).Should().Be(new DateOnly(2026, 11, 3));
-        TimelineCalendar.EffectiveDeadline(null, null, 2026, 2).Should().Be(new DateOnly(2026, 2, 28));
-        TimelineCalendar.EffectiveDeadline(null, null, 2028, 2).Should().Be(new DateOnly(2028, 2, 29));
+        Assert.Equal(new DateOnly(2026, 11, 20), TimelineCalendar.EffectiveDeadline(new DateOnly(2026, 11, 20), new DateOnly(2026, 11, 3), 2026, 11));
+        Assert.Equal(new DateOnly(2026, 11, 3), TimelineCalendar.EffectiveDeadline(null, new DateOnly(2026, 11, 3), 2026, 11));
+        Assert.Equal(new DateOnly(2026, 2, 28), TimelineCalendar.EffectiveDeadline(null, null, 2026, 2));
+        Assert.Equal(new DateOnly(2028, 2, 29), TimelineCalendar.EffectiveDeadline(null, null, 2028, 2));
     }
 
     [Theory]
@@ -24,13 +23,13 @@ public sealed class TimelineCalendarTests
     [InlineData(TimelineTaskStatus.Done, 6, false)]
     [InlineData(TimelineTaskStatus.Todo, 7, false)]
     public void IsOverdue_OnlyForOpenTasksPastTheirDay(TimelineTaskStatus status, int day, bool expected)
-        => TimelineCalendar.IsOverdue(status, null, new DateOnly(2026, 11, day), 2026, 11, Today).Should().Be(expected);
+        => Assert.Equal(expected, TimelineCalendar.IsOverdue(status, null, new DateOnly(2026, 11, day), 2026, 11, Today));
 
     [Fact]
     public void IsOverdue_ForAPinnedTask_WaitsForTheMonthEnd()
     {
-        TimelineCalendar.IsOverdue(TimelineTaskStatus.Todo, null, null, 2026, 11, Today).Should().BeFalse();
-        TimelineCalendar.IsOverdue(TimelineTaskStatus.Todo, null, null, 2026, 10, Today).Should().BeTrue();
+        Assert.False(TimelineCalendar.IsOverdue(TimelineTaskStatus.Todo, null, null, 2026, 11, Today));
+        Assert.True(TimelineCalendar.IsOverdue(TimelineTaskStatus.Todo, null, null, 2026, 10, Today));
     }
 
     [Theory]
@@ -39,11 +38,11 @@ public sealed class TimelineCalendarTests
     [InlineData(9, 7)]
     [InlineData(1, 7)]
     public void ResolveToday_TrustsTheClient_OnlyWithinADayOfUtc(int clientDay, int expectedDay)
-        => TimelineCalendar.ResolveToday(new DateOnly(2026, 11, clientDay), Today).Should().Be(new DateOnly(2026, 11, expectedDay));
+        => Assert.Equal(new DateOnly(2026, 11, expectedDay), TimelineCalendar.ResolveToday(new DateOnly(2026, 11, clientDay), Today));
 
     [Fact]
     public void ResolveToday_WithoutAClientDate_IsUtc()
-        => TimelineCalendar.ResolveToday(null, Today).Should().Be(Today);
+        => Assert.Equal(Today, TimelineCalendar.ResolveToday(null, Today));
 
     [Theory]
     [InlineData(6, null, true)]
@@ -54,15 +53,15 @@ public sealed class TimelineCalendarTests
     {
         var end = endDay is { } e ? new DateOnly(2026, 11, e) : (DateOnly?)null;
 
-        TimelineCalendar.IsPast(new DateOnly(2026, 11, day), end, 2026, 11, Today).Should().Be(expected);
+        Assert.Equal(expected, TimelineCalendar.IsPast(new DateOnly(2026, 11, day), end, 2026, 11, Today));
     }
 
     [Fact]
     public void IsPast_ForAPinnedEvent_OnceItsMonthIsOver()
     {
-        TimelineCalendar.IsPast(null, null, 2026, 10, Today).Should().BeTrue();
-        TimelineCalendar.IsPast(null, null, 2026, 11, Today).Should().BeFalse();
-        TimelineCalendar.IsPast(null, null, 2026, 11, new DateOnly(2026, 12, 1)).Should().BeTrue();
+        Assert.True(TimelineCalendar.IsPast(null, null, 2026, 10, Today));
+        Assert.False(TimelineCalendar.IsPast(null, null, 2026, 11, Today));
+        Assert.True(TimelineCalendar.IsPast(null, null, 2026, 11, new DateOnly(2026, 12, 1)));
     }
 
     [Fact]
@@ -71,8 +70,8 @@ public sealed class TimelineCalendarTests
         var sofia = TimeZoneInfo.FindSystemTimeZoneById("Europe/Sofia");
         var lateUtc = new DateTimeOffset(2026, 11, 6, 22, 30, 0, TimeSpan.Zero);
 
-        TimelineCalendar.TodayIn(sofia, lateUtc).Should().Be(Today);
-        TimelineCalendar.TodayIn(TimeZoneInfo.Utc, lateUtc).Should().Be(new DateOnly(2026, 11, 6));
+        Assert.Equal(Today, TimelineCalendar.TodayIn(sofia, lateUtc));
+        Assert.Equal(new DateOnly(2026, 11, 6), TimelineCalendar.TodayIn(TimeZoneInfo.Utc, lateUtc));
     }
 
     [Fact]
@@ -81,14 +80,14 @@ public sealed class TimelineCalendarTests
         var sofia = TimeZoneInfo.FindSystemTimeZoneById("Europe/Sofia");
         var today = TimelineCalendar.TodayIn(sofia, new DateTimeOffset(2026, 10, 31, 22, 5, 0, TimeSpan.Zero));
 
-        TimelineCalendar.IsPast(new DateOnly(2026, 10, 31), null, 2026, 10, today).Should().BeTrue();
-        TimelineCalendar.IsPast(null, null, 2026, 10, today).Should().BeTrue();
+        Assert.True(TimelineCalendar.IsPast(new DateOnly(2026, 10, 31), null, 2026, 10, today));
+        Assert.True(TimelineCalendar.IsPast(null, null, 2026, 10, today));
     }
 
     [Fact]
     public void MonthIndex_OrdersMonthsAcrossYears()
     {
-        TimelineCalendar.MonthIndex(2026, 12).Should().BeLessThan(TimelineCalendar.MonthIndex(2027, 1));
-        (TimelineCalendar.MonthIndex(2027, 1) - TimelineCalendar.MonthIndex(2026, 12)).Should().Be(1);
+        Assert.True(TimelineCalendar.MonthIndex(2026, 12) < TimelineCalendar.MonthIndex(2027, 1));
+        Assert.Equal(1, (TimelineCalendar.MonthIndex(2027, 1) - TimelineCalendar.MonthIndex(2026, 12)));
     }
 }

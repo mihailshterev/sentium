@@ -1,5 +1,4 @@
 using System.Text.Json;
-using FluentAssertions;
 using Microsoft.Extensions.AI;
 using Sentium.Praxis.Common.Streaming;
 using Sentium.Praxis.Features.Agents.Activity;
@@ -27,18 +26,18 @@ public sealed class AgentActivityTests
         events.AddRange(translator.Translate([new FunctionResultContent("c1", "Found 2 assets")]));
         events.AddRange(translator.Translate([new TextReasoningContent("Two hits.")]));
 
-        events.Select(e => e.Type).Should().Equal(AgentUpdateTypes.Thought, AgentUpdateTypes.ToolCall, AgentUpdateTypes.ToolResult, AgentUpdateTypes.Thought);
+        Assert.Equal(new string[] { AgentUpdateTypes.Thought, AgentUpdateTypes.ToolCall, AgentUpdateTypes.ToolResult, AgentUpdateTypes.Thought }, events.Select(e => e.Type));
 
         using var call = JsonDocument.Parse(events[1].Payload);
-        call.RootElement.GetProperty("callId").GetString().Should().Be("c1");
-        call.RootElement.GetProperty("name").GetString().Should().Be("find_assets");
-        call.RootElement.GetProperty("arguments").GetString().Should().Contain("drill");
+        Assert.Equal("c1", call.RootElement.GetProperty("callId").GetString());
+        Assert.Equal("find_assets", call.RootElement.GetProperty("name").GetString());
+        Assert.Contains("drill", call.RootElement.GetProperty("arguments").GetString(), StringComparison.Ordinal);
 
         using var result = JsonDocument.Parse(events[2].Payload);
-        result.RootElement.GetProperty("status").GetString().Should().Be("ok");
-        result.RootElement.GetProperty("result").GetString().Should().Be("Found 2 assets");
-        result.RootElement.GetProperty("durationMs").GetInt64().Should().Be(420);
-        translator.Durations["c1"].Should().Be(420);
+        Assert.Equal("ok", result.RootElement.GetProperty("status").GetString());
+        Assert.Equal("Found 2 assets", result.RootElement.GetProperty("result").GetString());
+        Assert.Equal(420, result.RootElement.GetProperty("durationMs").GetInt64());
+        Assert.Equal(420, translator.Durations["c1"]);
     }
 
     [Fact]
@@ -50,10 +49,10 @@ public sealed class AgentActivityTests
         var denied = translator.Translate([new FunctionResultContent("a", "[Access Denied by Security Policy] egress")]).Single();
         var failed = translator.Translate([new FunctionResultContent("b", result: null) { Exception = new InvalidOperationException("disk gone") }]).Single();
 
-        JsonDocument.Parse(denied.Payload).RootElement.GetProperty("status").GetString().Should().Be("denied");
+        Assert.Equal("denied", JsonDocument.Parse(denied.Payload).RootElement.GetProperty("status").GetString());
         var error = JsonDocument.Parse(failed.Payload).RootElement;
-        error.GetProperty("status").GetString().Should().Be("error");
-        error.GetProperty("result").GetString().Should().Be("disk gone");
+        Assert.Equal("error", error.GetProperty("status").GetString());
+        Assert.Equal("disk gone", error.GetProperty("result").GetString());
     }
 
     [Fact]
@@ -62,7 +61,7 @@ public sealed class AgentActivityTests
         var translator = new AgentActivityTranslator();
         var call = new FunctionCallContent("c1", "find_assets");
 
-        translator.Translate([call]).Concat(translator.Translate([call])).Should().ContainSingle();
+        Assert.Single(translator.Translate([call]).Concat(translator.Translate([call])));
     }
 
     [Fact]
@@ -77,12 +76,12 @@ public sealed class AgentActivityTests
 
         var (answer, steps) = AgentTurnSteps.Build(turn, new Dictionary<string, long> { ["c1"] = 87 });
 
-        answer.Should().Be("Use HNSW.");
-        steps.Select(s => s.Kind).Should().Equal("thought", "text", "tool", "thought");
-        steps[0].Text.Should().Be("Plan: search first.");
-        steps[1].Text.Should().Be("Searching now.");
-        steps[2].Should().BeEquivalentTo(new { Name = "knowledge_base_search", Status = "ok", Result = "3 snippets", DurationMs = 87L });
-        steps[2].Arguments.Should().Contain("hnsw");
+        Assert.Equal("Use HNSW.", answer);
+        Assert.Equal(new string[] { "thought", "text", "tool", "thought" }, steps.Select(s => s.Kind));
+        Assert.Equal("Plan: search first.", steps[0].Text);
+        Assert.Equal("Searching now.", steps[1].Text);
+        Assert.Equivalent(new { Name = "knowledge_base_search", Status = "ok", Result = "3 snippets", DurationMs = 87L }, steps[2]);
+        Assert.Contains("hnsw", steps[2].Arguments, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -96,12 +95,13 @@ public sealed class AgentActivityTests
 
         var (answer, steps) = AgentTurnSteps.Build(turn);
 
-        answer.Should().BeEmpty("the narration precedes the tool, so it stays on the timeline");
-        steps.Select(s => s.Kind).Should().Equal("text", "tool");
+        // the narration precedes the tool, so it stays on the timeline
+        Assert.Empty(answer);
+        Assert.Equal(new string[] { "text", "tool" }, steps.Select(s => s.Kind));
 
         var (tailAnswer, tailSteps) = AgentTurnSteps.Build([new ChatMessage(ChatRole.Assistant, [new FunctionCallContent("c2", "find_assets"), new TextContent("Nothing found.")])]);
-        tailAnswer.Should().Be("Nothing found.");
-        tailSteps.Should().ContainSingle(s => s.Kind == "tool");
+        Assert.Equal("Nothing found.", tailAnswer);
+        Assert.Single(tailSteps, s => s.Kind == "tool");
     }
 
     private sealed class ManualClock : TimeProvider

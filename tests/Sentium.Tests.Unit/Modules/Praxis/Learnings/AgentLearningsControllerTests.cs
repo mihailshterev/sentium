@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
 using Sentium.Core.Results;
@@ -32,8 +31,7 @@ public sealed class AgentLearningsControllerTests
         var result = await _controller.GetLearnings(null, 1, 20, ct);
 
         // Assert
-        result.Result.Should().BeOfType<OkObjectResult>()
-            .Which.Value.Should().Be(paged);
+        Assert.Equal(paged, Assert.IsType<OkObjectResult>(result.Result).Value);
     }
 
     [Fact]
@@ -48,8 +46,7 @@ public sealed class AgentLearningsControllerTests
         var result = await _controller.GetStats(ct);
 
         // Assert
-        result.Result.Should().BeOfType<OkObjectResult>()
-            .Which.Value.Should().Be(stats);
+        Assert.Equal(stats, Assert.IsType<OkObjectResult>(result.Result).Value);
     }
 
     [Fact]
@@ -64,7 +61,7 @@ public sealed class AgentLearningsControllerTests
         var result = await _controller.DeleteLearning(id, ct);
 
         // Assert
-        result.Should().BeOfType<NoContentResult>();
+        Assert.IsType<NoContentResult>(result);
     }
 
     [Fact]
@@ -79,7 +76,7 @@ public sealed class AgentLearningsControllerTests
         var result = await _controller.DeleteLearning(id, ct);
 
         // Assert
-        result.Should().BeOfType<NotFoundResult>();
+        Assert.IsType<NotFoundResult>(result);
     }
 
     [Fact]
@@ -96,8 +93,7 @@ public sealed class AgentLearningsControllerTests
         var result = await _controller.UpdateLearning(id, request, ct);
 
         // Assert
-        result.Result.Should().BeOfType<OkObjectResult>()
-            .Which.Value.Should().Be(updated);
+        Assert.Equal(updated, Assert.IsType<OkObjectResult>(result.Result).Value);
     }
 
     [Fact]
@@ -113,6 +109,6 @@ public sealed class AgentLearningsControllerTests
         var result = await _controller.UpdateLearning(id, request, ct);
 
         // Assert
-        result.Result.Should().BeOfType<NotFoundResult>();
+        Assert.IsType<NotFoundResult>(result.Result);
     }
 }

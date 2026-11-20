@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Sentium.Infrastructure.Extensions;
 using Sentium.Infrastructure.Security;
@@ -28,8 +27,9 @@ public sealed class MemoriaQueryTranslationTests
 
         foreach (var sql in new[] { db.Notes.ToQueryString(), db.Links.ToQueryString(), db.Vaults.ToQueryString() })
         {
-            sql.Should().Contain("\"UserId\" =").And.Contain(UserId.ToString());
-            sql.Should().MatchRegex("IsSystemScope[^=\\n]*='False'");
+            Assert.Contains("\"UserId\" =", sql, StringComparison.Ordinal);
+            Assert.Contains(UserId.ToString(), sql, StringComparison.Ordinal);
+            Assert.Matches("IsSystemScope[^=\\n]*='False'", sql);
         }
     }
 
@@ -38,7 +38,7 @@ public sealed class MemoriaQueryTranslationTests
     {
         using var db = CreateContext(sovereign: false, system: true);
 
-        db.Notes.ToQueryString().Should().MatchRegex("IsSystemScope[^=\\n]*='True'");
+        Assert.Matches("IsSystemScope[^=\\n]*='True'", db.Notes.ToQueryString());
     }
 
     private sealed class StubUser(Guid? userId, bool sovereign, bool system) : ICurrentUser

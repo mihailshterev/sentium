@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
@@ -42,7 +41,7 @@ public sealed class IdentityServiceTests
 
         var result = await _service.LoginAsync("user1", "Test@123");
 
-        result.Succeeded.Should().BeTrue();
+        Assert.True(result.Succeeded);
     }
 
     [Fact]
@@ -53,7 +52,7 @@ public sealed class IdentityServiceTests
 
         var result = await _service.LoginAsync("user1", "wrong");
 
-        result.Succeeded.Should().BeFalse();
+        Assert.False(result.Succeeded);
     }
 
     [Fact]
@@ -64,7 +63,7 @@ public sealed class IdentityServiceTests
 
         var result = await _service.LoginAsync("user1", "wrong");
 
-        result.IsLockedOut.Should().BeTrue();
+        Assert.True(result.IsLockedOut);
     }
 
     [Fact]

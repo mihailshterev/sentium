@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Sentium.Identity.Contracts;
@@ -42,11 +41,11 @@ public sealed class NotifierTests
 
         await CreateSut().NotifyAsync(NotificationRecipient.Sovereigns, IncidentMessage, Ct);
 
-        _store.Saved.Select(p => p.UserId).Should().BeEquivalentTo([Alice, Bob]);
-        aliceFeed.Reader.TryRead(out var frame).Should().BeTrue();
-        frame!.Type.Should().Be(NotificationFeedEventTypes.Notification);
-        frame.Data.Should().BeOfType<NotificationDto>().Which.Title.Should().Be("Sandbox is down");
-        carolFeed.Reader.TryRead(out _).Should().BeFalse("Carol is not a Sovereign");
+        Assert.Equivalent(new[] { Alice, Bob }, _store.Saved.Select(p => p.UserId));
+        Assert.True(aliceFeed.Reader.TryRead(out var frame));
+        Assert.Equal(NotificationFeedEventTypes.Notification, frame!.Type);
+        Assert.Equal("Sandbox is down", Assert.IsType<NotificationDto>(frame.Data).Title);
+        Assert.False(carolFeed.Reader.TryRead(out _), "Carol is not a Sovereign");
     }
 
     [Fact]
@@ -54,7 +53,7 @@ public sealed class NotifierTests
     {
         await CreateSut().NotifyAsync(NotificationRecipient.Household, IncidentMessage, Ct);
 
-        _store.Saved.Select(p => p.UserId).Should().BeEquivalentTo([Alice, Bob, Carol]);
+        Assert.Equivalent(new[] { Alice, Bob, Carol }, _store.Saved.Select(p => p.UserId));
     }
 
     [Fact]
@@ -62,7 +61,7 @@ public sealed class NotifierTests
     {
         await CreateSut().NotifyAsync(NotificationRecipient.User(Carol), IncidentMessage, Ct);
 
-        _store.Saved.Should().ContainSingle().Which.UserId.Should().Be(Carol);
+        Assert.Equal(Carol, Assert.Single(_store.Saved).UserId);
         await _directory.DidNotReceive().GetSovereignIdsAsync(Arg.Any<CancellationToken>());
         await _directory.DidNotReceive().GetHouseholdIdsAsync(Arg.Any<CancellationToken>());
     }
@@ -78,9 +77,10 @@ public sealed class NotifierTests
 
         var publish = () => CreateSut().NotifyAsync(NotificationRecipient.Sovereigns, IncidentMessage, Ct);
 
-        await publish.Should().NotThrowAsync();
-        _store.Saved.Should().HaveCount(2, "the Inbox write stands");
-        aliceFeed.Reader.TryRead(out _).Should().BeTrue();
+        await publish();
+        // the Inbox write stands
+        Assert.Equal(2, _store.Saved.Count);
+        Assert.True(aliceFeed.Reader.TryRead(out _));
         await working.Received(1).DeliverAsync(Alice, Arg.Any<NotificationDto>(), Arg.Any<CancellationToken>());
         await working.Received(1).DeliverAsync(Bob, Arg.Any<NotificationDto>(), Arg.Any<CancellationToken>());
     }
@@ -94,7 +94,7 @@ public sealed class NotifierTests
 
         var publish = () => CreateSut().NotifyAsync(NotificationRecipient.User(Alice), IncidentMessage, Ct);
 
-        await publish.Should().NotThrowAsync();
+        await publish();
         await channel.DidNotReceive().DeliverAsync(Arg.Any<Guid>(), Arg.Any<NotificationDto>(), Arg.Any<CancellationToken>());
     }
 
@@ -108,9 +108,9 @@ public sealed class NotifierTests
 
         var publish = () => CreateSut().NotifyAsync(NotificationRecipient.Sovereigns, IncidentMessage, Ct);
 
-        await publish.Should().NotThrowAsync();
-        _store.Saved.Select(s => s.UserId).Should().Equal(Bob);
-        bobFeed.Reader.TryRead(out _).Should().BeTrue();
+        await publish();
+        Assert.Equal(new Guid[] { Bob }, _store.Saved.Select(s => s.UserId));
+        Assert.True(bobFeed.Reader.TryRead(out _));
         await channel.Received(1).DeliverAsync(Bob, Arg.Any<NotificationDto>(), Arg.Any<CancellationToken>());
         await channel.DidNotReceive().DeliverAsync(Alice, Arg.Any<NotificationDto>(), Arg.Any<CancellationToken>());
     }
@@ -122,8 +122,8 @@ public sealed class NotifierTests
 
         var publish = () => CreateSut().NotifyAsync(NotificationRecipient.Sovereigns, IncidentMessage, Ct);
 
-        await publish.Should().NotThrowAsync();
-        _store.Saved.Should().BeEmpty();
+        await publish();
+        Assert.Empty(_store.Saved);
     }
 
     [Fact]
@@ -134,8 +134,8 @@ public sealed class NotifierTests
 
         await CreateSut().NotifyAsync(NotificationRecipient.User(Bob), IncidentMessage, Ct);
 
-        aliceFeed.Reader.TryRead(out _).Should().BeFalse();
-        bobFeed.Reader.TryRead(out _).Should().BeTrue();
+        Assert.False(aliceFeed.Reader.TryRead(out _));
+        Assert.True(bobFeed.Reader.TryRead(out _));
     }
 
     private sealed class InMemoryNotificationStore : INotificationStore

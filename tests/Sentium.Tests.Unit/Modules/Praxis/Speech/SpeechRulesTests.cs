@@ -1,6 +1,5 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
-using FluentAssertions;
 using Sentium.Infrastructure.Speech;
 using Sentium.Praxis.Features.Speech;
 using Xunit;
@@ -18,7 +17,7 @@ public sealed class SpeechRulesTests
     [InlineData("Hello there.", null, 2.0f)]
     public void SpeakRequest_Valid(string text, string? voice, float? speed)
     {
-        _validator.Validate(new SpeakRequest(text, voice, speed)).IsValid.Should().BeTrue();
+        Assert.True(_validator.Validate(new SpeakRequest(text, voice, speed)).IsValid);
     }
 
     [Theory]
@@ -31,7 +30,7 @@ public sealed class SpeechRulesTests
     [InlineData("Hello.", null, 2.1f)]
     public void SpeakRequest_Invalid(string text, string? voice, float? speed)
     {
-        _validator.Validate(new SpeakRequest(text, voice, speed)).IsValid.Should().BeFalse();
+        Assert.False(_validator.Validate(new SpeakRequest(text, voice, speed)).IsValid);
     }
 
     [Fact]
@@ -39,8 +38,8 @@ public sealed class SpeechRulesTests
     {
         var atLimit = new string('a', SpeechLimits.MaxTextLength);
 
-        _validator.Validate(new SpeakRequest(atLimit)).IsValid.Should().BeTrue();
-        _validator.Validate(new SpeakRequest(atLimit + "a")).IsValid.Should().BeFalse();
+        Assert.True(_validator.Validate(new SpeakRequest(atLimit)).IsValid);
+        Assert.False(_validator.Validate(new SpeakRequest(atLimit + "a")).IsValid);
     }
 
     [Fact]
@@ -54,10 +53,7 @@ public sealed class SpeechRulesTests
             ]}
             """);
 
-        SpeechService.ParseVoices(document.RootElement).Should().Equal(
-            new SpeechVoice("af_bella", "af_bella"),
-            new SpeechVoice("af_heart", "Heart"),
-            new SpeechVoice("am_adam", "am_adam"));
+        Assert.Equal(new SpeechVoice[] { new SpeechVoice("af_bella", "af_bella"), new SpeechVoice("af_heart", "Heart"), new SpeechVoice("am_adam", "am_adam") }, SpeechService.ParseVoices(document.RootElement));
     }
 
     [Fact]
@@ -65,9 +61,7 @@ public sealed class SpeechRulesTests
     {
         using var document = JsonDocument.Parse("""{"voices":["bf_emma","", 7, null, {"name":"no id"}, "af_heart"]}""");
 
-        SpeechService.ParseVoices(document.RootElement).Should().Equal(
-            new SpeechVoice("af_heart", "af_heart"),
-            new SpeechVoice("bf_emma", "bf_emma"));
+        Assert.Equal(new SpeechVoice[] { new SpeechVoice("af_heart", "af_heart"), new SpeechVoice("bf_emma", "bf_emma") }, SpeechService.ParseVoices(document.RootElement));
     }
 
     [Theory]
@@ -78,7 +72,7 @@ public sealed class SpeechRulesTests
     {
         using var document = JsonDocument.Parse(json);
 
-        SpeechService.ParseVoices(document.RootElement).Should().BeEmpty();
+        Assert.Empty(SpeechService.ParseVoices(document.RootElement));
     }
 
     [Fact]
@@ -86,9 +80,9 @@ public sealed class SpeechRulesTests
     {
         var options = new SpeechOptions();
 
-        Validate(options).Should().BeEmpty();
-        SpeechOptions.IsConfigured(options.TranscriptionEndpoint).Should().BeFalse();
-        SpeechOptions.IsConfigured(options.SynthesisEndpoint).Should().BeFalse();
+        Assert.Empty(Validate(options));
+        Assert.False(SpeechOptions.IsConfigured(options.TranscriptionEndpoint));
+        Assert.False(SpeechOptions.IsConfigured(options.SynthesisEndpoint));
     }
 
     [Fact]
@@ -96,8 +90,8 @@ public sealed class SpeechRulesTests
     {
         var options = new SpeechOptions { TranscriptionEndpoint = new Uri(string.Empty, UriKind.Relative) };
 
-        Validate(options).Should().BeEmpty();
-        SpeechOptions.IsConfigured(options.TranscriptionEndpoint).Should().BeFalse();
+        Assert.Empty(Validate(options));
+        Assert.False(SpeechOptions.IsConfigured(options.TranscriptionEndpoint));
     }
 
     [Theory]
@@ -108,7 +102,7 @@ public sealed class SpeechRulesTests
     {
         var options = new SpeechOptions { SynthesisEndpoint = new Uri(endpoint, kind) };
 
-        Validate(options).Should().ContainSingle().Which.MemberNames.Should().Contain(nameof(SpeechOptions.SynthesisEndpoint));
+        Assert.Contains(nameof(SpeechOptions.SynthesisEndpoint), Assert.Single(Validate(options)).MemberNames);
     }
 
     [Fact]
@@ -116,9 +110,9 @@ public sealed class SpeechRulesTests
     {
         var options = new SpeechOptions { TranscriptionEndpoint = new Uri("http://whisper:8080"), SynthesisEndpoint = new Uri("https://tts.local/") };
 
-        Validate(options).Should().BeEmpty();
-        SpeechOptions.IsConfigured(options.TranscriptionEndpoint).Should().BeTrue();
-        SpeechOptions.IsConfigured(options.SynthesisEndpoint).Should().BeTrue();
+        Assert.Empty(Validate(options));
+        Assert.True(SpeechOptions.IsConfigured(options.TranscriptionEndpoint));
+        Assert.True(SpeechOptions.IsConfigured(options.SynthesisEndpoint));
     }
 
     private static List<ValidationResult> Validate(SpeechOptions options)

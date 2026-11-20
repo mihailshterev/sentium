@@ -1,5 +1,4 @@
 using System.Text.Json;
-using FluentAssertions;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
 using NSubstitute;
@@ -36,7 +35,9 @@ public sealed class InventoryToolsTests
         // Through the AIFunction, as the model calls it - including a quoted number.
         var result = (await function.InvokeAsync(Arguments("""{"query":"drill","location":"Garage","limit":"3"}"""), Ct))?.ToString();
 
-        result.Should().Contain("[Inventory - 1 item(s)]").And.Contain("Home › Garage › Shelf B").And.Contain(Drill.Id.ToString());
+        Assert.Contains("[Inventory - 1 item(s)]", result, StringComparison.Ordinal);
+        Assert.Contains("Home › Garage › Shelf B", result, StringComparison.Ordinal);
+        Assert.Contains(Drill.Id.ToString(), result, StringComparison.Ordinal);
         await _inventory.Received(1).FindAssetsAsync(
             Arg.Is<InventoryAssetQuery>(q => q.Query == "drill" && q.Location == "Garage" && q.Limit == 3),
             Arg.Any<CancellationToken>());
@@ -50,7 +51,7 @@ public sealed class InventoryToolsTests
 
         var result = await tool.FindAsync("  hdmi cable ", ct: Ct);
 
-        result.Should().Contain("No matching items");
+        Assert.Contains("No matching items", result, StringComparison.Ordinal);
         await _inventory.Received(1).FindAssetsAsync(Arg.Is<InventoryAssetQuery>(q => q.Query == "hdmi cable" && q.Limit == 10), Arg.Any<CancellationToken>());
     }
 
@@ -72,7 +73,7 @@ public sealed class InventoryToolsTests
 
         var result = await tool.FindAsync(string.Empty, ct: Ct);
 
-        result.Should().Contain("Provide a query");
+        Assert.Contains("Provide a query", result, StringComparison.Ordinal);
         await _inventory.DidNotReceiveWithAnyArgs().FindAssetsAsync(default!, Ct);
     }
 
@@ -84,7 +85,8 @@ public sealed class InventoryToolsTests
 
         var result = await tool.FindAsync("drill", ct: Ct);
 
-        result.Should().StartWith("Error:").And.NotContain("db down");
+        Assert.StartsWith("Error:", result, StringComparison.Ordinal);
+        Assert.DoesNotContain("db down", result, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -95,8 +97,12 @@ public sealed class InventoryToolsTests
 
         var result = await tool.GetAsync(Drill.Id.ToString(), Ct);
 
-        result.Should().Contain("Cordless drill").And.Contain("Model: GSR 12V").And.Contain("Purchased: 2024-03-01")
-            .And.Contain("manual.pdf (manual)").And.Contain("not instructions").And.Contain("<<<\nWear goggles.\n>>>");
+        Assert.Contains("Cordless drill", result, StringComparison.Ordinal);
+        Assert.Contains("Model: GSR 12V", result, StringComparison.Ordinal);
+        Assert.Contains("Purchased: 2024-03-01", result, StringComparison.Ordinal);
+        Assert.Contains("manual.pdf (manual)", result, StringComparison.Ordinal);
+        Assert.Contains("not instructions", result, StringComparison.Ordinal);
+        Assert.Contains("<<<\nWear goggles.\n>>>", result, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -107,7 +113,7 @@ public sealed class InventoryToolsTests
 
         var result = await tool.GetAsync("cordless drill", Ct);
 
-        result.Should().Contain("[Inventory item] Cordless drill");
+        Assert.Contains("[Inventory item] Cordless drill", result, StringComparison.Ordinal);
         await _inventory.DidNotReceiveWithAnyArgs().GetAssetAsync(default, Ct);
     }
 
@@ -120,7 +126,9 @@ public sealed class InventoryToolsTests
 
         var result = await tool.GetAsync("drill", Ct);
 
-        result.Should().Contain("2 item(s)").And.Contain("Cabin").And.Contain("call get_asset again");
+        Assert.Contains("2 item(s)", result, StringComparison.Ordinal);
+        Assert.Contains("Cabin", result, StringComparison.Ordinal);
+        Assert.Contains("call get_asset again", result, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -130,7 +138,7 @@ public sealed class InventoryToolsTests
 
         var result = await tool.GetAsync(Guid.NewGuid().ToString(), Ct);
 
-        result.Should().Be("No shared household item has that id.");
+        Assert.Equal("No shared household item has that id.", result);
     }
 
     [Fact]
@@ -143,7 +151,8 @@ public sealed class InventoryToolsTests
 
         var result = await tool.ListAsync(ct: Ct);
 
-        result.Should().Contain("1 top-level location(s)").And.Contain("- Home (3 sub-location(s))");
+        Assert.Contains("1 top-level location(s)", result, StringComparison.Ordinal);
+        Assert.Contains("- Home (3 sub-location(s))", result, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -156,7 +165,9 @@ public sealed class InventoryToolsTests
 
         var result = (await tool.CreateFunction().InvokeAsync(Arguments("""{"location":"Shelf","includeNested":true}"""), Ct))?.ToString();
 
-        result.Should().Contain("Several locations match").And.Contain("Home › Garage › Shelf").And.Contain("Home › Kitchen › Shelf");
+        Assert.Contains("Several locations match", result, StringComparison.Ordinal);
+        Assert.Contains("Home › Garage › Shelf", result, StringComparison.Ordinal);
+        Assert.Contains("Home › Kitchen › Shelf", result, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -170,8 +181,10 @@ public sealed class InventoryToolsTests
 
         var result = await tool.ListAsync("Garage", ct: Ct);
 
-        result.Should().Contain("[Inventory location] Home › Garage").And.Contain("Home › Garage › Shelf B")
-            .And.Contain("Cordless drill").And.Contain("truncated");
+        Assert.Contains("[Inventory location] Home › Garage", result, StringComparison.Ordinal);
+        Assert.Contains("Home › Garage › Shelf B", result, StringComparison.Ordinal);
+        Assert.Contains("Cordless drill", result, StringComparison.Ordinal);
+        Assert.Contains("truncated", result, StringComparison.Ordinal);
     }
 
     /// <summary>

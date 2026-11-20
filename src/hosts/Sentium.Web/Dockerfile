@@ -18,7 +18,7 @@ COPY . .
 COPY --from=portal /src/src/hosts/Sentium.Web/wwwroot src/hosts/Sentium.Web/wwwroot
 RUN --mount=type=cache,target=/root/.nuget/packages,sharing=locked \
     dotnet publish src/hosts/Sentium.Web/Sentium.Web.csproj \
-    -c Release -o /app /p:UseAppHost=false /p:TreatWarningsAsErrors=false
+    -c Release -o /app /p:UseAppHost=false /p:TreatWarningsAsErrors=false /p:RestoreLockedMode=true
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app

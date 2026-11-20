@@ -1,7 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Sentium.Infrastructure.Security;
 using Sentium.Nuntius.Contracts;
@@ -54,10 +53,10 @@ public sealed class NuntiusApiTests(MonolithWebApplicationFactory factory) : ICl
         await Notifier.NotifyAsync(NotificationRecipient.User(user), Message("Second", severity: NotificationSeverity.Warning), Ct);
 
         var inbox = await InboxAsync(client);
-        inbox.Select(n => n.Title).Should().Equal("Second", "First");
-        inbox[0].Severity.Should().Be(NotificationSeverity.Warning);
-        inbox[0].Link.Should().Be("/orchestration");
-        (await UnreadCountAsync(client)).Should().Be(2);
+        Assert.Equal(new string[] { "Second", "First" }, inbox.Select(n => n.Title));
+        Assert.Equal(NotificationSeverity.Warning, inbox[0].Severity);
+        Assert.Equal("/orchestration", inbox[0].Link);
+        Assert.Equal(2, await UnreadCountAsync(client));
     }
 
     [Fact]
@@ -69,17 +68,18 @@ public sealed class NuntiusApiTests(MonolithWebApplicationFactory factory) : ICl
         await Notifier.NotifyAsync(NotificationRecipient.User(user), Message("Probe failing", "probe:llm"), Ct);
         await Notifier.NotifyAsync(NotificationRecipient.User(user), Message("Probe still failing", "probe:llm"), Ct);
 
-        var single = (await InboxAsync(client)).Should().ContainSingle().Subject;
-        single.Title.Should().Be("Probe still failing");
-        single.Occurrences.Should().Be(2);
+        var single = Assert.Single(await InboxAsync(client));
+        Assert.Equal("Probe still failing", single.Title);
+        Assert.Equal(2, single.Occurrences);
 
-        (await client.PostAsync($"{Notifications}/{single.Id}/read", null, Ct)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        Assert.Equal(HttpStatusCode.NoContent, (await client.PostAsync($"{Notifications}/{single.Id}/read", null, Ct)).StatusCode);
         await Notifier.NotifyAsync(NotificationRecipient.User(user), Message("Probe failing again", "probe:llm"), Ct);
 
         var inbox = await InboxAsync(client);
-        inbox.Should().HaveCount(2, "a read Notification is never revived");
-        inbox[0].Title.Should().Be("Probe failing again");
-        inbox[0].Occurrences.Should().Be(1);
+        // a read Notification is never revived
+        Assert.Equal(2, inbox.Count);
+        Assert.Equal("Probe failing again", inbox[0].Title);
+        Assert.Equal(1, inbox[0].Occurrences);
     }
 
     [Fact]
@@ -90,8 +90,8 @@ public sealed class NuntiusApiTests(MonolithWebApplicationFactory factory) : ICl
         await Task.WhenAll(Enumerable.Range(0, 8)
             .Select(i => Notifier.NotifyAsync(NotificationRecipient.User(user), Message($"Flap {i}", "probe:redis"), Ct)));
 
-        var single = (await InboxAsync(ClientFor(user))).Should().ContainSingle().Subject;
-        single.Occurrences.Should().Be(8);
+        var single = Assert.Single(await InboxAsync(ClientFor(user)));
+        Assert.Equal(8, single.Occurrences);
     }
 
     [Fact]
@@ -101,18 +101,19 @@ public sealed class NuntiusApiTests(MonolithWebApplicationFactory factory) : ICl
         var bob = Guid.NewGuid();
         await Notifier.NotifyAsync(NotificationRecipient.User(alice), Message("For Alice"), Ct);
 
-        var aliceNotification = (await InboxAsync(ClientFor(alice))).Should().ContainSingle().Subject;
+        var aliceNotification = Assert.Single(await InboxAsync(ClientFor(alice)));
 
         var bobClient = ClientFor(bob);
-        (await InboxAsync(bobClient)).Should().BeEmpty();
-        (await UnreadCountAsync(bobClient)).Should().Be(0);
-        (await bobClient.PostAsync($"{Notifications}/{aliceNotification.Id}/read", null, Ct)).StatusCode.Should().Be(HttpStatusCode.NotFound);
+        Assert.Empty(await InboxAsync(bobClient));
+        Assert.Equal(0, await UnreadCountAsync(bobClient));
+        Assert.Equal(HttpStatusCode.NotFound, (await bobClient.PostAsync($"{Notifications}/{aliceNotification.Id}/read", null, Ct)).StatusCode);
         await bobClient.PostAsync($"{Notifications}/read-all", null, Ct);
 
         var sovereign = factory.CreateClient();
-        (await InboxAsync(sovereign)).Should().NotContain(n => n.Id == aliceNotification.Id);
+        Assert.DoesNotContain(await InboxAsync(sovereign), n => n.Id == aliceNotification.Id);
 
-        (await InboxAsync(ClientFor(alice), unreadOnly: true)).Should().ContainSingle("nobody else can mark Alice's Notifications read");
+        // nobody else can mark Alice's Notifications read
+        Assert.Single(await InboxAsync(ClientFor(alice), unreadOnly: true));
     }
 
     [Fact]
@@ -125,9 +126,11 @@ public sealed class NuntiusApiTests(MonolithWebApplicationFactory factory) : ICl
 
         var response = await client.PostAsync($"{Notifications}/read-all", null, Ct);
 
-        (await response.Content.ReadFromJsonAsync<UnreadCountDto>(Ct))!.Count.Should().Be(2);
-        (await UnreadCountAsync(client)).Should().Be(0);
-        (await InboxAsync(client)).Should().HaveCount(2).And.OnlyContain(n => n.ReadAt != null);
+        Assert.Equal(2, (await response.Content.ReadFromJsonAsync<UnreadCountDto>(Ct))!.Count);
+        Assert.Equal(0, await UnreadCountAsync(client));
+        var actual = (await InboxAsync(client));
+        Assert.Equal(2, actual.Count);
+        Assert.All(actual, n => Assert.True(n.ReadAt != null));
     }
 
     [Fact]
@@ -138,10 +141,10 @@ public sealed class NuntiusApiTests(MonolithWebApplicationFactory factory) : ICl
         await Notifier.NotifyAsync(NotificationRecipient.User(user), Message("Old news"), Ct);
 
         await SweepAsync(DateTimeOffset.UtcNow.AddDays(89));
-        (await InboxAsync(client)).Should().ContainSingle();
+        Assert.Single(await InboxAsync(client));
 
         await SweepAsync(DateTimeOffset.UtcNow.AddDays(91));
-        (await InboxAsync(client)).Should().BeEmpty();
+        Assert.Empty(await InboxAsync(client));
     }
 
     [Fact]
@@ -154,17 +157,17 @@ public sealed class NuntiusApiTests(MonolithWebApplicationFactory factory) : ICl
 
         using var request = new HttpRequestMessage(HttpMethod.Get, "/api/nuntius/stream");
         using var response = await ClientFor(alice).SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
-        response.Content.Headers.ContentType!.MediaType.Should().Be("text/event-stream");
+        Assert.Equal("text/event-stream", response.Content.Headers.ContentType!.MediaType);
         using var reader = new StreamReader(await response.Content.ReadAsStreamAsync(timeout.Token));
 
-        (await ReadFrameAsync(reader, timeout.Token)).GetProperty("type").GetString().Should().Be("connected");
+        Assert.Equal("connected", (await ReadFrameAsync(reader, timeout.Token)).GetProperty("type").GetString());
 
         await Notifier.NotifyAsync(NotificationRecipient.User(bob), Message("For Bob"), Ct);
         await Notifier.NotifyAsync(NotificationRecipient.User(alice), Message("For Alice"), Ct);
 
         var frame = await ReadFrameAsync(reader, timeout.Token);
-        frame.GetProperty("type").GetString().Should().Be("notification");
-        frame.GetProperty("data").GetProperty("title").GetString().Should().Be("For Alice");
+        Assert.Equal("notification", frame.GetProperty("type").GetString());
+        Assert.Equal("For Alice", frame.GetProperty("data").GetProperty("title").GetString());
     }
 
     [Fact]
@@ -175,12 +178,12 @@ public sealed class NuntiusApiTests(MonolithWebApplicationFactory factory) : ICl
 
         var receipt = await agents.ProposeTaskAsync(user, "TimelinePlanner",
             new TimelineTaskProposal("Renew passport", null, 2031, 4, null, null, TimelineTaskPriority.Normal, [], null, null), Ct);
-        receipt.IsSuccess.Should().BeTrue(receipt.Error);
+        Assert.True(receipt.IsSuccess, receipt.Error);
 
-        var notification = (await InboxAsync(ClientFor(user))).Should().ContainSingle().Subject;
-        notification.Category.Should().Be(NotificationCategories.TimelineProposal);
-        notification.Title.Should().Contain("Renew passport");
-        notification.Link.Should().StartWith("/timeline");
+        var notification = Assert.Single(await InboxAsync(ClientFor(user)));
+        Assert.Equal(NotificationCategories.TimelineProposal, notification.Category);
+        Assert.Contains("Renew passport", notification.Title, StringComparison.Ordinal);
+        Assert.StartsWith("/timeline", notification.Link, StringComparison.Ordinal);
     }
 
     private async Task SweepAsync(DateTimeOffset now)

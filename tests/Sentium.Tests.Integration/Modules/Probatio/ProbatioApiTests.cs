@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using FluentAssertions;
 using Sentium.Core.Results;
 using Sentium.Probatio.Entities;
 using Sentium.Probatio.Features.Suites;
@@ -40,14 +39,14 @@ public sealed class ProbatioApiTests(MonolithWebApplicationFactory factory) : IC
     private static async Task<EvalSuiteDto> CreateAsync(HttpClient client, params EvalCaseInput[] cases)
     {
         var response = await client.PostAsJsonAsync(Suites, new CreateEvalSuiteRequest("  Shopping  ", "List questions", cases), Ct);
-        response.StatusCode.Should().Be(HttpStatusCode.Created, await response.Content.ReadAsStringAsync(Ct));
+        Assert.True(response.StatusCode == HttpStatusCode.Created, $"{response.StatusCode}: {await response.Content.ReadAsStringAsync(Ct)}");
         return (await response.Content.ReadFromJsonAsync<EvalSuiteDto>(Ct))!;
     }
 
     private static async Task<EvalSuiteDto> UpdateAsync(HttpClient client, EvalSuiteDto suite, string name, params EvalCaseInput[] cases)
     {
         var response = await client.PutAsJsonAsync($"{Suites}/{suite.Id}", new UpdateEvalSuiteRequest(name, suite.Description, cases, suite.CurrentVersion), Ct);
-        response.StatusCode.Should().Be(HttpStatusCode.OK, await response.Content.ReadAsStringAsync(Ct));
+        Assert.True(response.StatusCode == HttpStatusCode.OK, $"{response.StatusCode}: {await response.Content.ReadAsStringAsync(Ct)}");
         return (await response.Content.ReadFromJsonAsync<EvalSuiteDto>(Ct))!;
     }
 
@@ -60,22 +59,22 @@ public sealed class ProbatioApiTests(MonolithWebApplicationFactory factory) : IC
         var client = ClientFor(Guid.NewGuid());
         var suite = await CreateAsync(client, Case("What do we need?"));
 
-        suite.Name.Should().Be("Shopping");
-        suite.Version.Should().Be(1);
-        suite.Cases.Should().ContainSingle();
-        suite.Cases[0].Id.Should().NotBeEmpty();
-        suite.Cases[0].Checks.Should().HaveCount(3);
-        suite.Cases[0].PriorTurns.Should().HaveCount(2);
+        Assert.Equal("Shopping", suite.Name);
+        Assert.Equal(1, suite.Version);
+        Assert.Single(suite.Cases);
+        Assert.NotEqual(Guid.Empty, suite.Cases[0].Id);
+        Assert.Equal(3, suite.Cases[0].Checks.Count);
+        Assert.Equal(2, suite.Cases[0].PriorTurns.Count);
 
         var fetched = await client.GetFromJsonAsync<EvalSuiteDto>($"{Suites}/{suite.Id}", Ct);
-        fetched!.Cases.Should().BeEquivalentTo(suite.Cases);
+        Assert.Equivalent(suite.Cases, fetched!.Cases);
 
         var page = await client.GetFromJsonAsync<PagedResponse<EvalSuiteSummaryDto>>(Suites, Ct);
-        page!.Items.Should().ContainSingle(s => s.Id == suite.Id && s.CaseCount == 1 && s.CurrentVersion == 1);
+        Assert.Single(page!.Items, s => s.Id == suite.Id && s.CaseCount == 1 && s.CurrentVersion == 1);
 
-        (await client.DeleteAsync($"{Suites}/{suite.Id}", Ct)).StatusCode.Should().Be(HttpStatusCode.NoContent);
-        (await client.GetAsync($"{Suites}/{suite.Id}", Ct)).StatusCode.Should().Be(HttpStatusCode.NotFound);
-        (await client.GetAsync($"{Suites}/{suite.Id}/versions/1", Ct)).StatusCode.Should().Be(HttpStatusCode.NotFound);
+        Assert.Equal(HttpStatusCode.NoContent, (await client.DeleteAsync($"{Suites}/{suite.Id}", Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"{Suites}/{suite.Id}", Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"{Suites}/{suite.Id}/versions/1", Ct)).StatusCode);
     }
 
     [Fact]
@@ -87,18 +86,19 @@ public sealed class ProbatioApiTests(MonolithWebApplicationFactory factory) : IC
 
         var v2 = await UpdateAsync(client, v1, "Shopping", AsInput(kept) with { Prompt = "What do we still need?" }, Case("Anything else?"));
 
-        v2.Version.Should().Be(2);
-        v2.CurrentVersion.Should().Be(2);
-        v2.Cases.Should().HaveCount(2);
-        v2.Cases[0].Id.Should().Be(kept.Id, "a kept case keeps its id across versions");
+        Assert.Equal(2, v2.Version);
+        Assert.Equal(2, v2.CurrentVersion);
+        Assert.Equal(2, v2.Cases.Count);
+        // a kept case keeps its id across versions
+        Assert.Equal(kept.Id, v2.Cases[0].Id);
 
         var old = await client.GetFromJsonAsync<EvalSuiteDto>($"{Suites}/{v1.Id}/versions/1", Ct);
-        old!.Version.Should().Be(1);
-        old.CurrentVersion.Should().Be(2);
-        old.Cases.Should().ContainSingle(c => c.Prompt == "What do we need?");
+        Assert.Equal(1, old!.Version);
+        Assert.Equal(2, old.CurrentVersion);
+        Assert.Single(old.Cases, c => c.Prompt == "What do we need?");
 
         var versions = await client.GetFromJsonAsync<List<EvalSuiteVersionDto>>($"{Suites}/{v1.Id}/versions", Ct);
-        versions!.Select(v => (v.Version, v.CaseCount)).Should().Equal((2, 2), (1, 1));
+        Assert.Equal(new (int Version, int CaseCount)[] { (2, 2), (1, 1) }, versions!.Select(v => (v.Version, v.CaseCount)));
     }
 
     [Fact]
@@ -109,8 +109,8 @@ public sealed class ProbatioApiTests(MonolithWebApplicationFactory factory) : IC
 
         var renamed = await UpdateAsync(client, suite, "Groceries", AsInput(suite.Cases[0]));
 
-        renamed.Name.Should().Be("Groceries");
-        renamed.Version.Should().Be(1);
+        Assert.Equal("Groceries", renamed.Name);
+        Assert.Equal(1, renamed.Version);
     }
 
     [Fact]
@@ -122,7 +122,7 @@ public sealed class ProbatioApiTests(MonolithWebApplicationFactory factory) : IC
 
         var stale = await client.PutAsJsonAsync($"{Suites}/{suite.Id}", new UpdateEvalSuiteRequest("Shopping", null, [Case("Other")], BaseVersion: 1), Ct);
 
-        stale.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        Assert.Equal(HttpStatusCode.Conflict, stale.StatusCode);
     }
 
     [Fact]
@@ -134,14 +134,14 @@ public sealed class ProbatioApiTests(MonolithWebApplicationFactory factory) : IC
             Suites,
             new CreateEvalSuiteRequest("Bad", null, [Case("Hi") with { ExpectedToolCalls = [new ExpectedToolCall("delete_everything", null)] }]),
             Ct);
-        unknownTool.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        (await unknownTool.Content.ReadAsStringAsync(Ct)).Should().Contain("Unknown tool 'delete_everything'");
+        Assert.Equal(HttpStatusCode.BadRequest, unknownTool.StatusCode);
+        Assert.Contains("Unknown tool 'delete_everything'", await unknownTool.Content.ReadAsStringAsync(Ct), StringComparison.Ordinal);
 
         var unknownCheck = await client.PostAsJsonAsync(
             Suites,
             new { name = "Bad", cases = new[] { new { prompt = "Hi", checks = new[] { new { type = "Vibes" } } } } },
             Ct);
-        unknownCheck.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        Assert.Equal(HttpStatusCode.BadRequest, unknownCheck.StatusCode);
     }
 
     [Fact]
@@ -155,12 +155,12 @@ public sealed class ProbatioApiTests(MonolithWebApplicationFactory factory) : IC
 
         foreach (var client in new[] { other, sovereign })
         {
-            (await client.GetAsync($"{Suites}/{suite.Id}", Ct)).StatusCode.Should().Be(HttpStatusCode.NotFound);
-            (await client.GetAsync($"{Suites}/{suite.Id}/versions", Ct)).StatusCode.Should().Be(HttpStatusCode.NotFound);
-            (await client.DeleteAsync($"{Suites}/{suite.Id}", Ct)).StatusCode.Should().Be(HttpStatusCode.NotFound);
-            (await client.GetFromJsonAsync<PagedResponse<EvalSuiteSummaryDto>>(Suites, Ct))!.Items.Should().NotContain(s => s.Id == suite.Id);
+            Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"{Suites}/{suite.Id}", Ct)).StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"{Suites}/{suite.Id}/versions", Ct)).StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, (await client.DeleteAsync($"{Suites}/{suite.Id}", Ct)).StatusCode);
+            Assert.DoesNotContain((await client.GetFromJsonAsync<PagedResponse<EvalSuiteSummaryDto>>(Suites, Ct))!.Items, s => s.Id == suite.Id);
         }
 
-        (await owner.GetAsync($"{Suites}/{suite.Id}", Ct)).StatusCode.Should().Be(HttpStatusCode.OK);
+        Assert.Equal(HttpStatusCode.OK, (await owner.GetAsync($"{Suites}/{suite.Id}", Ct)).StatusCode);
     }
 }

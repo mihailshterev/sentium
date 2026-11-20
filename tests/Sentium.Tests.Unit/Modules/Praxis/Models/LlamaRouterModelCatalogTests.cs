@@ -1,6 +1,5 @@
 using System.Net;
 using System.Text;
-using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Sentium.Praxis.Features.Models;
 using Xunit;
@@ -43,10 +42,8 @@ public sealed class LlamaRouterModelCatalogTests : IDisposable
 
         var models = await _sut.ListAsync(Ct);
 
-        models.Should().Equal(
-            new CatalogModel("alpha", "unloaded", null),
-            new CatalogModel("gemma-4-e4b", "loaded", 16384));
-        _handler.Requests.Single().Uri.Should().Be(new Uri("http://llm.test/models"));
+        Assert.Equal(new CatalogModel[] { new CatalogModel("alpha", "unloaded", null), new CatalogModel("gemma-4-e4b", "loaded", 16384) }, models);
+        Assert.Equal(new Uri("http://llm.test/models"), _handler.Requests.Single().Uri);
     }
 
     [Fact]
@@ -56,7 +53,7 @@ public sealed class LlamaRouterModelCatalogTests : IDisposable
 
         var models = await _sut.ListAsync(Ct);
 
-        models.Should().ContainSingle().Which.Should().Be(new CatalogModel("m", "unknown", null));
+        Assert.Equal(new CatalogModel("m", "unknown", null), Assert.Single(models!));
     }
 
     [Theory]
@@ -66,7 +63,7 @@ public sealed class LlamaRouterModelCatalogTests : IDisposable
     {
         _handler.Respond(status, """{"error":{"message":"nope"}}""");
 
-        (await _sut.ListAsync(Ct)).Should().BeNull();
+        Assert.Null(await _sut.ListAsync(Ct));
     }
 
     [Fact]
@@ -74,7 +71,7 @@ public sealed class LlamaRouterModelCatalogTests : IDisposable
     {
         _handler.Fail(new HttpRequestException("connection refused"));
 
-        (await _sut.ListAsync(Ct)).Should().BeNull();
+        Assert.Null(await _sut.ListAsync(Ct));
     }
 
     [Fact]
@@ -82,7 +79,7 @@ public sealed class LlamaRouterModelCatalogTests : IDisposable
     {
         _handler.Respond(HttpStatusCode.OK, "not json");
 
-        (await _sut.ListAsync(Ct)).Should().BeNull();
+        Assert.Null(await _sut.ListAsync(Ct));
     }
 
     [Theory]
@@ -96,11 +93,11 @@ public sealed class LlamaRouterModelCatalogTests : IDisposable
 
         var result = await _sut.LoadAsync("gemma-4-e4b", Ct);
 
-        result.Should().Be(Enum.Parse<ModelActionResult>(expected));
+        Assert.Equal(Enum.Parse<ModelActionResult>(expected), result);
         var request = _handler.Requests.Single();
-        request.Method.Should().Be(HttpMethod.Post);
-        request.Uri.Should().Be(new Uri("http://llm.test/models/load"));
-        request.Body.Should().Be("""{"model":"gemma-4-e4b"}""");
+        Assert.Equal(HttpMethod.Post, request.Method);
+        Assert.Equal(new Uri("http://llm.test/models/load"), request.Uri);
+        Assert.Equal("""{"model":"gemma-4-e4b"}""", request.Body);
     }
 
     [Fact]
@@ -110,8 +107,8 @@ public sealed class LlamaRouterModelCatalogTests : IDisposable
 
         var result = await _sut.UnloadAsync("gemma-4-e4b", Ct);
 
-        result.Should().Be(ModelActionResult.Accepted);
-        _handler.Requests.Single().Uri.Should().Be(new Uri("http://llm.test/models/unload"));
+        Assert.Equal(ModelActionResult.Accepted, result);
+        Assert.Equal(new Uri("http://llm.test/models/unload"), _handler.Requests.Single().Uri);
     }
 
     [Fact]
@@ -119,7 +116,7 @@ public sealed class LlamaRouterModelCatalogTests : IDisposable
     {
         _handler.Fail(new HttpRequestException("connection refused"));
 
-        (await _sut.UnloadAsync("gemma-4-e4b", Ct)).Should().Be(ModelActionResult.Failed);
+        Assert.Equal(ModelActionResult.Failed, await _sut.UnloadAsync("gemma-4-e4b", Ct));
     }
 
     private sealed record RecordedRequest(HttpMethod Method, Uri Uri, string Body);

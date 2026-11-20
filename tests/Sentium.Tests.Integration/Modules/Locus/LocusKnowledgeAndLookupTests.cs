@@ -1,5 +1,4 @@
 using System.Net.Http.Json;
-using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
@@ -55,7 +54,7 @@ public sealed class LocusKnowledgeAndLookupTests : IClassFixture<LocusApiFactory
         var asset = await _client.CreateAssetAsync(new SaveAssetRequest("Cordless drill", home.Id, Instructions: "Charge before storing"), Ct);
         var source = AssetKnowledgeDocumentBuilder.SourceFor(asset.Id);
 
-        (await ProcessAsync(asset.Id)).Should().Be(KnowledgeSyncOutcome.Synced);
+        Assert.Equal(KnowledgeSyncOutcome.Synced, await ProcessAsync(asset.Id));
 
         // Replace, never append: the old copy is removed before both sections (identity, care) are written.
         Received.InOrder(() =>
@@ -70,11 +69,11 @@ public sealed class LocusKnowledgeAndLookupTests : IClassFixture<LocusApiFactory
             null, Arg.Any<CancellationToken>());
 
         var stored = await WithDbAsync(db => db.Assets.AsNoTracking().SingleAsync(a => a.Id == asset.Id, Ct));
-        stored.KnowledgeContentHash.Should().NotBeNull();
-        (await WithDbAsync(db => db.KnowledgeSyncEntries.AnyAsync(e => e.AssetId == asset.Id, Ct))).Should().BeFalse();
+        Assert.NotNull(stored.KnowledgeContentHash);
+        Assert.False(await WithDbAsync(db => db.KnowledgeSyncEntries.AnyAsync(e => e.AssetId == asset.Id, Ct)));
 
         var dto = await _client.GetFromJsonAsync<AssetDto>($"/api/locus/assets/{asset.Id}", Ct);
-        dto!.KnowledgeStatus.Should().Be(AssetKnowledgeStatus.Synced);
+        Assert.Equal(AssetKnowledgeStatus.Synced, dto!.KnowledgeStatus);
     }
 
     [Fact]
@@ -87,7 +86,7 @@ public sealed class LocusKnowledgeAndLookupTests : IClassFixture<LocusApiFactory
 
         await _client.PostAsync($"/api/locus/assets/{asset.Id}/knowledge-sync", null, Ct);
 
-        (await ProcessAsync(asset.Id)).Should().Be(KnowledgeSyncOutcome.Unchanged);
+        Assert.Equal(KnowledgeSyncOutcome.Unchanged, await ProcessAsync(asset.Id));
         await _factory.Ingestion.DidNotReceiveWithAnyArgs().IngestAsync(default!, default, Ct);
     }
 
@@ -100,14 +99,14 @@ public sealed class LocusKnowledgeAndLookupTests : IClassFixture<LocusApiFactory
         _factory.Ingestion.ClearReceivedCalls();
 
         await _client.PutAsJsonAsync($"/api/locus/assets/{asset.Id}", new SaveAssetRequest("Router", home.Id, IsAgentAccessible: false), Ct);
-        (await ProcessAsync(asset.Id)).Should().Be(KnowledgeSyncOutcome.Removed);
+        Assert.Equal(KnowledgeSyncOutcome.Removed, await ProcessAsync(asset.Id));
 
         await _factory.Ingestion.Received(1).RemoveBySourceAsync(AssetKnowledgeDocumentBuilder.SourceFor(asset.Id), null, Arg.Any<CancellationToken>());
         await _factory.Ingestion.DidNotReceiveWithAnyArgs().IngestAsync(default!, default, Ct);
-        (await WithDbAsync(db => db.Assets.AsNoTracking().SingleAsync(a => a.Id == asset.Id, Ct))).KnowledgeContentHash.Should().BeNull();
+        Assert.Null((await WithDbAsync(db => db.Assets.AsNoTracking().SingleAsync(a => a.Id == asset.Id, Ct))).KnowledgeContentHash);
 
         await _client.DeleteAsync($"/api/locus/assets/{asset.Id}", Ct);
-        (await ProcessAsync(asset.Id)).Should().Be(KnowledgeSyncOutcome.Removed);
+        Assert.Equal(KnowledgeSyncOutcome.Removed, await ProcessAsync(asset.Id));
     }
 
     [Fact]
@@ -118,16 +117,16 @@ public sealed class LocusKnowledgeAndLookupTests : IClassFixture<LocusApiFactory
         _factory.Ingestion.IngestAsync(Arg.Any<IngestionRequest>(), Arg.Any<string?>(), Arg.Any<CancellationToken>())
             .ThrowsAsync(new HttpRequestException("embedding server unavailable"));
 
-        (await ProcessAsync(asset.Id)).Should().Be(KnowledgeSyncOutcome.Failed);
+        Assert.Equal(KnowledgeSyncOutcome.Failed, await ProcessAsync(asset.Id));
 
         var entry = await WithDbAsync(db => db.KnowledgeSyncEntries.AsNoTracking().SingleAsync(e => e.AssetId == asset.Id, Ct));
-        entry.Attempts.Should().Be(1);
-        entry.Status.Should().Be(KnowledgeSyncStatus.Pending);
-        entry.LastError.Should().Contain("embedding server unavailable");
-        entry.NextAttemptAt.Should().BeAfter(DateTimeOffset.UtcNow);
+        Assert.Equal(1, entry.Attempts);
+        Assert.Equal(KnowledgeSyncStatus.Pending, entry.Status);
+        Assert.Contains("embedding server unavailable", entry.LastError, StringComparison.Ordinal);
+        Assert.True(entry.NextAttemptAt > DateTimeOffset.UtcNow);
 
         var dto = await _client.GetFromJsonAsync<AssetDto>($"/api/locus/assets/{asset.Id}", Ct);
-        dto!.KnowledgeError.Should().Contain("embedding server unavailable");
+        Assert.Contains("embedding server unavailable", dto!.KnowledgeError, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -143,9 +142,9 @@ public sealed class LocusKnowledgeAndLookupTests : IClassFixture<LocusApiFactory
                 await scope.ServiceProvider.GetRequiredService<KnowledgeSyncOutbox>().EnqueueAsync([asset.Id], CancellationToken.None);
             });
 
-        (await ProcessAsync(asset.Id)).Should().Be(KnowledgeSyncOutcome.Synced);
+        Assert.Equal(KnowledgeSyncOutcome.Synced, await ProcessAsync(asset.Id));
 
-        (await WithDbAsync(db => db.KnowledgeSyncEntries.AnyAsync(e => e.AssetId == asset.Id, Ct))).Should().BeTrue();
+        Assert.True(await WithDbAsync(db => db.KnowledgeSyncEntries.AnyAsync(e => e.AssetId == asset.Id, Ct)));
     }
 
     [Fact]
@@ -160,25 +159,25 @@ public sealed class LocusKnowledgeAndLookupTests : IClassFixture<LocusApiFactory
         var lookup = _factory.Services.GetRequiredService<IInventoryLookup>();
 
         var found = await lookup.FindAssetsAsync(new InventoryAssetQuery(token), Ct);
-        found.Should().ContainSingle().Which.Id.Should().Be(shared.Id);
-        found[0].LocationPath.Should().Be($"Home{token} › Garage");
+        Assert.Equal(shared.Id, Assert.Single(found).Id);
+        Assert.Equal($"Home{token} › Garage", found[0].LocationPath);
 
-        (await lookup.GetAssetAsync(hidden.Id, Ct)).Should().BeNull();
-        (await lookup.FindAssetsByNameAsync($"safe {token}", ct: Ct)).Should().BeEmpty();
+        Assert.Null(await lookup.GetAssetAsync(hidden.Id, Ct));
+        Assert.Empty(await lookup.FindAssetsByNameAsync($"safe {token}", ct: Ct));
 
         var detail = await lookup.GetAssetAsync(shared.Id, Ct);
-        detail!.AssistantNotes.Should().Be("Wear goggles");
+        Assert.Equal("Wear goggles", detail!.AssistantNotes);
 
         var contents = await lookup.GetLocationContentsAsync($"Home{token}/Garage", ct: Ct);
-        contents.Status.Should().Be(InventoryLocationLookupStatus.Found);
-        contents.Assets.Should().ContainSingle().Which.Id.Should().Be(shared.Id);
+        Assert.Equal(InventoryLocationLookupStatus.Found, contents.Status);
+        Assert.Equal(shared.Id, Assert.Single(contents.Assets).Id);
 
         var nested = await lookup.GetLocationContentsAsync($"Home{token}", includeNested: true, ct: Ct);
-        nested.Assets.Select(a => a.Id).Should().Equal(shared.Id);
-        nested.SubLocations.Should().ContainSingle().Which.Name.Should().Be("Garage");
+        Assert.Equal(new Guid[] { shared.Id }, nested.Assets.Select(a => a.Id));
+        Assert.Equal("Garage", Assert.Single(nested.SubLocations).Name);
 
-        (await lookup.FindAssetsAsync(new InventoryAssetQuery(null, Location: $"Home{token}"), Ct)).Should().ContainSingle();
-        (await lookup.FindAssetsAsync(new InventoryAssetQuery("drill", Location: "Nowhere-" + token), Ct)).Should().BeEmpty();
+        Assert.Single(await lookup.FindAssetsAsync(new InventoryAssetQuery(null, Location: $"Home{token}"), Ct));
+        Assert.Empty(await lookup.FindAssetsAsync(new InventoryAssetQuery("drill", Location: "Nowhere-" + token), Ct));
     }
 
     [Fact]
@@ -195,7 +194,7 @@ public sealed class LocusKnowledgeAndLookupTests : IClassFixture<LocusApiFactory
         scope.ServiceProvider.GetRequiredService<SystemScopeContext>().Activate();
         var queued = await scope.ServiceProvider.GetRequiredService<KnowledgeSyncProcessor>().ReconcileAsync(Ct);
 
-        queued.Should().BeGreaterThan(0);
-        (await WithDbAsync(db => db.KnowledgeSyncEntries.AnyAsync(e => e.AssetId == asset.Id, Ct))).Should().BeTrue();
+        Assert.True(queued > 0);
+        Assert.True(await WithDbAsync(db => db.KnowledgeSyncEntries.AnyAsync(e => e.AssetId == asset.Id, Ct)));
     }
 }

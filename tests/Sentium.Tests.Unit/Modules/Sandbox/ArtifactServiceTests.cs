@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using NSubstitute;
@@ -54,8 +53,8 @@ public sealed class ArtifactServiceTests : IDisposable
 
         var artifacts = await _sut.HarvestAsync(_jobDirectory, new HashSet<string> { "main.py" }, Guid.NewGuid(), ct);
 
-        artifacts.Select(a => a.FileName).Should().Equal("result.csv");
-        _uploaded.Should().ContainSingle().Which.Should().EndWith("/result.csv");
+        Assert.Equal(new string[] { "result.csv" }, artifacts.Select(a => a.FileName));
+        Assert.EndsWith("/result.csv", Assert.Single(_uploaded), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -68,10 +67,10 @@ public sealed class ArtifactServiceTests : IDisposable
 
         var artifacts = await _sut.HarvestAsync(_jobDirectory, new HashSet<string>(), jobId, ct);
 
-        var artifact = artifacts.Should().ContainSingle().Subject;
-        artifact.Key.Should().Be($"{jobId:N}/out/my chart.png");
-        artifact.MimeType.Should().Be("image/png");
-        artifact.BlobUri.Should().Be(new Uri($"s3://sandbox-artifacts/{jobId:N}/out/my%20chart.png"));
-        _uploaded.Should().Equal($"sandbox-artifacts/{jobId:N}/out/my chart.png");
+        var artifact = Assert.Single(artifacts);
+        Assert.Equal($"{jobId:N}/out/my chart.png", artifact.Key);
+        Assert.Equal("image/png", artifact.MimeType);
+        Assert.Equal(new Uri($"s3://sandbox-artifacts/{jobId:N}/out/my%20chart.png"), artifact.BlobUri);
+        Assert.Equal(new string[] { $"sandbox-artifacts/{jobId:N}/out/my chart.png" }, _uploaded);
     }
 }

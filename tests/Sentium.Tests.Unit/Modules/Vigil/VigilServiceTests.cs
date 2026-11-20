@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Sentium.Vigil.Features.Metrics;
 using Xunit;
 
@@ -13,7 +12,7 @@ public sealed class VigilServiceTests
     {
         var metrics = _service.GetMetrics();
 
-        metrics.Should().NotBeNull();
+        Assert.NotNull(metrics);
     }
 
     [Fact]
@@ -23,12 +22,12 @@ public sealed class VigilServiceTests
 
         Assert.Multiple(() =>
         {
-            metrics.Host.MachineName.Should().NotBeNullOrWhiteSpace();
-            metrics.Host.OsDescription.Should().NotBeNullOrWhiteSpace();
-            metrics.Host.OsArchitecture.Should().NotBeNullOrWhiteSpace();
-            metrics.Host.ProcessorCount.Should().BeGreaterThan(0);
-            metrics.Host.RuntimeVersion.Should().NotBeNullOrWhiteSpace();
-            metrics.Host.Uptime.Should().BeGreaterThan(TimeSpan.Zero);
+            Assert.False(string.IsNullOrWhiteSpace(metrics.Host.MachineName));
+            Assert.False(string.IsNullOrWhiteSpace(metrics.Host.OsDescription));
+            Assert.False(string.IsNullOrWhiteSpace(metrics.Host.OsArchitecture));
+            Assert.True(metrics.Host.ProcessorCount > 0);
+            Assert.False(string.IsNullOrWhiteSpace(metrics.Host.RuntimeVersion));
+            Assert.True(metrics.Host.Uptime > TimeSpan.Zero);
         });
     }
 
@@ -37,7 +36,7 @@ public sealed class VigilServiceTests
     {
         var metrics = _service.GetMetrics();
 
-        metrics.Memory.TotalMb.Should().BeGreaterThan(0);
+        Assert.True(metrics.Memory.TotalMb > 0);
     }
 
     [Fact]
@@ -47,8 +46,8 @@ public sealed class VigilServiceTests
 
         Assert.Multiple(() =>
         {
-            metrics.Cpu.ProcessorCount.Should().BeGreaterThan(0);
-            metrics.Cpu.Architecture.Should().NotBeNullOrWhiteSpace();
+            Assert.True(metrics.Cpu.ProcessorCount > 0);
+            Assert.False(string.IsNullOrWhiteSpace(metrics.Cpu.Architecture));
         });
     }
 
@@ -59,9 +58,9 @@ public sealed class VigilServiceTests
 
         Assert.Multiple(() =>
         {
-            metrics.Process.Id.Should().BeGreaterThan(0);
-            metrics.Process.Name.Should().NotBeNullOrWhiteSpace();
-            metrics.Process.WorkingSetMb.Should().BeGreaterThan(0);
+            Assert.True(metrics.Process.Id > 0);
+            Assert.False(string.IsNullOrWhiteSpace(metrics.Process.Name));
+            Assert.True(metrics.Process.WorkingSetMb > 0);
         });
     }
 
@@ -70,7 +69,7 @@ public sealed class VigilServiceTests
     {
         var metrics = _service.GetMetrics();
 
-        metrics.Disks.Should().NotBeEmpty();
+        Assert.NotEmpty(metrics.Disks);
     }
 
     [Fact]
@@ -79,6 +78,6 @@ public sealed class VigilServiceTests
         var first = _service.GetMetrics();
         var second = _service.GetMetrics();
 
-        first.Should().NotBeSameAs(second);
+        Assert.NotSame(second, first);
     }
 }

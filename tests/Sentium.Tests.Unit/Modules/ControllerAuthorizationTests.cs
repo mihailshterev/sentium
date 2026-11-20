@@ -1,5 +1,4 @@
 using System.Reflection;
-using FluentAssertions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sentium.Codex;
@@ -57,15 +56,16 @@ public sealed class ControllerAuthorizationTests
                 .Select(m => (Controller: c, Action: m)))
             .ToList();
 
-        actions.Should().NotBeEmpty("the scan must find the module controllers");
+        // the scan must find the module controllers
+        Assert.NotEmpty(actions);
 
         var unprotected = actions
             .Where(x => !HasAuthorizationRule(x.Action) && !HasAuthorizationRule(x.Controller))
             .Select(x => $"{x.Controller.FullName}.{x.Action.Name}")
             .ToList();
 
-        unprotected.Should().BeEmpty(
-            "anonymous access must be opted into with [AllowAnonymous]; these actions declare no rule");
+        // anonymous access must be opted into with [AllowAnonymous]; these actions declare no rule
+        Assert.Empty(unprotected);
     }
 
     private static bool IsController(Type type)

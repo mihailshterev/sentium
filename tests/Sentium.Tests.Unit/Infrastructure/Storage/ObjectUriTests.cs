@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Sentium.Infrastructure.Storage;
 using Xunit;
 
@@ -17,8 +16,8 @@ public sealed class ObjectUriTests
     {
         var uri = ObjectUri.Create(Bucket, key);
 
-        uri.Scheme.Should().Be(ObjectUri.Scheme);
-        ObjectUri.GetKey(uri, Bucket).Should().Be(key);
+        Assert.Equal(ObjectUri.Scheme, uri.Scheme);
+        Assert.Equal(key, ObjectUri.GetKey(uri, Bucket));
     }
 
     [Theory]
@@ -28,6 +27,6 @@ public sealed class ObjectUriTests
     [InlineData("file:///sandbox-artifacts/abc/result.csv")]
     public void GetKey_ReturnsNull_ForAnythingButAnS3ReferenceIntoTheBucket(string uri)
     {
-        ObjectUri.GetKey(new Uri(uri), Bucket).Should().BeNull();
+        Assert.Null(ObjectUri.GetKey(new Uri(uri), Bucket));
     }
 }

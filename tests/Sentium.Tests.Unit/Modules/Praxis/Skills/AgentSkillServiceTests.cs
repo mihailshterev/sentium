@@ -1,4 +1,3 @@
-using FluentAssertions;
 using NSubstitute;
 using Sentium.Core.Results;
 using Sentium.Praxis.Entities;
@@ -44,8 +43,8 @@ public sealed class AgentSkillServiceTests
         var result = await _sut.GetAllAsync(ct);
 
         // Assert
-        result.Should().HaveCount(1);
-        result[0].Name.Should().Be("Test Skill");
+        Assert.Single(result);
+        Assert.Equal("Test Skill", result[0].Name);
     }
 
     [Fact]
@@ -61,9 +60,9 @@ public sealed class AgentSkillServiceTests
         var result = await _sut.GetByIdAsync(id, ct);
 
         // Assert
-        result.Should().NotBeNull();
-        result!.Id.Should().Be(id);
-        result.Name.Should().Be(skill.Name);
+        Assert.NotNull(result);
+        Assert.Equal(id, result!.Id);
+        Assert.Equal(skill.Name, result.Name);
     }
 
     [Fact]
@@ -78,7 +77,7 @@ public sealed class AgentSkillServiceTests
         var result = await _sut.GetByIdAsync(id, ct);
 
         // Assert
-        result.Should().BeNull();
+        Assert.Null(result);
     }
 
     [Fact]
@@ -93,8 +92,8 @@ public sealed class AgentSkillServiceTests
         var result = await _sut.CreateAsync(request, ct);
 
         // Assert
-        result.Status.Should().Be(ResultStatus.Conflict);
-        result.Error.Should().Contain("Duplicate");
+        Assert.Equal(ResultStatus.Conflict, result.Status);
+        Assert.Contains("Duplicate", result.Error, StringComparison.Ordinal);
         await _repository.DidNotReceive().AddAsync(Arg.Any<AgentSkill>(), Arg.Any<CancellationToken>());
     }
 
@@ -110,9 +109,9 @@ public sealed class AgentSkillServiceTests
         var result = await _sut.CreateAsync(request, ct);
 
         // Assert
-        result.Status.Should().Be(ResultStatus.Success);
-        result.Value.Should().NotBeNull();
-        result.Value!.Name.Should().Be("New Skill");
+        Assert.Equal(ResultStatus.Success, result.Status);
+        Assert.NotNull(result.Value);
+        Assert.Equal("New Skill", result.Value!.Name);
         await _repository.Received(1).AddAsync(Arg.Any<AgentSkill>(), ct);
     }
 
@@ -128,7 +127,7 @@ public sealed class AgentSkillServiceTests
         var result = await _sut.UpdateAsync(id, new UpdateAgentSkillRequest("Updated", "Desc", "Inst"), ct);
 
         // Assert
-        result.Should().BeFalse();
+        Assert.False(result);
     }
 
     [Fact]
@@ -144,7 +143,7 @@ public sealed class AgentSkillServiceTests
         var result = await _sut.UpdateAsync(id, new UpdateAgentSkillRequest("Updated", "Desc", "Inst"), ct);
 
         // Assert
-        result.Should().BeTrue();
+        Assert.True(result);
         await _repository.Received(1).UpdateAsync(skill, ct);
     }
 
@@ -160,7 +159,7 @@ public sealed class AgentSkillServiceTests
         var result = await _sut.DeleteAsync(id, ct);
 
         // Assert
-        result.Should().BeTrue();
+        Assert.True(result);
     }
 
     [Fact]
@@ -175,6 +174,6 @@ public sealed class AgentSkillServiceTests
         var result = await _sut.DeleteAsync(id, ct);
 
         // Assert
-        result.Should().BeFalse();
+        Assert.False(result);
     }
 }

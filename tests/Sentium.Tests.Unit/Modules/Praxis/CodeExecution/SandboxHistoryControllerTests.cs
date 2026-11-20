@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -66,7 +65,7 @@ public sealed class SandboxHistoryControllerTests
         var result = await _controller.GetExecutions(1, 20, null, null, null, ct);
 
         // Assert
-        result.Should().BeOfType<OkObjectResult>();
+        Assert.IsType<OkObjectResult>(result);
     }
 
     [Fact]
@@ -111,7 +110,7 @@ public sealed class SandboxHistoryControllerTests
         var result = await _controller.GetExecution(entry.JobId, ct);
 
         // Assert
-        result.Should().BeOfType<OkObjectResult>();
+        Assert.IsType<OkObjectResult>(result);
     }
 
     [Fact]
@@ -126,7 +125,7 @@ public sealed class SandboxHistoryControllerTests
         var result = await _controller.GetExecution(id, ct);
 
         // Assert
-        result.Should().BeOfType<NotFoundResult>();
+        Assert.IsType<NotFoundResult>(result);
     }
 
     [Fact]
@@ -140,7 +139,7 @@ public sealed class SandboxHistoryControllerTests
         var result = await _controller.GetStats(ct);
 
         // Assert
-        result.Should().BeOfType<OkObjectResult>();
+        Assert.IsType<OkObjectResult>(result);
     }
 
     [Fact]
@@ -167,11 +166,11 @@ public sealed class SandboxHistoryControllerTests
         var download = await _controller.DownloadArtifactAsync(key, ct);
 
         // Assert
-        record.Artifacts.Should().ContainSingle().Which.DownloadPath.Should().Be(key);
-        var file = download.Should().BeOfType<FileStreamResult>().Subject;
-        file.FileStream.Should().BeSameAs(content);
-        file.ContentType.Should().Be("text/csv");
-        file.FileDownloadName.Should().Be("result v2.csv");
+        Assert.Equal(key, Assert.Single(record.Artifacts).DownloadPath);
+        var file = Assert.IsType<FileStreamResult>(download);
+        Assert.Same(content, file.FileStream);
+        Assert.Equal("text/csv", file.ContentType);
+        Assert.Equal("result v2.csv", file.FileDownloadName);
     }
 
     [Fact]
@@ -194,6 +193,6 @@ public sealed class SandboxHistoryControllerTests
         var result = await _controller.DownloadArtifactAsync(key, ct);
 
         // Assert
-        result.Should().BeOfType<NotFoundResult>();
+        Assert.IsType<NotFoundResult>(result);
     }
 }
