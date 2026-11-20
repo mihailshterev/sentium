@@ -1,9 +1,20 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchActiveSchedulerJobs, deleteScheduledJob } from "@/features/scheduler/api/scheduler.service";
-import type { CronJobRecord } from "@/features/scheduler/types/scheduler";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  createSchedule,
+  deleteSchedule,
+  fetchActiveSchedulerJobs,
+  fetchBackgroundJobs,
+  fetchPreApprovableTools,
+  fetchScheduleTemplates,
+  pauseSchedule,
+  resumeSchedule,
+  updateSchedule,
+} from "@/features/scheduler/api/scheduler.service";
+import type { CronJobRecord, PreApprovalTarget, SaveSchedulePayload } from "@/features/scheduler/types/scheduler";
 
 const SCHEDULER_POLL_INTERVAL = 5_000;
 const QUERY_KEY = "scheduler-jobs";
+const BACKGROUND_KEY = "scheduler-background-jobs";
 
 export const useSchedulerJobs = () => {
   const {
@@ -21,13 +32,60 @@ export const useSchedulerJobs = () => {
   return { jobs, isLoading, error, refetch };
 };
 
-export const useDeleteJobMutation = () => {
+const useInvalidateJobs = () => {
   const queryClient = useQueryClient();
+  return () => queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
+};
 
+export const useDeleteJobMutation = () => {
+  const onSuccess = useInvalidateJobs();
+  return useMutation({ mutationFn: (jobId: string) => deleteSchedule(jobId), onSuccess });
+};
+
+export const useSaveScheduleMutation = () => {
+  const onSuccess = useInvalidateJobs();
   return useMutation({
-    mutationFn: ({ agentId, jobId }: { agentId: string; jobId: string }) => deleteScheduledJob(agentId, jobId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEY] });
-    },
+    mutationFn: ({ jobId, payload }: { jobId?: string; payload: SaveSchedulePayload }) =>
+      jobId ? updateSchedule(jobId, payload) : createSchedule(payload),
+    onSuccess,
   });
+};
+
+export const usePauseResumeMutation = () => {
+  const onSuccess = useInvalidateJobs();
+  return useMutation({
+    mutationFn: ({ jobId, pause }: { jobId: string; pause: boolean }) =>
+      pause ? pauseSchedule(jobId) : resumeSchedule(jobId),
+    onSuccess,
+  });
+};
+
+export const useScheduleTemplates = () => {
+  const { data = [] } = useQuery({
+    queryKey: [QUERY_KEY, "templates"],
+    queryFn: fetchScheduleTemplates,
+    staleTime: Infinity,
+  });
+  return data;
+};
+
+export const usePreApprovableTools = (target: PreApprovalTarget | null) => {
+  const { data = [], isFetching, isError } = useQuery({
+    queryKey: [QUERY_KEY, "pre-approvable", target],
+    queryFn: () => fetchPreApprovableTools(target as PreApprovalTarget),
+    enabled: target !== null,
+    retry: false,
+  });
+  return { tools: target ? data : [], isLoading: isFetching, isError };
+};
+
+export const useBackgroundJobs = (enabled: boolean) => {
+  const { data, isLoading, error } = useQuery({
+    queryKey: [BACKGROUND_KEY],
+    queryFn: fetchBackgroundJobs,
+    enabled,
+    refetchInterval: SCHEDULER_POLL_INTERVAL,
+    retry: false,
+  });
+  return { snapshot: data, isLoading, error };
 };

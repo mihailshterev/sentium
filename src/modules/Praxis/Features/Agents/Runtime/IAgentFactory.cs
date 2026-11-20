@@ -1,4 +1,5 @@
 using Microsoft.Agents.AI;
+using Microsoft.Extensions.AI;
 
 namespace Sentium.Praxis.Features.Agents.Runtime;
 
@@ -17,7 +18,8 @@ internal interface IAgentFactory
     /// <param name="actingUserId">The user on whose behalf the agent runs; flows into per-user settings and agent lookup.</param>
     /// <param name="chatHistory">Optional chat-history provider (e.g. a persisted conversation); defaults to in-memory session history.</param>
     /// <param name="allowApprovalTools">
-    /// <see langword="false"/> for unattended runs (workflows): drops tools that require human approval, since nobody can answer the request.
+    /// <see langword="false"/> for unattended runs (workflows): drops tools that require human approval, since nobody can answer the request,
+    /// unless the run context carries an <see cref="Contracts.UnattendedRunPolicy"/>, which then decides per tool.
     /// </param>
     /// <exception cref="InvalidOperationException">Thrown when <paramref name="agentName"/> matches neither a native nor a database agent.</exception>
     Task<AIAgent> CreateAsync(
@@ -39,6 +41,12 @@ internal interface IAgentFactory
         Guid? actingUserId,
         bool allowApprovalTools,
         CancellationToken ct = default);
+
+    /// <summary>
+    /// The tools <see cref="CreateAsync"/> would give the agent when approval-gated tools are allowed, without resolving
+    /// its model; <see langword="null"/> when <paramref name="agentName"/> matches no agent.
+    /// </summary>
+    Task<IReadOnlyList<AITool>?> ResolveToolsAsync(string agentName, Guid? actingUserId, CancellationToken ct = default);
 
     /// <summary>
     /// The model an agent run on <paramref name="overrideModel"/> would use: the override, else the user's Registry

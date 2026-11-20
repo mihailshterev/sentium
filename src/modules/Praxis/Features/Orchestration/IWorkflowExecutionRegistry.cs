@@ -8,9 +8,9 @@ internal interface IWorkflowExecutionRegistry
 {
     /// <summary>
     /// Registers the token source driving the run identified by <paramref name="streamId"/>, run for
-    /// <paramref name="ownerId"/>.
+    /// <paramref name="ownerId"/>. <paramref name="label"/> names the run in the background-jobs overview.
     /// </summary>
-    void Register(string streamId, Guid? ownerId, CancellationTokenSource cts);
+    void Register(string streamId, Guid? ownerId, CancellationTokenSource cts, string? label = null);
 
     /// <summary>
     /// Removes the run's registration (call once the run reaches a terminal state).
@@ -27,4 +27,6 @@ internal interface IWorkflowExecutionRegistry
     /// <see cref="Cancel"/>, but only a run of <paramref name="ownerId"/>.
     /// </summary>
     bool CancelOwned(string streamId, Guid ownerId);
+
+    IReadOnlyList<RunningWorkflow> Snapshot();
 }

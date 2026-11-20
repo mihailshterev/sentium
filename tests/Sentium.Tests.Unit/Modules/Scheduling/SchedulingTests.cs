@@ -9,6 +9,7 @@ using Quartz.Impl;
 using Quartz.Impl.Matchers;
 using Sentium.Infrastructure.Security;
 using Sentium.Praxis.Contracts;
+using Sentium.Registry.Contracts;
 using Sentium.Scheduling.Features.Jobs;
 using Sentium.Tests.Unit.Modules.Praxis.Support;
 using Xunit;
@@ -71,7 +72,14 @@ public sealed class SchedulingTests : IAsyncLifetime
         user.UserId.Returns(userId);
         user.IsAuthenticated.Returns(userId.HasValue);
         user.IsSovereign.Returns(sovereign);
-        return new SchedulerController(_factory, user)
+        var service = new ScheduleService(
+            _factory,
+            Substitute.For<IUnattendedRunLauncher>(),
+            new OwnerTimeZoneResolver(Substitute.For<ISettingsService>(), Substitute.For<ILogger<OwnerTimeZoneResolver>>()),
+            TimeProvider.System,
+            Substitute.For<ILogger<ScheduleService>>());
+
+        return new SchedulerController(_factory, service, user)
         {
             ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() }
         };

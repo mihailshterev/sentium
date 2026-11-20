@@ -23,8 +23,6 @@ internal sealed class ScheduleTaskTool(
 {
     public const string ToolName = "schedule_recurring_task";
 
-    private const int IntervalSamples = 50;
-
     public AIFunction CreateFunction()
     {
         return AgentToolFunction.Create(
@@ -66,7 +64,7 @@ internal sealed class ScheduleTaskTool(
             return $"Error: The CRON expression '{cronExpression}' never fires in the future.";
         }
 
-        if (GetShortestInterval(cron, firstFire.Value) is { } shortest && shortest < SchedulerDefaults.MinimumInterval)
+        if (ScheduleCron.GetShortestInterval(cron, firstFire.Value) is { } shortest && shortest < SchedulerDefaults.MinimumInterval)
         {
             return $"Error: The CRON expression '{cronExpression}' fires every {shortest.TotalSeconds:0} second(s); " +
                    $"scheduled tasks must be at least {SchedulerDefaults.MinimumInterval.TotalMinutes:0} minute(s) apart.";
@@ -117,29 +115,5 @@ internal sealed class ScheduleTaskTool(
             logger.LogError(ex, "Failed to schedule job '{JobName}' for user {UserId}", name, userId);
             return "Error: The scheduler could not save the task. Try again later.";
         }
-    }
-
-    private static TimeSpan? GetShortestInterval(CronExpression cron, DateTimeOffset firstFire)
-    {
-        TimeSpan? shortest = null;
-        var previous = firstFire;
-
-        for (var i = 0; i < IntervalSamples; i++)
-        {
-            if (cron.GetNextValidTimeAfter(previous) is not { } next)
-            {
-                break;
-            }
-
-            var gap = next - previous;
-            if (shortest is null || gap < shortest)
-            {
-                shortest = gap;
-            }
-
-            previous = next;
-        }
-
-        return shortest;
     }
 }

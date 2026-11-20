@@ -1,5 +1,6 @@
 using Sentium.Praxis.Common.Streaming;
 using Sentium.Praxis.Features.Agents;
+using Sentium.Praxis.Features.Agents.Runtime;
 using Sentium.Praxis.Features.Orchestration;
 using Sentium.Praxis.Features.WorkflowManagement;
 using Sentium.Praxis.Features.Workflows.Squad;
@@ -10,10 +11,13 @@ namespace Sentium.Praxis.Features.Workflows;
 
 /// <summary>
 /// User-defined squad: a fixed plan - the workflow's agents, in their configured order - each contributing its role.
+/// A trigger that names one agent instead of a saved workflow (a Schedule's agent run) is a one-step plan for exactly
+/// that agent, with no planner.
 /// </summary>
 internal sealed class DynamicCustomWorkflow(
     SquadWorkflowRunner squad,
     IAgentRepository agentRepository,
+    IAgentFactory agentFactory,
     IWorkflowService workflowService,
     IAgentStreamPublisher stream,
     IWorkspaceContextBuilder workspaceContext) : IAgentWorkflow
@@ -24,6 +28,11 @@ internal sealed class DynamicCustomWorkflow(
     {
         ArgumentNullException.ThrowIfNull(trigger);
 
+        if (trigger.WorkflowId is null && !string.IsNullOrWhiteSpace(trigger.AgentName))
+        {
+            return await RunSingleAgentAsync(trigger, trigger.AgentName, ct);
+        }
+
         if (trigger.WorkflowId is not { } workflowId)
         {
             return new WorkflowResult { Explanation = "Custom workflow trigger is missing a valid workflowId." };
@@ -32,7 +41,8 @@ internal sealed class DynamicCustomWorkflow(
         var workflowDef = await workflowService.GetWorkflowAsync(workflowId, ct);
         if (workflowDef is null)
         {
-            return new WorkflowResult { Explanation = $"Workflow '{workflowId}' was not found." };
+            var missing = $"Workflow '{trigger.WorkflowName ?? workflowId.ToString()}' was not found.";
+            return trigger.Schedule is null ? new WorkflowResult { Explanation = missing } : throw new UnrunnableWorkflowException(missing);
         }
 
         var agents = new List<AgentResponse>();
@@ -66,6 +76,22 @@ internal sealed class DynamicCustomWorkflow(
         var result = await squad.RunAsync(trigger, request, roster, plan, timeline, ct);
 
         return SquadResultMapper.ToWorkflowResult(result, timeline, $"Custom workflow '{workflowDef.Name}' completed with no output.", workflowId, workflowDef.UserId);
+    }
+
+    private async Task<WorkflowResult> RunSingleAgentAsync(WorkflowTrigger trigger, string agentName, CancellationToken ct)
+    {
+        var blueprint = await agentFactory.ResolveBlueprintAsync(agentName, overrideModel: null, trigger.UserId, allowApprovalTools: false, ct)
+            ?? throw new UnrunnableWorkflowException($"Agent '{agentName}' no longer exists.");
+
+        var definition = blueprint.Definition;
+        var roster = new List<SquadMember> { new(definition.Name, definition.Description, definition.Instructions) };
+        var plan = new SquadPlan([new SquadStep(definition.Name, "Carry out the request.", "A complete answer to the request.")]);
+
+        var timeline = new WorkflowTimeline(stream, trigger.StreamId);
+        var request = await WorkspaceContextPrompt.AugmentAsync(workspaceContext, trigger, ct);
+        var result = await squad.RunAsync(trigger, request, roster, plan, timeline, ct);
+
+        return SquadResultMapper.ToWorkflowResult(result, timeline, $"Agent '{definition.Name}' completed with no output.", workflowId: null, trigger.UserId);
     }
 
     private static void WarnOnDuplicateNames(WorkflowTimeline timeline, string workflowName, IReadOnlyList<AgentResponse> agents)

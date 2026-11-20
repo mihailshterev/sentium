@@ -17,7 +17,7 @@ const job = { id: "j1", agentId: "a1" } as never;
 
 beforeEach(() => {
   vi.spyOn(schedulerService, "fetchActiveSchedulerJobs").mockResolvedValue([job]);
-  vi.spyOn(schedulerService, "deleteScheduledJob").mockResolvedValue(undefined);
+  vi.spyOn(schedulerService, "deleteSchedule").mockResolvedValue(undefined);
 });
 
 describe("useSchedulerJobs", () => {
@@ -38,9 +38,9 @@ describe("useDeleteJobMutation", () => {
   it("deletes a job and settles successfully", async () => {
     const { result } = renderHook(() => useDeleteJobMutation(), { wrapper: createWrapper() });
     act(() => {
-      result.current.mutate({ agentId: "a1", jobId: "j1" });
+      result.current.mutate("j1");
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(schedulerService.deleteScheduledJob).toHaveBeenCalledWith("a1", "j1");
+    expect(schedulerService.deleteSchedule).toHaveBeenCalledWith("j1");
   });
 });

@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Options;
 using Sentium.Core.Constants;
 using Sentium.Identity.Contracts;
+using Sentium.Infrastructure.BackgroundWork;
 using Sentium.Infrastructure.Extensions;
 using Sentium.Infrastructure.Inference;
 using Sentium.Infrastructure.Retention;
@@ -166,6 +167,9 @@ public static class PraxisModuleExtensions
         services.AddSingleton<WorkflowRunQueue>();
         services.AddSingleton<IWorkflowRunQueue>(sp => sp.GetRequiredService<WorkflowRunQueue>());
         services.AddSingleton<WorkflowRunNotifier>();
+        services.AddSingleton<ScheduledRunGate>();
+        services.AddSingleton<IUnattendedRunLauncher, UnattendedRunLauncher>();
+        services.AddSingleton<IBackgroundActivitySource, WorkflowRunActivitySource>();
         services.AddHostedService<WorkflowRunProcessor>();
 
         services.AddSingleton<StreamRelay>();

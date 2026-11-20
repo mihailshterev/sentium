@@ -20,4 +20,9 @@ public interface IPdpContextAccessor
     /// even across DI scopes / approval continuations where the HTTP context is no longer available.
     /// </summary>
     Guid? UserId { get; set; }
+
+    /// <summary>
+    /// Set for a run nobody is present for (a Schedule's run); <see langword="null"/> when a person can answer approvals.
+    /// </summary>
+    UnattendedRunPolicy? Unattended { get; set; }
 }

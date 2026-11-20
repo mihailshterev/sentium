@@ -15,7 +15,8 @@ namespace Sentium.Praxis.Features.Orchestration;
 /// terminal frame (<see cref="AgentUpdateTypes.Done"/>, <see cref="AgentUpdateTypes.Error"/> or
 /// <see cref="AgentUpdateTypes.Cancelled"/>) to its stream so the UI can never hang waiting for an outcome -
 /// including runs interrupted, or never started, because the application shut down. Every outcome except a stop by
-/// the user also notifies the run's user (see <see cref="WorkflowRunNotifier"/>).
+/// the user also notifies the run's user (see <see cref="WorkflowRunNotifier"/>). A Schedule's run additionally
+/// releases its <see cref="ScheduledRunGate"/> slot and reports its end to every <see cref="IUnattendedRunObserver"/>.
 /// </summary>
 internal sealed class WorkflowRunProcessor(
     WorkflowRunQueue queue,
@@ -24,6 +25,8 @@ internal sealed class WorkflowRunProcessor(
     IWorkflowExecutionRegistry executionRegistry,
     IPdpContextAccessor runContext,
     WorkflowRunNotifier runNotifier,
+    ScheduledRunGate scheduledRunGate,
+    IEnumerable<IUnattendedRunObserver> runObservers,
     IConfiguration configuration,
     ILogger<WorkflowRunProcessor> logger) : BackgroundService
 {
@@ -69,77 +72,118 @@ internal sealed class WorkflowRunProcessor(
         }
 
         using var userCts = new CancellationTokenSource();
-        executionRegistry.Register(trigger.StreamId, trigger.UserId, userCts);
+        executionRegistry.Register(trigger.StreamId, trigger.UserId, userCts, DescribeForOverview(trigger));
 
         var startedAt = DateTime.UtcNow;
+        var end = new RunEnd(UnattendedRunStatus.Interrupted, null);
 
         try
         {
-            EmitSystem(trigger.StreamId, "Workflow started", AgentUpdateTypes.Status);
-
-            for (var attempt = 1; ; attempt++)
-            {
-                using var attemptCts = CancellationTokenSource.CreateLinkedTokenSource(hostCt, userCts.Token);
-                attemptCts.CancelAfter(_workflowTimeout);
-
-                try
-                {
-                    if (attempt > 1)
-                    {
-                        await Task.Delay(RetryDelay, attemptCts.Token);
-                    }
-
-                    logger.LogInformation(
-                        "Executing {TriggerType} workflow (stream {StreamId}, attempt {Attempt}/{Max}).",
-                        trigger.TriggerType, trigger.StreamId, attempt, MaxAttempts);
-
-                    var run = await RunAndPersistAsync(trigger, startedAt, attemptCts.Token);
-                    EmitSystem(trigger.StreamId, AgentUpdateTypes.Done, AgentUpdateTypes.Done);
-                    await runNotifier.NotifyAsync(trigger, run, WorkflowRunOutcome.Completed, null, CancellationToken.None);
-                    return;
-                }
-                catch (OperationCanceledException) when (hostCt.IsCancellationRequested)
-                {
-                    logger.LogWarning("Shutdown interrupted the workflow for stream {StreamId}.", trigger.StreamId);
-                    await RecordFailureAsync(trigger, startedAt, "[CANCELLED] Interrupted by application shutdown.", WorkflowRunOutcome.Interrupted);
-                    EmitSystem(trigger.StreamId, "The application shut down before the workflow completed.", AgentUpdateTypes.Error);
-                    return;
-                }
-                catch (OperationCanceledException) when (userCts.IsCancellationRequested)
-                {
-                    logger.LogInformation("Workflow for stream {StreamId} was stopped by the user.", trigger.StreamId);
-                    await SafePersistFailureAsync(trigger, startedAt, "[CANCELLED] Stopped by user.");
-                    EmitSystem(trigger.StreamId, "Run stopped by user.", AgentUpdateTypes.Cancelled);
-                    return;
-                }
-                catch (OperationCanceledException) when (attemptCts.IsCancellationRequested)
-                {
-                    logger.LogError("Workflow for stream {StreamId} timed out after {Timeout}.", trigger.StreamId, _workflowTimeout);
-                    await RecordFailureAsync(trigger, startedAt, $"[TIMEOUT] Workflow exceeded {_workflowTimeout.TotalMinutes:0} minute(s).", WorkflowRunOutcome.TimedOut);
-                    EmitSystem(trigger.StreamId, "The workflow timed out before completing.", AgentUpdateTypes.Error);
-                    return;
-                }
-                catch (Exception ex) when (attempt < MaxAttempts)
-                {
-                    logger.LogError(ex, "Attempt {Attempt}/{Max} of the workflow for stream {StreamId} failed; retrying.", attempt, MaxAttempts, trigger.StreamId);
-                    EmitSystem(trigger.StreamId, $"Attempt {attempt} failed; retrying...", AgentUpdateTypes.Status);
-                }
-                catch (Exception ex)
-                {
-                    logger.LogError(ex, "Workflow for stream {StreamId} failed after {Max} attempts.", trigger.StreamId, MaxAttempts);
-                    await RecordFailureAsync(trigger, startedAt, $"[FAILED] {ex.Message}", WorkflowRunOutcome.Failed);
-                    EmitSystem(trigger.StreamId, "The workflow failed to complete.", AgentUpdateTypes.Error);
-                    return;
-                }
-            }
+            end = await ExecuteWithRetriesAsync(trigger, startedAt, userCts, hostCt);
         }
         finally
         {
             executionRegistry.Unregister(trigger.StreamId);
+
+            if (trigger.Schedule is { } schedule)
+            {
+                scheduledRunGate.Release(schedule.ScheduleId);
+                await ReportScheduledEndAsync(trigger, schedule, end);
+            }
         }
     }
 
-    private async Task<PersistedRun?> RunAndPersistAsync(WorkflowTrigger trigger, DateTime startedAt, CancellationToken ct)
+    private async Task<RunEnd> ExecuteWithRetriesAsync(WorkflowTrigger trigger, DateTime startedAt, CancellationTokenSource userCts, CancellationToken hostCt)
+    {
+        EmitSystem(trigger.StreamId, "Workflow started", AgentUpdateTypes.Status);
+
+        for (var attempt = 1; ; attempt++)
+        {
+            using var attemptCts = CancellationTokenSource.CreateLinkedTokenSource(hostCt, userCts.Token);
+            attemptCts.CancelAfter(_workflowTimeout);
+
+            try
+            {
+                if (attempt > 1)
+                {
+                    await Task.Delay(RetryDelay, attemptCts.Token);
+                }
+
+                logger.LogInformation(
+                    "Executing {TriggerType} workflow (stream {StreamId}, attempt {Attempt}/{Max}).",
+                    trigger.TriggerType, trigger.StreamId, attempt, MaxAttempts);
+
+                var (run, answer) = await RunAndPersistAsync(trigger, startedAt, attemptCts.Token);
+                EmitSystem(trigger.StreamId, AgentUpdateTypes.Done, AgentUpdateTypes.Done);
+                await runNotifier.NotifyAsync(trigger, run, WorkflowRunOutcome.Completed, answer, CancellationToken.None);
+                return new RunEnd(UnattendedRunStatus.Completed, run);
+            }
+            catch (OperationCanceledException) when (hostCt.IsCancellationRequested)
+            {
+                logger.LogWarning("Shutdown interrupted the workflow for stream {StreamId}.", trigger.StreamId);
+                var run = await RecordFailureAsync(trigger, startedAt, "[CANCELLED] Interrupted by application shutdown.", WorkflowRunOutcome.Interrupted);
+                EmitSystem(trigger.StreamId, "The application shut down before the workflow completed.", AgentUpdateTypes.Error);
+                return new RunEnd(UnattendedRunStatus.Interrupted, run);
+            }
+            catch (OperationCanceledException) when (userCts.IsCancellationRequested)
+            {
+                logger.LogInformation("Workflow for stream {StreamId} was stopped by the user.", trigger.StreamId);
+                var run = await SafePersistFailureAsync(trigger, startedAt, "[CANCELLED] Stopped by user.");
+                EmitSystem(trigger.StreamId, "Run stopped by user.", AgentUpdateTypes.Cancelled);
+                return new RunEnd(UnattendedRunStatus.Cancelled, run);
+            }
+            catch (OperationCanceledException) when (attemptCts.IsCancellationRequested)
+            {
+                logger.LogError("Workflow for stream {StreamId} timed out after {Timeout}.", trigger.StreamId, _workflowTimeout);
+                var run = await RecordFailureAsync(trigger, startedAt, $"[TIMEOUT] Workflow exceeded {_workflowTimeout.TotalMinutes:0} minute(s).", WorkflowRunOutcome.TimedOut);
+                EmitSystem(trigger.StreamId, "The workflow timed out before completing.", AgentUpdateTypes.Error);
+                return new RunEnd(UnattendedRunStatus.TimedOut, run);
+            }
+            catch (UnrunnableWorkflowException ex)
+            {
+                logger.LogWarning("Workflow for stream {StreamId} cannot run: {Reason}", trigger.StreamId, ex.Message);
+                var run = await RecordFailureAsync(trigger, startedAt, $"[FAILED] {ex.Message}", WorkflowRunOutcome.Failed);
+                EmitSystem(trigger.StreamId, ex.Message, AgentUpdateTypes.Error);
+                return new RunEnd(UnattendedRunStatus.Failed, run);
+            }
+            catch (Exception ex) when (attempt < MaxAttempts)
+            {
+                logger.LogError(ex, "Attempt {Attempt}/{Max} of the workflow for stream {StreamId} failed; retrying.", attempt, MaxAttempts, trigger.StreamId);
+                EmitSystem(trigger.StreamId, $"Attempt {attempt} failed; retrying...", AgentUpdateTypes.Status);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Workflow for stream {StreamId} failed after {Max} attempts.", trigger.StreamId, MaxAttempts);
+                var run = await RecordFailureAsync(trigger, startedAt, $"[FAILED] {ex.Message}", WorkflowRunOutcome.Failed);
+                EmitSystem(trigger.StreamId, "The workflow failed to complete.", AgentUpdateTypes.Error);
+                return new RunEnd(UnattendedRunStatus.Failed, run);
+            }
+        }
+    }
+
+    private async Task ReportScheduledEndAsync(WorkflowTrigger trigger, ScheduledRun schedule, RunEnd end)
+    {
+        if (trigger.UserId is not { } ownerId)
+        {
+            return;
+        }
+
+        var completion = new UnattendedRunCompletion(schedule.ScheduleId, ownerId, end.Run?.Id, end.Status, DateTimeOffset.UtcNow);
+
+        foreach (var observer in runObservers)
+        {
+            try
+            {
+                await observer.OnRunCompletedAsync(completion, CancellationToken.None);
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex, "Run observer {Observer} failed for schedule {ScheduleId}.", observer.GetType().Name, schedule.ScheduleId);
+            }
+        }
+    }
+
+    private async Task<(PersistedRun? Run, string Answer)> RunAndPersistAsync(WorkflowTrigger trigger, DateTime startedAt, CancellationToken ct)
     {
         using var scope = scopeFactory.CreateScope();
 
@@ -163,6 +207,7 @@ internal sealed class WorkflowRunProcessor(
         runContext.UserId = trigger.UserId;
         runContext.CorrelationId = trigger.StreamId;
         runContext.OriginalUserPrompt = trigger.Activity;
+        runContext.Unattended = trigger.Schedule?.Policy;
 
         var title = ResolveScenario(trigger) is { } scenario
             ? scope.ServiceProvider.GetRequiredService<ITitleGenerator>().GenerateAsync(scenario, ct)
@@ -199,7 +244,7 @@ internal sealed class WorkflowRunProcessor(
         }
 
         logger.LogInformation("Workflow complete for stream {StreamId}: {Explanation}", trigger.StreamId, result.Explanation);
-        return persisted;
+        return (persisted, result.Explanation ?? string.Empty);
     }
 
     /// <summary>
@@ -221,10 +266,11 @@ internal sealed class WorkflowRunProcessor(
         EmitSystem(trigger.StreamId, "The application shut down before the workflow started.", AgentUpdateTypes.Error);
     }
 
-    private async Task RecordFailureAsync(WorkflowTrigger trigger, DateTime startedAt, string explanation, WorkflowRunOutcome outcome)
+    private async Task<PersistedRun?> RecordFailureAsync(WorkflowTrigger trigger, DateTime startedAt, string explanation, WorkflowRunOutcome outcome)
     {
         var run = await SafePersistFailureAsync(trigger, startedAt, explanation);
         await runNotifier.NotifyAsync(trigger, run, outcome, explanation, CancellationToken.None);
+        return run;
     }
 
     private async Task<PersistedRun?> SafePersistFailureAsync(WorkflowTrigger trigger, DateTime startedAt, string explanation)
@@ -267,6 +313,16 @@ internal sealed class WorkflowRunProcessor(
         return string.IsNullOrWhiteSpace(trigger.Activity) ? null : trigger.Activity;
     }
 
+    private static string DescribeForOverview(WorkflowTrigger trigger)
+    {
+        if (trigger.Schedule is { } schedule)
+        {
+            return $"Schedule: {schedule.ScheduleName}";
+        }
+
+        return trigger.WorkflowName is { Length: > 0 } workflowName ? $"Workflow: {workflowName}" : "Dynamic workflow";
+    }
+
     private void EmitSystem(string streamId, string text, string type)
     {
         try
@@ -288,4 +344,6 @@ internal sealed class WorkflowRunProcessor(
 
     private static TimeSpan ResolveWorkflowTimeout(IConfiguration configuration)
         => configuration.GetTimeSpan("Orchestration:WorkflowTimeout", TimeSpan.FromMinutes(DefaultTimeoutMinutes));
+
+    private sealed record RunEnd(UnattendedRunStatus Status, PersistedRun? Run);
 }

@@ -171,6 +171,9 @@ public sealed class SquadWorkflowRunnerTests
         public Task<AgentBlueprint?> ResolveBlueprintAsync(string agentName, string? overrideModel, Guid? actingUserId, bool allowApprovalTools, CancellationToken ct = default)
             => throw new NotSupportedException("Squad workflows build agents, never blueprints.");
 
+        public Task<IReadOnlyList<AITool>?> ResolveToolsAsync(string agentName, Guid? actingUserId, CancellationToken ct = default)
+            => throw new NotSupportedException("Squad workflows build agents, never resolve tools.");
+
         public Task<string> ResolveModelAsync(string? overrideModel, Guid? actingUserId, CancellationToken ct = default)
             => throw new NotSupportedException("Squad workflows build agents, never resolve models.");
 
