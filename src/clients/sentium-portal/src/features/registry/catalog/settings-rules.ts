@@ -15,7 +15,12 @@ export function validateSetting(
     if (!Number.isInteger(number)) {
       return "Enter a whole number.";
     }
-    if (number < control.min || (control.max !== undefined && number > control.max)) {
+    const belowMin = control.min !== undefined && number < control.min;
+    const aboveMax = control.max !== undefined && number > control.max;
+    if (belowMin || aboveMax) {
+      if (control.min === undefined) {
+        return `Must be at most ${control.max}.`;
+      }
       return control.max === undefined
         ? `Must be at least ${control.min}.`
         : `Must be between ${control.min} and ${control.max}.`;

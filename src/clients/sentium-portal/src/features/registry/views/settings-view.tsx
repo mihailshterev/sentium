@@ -7,13 +7,15 @@ import { Card } from "@/shared/ui/card";
 import { EmptyState } from "@/shared/ui/empty-state";
 import { Page } from "@/shared/ui/page";
 import { SkeletonText } from "@/shared/ui/skeleton";
-import { SCOPES, SETTINGS_SECTIONS } from "../catalog/settings-catalog";
+import { StatusMessage } from "@/shared/ui/status-message";
+import { SCOPES } from "../catalog/settings-presentation";
 import { matchesSearch } from "../catalog/settings-rules";
 import { SettingsSaveBar, type SaveOutcome } from "../components/settings-save-bar";
 import { SettingsSection } from "../components/settings-section";
 import { SettingsSidebar, type SidebarGroup } from "../components/settings-sidebar";
 import { useActiveSection } from "../hooks/useActiveSection";
 import { useSettingsDraft } from "../hooks/useSettingsDraft";
+import { useSettingsSchema } from "../hooks/useSettingsSchema";
 import { useSaveSettingsGroups, useSettingsGroups } from "../hooks/useSettingsGroups";
 import type { SettingsKey, SettingValue } from "../types/settings";
 import styles from "../settings.module.css";
@@ -36,14 +38,13 @@ export function SettingsView() {
   const query = searchParams.get(QUERY_PARAM) ?? "";
   const modifiedOnly = searchParams.get(FILTER_PARAM) === MODIFIED_FILTER;
 
-  const sections = useMemo(
-    () => SETTINGS_SECTIONS.filter((s) => isSovereign || s.scope === "personal"),
-    [isSovereign],
-  );
+  const schema = useSettingsSchema(isSovereign);
+  const sections = schema.sections;
   const definitions = useMemo(() => sections.flatMap((s) => s.settings), [sections]);
   const keys = useMemo(() => sections.map((s) => s.group), [sections]);
 
-  const { envelopes, errors: loadErrors, isLoading } = useSettingsGroups(keys);
+  const { envelopes, errors: loadErrors, isLoading: isLoadingGroups } = useSettingsGroups(keys);
+  const isLoading = schema.isLoading || isLoadingGroups;
   const draft = useSettingsDraft(definitions, envelopes);
   const save = useSaveSettingsGroups();
   const [outcome, setOutcome] = useState<SaveOutcome>(null);
@@ -91,6 +92,16 @@ export function SettingsView() {
     setActiveId(sectionParam);
   }, [isLoading, sectionParam, setActiveId]);
 
+  if (schema.error) {
+    return (
+      <Page title={PAGE_TITLE} subtitle={PAGE_SUBTITLE}>
+        <Card padding="lg">
+          <StatusMessage variant="error" message={`Couldn't load settings: ${schema.error.message}`} />
+        </Card>
+      </Page>
+    );
+  }
+
   if (isLoading) {
     return (
       <Page title={PAGE_TITLE} subtitle={PAGE_SUBTITLE}>
@@ -130,7 +141,7 @@ export function SettingsView() {
 
   const saveChanges = async () => {
     const results = await save.mutateAsync(draft.patches());
-    const failed = results.filter((r) => r.error);
+    const failed = results.flatMap((r) => (r.error ? [{ key: r.key, error: r.error }] : []));
     draft.clearGroups(results.filter((r) => !r.error).map((r) => r.key));
     setSaveErrors(Object.fromEntries(failed.map((r) => [r.key, r.error])));
     setOutcome(

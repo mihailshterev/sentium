@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.Caching.Hybrid;
 using Sentium.Registry.Contracts;
+using Sentium.Registry.Contracts.Settings;
 using Sentium.Registry.Entities;
 
 namespace Sentium.Registry.Features.Settings;
@@ -99,7 +100,7 @@ internal sealed class SettingsService(
     {
         await repository.RemoveAsync(userId, ct);
 
-        foreach (var descriptor in catalog.All.Where(d => d.Scope == SettingsScope.PerUser))
+        foreach (var descriptor in catalog.All.Where(d => d.Scope == SettingsScope.Personal))
         {
             await cache.RemoveAsync(RegistrySettingsCacheKeys.Envelope(descriptor.Key, userId), ct);
         }
@@ -138,10 +139,9 @@ internal sealed class SettingsService(
     private async Task<SettingsEnvelope> LoadAsync(ISettingsDescriptor descriptor, Guid? scopeUserId, CancellationToken ct)
     {
         var entity = await repository.FindAsync(scopeUserId, ct);
-        var container = entity?.Settings ?? new SettingsContainer();
-        var value = descriptor.Read(container);
+        var value = descriptor.Read(entity?.Settings ?? new Dictionary<string, JsonElement>());
         return new SettingsEnvelope(descriptor.Key, JsonSerializer.SerializeToElement(value, value.GetType(), WebOptions), entity?.UpdatedAt ?? DateTimeOffset.UtcNow, entity?.UpdatedBy);
     }
 
-    private static Guid? ScopeUserId(ISettingsDescriptor descriptor, Guid? userId) => descriptor.Scope == SettingsScope.Global ? null : userId;
+    private static Guid? ScopeUserId(ISettingsDescriptor descriptor, Guid? userId) => descriptor.Scope == SettingsScope.Household ? null : userId;
 }

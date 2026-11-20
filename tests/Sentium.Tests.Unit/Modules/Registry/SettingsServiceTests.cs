@@ -18,8 +18,8 @@ public sealed class SettingsServiceTests
 
     private readonly SettingsCatalog _catalog = new(new ISettingsDescriptor[]
     {
-        new SettingsDescriptor<HarnessSettings>(SettingsKeys.Harness, SettingsScope.PerUser, c => c.Harness, (c, v) => c.Harness = v),
-        new SettingsDescriptor<PdpSettings>(SettingsKeys.Pdp, SettingsScope.Global, c => c.Pdp, (c, v) => c.Pdp = v),
+        new SettingsDescriptor<HarnessSettings>(SettingsKeys.Harness, SettingsScope.Personal),
+        new SettingsDescriptor<PdpSettings>(SettingsKeys.Pdp, SettingsScope.Household),
     });
 
     private readonly SettingsService _sut;
@@ -43,6 +43,8 @@ public sealed class SettingsServiceTests
 
     private static JsonElement Payload(object value) => JsonSerializer.SerializeToElement(value);
 
+    private static T Stored<T>(SystemSettings entity, string key) => entity.Settings[key].Deserialize<T>(WebOptions)!;
+
     [Fact]
     public async Task GetAsync_ReturnsNull_ForUnknownKey()
     {
@@ -58,7 +60,7 @@ public sealed class SettingsServiceTests
         var entity = new SystemSettings
         {
             UserId = UserId,
-            Settings = new SettingsContainer { Harness = new HarnessSettings { UserHarnessPrompt = "existing" } }
+            Settings = new() { [SettingsKeys.Harness] = JsonSerializer.SerializeToElement(new HarnessSettings { UserHarnessPrompt = "existing" }, WebOptions) }
         };
         _repository.FindAsync(UserId, ct).Returns(entity);
 
@@ -97,7 +99,7 @@ public sealed class SettingsServiceTests
             "admin", ct);
 
         await _repository.Received(1).TryUpdateAsync(Arg.Any<SystemSettings>(), ct);
-        Assert.Equal("custom", entity.Settings.Harness.UserHarnessPrompt);
+        Assert.Equal("custom", Stored<HarnessSettings>(entity, SettingsKeys.Harness).UserHarnessPrompt);
         Assert.Equal("admin", entity.UpdatedBy);
         Assert.Equal("custom", result.Value.Deserialize<HarnessSettings>(WebOptions)!.UserHarnessPrompt);
         await cache.Received(1).RemoveAsync(RegistrySettingsCacheKeys.Envelope(SettingsKeys.Harness, UserId), ct);
@@ -116,8 +118,8 @@ public sealed class SettingsServiceTests
             Payload(new { lockdownMode = true, autonomyLevel = 3, semanticIntentCheckEnabled = false, intentCheckModel = "m", rateLimitMaxRequests = 50, rateLimitWindowSeconds = 30 }),
             "admin", ct);
 
-        Assert.True(globalRow.Settings.Pdp.LockdownMode);
-        Assert.Equal(3, globalRow.Settings.Pdp.AutonomyLevel);
+        Assert.True(Stored<PdpSettings>(globalRow, SettingsKeys.Pdp).LockdownMode);
+        Assert.Equal(3, Stored<PdpSettings>(globalRow, SettingsKeys.Pdp).AutonomyLevel);
         await _repository.Received(1).FindAsync(null, ct);
     }
 
@@ -138,7 +140,7 @@ public sealed class SettingsServiceTests
         {
             UserId = UserId,
             Version = 2,
-            Settings = new SettingsContainer { Harness = new HarnessSettings { IsPromptEnhancementEnabled = true } }
+            Settings = new() { [SettingsKeys.Harness] = JsonSerializer.SerializeToElement(new HarnessSettings { IsPromptEnhancementEnabled = true }, WebOptions) }
         };
         _repository.FindAsync(UserId, ct).Returns(stale, fresh);
         _repository.TryUpdateAsync(stale, ct).Returns(false);
@@ -146,7 +148,7 @@ public sealed class SettingsServiceTests
 
         await _sut.UpdateAsync(SettingsKeys.Harness, UserId, Payload(new { userHarnessPrompt = "mine" }), "admin", ct);
 
-        Assert.Equal("mine", fresh.Settings.Harness.UserHarnessPrompt);
-        Assert.True(fresh.Settings.Harness.IsPromptEnhancementEnabled);
+        Assert.Equal("mine", Stored<HarnessSettings>(fresh, SettingsKeys.Harness).UserHarnessPrompt);
+        Assert.True(Stored<HarnessSettings>(fresh, SettingsKeys.Harness).IsPromptEnhancementEnabled);
     }
 }

@@ -1,7 +1,5 @@
-using Sentium.Core.Constants;
 using Sentium.Infrastructure.Extensions;
 using Sentium.Registry.Contracts;
-using Sentium.Registry.Contracts.Settings;
 using Sentium.Registry.Data;
 using Sentium.Registry.Features.Settings;
 
@@ -19,47 +17,8 @@ public static class RegistryModuleExtensions
 
         services.AddScoped<ISettingsRepository, SettingsRepository>();
 
-        services.AddSingleton<ISettingsDescriptor>(new SettingsDescriptor<HarnessSettings>(
-            SettingsKeys.Harness, SettingsScope.PerUser, c => c.Harness, (c, v) => c.Harness = v)
-        );
-
-        services.AddSingleton<ISettingsDescriptor>(new SettingsDescriptor<PdpSettings>(
-            SettingsKeys.Pdp, SettingsScope.Global, c => c.Pdp, (c, v) => c.Pdp = v)
-        );
-
-        services.AddSingleton<ISettingsDescriptor>(new SettingsDescriptor<InferenceSettings>(
-            SettingsKeys.Inference, SettingsScope.Global, c => c.Inference, (c, v) => c.Inference = v)
-        );
-
-        services.AddSingleton<ISettingsDescriptor>(new SettingsDescriptor<VigilSettings>(
-            SettingsKeys.Vigil, SettingsScope.Global, c => c.Vigil, (c, v) => c.Vigil = v)
-        );
-
-        services.AddSingleton<ISettingsDescriptor>(new SettingsDescriptor<McpSettings>(
-            SettingsKeys.Mcp, SettingsScope.Global, c => c.Mcp, (c, v) => c.Mcp = v)
-        );
-
-        services.AddSingleton<ISettingsDescriptor>(new SettingsDescriptor<AccessSettings>(
-            SettingsKeys.Access, SettingsScope.Global, c => c.Access, (c, v) => c.Access = v)
-        );
-
-        services.AddSingleton<ISettingsDescriptor>(new SettingsDescriptor<CalendarSettings>(
-            SettingsKeys.Calendar, SettingsScope.Global, c => c.Calendar, (c, v) => c.Calendar = v)
-        );
-
-        services.AddSingleton<ISettingsDescriptor>(new SettingsDescriptor<UserCalendarSettings>(
-            SettingsKeys.UserCalendar, SettingsScope.PerUser, c => c.UserCalendar, (c, v) => c.UserCalendar = v)
-        );
-
-        services.AddSingleton<ISettingsDescriptor>(new SettingsDescriptor<CompanionSettings>(
-            SettingsKeys.Companion, SettingsScope.PerUser, c => c.Companion, (c, v) => c.Companion = v)
-        );
-
-        services.AddSingleton<ISettingsDescriptor>(new SettingsDescriptor<EvaluationSettings>(
-            SettingsKeys.Evaluation, SettingsScope.PerUser, c => c.Evaluation, (c, v) => c.Evaluation = v)
-        );
-
-        services.AddSingleton<ISettingsCatalog, SettingsCatalog>();
+        services.AddSingleton<ISettingsCatalog>(SettingsCatalog.FromAssembly(typeof(RegistryModuleExtensions).Assembly));
+        services.AddSingleton<SettingsSchemaProvider>();
         services.AddScoped<SettingsService>();
         services.AddSingleton<ISettingsService, ScopedSettingsService>();
 

@@ -11,6 +11,8 @@ public sealed class RegistryApiTests(MonolithWebApplicationFactory factory) : IC
     private readonly HttpClient _client = factory.CreateClient();
     private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
+    private sealed record SchemaSection(string Id, string Key);
+
     private sealed record Envelope(string Key, HarnessSettings Value, DateTimeOffset UpdatedAt, string? UpdatedBy);
 
     [Fact]
@@ -54,6 +56,26 @@ public sealed class RegistryApiTests(MonolithWebApplicationFactory factory) : IC
         var env = await getResponse.Content.ReadFromJsonAsync<Envelope>(Ct);
 
         Assert.Equal(uniquePrompt, env!.Value.UserHarnessPrompt);
+    }
+
+    [Fact]
+    public async Task GetSchema_ListsTheAgentsSection()
+    {
+        var response = await _client.GetAsync("/api/registry/settings/schema", Ct);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var sections = await response.Content.ReadFromJsonAsync<List<SchemaSection>>(Ct);
+        Assert.Contains(sections!, s => s.Id == "agents" && s.Key == "harness");
+    }
+
+    [Fact]
+    public async Task UpdateHarness_OverTheLengthLimit_Returns400()
+    {
+        var payload = new HarnessSettings { UserHarnessPrompt = new string('x', HarnessSettings.MaxUserHarnessPromptLength + 1) };
+
+        var response = await _client.PutAsJsonAsync("/api/registry/settings/harness", payload, Ct);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]

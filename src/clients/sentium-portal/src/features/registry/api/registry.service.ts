@@ -1,7 +1,11 @@
 import { client } from "@/shared/api/client";
-import type { SettingsEnvelope, SettingsGroupValue, SettingsKey } from "../types/settings";
+import type { SettingsEnvelope, SettingsGroupValue, SettingsKey, SettingsSectionSchema } from "../types/settings";
 
 const BASE = "/registry/settings";
+
+/** The sections the caller may edit: personal ones, plus household ones for a Sovereign. */
+export const fetchSettingsSchema = (): Promise<SettingsSectionSchema[]> =>
+  client.get<SettingsSectionSchema[]>(`${BASE}/schema`);
 
 export const fetchSettingsGroup = <T = SettingsGroupValue>(key: SettingsKey): Promise<SettingsEnvelope<T>> =>
   client.get<SettingsEnvelope<T>>(`${BASE}/${key}`);

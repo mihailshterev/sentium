@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Sentium.Core.Constants;
 using Sentium.Infrastructure.Security;
 using Sentium.Registry.Contracts;
+using Sentium.Registry.Contracts.Settings;
 
 namespace Sentium.Registry.Features.Settings;
 
@@ -15,7 +16,10 @@ namespace Sentium.Registry.Features.Settings;
 [ApiController]
 [Authorize]
 [Route($"{RegistryRoutes.Prefix}/settings")]
-internal sealed class SettingsController(ISettingsService settingsService, ISettingsCatalog catalog) : ControllerBase
+internal sealed class SettingsController(
+    ISettingsService settingsService,
+    ISettingsCatalog catalog,
+    SettingsSchemaProvider schema) : ControllerBase
 {
     private bool IsSovereign => RoleClaims.IsInRole(User, SecurityRoles.Sovereign);
 
@@ -26,6 +30,18 @@ internal sealed class SettingsController(ISettingsService settingsService, ISett
             var value = User.FindFirstValue(ClaimTypes.NameIdentifier);
             return Guid.TryParse(value, out var id) ? id : null;
         }
+    }
+
+    /// <summary>
+    /// Returns what the portal's Settings page renders: the caller's personal sections, plus the household
+    /// sections for a Sovereign.
+    /// </summary>
+    [HttpGet("schema")]
+    [ProducesResponseType<IReadOnlyList<SettingsSectionSchema>>(StatusCodes.Status200OK)]
+    public ActionResult<IReadOnlyList<SettingsSectionSchema>> GetSchema()
+    {
+        var isSovereign = IsSovereign;
+        return Ok(schema.Sections.Where(section => isSovereign || section.Scope != SettingsSchemaProvider.HouseholdScope).ToList());
     }
 
     /// <summary>
@@ -43,12 +59,12 @@ internal sealed class SettingsController(ISettingsService settingsService, ISett
             return NotFound();
         }
 
-        if (descriptor.Scope == SettingsScope.Global && !IsSovereign)
+        if (descriptor.Scope == SettingsScope.Household && !IsSovereign)
         {
             return Forbid();
         }
 
-        var effectiveUserId = descriptor.Scope == SettingsScope.Global ? null : CallerUserId;
+        var effectiveUserId = descriptor.Scope == SettingsScope.Household ? null : CallerUserId;
 
         var envelope = await settingsService.GetAsync(key, effectiveUserId, ct);
         return envelope is null ? NotFound() : Ok(envelope);
@@ -69,12 +85,12 @@ internal sealed class SettingsController(ISettingsService settingsService, ISett
             return NotFound();
         }
 
-        if (descriptor.Scope == SettingsScope.Global && !IsSovereign)
+        if (descriptor.Scope == SettingsScope.Household && !IsSovereign)
         {
             return Forbid();
         }
 
-        var effectiveUserId = descriptor.Scope == SettingsScope.Global ? null : CallerUserId;
+        var effectiveUserId = descriptor.Scope == SettingsScope.Household ? null : CallerUserId;
 
         try
         {

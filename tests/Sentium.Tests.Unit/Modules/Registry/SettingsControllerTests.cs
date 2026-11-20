@@ -17,13 +17,13 @@ public sealed class SettingsControllerTests
 
     private readonly ISettingsCatalog _catalog = new SettingsCatalog(new ISettingsDescriptor[]
     {
-        new SettingsDescriptor<HarnessSettings>(SettingsKeys.Harness, SettingsScope.PerUser, c => c.Harness, (c, v) => c.Harness = v),
-        new SettingsDescriptor<PdpSettings>(SettingsKeys.Pdp, SettingsScope.Global, c => c.Pdp, (c, v) => c.Pdp = v),
+        new SettingsDescriptor<HarnessSettings>(SettingsKeys.Harness, SettingsScope.Personal),
+        new SettingsDescriptor<PdpSettings>(SettingsKeys.Pdp, SettingsScope.Household),
     });
 
     private SettingsController NewController(params Claim[] claims)
     {
-        return new(_service, _catalog)
+        return new(_service, _catalog, new SettingsSchemaProvider(_catalog))
         {
             ControllerContext = new ControllerContext
             {
@@ -71,6 +71,28 @@ public sealed class SettingsControllerTests
         await controller.Get(SettingsKeys.Harness, ct);
 
         await _service.Received(1).GetAsync(SettingsKeys.Harness, userId, ct);
+    }
+
+    [Fact]
+    public void GetSchema_ListsOnlyPersonalSections_ForMember()
+    {
+        var controller = NewController(new Claim(ClaimTypes.Name, "member"));
+
+        var sections = Assert.IsAssignableFrom<IEnumerable<SettingsSectionSchema>>(
+            Assert.IsType<OkObjectResult>(controller.GetSchema().Result).Value);
+
+        Assert.Equal([SettingsKeys.Harness], sections.Select(s => s.Key));
+    }
+
+    [Fact]
+    public void GetSchema_ListsHouseholdSections_ForSovereign()
+    {
+        var controller = NewController(new Claim(ClaimTypes.Role, "Sovereign"));
+
+        var sections = Assert.IsAssignableFrom<IEnumerable<SettingsSectionSchema>>(
+            Assert.IsType<OkObjectResult>(controller.GetSchema().Result).Value);
+
+        Assert.Equal([SettingsKeys.Harness, SettingsKeys.Pdp], sections.Select(s => s.Key));
     }
 
     [Fact]

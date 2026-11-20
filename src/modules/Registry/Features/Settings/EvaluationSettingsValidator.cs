@@ -8,7 +8,6 @@ internal sealed class EvaluationSettingsValidator : AbstractValidator<Evaluation
     public EvaluationSettingsValidator()
     {
         RuleFor(x => x.JudgeModel)
-            .MaximumLength(EvaluationSettings.MaxModelIdLength)
             .Must(m => m is null || !string.IsNullOrWhiteSpace(m))
             .WithMessage("JudgeModel must be a model id, or null for the default model.");
     }
