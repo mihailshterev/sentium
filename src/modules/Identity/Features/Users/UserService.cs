@@ -202,5 +202,5 @@ internal sealed class UserService(
     }
 
     private static UserDto ToDto(ApplicationUser user, ILookup<Guid, string> roles) =>
-        new(user.Id, user.UserName, user.FirstName, user.LastName, user.LockoutEnd, [.. roles[user.Id].Order(StringComparer.Ordinal)]);
+        new(user.Id, user.UserName, user.FirstName, user.LastName, user.LockoutEnd, [.. roles[user.Id].Order(StringComparer.Ordinal)], user.AvatarUpdatedAt);
 }

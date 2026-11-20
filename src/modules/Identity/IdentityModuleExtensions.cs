@@ -7,6 +7,7 @@ using Sentium.Identity.Contracts;
 using Sentium.Identity.Data;
 using Sentium.Identity.Entities;
 using Sentium.Identity.Features.Account;
+using Sentium.Identity.Features.Avatars;
 using Sentium.Identity.Features.Devices;
 using Sentium.Identity.Features.RoleManagement;
 using Sentium.Identity.Features.Security;
@@ -107,6 +108,8 @@ public static class IdentityModuleExtensions
         services.AddScoped<IUserService, UserService>();
         services.AddSingleton<IUserDirectory, ScopedUserDirectory>();
         services.AddSingleton<IUserRemovalObserver, UserSettingsRemover>();
+        services.AddScoped<IAvatarService, AvatarService>();
+        services.AddSingleton<IUserRemovalObserver, AvatarRemover>();
 
         services.TryAddSingleton(TimeProvider.System);
         services.AddMemoryCache();

@@ -4,6 +4,7 @@ import { MemoryRouter } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ProfileView as Profile } from "./profile-view";
 import { useAuthStore } from "@/shared/auth/state/auth-store";
+import * as useAvatarHook from "@/features/profile/hooks/useAvatar";
 import * as useProfileHook from "@/features/profile/hooks/useProfile";
 import * as useRoleHook from "@/shared/auth/hooks/useRole";
 import type { UserProfile } from "../../auth/api/identity.service";
@@ -13,6 +14,7 @@ const mockProfile: UserProfile = {
   userName: "alice",
   firstName: "Alice",
   lastName: "Smith",
+  avatarUrl: null,
 };
 
 const defaultProfileHook = {
@@ -145,5 +147,47 @@ describe("Profile form interactions", () => {
     fireEvent.change(screen.getByLabelText(/last name/i), { target: { value: "" } });
     fireEvent.submit(document.querySelector("form")!);
     await waitFor(() => expect(updateProfile).toHaveBeenCalledWith(expect.objectContaining({ lastName: null })));
+  });
+});
+
+describe("Profile picture", () => {
+  const avatarHook = (overrides: Partial<ReturnType<typeof useAvatarHook.useAvatar>> = {}) => ({
+    uploadAvatar: vi.fn(),
+    removeAvatar: vi.fn(),
+    isUploading: false,
+    isRemoving: false,
+    error: null,
+    ...overrides,
+  });
+
+  it("uploads the chosen file", () => {
+    const hook = avatarHook();
+    vi.spyOn(useAvatarHook, "useAvatar").mockReturnValue(hook);
+    renderProfile();
+
+    const file = new File(["x"], "me.png", { type: "image/png" });
+    fireEvent.change(screen.getByTestId("avatar-input"), { target: { files: [file] } });
+
+    expect(hook.uploadAvatar).toHaveBeenCalledWith(file);
+  });
+
+  it("offers to remove the picture only when there is one", () => {
+    vi.spyOn(useAvatarHook, "useAvatar").mockReturnValue(avatarHook());
+    const { unmount } = renderProfile();
+    expect(screen.queryByRole("button", { name: /remove/i })).not.toBeInTheDocument();
+    unmount();
+
+    vi.spyOn(useProfileHook, "useProfile").mockReturnValue({
+      ...defaultProfileHook,
+      profile: { ...mockProfile, avatarUrl: "/api/identity/users/u1/avatar?v=1" },
+    });
+    renderProfile();
+    expect(screen.getByRole("button", { name: /remove/i })).toBeInTheDocument();
+  });
+
+  it("shows why an upload failed", () => {
+    vi.spyOn(useAvatarHook, "useAvatar").mockReturnValue(avatarHook({ error: new Error("Pictures can be at most 1024 KB.") }));
+    renderProfile();
+    expect(screen.getByText("Pictures can be at most 1024 KB.")).toBeInTheDocument();
   });
 });

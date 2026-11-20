@@ -26,6 +26,7 @@ const alice: UserListItem = {
   userName: "alice",
   firstName: "Alice",
   lastName: "Smith",
+  avatarUrl: null,
   roles: ["Member"],
   isLockedOut: false,
 };
@@ -35,6 +36,7 @@ const bob: UserListItem = {
   userName: "bob",
   firstName: "Bob",
   lastName: null,
+  avatarUrl: null,
   roles: ["Member"],
   isLockedOut: true,
 };

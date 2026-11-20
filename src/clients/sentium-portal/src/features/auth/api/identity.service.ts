@@ -6,6 +6,8 @@ export interface UserProfile {
   userName: string;
   firstName: string;
   lastName: string | null;
+  /** Versioned URL of the profile picture, or null when the user has none. */
+  avatarUrl: string | null;
 }
 
 export interface UserListItem extends UserProfile {
@@ -32,6 +34,16 @@ export function getMe() {
 
 export function updateMe(data: { firstName: string; lastName?: string | null; userName: string }) {
   return client.put<void>("/identity/account/me", data);
+}
+
+export function uploadAvatar(picture: Blob) {
+  const form = new FormData();
+  form.append("file", picture, "avatar");
+  return client.postForm<{ avatarUrl: string }>("/identity/account/me/avatar", form);
+}
+
+export function deleteAvatar() {
+  return client.delete<void>("/identity/account/me/avatar");
 }
 
 export function getUsers(page = 1, pageSize = 20) {

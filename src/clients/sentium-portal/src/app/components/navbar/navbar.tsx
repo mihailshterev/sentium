@@ -40,6 +40,7 @@ import { useRole } from "@/shared/auth/hooks/useRole";
 import { useProfile } from "@/features/profile/hooks/useProfile";
 import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
 import { useUiStore } from "@/shared/ui/state/ui-store";
+import { Avatar } from "@/shared/ui/avatar";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { SentiumMark } from "@/shared/ui/sentium-mark";
@@ -113,11 +114,6 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
 ];
-
-function initialsOf(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  return (parts.length > 1 ? parts[0][0] + parts[parts.length - 1][0] : (parts[0] ?? "?").slice(0, 2)).toUpperCase();
-}
 
 function isEditable(target: EventTarget | null): boolean {
   const el = target as HTMLElement | null;
@@ -238,9 +234,7 @@ export function Navbar() {
             to="/profile"
             className={({ isActive }) => (isActive ? `${styles.account} ${styles.accountActive}` : styles.account)}
           >
-            <span className={styles.avatar} aria-hidden="true">
-              {initialsOf(displayName)}
-            </span>
+            <Avatar name={displayName} src={profile?.avatarUrl} size="sm" />
             <span className={styles.userInfo}>
               <span className={styles.userDisplayName}>{displayName}</span>
               {highestRole && (

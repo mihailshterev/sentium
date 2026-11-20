@@ -24,6 +24,7 @@ const mockProfile: UserProfile = {
   userName: "alice",
   firstName: "Alice",
   lastName: "Smith",
+  avatarUrl: null,
 };
 
 beforeEach(() => {

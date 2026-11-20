@@ -6,7 +6,8 @@ internal sealed record UserDto(
     string FirstName,
     string? LastName,
     DateTimeOffset? LockoutEnd,
-    IReadOnlyList<string> Roles)
+    IReadOnlyList<string> Roles,
+    DateTimeOffset? AvatarUpdatedAt)
 {
     public bool IsLockedOut => LockoutEnd.HasValue && LockoutEnd.Value > DateTimeOffset.UtcNow;
 }

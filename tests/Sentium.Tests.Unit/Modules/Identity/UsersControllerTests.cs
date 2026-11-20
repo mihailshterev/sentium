@@ -29,7 +29,7 @@ public sealed class UsersControllerTests
     }
 
     private static UserDto MakeUser(Guid? id = null) =>
-        new(id ?? Guid.NewGuid(), "user1", "Test", "User", null, ["Member"]);
+        new(id ?? Guid.NewGuid(), "user1", "Test", "User", null, ["Member"], null);
 
     [Fact]
     public async Task GetAllUsers_ReturnsOk_WithPagedResponse()
