@@ -13,13 +13,20 @@ on:
       - ".github/workflows/docker.yml"
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
     paths:
-      - "src/**"
+      - "**/Dockerfile"
+      - "**/*.csproj"
+      - "**/packages.lock.json"
       - "Directory.Build.props"
       - "Directory.Packages.props"
       - "global.json"
       - "nuget.config"
       - ".dockerignore"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "**/package.json"
       - ".github/workflows/docker.yml"
   workflow_dispatch:
 
@@ -33,6 +40,7 @@ concurrency:
 jobs:
   build:
     name: Build ${{ matrix.image }} image
+    if: github.event.pull_request.draft != true
     runs-on: ubuntu-latest
     timeout-minutes: 30
     strategy:
@@ -63,4 +71,4 @@ jobs:
           file: ${{ matrix.dockerfile }}
           push: false
           cache-from: type=gha,scope=${{ matrix.cache-scope }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.cache-scope }}
+          cache-to: ${{ github.event_name == 'push' && format('type=gha,mode=max,scope={0}', matrix.cache-scope) || '' }}

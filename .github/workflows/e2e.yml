@@ -3,12 +3,19 @@ name: Sentium.E2E
 on:
   pull_request:
     branches: [main]
-    paths-ignore:
-      - "**.md"
-      - "docs/**"
-      - "scripts/**"
-      - ".vscode/**"
-      - "LICENSE"
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - "src/**"
+      - "!src/clients/sentium-satelles/**"
+      - "e2e/**"
+      - "Directory.Build.props"
+      - "Directory.Packages.props"
+      - "global.json"
+      - "nuget.config"
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".github/workflows/e2e.yml"
   workflow_dispatch:
     inputs:
       browser:
@@ -24,20 +31,17 @@ concurrency:
   group: e2e-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  DOTNET_VERSION: "10.0.x"
-  NODE_VERSION: "24"
-
 jobs:
   e2e:
     name: E2E Tests (Playwright)
+    if: github.event.pull_request.draft != true
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
     env:
       CI: "true"
       E2E_SKIP_BUILD: "1"
-      BROWSER: ${{ github.event_name == 'pull_request' && 'chromium' || inputs.browser || 'all' }}
+      BROWSER: ${{ github.event_name == 'workflow_dispatch' && inputs.browser || 'chromium' }}
 
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
@@ -47,7 +51,9 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@26b0ec14cb23fa6904739307f278c14f94c95bf1 # v5.4.0
         with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+          dotnet-version: "10.0.x"
+          cache: true
+          cache-dependency-path: "**/packages.lock.json"
 
       - name: Install pnpm
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
@@ -55,7 +61,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: "24"
           cache: "pnpm"
           cache-dependency-path: "./pnpm-lock.yaml"
 
@@ -73,12 +79,17 @@ jobs:
         working-directory: ./e2e
         run: pnpm typecheck
 
+      - name: Resolve Playwright version
+        id: playwright-version
+        working-directory: ./e2e
+        run: echo "version=$(pnpm exec playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+
       - name: Cache Playwright browsers
         id: playwright-cache
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ env.BROWSER }}-${{ hashFiles('pnpm-lock.yaml') }}
+          key: playwright-${{ runner.os }}-${{ env.BROWSER }}-${{ steps.playwright-version.outputs.version }}
 
       - name: Install Playwright browsers + OS deps
         working-directory: ./e2e
@@ -112,7 +123,7 @@ jobs:
         with:
           name: playwright-report
           path: ./e2e/playwright-report
-          retention-days: 14
+          retention-days: 7
 
       - name: Upload Playwright test results
         if: ${{ !cancelled() }}
@@ -120,4 +131,4 @@ jobs:
         with:
           name: playwright-test-results
           path: ./e2e/test-results
-          retention-days: 14
+          retention-days: 7

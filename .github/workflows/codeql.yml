@@ -11,12 +11,12 @@ on:
       - "LICENSE"
   pull_request:
     branches: [main]
-    paths-ignore:
-      - "**.md"
-      - "docs/**"
-      - "scripts/**"
-      - ".vscode/**"
-      - "LICENSE"
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - "src/**"
+      - "tests/**"
+      - "e2e/**"
+      - ".github/**"
   schedule:
     - cron: "0 4 * * 1"
   workflow_dispatch:
@@ -31,6 +31,7 @@ concurrency:
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
+    if: github.event.pull_request.draft != true
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:

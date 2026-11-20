@@ -12,8 +12,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  dependency-review:
-    name: Dependency Review
+  security:
+    name: Dependency Review & Workflow Lint
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -25,19 +25,16 @@ jobs:
           # graph; see the matching ignore in src/clients/sentium-satelles/src-tauri/deny.toml.
           allow-ghsas: GHSA-wrw7-89jp-8q8g
 
-  workflow-lint:
-    name: Workflow Lint (zizmor)
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        if: ${{ !cancelled() }}
         with:
           persist-credentials: false
 
       # Audits the workflows under .github/ for injection, credential leaks, over-broad permissions
       # and actions not pinned to a commit SHA. Reports as annotations rather than uploading SARIF, so it
-      # also works on PRs from forks.
+      # also works on PRs from forks. Runs even when dependency review failed, so both results show.
       - uses: zizmorcore/zizmor-action@53290badfa369cb0bf7ad16342cb62c2fa47ac7b # v0.8.0
+        if: ${{ !cancelled() }}
         with:
           version: 1.31.1
           advanced-security: false
