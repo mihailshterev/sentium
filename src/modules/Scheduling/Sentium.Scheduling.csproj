@@ -18,6 +18,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\shared\Sentium.Core\Sentium.Core.csproj" />
     <ProjectReference Include="..\..\shared\Sentium.Infrastructure\Sentium.Infrastructure.csproj" />
+    <ProjectReference Include="..\Registry\Sentium.Registry.csproj" />
     <ProjectReference Include="..\Praxis\Sentium.Praxis.csproj" />
   </ItemGroup>
 

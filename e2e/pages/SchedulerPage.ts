@@ -9,19 +9,16 @@ export class SchedulerPage {
   }
 
   async expectLoaded(): Promise<void> {
-    await expect(this.page.getByRole("heading", { name: "Automated Scheduler" })).toBeVisible();
+    await expect(this.page.getByRole("heading", { name: "Scheduler", exact: true })).toBeVisible();
   }
 
-  async expectEngineStatusVisible(): Promise<void> {
-    await expect(this.page.getByText(/engine pipeline status/i)).toBeVisible();
-  }
-
-  async expectJobCountVisible(): Promise<void> {
-    await expect(this.page.getByText(/active core loops/i)).toBeVisible();
+  async expectStatsVisible(): Promise<void> {
+    await expect(this.page.getByText("Paused", { exact: true }).first()).toBeVisible();
+    await expect(this.page.getByText(/last run failed/i)).toBeVisible();
   }
 
   async expectEmptyState(): Promise<void> {
-    await expect(this.page.getByText(/no automated cron jobs/i)).toBeVisible();
+    await expect(this.page.getByText(/no schedules yet/i)).toBeVisible();
   }
 
   async expectJobVisible(jobName: string): Promise<void> {
@@ -29,6 +26,15 @@ export class SchedulerPage {
   }
 
   async clickRefresh(): Promise<void> {
-    await this.page.getByRole("button", { name: /refresh engine/i }).click();
+    await this.page.getByRole("button", { name: /^refresh$/i }).click();
+  }
+
+  async openNewSchedule(): Promise<void> {
+    await this.page.getByTestId("schedule-new").click();
+    await expect(this.page.getByRole("dialog", { name: "New schedule" })).toBeVisible();
+  }
+
+  async openBackgroundJobs(): Promise<void> {
+    await this.page.getByTestId("scheduler-tab-background").click();
   }
 }

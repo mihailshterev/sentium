@@ -5,6 +5,7 @@ using NSubstitute;
 using Sentium.Infrastructure.Security;
 using Sentium.Nuntius.Contracts;
 using Sentium.Praxis.Common.Streaming;
+using Sentium.Praxis.Contracts;
 using Sentium.Praxis.Entities;
 using Sentium.Praxis.Features.Orchestration;
 using Sentium.Praxis.Features.Sentinel;
@@ -27,6 +28,8 @@ public sealed class WorkflowRunProcessorTests : IAsyncDisposable
     private readonly IWorkflowRunRepository _runs = Substitute.For<IWorkflowRunRepository>();
     private readonly ITitleGenerator _titles = Substitute.For<ITitleGenerator>();
     private readonly INotifier _notifier = Substitute.For<INotifier>();
+    private readonly ScheduledRunGate _gate = new();
+    private readonly IUnattendedRunObserver _observer = Substitute.For<IUnattendedRunObserver>();
     private ServiceProvider? _services;
     private WorkflowRunProcessor? _processor;
 
@@ -219,6 +222,91 @@ public sealed class WorkflowRunProcessorTests : IAsyncDisposable
         await _notifier.DidNotReceive().NotifyAsync(Arg.Any<NotificationRecipient>(), Arg.Any<NotificationMessage>(), Arg.Any<CancellationToken>());
     }
 
+    [Fact]
+    public async Task ScheduledRun_RunsUnattended_WithItsPreApprovals()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        UnattendedRunPolicy? seenPolicy = null;
+        _orchestrator.RunAsync(Arg.Any<WorkflowTrigger>(), Arg.Any<CancellationToken>())
+            .Returns(_ =>
+            {
+                seenPolicy = _runContext.Unattended;
+                return Task.FromResult(new WorkflowResult { Explanation = "ok" });
+            });
+        await StartAsync(ct);
+
+        var trigger = await EnqueueScheduledAsync(ct, Guid.NewGuid(), preApproved: "execute_code_sandbox");
+        await ReadUntilTerminalAsync(trigger.StreamId, ct);
+
+        Assert.NotNull(seenPolicy);
+        Assert.True(seenPolicy.IsPreApproved("execute_code_sandbox"));
+        Assert.False(seenPolicy.IsPreApproved("schedule_recurring_task"));
+    }
+
+    [Fact]
+    public async Task ScheduledRun_NotifiesOnce_AsAScheduleRun_WithAnExcerptOfTheAnswer()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var userId = Guid.NewGuid();
+        var answer = "Today: dentist at 09:00. " + new string('x', 400);
+        _orchestrator.RunAsync(Arg.Any<WorkflowTrigger>(), Arg.Any<CancellationToken>()).Returns(new WorkflowResult { Explanation = answer });
+        await StartAsync(ct);
+
+        var trigger = await EnqueueScheduledAsync(ct, userId);
+        await ReadUntilTerminalAsync(trigger.StreamId, ct);
+        await WaitUntilAsync(() => _observer.ReceivedCalls().Any(), ct);
+
+        await _notifier.Received(1).NotifyAsync(
+            NotificationRecipient.User(userId),
+            Arg.Is<NotificationMessage>(m => m.Category == NotificationCategories.ScheduleRun
+                && m.Severity == NotificationSeverity.Info
+                && m.Body!.StartsWith("Today: dentist at 09:00.", StringComparison.Ordinal)
+                && m.Body.Length < answer.Length),
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task ScheduledRun_ReleasesItsSchedule_AndReportsHowItEnded()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var userId = Guid.NewGuid();
+        _orchestrator.RunAsync(Arg.Any<WorkflowTrigger>(), Arg.Any<CancellationToken>()).Returns(new WorkflowResult { Explanation = "ok" });
+        await StartAsync(ct);
+
+        Assert.True(_gate.TryAcquire("schedule-1"));
+        var trigger = await EnqueueScheduledAsync(ct, userId);
+        await ReadUntilTerminalAsync(trigger.StreamId, ct);
+        await WaitUntilAsync(() => _observer.ReceivedCalls().Any(), ct);
+
+        await _observer.Received(1).OnRunCompletedAsync(
+            Arg.Is<UnattendedRunCompletion>(c => c.ScheduleId == "schedule-1" && c.OwnerId == userId && c.Status == UnattendedRunStatus.Completed && c.RunId != null),
+            Arg.Any<CancellationToken>());
+        Assert.True(_gate.TryAcquire("schedule-1"));
+    }
+
+    [Fact]
+    public async Task UnrunnableRun_FailsAtOnce_WithItsReason_AsAWarning()
+    {
+        var ct = TestContext.Current.CancellationToken;
+        var userId = Guid.NewGuid();
+        _orchestrator.RunAsync(Arg.Any<WorkflowTrigger>(), Arg.Any<CancellationToken>())
+            .Returns<WorkflowResult>(_ => throw new UnrunnableWorkflowException("Agent 'Gone' no longer exists."));
+        await StartAsync(ct);
+
+        var trigger = await EnqueueScheduledAsync(ct, userId);
+        var frames = await ReadUntilTerminalAsync(trigger.StreamId, ct);
+        await WaitUntilAsync(() => _observer.ReceivedCalls().Any(), ct);
+
+        Assert.Equal(AgentUpdateTypes.Error, frames[^1].Type);
+        await _orchestrator.Received(1).RunAsync(Arg.Any<WorkflowTrigger>(), Arg.Any<CancellationToken>());
+        await _runs.Received(1).AddAsync(Arg.Is<WorkflowRun>(r => r.Explanation == "[FAILED] Agent 'Gone' no longer exists." && r.UserId == userId), Arg.Any<CancellationToken>());
+        await _notifier.Received(1).NotifyAsync(
+            NotificationRecipient.User(userId),
+            Arg.Is<NotificationMessage>(m => m.Category == NotificationCategories.ScheduleRun && m.Severity == NotificationSeverity.Warning),
+            Arg.Any<CancellationToken>());
+        await _observer.Received(1).OnRunCompletedAsync(Arg.Is<UnattendedRunCompletion>(c => c.Status == UnattendedRunStatus.Failed), Arg.Any<CancellationToken>());
+    }
+
     public async ValueTask DisposeAsync()
     {
         if (_processor is not null)
@@ -265,6 +353,8 @@ public sealed class WorkflowRunProcessorTests : IAsyncDisposable
             _registry,
             _runContext,
             new WorkflowRunNotifier(_notifier),
+            _gate,
+            [_observer],
             configuration,
             NullLogger<WorkflowRunProcessor>.Instance);
 
@@ -279,6 +369,22 @@ public sealed class WorkflowRunProcessorTests : IAsyncDisposable
             Activity = activity,
             UserId = userId,
             StreamId = Guid.NewGuid().ToString("N")
+        };
+
+        await _queue.EnqueueAsync(trigger, ct);
+        return trigger;
+    }
+
+    private async Task<WorkflowTrigger> EnqueueScheduledAsync(CancellationToken ct, Guid userId, params string[] preApproved)
+    {
+        var trigger = new WorkflowTrigger
+        {
+            TriggerType = WorkflowTriggerTypes.CustomWorkflow,
+            Activity = "Prepare my morning briefing",
+            AgentName = "TimelinePlanner",
+            UserId = userId,
+            StreamId = Guid.NewGuid().ToString("N"),
+            Schedule = new ScheduledRun("schedule-1", "Morning briefing", new UnattendedRunPolicy(new HashSet<string>(preApproved))),
         };
 
         await _queue.EnqueueAsync(trigger, ct);

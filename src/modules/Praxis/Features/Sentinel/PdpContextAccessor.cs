@@ -10,6 +10,7 @@ internal sealed class PdpContextAccessor : IPdpContextAccessor
     private static readonly AsyncLocal<string> _prompt = new();
     private static readonly AsyncLocal<string> _correlationId = new();
     private static readonly AsyncLocal<Guid?> _userId = new();
+    private static readonly AsyncLocal<UnattendedRunPolicy?> _unattended = new();
 
     public string OriginalUserPrompt
     {
@@ -27,5 +28,11 @@ internal sealed class PdpContextAccessor : IPdpContextAccessor
     {
         get => _userId.Value;
         set => _userId.Value = value;
+    }
+
+    public UnattendedRunPolicy? Unattended
+    {
+        get => _unattended.Value;
+        set => _unattended.Value = value;
     }
 }

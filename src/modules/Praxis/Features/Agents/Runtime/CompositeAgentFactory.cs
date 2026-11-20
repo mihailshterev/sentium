@@ -95,6 +95,12 @@ internal sealed class CompositeAgentFactory(
         return new AgentBlueprint(definition, settings, model, contextWindow, tools);
     }
 
+    public async Task<IReadOnlyList<AITool>?> ResolveToolsAsync(string agentName, Guid? actingUserId, CancellationToken ct = default)
+    {
+        var definition = await ResolveDefinitionAsync(agentName, actingUserId, ct);
+        return definition is null ? null : await SelectToolsAsync(definition, allowApprovalTools: true, ct);
+    }
+
     public async Task<string> ResolveModelAsync(string? overrideModel, Guid? actingUserId, CancellationToken ct = default)
     {
         var settings = await registrySettingsService.GetAsync(actingUserId ?? runContext.UserId, ct);
@@ -151,8 +157,9 @@ internal sealed class CompositeAgentFactory(
     /// <summary>
     /// The agent's curated tool set (all built-in tools when it declares none). External-source (e.g. MCP) tools are opt-in: an agent gets one
     /// only when its tool list names it explicitly, so registering a server never silently widens what existing agents
-    /// can do. Approval-gated tools are dropped for unattended runs: no human can answer the approval request there, so
-    /// offering them only stalls the step.
+    /// can do. Without <paramref name="allowApprovalTools"/> no human can answer an approval request, so a gated tool is
+    /// either dropped (a workflow started from the portal) or, in a Schedule's run, handled by the run's
+    /// <see cref="UnattendedRunPolicy"/> (see <see cref="UnattendedToolGate"/>).
     /// </summary>
     private async Task<List<AITool>> SelectToolsAsync(IAgent definition, bool allowApprovalTools, CancellationToken ct)
     {
@@ -169,7 +176,17 @@ internal sealed class CompositeAgentFactory(
             }
         }
 
-        return [.. candidates.Where(tool => allowApprovalTools || tool.GetService<ApprovalRequiredAIFunction>() is null)];
+        if (allowApprovalTools)
+        {
+            return [.. candidates];
+        }
+
+        if (runContext.Unattended is { } policy)
+        {
+            return [.. candidates.Select(tool => UnattendedToolGate.Apply(tool, policy))];
+        }
+
+        return [.. candidates.Where(tool => tool.GetService<ApprovalRequiredAIFunction>() is null)];
     }
 
     private async Task<IAgent?> ResolveDefinitionAsync(string agentName, Guid? actingUserId, CancellationToken ct)

@@ -24,6 +24,16 @@ internal sealed class WorkflowTrigger
 
     public string? WorkflowName { get; init; }
 
+    /// <summary>
+    /// The one agent to run, for a Schedule's agent run (a custom workflow run without a saved workflow).
+    /// </summary>
+    public string? AgentName { get; init; }
+
+    /// <summary>
+    /// Set when a Schedule started the run; nobody is present to approve anything.
+    /// </summary>
+    public ScheduledRun? Schedule { get; init; }
+
     public Guid? WorkspaceId { get; init; }
 
     /// <summary>
@@ -47,6 +57,13 @@ internal sealed class WorkflowTrigger
     /// </summary>
     public string ToPayloadJson()
     {
-        return JsonSerializer.Serialize(new WorkflowTriggerPayload(Activity, WorkflowId, WorkflowName, WorkspaceId, FileIds.Count > 0 ? FileIds : null), PayloadJsonOptions);
+        var payload = new WorkflowTriggerPayload(Activity, WorkflowId, WorkflowName, WorkspaceId, FileIds.Count > 0 ? FileIds : null)
+        {
+            AgentName = AgentName,
+            ScheduleId = Schedule?.ScheduleId,
+            ScheduleName = Schedule?.ScheduleName,
+        };
+
+        return JsonSerializer.Serialize(payload, PayloadJsonOptions);
     }
 }

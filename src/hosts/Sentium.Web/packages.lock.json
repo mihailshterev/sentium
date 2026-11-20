@@ -565,7 +565,8 @@
           "Quartz.Serialization.SystemTextJson": "[3.22.10, )",
           "Sentium.Core": "[1.0.0, )",
           "Sentium.Infrastructure": "[1.0.0, )",
-          "Sentium.Praxis": "[1.0.0, )"
+          "Sentium.Praxis": "[1.0.0, )",
+          "Sentium.Registry": "[1.0.0, )"
         }
       },
       "sentium.sentinel": {
