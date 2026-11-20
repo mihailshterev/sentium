@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Sentium.Vigil.Features.Devices;
 using Xunit;
 
@@ -28,13 +27,13 @@ public sealed class DeviceStateStoreTests
         _clock.Advance(TimeSpan.FromSeconds(30));
         var result = _sut.Record(_device, _owner, Report(cpu: 42), IntervalSeconds);
 
-        result.Snapshot.IsOnline.Should().BeTrue();
+        Assert.True(result.Snapshot.IsOnline);
 
         var snapshot = _sut.Get(_device)!;
-        snapshot.IsOnline.Should().BeTrue();
-        snapshot.OwnerUserId.Should().Be(_owner);
-        snapshot.Report.CpuPercent.Should().Be(42);
-        snapshot.ReportedAt.Should().Be(_clock.GetUtcNow());
+        Assert.True(snapshot.IsOnline);
+        Assert.Equal(_owner, snapshot.OwnerUserId);
+        Assert.Equal(42, snapshot.Report.CpuPercent);
+        Assert.Equal(_clock.GetUtcNow(), snapshot.ReportedAt);
     }
 
     [Fact]
@@ -44,8 +43,8 @@ public sealed class DeviceStateStoreTests
 
         _clock.Advance(TimeSpan.FromSeconds(IntervalSeconds * 3));
 
-        _sut.Get(_device)!.IsOnline.Should().BeTrue();
-        _sut.TakeNewlyOffline().Should().BeEmpty();
+        Assert.True(_sut.Get(_device)!.IsOnline);
+        Assert.Empty(_sut.TakeNewlyOffline());
     }
 
     [Fact]
@@ -57,8 +56,8 @@ public sealed class DeviceStateStoreTests
         _clock.Advance(TimeSpan.FromSeconds((IntervalSeconds * 3) + 6));
 
         var snapshot = _sut.Get(_device)!;
-        snapshot.IsOnline.Should().BeFalse();
-        snapshot.ReportedAt.Should().Be(reportedAt);
+        Assert.False(snapshot.IsOnline);
+        Assert.Equal(reportedAt, snapshot.ReportedAt);
     }
 
     [Fact]
@@ -67,14 +66,14 @@ public sealed class DeviceStateStoreTests
         _sut.Record(_device, _owner, Report(), IntervalSeconds);
         _clock.Advance(TimeSpan.FromMinutes(5));
 
-        _sut.TakeNewlyOffline().Should().ContainSingle().Which.DeviceId.Should().Be(_device);
-        _sut.TakeNewlyOffline().Should().BeEmpty();
+        Assert.Equal(_device, Assert.Single(_sut.TakeNewlyOffline()).DeviceId);
+        Assert.Empty(_sut.TakeNewlyOffline());
 
         _sut.Record(_device, _owner, Report(), IntervalSeconds);
-        _sut.TakeNewlyOffline().Should().BeEmpty();
+        Assert.Empty(_sut.TakeNewlyOffline());
 
         _clock.Advance(TimeSpan.FromMinutes(5));
-        _sut.TakeNewlyOffline().Should().ContainSingle();
+        Assert.Single(_sut.TakeNewlyOffline());
     }
 
     [Fact]
@@ -84,7 +83,7 @@ public sealed class DeviceStateStoreTests
 
         _clock.Advance(TimeSpan.FromMinutes(10));
 
-        _sut.Get(_device)!.IsOnline.Should().BeTrue("three 5-minute Reports are not overdue yet");
+        Assert.True(_sut.Get(_device)!.IsOnline, "three 5-minute Reports are not overdue yet");
     }
 
     [Fact]
@@ -92,10 +91,10 @@ public sealed class DeviceStateStoreTests
     {
         var full = new DeviceDiskReport("C:", 1_000, 50);
 
-        _sut.Record(_device, _owner, Report(disks: full), IntervalSeconds).NewlyFullDisks.Should().BeEmpty();
-        _sut.Record(_device, _owner, Report(disks: full), IntervalSeconds).NewlyFullDisks.Should().BeEmpty();
-        _sut.Record(_device, _owner, Report(disks: full), IntervalSeconds).NewlyFullDisks.Should().ContainSingle();
-        _sut.Record(_device, _owner, Report(disks: full), IntervalSeconds).NewlyFullDisks.Should().BeEmpty();
+        Assert.Empty(_sut.Record(_device, _owner, Report(disks: full), IntervalSeconds).NewlyFullDisks);
+        Assert.Empty(_sut.Record(_device, _owner, Report(disks: full), IntervalSeconds).NewlyFullDisks);
+        Assert.Single(_sut.Record(_device, _owner, Report(disks: full), IntervalSeconds).NewlyFullDisks);
+        Assert.Empty(_sut.Record(_device, _owner, Report(disks: full), IntervalSeconds).NewlyFullDisks);
     }
 
     [Fact]
@@ -109,8 +108,8 @@ public sealed class DeviceStateStoreTests
 
         var samples = _sut.GetSamples(_device, take: 2);
 
-        samples.Select(s => s.CpuPercent).Should().Equal(2, 3);
-        samples[0].MemoryUsedPercent.Should().Be(50);
+        Assert.Equal(new double[] { 2, 3 }, samples.Select(s => s.CpuPercent));
+        Assert.Equal(50, samples[0].MemoryUsedPercent);
     }
 
     [Fact]
@@ -118,17 +117,17 @@ public sealed class DeviceStateStoreTests
     {
         _sut.Record(_device, _owner, Report(), IntervalSeconds);
 
-        _sut.Remove(_device).Should().BeTrue();
+        Assert.True(_sut.Remove(_device));
 
-        _sut.Get(_device).Should().BeNull();
-        _sut.GetSamples(_device, 10).Should().BeEmpty();
-        _sut.Remove(_device).Should().BeFalse();
+        Assert.Null(_sut.Get(_device));
+        Assert.Empty(_sut.GetSamples(_device, 10));
+        Assert.False(_sut.Remove(_device));
     }
 
     [Fact]
     public void UnknownDevice_HasNoState()
     {
-        _sut.Get(Guid.NewGuid()).Should().BeNull();
+        Assert.Null(_sut.Get(Guid.NewGuid()));
     }
 
     private sealed class ManualClock(DateTimeOffset now) : TimeProvider

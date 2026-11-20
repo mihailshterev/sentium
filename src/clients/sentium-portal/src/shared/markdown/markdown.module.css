@@ -1,0 +1,7 @@
+/* Markdown images never overflow the message, note or panel they sit in. */
+.image {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-sm);
+  vertical-align: middle;
+}

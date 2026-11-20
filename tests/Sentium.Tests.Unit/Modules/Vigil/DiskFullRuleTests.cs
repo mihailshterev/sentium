@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Sentium.Vigil.Features.Devices;
 using Xunit;
 
@@ -17,12 +16,13 @@ public sealed class DiskFullRuleTests
     [Fact]
     public void FullDisk_IsReportedOnTheThirdConsecutiveReport_AndOnlyOnce()
     {
-        Report(Disk("C:", 95)).Should().BeEmpty();
-        Report(Disk("C:", 95)).Should().BeEmpty();
-        Report(Disk("C:", 96)).Should().ContainSingle().Which.Name.Should().Be("C:");
+        Assert.Empty(Report(Disk("C:", 95)));
+        Assert.Empty(Report(Disk("C:", 95)));
+        Assert.Equal("C:", Assert.Single(Report(Disk("C:", 96))).Name);
 
-        Report(Disk("C:", 97)).Should().BeEmpty("the owner was already told");
-        Report(Disk("C:", 99)).Should().BeEmpty();
+        // the owner was already told
+        Assert.Empty(Report(Disk("C:", 97)));
+        Assert.Empty(Report(Disk("C:", 99)));
     }
 
     [Fact]
@@ -32,9 +32,9 @@ public sealed class DiskFullRuleTests
         Report(Disk("C:", 95));
         Report(Disk("C:", 80));
 
-        Report(Disk("C:", 95)).Should().BeEmpty();
-        Report(Disk("C:", 95)).Should().BeEmpty();
-        Report(Disk("C:", 95)).Should().ContainSingle();
+        Assert.Empty(Report(Disk("C:", 95)));
+        Assert.Empty(Report(Disk("C:", 95)));
+        Assert.Single(Report(Disk("C:", 95)));
     }
 
     [Fact]
@@ -42,13 +42,14 @@ public sealed class DiskFullRuleTests
     {
         Report(Disk("C:", 95));
         Report(Disk("C:", 95));
-        Report(Disk("C:", 95)).Should().ContainSingle();
+        Assert.Single(Report(Disk("C:", 95)));
 
-        Report(Disk("C:", 50)).Should().BeEmpty();
+        Assert.Empty(Report(Disk("C:", 50)));
 
         Report(Disk("C:", 95));
         Report(Disk("C:", 95));
-        Report(Disk("C:", 95)).Should().ContainSingle("it recovered in between, so this is a new problem");
+        // it recovered in between, so this is a new problem
+        Assert.Single(Report(Disk("C:", 95)));
     }
 
     [Fact]
@@ -56,7 +57,7 @@ public sealed class DiskFullRuleTests
     {
         Report(Disk("C:", 90));
         Report(Disk("C:", 90));
-        Report(Disk("C:", 90)).Should().BeEmpty();
+        Assert.Empty(Report(Disk("C:", 90)));
     }
 
     [Fact]
@@ -64,8 +65,8 @@ public sealed class DiskFullRuleTests
     {
         Report(Disk("C:", 95), Disk("D:", 10));
         Report(Disk("C:", 95), Disk("D:", 95));
-        Report(Disk("C:", 95), Disk("D:", 95)).Select(d => d.Name).Should().Equal("C:");
-        Report(Disk("C:", 95), Disk("D:", 95)).Select(d => d.Name).Should().Equal("D:");
+        Assert.Equal(new string[] { "C:" }, Report(Disk("C:", 95), Disk("D:", 95)).Select(d => d.Name));
+        Assert.Equal(new string[] { "D:" }, Report(Disk("C:", 95), Disk("D:", 95)).Select(d => d.Name));
     }
 
     [Fact]
@@ -75,9 +76,9 @@ public sealed class DiskFullRuleTests
         Report(Disk("E:", 95));
         Report();
 
-        Report(Disk("E:", 95)).Should().BeEmpty();
-        Report(Disk("E:", 95)).Should().BeEmpty();
-        Report(Disk("E:", 95)).Should().ContainSingle();
+        Assert.Empty(Report(Disk("E:", 95)));
+        Assert.Empty(Report(Disk("E:", 95)));
+        Assert.Single(Report(Disk("E:", 95)));
     }
 
     [Fact]
@@ -87,6 +88,6 @@ public sealed class DiskFullRuleTests
 
         Report(unformatted);
         Report(unformatted);
-        Report(unformatted).Should().BeEmpty();
+        Assert.Empty(Report(unformatted));
     }
 }

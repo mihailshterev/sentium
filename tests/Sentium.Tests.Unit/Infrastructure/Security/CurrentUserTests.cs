@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Sentium.Infrastructure.Extensions;
@@ -33,10 +32,10 @@ public sealed class CurrentUserTests : IDisposable
 
         var user = scope.ServiceProvider.GetRequiredService<ICurrentUser>();
 
-        user.UserId.Should().Be(userId);
-        user.IsAuthenticated.Should().BeTrue();
-        user.IsSystem.Should().BeFalse();
-        user.IsSovereign.Should().BeFalse();
+        Assert.Equal(userId, user.UserId);
+        Assert.True(user.IsAuthenticated);
+        Assert.False(user.IsSystem);
+        Assert.False(user.IsSovereign);
     }
 
     [Fact]
@@ -47,7 +46,7 @@ public sealed class CurrentUserTests : IDisposable
 
         var user = scope.ServiceProvider.GetRequiredService<ICurrentUser>();
 
-        user.IsSystem.Should().BeTrue();
-        user.UserId.Should().BeNull();
+        Assert.True(user.IsSystem);
+        Assert.Null(user.UserId);
     }
 }

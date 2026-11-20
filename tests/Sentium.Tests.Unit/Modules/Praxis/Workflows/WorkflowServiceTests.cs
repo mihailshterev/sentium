@@ -1,4 +1,3 @@
-using FluentAssertions;
 using NSubstitute;
 using Sentium.Praxis.Features.WorkflowManagement;
 using Sentium.Praxis.Features.Workflows;
@@ -30,7 +29,7 @@ public sealed class WorkflowServiceTests
 
         var result = await _service.GetWorkflowsAsync(TestContext.Current.CancellationToken);
 
-        result.Should().BeEquivalentTo(expected);
+        Assert.Equivalent(expected, result);
     }
 
     [Fact]
@@ -42,7 +41,7 @@ public sealed class WorkflowServiceTests
 
         var result = await _service.GetWorkflowAsync(id, TestContext.Current.CancellationToken);
 
-        result.Should().Be(expected);
+        Assert.Equal(expected, result);
     }
 
     [Fact]
@@ -54,7 +53,7 @@ public sealed class WorkflowServiceTests
 
         var result = await _service.CreateWorkflowAsync(request, TestContext.Current.CancellationToken);
 
-        result.Should().Be(expected);
+        Assert.Equal(expected, result);
         await _repository.Received(1).CreateWorkflowAsync(request, Arg.Any<CancellationToken>());
     }
 

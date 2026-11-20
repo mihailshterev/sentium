@@ -1,42 +1,27 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Sentium.Infrastructure.Middleware;
-using Serilog;
-using Serilog.Sinks.OpenTelemetry;
-using Serilog.Sinks.SystemConsole.Themes;
 
 namespace Sentium.Infrastructure.Extensions;
 
 public static class LoggingExtensions
 {
+    private const string ConsoleTimestampFormat = "HH:mm:ss ";
+
+    /// <summary>
+    /// Writes timestamped console logs with the category on its own line and the message below it, for readability.
+    /// Export to the OTLP collector comes from the OpenTelemetry logger provider that <c>AddServiceDefaults</c>
+    /// registers, and the <c>Logging:LogLevel</c> configuration filters both.
+    /// </summary>
     public static void AddSentiumAuditLogging(this IHostApplicationBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder, nameof(builder));
 
-        var otlpEndpoint = builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"];
-
-        builder.Services.AddSerilog((sp, cfg) =>
+        builder.Logging.AddSimpleConsole(options =>
         {
-            cfg.Enrich.FromLogContext()
-               .Enrich.WithProperty("Application", builder.Environment.ApplicationName)
-               .WriteTo.Console(theme: AnsiConsoleTheme.Code);
-
-            if (string.IsNullOrWhiteSpace(otlpEndpoint))
-            {
-                return;
-            }
-
-            cfg.WriteTo.OpenTelemetry(options =>
-            {
-                options.Endpoint = otlpEndpoint;
-                options.Protocol = OtlpProtocol.Grpc;
-                options.IncludedData = IncludedData.TraceIdField | IncludedData.SpanIdField;
-
-                options.ResourceAttributes = new Dictionary<string, object>
-                {
-                    ["service.name"] = builder.Environment.ApplicationName
-                };
-            });
+            options.SingleLine = false;
+            options.TimestampFormat = ConsoleTimestampFormat;
         });
     }
 

@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Sentium.Vigil.Features.Monitoring.Probes;
 using Xunit;
 
@@ -17,9 +16,9 @@ public sealed class EndpointResolverTests
     {
         var result = EndpointResolver.ResolveHostPort(conn, defaultPort: 1);
 
-        result.Should().NotBeNull();
-        result!.Value.Host.Should().Be(host);
-        result.Value.Port.Should().Be(port);
+        Assert.NotNull(result);
+        Assert.Equal(host, result!.Value.Host);
+        Assert.Equal(port, result.Value.Port);
     }
 
     [Fact]
@@ -27,14 +26,14 @@ public sealed class EndpointResolverTests
     {
         var result = EndpointResolver.ResolveHostPort("justhost", defaultPort: 6379);
 
-        result!.Value.Host.Should().Be("justhost");
-        result.Value.Port.Should().Be(6379);
+        Assert.Equal("justhost", result!.Value.Host);
+        Assert.Equal(6379, result.Value.Port);
     }
 
     [Fact]
     public void ResolveHostPort_ReturnsNull_ForEmpty()
     {
-        EndpointResolver.ResolveHostPort(null, 1).Should().BeNull();
-        EndpointResolver.ResolveHostPort("  ", 1).Should().BeNull();
+        Assert.Null(EndpointResolver.ResolveHostPort(null, 1));
+        Assert.Null(EndpointResolver.ResolveHostPort("  ", 1));
     }
 }

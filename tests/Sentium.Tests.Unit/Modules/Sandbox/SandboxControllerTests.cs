@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
@@ -54,11 +53,10 @@ public sealed class SandboxControllerTests
         var result = await _controller.ExecuteAsync(body, ct);
 
         // Assert
-        var response = result.Result.Should().BeOfType<OkObjectResult>()
-            .Which.Value.Should().BeOfType<SandboxExecutionResponse>().Subject;
-        response.Succeeded.Should().BeTrue();
-        response.Output.Should().Be("hello\n");
-        response.JobId.Should().Be(jobId);
+        var response = Assert.IsType<SandboxExecutionResponse>(Assert.IsType<OkObjectResult>(result.Result).Value);
+        Assert.True(response.Succeeded);
+        Assert.Equal("hello\n", response.Output);
+        Assert.Equal(jobId, response.JobId);
         await _runner.Received(1).RunAsync(
             Arg.Is<ExecutionRequest>(r => r.Language == ExecutionLanguage.Python && r.AgentId == "agent-1"),
             ct);

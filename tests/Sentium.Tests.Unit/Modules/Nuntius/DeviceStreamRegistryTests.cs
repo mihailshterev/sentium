@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Sentium.Nuntius.Features.Devices;
 using Xunit;
 
@@ -18,9 +17,9 @@ public sealed class DeviceStreamRegistryTests
 
         _sut.OnDeviceRemoved(removed, Guid.NewGuid());
 
-        first.Token.IsCancellationRequested.Should().BeTrue();
-        second.Token.IsCancellationRequested.Should().BeTrue();
-        other.Token.IsCancellationRequested.Should().BeFalse();
+        Assert.True(first.Token.IsCancellationRequested);
+        Assert.True(second.Token.IsCancellationRequested);
+        Assert.False(other.Token.IsCancellationRequested);
     }
 
     [Fact]
@@ -31,7 +30,7 @@ public sealed class DeviceStreamRegistryTests
 
         request.Cancel();
 
-        lease.Token.IsCancellationRequested.Should().BeTrue();
+        Assert.True(lease.Token.IsCancellationRequested);
     }
 
     [Fact]
@@ -42,6 +41,6 @@ public sealed class DeviceStreamRegistryTests
 
         var act = () => _sut.OnDeviceRemoved(device, Guid.NewGuid());
 
-        act.Should().NotThrow();
+        act();
     }
 }

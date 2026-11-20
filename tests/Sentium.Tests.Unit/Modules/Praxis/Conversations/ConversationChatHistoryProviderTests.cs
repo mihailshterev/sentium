@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using FluentAssertions;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
@@ -62,9 +61,10 @@ public sealed class ConversationChatHistoryProviderTests
 
         var paused = await agent1.RunAsync(new ChatMessage(ChatRole.User, "run the report"), session1, cancellationToken: ct);
 
-        var request = paused.Messages.SelectMany(m => m.Contents).OfType<ToolApprovalRequestContent>().Should().ContainSingle().Subject;
-        tool.Invocations.Should().Be(0);
-        _transcript.Should().ContainSingle(m => m.Role == "user" && m.Content == "run the report", "the user's turn is recorded as soon as the run pauses");
+        var request = Assert.Single(paused.Messages.SelectMany(m => m.Contents).OfType<ToolApprovalRequestContent>());
+        Assert.Equal(0, tool.Invocations);
+        // the user's turn is recorded as soon as the run pauses
+        Assert.Single(_transcript, m => m.Role == "user" && m.Content == "run the report");
 
         var serialized = await agent1.SerializeSessionAsync(session1, cancellationToken: ct);
 
@@ -74,23 +74,21 @@ public sealed class ConversationChatHistoryProviderTests
 
         var resumed = await agent2.RunAsync(new ChatMessage(ChatRole.User, [request.CreateResponse(true)]), session2, cancellationToken: ct);
 
-        tool.Invocations.Should().Be(1);
-        resumed.Text.Should().Contain("report done");
+        Assert.Equal(1, tool.Invocations);
+        Assert.Contains("report done", resumed.Text, StringComparison.Ordinal);
 
         var finalRequest = _host.Model.Requests[^1].Messages;
-        finalRequest.Count(m => m.Text == "run the report").Should().Be(1, "the paused question is replayed exactly once");
-        finalRequest.Should().Contain(m => m.Text == "earlier question", "prior turns come from the server transcript");
-        finalRequest.SelectMany(m => m.Contents).OfType<FunctionResultContent>().Should().ContainSingle(r => r.CallId == "call-1");
+        // the paused question is replayed exactly once
+        Assert.Equal(1, finalRequest.Count(m => m.Text == "run the report"));
+        // prior turns come from the server transcript
+        Assert.Contains(finalRequest, m => m.Text == "earlier question");
+        Assert.Single(finalRequest.SelectMany(m => m.Contents).OfType<FunctionResultContent>(), r => r.CallId == "call-1");
 
-        _transcript.Select(m => (m.Role, m.Content)).Should().Equal(
-            ("user", "earlier question"),
-            ("assistant", "earlier answer"),
-            ("user", "run the report"),
-            ("assistant", "report done"));
+        Assert.Equal(new (string Role, string Content)[] { ("user", "earlier question"), ("assistant", "earlier answer"), ("user", "run the report"), ("assistant", "report done") }, _transcript.Select(m => (m.Role, m.Content)));
 
-        var step = _transcript[^1].Steps.Should().ContainSingle().Subject;
-        step.Should().BeEquivalentTo(new { Kind = "tool", CallId = "call-1", Name = "run_report", Status = "ok", Result = "rows: 42" },
-            "the completed turn keeps the approved call and its result on the timeline");
+        var step = Assert.Single(_transcript[^1].Steps!);
+        // the completed turn keeps the approved call and its result on the timeline
+        Assert.Equivalent(new { Kind = "tool", CallId = "call-1", Name = "run_report", Status = "ok", Result = "rows: 42" }, step);
     }
 
     [Fact]
@@ -114,8 +112,8 @@ public sealed class ConversationChatHistoryProviderTests
         var session2 = await agent2.DeserializeSessionAsync(serialized, cancellationToken: ct);
         await agent2.RunAsync(new ChatMessage(ChatRole.User, [request.CreateResponse(false)]), session2, cancellationToken: ct);
 
-        tool.Invocations.Should().Be(0);
-        _transcript[^1].Steps.Should().ContainSingle(s => s.CallId == "call-9" && s.Status == "rejected");
+        Assert.Equal(0, tool.Invocations);
+        Assert.Single(_transcript[^1].Steps!, s => s.CallId == "call-9" && s.Status == "rejected");
     }
 
     [Fact]
@@ -131,7 +129,7 @@ public sealed class ConversationChatHistoryProviderTests
 
         await agent.RunAsync(new ChatMessage(ChatRole.User, "summarise the logs"), session, cancellationToken: ct);
 
-        _host.Model.Requests[^1].Messages.Count(m => m.Role == ChatRole.User).Should().Be(1);
+        Assert.Equal(1, _host.Model.Requests[^1].Messages.Count(m => m.Role == ChatRole.User));
     }
 
     [Fact]
@@ -182,13 +180,14 @@ public sealed class ConversationChatHistoryProviderTests
         var session2 = await agent2.DeserializeSessionAsync(serialized, cancellationToken: ct);
         await agent2.RunAsync(new ChatMessage(ChatRole.User, [request.CreateResponse(true)]), session2, cancellationToken: ct);
 
-        _host.Model.Requests.Should().HaveCountGreaterThanOrEqualTo(2);
-        _host.Model.Requests[0].Options!.Instructions.Should().Contain("budget contents");
-        _host.Model.Requests[^1].Options!.Instructions.Should().Contain("budget contents", "the resumed run is built from the serialized session");
+        Assert.True(_host.Model.Requests.Count >= 2);
+        Assert.Contains("budget contents", _host.Model.Requests[0].Options!.Instructions, StringComparison.Ordinal);
+        // the resumed run is built from the serialized session
+        Assert.Contains("budget contents", _host.Model.Requests[^1].Options!.Instructions, StringComparison.Ordinal);
 
-        var userTurn = _transcript.Should().ContainSingle(m => m.Role == "user").Subject;
-        userTurn.Content.Should().Be("summarise the budget");
-        userTurn.Attachments.Should().ContainSingle().Which.Should().Be(file);
+        var userTurn = Assert.Single(_transcript, m => m.Role == "user");
+        Assert.Equal("summarise the budget", userTurn.Content);
+        Assert.Equal(file, Assert.Single(userTurn.Attachments!));
     }
 
     [Fact]
@@ -206,7 +205,7 @@ public sealed class ConversationChatHistoryProviderTests
 
         await agent.RunAsync(new ChatMessage(ChatRole.User, "and now?"), session, cancellationToken: ct);
 
-        _host.Model.Requests[^1].Messages.Should().Contain(m => m.Text.Contains($"notes.md (ID: {file.FileId})"));
+        Assert.Contains(_host.Model.Requests[^1].Messages, m => m.Text.Contains($"notes.md (ID: {file.FileId})"));
         await _host.WorkspaceContext.DidNotReceive().BuildAsync(Arg.Any<Guid>(), Arg.Any<Guid?>(), Arg.Any<IReadOnlyList<Guid>>(), Arg.Any<int>(), Arg.Any<CancellationToken>());
     }
 

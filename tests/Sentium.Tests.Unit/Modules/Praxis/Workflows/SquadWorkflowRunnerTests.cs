@@ -1,5 +1,4 @@
 using System.Text.Json;
-using FluentAssertions;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using NSubstitute;
@@ -44,24 +43,24 @@ public sealed class SquadWorkflowRunnerTests
 
         var result = await RunAsync(fixedPlan: null, ct);
 
-        result.Answer.Should().Be("Final: runbook + script");
-        result.Risk.Should().Be(RiskLevel.Low);
-        result.Recommendation.Should().Be("Ship it.");
-        result.Steps.Select(s => (s.Step.Agent, s.Verified)).Should().Equal((Research, true), (Engineer, true));
+        Assert.Equal("Final: runbook + script", result.Answer);
+        Assert.Equal(RiskLevel.Low, result.Risk);
+        Assert.Equal("Ship it.", result.Recommendation);
+        Assert.Equal(new (string Agent, bool Verified)[] { (Research, true), (Engineer, true) }, result.Steps.Select(s => (s.Step.Agent, s.Verified)));
 
         // The planner may only name roster agents: constrained decoding via a JSON-schema enum.
-        var planFormat = _factory.CallsTo(AgentRole.Orchestrator).Single().Options!.ResponseFormat.Should().BeOfType<ChatResponseFormatJson>().Subject;
-        planFormat.Schema!.Value.GetProperty("properties").GetProperty("steps").GetProperty("items").GetProperty("properties")
-            .GetProperty("agent").GetProperty("enum").EnumerateArray().Select(e => e.GetString())
-            .Should().BeEquivalentTo(Roster.Select(m => m.Name));
+        var planFormat = Assert.IsType<ChatResponseFormatJson>(_factory.CallsTo(AgentRole.Orchestrator).Single().Options!.ResponseFormat);
+        Assert.Equivalent(Roster.Select(m => m.Name), planFormat.Schema!.Value.GetProperty("properties").GetProperty("steps").GetProperty("items").GetProperty("properties")
+            .GetProperty("agent").GetProperty("enum").EnumerateArray().Select(e => e.GetString()));
 
         // Each step sees one user message, never a shared multi-agent transcript; later steps get earlier results.
-        var engineerInput = _factory.CallsTo(Engineer).Single().Messages.Should().ContainSingle(m => m.Role == ChatRole.User).Subject.Text;
-        engineerInput.Should().Contain("## Results from earlier steps").And.Contain("RUNBOOK: deploy, verify.");
-        _factory.CallsTo(Research).Single().Messages.Count(m => m.Role == ChatRole.User).Should().Be(1);
+        var engineerInput = Assert.Single(_factory.CallsTo(Engineer).Single().Messages, m => m.Role == ChatRole.User).Text;
+        Assert.Contains("## Results from earlier steps", engineerInput, StringComparison.Ordinal);
+        Assert.Contains("RUNBOOK: deploy, verify.", engineerInput, StringComparison.Ordinal);
+        Assert.Equal(1, _factory.CallsTo(Research).Single().Messages.Count(m => m.Role == ChatRole.User));
 
         // Specialists in a team run never get approval-gated tools (nobody can approve them).
-        _factory.Created.Where(c => !c.Control).Should().OnlyContain(c => !c.AllowApprovalTools);
+        Assert.All(_factory.Created.Where(c => !c.Control), c => Assert.True(!c.AllowApprovalTools));
     }
 
     [Fact]
@@ -77,13 +76,16 @@ public sealed class SquadWorkflowRunnerTests
         var result = await RunAsync(fixedPlan: null, ct);
 
         var attempts = _factory.CallsTo(Research);
-        attempts.Should().HaveCount(2);
-        attempts[1].Messages.Single(m => m.Role == ChatRole.User).Text
-            .Should().Contain("Reviewer feedback").And.Contain("Cite the source file.").And.Contain("steps without sources");
+        Assert.Equal(2, attempts.Count);
+        var actual = attempts[1].Messages.Single(m => m.Role == ChatRole.User).Text;
+        Assert.Contains("Reviewer feedback", actual, StringComparison.Ordinal);
+        Assert.Contains("Cite the source file.", actual, StringComparison.Ordinal);
+        Assert.Contains("steps without sources", actual, StringComparison.Ordinal);
 
-        result.Answer.Should().Be("steps [source: runbook.md]", "a single-step plan needs no synthesis call");
-        result.Steps.Should().ContainSingle().Which.Verified.Should().BeTrue();
-        _factory.CallsTo(AgentRole.Summarizer).Should().BeEmpty();
+        // a single-step plan needs no synthesis call
+        Assert.Equal("steps [source: runbook.md]", result.Answer);
+        Assert.True(Assert.Single(result.Steps).Verified);
+        Assert.Empty(_factory.CallsTo(AgentRole.Summarizer));
     }
 
     [Fact]
@@ -97,8 +99,8 @@ public sealed class SquadWorkflowRunnerTests
 
         var result = await RunAsync(fixedPlan: null, ct);
 
-        _factory.CallsTo(Research).Should().HaveCount(SquadWorkflowRunner.MaxAttemptsPerStep);
-        result.Steps.Should().ContainSingle().Which.Verified.Should().BeFalse();
+        Assert.Equal(SquadWorkflowRunner.MaxAttemptsPerStep, _factory.CallsTo(Research).Count);
+        Assert.False(Assert.Single(result.Steps).Verified);
     }
 
     [Fact]
@@ -111,8 +113,8 @@ public sealed class SquadWorkflowRunnerTests
 
         var result = await RunAsync(fixedPlan: null, ct);
 
-        result.Steps.Should().ContainSingle().Which.Step.Agent.Should().Be(AgentRole.GeneralAssistant);
-        result.Answer.Should().Be("general answer");
+        Assert.Equal(AgentRole.GeneralAssistant, Assert.Single(result.Steps).Step.Agent);
+        Assert.Equal("general answer", result.Answer);
     }
 
     [Fact]
@@ -126,9 +128,9 @@ public sealed class SquadWorkflowRunnerTests
         var plan = new SquadPlan([new SquadStep(Research, "Part A", "A"), new SquadStep(Engineer, "Part B", "B")]);
         var result = await RunAsync(plan, ct);
 
-        _factory.CallsTo(AgentRole.Orchestrator).Should().BeEmpty();
-        result.Answer.Should().Be("combined");
-        result.Risk.Should().Be(RiskLevel.High);
+        Assert.Empty(_factory.CallsTo(AgentRole.Orchestrator));
+        Assert.Equal("combined", result.Answer);
+        Assert.Equal(RiskLevel.High, result.Risk);
     }
 
     private Task<SquadResult> RunAsync(SquadPlan? fixedPlan, CancellationToken ct) =>

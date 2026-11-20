@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Sentium.Codex.Data;
 using Sentium.Identity.Data;
@@ -45,8 +44,7 @@ public sealed class MigrationSnapshotTests
     {
         using var db = Contexts[module]();
 
-        db.Database.HasPendingModelChanges().Should().BeFalse(
-            $"the {module} model changed without a migration; run `dotnet ef migrations add <Name> " +
+        Assert.False(db.Database.HasPendingModelChanges(), $"the {module} model changed without a migration; run `dotnet ef migrations add <Name> " +
             $"--project src/modules/{module} --startup-project src/hosts/Sentium.Web " +
             $"--context {module}DbContext --output-dir Data/Migrations`");
     }

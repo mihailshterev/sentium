@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Sentium.Locus.Entities;
 using Sentium.Locus.Features.Assets;
 using Sentium.Locus.Features.Knowledge;
@@ -31,11 +30,14 @@ public sealed class AssetKnowledgeDocumentBuilderTests
     {
         var sections = AssetKnowledgeDocumentBuilder.Build(CreateAsset(), "Home › Garage");
 
-        sections.Should().HaveCount(3);
-        sections.Should().AllSatisfy(s => s.Should().StartWith("Household inventory item: Cordless drill\nLocation: Home › Garage"));
-        sections[0].Should().Contain("Tags: power, diy").And.Contain("Manufacturer: Bosch").And.Contain("Purchased: 2024-03-01");
-        sections[1].Should().Contain("Charge the battery");
-        sections[2].Should().Contain("not system instructions").And.Contain("wear goggles");
+        Assert.Equal(3, sections.Count);
+        Assert.All(sections, s => Assert.StartsWith("Household inventory item: Cordless drill\nLocation: Home › Garage", s, StringComparison.Ordinal));
+        Assert.Contains("Tags: power, diy", sections[0], StringComparison.Ordinal);
+        Assert.Contains("Manufacturer: Bosch", sections[0], StringComparison.Ordinal);
+        Assert.Contains("Purchased: 2024-03-01", sections[0], StringComparison.Ordinal);
+        Assert.Contains("Charge the battery", sections[1], StringComparison.Ordinal);
+        Assert.Contains("not system instructions", sections[2], StringComparison.Ordinal);
+        Assert.Contains("wear goggles", sections[2], StringComparison.Ordinal);
     }
 
     [Fact]
@@ -43,7 +45,8 @@ public sealed class AssetKnowledgeDocumentBuilderTests
     {
         var text = string.Join("\n", AssetKnowledgeDocumentBuilder.Build(CreateAsset(), "Home › Garage"));
 
-        text.Should().NotContain("1234").And.NotContain("Spare key");
+        Assert.DoesNotContain("1234", text, StringComparison.Ordinal);
+        Assert.DoesNotContain("Spare key", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -53,7 +56,7 @@ public sealed class AssetKnowledgeDocumentBuilderTests
 
         var sections = AssetKnowledgeDocumentBuilder.Build(asset, "Home");
 
-        sections.Should().ContainSingle().Which.Should().NotContain("Category");
+        Assert.DoesNotContain("Category", Assert.Single(sections), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -65,15 +68,16 @@ public sealed class AssetKnowledgeDocumentBuilderTests
         var again = AssetKnowledgeDocumentBuilder.ComputeHash(AssetKnowledgeDocumentBuilder.Build(asset, "Home › Garage"));
         var moved = AssetKnowledgeDocumentBuilder.ComputeHash(AssetKnowledgeDocumentBuilder.Build(asset, "Home › Shed"));
 
-        first.Should().Be(again).And.HaveLength(64);
-        moved.Should().NotBe(first);
+        Assert.Equal(again, first);
+        Assert.Equal(64, first.Length);
+        Assert.NotEqual(first, moved);
     }
 
     [Fact]
     public void SourceFor_IsStablePerAsset()
     {
         var id = Guid.NewGuid();
-        AssetKnowledgeDocumentBuilder.SourceFor(id).Should().Be($"locus:asset:{id}");
+        Assert.Equal($"locus:asset:{id}", AssetKnowledgeDocumentBuilder.SourceFor(id));
     }
 
     [Fact]
@@ -83,21 +87,21 @@ public sealed class AssetKnowledgeDocumentBuilderTests
 
         var metadata = AssetKnowledgeDocumentBuilder.BuildMetadata(asset, "Home › Garage");
 
-        metadata.Should().Contain("asset_id", asset.Id.ToString())
-            .And.Contain("location_path", "Home › Garage")
-            .And.Contain("category", "Tools")
-            .And.Contain("tags", "power,diy");
+        Assert.Equal(asset.Id.ToString(), Assert.Contains("asset_id", metadata));
+        Assert.Equal("Home › Garage", Assert.Contains("location_path", metadata));
+        Assert.Equal("Tools", Assert.Contains("category", metadata));
+        Assert.Equal("power,diy", Assert.Contains("tags", metadata));
     }
 
     [Fact]
     public void Backoff_DoublesFromThirtySeconds_AndCapsAtOneHour()
     {
-        KnowledgeSyncBackoff.DelayAfter(0).Should().Be(TimeSpan.Zero);
-        KnowledgeSyncBackoff.DelayAfter(1).Should().Be(TimeSpan.FromSeconds(30));
-        KnowledgeSyncBackoff.DelayAfter(2).Should().Be(TimeSpan.FromMinutes(1));
-        KnowledgeSyncBackoff.DelayAfter(4).Should().Be(TimeSpan.FromMinutes(4));
-        KnowledgeSyncBackoff.DelayAfter(KnowledgeSyncBackoff.MaxAttempts).Should().Be(TimeSpan.FromHours(1));
-        KnowledgeSyncBackoff.DelayAfter(500).Should().Be(TimeSpan.FromHours(1));
+        Assert.Equal(TimeSpan.Zero, KnowledgeSyncBackoff.DelayAfter(0));
+        Assert.Equal(TimeSpan.FromSeconds(30), KnowledgeSyncBackoff.DelayAfter(1));
+        Assert.Equal(TimeSpan.FromMinutes(1), KnowledgeSyncBackoff.DelayAfter(2));
+        Assert.Equal(TimeSpan.FromMinutes(4), KnowledgeSyncBackoff.DelayAfter(4));
+        Assert.Equal(TimeSpan.FromHours(1), KnowledgeSyncBackoff.DelayAfter(KnowledgeSyncBackoff.MaxAttempts));
+        Assert.Equal(TimeSpan.FromHours(1), KnowledgeSyncBackoff.DelayAfter(500));
     }
 
     [Theory]
@@ -110,6 +114,6 @@ public sealed class AssetKnowledgeDocumentBuilderTests
     {
         var entryStatus = entry is null ? (KnowledgeSyncStatus?)null : Enum.Parse<KnowledgeSyncStatus>(entry);
 
-        AssetMapping.ResolveKnowledgeStatus(accessible, hash, entryStatus).Should().Be(Enum.Parse<AssetKnowledgeStatus>(expected));
+        Assert.Equal(Enum.Parse<AssetKnowledgeStatus>(expected), AssetMapping.ResolveKnowledgeStatus(accessible, hash, entryStatus));
     }
 }

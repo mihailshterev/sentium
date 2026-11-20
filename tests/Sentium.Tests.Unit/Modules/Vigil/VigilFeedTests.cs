@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Sentium.Vigil.Features.Monitoring;
 using Xunit;
 
@@ -17,10 +16,10 @@ public sealed class VigilFeedTests
 
         _sut.Publish(evt);
 
-        first.Reader.TryRead(out var a).Should().BeTrue();
-        second.Reader.TryRead(out var b).Should().BeTrue();
-        a.Should().Be(evt);
-        b.Should().Be(evt);
+        Assert.True(first.Reader.TryRead(out var a));
+        Assert.True(second.Reader.TryRead(out var b));
+        Assert.Equal(evt, a);
+        Assert.Equal(evt, b);
     }
 
     [Fact]
@@ -31,7 +30,7 @@ public sealed class VigilFeedTests
 
         _sut.Publish(new VigilFeedEvent(VigilFeedEventTypes.IncidentOpened, "payload"));
 
-        subscription.Reader.TryRead(out _).Should().BeFalse();
+        Assert.False(subscription.Reader.TryRead(out _));
     }
 
     [Fact]
@@ -44,8 +43,8 @@ public sealed class VigilFeedTests
             _sut.Publish(new VigilFeedEvent(VigilFeedEventTypes.Status, i));
         }
 
-        subscription.Reader.Count.Should().Be(256);
-        subscription.Reader.TryRead(out var oldest).Should().BeTrue();
-        oldest!.Data.Should().Be(44);
+        Assert.Equal(256, subscription.Reader.Count);
+        Assert.True(subscription.Reader.TryRead(out var oldest));
+        Assert.Equal(44, oldest!.Data);
     }
 }

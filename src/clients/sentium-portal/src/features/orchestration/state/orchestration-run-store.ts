@@ -1,4 +1,4 @@
-import { create } from "zustand";
+import { createStore } from "@/shared/state/create-store";
 import type { LogEntry, Phase } from "@/features/orchestration/types/orchestration";
 import {
   runWorkflowPipeline,
@@ -59,7 +59,7 @@ const closeStream = () => {
   currentStreamId = null;
 };
 
-export const useOrchestrationRunStore = create<OrchestrationRunState>((set, get) => {
+export const useOrchestrationRunStore = createStore<OrchestrationRunState>((set, get) => {
   const finalize = (outcome: RunOutcome, extra?: Partial<OrchestrationRunState>) => {
     closeStream();
     set({ phase: "COMPLETE", isRunning: false, connection: "idle", lastOutcome: outcome, ...extra });

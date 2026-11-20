@@ -1,5 +1,4 @@
 using System.Security.Claims;
-using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -41,7 +40,7 @@ public sealed class AccountControllerTests
         var result = await _controller.Register(request, TestContext.Current.CancellationToken);
 
         // Assert
-        result.Should().BeOfType<OkObjectResult>();
+        Assert.IsType<OkObjectResult>(result);
         await _identityService.Received(1).RegisterUserAsync(request, Arg.Any<CancellationToken>());
     }
 
@@ -57,7 +56,7 @@ public sealed class AccountControllerTests
         var result = await _controller.Register(request, TestContext.Current.CancellationToken);
 
         // Assert
-        result.Should().BeOfType<BadRequestObjectResult>();
+        Assert.IsType<BadRequestObjectResult>(result);
     }
 
     [Fact]
@@ -68,7 +67,7 @@ public sealed class AccountControllerTests
 
         var result = await _controller.Register(request, TestContext.Current.CancellationToken);
 
-        result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(StatusCodes.Status403Forbidden);
+        Assert.Equal(StatusCodes.Status403Forbidden, Assert.IsType<ObjectResult>(result).StatusCode);
     }
 
     [Fact]
@@ -83,7 +82,7 @@ public sealed class AccountControllerTests
         var result = await _controller.Login(request, returnUrl: null);
 
         // Assert
-        result.Should().BeOfType<OkObjectResult>();
+        Assert.IsType<OkObjectResult>(result);
     }
 
     [Fact]
@@ -98,8 +97,7 @@ public sealed class AccountControllerTests
         var result = await _controller.Login(request, returnUrl: null);
 
         // Assert
-        result.Should().BeOfType<ObjectResult>()
-            .Which.StatusCode.Should().Be(StatusCodes.Status423Locked);
+        Assert.Equal(StatusCodes.Status423Locked, Assert.IsType<ObjectResult>(result).StatusCode);
     }
 
     [Fact]
@@ -114,7 +112,7 @@ public sealed class AccountControllerTests
         var result = await _controller.Login(request, returnUrl: null);
 
         // Assert
-        result.Should().BeOfType<UnauthorizedObjectResult>();
+        Assert.IsType<UnauthorizedObjectResult>(result);
     }
 
     [Fact]
@@ -124,7 +122,7 @@ public sealed class AccountControllerTests
         var result = await _controller.Logout();
 
         // Assert
-        result.Should().BeOfType<NoContentResult>();
+        Assert.IsType<NoContentResult>(result);
         await _identityService.Received(1).LogoutAsync();
     }
 
@@ -152,10 +150,10 @@ public sealed class AccountControllerTests
         var result = _controller.GetSession();
 
         // Assert
-        var session = result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeOfType<SessionResponse>().Subject;
-        session.Sub.Should().Be(userId.ToString());
-        session.Name.Should().Be("user1");
-        session.Roles.Should().BeEquivalentTo("Member", "Sovereign");
+        var session = Assert.IsType<SessionResponse>(Assert.IsType<OkObjectResult>(result).Value);
+        Assert.Equal(userId.ToString(), session.Sub);
+        Assert.Equal("user1", session.Name);
+        Assert.Equivalent(new string[] { "Member", "Sovereign" }, session.Roles);
     }
 
     [Fact]
@@ -180,7 +178,7 @@ public sealed class AccountControllerTests
         var result = await _controller.GetProfile(ct);
 
         // Assert
-        result.Should().BeOfType<OkObjectResult>();
+        Assert.IsType<OkObjectResult>(result);
     }
 
     [Fact]
@@ -204,7 +202,7 @@ public sealed class AccountControllerTests
         var result = await _controller.GetProfile(ct);
 
         // Assert
-        result.Should().BeOfType<NotFoundResult>();
+        Assert.IsType<NotFoundResult>(result);
     }
 
     [Fact]
@@ -224,7 +222,7 @@ public sealed class AccountControllerTests
         var result = await _controller.GetProfile(ct);
 
         // Assert
-        result.Should().BeOfType<UnauthorizedResult>();
+        Assert.IsType<UnauthorizedResult>(result);
     }
 
     [Fact]
@@ -250,7 +248,7 @@ public sealed class AccountControllerTests
         var result = await _controller.UpdateProfile(request, ct);
 
         // Assert
-        result.Should().BeOfType<NoContentResult>();
+        Assert.IsType<NoContentResult>(result);
     }
 
     [Fact]
@@ -276,7 +274,6 @@ public sealed class AccountControllerTests
         var result = await _controller.UpdateProfile(request, ct);
 
         // Assert
-        result.Should().BeAssignableTo<ObjectResult>()
-            .Which.StatusCode.Should().Be(StatusCodes.Status400BadRequest);
+        Assert.Equal(StatusCodes.Status400BadRequest, Assert.IsAssignableFrom<ObjectResult>(result).StatusCode);
     }
 }

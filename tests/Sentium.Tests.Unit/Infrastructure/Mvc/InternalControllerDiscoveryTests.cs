@@ -1,5 +1,4 @@
 using System.Reflection;
-using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.Extensions.DependencyInjection;
@@ -23,17 +22,19 @@ public sealed class InternalControllerDiscoveryTests
         var expected = Praxis.GetTypes()
             .Where(t => t is { IsClass: true, IsAbstract: false, IsNested: false } && t.IsAssignableTo(typeof(ControllerBase)))
             .ToList();
-        expected.Should().NotBeEmpty().And.OnlyContain(t => !t.IsPublic, "module controllers are internal");
+        // module controllers are internal
+        Assert.NotEmpty(expected);
+        Assert.All(expected, t => Assert.True(!t.IsPublic));
 
         var discovered = DiscoverControllers(mvc => mvc.AddInternalControllers());
 
-        discovered.Should().BeEquivalentTo(expected);
+        Assert.Equivalent(expected, discovered);
     }
 
     [Fact]
     public void DefaultDiscovery_SkipsInternalControllers()
     {
-        DiscoverControllers(_ => { }).Should().BeEmpty();
+        Assert.Empty(DiscoverControllers(_ => { }));
     }
 
     private static List<Type> DiscoverControllers(Action<IMvcBuilder> configure)

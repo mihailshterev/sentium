@@ -136,8 +136,8 @@ healthy. Both servers reject every request except `/health` without the `llm-api
 | **Portal** (start here) | http://localhost:5173                   |
 | Aspire dashboard        | printed on startup (with a login token) |
 
-The portal sends you to its own `/login` page; the first account you register becomes the Sovereign (see [Accounts](#accounts-and-data-retention)). Sentium.Web's API reference
-(Scalar) is linked from its resource in the dashboard.
+The portal sends you to its own `/login` page; the first account you register becomes the Sovereign (see [Accounts](#accounts-and-data-retention)). Sentium.Web's OpenAPI
+document (`/openapi/v1.json`, Development only) is linked from its resource in the dashboard.
 
 > **First run takes a while** - Docker pulls the infrastructure images and `models-init` downloads
 > about 5 GB of model files. Subsequent starts reuse the persisted data volumes; the models volume is
@@ -484,13 +484,14 @@ else.
 ### Build the app
 
 It is a [Tauri 2](https://tauri.app) app in `src/clients/sentium-satelles`. Build it on the platform you want it for,
-with [Rust](https://rustup.rs) and pnpm installed (on Linux also the
-[Tauri system packages](https://tauri.app/start/prerequisites/#linux)):
+with [Rust](https://rustup.rs) installed (on Linux also the
+[Tauri system packages](https://tauri.app/start/prerequisites/#linux)). The Tauri CLI comes from crates.io, like the
+rest of the app, so no Node.js is needed:
 
 ```bash
+cargo install tauri-cli --version 2.12.4 --locked   # once
 cd src/clients/sentium-satelles
-pnpm install
-pnpm tauri build
+cargo tauri build
 ```
 
 The output is in `src-tauri/target/release/bundle/`:
@@ -665,7 +666,7 @@ three buckets, created on first write: `workspace-storage`, `sandbox-artifacts` 
 - **Disk.** Deleted objects are reclaimed by SeaweedFS's vacuum (every 14 minutes once a volume is 30% garbage),
   so disk usage drops with a delay.
 - **Upgrading SeaweedFS.** Change the digest in `docker-compose.yml`, `StorageConfig` (Aspire) and
-  `e2e/compose.e2e.yaml` together, and run `dotnet test tests/Sentium.Tests.Integration --filter ObjectStoreContract`.
+  `e2e/compose.e2e.yaml` together, and run `dotnet test --project tests/Sentium.Tests.Integration --filter-class "*.ObjectStoreContractTests"`.
 
 ---
 
@@ -820,6 +821,18 @@ upgrades, on a spare machine or in a separate copy of the installation directory
 ---
 
 ## Troubleshooting
+
+### Building from source
+
+**`dotnet restore` fails with `NU1901`-`NU1904` (a known vulnerability).**
+NuGet audit checks every package in the graph, transitive ones included, and warnings are errors. Bump the
+package in `Directory.Packages.props` to a fixed version; for a transitive package, add or raise its pin in the
+"Transitive pins" group there. Then run `dotnet restore Sentium.slnx --force-evaluate` and commit the changed
+`packages.lock.json` files. Don't suppress an advisory without a written reason.
+
+**`dotnet restore --locked-mode` fails with `NU1004`.**
+A project's package references no longer match its `packages.lock.json`. Run
+`dotnet restore Sentium.slnx --force-evaluate` and commit the lock files together with the change that caused it.
 
 ### Aspire (Method A)
 

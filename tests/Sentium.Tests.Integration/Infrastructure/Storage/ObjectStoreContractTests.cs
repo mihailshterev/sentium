@@ -1,5 +1,4 @@
 using System.Text;
-using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Sentium.Infrastructure.Storage;
@@ -25,12 +24,13 @@ public sealed class ObjectStoreContractTests(ObjectStoreServerFixture server) : 
         await _store.PutAsync(_bucket, "dir/file name.pdf", new MemoryStream("pdf-bytes"u8.ToArray()), "application/pdf", metadata, ct);
         var stored = await _store.OpenReadAsync(_bucket, "dir/file name.pdf", ct);
 
-        stored.Should().NotBeNull();
+        Assert.NotNull(stored);
         await using var content = stored!.Content;
-        stored.ContentType.Should().Be("application/pdf");
-        stored.Length.Should().Be(9);
-        stored.Metadata.Should().Contain("filename", "Résumé 100% (final).pdf").And.Contain("workspaceid", "42");
-        (await ReadAllAsync(content, ct)).Should().Be("pdf-bytes");
+        Assert.Equal("application/pdf", stored.ContentType);
+        Assert.Equal(9, stored.Length);
+        Assert.Equal("Résumé 100% (final).pdf", Assert.Contains("filename", stored.Metadata));
+        Assert.Equal("42", Assert.Contains("workspaceid", stored.Metadata));
+        Assert.Equal("pdf-bytes", await ReadAllAsync(content, ct));
     }
 
     [Fact]
@@ -42,21 +42,21 @@ public sealed class ObjectStoreContractTests(ObjectStoreServerFixture server) : 
 
         await using var content = (await _store.OpenReadAsync(_bucket, "range.txt", ct))!.Content;
 
-        content.CanSeek.Should().BeTrue();
-        content.Length.Should().Be(body.Length);
+        Assert.True(content.CanSeek);
+        Assert.Equal(body.Length, content.Length);
 
         content.Seek(1500, SeekOrigin.Begin);
         var tail = new byte[10];
         await content.ReadExactlyAsync(tail, ct);
-        tail.Should().Equal(body[1500..1510]);
+        Assert.Equal(body[1500..1510], tail);
 
         content.Position = 3;
         var head = new byte[4];
         await content.ReadExactlyAsync(head, ct);
-        head.Should().Equal(body[3..7]);
+        Assert.Equal(body[3..7], head);
 
         content.Seek(-5, SeekOrigin.End);
-        (await ReadAllAsync(content, ct)).Should().Be(Encoding.ASCII.GetString(body[^5..]));
+        Assert.Equal(Encoding.ASCII.GetString(body[^5..]), await ReadAllAsync(content, ct));
     }
 
     [Fact]
@@ -70,7 +70,7 @@ public sealed class ObjectStoreContractTests(ObjectStoreServerFixture server) : 
         content.Seek(6, SeekOrigin.Begin);
         var read = async () => await content.ReadAsync(new byte[4], ct);
 
-        await read.Should().ThrowAsync<Exception>();
+        await Assert.ThrowsAnyAsync<Exception>(read);
     }
 
     [Fact]
@@ -83,12 +83,12 @@ public sealed class ObjectStoreContractTests(ObjectStoreServerFixture server) : 
         await _store.PutAsync(_bucket, "empty.bin", new MemoryStream(), ct: ct);
 
         await using var piped = (await _store.OpenReadAsync(_bucket, "piped.bin", ct))!.Content;
-        (await ReadAllAsync(piped, ct)).Should().Be("streamed");
+        Assert.Equal("streamed", await ReadAllAsync(piped, ct));
         var empty = await _store.OpenReadAsync(_bucket, "empty.bin", ct);
-        empty!.Length.Should().Be(0);
+        Assert.Equal(0, empty!.Length);
         await using var emptyContent = empty.Content;
-        (await ReadAllAsync(emptyContent, ct)).Should().BeEmpty();
-        empty.ContentType.Should().Be("application/octet-stream");
+        Assert.Empty(await ReadAllAsync(emptyContent, ct));
+        Assert.Equal("application/octet-stream", empty.ContentType);
     }
 
     [Fact]
@@ -97,13 +97,13 @@ public sealed class ObjectStoreContractTests(ObjectStoreServerFixture server) : 
         var ct = TestContext.Current.CancellationToken;
         var missingBucket = $"missing-{Guid.NewGuid():N}"[..30];
 
-        (await _store.OpenReadAsync(missingBucket, "nothing", ct)).Should().BeNull();
-        (await _store.ListKeysAsync(missingBucket, ct: ct).ToListAsync(ct)).Should().BeEmpty();
+        Assert.Null(await _store.OpenReadAsync(missingBucket, "nothing", ct));
+        Assert.Empty(await _store.ListKeysAsync(missingBucket, ct: ct).ToListAsync(ct));
         await _store.DeleteAsync(missingBucket, "nothing", ct);
         await _store.DeletePrefixAsync(missingBucket, "x/", ct);
 
         await _store.PutAsync(_bucket, "present", new MemoryStream("x"u8.ToArray()), ct: ct);
-        (await _store.OpenReadAsync(_bucket, "absent", ct)).Should().BeNull();
+        Assert.Null(await _store.OpenReadAsync(_bucket, "absent", ct));
         await _store.DeleteAsync(_bucket, "absent", ct);
     }
 
@@ -117,12 +117,12 @@ public sealed class ObjectStoreContractTests(ObjectStoreServerFixture server) : 
             await _store.PutAsync(_bucket, $"asset-a/{i:D4}", new MemoryStream([1]), ct: token));
         await _store.PutAsync(_bucket, "asset-b/keep", new MemoryStream([1]), ct: ct);
 
-        (await _store.ListKeysAsync(_bucket, ct: ct).ToListAsync(ct)).Should().HaveCount(count + 1);
-        (await _store.ListBucketsAsync(ct).ToListAsync(ct)).Should().Contain(_bucket);
+        Assert.Equal(count + 1, (await _store.ListKeysAsync(_bucket, ct: ct).ToListAsync(ct)).Count);
+        Assert.Contains(_bucket, await _store.ListBucketsAsync(ct).ToListAsync(ct));
 
         await _store.DeletePrefixAsync(_bucket, "asset-a/", ct);
 
-        (await _store.ListKeysAsync(_bucket, ct: ct).ToListAsync(ct)).Should().Equal("asset-b/keep");
+        Assert.Equal(new string[] { "asset-b/keep" }, await _store.ListKeysAsync(_bucket, ct: ct).ToListAsync(ct));
     }
 
     [Fact]
@@ -135,9 +135,9 @@ public sealed class ObjectStoreContractTests(ObjectStoreServerFixture server) : 
         var report = await host.Services.GetRequiredService<HealthCheckService>().CheckHealthAsync(ct);
         var goodReport = await server.Services.GetRequiredService<HealthCheckService>().CheckHealthAsync(ct);
 
-        await ping.Should().ThrowAsync<Exception>();
-        report.Status.Should().Be(HealthStatus.Unhealthy);
-        goodReport.Status.Should().Be(HealthStatus.Healthy);
+        await Assert.ThrowsAnyAsync<Exception>(ping);
+        Assert.Equal(HealthStatus.Unhealthy, report.Status);
+        Assert.Equal(HealthStatus.Healthy, goodReport.Status);
     }
 
     private static async Task<string> ReadAllAsync(Stream stream, CancellationToken ct)

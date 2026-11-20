@@ -1,7 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Sentium.Nuntius.Contracts;
 using Sentium.Tests.Integration.Common;
@@ -33,20 +32,21 @@ public sealed class DeviceNotificationStreamTests(MonolithWebApplicationFactory 
 
         using var request = new HttpRequestMessage(HttpMethod.Get, "/api/nuntius/devices/stream");
         using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
-        response.Content.Headers.ContentType!.MediaType.Should().Be("text/event-stream");
+        Assert.Equal("text/event-stream", response.Content.Headers.ContentType!.MediaType);
         using var reader = new StreamReader(await response.Content.ReadAsStreamAsync(timeout.Token));
-        (await ReadFrameAsync(reader, timeout.Token)).GetProperty("type").GetString().Should().Be("connected");
+        Assert.Equal("connected", (await ReadFrameAsync(reader, timeout.Token)).GetProperty("type").GetString());
 
         await Notifier.NotifyAsync(NotificationRecipient.User(bob), Message("For Bob"), Ct);
         await Notifier.NotifyAsync(NotificationRecipient.User(alice), Message("For Alice"), Ct);
 
         var frame = await ReadFrameAsync(reader, timeout.Token);
-        frame.GetProperty("type").GetString().Should().Be("notification");
+        Assert.Equal("notification", frame.GetProperty("type").GetString());
         var data = frame.GetProperty("data");
-        data.GetProperty("title").GetString().Should().Be("For Alice");
-        data.GetProperty("body").GetString().Should().Be("Body");
-        data.GetProperty("link").GetString().Should().Be("/vigil");
-        data.GetProperty("readAt").ValueKind.Should().Be(JsonValueKind.Null, "the Satelles app toasts only unread Notifications");
+        Assert.Equal("For Alice", data.GetProperty("title").GetString());
+        Assert.Equal("Body", data.GetProperty("body").GetString());
+        Assert.Equal("/vigil", data.GetProperty("link").GetString());
+        // the Satelles app toasts only unread Notifications
+        Assert.Equal(JsonValueKind.Null, data.GetProperty("readAt").ValueKind);
     }
 
     [Fact]
@@ -61,7 +61,7 @@ public sealed class DeviceNotificationStreamTests(MonolithWebApplicationFactory 
         await Notifier.NotifyAsync(NotificationRecipient.User(Guid.NewGuid()), Message("Someone else's"), Ct);
 
         var body = await client.GetFromJsonAsync<Dictionary<string, int>>("/api/nuntius/devices/unread-count", Ct);
-        body.Should().BeEquivalentTo(new Dictionary<string, int> { ["count"] = 2 });
+        Assert.Equivalent(new Dictionary<string, int> { ["count"] = 2 }, body);
     }
 
     [Fact]
@@ -79,10 +79,11 @@ public sealed class DeviceNotificationStreamTests(MonolithWebApplicationFactory 
         using var reader = new StreamReader(await response.Content.ReadAsStreamAsync(timeout.Token));
         await ReadFrameAsync(reader, timeout.Token);
 
-        (await portal.DeleteAsync($"/api/identity/devices/{device.DeviceId}", Ct)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        Assert.Equal(HttpStatusCode.NoContent, (await portal.DeleteAsync($"/api/identity/devices/{device.DeviceId}", Ct)).StatusCode);
 
         var closed = async () => await ReadFrameAsync(reader, timeout.Token);
-        await closed.Should().ThrowAsync<EndOfStreamException>("the server ends the stream of a removed Device");
+        // the server ends the stream of a removed Device
+        await Assert.ThrowsAnyAsync<EndOfStreamException>(closed);
     }
 
     private async Task<Sentium.Identity.Features.Devices.PairDeviceResponse> PairAsync(Guid owner, string name)

@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Sentium.Core.Results;
 using Sentium.Infrastructure.Security;
@@ -29,8 +28,10 @@ public sealed class SandboxHistoryIsolationTests(MonolithWebApplicationFactory f
 
         var page = await ClientFor(alice).GetFromJsonAsync<PagedResponse<SandboxExecutionLogRecord>>("/api/sandbox/executions?pageSize=100", Ct);
 
-        page!.Items.Select(r => r.JobId).Should().Contain(aliceRun.JobId).And.NotContain(bobRun.JobId);
-        (await ClientFor(alice).GetAsync($"/api/sandbox/executions/{bobRun.JobId}", Ct)).StatusCode.Should().Be(HttpStatusCode.NotFound);
+        var actual = page!.Items.Select(r => r.JobId);
+        Assert.Contains(aliceRun.JobId, actual);
+        Assert.DoesNotContain(bobRun.JobId, actual);
+        Assert.Equal(HttpStatusCode.NotFound, (await ClientFor(alice).GetAsync($"/api/sandbox/executions/{bobRun.JobId}", Ct)).StatusCode);
     }
 
     [Fact]
@@ -40,7 +41,7 @@ public sealed class SandboxHistoryIsolationTests(MonolithWebApplicationFactory f
 
         var response = await ClientFor(Guid.NewGuid()).GetAsync($"/api/sandbox/artifacts/{bobRun.JobId:N}/result.csv", Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     private HttpClient ClientFor(Guid userId)

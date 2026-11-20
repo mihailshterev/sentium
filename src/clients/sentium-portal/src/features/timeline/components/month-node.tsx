@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { SharedLayoutIndicator } from "@/shared/ui/motion";
 import styles from "../timeline.module.css";
 import type { MonthSummary } from "../types/timeline";
 import { MONTH_NAMES, type MonthState } from "../utils/calendar";
@@ -46,7 +46,7 @@ export function MonthNode({ year, month, summary, state, selected, position, onS
       data-testid={`timeline-month-${year}-${month}`}
       onClick={() => onSelect(year, month)}
     >
-      {selected && <motion.span layoutId="timeline-selected-node" className={styles.nodeHalo} aria-hidden="true" />}
+      {selected && <SharedLayoutIndicator layoutId="timeline-selected-node" className={styles.nodeHalo} aria-hidden="true" />}
       <svg className={styles.nodeRing} viewBox="0 0 40 40" aria-hidden="true">
         <circle className={styles.ringTrack} cx="20" cy="20" r="17" />
         {total > 0 && (

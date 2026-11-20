@@ -1,4 +1,3 @@
-using FluentAssertions;
 using NSubstitute;
 using Sentium.Praxis.Common;
 using Sentium.Praxis.Features.WorkflowManagement;
@@ -14,11 +13,11 @@ public sealed class TextSearchTests
     [InlineData("   ", null)]
     [InlineData("  trip  ", "trip")]
     public void Normalize_TrimsAndDropsBlankTerms(string? input, string? expected)
-        => TextSearch.Normalize(input).Should().Be(expected);
+        => Assert.Equal(expected, TextSearch.Normalize(input));
 
     [Fact]
     public void Normalize_CutsOverlongTerms()
-        => TextSearch.Normalize(new string('a', TextSearch.MaxTermLength + 50))!.Length.Should().Be(TextSearch.MaxTermLength);
+        => Assert.Equal(TextSearch.MaxTermLength, TextSearch.Normalize(new string('a', TextSearch.MaxTermLength + 50))!.Length);
 
     [Theory]
     [InlineData("trip", "%trip%")]
@@ -26,7 +25,7 @@ public sealed class TextSearchTests
     [InlineData("a_b", @"%a\_b%")]
     [InlineData(@"c:\temp", @"%c:\\temp%")]
     public void ToContainsPattern_EscapesLikeWildcards(string term, string expected)
-        => TextSearch.ToContainsPattern(term).Should().Be(expected);
+        => Assert.Equal(expected, TextSearch.ToContainsPattern(term));
 
     [Fact]
     public async Task WorkflowRuns_ForwardsSearch_ToRepository()

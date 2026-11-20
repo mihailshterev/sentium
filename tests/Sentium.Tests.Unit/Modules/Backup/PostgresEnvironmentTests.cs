@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Sentium.Backup.Tools;
 using Xunit;
 
@@ -11,14 +10,14 @@ public sealed class PostgresEnvironmentTests
     {
         var variables = PostgresEnvironment.ToLibpqVariables("Host=postgres;Port=5432;Username=postgres;Password=secret;Database=sentiumdb");
 
-        variables.Should().BeEquivalentTo(new Dictionary<string, string>
+        Assert.Equivalent(new Dictionary<string, string>
         {
             ["PGHOST"] = "postgres",
             ["PGPORT"] = "5432",
             ["PGUSER"] = "postgres",
             ["PGPASSWORD"] = "secret",
             ["PGDATABASE"] = "sentiumdb",
-        });
+        }, variables);
     }
 
     [Fact]
@@ -26,7 +25,7 @@ public sealed class PostgresEnvironmentTests
     {
         var variables = PostgresEnvironment.ToLibpqVariables("Host=db;Username=u;Password=\"a;b=c\";Database=sentiumdb");
 
-        variables["PGPASSWORD"].Should().Be("a;b=c");
-        variables.Should().NotContainKey("PGPORT");
+        Assert.Equal("a;b=c", variables["PGPASSWORD"]);
+        Assert.DoesNotContain("PGPORT", variables);
     }
 }

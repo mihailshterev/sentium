@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Sentium.Memoria.Features.Parsing;
 using Xunit;
 
@@ -22,9 +21,9 @@ public sealed class MarkdownNoteParserTests
 
         var parsed = MarkdownNoteParser.Parse("Projects/Sentium.md", note);
 
-        parsed.Tags.Should().Equal("project", "area/health");
-        parsed.Aliases.Should().Equal("Sentium", "The Brain");
-        parsed.FrontmatterJson.Should().Contain("\"status\":\"active\"");
+        Assert.Equal(new string[] { "project", "area/health" }, parsed.Tags);
+        Assert.Equal(new string[] { "Sentium", "The Brain" }, parsed.Aliases);
+        Assert.Contains("\"status\":\"active\"", parsed.FrontmatterJson, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -41,7 +40,7 @@ public sealed class MarkdownNoteParserTests
 
         var parsed = MarkdownNoteParser.Parse("a.md", note);
 
-        parsed.Tags.Should().Equal("sentium/memoria");
+        Assert.Equal(new string[] { "sentium/memoria" }, parsed.Tags);
     }
 
     [Fact]
@@ -51,11 +50,7 @@ public sealed class MarkdownNoteParserTests
 
         var parsed = MarkdownNoteParser.Parse("x.md", note);
 
-        parsed.Links.Select(l => (l.TargetKey, l.Heading, l.IsEmbed)).Should().Equal(
-            ("note a", null, false),
-            ("folder/note b", "Intro", false),
-            ("diagram", null, true),
-            ("note c", null, false));
+        Assert.Equal(new (string TargetKey, string? Heading, bool IsEmbed)[] { ("note a", null, false), ("folder/note b", "Intro", false), ("diagram", null, true), ("note c", null, false) }, parsed.Links.Select(l => (l.TargetKey, l.Heading, l.IsEmbed)));
     }
 
     [Fact]
@@ -73,7 +68,7 @@ public sealed class MarkdownNoteParserTests
 
         var parsed = MarkdownNoteParser.Parse("x.md", note);
 
-        parsed.Links.Select(l => l.TargetKey).Should().Equal("kept");
+        Assert.Equal(new string[] { "kept" }, parsed.Links.Select(l => l.TargetKey));
     }
 
     [Fact]
@@ -83,9 +78,7 @@ public sealed class MarkdownNoteParserTests
 
         var parsed = MarkdownNoteParser.Parse("Areas/Health/Today.md", note);
 
-        parsed.Links.Select(l => (l.TargetKey, l.Heading)).Should().Equal(
-            ("areas/other note", null),
-            ("areas/health/sibling", "Part"));
+        Assert.Equal(new (string TargetKey, string? Heading)[] { ("areas/other note", null), ("areas/health/sibling", "Part") }, parsed.Links.Select(l => (l.TargetKey, l.Heading)));
     }
 
     [Fact]
@@ -106,11 +99,7 @@ public sealed class MarkdownNoteParserTests
 
         var parsed = MarkdownNoteParser.Parse("x.md", note);
 
-        parsed.Sections.Select(s => (string.Join(" > ", s.HeadingPath), s.Text)).Should().Equal(
-            (string.Empty, "Intro text."),
-            ("Goals", "Ship it."),
-            ("Goals > Q1", "Memoria with the vault."),
-            ("Notes", "Done."));
+        Assert.Equal(new (string, string Text)[] { (string.Empty, "Intro text."), ("Goals", "Ship it."), ("Goals > Q1", "Memoria with the vault."), ("Notes", "Done.") }, parsed.Sections.Select(s => (string.Join(" > ", s.HeadingPath), s.Text)));
     }
 
     [Fact]
@@ -125,14 +114,13 @@ public sealed class MarkdownNoteParserTests
 
         var parsed = MarkdownNoteParser.Parse("x.md", note);
 
-        parsed.Tags.Should().Equal("kept");
-        parsed.FrontmatterJson.Should().BeNull();
+        Assert.Equal(new string[] { "kept" }, parsed.Tags);
+        Assert.Null(parsed.FrontmatterJson);
     }
 
     [Fact]
     public void SimplifyLinks_ShowsAliasOrTitle()
     {
-        MarkdownNoteParser.SimplifyLinks("[[a/b/Target|Shown]] and [[a/b/Target#Part]] and [[Plain]]")
-            .Should().Be("Shown and Target > Part and Plain");
+        Assert.Equal("Shown and Target > Part and Plain", MarkdownNoteParser.SimplifyLinks("[[a/b/Target|Shown]] and [[a/b/Target#Part]] and [[Plain]]"));
     }
 }

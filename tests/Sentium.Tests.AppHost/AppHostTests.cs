@@ -1,7 +1,6 @@
 using Aspire.Hosting;
 using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.Testing;
-using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Sentium.Core.Constants;
 using Xunit;
@@ -21,8 +20,8 @@ public sealed class AppHostTests
         await using var app = await appHost.BuildAsync(ct);
 
         // Assert
-        appHost.Should().NotBeNull();
-        app.Should().NotBeNull();
+        Assert.NotNull(appHost);
+        Assert.NotNull(app);
     }
 
     [Fact]
@@ -37,13 +36,13 @@ public sealed class AppHostTests
         var resourceNames = appHost.Resources.Select(r => r.Name).ToList();
 
         // Assert - the modular monolith, the isolated sandbox and the shared infrastructure.
-        resourceNames.Should().Contain(ServiceNames.Web);
-        resourceNames.Should().Contain(ServiceNames.Sandbox);
-        resourceNames.Should().Contain(ServiceNames.Frontend);
-        resourceNames.Should().Contain(ResourceNames.Postgres);
-        resourceNames.Should().Contain(ResourceNames.SentiumDb);
-        resourceNames.Should().Contain([ResourceNames.Llm, ResourceNames.Embeddings, ResourceNames.ModelsInit]);
-        resourceNames.Should().Contain(ResourceNames.Searxng);
+        Assert.Contains(ServiceNames.Web, resourceNames);
+        Assert.Contains(ServiceNames.Sandbox, resourceNames);
+        Assert.Contains(ServiceNames.Frontend, resourceNames);
+        Assert.Contains(ResourceNames.Postgres, resourceNames);
+        Assert.Contains(ResourceNames.SentiumDb, resourceNames);
+        Assert.All(new[] { ResourceNames.Llm, ResourceNames.Embeddings, ResourceNames.ModelsInit }, expected => Assert.Contains(expected, resourceNames));
+        Assert.Contains(ResourceNames.Searxng, resourceNames);
     }
 
     [Fact]
@@ -58,7 +57,7 @@ public sealed class AppHostTests
             .Annotations.OfType<ContainerImageAnnotation>().Single();
 
         // Assert - the search backend is a supply-chain input too.
-        image.SHA256.Should().MatchRegex("^[0-9a-f]{64}$");
+        Assert.Matches("^[0-9a-f]{64}$", image.SHA256);
     }
 
     [Fact]
@@ -73,10 +72,10 @@ public sealed class AppHostTests
         var configuration = await ExecutionConfigurationBuilder.Create(sandbox)
             .WithEnvironmentVariablesConfig()
             .BuildAsync(new DistributedApplicationExecutionContext(DistributedApplicationOperation.Publish), NullLogger.Instance, ct);
-        var env = configuration.EnvironmentVariables;
+        var env = configuration.EnvironmentVariables.ToDictionary();
 
         // Assert - MCP containers may use only the internal network that SearXNG shares.
-        env.Should().Contain(EnvConfig.Keys.SandboxMcp.AllowedNetwork, "sentium-egress");
+        Assert.Equal("sentium-egress", Assert.Contains(EnvConfig.Keys.SandboxMcp.AllowedNetwork, env));
     }
 
     [Fact]
@@ -93,8 +92,9 @@ public sealed class AppHostTests
             .ToList();
 
         // Assert - model-serving images are supply-chain inputs: a tag alone could be re-pointed.
-        images.Should().HaveCount(3);
-        images.Should().AllSatisfy(i => i.Image.SHA256.Should().MatchRegex("^[0-9a-f]{64}$", $"{i.Name} must be pinned by digest"));
+        Assert.Equal(3, images.Count);
+        // Every image must be pinned by digest.
+        Assert.All(images, i => Assert.Matches("^[0-9a-f]{64}$", i.Image.SHA256));
     }
 
     [Fact]
@@ -109,17 +109,14 @@ public sealed class AppHostTests
         var configuration = await ExecutionConfigurationBuilder.Create(web)
             .WithEnvironmentVariablesConfig()
             .BuildAsync(new DistributedApplicationExecutionContext(DistributedApplicationOperation.Publish), NullLogger.Instance, ct);
-        var env = configuration.EnvironmentVariables;
+        var env = configuration.EnvironmentVariables.ToDictionary();
 
         // Assert - chat goes to the llm router, embeddings to their own server, both with the shared API key.
-        env.Should().ContainKey(EnvConfig.Keys.Inference.ChatEndpoint)
-            .WhoseValue.Should().Contain($"{{{ResourceNames.Llm}.bindings.http.url}}");
-        env.Should().ContainKey(EnvConfig.Keys.Inference.EmbeddingEndpoint)
-            .WhoseValue.Should().Contain($"{{{ResourceNames.Embeddings}.bindings.http.url}}");
-        env.Should().ContainKey(EnvConfig.Keys.Inference.ApiKey)
-            .WhoseValue.Should().Contain("llm-api-key");
-        env.Should().Contain(EnvConfig.Keys.Inference.DefaultModel, AIModels.Gemma4_E4B);
-        env.Should().Contain(EnvConfig.Keys.Inference.EmbeddingModelName, AIModels.EmbeddingGemma2);
+        Assert.Contains($"{{{ResourceNames.Llm}.bindings.http.url}}", Assert.Contains(EnvConfig.Keys.Inference.ChatEndpoint, env), StringComparison.Ordinal);
+        Assert.Contains($"{{{ResourceNames.Embeddings}.bindings.http.url}}", Assert.Contains(EnvConfig.Keys.Inference.EmbeddingEndpoint, env), StringComparison.Ordinal);
+        Assert.Contains("llm-api-key", Assert.Contains(EnvConfig.Keys.Inference.ApiKey, env), StringComparison.Ordinal);
+        Assert.Equal(AIModels.Gemma4_E4B, Assert.Contains(EnvConfig.Keys.Inference.DefaultModel, env));
+        Assert.Equal(AIModels.EmbeddingGemma2, Assert.Contains(EnvConfig.Keys.Inference.EmbeddingModelName, env));
     }
 
     [Fact]
@@ -134,19 +131,17 @@ public sealed class AppHostTests
         // Act
         var backupEnv = (await ExecutionConfigurationBuilder.Create(resources.Single(r => r.Name == ResourceNames.Backup))
             .WithEnvironmentVariablesConfig()
-            .BuildAsync(context, NullLogger.Instance, ct)).EnvironmentVariables;
+            .BuildAsync(context, NullLogger.Instance, ct)).EnvironmentVariables.ToDictionary();
         var webEnv = (await ExecutionConfigurationBuilder.Create(resources.Single(r => r.Name == ServiceNames.Web))
             .WithEnvironmentVariablesConfig()
-            .BuildAsync(context, NullLogger.Instance, ct)).EnvironmentVariables;
+            .BuildAsync(context, NullLogger.Instance, ct)).EnvironmentVariables.ToDictionary();
 
         // Assert - the sidecar dumps sentiumdb and copies the blobs; Sentium.Web probes it and offers "back up now".
-        backupEnv.Should().ContainKey($"ConnectionStrings__{ResourceNames.SentiumDb}");
-        backupEnv.Should().ContainKey($"ConnectionStrings__{ResourceNames.WorkspaceBlobs}");
-        appHost.Resources.OfType<IResourceWithConnectionString>().Single(r => r.Name == ResourceNames.WorkspaceBlobs)
-            .ConnectionStringExpression.ValueExpression.Should()
-            .Be($"Endpoint={{{ResourceNames.Storage}.bindings.http.url}};AccessKey={{storage-access-key.value}};SecretKey={{storage-secret-key.value}}");
-        backupEnv.Should().ContainKey(EnvConfig.Keys.InternalApiKey);
-        webEnv.Should().ContainKey(EnvConfig.Keys.Backup.Endpoint)
-            .WhoseValue.Should().Contain($"{{{ResourceNames.Backup}.bindings.http.url}}");
+        Assert.Contains($"ConnectionStrings__{ResourceNames.SentiumDb}", backupEnv);
+        Assert.Contains($"ConnectionStrings__{ResourceNames.WorkspaceBlobs}", backupEnv);
+        Assert.Equal($"Endpoint={{{ResourceNames.Storage}.bindings.http.url}};AccessKey={{storage-access-key.value}};SecretKey={{storage-secret-key.value}}", appHost.Resources.OfType<IResourceWithConnectionString>().Single(r => r.Name == ResourceNames.WorkspaceBlobs)
+            .ConnectionStringExpression.ValueExpression);
+        Assert.Contains(EnvConfig.Keys.InternalApiKey, backupEnv);
+        Assert.Contains($"{{{ResourceNames.Backup}.bindings.http.url}}", Assert.Contains(EnvConfig.Keys.Backup.Endpoint, webEnv), StringComparison.Ordinal);
     }
 }

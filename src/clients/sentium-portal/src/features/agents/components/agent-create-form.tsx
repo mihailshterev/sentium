@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { zodResolver } from "@/shared/forms/zod-resolver";
 import { Plus } from "lucide-react";
 import styles from "../agents.module.css";
 import { Button } from "@/shared/ui/button";

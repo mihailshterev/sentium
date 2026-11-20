@@ -1,5 +1,4 @@
 using System.Text.Json;
-using FluentAssertions;
 using Microsoft.Agents.AI;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.Extensions.AI;
@@ -43,15 +42,15 @@ public sealed class McpToolFunctionTests
     {
         var function = CreateFunction();
 
-        AgentToolFunction.TryGetClassification(function, out var resource, out var action).Should().BeTrue();
-        resource.Should().Be("External");
-        action.Should().Be("Execute");
+        Assert.True(AgentToolFunction.TryGetClassification(function, out var resource, out var action));
+        Assert.Equal("External", resource);
+        Assert.Equal("Execute", action);
 
-        AgentToolFunction.TryGetResourceId(function, out var resourceId).Should().BeTrue();
-        resourceId.Should().Be("mcp:docs/search");
+        Assert.True(AgentToolFunction.TryGetResourceId(function, out var resourceId));
+        Assert.Equal("mcp:docs/search", resourceId);
 
-        function.Name.Should().Be("docs__search");
-        function.JsonSchema.GetProperty("properties").TryGetProperty("query", out _).Should().BeTrue();
+        Assert.Equal("docs__search", function.Name);
+        Assert.True(function.JsonSchema.GetProperty("properties").TryGetProperty("query", out _));
     }
 
     [Fact]
@@ -59,8 +58,8 @@ public sealed class McpToolFunctionTests
     {
         AIFunction wrapped = new ApprovalRequiredAIFunction(CreateFunction());
 
-        AgentToolFunction.TryGetClassification(wrapped, out var resource, out _).Should().BeTrue();
-        resource.Should().Be("External");
+        Assert.True(AgentToolFunction.TryGetClassification(wrapped, out var resource, out _));
+        Assert.Equal("External", resource);
     }
 
     [Fact]
@@ -76,9 +75,9 @@ public sealed class McpToolFunctionTests
             ["exfiltrate_to"] = "https://evil.example",
         }), Ct);
 
-        result.Should().Be("first\nsecond");
-        sent.Should().NotBeNull();
-        sent!.Keys.Should().BeEquivalentTo(["query"]);
+        Assert.Equal("first\nsecond", result);
+        Assert.NotNull(sent);
+        Assert.Equivalent(new[] { "query" }, sent!.Keys);
     }
 
     [Fact]
@@ -93,8 +92,9 @@ public sealed class McpToolFunctionTests
         var error = await CreateFunction().InvokeAsync(new AIFunctionArguments(), Ct);
         var truncated = (string)(await CreateFunction().InvokeAsync(new AIFunctionArguments(), Ct))!;
 
-        error.Should().Be("[MCP tool error] bad query");
-        truncated.Should().StartWith(new string('a', 1_000)).And.Contain("[truncated");
+        Assert.Equal("[MCP tool error] bad query", error);
+        Assert.StartsWith(new string('a', 1_000), truncated, StringComparison.Ordinal);
+        Assert.Contains("[truncated", truncated, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -105,7 +105,7 @@ public sealed class McpToolFunctionTests
 
         var result = await CreateFunction().InvokeAsync(new AIFunctionArguments(), Ct);
 
-        result.Should().Be("[MCP tool error] 'docs__search' failed: connection refused");
+        Assert.Equal("[MCP tool error] 'docs__search' failed: connection refused", result);
     }
 
     [Fact]
@@ -115,8 +115,8 @@ public sealed class McpToolFunctionTests
 
         var result = await CreateFunction().InvokeAsync(new AIFunctionArguments(), Ct);
 
-        result.Should().BeOfType<string>().Which.Should().Contain("disabled");
-        _invoker.ReceivedCalls().Should().BeEmpty();
+        Assert.Contains("disabled", Assert.IsType<string>(result), StringComparison.Ordinal);
+        Assert.Empty(_invoker.ReceivedCalls());
     }
 
     [Fact]
@@ -132,8 +132,8 @@ public sealed class McpToolFunctionTests
             StructuredContent = JsonDocument.Parse("""{"temperature":21}""").RootElement.Clone(),
         }, 1_000);
 
-        mixed.Should().Be("chart:\n[image: image/png]");
-        structured.Should().Be("""{"temperature":21}""");
+        Assert.Equal("chart:\n[image: image/png]", mixed);
+        Assert.Equal("""{"temperature":21}""", structured);
     }
 
     [Fact]
@@ -156,11 +156,12 @@ public sealed class McpToolFunctionTests
             (_, _) => ValueTask.FromResult<object?>("ok"),
             Ct);
 
-        captured.Should().NotBeNull();
-        captured!.ResourceType.Should().Be("External");
-        captured.Action.Should().Be("Execute");
-        captured.ResourceId.Should().Be("mcp:docs/search", "argument names of an external tool must not decide the resource id");
-        captured.Metadata.Should().ContainKey("payload").WhoseValue.Should().Contain("AKIAABCDEFGHIJKLMNOP");
+        Assert.NotNull(captured);
+        Assert.Equal("External", captured!.ResourceType);
+        Assert.Equal("Execute", captured.Action);
+        // argument names of an external tool must not decide the resource id
+        Assert.Equal("mcp:docs/search", captured.ResourceId);
+        Assert.Contains("AKIAABCDEFGHIJKLMNOP", Assert.Contains("payload", captured.Metadata), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -184,12 +185,15 @@ public sealed class McpToolFunctionTests
         var unattended = await host.CreateFactory().CreateAsync("Docs Bot", actingUserId: host.RunContext.UserId, allowApprovalTools: false, ct: Ct);
         await unattended.RunAsync("hi", await unattended.CreateSessionAsync(Ct), cancellationToken: Ct);
 
-        ToolNamesOf(host.Model.Requests[0].Options).Should().NotContain(n => n.Contains("__"), "'all tools' means all built-in tools");
+        // 'all tools' means all built-in tools
+        Assert.DoesNotContain(ToolNamesOf(host.Model.Requests[0].Options), n => n.Contains("__"));
 
-        ToolNamesOf(host.Model.Requests[1].Options).Should().Contain(["docs__search", "pages__delete_page"]);
-        host.Model.Requests[1].Options!.Instructions.Should().Contain(AgentInstructionsNotice);
+        Assert.All(new[] { "docs__search", "pages__delete_page" }, expected => Assert.Contains(expected, ToolNamesOf(host.Model.Requests[1].Options)));
+        Assert.Contains(AgentInstructionsNotice, host.Model.Requests[1].Options!.Instructions, StringComparison.Ordinal);
 
-        ToolNamesOf(host.Model.Requests[2].Options).Should().Contain("docs__search").And.NotContain("pages__delete_page");
+        var actual = ToolNamesOf(host.Model.Requests[2].Options);
+        Assert.Contains("docs__search", actual);
+        Assert.DoesNotContain("pages__delete_page", actual);
     }
 
     [Fact]
@@ -204,7 +208,7 @@ public sealed class McpToolFunctionTests
         var agent = await host.CreateFactory().CreateAsync("Docs Bot", actingUserId: host.RunContext.UserId, ct: Ct);
         await agent.RunAsync("hi", await agent.CreateSessionAsync(Ct), cancellationToken: Ct);
 
-        ToolNamesOf(host.Model.Requests.Single().Options).Should().NotContain("docs__search");
+        Assert.DoesNotContain("docs__search", ToolNamesOf(host.Model.Requests.Single().Options));
     }
 
     [Fact]
@@ -216,10 +220,11 @@ public sealed class McpToolFunctionTests
 
         var provider = new AgentToolProvider([], [catalog]);
 
-        provider.GetTools().Should().ContainSingle(t => t.Name == "docs__search" && t.Server == "Docs");
-        provider.Contains("docs__changed").Should().BeTrue("agents that still list a changed tool keep validating");
-        provider.Contains("nope__tool").Should().BeFalse();
-        provider.GetToolsForAgent("any", Ct).Should().BeEmpty("MCP tools are selected by name, never handed out wholesale");
+        Assert.Single(provider.GetTools(), t => t.Name == "docs__search" && t.Server == "Docs");
+        Assert.True(provider.Contains("docs__changed"), "agents that still list a changed tool keep validating");
+        Assert.False(provider.Contains("nope__tool"));
+        // MCP tools are selected by name, never handed out wholesale
+        Assert.Empty(provider.GetToolsForAgent("any", Ct));
     }
 
     [Fact]
@@ -229,11 +234,12 @@ public sealed class McpToolFunctionTests
 
         var protectedValue = protector.Protect(new Dictionary<string, string> { ["Authorization"] = "Bearer s3cret" });
 
-        protectedValue.Should().NotBeNull().And.NotContain("s3cret");
-        protector.Unprotect(protectedValue).Should().ContainKey("Authorization").WhoseValue.Should().Be("Bearer s3cret");
-        protector.GetNames(protectedValue).Should().Equal("Authorization");
-        protector.GetNames("not-a-protected-payload").Should().BeEmpty();
-        protector.Protect(new Dictionary<string, string>()).Should().BeNull();
+        Assert.NotNull(protectedValue);
+        Assert.DoesNotContain("s3cret", protectedValue, StringComparison.Ordinal);
+        Assert.Equal("Bearer s3cret", Assert.Contains("Authorization", protector.Unprotect(protectedValue)));
+        Assert.Equal(new string[] { "Authorization" }, protector.GetNames(protectedValue));
+        Assert.Empty(protector.GetNames("not-a-protected-payload"));
+        Assert.Null(protector.Protect(new Dictionary<string, string>()));
     }
 
     private static Sentium.Praxis.Features.Agents.AgentResponse DocsBot(params string[] tools) =>

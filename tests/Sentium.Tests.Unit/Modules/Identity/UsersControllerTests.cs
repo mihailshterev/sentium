@@ -1,5 +1,4 @@
 using System.Security.Claims;
-using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
@@ -44,7 +43,7 @@ public sealed class UsersControllerTests
         var result = await _controller.GetAllUsers(1, 20, ct);
 
         // Assert
-        result.Should().BeOfType<OkObjectResult>();
+        Assert.IsType<OkObjectResult>(result);
     }
 
     [Fact]
@@ -88,7 +87,7 @@ public sealed class UsersControllerTests
         var result = await _controller.GetUser(id, ct);
 
         // Assert
-        result.Should().BeOfType<OkObjectResult>();
+        Assert.IsType<OkObjectResult>(result);
     }
 
     [Fact]
@@ -103,7 +102,7 @@ public sealed class UsersControllerTests
         var result = await _controller.GetUser(id, ct);
 
         // Assert
-        result.Should().BeOfType<NotFoundResult>();
+        Assert.IsType<NotFoundResult>(result);
     }
 
     [Fact]
@@ -127,7 +126,7 @@ public sealed class UsersControllerTests
         var result = await _controller.DeleteUser(targetId, ct);
 
         // Assert
-        result.Should().BeOfType<NoContentResult>();
+        Assert.IsType<NoContentResult>(result);
     }
 
     [Fact]
@@ -152,7 +151,7 @@ public sealed class UsersControllerTests
         var result = await _controller.DeleteUser(targetId, ct);
 
         // Assert
-        result.Should().BeOfType<BadRequestObjectResult>();
+        Assert.IsType<BadRequestObjectResult>(result);
     }
 
     [Fact]
@@ -172,6 +171,6 @@ public sealed class UsersControllerTests
         var result = await _controller.DeleteUser(Guid.NewGuid(), ct);
 
         // Assert
-        result.Should().BeOfType<UnauthorizedResult>();
+        Assert.IsType<UnauthorizedResult>(result);
     }
 }

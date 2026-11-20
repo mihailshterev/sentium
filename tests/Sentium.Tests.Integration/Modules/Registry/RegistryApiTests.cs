@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using FluentAssertions;
 using Sentium.Registry.Contracts.Settings;
 using Sentium.Tests.Integration.Common;
 using Xunit;
@@ -18,7 +17,7 @@ public sealed class RegistryApiTests(MonolithWebApplicationFactory factory) : IC
     public async Task GetHarness_ReturnsOk_OnFirstCall()
     {
         var response = await _client.GetAsync("/api/registry/settings/harness", Ct);
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     [Fact]
@@ -27,9 +26,9 @@ public sealed class RegistryApiTests(MonolithWebApplicationFactory factory) : IC
         var response = await _client.GetAsync("/api/registry/settings/harness", Ct);
 
         var env = await response.Content.ReadFromJsonAsync<Envelope>(Ct);
-        env.Should().NotBeNull();
-        env!.Key.Should().Be("harness");
-        env.Value.Should().NotBeNull();
+        Assert.NotNull(env);
+        Assert.Equal("harness", env!.Key);
+        Assert.NotNull(env.Value);
     }
 
     [Fact]
@@ -39,9 +38,9 @@ public sealed class RegistryApiTests(MonolithWebApplicationFactory factory) : IC
 
         var response = await _client.PutAsJsonAsync("/api/registry/settings/harness", payload, Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var env = await response.Content.ReadFromJsonAsync<Envelope>(Ct);
-        env!.Value.UserHarnessPrompt.Should().Be("my custom prompt");
+        Assert.Equal("my custom prompt", env!.Value.UserHarnessPrompt);
     }
 
     [Fact]
@@ -54,13 +53,13 @@ public sealed class RegistryApiTests(MonolithWebApplicationFactory factory) : IC
         var getResponse = await _client.GetAsync("/api/registry/settings/harness", Ct);
         var env = await getResponse.Content.ReadFromJsonAsync<Envelope>(Ct);
 
-        env!.Value.UserHarnessPrompt.Should().Be(uniquePrompt);
+        Assert.Equal(uniquePrompt, env!.Value.UserHarnessPrompt);
     }
 
     [Fact]
     public async Task UnknownKey_Returns404()
     {
         var response = await _client.GetAsync("/api/registry/settings/does-not-exist", Ct);
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 }

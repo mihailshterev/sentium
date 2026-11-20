@@ -1,5 +1,4 @@
 using System.ComponentModel;
-using FluentAssertions;
 using Microsoft.Extensions.AI;
 using NSubstitute;
 using Sentium.Praxis.Contracts;
@@ -32,12 +31,13 @@ public sealed class CompositeAgentFactoryTests
         var agent = await _host.CreateFactory().CreateAsync(AgentRole.GeneralAssistant, ct: ct);
         await agent.RunAsync("How should I index vectors?", await agent.CreateSessionAsync(ct), cancellationToken: ct);
 
-        var request = _host.Model.Requests.Should().ContainSingle().Subject;
+        var request = Assert.Single(_host.Model.Requests);
 
-        request.Messages.Should().NotContain(m => m.Role == ChatRole.System, "the whole system prompt travels as ChatOptions.Instructions");
+        // the whole system prompt travels as ChatOptions.Instructions
+        Assert.DoesNotContain(request.Messages, m => m.Role == ChatRole.System);
 
         var instructions = request.Options!.Instructions;
-        instructions.Should().StartWith("### OPERATING PROTOCOL");
+        Assert.StartsWith("### OPERATING PROTOCOL", instructions, StringComparison.Ordinal);
 
         var harness = instructions!.IndexOf("### USER-DEFINED BEHAVIOUR", StringComparison.Ordinal);
         var role = instructions.IndexOf("### AGENT ROLE", StringComparison.Ordinal);
@@ -45,10 +45,10 @@ public sealed class CompositeAgentFactoryTests
         // The harness policy itself mentions the heading (rule 5), so locate the injected block by its last occurrence.
         var learnings = instructions.LastIndexOf("### RELEVANT PRIOR LEARNINGS", StringComparison.Ordinal);
 
-        harness.Should().BePositive();
-        role.Should().BeGreaterThan(harness);
-        learnings.Should().BeGreaterThan(role);
-        instructions.Should().Contain("Prefer pgvector HNSW indexes.");
+        Assert.True(harness > 0);
+        Assert.True(role > harness);
+        Assert.True(learnings > role);
+        Assert.Contains("Prefer pgvector HNSW indexes.", instructions, StringComparison.Ordinal);
 
         await _host.Learnings.Received(1).RecallRelevantAsync("How should I index vectors?", userId, Arg.Any<int>(), Arg.Any<CancellationToken>());
     }
@@ -62,14 +62,15 @@ public sealed class CompositeAgentFactoryTests
         var agent = await _host.CreateFactory().CreateAsync(AgentRole.GeneralAssistant, overrideModel: "qwen-override", ct: ct);
         await agent.RunAsync("hi", await agent.CreateSessionAsync(ct), cancellationToken: ct);
 
-        var options = _host.Model.Requests.Should().ContainSingle().Subject.Options!;
+        var options = Assert.Single(_host.Model.Requests).Options!;
 
-        options.ModelId.Should().Be("qwen-override");
-        options.AdditionalProperties.Should().BeNullOrEmpty("the context size is fixed per model by the inference server, not sent per request");
+        Assert.Equal("qwen-override", options.ModelId);
+        Assert.True(options.AdditionalProperties is null || options.AdditionalProperties.Count == 0, "the context size is fixed per model by the inference server, not sent per request");
         await _host.ContextWindows.Received().GetContextWindowAsync("qwen-override", Arg.Any<CancellationToken>());
 
-        var loadSkill = options.Tools.Should().ContainSingle(t => t.Name == "load_skill").Subject;
-        loadSkill.GetService<ApprovalRequiredAIFunction>().Should().BeNull("built-in and user skills are trusted; approval would stall workflows");
+        var loadSkill = Assert.Single(options.Tools!, t => t.Name == "load_skill");
+        // built-in and user skills are trusted; approval would stall workflows
+        Assert.Null(loadSkill.GetService<ApprovalRequiredAIFunction>());
     }
 
     [Fact]
@@ -81,7 +82,7 @@ public sealed class CompositeAgentFactoryTests
         var agent = await _host.CreateFactory().CreateAsync(AgentRole.GeneralAssistant, ct: ct);
         await agent.RunAsync("hi", await agent.CreateSessionAsync(ct), cancellationToken: ct);
 
-        _host.Model.Requests.Should().ContainSingle().Subject.Options!.ModelId.Should().Be(_host.Inference.DefaultModel);
+        Assert.Equal(_host.Inference.DefaultModel, Assert.Single(_host.Model.Requests).Options!.ModelId);
     }
 
     [Theory]
@@ -101,16 +102,16 @@ public sealed class CompositeAgentFactoryTests
         var agent = await _host.CreateFactory().CreateAsync(AgentRole.GeneralAssistant, ct: ct);
         await agent.RunAsync("save it", await agent.CreateSessionAsync(ct), cancellationToken: ct);
 
-        tool.Invocations.Should().Be(allowed ? 1 : 0);
+        Assert.Equal(allowed ? 1 : 0, tool.Invocations);
 
-        var toolResult = _host.Model.Requests[^1].Messages.SelectMany(m => m.Contents).OfType<FunctionResultContent>().Should().ContainSingle().Subject;
+        var toolResult = Assert.Single(_host.Model.Requests[^1].Messages.SelectMany(m => m.Contents).OfType<FunctionResultContent>());
         if (allowed)
         {
-            toolResult.Result?.ToString().Should().Be("saved");
+            Assert.Equal("saved", toolResult.Result?.ToString());
         }
         else
         {
-            toolResult.Result?.ToString().Should().Contain("[Access Denied by Security Policy] egress blocked");
+            Assert.Contains("[Access Denied by Security Policy] egress blocked", toolResult.Result?.ToString(), StringComparison.Ordinal);
         }
 
         await _host.Pdp.Received(1).EvaluateAsync(

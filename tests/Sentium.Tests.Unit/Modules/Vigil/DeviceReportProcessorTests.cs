@@ -1,4 +1,3 @@
-using FluentAssertions;
 using NSubstitute;
 using Sentium.Nuntius.Contracts;
 using Sentium.Vigil.Features.Devices;
@@ -34,8 +33,8 @@ public sealed class DeviceReportProcessorTests
     {
         var response = await _sut.ProcessAsync(_device, _owner, Report(), Ct);
 
-        response.NextReportSeconds.Should().Be(45);
-        _store.Get(_device)!.Report.MachineName.Should().Be("DESKTOP-1");
+        Assert.Equal(45, response.NextReportSeconds);
+        Assert.Equal("DESKTOP-1", _store.Get(_device)!.Report.MachineName);
     }
 
     [Fact]
@@ -45,10 +44,10 @@ public sealed class DeviceReportProcessorTests
 
         await _sut.ProcessAsync(_device, _owner, Report(), Ct);
 
-        subscription.Reader.TryRead(out var evt).Should().BeTrue();
-        evt!.Type.Should().Be(VigilFeedEventTypes.DeviceUpdated);
-        evt.AudienceUserId.Should().Be(_owner);
-        evt.Data.Should().BeOfType<DeviceUpdatedFrame>().Which.Id.Should().Be(_device);
+        Assert.True(subscription.Reader.TryRead(out var evt));
+        Assert.Equal(VigilFeedEventTypes.DeviceUpdated, evt!.Type);
+        Assert.Equal(_owner, evt.AudienceUserId);
+        Assert.Equal(_device, Assert.IsType<DeviceUpdatedFrame>(evt.Data).Id);
     }
 
     [Fact]

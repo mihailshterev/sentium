@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Sentium.Tempus.Common;
 using Xunit;
 
@@ -16,8 +15,7 @@ public sealed class ReminderScheduleTests
     public void ATimedEntry_FiresTheOffsetBeforeItsLocalTime()
     {
         // 14:30 in Sofia (UTC+2 in November), 90 minutes before.
-        ReminderSchedule.DueAt(new DateOnly(2026, 11, 20), new TimeOnly(14, 30), 2026, 11, 90, Sofia, DayStart)
-            .Should().Be(Utc(2026, 11, 20, 11, 0));
+        Assert.Equal(Utc(2026, 11, 20, 11, 0), ReminderSchedule.DueAt(new DateOnly(2026, 11, 20), new TimeOnly(14, 30), 2026, 11, 90, Sofia, DayStart));
     }
 
     [Theory]
@@ -26,22 +24,19 @@ public sealed class ReminderScheduleTests
     [InlineData(ReminderSchedule.WeekBefore, 13)]
     public void ADayEntry_FiresAtDayStart_OnTheChosenDay(int offset, int expectedDay)
     {
-        ReminderSchedule.DueAt(new DateOnly(2026, 11, 20), null, 2026, 11, offset, Sofia, DayStart)
-            .Should().Be(Utc(2026, 11, expectedDay, 6, 0));
+        Assert.Equal(Utc(2026, 11, expectedDay, 6, 0), ReminderSchedule.DueAt(new DateOnly(2026, 11, 20), null, 2026, 11, offset, Sofia, DayStart));
     }
 
     [Fact]
     public void APinnedEntry_FiresOnTheFirstOfItsMonth_AtDayStart()
     {
-        ReminderSchedule.DueAt(null, null, 2027, 7, ReminderSchedule.WeekBefore, Sofia, DayStart)
-            .Should().Be(Utc(2027, 7, 1, 5, 0));
+        Assert.Equal(Utc(2027, 7, 1, 5, 0), ReminderSchedule.DueAt(null, null, 2027, 7, ReminderSchedule.WeekBefore, Sofia, DayStart));
     }
 
     [Fact]
     public void ALocalTimeInTheSpringForwardGap_MovesPastTheGap()
     {
         // Sofia skips 03:00-04:00 on 2027-03-28; 03:30 local does not exist and fires at 04:30 (01:30 UTC).
-        ReminderSchedule.DueAt(new DateOnly(2027, 3, 28), new TimeOnly(3, 30), 2027, 3, 0, Sofia, DayStart)
-            .Should().Be(Utc(2027, 3, 28, 1, 30));
+        Assert.Equal(Utc(2027, 3, 28, 1, 30), ReminderSchedule.DueAt(new DateOnly(2027, 3, 28), new TimeOnly(3, 30), 2027, 3, 0, Sofia, DayStart));
     }
 }

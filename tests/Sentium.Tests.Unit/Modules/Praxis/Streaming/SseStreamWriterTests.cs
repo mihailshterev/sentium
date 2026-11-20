@@ -1,6 +1,5 @@
 using System.Text;
 using System.Text.Json;
-using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging.Abstractions;
 using Sentium.Praxis.Common.Streaming;
@@ -29,10 +28,10 @@ public sealed class SseStreamWriterTests
     {
         await using var sse = await StartAsync();
 
-        _context.Response.ContentType.Should().Be("text/event-stream");
-        _context.Response.Headers.CacheControl.ToString().Should().Be("no-cache");
-        Output().Should().StartWith(":");
-        DataFrames().Should().BeEmpty();
+        Assert.Equal("text/event-stream", _context.Response.ContentType);
+        Assert.Equal("no-cache", _context.Response.Headers.CacheControl.ToString());
+        Assert.StartsWith(":", Output(), StringComparison.Ordinal);
+        Assert.Empty(DataFrames());
     }
 
     [Fact]
@@ -43,10 +42,10 @@ public sealed class SseStreamWriterTests
 
         await sse.WriteUpdateAsync(AgentUpdateTypes.Message, "Hello", ct);
 
-        var frame = DataFrames().Should().ContainSingle().Subject;
-        frame.GetProperty("type").GetString().Should().Be(AgentUpdateTypes.Message);
-        frame.GetProperty("message").GetProperty("content").GetString().Should().Be("Hello");
-        frame.GetProperty("done").GetBoolean().Should().BeFalse();
+        var frame = Assert.Single(DataFrames());
+        Assert.Equal(AgentUpdateTypes.Message, frame.GetProperty("type").GetString());
+        Assert.Equal("Hello", frame.GetProperty("message").GetProperty("content").GetString());
+        Assert.False(frame.GetProperty("done").GetBoolean());
     }
 
     [Fact]
@@ -59,9 +58,9 @@ public sealed class SseStreamWriterTests
         await sse.FailAsync("too late");
         await sse.WriteUpdateAsync(AgentUpdateTypes.Message, "too late", ct);
 
-        var frame = DataFrames().Should().ContainSingle().Subject;
-        frame.GetProperty("type").GetString().Should().Be(AgentUpdateTypes.Done);
-        frame.GetProperty("done").GetBoolean().Should().BeTrue();
+        var frame = Assert.Single(DataFrames());
+        Assert.Equal(AgentUpdateTypes.Done, frame.GetProperty("type").GetString());
+        Assert.True(frame.GetProperty("done").GetBoolean());
     }
 
     [Fact]
@@ -71,10 +70,10 @@ public sealed class SseStreamWriterTests
 
         await sse.FailAsync("boom");
 
-        var frame = DataFrames().Should().ContainSingle().Subject;
-        frame.GetProperty("type").GetString().Should().Be(AgentUpdateTypes.Error);
-        frame.GetProperty("message").GetString().Should().Be("boom");
-        frame.GetProperty("done").GetBoolean().Should().BeTrue();
+        var frame = Assert.Single(DataFrames());
+        Assert.Equal(AgentUpdateTypes.Error, frame.GetProperty("type").GetString());
+        Assert.Equal("boom", frame.GetProperty("message").GetString());
+        Assert.True(frame.GetProperty("done").GetBoolean());
     }
 
     [Fact]
@@ -85,7 +84,7 @@ public sealed class SseStreamWriterTests
 
         var fail = () => sse.FailAsync("boom");
 
-        await fail.Should().NotThrowAsync();
+        await fail();
     }
 
     [Fact]
@@ -103,14 +102,16 @@ public sealed class SseStreamWriterTests
             ct);
 
         var output = Output();
-        output.Should().Contain("id: 1\ndata: ").And.Contain("id: 3\ndata: ");
-        output.Should().NotContain("id: 2").And.NotContain("id: 4");
+        Assert.Contains("id: 1\ndata: ", output, StringComparison.Ordinal);
+        Assert.Contains("id: 3\ndata: ", output, StringComparison.Ordinal);
+        Assert.DoesNotContain("id: 2", output, StringComparison.Ordinal);
+        Assert.DoesNotContain("id: 4", output, StringComparison.Ordinal);
 
         var frames = DataFrames();
-        frames.Should().HaveCount(2);
-        frames[0].GetProperty("Author").GetString().Should().Be("Researcher");
-        frames[0].GetProperty("Text").GetString().Should().Be("hi");
-        frames[1].GetProperty("type").GetString().Should().Be(AgentUpdateTypes.Done);
+        Assert.Equal(2, frames.Count);
+        Assert.Equal("Researcher", frames[0].GetProperty("Author").GetString());
+        Assert.Equal("hi", frames[0].GetProperty("Text").GetString());
+        Assert.Equal(AgentUpdateTypes.Done, frames[1].GetProperty("type").GetString());
     }
 
     [Theory]
@@ -123,10 +124,10 @@ public sealed class SseStreamWriterTests
 
         await sse.ForwardAsync(Frames(new StreamFrame(7, new AgentStreamUpdate("System", "Run failed.", updateType))), ct);
 
-        var frame = DataFrames().Should().ContainSingle().Subject;
-        frame.GetProperty("type").GetString().Should().Be(expectedFrameType);
-        frame.GetProperty("done").GetBoolean().Should().BeTrue();
-        Output().Should().Contain("id: 7\n");
+        var frame = Assert.Single(DataFrames());
+        Assert.Equal(expectedFrameType, frame.GetProperty("type").GetString());
+        Assert.True(frame.GetProperty("done").GetBoolean());
+        Assert.Contains("id: 7\n", Output(), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -136,7 +137,7 @@ public sealed class SseStreamWriterTests
         await Task.Delay(TimeSpan.FromMilliseconds(250), TestContext.Current.CancellationToken);
         await sse.DisposeAsync();
 
-        Output().Should().Contain(": ping\n\n");
+        Assert.Contains(": ping\n\n", Output(), StringComparison.Ordinal);
     }
 
     private Task<SseStreamWriter> StartAsync() =>

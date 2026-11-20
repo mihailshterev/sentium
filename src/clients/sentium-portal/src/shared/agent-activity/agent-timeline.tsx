@@ -1,5 +1,5 @@
 import { useEffect, useId, useState, type ReactNode } from "react";
-import Markdown from "react-markdown";
+import { Markdown } from "@/shared/markdown";
 import { ChevronRight } from "lucide-react";
 import { Button } from "@/shared/ui/button";
 import styles from "./agent-timeline.module.css";

@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.AI.Evaluation;
 using Sentium.Probatio.Entities;
@@ -40,10 +39,10 @@ public sealed class QualityCheckGraderTests
 
         var outcome = await GradeAsync(judge, new EvalCheck(Enum.Parse<EvalCheckType>(type)));
 
-        outcome.Status.Should().Be(CheckOutcomeStatus.Passed, outcome.Reason);
-        outcome.Score.Should().Be(4);
-        outcome.Threshold.Should().Be(4);
-        outcome.Reason.Should().Contain("answers the question directly");
+        Assert.True(outcome.Status == CheckOutcomeStatus.Passed, outcome.Reason);
+        Assert.Equal(4, outcome.Score);
+        Assert.Equal(4, outcome.Threshold);
+        Assert.Contains("answers the question directly", outcome.Reason, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -52,8 +51,8 @@ public sealed class QualityCheckGraderTests
         using var judge = new FakeJudge(FakeJudge.Scored(4, "Fine."));
         var outcome = await GradeAsync(judge, new EvalCheck(EvalCheckType.Relevance, 5));
 
-        outcome.Status.Should().Be(CheckOutcomeStatus.Failed);
-        outcome.Threshold.Should().Be(5);
+        Assert.Equal(CheckOutcomeStatus.Failed, outcome.Status);
+        Assert.Equal(5, outcome.Threshold);
     }
 
     [Fact]
@@ -61,11 +60,11 @@ public sealed class QualityCheckGraderTests
     {
         using var groundedness = new FakeJudge(FakeJudge.Scored(5, "Grounded."));
         await GradeAsync(groundedness, new EvalCheck(EvalCheckType.Groundedness));
-        groundedness.LastPrompt.Should().Contain("milk, eggs");
+        Assert.Contains("milk, eggs", groundedness.LastPrompt, StringComparison.Ordinal);
 
         using var completeness = new FakeJudge(FakeJudge.Scored(5, "Complete."));
         await GradeAsync(completeness, new EvalCheck(EvalCheckType.Completeness));
-        completeness.LastPrompt.Should().Contain("Milk and eggs.");
+        Assert.Contains("Milk and eggs.", completeness.LastPrompt, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -82,7 +81,8 @@ public sealed class QualityCheckGraderTests
 
         await grader.GradeAsync(new EvalCheck(EvalCheckType.Relevance), Case(), request, new ChatResponse(new ChatMessage(ChatRole.Assistant, "Feed it.")), Ct);
 
-        judge.LastPrompt.Should().Contain("nail polish remover").And.Contain("So what should I do?");
+        Assert.Contains("nail polish remover", judge.LastPrompt, StringComparison.Ordinal);
+        Assert.Contains("So what should I do?", judge.LastPrompt, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -91,9 +91,9 @@ public sealed class QualityCheckGraderTests
         using var judge = new FakeJudge("I would rather not say.");
         var outcome = await GradeAsync(judge, new EvalCheck(EvalCheckType.Coherence));
 
-        outcome.Status.Should().Be(CheckOutcomeStatus.Failed);
-        outcome.Score.Should().BeNull();
-        outcome.Reason.Should().StartWith("The Judge gave no usable score");
+        Assert.Equal(CheckOutcomeStatus.Failed, outcome.Status);
+        Assert.Null(outcome.Score);
+        Assert.StartsWith("The Judge gave no usable score", outcome.Reason, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -102,8 +102,8 @@ public sealed class QualityCheckGraderTests
         using var judge = new FakeJudge(new HttpRequestException("connection refused"));
         var outcome = await GradeAsync(judge, new EvalCheck(EvalCheckType.Relevance));
 
-        outcome.Status.Should().Be(CheckOutcomeStatus.Failed);
-        outcome.Reason.Should().Contain("connection refused");
+        Assert.Equal(CheckOutcomeStatus.Failed, outcome.Status);
+        Assert.Contains("connection refused", outcome.Reason, StringComparison.Ordinal);
     }
 
     private sealed class FakeJudge : IChatClient

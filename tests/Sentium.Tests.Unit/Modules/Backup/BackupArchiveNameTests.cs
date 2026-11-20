@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Sentium.Backup.Archives;
 using Xunit;
 
@@ -13,7 +12,7 @@ public sealed class BackupArchiveNameTests
     {
         var startedLocal = new DateTimeOffset(2026, 11, 15, 5, 0, 0, TimeSpan.FromHours(2));
 
-        BackupArchiveName.Format(startedLocal, encrypted).Should().Be(expected);
+        Assert.Equal(expected, BackupArchiveName.Format(startedLocal, encrypted));
     }
 
     [Theory]
@@ -23,10 +22,10 @@ public sealed class BackupArchiveNameTests
     {
         var createdAt = new DateTimeOffset(2026, 11, 15, 3, 4, 5, TimeSpan.Zero);
 
-        BackupArchiveName.TryParse(BackupArchiveName.Format(createdAt, encrypted), out var archive).Should().BeTrue();
+        Assert.True(BackupArchiveName.TryParse(BackupArchiveName.Format(createdAt, encrypted), out var archive));
 
-        archive!.CreatedAt.Should().Be(createdAt);
-        archive.Encrypted.Should().Be(encrypted);
+        Assert.Equal(createdAt, archive!.CreatedAt);
+        Assert.Equal(encrypted, archive.Encrypted);
     }
 
     [Theory]
@@ -37,7 +36,7 @@ public sealed class BackupArchiveNameTests
     [InlineData("other-20261115T030000Z.tar")]
     public void TryParse_RejectsAnythingThatIsNotAFinishedArchive(string fileName)
     {
-        BackupArchiveName.TryParse(fileName, out _).Should().BeFalse();
+        Assert.False(BackupArchiveName.TryParse(fileName, out _));
     }
 
     [Fact]
@@ -45,7 +44,7 @@ public sealed class BackupArchiveNameTests
     {
         var partial = BackupArchiveName.Partial("sentium-20261115T030000Z.tar");
 
-        partial.Should().StartWith(".");
-        BackupArchiveName.TryParse(partial, out _).Should().BeFalse();
+        Assert.StartsWith(".", partial, StringComparison.Ordinal);
+        Assert.False(BackupArchiveName.TryParse(partial, out _));
     }
 }

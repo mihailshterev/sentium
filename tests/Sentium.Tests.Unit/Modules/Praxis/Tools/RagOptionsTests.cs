@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Sentium.Codex.Contracts;
 using Xunit;
 
@@ -8,5 +7,5 @@ public sealed class RagOptionsTests
 {
     [Fact]
     public void SearchCollections_DefaultsToEveryStoreIncludingVaultNotes()
-        => new RagOptions().SearchCollections.Should().BeEquivalentTo(new[] { "knowledge_base", "agent_learnings", "user_memories", "vault_notes" });
+        => Assert.Equivalent(new[] { "knowledge_base", "agent_learnings", "user_memories", "vault_notes" }, new RagOptions().SearchCollections);
 }

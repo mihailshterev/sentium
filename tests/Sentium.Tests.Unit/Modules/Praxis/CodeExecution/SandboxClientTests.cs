@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
@@ -95,9 +94,9 @@ public sealed class SandboxClientTests : IDisposable
 
         var result = await _sut.ExecuteAsync(MakeRequest(), "corr-1", ct);
 
-        result.JobId.Should().Be(run.JobId);
-        result.SentinelAuditId.Should().Be(auditId);
-        result.PolicyDenied.Should().BeFalse();
+        Assert.Equal(run.JobId, result.JobId);
+        Assert.Equal(auditId, result.SentinelAuditId);
+        Assert.False(result.PolicyDenied);
         await _executionLog.Received(1).AddAsync(
             Arg.Is<ExecutionLogEntry>(e => e.JobId == run.JobId && e.Succeeded && e.AgentId == "agent-1" && e.CorrelationId == "corr-1"
                 && e.Language == ExecutionLanguage.Python && e.SentinelAuditId == auditId),
@@ -143,11 +142,11 @@ public sealed class SandboxClientTests : IDisposable
 
         var result = await _sut.ExecuteAsync(MakeRequest(), "corr-4", ct);
 
-        result.PolicyDenied.Should().BeTrue();
-        result.Succeeded.Should().BeFalse();
-        result.PolicyDenialReason.Should().Be("blocked");
-        result.SentinelAuditId.Should().Be(auditId);
-        _handler.LastRequest.Should().BeNull();
+        Assert.True(result.PolicyDenied);
+        Assert.False(result.Succeeded);
+        Assert.Equal("blocked", result.PolicyDenialReason);
+        Assert.Equal(auditId, result.SentinelAuditId);
+        Assert.Null(_handler.LastRequest);
         await _executionLog.Received(1).AddAsync(
             Arg.Is<ExecutionLogEntry>(e => e.PolicyDenied && e.PolicyDenialReason == "blocked" && e.SentinelAuditId == auditId),
             Arg.Any<CancellationToken>());
@@ -160,8 +159,7 @@ public sealed class SandboxClientTests : IDisposable
 
         var act = async () => await _sut.ExecuteAsync(MakeRequest(language: "ruby"), "corr-6", ct);
 
-        (await act.Should().ThrowAsync<SandboxRejectedException>())
-            .Which.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        Assert.Equal(HttpStatusCode.BadRequest, (await Assert.ThrowsAnyAsync<SandboxRejectedException>(act)).StatusCode);
         await _pdp.DidNotReceive().EvaluateAsync(Arg.Any<PolicyEvaluationRequest>(), Arg.Any<CancellationToken>());
         await _executionLog.DidNotReceive().AddAsync(Arg.Any<ExecutionLogEntry>(), Arg.Any<CancellationToken>());
     }
@@ -175,8 +173,7 @@ public sealed class SandboxClientTests : IDisposable
 
         var act = async () => await _sut.ExecuteAsync(MakeRequest(), "corr-7", ct);
 
-        (await act.Should().ThrowAsync<SandboxRejectedException>())
-            .Which.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        Assert.Equal(HttpStatusCode.BadRequest, (await Assert.ThrowsAnyAsync<SandboxRejectedException>(act)).StatusCode);
         await _executionLog.DidNotReceive().AddAsync(Arg.Any<ExecutionLogEntry>(), Arg.Any<CancellationToken>());
     }
 
@@ -189,8 +186,8 @@ public sealed class SandboxClientTests : IDisposable
 
         await _sut.ExecuteAsync(MakeRequest(), "corr-8", ct);
 
-        _handler.LastRequest!.Headers.GetValues("X-Correlation-ID").Should().ContainSingle().Which.Should().Be("corr-8");
-        _handler.LastRequest.RequestUri!.AbsolutePath.Should().Be("/execute");
+        Assert.Equal("corr-8", Assert.Single(_handler.LastRequest!.Headers.GetValues("X-Correlation-ID")));
+        Assert.Equal("/execute", _handler.LastRequest.RequestUri!.AbsolutePath);
     }
 
     private sealed class StubHandler : HttpMessageHandler

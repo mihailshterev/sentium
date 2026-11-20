@@ -1,5 +1,4 @@
 using System.Text.Json;
-using FluentAssertions;
 using NSubstitute;
 using Sentium.Praxis.Contracts;
 using Sentium.Probatio.Entities;
@@ -56,12 +55,12 @@ public sealed class EvalSuiteValidatorTests
                 new EvalCheck(EvalCheckType.Completeness, 5),
             ]));
 
-        validator.Validate(request).IsValid.Should().BeTrue();
+        Assert.True(validator.Validate(request).IsValid);
     }
 
     [Fact]
     public void AcceptsASuiteWithoutCases()
-        => validator.Validate(new CreateEvalSuiteRequest("Empty for now", null, null)).IsValid.Should().BeTrue();
+        => Assert.True(validator.Validate(new CreateEvalSuiteRequest("Empty for now", null, null)).IsValid);
 
     [Fact]
     public void RejectsUnknownToolNames_InExpectedCallsAndCannedResults()
@@ -71,66 +70,65 @@ public sealed class EvalSuiteValidatorTests
             checks: new EvalCheck(EvalCheckType.ToolsCalled))));
         var canned = validator.Validate(Suite(Case(cannedToolResults: [new CannedToolResult("delete_everything", "ok")])));
 
-        expected.Errors.Should().Contain(e => e.ErrorMessage.Contains("Unknown tool 'delete_everything'"));
-        canned.Errors.Should().Contain(e => e.ErrorMessage.Contains("Unknown tool 'delete_everything'"));
+        Assert.Contains(expected.Errors, e => e.ErrorMessage.Contains("Unknown tool 'delete_everything'"));
+        Assert.Contains(canned.Errors, e => e.ErrorMessage.Contains("Unknown tool 'delete_everything'"));
     }
 
     [Fact]
     public void RejectsUnknownCheckTypes()
-        => validator.Validate(Suite(Case(checks: new EvalCheck((EvalCheckType)99)))).Errors
-            .Should().Contain(e => e.ErrorMessage == "Unknown Check type.");
+        => Assert.Contains(validator.Validate(Suite(Case(checks: new EvalCheck((EvalCheckType)99)))).Errors, e => e.ErrorMessage == "Unknown Check type.");
 
     [Fact]
     public void RejectsACaseWithoutChecks()
     {
         var request = Suite(new EvalCaseInput(null, null, "Hi", null, null, null, null, []));
 
-        validator.Validate(request).Errors.Should().Contain(e => e.ErrorMessage == "A case needs at least one Check.");
+        Assert.Contains(validator.Validate(request).Errors, e => e.ErrorMessage == "A case needs at least one Check.");
     }
 
     [Theory]
     [InlineData(nameof(EvalCheckType.ContainsExpectedAnswer))]
     [InlineData(nameof(EvalCheckType.Completeness))]
     public void RejectsAnswerChecks_WithoutAnExpectedAnswer(string type)
-        => validator.Validate(Suite(Case(checks: new EvalCheck(Enum.Parse<EvalCheckType>(type))))).IsValid.Should().BeFalse();
+        => Assert.False(validator.Validate(Suite(Case(checks: new EvalCheck(Enum.Parse<EvalCheckType>(type))))).IsValid);
 
     [Theory]
     [InlineData(nameof(EvalCheckType.ToolsCalled))]
     [InlineData(nameof(EvalCheckType.ToolArgumentsMatch))]
     public void RejectsToolChecks_WithoutExpectedToolCalls(string type)
-        => validator.Validate(Suite(Case(checks: new EvalCheck(Enum.Parse<EvalCheckType>(type))))).IsValid.Should().BeFalse();
+        => Assert.False(validator.Validate(Suite(Case(checks: new EvalCheck(Enum.Parse<EvalCheckType>(type))))).IsValid);
 
     [Fact]
     public void RejectsGroundedness_WithoutCannedToolResults()
     {
-        validator.Validate(Suite(Case(checks: new EvalCheck(EvalCheckType.Groundedness)))).IsValid.Should().BeFalse();
-        validator.Validate(Suite(Case(cannedToolResults: [new CannedToolResult(KnownTool, "milk")], checks: new EvalCheck(EvalCheckType.Groundedness))))
-            .IsValid.Should().BeTrue();
+        Assert.False(validator.Validate(Suite(Case(checks: new EvalCheck(EvalCheckType.Groundedness)))).IsValid);
+        Assert.True(validator.Validate(Suite(Case(cannedToolResults: [new CannedToolResult(KnownTool, "milk")], checks: new EvalCheck(EvalCheckType.Groundedness))))
+            .IsValid);
     }
 
     [Fact]
     public void RejectsThresholds_OnDeterministicChecks_AndOutOfRange()
     {
-        validator.Validate(Suite(Case(expectedAnswer: "milk", checks: new EvalCheck(EvalCheckType.ContainsExpectedAnswer, 3))))
-            .IsValid.Should().BeFalse();
-        validator.Validate(Suite(Case(checks: new EvalCheck(EvalCheckType.Relevance, 6)))).IsValid.Should().BeFalse();
-        validator.Validate(Suite(Case(checks: new EvalCheck(EvalCheckType.Relevance, 3)))).IsValid.Should().BeTrue();
+        Assert.False(validator.Validate(Suite(Case(expectedAnswer: "milk", checks: new EvalCheck(EvalCheckType.ContainsExpectedAnswer, 3))))
+            .IsValid);
+        Assert.False(validator.Validate(Suite(Case(checks: new EvalCheck(EvalCheckType.Relevance, 6)))).IsValid);
+        Assert.True(validator.Validate(Suite(Case(checks: new EvalCheck(EvalCheckType.Relevance, 3)))).IsValid);
     }
 
     [Fact]
     public void RejectsDuplicateChecks_AndDuplicateCaseIds()
     {
-        validator.Validate(Suite(Case(checks: [new EvalCheck(EvalCheckType.Relevance), new EvalCheck(EvalCheckType.Relevance)])))
-            .IsValid.Should().BeFalse();
+        Assert.False(validator.Validate(Suite(Case(checks: [new EvalCheck(EvalCheckType.Relevance), new EvalCheck(EvalCheckType.Relevance)])))
+            .IsValid);
 
         var id = Guid.NewGuid();
-        validator.Validate(Suite(Case() with { Id = id }, Case() with { Id = id })).IsValid.Should().BeFalse();
+        Assert.False(validator.Validate(Suite(Case() with { Id = id }, Case() with { Id = id })).IsValid);
     }
 
     [Fact]
     public void RejectsBlankPrompts_AndBlankNames()
     {
-        validator.Validate(Suite(Case(prompt: "  "))).IsValid.Should().BeFalse();
-        validator.Validate(new CreateEvalSuiteRequest(" ", null, null)).IsValid.Should().BeFalse();
+        Assert.False(validator.Validate(Suite(Case(prompt: "  "))).IsValid);
+        Assert.False(validator.Validate(new CreateEvalSuiteRequest(" ", null, null)).IsValid);
     }
 }

@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
@@ -27,8 +26,8 @@ public sealed class ModelContextWindowProviderTests : IDisposable
         ]);
         var provider = CreateProvider();
 
-        (await provider.GetContextWindowAsync("gemma-4-e4b", Ct)).Should().Be(16384);
-        (await provider.GetContextWindowAsync("qwen-coder", Ct)).Should().Be(8192);
+        Assert.Equal(16384, await provider.GetContextWindowAsync("gemma-4-e4b", Ct));
+        Assert.Equal(8192, await provider.GetContextWindowAsync("qwen-coder", Ct));
 
         await _catalog.Received(1).ListAsync(Arg.Any<CancellationToken>());
     }
@@ -38,7 +37,7 @@ public sealed class ModelContextWindowProviderTests : IDisposable
     {
         _catalog.ListAsync(Arg.Any<CancellationToken>()).Returns([new CatalogModel("gemma-4-e4b", "unloaded")]);
 
-        (await CreateProvider().GetContextWindowAsync("gemma-4-e4b", Ct)).Should().Be(CatalogModelContextWindowProvider.DefaultContextWindow);
+        Assert.Equal(CatalogModelContextWindowProvider.DefaultContextWindow, await CreateProvider().GetContextWindowAsync("gemma-4-e4b", Ct));
     }
 
     [Fact]
@@ -47,8 +46,8 @@ public sealed class ModelContextWindowProviderTests : IDisposable
         _catalog.ListAsync(Arg.Any<CancellationToken>()).Returns((IReadOnlyList<CatalogModel>?)null);
         var provider = CreateProvider();
 
-        (await provider.GetContextWindowAsync("gemma-4-e4b", Ct)).Should().Be(CatalogModelContextWindowProvider.DefaultContextWindow);
-        (await provider.GetContextWindowAsync("gemma-4-e4b", Ct)).Should().Be(CatalogModelContextWindowProvider.DefaultContextWindow);
+        Assert.Equal(CatalogModelContextWindowProvider.DefaultContextWindow, await provider.GetContextWindowAsync("gemma-4-e4b", Ct));
+        Assert.Equal(CatalogModelContextWindowProvider.DefaultContextWindow, await provider.GetContextWindowAsync("gemma-4-e4b", Ct));
 
         await _catalog.Received(1).ListAsync(Arg.Any<CancellationToken>());
     }

@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Sentium.Registry.Contracts.Settings;
 using Sentium.Registry.Features.Settings;
 using Xunit;
@@ -14,11 +13,11 @@ public sealed class CompanionSettingsValidatorTests
     {
         var defaults = new CompanionSettings();
 
-        _sut.Validate(defaults).IsValid.Should().BeTrue();
-        defaults.IsCompanionEnabled.Should().BeTrue();
-        defaults.IsVoiceEnabled.Should().BeTrue();
-        defaults.IsReviewBeforeSendingEnabled.Should().BeFalse();
-        defaults.IsSpeakTypedRepliesEnabled.Should().BeFalse();
+        Assert.True(_sut.Validate(defaults).IsValid);
+        Assert.True(defaults.IsCompanionEnabled);
+        Assert.True(defaults.IsVoiceEnabled);
+        Assert.False(defaults.IsReviewBeforeSendingEnabled);
+        Assert.False(defaults.IsSpeakTypedRepliesEnabled);
     }
 
     [Theory]
@@ -27,7 +26,7 @@ public sealed class CompanionSettingsValidatorTests
     [InlineData(2.0)]
     public void SpeakingRate_InRange_Passes(double rate)
     {
-        _sut.Validate(new CompanionSettings { SpeakingRate = rate }).IsValid.Should().BeTrue();
+        Assert.True(_sut.Validate(new CompanionSettings { SpeakingRate = rate }).IsValid);
     }
 
     [Theory]
@@ -36,7 +35,7 @@ public sealed class CompanionSettingsValidatorTests
     [InlineData(-1)]
     public void SpeakingRate_OutOfRange_Fails(double rate)
     {
-        _sut.Validate(new CompanionSettings { SpeakingRate = rate }).IsValid.Should().BeFalse();
+        Assert.False(_sut.Validate(new CompanionSettings { SpeakingRate = rate }).IsValid);
     }
 
     [Theory]
@@ -44,7 +43,7 @@ public sealed class CompanionSettingsValidatorTests
     [InlineData("bm-george_2")]
     public void Voice_Id_Passes(string voice)
     {
-        _sut.Validate(new CompanionSettings { Voice = voice }).IsValid.Should().BeTrue();
+        Assert.True(_sut.Validate(new CompanionSettings { Voice = voice }).IsValid);
     }
 
     [Theory]
@@ -53,7 +52,7 @@ public sealed class CompanionSettingsValidatorTests
     [InlineData("a/b")]
     public void Voice_ThatIsNotAnId_Fails(string voice)
     {
-        _sut.Validate(new CompanionSettings { Voice = voice }).IsValid.Should().BeFalse();
+        Assert.False(_sut.Validate(new CompanionSettings { Voice = voice }).IsValid);
     }
 
     [Fact]
@@ -61,6 +60,6 @@ public sealed class CompanionSettingsValidatorTests
     {
         var voice = new string('a', CompanionSettings.MaxVoiceIdLength + 1);
 
-        _sut.Validate(new CompanionSettings { Voice = voice }).IsValid.Should().BeFalse();
+        Assert.False(_sut.Validate(new CompanionSettings { Voice = voice }).IsValid);
     }
 }

@@ -2,7 +2,6 @@ using System.Text;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
-using FluentAssertions;
 using Sentium.Praxis.Features.Files;
 using UglyToad.PdfPig.Core;
 using UglyToad.PdfPig.Fonts.Standard14Fonts;
@@ -22,7 +21,7 @@ public sealed class FileTextExtractorTests
 
         var text = await _extractor.ExtractAsync(stream, ".md", TestContext.Current.CancellationToken);
 
-        text.Should().Be("Grüße, мир");
+        Assert.Equal("Grüße, мир", text);
     }
 
     [Fact]
@@ -33,7 +32,7 @@ public sealed class FileTextExtractorTests
 
         var text = await _extractor.ExtractAsync(stream, ".txt", TestContext.Current.CancellationToken);
 
-        text.Should().Be("utf-16 text");
+        Assert.Equal("utf-16 text", text);
     }
 
     [Fact]
@@ -43,8 +42,10 @@ public sealed class FileTextExtractorTests
 
         var text = await _extractor.ExtractAsync(stream, ".PDF", TestContext.Current.CancellationToken);
 
-        text.Should().Contain("--- Page 1 ---").And.Contain("Quarterly revenue grew")
-            .And.Contain("--- Page 2 ---").And.Contain("Second page notes");
+        Assert.Contains("--- Page 1 ---", text, StringComparison.Ordinal);
+        Assert.Contains("Quarterly revenue grew", text, StringComparison.Ordinal);
+        Assert.Contains("--- Page 2 ---", text, StringComparison.Ordinal);
+        Assert.Contains("Second page notes", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -54,7 +55,8 @@ public sealed class FileTextExtractorTests
 
         var text = await _extractor.ExtractAsync(stream, ".docx", TestContext.Current.CancellationToken);
 
-        text.Should().Contain("Meeting notes").And.Contain("Cell value");
+        Assert.Contains("Meeting notes", text, StringComparison.Ordinal);
+        Assert.Contains("Cell value", text, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -64,7 +66,7 @@ public sealed class FileTextExtractorTests
 
         var extract = () => _extractor.ExtractAsync(stream, ".pdf", TestContext.Current.CancellationToken);
 
-        await extract.Should().ThrowAsync<InvalidDataException>();
+        await Assert.ThrowsAnyAsync<InvalidDataException>(extract);
     }
 
     private static byte[] BuildPdf(params string[] pages)

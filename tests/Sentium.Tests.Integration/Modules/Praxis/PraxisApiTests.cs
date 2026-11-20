@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Sentium.Core.Results;
 using Sentium.Praxis.Contracts;
@@ -32,12 +31,12 @@ public class PraxisApiTests(MonolithWebApplicationFactory factory)
 
         var response = await _client.PostAsJsonAsync("/api/praxis/agents", request, Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var created = await response.Content.ReadFromJsonAsync<AgentResponse>(Ct);
 
-        created.Should().NotBeNull();
-        created!.Name.Should().Be(request.Name);
-        response.Headers.Location.Should().NotBeNull();
+        Assert.NotNull(created);
+        Assert.Equal(request.Name, created!.Name);
+        Assert.NotNull(response.Headers.Location);
     }
 
     [Fact]
@@ -48,9 +47,9 @@ public class PraxisApiTests(MonolithWebApplicationFactory factory)
 
         var response = await _client.GetAsync("/api/praxis/agents", Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var paged = await response.Content.ReadFromJsonAsync<PagedResponse<AgentResponse>>(Ct);
-        paged!.Items.Should().Contain(a => a.Name == name);
+        Assert.Contains(paged!.Items, a => a.Name == name);
     }
 
     [Fact]
@@ -62,9 +61,9 @@ public class PraxisApiTests(MonolithWebApplicationFactory factory)
 
         var response = await _client.PutAsJsonAsync($"/api/praxis/agents/{created.Id}", updateRequest, Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
         var updated = await _client.GetFromJsonAsync<AgentResponse>($"/api/praxis/agents/{created.Id}", Ct);
-        updated!.Name.Should().Be("NewName");
+        Assert.Equal("NewName", updated!.Name);
     }
 
     [Fact]
@@ -74,9 +73,9 @@ public class PraxisApiTests(MonolithWebApplicationFactory factory)
 
         var response = await _client.PostAsJsonAsync("/api/praxis/conversations", request, Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var summary = await response.Content.ReadFromJsonAsync<ConversationSummary>(Ct);
-        summary!.Title.Should().Be("Project Alpha Chat");
+        Assert.Equal("Project Alpha Chat", summary!.Title);
     }
 
     [Fact]
@@ -84,12 +83,12 @@ public class PraxisApiTests(MonolithWebApplicationFactory factory)
     {
         var response = await _client.PostAsJsonAsync("/api/praxis/conversations", new CreateConversationRequest(null, "m", "timelineplanner"), Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var summary = await response.Content.ReadFromJsonAsync<ConversationSummary>(Ct);
-        summary!.AgentName.Should().Be("TimelinePlanner");
+        Assert.Equal("TimelinePlanner", summary!.AgentName);
 
         var detail = await _client.GetFromJsonAsync<ConversationResponse>($"/api/praxis/conversations/{summary.Id}", Ct);
-        detail!.AgentName.Should().Be("TimelinePlanner");
+        Assert.Equal("TimelinePlanner", detail!.AgentName);
     }
 
     [Theory]
@@ -99,7 +98,7 @@ public class PraxisApiTests(MonolithWebApplicationFactory factory)
     {
         var response = await _client.PostAsJsonAsync("/api/praxis/conversations", new CreateConversationRequest(null, "m", agentName), Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
@@ -107,8 +106,9 @@ public class PraxisApiTests(MonolithWebApplicationFactory factory)
     {
         var roster = await _client.GetFromJsonAsync<List<AgentRosterEntry>>("/api/praxis/agents/roster", Ct);
 
-        roster!.Select(r => r.Name).Should().Contain(["GeneralAssistant", "TimelinePlanner", "ResearchAnalyst"])
-            .And.NotContain(["Orchestrator", "Validator", "Summarizer"]);
+        var actual = roster!.Select(r => r.Name);
+        Assert.All(new[] { "GeneralAssistant", "TimelinePlanner", "ResearchAnalyst" }, expected => Assert.Contains(expected, actual));
+        Assert.All(new[] { "Orchestrator", "Validator", "Summarizer" }, unexpected => Assert.DoesNotContain(unexpected, actual));
     }
 
     [Fact]
@@ -116,8 +116,8 @@ public class PraxisApiTests(MonolithWebApplicationFactory factory)
     {
         var tools = await _client.GetFromJsonAsync<List<ToolDescriptor>>("/api/praxis/tools", Ct);
 
-        tools!.Should().Contain(t => t.Name == "knowledge_base_search" && !t.RequiresApproval);
-        tools.Should().Contain(t => t.Name == "execute_code_sandbox" && t.RequiresApproval && t.Resource == "Code");
+        Assert.Contains(tools!, t => t.Name == "knowledge_base_search" && !t.RequiresApproval);
+        Assert.Contains(tools!, t => t.Name == "execute_code_sandbox" && t.RequiresApproval && t.Resource == "Code");
     }
 
     [Fact]
@@ -127,14 +127,15 @@ public class PraxisApiTests(MonolithWebApplicationFactory factory)
 
         var response = await _client.PostAsJsonAsync("/api/praxis/agents", request, Ct);
         var created = await response.Content.ReadFromJsonAsync<AgentResponse>(Ct);
-        created!.Tools.Should().BeEquivalentTo("find_assets", "knowledge_base_search");
+        Assert.Equivalent(new string[] { "find_assets", "knowledge_base_search" }, created!.Tools);
 
         var update = new UpdateAgentRequest(created.Id, created.Name, "desc", "m", Tools: null);
-        (await _client.PutAsJsonAsync($"/api/praxis/agents/{created.Id}", update, Ct)).StatusCode.Should().Be(HttpStatusCode.NoContent);
-        (await _client.GetFromJsonAsync<AgentResponse>($"/api/praxis/agents/{created.Id}", Ct))!.Tools.Should().BeNull("null means every tool");
+        Assert.Equal(HttpStatusCode.NoContent, (await _client.PutAsJsonAsync($"/api/praxis/agents/{created.Id}", update, Ct)).StatusCode);
+        // null means every tool
+        Assert.Null((await _client.GetFromJsonAsync<AgentResponse>($"/api/praxis/agents/{created.Id}", Ct))!.Tools);
 
         var invalid = await _client.PostAsJsonAsync("/api/praxis/agents", new CreateAgentRequest($"Bad-{Guid.NewGuid()}", "d", "m", ["rm_rf"]), Ct);
-        invalid.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
     }
 
     [Fact]
@@ -142,21 +143,21 @@ public class PraxisApiTests(MonolithWebApplicationFactory factory)
     {
         var initial = await _client.GetFromJsonAsync<List<BuiltInAgentResponse>>("/api/praxis/agents/built-in", Ct);
         var analyst = initial!.Single(a => a.Name == "ResearchAnalyst");
-        analyst.IsCustomized.Should().BeFalse();
-        analyst.Tools.Should().BeEquivalentTo(analyst.DefaultTools);
-        initial.Should().NotContain(a => a.Name == "Orchestrator");
+        Assert.False(analyst.IsCustomized);
+        Assert.Equivalent(analyst.DefaultTools, analyst.Tools);
+        Assert.DoesNotContain(initial!, a => a.Name == "Orchestrator");
 
         var set = await _client.PutAsJsonAsync("/api/praxis/agents/built-in/ResearchAnalyst/tools", new UpdateAgentToolsRequest(["find_assets"]), Ct);
-        set.StatusCode.Should().Be(HttpStatusCode.OK);
+        Assert.Equal(HttpStatusCode.OK, set.StatusCode);
         var overridden = await set.Content.ReadFromJsonAsync<BuiltInAgentResponse>(Ct);
-        overridden!.IsCustomized.Should().BeTrue();
-        overridden.Tools.Should().Equal("find_assets");
+        Assert.True(overridden!.IsCustomized);
+        Assert.Equal(new string[] { "find_assets" }, overridden.Tools);
 
         var reset = await _client.DeleteAsync("/api/praxis/agents/built-in/ResearchAnalyst/tools", Ct);
-        (await reset.Content.ReadFromJsonAsync<BuiltInAgentResponse>(Ct))!.IsCustomized.Should().BeFalse();
+        Assert.False((await reset.Content.ReadFromJsonAsync<BuiltInAgentResponse>(Ct))!.IsCustomized);
 
-        (await _client.PutAsJsonAsync("/api/praxis/agents/built-in/Orchestrator/tools", new UpdateAgentToolsRequest(null), Ct))
-            .StatusCode.Should().Be(HttpStatusCode.NotFound);
+        Assert.Equal(HttpStatusCode.NotFound, (await _client.PutAsJsonAsync("/api/praxis/agents/built-in/Orchestrator/tools", new UpdateAgentToolsRequest(null), Ct))
+            .StatusCode);
     }
 
     [Fact]
@@ -167,10 +168,10 @@ public class PraxisApiTests(MonolithWebApplicationFactory factory)
 
         var response = await _client.GetAsync($"/api/praxis/conversations/{summary!.Id}", Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var detail = await response.Content.ReadFromJsonAsync<ConversationResponse>(Ct);
-        detail!.Id.Should().Be(summary.Id);
-        detail.Messages.Should().NotBeNull();
+        Assert.Equal(summary.Id, detail!.Id);
+        Assert.NotNull(detail.Messages);
     }
 
     [Fact]
@@ -178,9 +179,9 @@ public class PraxisApiTests(MonolithWebApplicationFactory factory)
     {
         var response = await _client.PostAsJsonAsync("/api/praxis/conversations", new CreateConversationRequest(null, "m"), Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var summary = await response.Content.ReadFromJsonAsync<ConversationSummary>(Ct);
-        summary!.Title.Should().Be(ConversationTitles.Placeholder);
+        Assert.Equal(ConversationTitles.Placeholder, summary!.Title);
     }
 
     [Fact]
@@ -191,8 +192,8 @@ public class PraxisApiTests(MonolithWebApplicationFactory factory)
         var first = await _client.PostAsJsonAsync("/api/praxis/conversations", new CreateConversationRequest(title, "m"), Ct);
         var second = await _client.PostAsJsonAsync("/api/praxis/conversations", new CreateConversationRequest(title, "m"), Ct);
 
-        first.StatusCode.Should().Be(HttpStatusCode.Created);
-        second.StatusCode.Should().Be(HttpStatusCode.Created);
+        Assert.Equal(HttpStatusCode.Created, first.StatusCode);
+        Assert.Equal(HttpStatusCode.Created, second.StatusCode);
     }
 
     [Fact]
@@ -203,9 +204,9 @@ public class PraxisApiTests(MonolithWebApplicationFactory factory)
 
         var response = await _client.PutAsJsonAsync($"/api/praxis/conversations/{summary!.Id}/title", new UpdateTitleRequest("  Trip planning  "), Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
         var detail = await _client.GetFromJsonAsync<ConversationResponse>($"/api/praxis/conversations/{summary.Id}", Ct);
-        detail!.Title.Should().Be("Trip planning");
+        Assert.Equal("Trip planning", detail!.Title);
     }
 
     [Fact]
@@ -213,7 +214,7 @@ public class PraxisApiTests(MonolithWebApplicationFactory factory)
     {
         var response = await _client.PutAsJsonAsync($"/api/praxis/conversations/{Guid.NewGuid()}/title", new UpdateTitleRequest("Anything"), Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     [Fact]
@@ -224,7 +225,7 @@ public class PraxisApiTests(MonolithWebApplicationFactory factory)
 
         var response = await _client.PutAsJsonAsync($"/api/praxis/conversations/{summary!.Id}/title", new UpdateTitleRequest("   "), Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
@@ -251,9 +252,9 @@ public class PraxisApiTests(MonolithWebApplicationFactory factory)
 
         var response = await _client.PutAsJsonAsync($"/api/praxis/workflows/runs/{runId}/title", new UpdateTitleRequest("Backup check"), Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
         var run = await _client.GetFromJsonAsync<WorkflowRunResponse>($"/api/praxis/workflows/runs/{runId}", Ct);
-        run!.Title.Should().Be("Backup check");
+        Assert.Equal("Backup check", run!.Title);
     }
 
     [Fact]
@@ -261,7 +262,7 @@ public class PraxisApiTests(MonolithWebApplicationFactory factory)
     {
         var response = await _client.PutAsJsonAsync($"/api/praxis/workflows/runs/{Guid.NewGuid()}/title", new UpdateTitleRequest("Anything"), Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 
     [Fact]
@@ -274,8 +275,8 @@ public class PraxisApiTests(MonolithWebApplicationFactory factory)
         var paged = await _client.GetFromJsonAsync<PagedResponse<ConversationSummary>>(
             $"/api/praxis/conversations?search={Uri.EscapeDataString($"KAYAK TRIP {marker}")}", Ct);
 
-        paged!.Items.Should().ContainSingle().Which.Title.Should().Be($"Kayak trip {marker}");
-        paged.TotalCount.Should().Be(1);
+        Assert.Equal($"Kayak trip {marker}", Assert.Single(paged!.Items).Title);
+        Assert.Equal(1, paged.TotalCount);
     }
 
     [Fact]
@@ -288,7 +289,7 @@ public class PraxisApiTests(MonolithWebApplicationFactory factory)
         var paged = await _client.GetFromJsonAsync<PagedResponse<ConversationSummary>>(
             $"/api/praxis/conversations?search={Uri.EscapeDataString($"100% {marker}")}", Ct);
 
-        paged!.Items.Should().ContainSingle().Which.Title.Should().Be($"Growth 100% {marker}");
+        Assert.Equal($"Growth 100% {marker}", Assert.Single(paged!.Items).Title);
     }
 
     [Fact]
@@ -311,8 +312,8 @@ public class PraxisApiTests(MonolithWebApplicationFactory factory)
             $"/api/praxis/workflows/runs?search={Uri.EscapeDataString($"backup")}&pageSize=100", Ct);
 
         var ids = paged!.Items.Select(r => r.Id).ToList();
-        ids.Should().Contain([titled, untitled]);
-        paged.Items.Should().NotContain(r => r.Title == $"Something else {marker}");
+        Assert.All(new[] { titled, untitled }, expected => Assert.Contains(expected, ids));
+        Assert.DoesNotContain(paged.Items, r => r.Title == $"Something else {marker}");
     }
 
     private static WorkflowRun NewRun(Guid id, string? title, string payload)
@@ -339,9 +340,9 @@ public class PraxisApiTests(MonolithWebApplicationFactory factory)
 
         var response = await _client.PostAsJsonAsync("/api/praxis/workflows", request, Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var wf = await response.Content.ReadFromJsonAsync<WorkflowResponse>(Ct);
-        wf!.Name.Should().Be("Cleanup-Workflow");
+        Assert.Equal("Cleanup-Workflow", wf!.Name);
     }
 
     [Fact]
@@ -351,9 +352,9 @@ public class PraxisApiTests(MonolithWebApplicationFactory factory)
         var wf = await postResp.Content.ReadFromJsonAsync<WorkflowResponse>(Ct);
 
         var response = await _client.DeleteAsync($"/api/praxis/workflows/{wf!.Id}", Ct);
-        response.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        Assert.Equal(HttpStatusCode.NoContent, response.StatusCode);
 
         var getResponse = await _client.GetAsync($"/api/praxis/workflows/{wf.Id}", Ct);
-        getResponse.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        Assert.Equal(HttpStatusCode.NotFound, getResponse.StatusCode);
     }
 }

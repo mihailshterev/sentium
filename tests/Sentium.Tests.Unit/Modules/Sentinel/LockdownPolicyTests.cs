@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Sentium.Sentinel.Features.Policies;
 using Sentium.Sentinel.Features.Settings;
 using Xunit;
@@ -32,7 +31,7 @@ public sealed class LockdownPolicyTests
 
         var result = await sut.EvaluateAsync(MakeRequest(), ct);
 
-        result.Should().BeNull();
+        Assert.Null(result);
     }
 
     [Fact]
@@ -43,11 +42,11 @@ public sealed class LockdownPolicyTests
 
         var result = await sut.EvaluateAsync(MakeRequest(), ct);
 
-        result.Should().NotBeNull();
-        result!.Allowed.Should().BeFalse();
-        result.Effect.Should().Be(PolicyEffect.DenyWithAlert);
-        result.Risk.Should().Be(PolicyRiskLevel.Critical);
-        result.TriggeredPolicies.Should().Contain("Lockdown");
+        Assert.NotNull(result);
+        Assert.False(result!.Allowed);
+        Assert.Equal(PolicyEffect.DenyWithAlert, result.Effect);
+        Assert.Equal(PolicyRiskLevel.Critical, result.Risk);
+        Assert.Contains("Lockdown", result.TriggeredPolicies);
     }
 
     [Fact]
@@ -58,6 +57,6 @@ public sealed class LockdownPolicyTests
 
         var act = async () => await sut.EvaluateAsync(null!, ct);
 
-        await act.Should().ThrowAsync<ArgumentNullException>();
+        await Assert.ThrowsAnyAsync<ArgumentNullException>(act);
     }
 }

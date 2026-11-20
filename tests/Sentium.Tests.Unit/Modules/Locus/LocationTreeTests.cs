@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Sentium.Locus.Features.Locations;
 using Xunit;
 
@@ -29,16 +28,16 @@ public sealed class LocationTreeTests
     {
         var tree = CreateTree();
 
-        tree.GetPath(Shelf).Select(c => c.Name).Should().Equal("Home", "Garage", "Shelf B");
-        tree.GetPathString(Shelf).Should().Be("Home › Garage › Shelf B");
-        tree.GetDepth(Shelf).Should().Be(3);
-        tree.GetDepth(Home).Should().Be(1);
+        Assert.Equal(new string[] { "Home", "Garage", "Shelf B" }, tree.GetPath(Shelf).Select(c => c.Name));
+        Assert.Equal("Home › Garage › Shelf B", tree.GetPathString(Shelf));
+        Assert.Equal(3, tree.GetDepth(Shelf));
+        Assert.Equal(1, tree.GetDepth(Home));
     }
 
     [Fact]
     public void GetPath_ForUnknownId_IsEmpty()
     {
-        CreateTree().GetPath(Guid.NewGuid()).Should().BeEmpty();
+        Assert.Empty(CreateTree().GetPath(Guid.NewGuid()));
     }
 
     [Fact]
@@ -46,15 +45,15 @@ public sealed class LocationTreeTests
     {
         var tree = CreateTree();
 
-        tree.Roots.Select(r => r.Name).Should().Equal("Cabin", "Home");
-        tree.ChildrenOf(Home).Select(c => c.Name).Should().Equal("Garage", "Kitchen");
+        Assert.Equal(new string[] { "Cabin", "Home" }, tree.Roots.Select(r => r.Name));
+        Assert.Equal(new string[] { "Garage", "Kitchen" }, tree.ChildrenOf(Home).Select(c => c.Name));
     }
 
     [Fact]
     public void GetSubtreeIds_IncludesSelfAndAllDescendants()
     {
-        CreateTree().GetSubtreeIds(Home).Should().BeEquivalentTo([Home, Garage, Shelf, Kitchen]);
-        CreateTree().GetSubtreeIds(Shelf).Should().Equal(Shelf);
+        Assert.Equivalent(new[] { Home, Garage, Shelf, Kitchen }, CreateTree().GetSubtreeIds(Home));
+        Assert.Equal(new Guid[] { Shelf }, CreateTree().GetSubtreeIds(Shelf));
     }
 
     [Fact]
@@ -62,9 +61,9 @@ public sealed class LocationTreeTests
     {
         var tree = CreateTree();
 
-        tree.GetHeight(Home).Should().Be(2);
-        tree.GetHeight(Garage).Should().Be(1);
-        tree.GetHeight(Shelf).Should().Be(0);
+        Assert.Equal(2, tree.GetHeight(Home));
+        Assert.Equal(1, tree.GetHeight(Garage));
+        Assert.Equal(0, tree.GetHeight(Shelf));
     }
 
     [Fact]
@@ -72,10 +71,10 @@ public sealed class LocationTreeTests
     {
         var tree = CreateTree();
 
-        tree.ValidatePlacement(Home, Shelf, 12).Should().NotBeNull();
-        tree.ValidatePlacement(Garage, Garage, 12).Should().NotBeNull();
-        tree.ValidatePlacement(Garage, Cabin, 12).Should().BeNull();
-        tree.ValidatePlacement(Garage, null, 12).Should().BeNull();
+        Assert.NotNull(tree.ValidatePlacement(Home, Shelf, 12));
+        Assert.NotNull(tree.ValidatePlacement(Garage, Garage, 12));
+        Assert.Null(tree.ValidatePlacement(Garage, Cabin, 12));
+        Assert.Null(tree.ValidatePlacement(Garage, null, 12));
     }
 
     [Fact]
@@ -84,12 +83,12 @@ public sealed class LocationTreeTests
         var tree = CreateTree();
 
         // Garage (height 1) under Shelf (depth 3) would reach depth 5.
-        tree.ValidatePlacement(Kitchen, Shelf, 4).Should().BeNull();
+        Assert.Null(tree.ValidatePlacement(Kitchen, Shelf, 4));
         // Garage under Kitchen (depth 2) becomes depth 3 and its Shelf depth 4.
-        tree.ValidatePlacement(Garage, Kitchen, 4).Should().BeNull();
-        tree.ValidatePlacement(Garage, Kitchen, 3).Should().Contain("at most 3");
-        tree.ValidatePlacement(null, Shelf, 3).Should().Contain("at most 3");
-        tree.ValidatePlacement(null, Shelf, 4).Should().BeNull();
+        Assert.Null(tree.ValidatePlacement(Garage, Kitchen, 4));
+        Assert.Contains("at most 3", tree.ValidatePlacement(Garage, Kitchen, 3), StringComparison.Ordinal);
+        Assert.Contains("at most 3", tree.ValidatePlacement(null, Shelf, 3), StringComparison.Ordinal);
+        Assert.Null(tree.ValidatePlacement(null, Shelf, 4));
     }
 
     [Fact]
@@ -99,11 +98,11 @@ public sealed class LocationTreeTests
         var b = Guid.NewGuid();
         var tree = new LocationTree([new LocationNode(a, b, "A"), new LocationNode(b, a, "B")]);
 
-        tree.GetPath(a).Should().HaveCount(2);
-        tree.GetSubtreeIds(a).Should().BeEquivalentTo([a, b]);
-        tree.Roots.Should().BeEmpty();
-        tree.GetHeight(a).Should().BeLessThan(3);
-        tree.IsSelfOrDescendant(b, a).Should().BeTrue();
+        Assert.Equal(2, tree.GetPath(a).Count);
+        Assert.Equivalent(new[] { a, b }, tree.GetSubtreeIds(a));
+        Assert.Empty(tree.Roots);
+        Assert.True(tree.GetHeight(a) < 3);
+        Assert.True(tree.IsSelfOrDescendant(b, a));
     }
 
     [Fact]
@@ -111,14 +110,14 @@ public sealed class LocationTreeTests
     {
         var tree = CreateTree();
 
-        tree.Resolve(Shelf.ToString()).Should().ContainSingle().Which.Id.Should().Be(Shelf);
-        tree.Resolve("Garage/Shelf B").Should().ContainSingle().Which.Id.Should().Be(Shelf);
-        tree.Resolve("home > garage").Should().ContainSingle().Which.Id.Should().Be(Garage);
-        tree.Resolve("Home › Garage › Shelf B").Should().ContainSingle().Which.Id.Should().Be(Shelf);
-        tree.Resolve("kitchen").Should().ContainSingle().Which.Id.Should().Be(Kitchen);
-        tree.Resolve("shel").Should().ContainSingle().Which.Id.Should().Be(Shelf);
-        tree.Resolve("Attic").Should().BeEmpty();
-        tree.Resolve("  ").Should().BeEmpty();
+        Assert.Equal(Shelf, Assert.Single(tree.Resolve(Shelf.ToString())).Id);
+        Assert.Equal(Shelf, Assert.Single(tree.Resolve("Garage/Shelf B")).Id);
+        Assert.Equal(Garage, Assert.Single(tree.Resolve("home > garage")).Id);
+        Assert.Equal(Shelf, Assert.Single(tree.Resolve("Home › Garage › Shelf B")).Id);
+        Assert.Equal(Kitchen, Assert.Single(tree.Resolve("kitchen")).Id);
+        Assert.Equal(Shelf, Assert.Single(tree.Resolve("shel")).Id);
+        Assert.Empty(tree.Resolve("Attic"));
+        Assert.Empty(tree.Resolve("  "));
     }
 
     [Fact]
@@ -131,12 +130,12 @@ public sealed class LocationTreeTests
             new LocationNode(Shelf, Home, "Garage cabinet"),
         ]);
 
-        tree.Resolve("garage").Should().ContainSingle().Which.Id.Should().Be(Garage);
+        Assert.Equal(Garage, Assert.Single(tree.Resolve("garage")).Id);
     }
 
     [Fact]
     public void FindSubtreesMatching_ReturnsMatchingLocationsAndTheirDescendants()
     {
-        CreateTree().FindSubtreesMatching("gar").Should().BeEquivalentTo([Garage, Shelf]);
+        Assert.Equivalent(new[] { Garage, Shelf }, CreateTree().FindSubtreesMatching("gar"));
     }
 }

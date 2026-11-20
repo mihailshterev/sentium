@@ -1,5 +1,4 @@
 using System.Text;
-using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -51,7 +50,7 @@ public sealed class SpeechControllerTests : IDisposable
 
         var result = await Controller().GetStatus(Ct);
 
-        result.Should().BeOfType<OkObjectResult>().Which.Value.Should().Be(status);
+        Assert.Equal(status, Assert.IsType<OkObjectResult>(result).Value);
     }
 
     [Fact]
@@ -61,14 +60,14 @@ public sealed class SpeechControllerTests : IDisposable
 
         var result = await Controller().Transcribe(Recording(), Ct);
 
-        result.Should().BeOfType<OkObjectResult>().Which.Value.Should().Be(new TranscriptionResponse("where is the drill?"));
+        Assert.Equal(new TranscriptionResponse("where is the drill?"), Assert.IsType<OkObjectResult>(result).Value);
     }
 
     [Fact]
     public async Task Transcribe_Returns400_WithoutARecording()
     {
-        StatusOf(await Controller().Transcribe(null, Ct)).Should().Be(StatusCodes.Status400BadRequest);
-        StatusOf(await Controller().Transcribe(Recording(length: 0), Ct)).Should().Be(StatusCodes.Status400BadRequest);
+        Assert.Equal(StatusCodes.Status400BadRequest, StatusOf(await Controller().Transcribe(null, Ct)));
+        Assert.Equal(StatusCodes.Status400BadRequest, StatusOf(await Controller().Transcribe(Recording(length: 0), Ct)));
         await _speech.DidNotReceive().TranscribeAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>());
     }
 
@@ -77,7 +76,7 @@ public sealed class SpeechControllerTests : IDisposable
     {
         var result = await Controller().Transcribe(Recording((int)SpeechLimits.MaxAudioBytes + 1), Ct);
 
-        StatusOf(result).Should().Be(StatusCodes.Status400BadRequest);
+        Assert.Equal(StatusCodes.Status400BadRequest, StatusOf(result));
         await _speech.DidNotReceive().TranscribeAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>());
     }
 
@@ -86,7 +85,7 @@ public sealed class SpeechControllerTests : IDisposable
     {
         _speech.TranscribeAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>()).Returns(SpeechResult<string>.Unavailable);
 
-        StatusOf(await Controller().Transcribe(Recording(), Ct)).Should().Be(StatusCodes.Status503ServiceUnavailable);
+        Assert.Equal(StatusCodes.Status503ServiceUnavailable, StatusOf(await Controller().Transcribe(Recording(), Ct)));
     }
 
     [Fact]
@@ -94,7 +93,7 @@ public sealed class SpeechControllerTests : IDisposable
     {
         _speech.TranscribeAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>()).Returns(SpeechResult<string>.Failed);
 
-        StatusOf(await Controller().Transcribe(Recording(), Ct)).Should().Be(StatusCodes.Status422UnprocessableEntity);
+        Assert.Equal(StatusCodes.Status422UnprocessableEntity, StatusOf(await Controller().Transcribe(Recording(), Ct)));
     }
 
     [Fact]
@@ -107,7 +106,7 @@ public sealed class SpeechControllerTests : IDisposable
         await controller.Transcribe(Recording(), Ct);
         var third = await controller.Transcribe(Recording(), Ct);
 
-        StatusOf(third).Should().Be(StatusCodes.Status429TooManyRequests);
+        Assert.Equal(StatusCodes.Status429TooManyRequests, StatusOf(third));
         await _speech.Received(2).TranscribeAsync(Arg.Any<Stream>(), Arg.Any<CancellationToken>());
     }
 
@@ -122,7 +121,7 @@ public sealed class SpeechControllerTests : IDisposable
         _currentUser.UserId.Returns(Guid.NewGuid());
         var otherUser = await controller.Transcribe(Recording(), Ct);
 
-        otherUser.Should().BeOfType<OkObjectResult>();
+        Assert.IsType<OkObjectResult>(otherUser);
     }
 
     [Fact]
@@ -135,10 +134,10 @@ public sealed class SpeechControllerTests : IDisposable
 
         var result = await controller.Speak(new SpeakRequest("Hello.", "af_heart", 1.2f), Ct);
 
-        var file = result.Should().BeOfType<FileContentResult>().Which;
-        file.ContentType.Should().Be("audio/mpeg");
-        file.FileContents.Should().Equal(audio);
-        controller.Response.Headers[HeaderNames.CacheControl].ToString().Should().Be("no-store");
+        var file = Assert.IsType<FileContentResult>(result);
+        Assert.Equal("audio/mpeg", file.ContentType);
+        Assert.Equal(audio, file.FileContents);
+        Assert.Equal("no-store", controller.Response.Headers[HeaderNames.CacheControl].ToString());
     }
 
     [Fact]
@@ -146,7 +145,7 @@ public sealed class SpeechControllerTests : IDisposable
     {
         _speech.SynthesizeAsync(Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<float?>(), Arg.Any<CancellationToken>()).Returns(SpeechResult<SpeechAudio>.Unavailable);
 
-        StatusOf(await Controller().Speak(new SpeakRequest("Hello."), Ct)).Should().Be(StatusCodes.Status503ServiceUnavailable);
+        Assert.Equal(StatusCodes.Status503ServiceUnavailable, StatusOf(await Controller().Speak(new SpeakRequest("Hello."), Ct)));
     }
 
     [Fact]
@@ -154,7 +153,7 @@ public sealed class SpeechControllerTests : IDisposable
     {
         _speech.SynthesizeAsync(Arg.Any<string>(), Arg.Any<string?>(), Arg.Any<float?>(), Arg.Any<CancellationToken>()).Returns(SpeechResult<SpeechAudio>.Failed);
 
-        StatusOf(await Controller().Speak(new SpeakRequest("Hello.", "no_such_voice"), Ct)).Should().Be(StatusCodes.Status422UnprocessableEntity);
+        Assert.Equal(StatusCodes.Status422UnprocessableEntity, StatusOf(await Controller().Speak(new SpeakRequest("Hello.", "no_such_voice"), Ct)));
     }
 
     [Fact]
@@ -166,7 +165,7 @@ public sealed class SpeechControllerTests : IDisposable
         await controller.Speak(new SpeakRequest("One."), Ct);
         await controller.Speak(new SpeakRequest("Two."), Ct);
 
-        StatusOf(await controller.Speak(new SpeakRequest("Three."), Ct)).Should().Be(StatusCodes.Status429TooManyRequests);
+        Assert.Equal(StatusCodes.Status429TooManyRequests, StatusOf(await controller.Speak(new SpeakRequest("Three."), Ct)));
     }
 
     [Fact]
@@ -174,7 +173,7 @@ public sealed class SpeechControllerTests : IDisposable
     {
         _currentUser.UserId.Returns((Guid?)null);
 
-        (await Controller().Transcribe(Recording(), Ct)).Should().BeOfType<UnauthorizedResult>();
-        (await Controller().Speak(new SpeakRequest("Hello."), Ct)).Should().BeOfType<UnauthorizedResult>();
+        Assert.IsType<UnauthorizedResult>(await Controller().Transcribe(Recording(), Ct));
+        Assert.IsType<UnauthorizedResult>(await Controller().Speak(new SpeakRequest("Hello."), Ct));
     }
 }

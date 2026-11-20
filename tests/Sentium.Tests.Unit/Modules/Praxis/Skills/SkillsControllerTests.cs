@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
@@ -36,8 +35,7 @@ public sealed class SkillsControllerTests
         var result = _controller.GetBuiltInSkills();
 
         // Assert
-        result.Should().BeOfType<OkObjectResult>()
-            .Which.Value.Should().BeEquivalentTo(skills);
+        Assert.Equivalent(skills, Assert.IsType<OkObjectResult>(result).Value);
     }
 
     [Fact]
@@ -53,8 +51,7 @@ public sealed class SkillsControllerTests
         var result = await _controller.GetSkills(null, 1, 20, ct);
 
         // Assert
-        result.Should().BeOfType<OkObjectResult>()
-            .Which.Value.Should().Be(paged);
+        Assert.Equal(paged, Assert.IsType<OkObjectResult>(result).Value);
     }
 
     [Fact]
@@ -70,8 +67,7 @@ public sealed class SkillsControllerTests
         var result = await _controller.GetSkillById(id, ct);
 
         // Assert
-        result.Should().BeOfType<OkObjectResult>()
-            .Which.Value.Should().Be(dto);
+        Assert.Equal(dto, Assert.IsType<OkObjectResult>(result).Value);
     }
 
     [Fact]
@@ -86,7 +82,7 @@ public sealed class SkillsControllerTests
         var result = await _controller.GetSkillById(id, ct);
 
         // Assert
-        result.Should().BeOfType<NotFoundResult>();
+        Assert.IsType<NotFoundResult>(result);
     }
 
     [Fact]
@@ -102,8 +98,7 @@ public sealed class SkillsControllerTests
         var result = await _controller.CreateSkill(request, ct);
 
         // Assert
-        result.Should().BeOfType<CreatedAtActionResult>()
-            .Which.Value.Should().Be(dto);
+        Assert.Equal(dto, Assert.IsType<CreatedAtActionResult>(result).Value);
     }
 
     [Fact]
@@ -119,7 +114,7 @@ public sealed class SkillsControllerTests
         var result = await _controller.CreateSkill(request, ct);
 
         // Assert
-        result.Should().BeOfType<ConflictObjectResult>();
+        Assert.IsType<ConflictObjectResult>(result);
     }
 
     [Fact]
@@ -134,7 +129,7 @@ public sealed class SkillsControllerTests
         var result = await _controller.UpdateSkill(id, new UpdateAgentSkillRequest("Updated", "Desc", "Inst"), ct);
 
         // Assert
-        result.Should().BeOfType<NoContentResult>();
+        Assert.IsType<NoContentResult>(result);
     }
 
     [Fact]
@@ -149,7 +144,7 @@ public sealed class SkillsControllerTests
         var result = await _controller.UpdateSkill(id, new UpdateAgentSkillRequest("Updated", "Desc", "Inst"), ct);
 
         // Assert
-        result.Should().BeOfType<NotFoundResult>();
+        Assert.IsType<NotFoundResult>(result);
     }
 
     [Fact]
@@ -164,7 +159,7 @@ public sealed class SkillsControllerTests
         var result = await _controller.DeleteSkill(id, ct);
 
         // Assert
-        result.Should().BeOfType<NoContentResult>();
+        Assert.IsType<NoContentResult>(result);
     }
 
     [Fact]
@@ -179,7 +174,7 @@ public sealed class SkillsControllerTests
         var result = await _controller.DeleteSkill(id, ct);
 
         // Assert
-        result.Should().BeOfType<NotFoundResult>();
+        Assert.IsType<NotFoundResult>(result);
     }
 
     [Fact]
@@ -192,7 +187,7 @@ public sealed class SkillsControllerTests
         var result = await _controller.UploadSkill(null!, ct);
 
         // Assert
-        result.Should().BeOfType<BadRequestObjectResult>();
+        Assert.IsType<BadRequestObjectResult>(result);
     }
 
     [Fact]
@@ -208,7 +203,7 @@ public sealed class SkillsControllerTests
         var result = await _controller.UploadSkill(file, ct);
 
         // Assert
-        result.Should().BeOfType<BadRequestObjectResult>();
+        Assert.IsType<BadRequestObjectResult>(result);
     }
 
     [Fact]
@@ -232,6 +227,6 @@ public sealed class SkillsControllerTests
         var result = await _controller.UploadSkill(file, ct);
 
         // Assert
-        result.Should().BeOfType<CreatedAtActionResult>();
+        Assert.IsType<CreatedAtActionResult>(result);
     }
 }

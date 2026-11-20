@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Sentium.Memoria.Features.Parsing;
 using Xunit;
 
@@ -15,7 +14,7 @@ public sealed class MarkdownNoteChunkerTests
             new NoteSection(["Goals", "Q1"], "Ship it.")
         ]);
 
-        chunks.Should().Equal("Plan\n\nIntro.\n\nTags: work", "Plan > Goals > Q1\n\nShip it.");
+        Assert.Equal(new string[] { "Plan\n\nIntro.\n\nTags: work", "Plan > Goals > Q1\n\nShip it." }, chunks);
     }
 
     [Fact]
@@ -26,15 +25,14 @@ public sealed class MarkdownNoteChunkerTests
 
         var chunks = MarkdownNoteChunker.Chunk("Long", [], [new NoteSection(["H"], text)]);
 
-        chunks.Should().HaveCountGreaterThan(1);
-        chunks.Should().AllSatisfy(c => c.Should().StartWith("Long > H\n\n"));
-        chunks.Should().AllSatisfy(c => c.Length.Should().BeLessThanOrEqualTo(MarkdownNoteChunker.MaxChunkChars + "Long > H\n\n".Length));
+        Assert.True(chunks.Count > 1);
+        Assert.All(chunks, c => Assert.StartsWith("Long > H\n\n", c, StringComparison.Ordinal));
+        Assert.All(chunks, c => Assert.True(c.Length <= MarkdownNoteChunker.MaxChunkChars + "Long > H\n\n".Length));
     }
 
     [Fact]
     public void Chunk_KeepsATitleOnlyNoteFindable()
     {
-        MarkdownNoteChunker.Chunk("Empty", [], [new NoteSection(["Only heading"], string.Empty)])
-            .Should().Equal("Empty > Only heading");
+        Assert.Equal(new string[] { "Empty > Only heading" }, MarkdownNoteChunker.Chunk("Empty", [], [new NoteSection(["Only heading"], string.Empty)]));
     }
 }

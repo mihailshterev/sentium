@@ -1,5 +1,4 @@
 using System.Text.Json;
-using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
@@ -66,25 +65,27 @@ public sealed class RegistrySettingsMigrationTests(MonolithWebApplicationFactory
         using (var global = await ReadSettingsAsync(db, globalId))
         {
             var root = global.RootElement;
-            root.TryGetProperty("ollama", out _).Should().BeFalse();
+            Assert.False(root.TryGetProperty("ollama", out _));
 
             var inference = root.GetProperty("inference");
-            inference.GetProperty("defaultModel").GetString().Should().Be("qwen3:4b");
-            inference.GetProperty("agentTemperature").GetDouble().Should().BeApproximately(0.7, 1e-6);
-            inference.TryGetProperty("agentContextWindow", out _).Should().BeFalse();
+            Assert.Equal("qwen3:4b", inference.GetProperty("defaultModel").GetString());
+            Assert.Equal(0.7, inference.GetProperty("agentTemperature").GetDouble(), tolerance: 1e-6);
+            Assert.False(inference.TryGetProperty("agentContextWindow", out _));
 
-            root.GetProperty("pdp").GetProperty("intentCheckModel").GetString().Should().Be("qwen3:4b", "other groups are untouched");
+            // other groups are untouched
+            Assert.Equal("qwen3:4b", root.GetProperty("pdp").GetProperty("intentCheckModel").GetString());
         }
 
         using (var user = await ReadSettingsAsync(db, userRowId))
         {
-            user.RootElement.TryGetProperty("inference", out _).Should().BeFalse("rows without an ollama group are left alone");
-            user.RootElement.GetProperty("harness").GetProperty("userHarnessPrompt").GetString().Should().Be("mine");
+            Assert.False(user.RootElement.TryGetProperty("inference", out _), "rows without an ollama group are left alone");
+            Assert.Equal("mine", user.RootElement.GetProperty("harness").GetProperty("userHarnessPrompt").GetString());
         }
 
         var entity = await db.SystemSettings.AsNoTracking().SingleAsync(s => s.Id == globalId, Ct);
-        entity.Settings.Inference.DefaultModel.Should().Be("qwen3:4b", "the application reads the migrated group");
-        entity.Settings.Inference.AgentTemperature.Should().BeApproximately(0.7f, 1e-6f);
+        // the application reads the migrated group
+        Assert.Equal("qwen3:4b", entity.Settings.Inference.DefaultModel);
+        Assert.Equal(0.7f, entity.Settings.Inference.AgentTemperature, tolerance: 1e-6f);
     }
 
     [Fact]
@@ -118,15 +119,17 @@ public sealed class RegistrySettingsMigrationTests(MonolithWebApplicationFactory
 
         using (var row = await ReadSettingsAsync(db, unknownTags))
         {
-            row.RootElement.GetProperty("inference").GetProperty("defaultModel").GetString().Should().Be("gemma-4-e4b", "the default must name a served model");
-            row.RootElement.GetProperty("inference").GetProperty("agentTemperature").GetDouble().Should().BeApproximately(0.5, 1e-6);
-            row.RootElement.GetProperty("pdp").GetProperty("intentCheckModel").GetString().Should().BeEmpty("an unknown intent-check model falls back to the default");
+            // the default must name a served model
+            Assert.Equal("gemma-4-e4b", row.RootElement.GetProperty("inference").GetProperty("defaultModel").GetString());
+            Assert.Equal(0.5, row.RootElement.GetProperty("inference").GetProperty("agentTemperature").GetDouble(), tolerance: 1e-6);
+            // an unknown intent-check model falls back to the default
+            Assert.Empty(row.RootElement.GetProperty("pdp").GetProperty("intentCheckModel").GetString()!);
         }
 
         using (var row = await ReadSettingsAsync(db, knownTags))
         {
-            row.RootElement.GetProperty("inference").GetProperty("defaultModel").GetString().Should().Be("gemma-4-e4b");
-            row.RootElement.GetProperty("pdp").GetProperty("intentCheckModel").GetString().Should().Be("gemma-4-e4b");
+            Assert.Equal("gemma-4-e4b", row.RootElement.GetProperty("inference").GetProperty("defaultModel").GetString());
+            Assert.Equal("gemma-4-e4b", row.RootElement.GetProperty("pdp").GetProperty("intentCheckModel").GetString());
         }
     }
 
@@ -154,8 +157,8 @@ public sealed class RegistrySettingsMigrationTests(MonolithWebApplicationFactory
             await migrator.MigrateAsync(PreviousMigration, Ct);
 
             using var rolledBack = await ReadSettingsAsync(db, id);
-            rolledBack.RootElement.TryGetProperty("inference", out _).Should().BeFalse();
-            rolledBack.RootElement.GetProperty("ollama").GetProperty("defaultModel").GetString().Should().Be("gemma4:e4b");
+            Assert.False(rolledBack.RootElement.TryGetProperty("inference", out _));
+            Assert.Equal("gemma4:e4b", rolledBack.RootElement.GetProperty("ollama").GetProperty("defaultModel").GetString());
         }
         finally
         {

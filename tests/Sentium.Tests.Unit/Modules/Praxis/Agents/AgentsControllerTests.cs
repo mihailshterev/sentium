@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
 using Sentium.Core.Results;
@@ -33,8 +32,7 @@ public sealed class AgentsControllerTests
         var result = await _controller.GetAgents(1, 20, ct);
 
         // Assert
-        result.Result.Should().BeOfType<OkObjectResult>()
-            .Which.Value.Should().Be(paged);
+        Assert.Equal(paged, Assert.IsType<OkObjectResult>(result.Result).Value);
         await _agentService.Received(1).GetAgentsPagedAsync(1, 20, ct);
     }
 
@@ -51,8 +49,7 @@ public sealed class AgentsControllerTests
         var result = await _controller.GetAgentById(id, ct);
 
         // Assert
-        result.Result.Should().BeOfType<OkObjectResult>()
-            .Which.Value.Should().Be(agent);
+        Assert.Equal(agent, Assert.IsType<OkObjectResult>(result.Result).Value);
         await _agentService.Received(1).GetAgentByIdAsync(id, ct);
     }
 
@@ -69,8 +66,7 @@ public sealed class AgentsControllerTests
         var result = await _controller.CreateAgent(request, ct);
 
         // Assert
-        result.Result.Should().BeOfType<CreatedAtActionResult>()
-            .Which.Value.Should().Be(created);
+        Assert.Equal(created, Assert.IsType<CreatedAtActionResult>(result.Result).Value);
         await _agentService.Received(1).CreateAgentAsync(request, ct);
     }
 
@@ -87,9 +83,7 @@ public sealed class AgentsControllerTests
         var result = await _controller.CreateAgent(request, ct);
 
         // Assert
-        result.Result.Should().BeOfType<ConflictObjectResult>()
-            .Which.Value.Should().BeOfType<ProblemDetails>()
-            .Which.Detail.Should().Contain("Dupe");
+        Assert.Contains("Dupe", Assert.IsType<ProblemDetails>(Assert.IsType<ConflictObjectResult>(result.Result).Value).Detail, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -104,7 +98,7 @@ public sealed class AgentsControllerTests
         var result = await _controller.GetAgentById(id, ct);
 
         // Assert
-        result.Result.Should().BeOfType<NotFoundResult>();
+        Assert.IsType<NotFoundResult>(result.Result);
     }
 
     [Fact]
@@ -120,7 +114,7 @@ public sealed class AgentsControllerTests
         var result = await _controller.UpdateAgent(id, request, ct);
 
         // Assert
-        result.Should().BeOfType<NotFoundResult>();
+        Assert.IsType<NotFoundResult>(result);
     }
 
     [Fact]
@@ -137,9 +131,7 @@ public sealed class AgentsControllerTests
         var result = await _controller.UpdateAgent(id, request, ct);
 
         // Assert
-        result.Should().BeOfType<ConflictObjectResult>()
-            .Which.Value.Should().BeOfType<ProblemDetails>()
-            .Which.Detail.Should().Contain("Taken");
+        Assert.Contains("Taken", Assert.IsType<ProblemDetails>(Assert.IsType<ConflictObjectResult>(result).Value).Detail, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -155,7 +147,7 @@ public sealed class AgentsControllerTests
         var result = await _controller.UpdateAgent(id, request, ct);
 
         // Assert
-        result.Should().BeOfType<NoContentResult>();
+        Assert.IsType<NoContentResult>(result);
         await _agentService.Received(1).UpdateAgentAsync(id, request, ct);
     }
 
@@ -171,7 +163,7 @@ public sealed class AgentsControllerTests
         var result = await _controller.DeleteAgent(id, ct);
 
         // Assert
-        result.Should().BeOfType<NotFoundResult>();
+        Assert.IsType<NotFoundResult>(result);
     }
 
     [Fact]
@@ -186,7 +178,7 @@ public sealed class AgentsControllerTests
         var result = await _controller.DeleteAgent(id, ct);
 
         // Assert
-        result.Should().BeOfType<NoContentResult>();
+        Assert.IsType<NoContentResult>(result);
         await _agentService.Received(1).DeleteAgentAsync(id, ct);
     }
 }

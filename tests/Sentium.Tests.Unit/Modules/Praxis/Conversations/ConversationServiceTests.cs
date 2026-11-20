@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Sentium.Core.Results;
@@ -44,10 +43,10 @@ public sealed class ConversationServiceTests
         var result = await _service.GetConversationsAsync(1, 20, null, ct);
 
         // Assert
-        result.Items.Should().BeEquivalentTo(expected);
-        result.TotalCount.Should().Be(expected.Count);
-        result.Page.Should().Be(1);
-        result.PageSize.Should().Be(20);
+        Assert.Equivalent(expected, result.Items);
+        Assert.Equal(expected.Count, result.TotalCount);
+        Assert.Equal(1, result.Page);
+        Assert.Equal(20, result.PageSize);
         await _repository.Received(1).GetConversationsAsync(1, 20, null, ct);
     }
 
@@ -64,7 +63,7 @@ public sealed class ConversationServiceTests
         var result = await _service.GetConversationAsync(id, ct);
 
         // Assert
-        result.Should().Be(expected);
+        Assert.Equal(expected, result);
         await _repository.Received(1).GetConversationAsync(id, ct);
     }
 
@@ -81,7 +80,7 @@ public sealed class ConversationServiceTests
         var result = await _service.CreateConversationAsync(request, ct);
 
         // Assert
-        result.Value.Should().Be(expected);
+        Assert.Equal(expected, result.Value);
         await _repository.Received(1).CreateConversationAsync(request, ct);
     }
 
@@ -95,7 +94,7 @@ public sealed class ConversationServiceTests
 
         var result = await _service.CreateConversationAsync(new CreateConversationRequest(null, "m", "timelineplanner"), ct);
 
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         await _repository.Received(1).CreateConversationAsync(Arg.Is<CreateConversationRequest>(r => r.AgentName == "TimelinePlanner"), ct);
     }
 
@@ -118,7 +117,7 @@ public sealed class ConversationServiceTests
 
         var result = await _service.CreateConversationAsync(new CreateConversationRequest(null, "m", "Orchestrator"), ct);
 
-        result.Status.Should().Be(ResultStatus.Invalid);
+        Assert.Equal(ResultStatus.Invalid, result.Status);
         await _repository.DidNotReceiveWithAnyArgs().CreateConversationAsync(default!, ct);
     }
 
@@ -130,7 +129,7 @@ public sealed class ConversationServiceTests
         _repository.GetAgentNameAsync(id, UserId, ct).Returns("Planner Bot");
         _roster.FindAsync("Planner Bot", UserId, ct).Returns(new AgentRosterEntry("Planner Bot", "Mine", AgentKind.Custom, null));
 
-        (await _service.ResolveChatAgentAsync(id, UserId, ct)).Should().Be("Planner Bot");
+        Assert.Equal("Planner Bot", await _service.ResolveChatAgentAsync(id, UserId, ct));
     }
 
     [Fact]
@@ -141,8 +140,8 @@ public sealed class ConversationServiceTests
         _repository.GetAgentNameAsync(id, UserId, ct).Returns("Deleted Agent");
         _roster.FindAsync("Deleted Agent", UserId, ct).Returns((AgentRosterEntry?)null);
 
-        (await _service.ResolveChatAgentAsync(id, UserId, ct)).Should().Be(AgentRole.GeneralAssistant);
-        (await _service.ResolveChatAgentAsync(null, UserId, ct)).Should().Be(AgentRole.GeneralAssistant);
+        Assert.Equal(AgentRole.GeneralAssistant, await _service.ResolveChatAgentAsync(id, UserId, ct));
+        Assert.Equal(AgentRole.GeneralAssistant, await _service.ResolveChatAgentAsync(null, UserId, ct));
     }
 
     [Fact]
@@ -182,7 +181,7 @@ public sealed class ConversationServiceTests
         var id = Guid.NewGuid();
         _repository.IsTitlePendingAsync(id, ct).Returns(true);
 
-        (await _service.IsTitlePendingAsync(id, ct)).Should().BeTrue();
+        Assert.True(await _service.IsTitlePendingAsync(id, ct));
     }
 
     [Theory]
@@ -198,7 +197,7 @@ public sealed class ConversationServiceTests
 
         var result = await service.TrySetGeneratedTitleAsync(id, "Trip planning", ct);
 
-        result.Should().Be(stored);
+        Assert.Equal(stored, result);
         await cache.Received(stored ? 1 : 0).InvalidateTagAsync("conversations", ct);
     }
 
@@ -215,7 +214,7 @@ public sealed class ConversationServiceTests
 
         var result = await service.RenameConversationAsync(id, "  Trip planning  ", ct);
 
-        result.Should().Be(renamed);
+        Assert.Equal(renamed, result);
         await _repository.Received(1).RenameConversationAsync(id, "Trip planning", ct);
         await cache.Received(renamed ? 1 : 0).InvalidateTagAsync("conversations", ct);
     }

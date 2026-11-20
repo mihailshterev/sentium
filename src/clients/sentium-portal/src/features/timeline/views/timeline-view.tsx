@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
-import { AnimatePresence, MotionConfig, motion } from "framer-motion";
+import { Animated, EASE_OUT_QUINT, Presence } from "@/shared/ui/motion";
 import { CalendarRange, Sparkles } from "lucide-react";
 import styles from "../timeline.module.css";
 import { Button } from "@/shared/ui/button";
@@ -43,6 +43,8 @@ import { MAX_MONTH_INDEX, MIN_MONTH_INDEX, monthAt, monthIndex } from "../utils/
 const MIN_YEAR = 2000;
 const MAX_YEAR = 2100;
 const NOTICE_MS = 6000;
+const MONTH_TIMING = { duration: 280, easing: EASE_OUT_QUINT };
+const DRAWER_TIMING = { duration: 220 };
 
 const clampYear = (value: number) => Math.min(MAX_YEAR, Math.max(MIN_YEAR, value));
 
@@ -284,169 +286,168 @@ export function TimelineView() {
   const mutationError = editor?.task ? taskMutations.update.error : taskMutations.create.error;
 
   return (
-    <MotionConfig reducedMotion="user">
-      <Page
-        title="Timeline"
-        subtitle="Your year at a glance: tasks, notes, and what your agents suggest"
-        icon={<CalendarRange size={20} />}
-        width="wide"
-        actions={
-          <div className={styles.headerActions}>
-            <Button size="sm" onClick={() => go(today.getFullYear(), today.getMonth() + 1)}>
-              Today
-            </Button>
-            <Button
-              size="sm"
-              icon={<Sparkles size={14} />}
-              onClick={() => setShowProposals(true)}
-              aria-label={`Suggestions${pending.length > 0 ? ` (${pending.length})` : ""}`}
-              data-testid="timeline-suggestions"
-            >
-              <span className={styles.actionLabel}>Suggestions</span>
-              {pending.length > 0 ? ` (${pending.length})` : ""}
-            </Button>
-          </div>
-        }
-      >
-        {notice && <StatusMessage variant="warning" message={notice} className={styles.notice} />}
-        {isError && <StatusMessage variant="error" message="The timeline could not be loaded." />}
+    <Page
+      title="Timeline"
+      subtitle="Your year at a glance: tasks, notes, and what your agents suggest"
+      icon={<CalendarRange size={20} />}
+      width="wide"
+      actions={
+        <div className={styles.headerActions}>
+          <Button size="sm" onClick={() => go(today.getFullYear(), today.getMonth() + 1)}>
+            Today
+          </Button>
+          <Button
+            size="sm"
+            icon={<Sparkles size={14} />}
+            onClick={() => setShowProposals(true)}
+            aria-label={`Suggestions${pending.length > 0 ? ` (${pending.length})` : ""}`}
+            data-testid="timeline-suggestions"
+          >
+            <span className={styles.actionLabel}>Suggestions</span>
+            {pending.length > 0 ? ` (${pending.length})` : ""}
+          </Button>
+        </div>
+      }
+    >
+      {notice && <StatusMessage variant="warning" message={notice} className={styles.notice} />}
+      {isError && <StatusMessage variant="error" message="The timeline could not be loaded." />}
 
-        <div className={styles.layout} data-chat={chat ? "open" : undefined}>
-          <div className={styles.main}>
-            <YearTimeline
-              overviews={overviews}
-              today={today}
-              selected={selectedMonth ? { year, month: selectedMonth } : null}
-              home={home}
-              overdueCount={upcoming?.overdueCount ?? 0}
-              narrow={narrow}
-              onSelectMonth={selectMonth}
-              onYearsChange={onYearsChange}
-            />
+      <div className={styles.layout} data-chat={chat ? "open" : undefined}>
+        <div className={styles.main}>
+          <YearTimeline
+            overviews={overviews}
+            today={today}
+            selected={selectedMonth ? { year, month: selectedMonth } : null}
+            home={home}
+            overdueCount={upcoming?.overdueCount ?? 0}
+            narrow={narrow}
+            onSelectMonth={selectMonth}
+            onYearsChange={onYearsChange}
+          />
 
-            <AnimatePresence mode="popLayout" initial={false}>
-              {selectedMonth ? (
-                <motion.div
-                  key={`${year}-${selectedMonth}`}
-                  initial={{ opacity: 0, y: -16, scaleY: 0.94 }}
-                  animate={{ opacity: 1, y: 0, scaleY: 1 }}
-                  exit={{ opacity: 0, y: -10, scaleY: 0.97 }}
-                  transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
-                  style={{ transformOrigin: "50% 0%" }}
-                >
-                  <MonthCalendar
-                    year={year}
-                    month={selectedMonth}
-                    detail={detail}
-                    isLoading={monthLoading}
-                    today={today}
-                    selectedDay={selectedDay}
-                    onSelectDay={setSelectedDay}
-                    onClose={collapse}
-                    onStepMonth={stepMonth}
-                    onOpenDay={openDay}
-                    onAddTask={(date) => setEditor({ task: null, defaults: defaultsFor(date) })}
-                    onOpenTask={(task) => setEditor({ task, defaults: defaultsFor(task.date) })}
-                    onMoveTask={moveTask}
-                    onToggleDone={toggleDone}
-                    onAskAgent={openChat}
-                    onAddNote={(payload) =>
-                      noteMutations.create.mutate(payload, {
-                        onError: (error) => setNotice(errorText(error, "The note could not be saved.")),
-                      })
-                    }
-                    onDeleteNote={(note) => noteMutations.remove.mutate(note.id)}
-                    isSavingNote={noteMutations.create.isPending}
-                    {...proposalActions}
-                  />
-                </motion.div>
-              ) : (
-                <motion.div key="up-next" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                  <UpNext
-                    upcoming={upcoming}
-                    today={todayIso}
-                    onOpenTask={openTaskMonth}
-                    onToggleDone={toggleDone}
-                    onAskAgent={(task) => openChat({ kind: "task", task })}
-                    onShowSuggestions={() => setShowProposals(true)}
-                    onPlanMonth={() =>
-                      openChat({ kind: "month", year: today.getFullYear(), month: today.getMonth() + 1 })
-                    }
-                  />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
-          <AnimatePresence>
-            {chat && (
-              <motion.div
-                className={styles.drawerWrap}
-                initial={{ opacity: 0, x: 32 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 32 }}
-                transition={{ duration: 0.22 }}
+          <Presence popLayout initial={false}>
+            {selectedMonth ? (
+              <Animated
+                key={`${year}-${selectedMonth}`}
+                from={{ opacity: 0, y: -16, scaleY: 0.94 }}
+                exitTo={{ opacity: 0, y: -10, scaleY: 0.97 }}
+                enter={MONTH_TIMING}
+                exit={MONTH_TIMING}
+                style={{ transformOrigin: "50% 0%" }}
               >
-                <AgentChatDrawer context={chat} today={todayIso} onClose={closeChat} />
-              </motion.div>
+                <MonthCalendar
+                  year={year}
+                  month={selectedMonth}
+                  detail={detail}
+                  isLoading={monthLoading}
+                  today={today}
+                  selectedDay={selectedDay}
+                  onSelectDay={setSelectedDay}
+                  onClose={collapse}
+                  onStepMonth={stepMonth}
+                  onOpenDay={openDay}
+                  onAddTask={(date) => setEditor({ task: null, defaults: defaultsFor(date) })}
+                  onOpenTask={(task) => setEditor({ task, defaults: defaultsFor(task.date) })}
+                  onMoveTask={moveTask}
+                  onToggleDone={toggleDone}
+                  onAskAgent={openChat}
+                  onAddNote={(payload) =>
+                    noteMutations.create.mutate(payload, {
+                      onError: (error) => setNotice(errorText(error, "The note could not be saved.")),
+                    })
+                  }
+                  onDeleteNote={(note) => noteMutations.remove.mutate(note.id)}
+                  isSavingNote={noteMutations.create.isPending}
+                  {...proposalActions}
+                />
+              </Animated>
+            ) : (
+              <Animated key="up-next" from={{ opacity: 0 }} exitTo={{ opacity: 0 }}>
+                <UpNext
+                  upcoming={upcoming}
+                  today={todayIso}
+                  onOpenTask={openTaskMonth}
+                  onToggleDone={toggleDone}
+                  onAskAgent={(task) => openChat({ kind: "task", task })}
+                  onShowSuggestions={() => setShowProposals(true)}
+                  onPlanMonth={() =>
+                    openChat({ kind: "month", year: today.getFullYear(), month: today.getMonth() + 1 })
+                  }
+                />
+              </Animated>
             )}
-          </AnimatePresence>
+          </Presence>
         </div>
 
-        {editor && (
-          <TaskFormDialog
-            task={editor.task}
-            defaults={editor.defaults}
-            roster={roster}
-            tagSuggestions={tagSuggestions}
-            onSubmit={saveTask}
-            onCancel={() => {
-              taskMutations.create.reset();
-              taskMutations.update.reset();
-              setEditor(null);
-            }}
-            onDelete={askDelete}
-            onDiscuss={(task) => {
-              setEditor(null);
-              openChat({ kind: "task", task });
-            }}
-            isPending={taskMutations.create.isPending || taskMutations.update.isPending}
-            error={mutationError ? errorText(mutationError, "The task could not be saved.") : null}
-          />
-        )}
+        <Presence>
+          {chat && (
+            <Animated
+              key="chat"
+              className={styles.drawerWrap}
+              from={{ opacity: 0, x: 32 }}
+              exitTo={{ opacity: 0, x: 32 }}
+              enter={DRAWER_TIMING}
+              exit={DRAWER_TIMING}
+            >
+              <AgentChatDrawer context={chat} today={todayIso} onClose={closeChat} />
+            </Animated>
+          )}
+        </Presence>
+      </div>
 
-        <ConfirmDialog
-          open={toDelete !== null}
-          variant="danger"
-          title={toDelete && isEvent(toDelete) ? "Delete event" : "Delete task"}
-          description={toDelete ? `Delete "${toDelete.title}" with its notes and pending suggestions?` : ""}
-          confirmLabel="Delete"
-          cancelLabel="Cancel"
-          onConfirm={() =>
-            toDelete &&
-            taskMutations.remove.mutate({ id: toDelete.id }, {
-              onSuccess: () => {
-                setToDelete(null);
-                setEditor(null);
-              },
-            })
-          }
-          onCancel={() => setToDelete(null)}
+      {editor && (
+        <TaskFormDialog
+          task={editor.task}
+          defaults={editor.defaults}
+          roster={roster}
+          tagSuggestions={tagSuggestions}
+          onSubmit={saveTask}
+          onCancel={() => {
+            taskMutations.create.reset();
+            taskMutations.update.reset();
+            setEditor(null);
+          }}
+          onDelete={askDelete}
+          onDiscuss={(task) => {
+            setEditor(null);
+            openChat({ kind: "task", task });
+          }}
+          isPending={taskMutations.create.isPending || taskMutations.update.isPending}
+          error={mutationError ? errorText(mutationError, "The task could not be saved.") : null}
         />
+      )}
 
-        {scopePrompt && (
-          <SeriesScopeDialog
-            action={scopePrompt.action}
-            title={scopePrompt.task.title}
-            onChoose={applyScope}
-            onCancel={() => setScopePrompt(null)}
-          />
-        )}
+      <ConfirmDialog
+        open={toDelete !== null}
+        variant="danger"
+        title={toDelete && isEvent(toDelete) ? "Delete event" : "Delete task"}
+        description={toDelete ? `Delete "${toDelete.title}" with its notes and pending suggestions?` : ""}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        onConfirm={() =>
+          toDelete &&
+          taskMutations.remove.mutate({ id: toDelete.id }, {
+            onSuccess: () => {
+              setToDelete(null);
+              setEditor(null);
+            },
+          })
+        }
+        onCancel={() => setToDelete(null)}
+      />
 
-        {showProposals && (
-          <ProposalsDialog proposals={pending} onClose={() => setShowProposals(false)} {...proposalActions} />
-        )}
-      </Page>
-    </MotionConfig>
+      {scopePrompt && (
+        <SeriesScopeDialog
+          action={scopePrompt.action}
+          title={scopePrompt.task.title}
+          onChoose={applyScope}
+          onCancel={() => setScopePrompt(null)}
+        />
+      )}
+
+      {showProposals && (
+        <ProposalsDialog proposals={pending} onClose={() => setShowProposals(false)} {...proposalActions} />
+      )}
+    </Page>
   );
 }

@@ -1,4 +1,3 @@
-using FluentAssertions;
 using NSubstitute;
 using Sentium.Praxis.Features.Agents;
 using Sentium.Praxis.Features.Agents.Native;
@@ -31,9 +30,9 @@ public sealed class AgentRosterTests
 
         var roster = await CreateRoster().GetAsync(UserId, Ct);
 
-        roster.Select(r => r.Name).Should().Equal(AgentRole.GeneralAssistant, AgentRole.ResearchAnalyst, AgentRole.TimelinePlanner, "Budget Bot", "Zed");
-        roster.Single(r => r.Name == "Budget Bot").Should().Be(new AgentRosterEntry("Budget Bot", "Mine", AgentKind.Custom, "qwen3"));
-        roster.Single(r => r.Name == AgentRole.TimelinePlanner).Kind.Should().Be(AgentKind.BuiltIn);
+        Assert.Equal(new string[] { AgentRole.GeneralAssistant, AgentRole.ResearchAnalyst, AgentRole.TimelinePlanner, "Budget Bot", "Zed" }, roster.Select(r => r.Name));
+        Assert.Equal(new AgentRosterEntry("Budget Bot", "Mine", AgentKind.Custom, "qwen3"), roster.Single(r => r.Name == "Budget Bot"));
+        Assert.Equal(AgentKind.BuiltIn, roster.Single(r => r.Name == AgentRole.TimelinePlanner).Kind);
     }
 
     [Fact]
@@ -41,14 +40,14 @@ public sealed class AgentRosterTests
     {
         var entry = await CreateRoster().FindAsync(" timelineplanner ", UserId, Ct);
 
-        entry!.Name.Should().Be(AgentRole.TimelinePlanner);
+        Assert.Equal(AgentRole.TimelinePlanner, entry!.Name);
         await _repository.DidNotReceiveWithAnyArgs().GetAgentByNameForUserAsync(default!, default, Ct);
     }
 
     [Fact]
     public async Task Find_NeverReturnsAControlRole()
     {
-        (await CreateRoster().FindAsync("orchestrator", UserId, Ct)).Should().BeNull();
+        Assert.Null(await CreateRoster().FindAsync("orchestrator", UserId, Ct));
         await _repository.DidNotReceiveWithAnyArgs().GetAgentByNameForUserAsync(default!, default, Ct);
     }
 
@@ -57,8 +56,8 @@ public sealed class AgentRosterTests
     {
         _repository.GetAgentByNameForUserAsync("budget bot", UserId, Ct).Returns(Custom("Budget Bot"));
 
-        (await CreateRoster().FindAsync("budget bot", UserId, Ct))!.Name.Should().Be("Budget Bot");
-        (await CreateRoster().FindAsync("someone else's", UserId, Ct)).Should().BeNull();
+        Assert.Equal("Budget Bot", (await CreateRoster().FindAsync("budget bot", UserId, Ct))!.Name);
+        Assert.Null(await CreateRoster().FindAsync("someone else's", UserId, Ct));
     }
 
     private sealed class FakeAgent(string name) : IAgent

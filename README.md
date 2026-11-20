@@ -165,8 +165,9 @@ Modules reference each other only through `Contracts`; a unit test (`ModuleBound
 - Entity Framework Core (PostgreSQL via Npgsql) · pgvector (vector store)
 - ASP.NET Core Identity (cookie authentication)
 - HybridCache (in-process) · Quartz.NET (scheduling)
-- Docker.DotNet (sandbox)
-- FluentValidation · Polly · Serilog → OpenTelemetry
+- Docker.DotNet.Enhanced (sandbox; the maintained fork Testcontainers also uses)
+- FluentValidation · Polly · `Microsoft.Extensions.Logging` → OpenTelemetry
+- NuGet: every version in `Directory.Packages.props` (with transitive pinning), lock files restored in locked mode, nuget.org as the only mapped source (`nuget.config`), and NuGet audit failing the build on any advisory
 
 **Models (default, all local via llama.cpp)**
 
@@ -177,12 +178,13 @@ Modules reference each other only through `Contracts`; a unit test (`ModuleBound
 **Frontend**
 
 - React 19 + TypeScript + Vite (`sentium-portal`)
-- TanStack Query v5 (server state) · Zustand v5 (client/streaming state)
-- SCSS modules · pnpm
+- TanStack Query v5 (server state) · in-house stores on `useSyncExternalStore` (client/streaming state)
+- CSS modules · pnpm workspace (one root lockfile and version catalog in `pnpm-workspace.yaml`)
+- Few runtime dependencies by design: markdown rendering, motion, the semantic-map canvas renderer, pan/zoom, form validation glue and fonts are in-house or vendored
 
 **Testing**
 
-- xUnit v3 · Testcontainers · `Aspire.Hosting.Testing` (backend)
+- xUnit v3 (built-in assertions, Microsoft Testing Platform) · NSubstitute · Testcontainers · `Aspire.Hosting.Testing` (backend)
 - Vitest (frontend) · Playwright (E2E)
 
 ---
@@ -251,7 +253,7 @@ Sentium.Web applies every module's EF Core migrations automatically on first sta
 ### Front-end only (against a running Sentium.Web)
 
 ```bash
-pnpm install      # once, at the repo root (installs portal, e2e and Satelles)
+pnpm install      # once, at the repo root (installs the portal and e2e)
 cd src/clients/sentium-portal
 pnpm dev          # Vite dev server on :5173 (proxies /api to Sentium.Web)
 pnpm lint
@@ -274,12 +276,14 @@ dotnet ef migrations add <Name> \
 
 ## Running the tests
 
-**Backend (xUnit v3)**
+**Backend (xUnit v3 on Microsoft Testing Platform, opted in by `global.json`)**
 
 ```bash
 dotnet test                                                            # everything
-dotnet test tests/Sentium.Tests.Unit/Sentium.Tests.Unit.csproj        # unit
-dotnet test tests/Sentium.Tests.Integration/...                       # integration (needs Docker: PostgreSQL Testcontainer)
+dotnet test --project tests/Sentium.Tests.Unit                         # unit
+dotnet test --project tests/Sentium.Tests.Integration                  # integration (needs Docker: PostgreSQL Testcontainer)
+dotnet test --project tests/Sentium.Tests.Unit --explicit only         # real-Docker sandbox tests (needs Docker)
+dotnet test --project tests/Sentium.Tests.Unit --filter-class "*.MigrationSnapshotTests"   # one test class
 ```
 
 **Frontend (Vitest)**

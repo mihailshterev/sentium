@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Sentium.Core.Results;
@@ -69,14 +68,14 @@ public sealed class EvaluationApiTests : IClassFixture<ProbatioApiFactory>
     private static async Task<EvalSuiteDto> CreateSuiteAsync(HttpClient client, params EvalCaseInput[] cases)
     {
         var response = await client.PostAsJsonAsync("/api/probatio/suites", new CreateEvalSuiteRequest("Shopping", null, cases), Ct);
-        response.StatusCode.Should().Be(HttpStatusCode.Created, await response.Content.ReadAsStringAsync(Ct));
+        Assert.True(response.StatusCode == HttpStatusCode.Created, $"{response.StatusCode}: {await response.Content.ReadAsStringAsync(Ct)}");
         return (await response.Content.ReadFromJsonAsync<EvalSuiteDto>(Ct))!;
     }
 
     private static async Task<EvaluationSummaryDto> StartAsync(HttpClient client, Guid suiteId, int repetitions = 1)
     {
         var response = await client.PostAsJsonAsync(Evaluations, new StartEvaluationRequest(suiteId, null, Agent, ProbatioApiFactory.Model, repetitions), Ct);
-        response.StatusCode.Should().Be(HttpStatusCode.Accepted, await response.Content.ReadAsStringAsync(Ct));
+        Assert.True(response.StatusCode == HttpStatusCode.Accepted, $"{response.StatusCode}: {await response.Content.ReadAsStringAsync(Ct)}");
         return (await response.Content.ReadFromJsonAsync<EvaluationSummaryDto>(Ct))!;
     }
 
@@ -90,70 +89,72 @@ public sealed class EvaluationApiTests : IClassFixture<ProbatioApiFactory>
         var suite = await CreateSuiteAsync(client, ShoppingCase(), GreetingCase());
         var started = await StartAsync(client, suite.Id, repetitions: 2);
 
-        started.Status.Should().Be(EvaluationStatus.Queued);
-        started.CaseCount.Should().Be(2);
+        Assert.Equal(EvaluationStatus.Queued, started.Status);
+        Assert.Equal(2, started.CaseCount);
 
         await factory.Worker.ProcessAsync(started.Id, Ct);
         var evaluation = await GetAsync(client, started.Id);
 
-        evaluation.Summary.Status.Should().Be(EvaluationStatus.Completed);
-        evaluation.Summary.CompletedCaseCount.Should().Be(2);
-        evaluation.Summary.PassedCaseCount.Should().Be(1);
-        evaluation.Summary.Model.Should().Be(ProbatioApiFactory.Model);
+        Assert.Equal(EvaluationStatus.Completed, evaluation.Summary.Status);
+        Assert.Equal(2, evaluation.Summary.CompletedCaseCount);
+        Assert.Equal(1, evaluation.Summary.PassedCaseCount);
+        Assert.Equal(ProbatioApiFactory.Model, evaluation.Summary.Model);
 
         var shopping = evaluation.Cases[0];
-        shopping.Passed.Should().BeTrue();
-        shopping.PassedRepetitions.Should().Be(2);
-        shopping.Repetitions.Should().HaveCount(2);
+        Assert.True(shopping.Passed);
+        Assert.Equal(2, shopping.PassedRepetitions);
+        Assert.Equal(2, shopping.Repetitions.Count);
 
         var repetition = shopping.Repetitions[0];
-        repetition.ToolCalls.Should().ContainSingle(c => c.ToolName == Tool && c.Result == "milk, eggs");
-        repetition.ToolCalls[0].Arguments.GetProperty("query").GetString().Should().Be("milk");
-        repetition.Transcript.Select(m => m.Role).Should().Equal("user", "assistant", "user", "assistant");
-        repetition.Transcript[^1].Text.Should().Be("You still need: milk, eggs");
-        repetition.Checks.Select(c => (c.Type, c.Status)).Should().Equal(
-            (EvalCheckType.ContainsExpectedAnswer, CheckOutcomeStatus.Passed),
-            (EvalCheckType.ToolsCalled, CheckOutcomeStatus.Passed),
-            (EvalCheckType.ToolArgumentsMatch, CheckOutcomeStatus.Passed),
-            (EvalCheckType.Relevance, CheckOutcomeStatus.Passed));
-        repetition.OutputTokens.Should().BeGreaterThan(0);
-        repetition.InputTokens.Should().BeGreaterThan(0);
-        repetition.LatencyMs.Should().BeGreaterThanOrEqualTo(0);
+        Assert.Single(repetition.ToolCalls, c => c.ToolName == Tool && c.Result == "milk, eggs");
+        Assert.Equal("milk", repetition.ToolCalls[0].Arguments.GetProperty("query").GetString());
+        Assert.Equal(new string[] { "user", "assistant", "user", "assistant" }, repetition.Transcript.Select(m => m.Role));
+        Assert.Equal("You still need: milk, eggs", repetition.Transcript[^1].Text);
+        Assert.Equal(new (EvalCheckType Type, CheckOutcomeStatus Status)[] { (EvalCheckType.ContainsExpectedAnswer, CheckOutcomeStatus.Passed), (EvalCheckType.ToolsCalled, CheckOutcomeStatus.Passed), (EvalCheckType.ToolArgumentsMatch, CheckOutcomeStatus.Passed), (EvalCheckType.Relevance, CheckOutcomeStatus.Passed) }, repetition.Checks.Select(c => (c.Type, c.Status)));
+        Assert.True(repetition.OutputTokens > 0);
+        Assert.True(repetition.InputTokens > 0);
+        Assert.True(repetition.LatencyMs >= 0);
 
         var greeting = evaluation.Cases[1];
-        greeting.Passed.Should().BeFalse();
-        greeting.Repetitions[0].Checks.Should().ContainSingle(c => c.Status == CheckOutcomeStatus.Failed);
+        Assert.False(greeting.Passed);
+        Assert.Single(greeting.Repetitions[0].Checks, c => c.Status == CheckOutcomeStatus.Failed);
 
         // The model got the canned result, so the real knowledge-base search never ran (ADR 0003).
-        factory.Script.ToolResultsSeen.Should().OnlyContain(r => r == "milk, eggs").And.HaveCount(2);
-        factory.Script.Requests.Should().OnlyContain(r => r.ModelId == ProbatioApiFactory.Model);
-        factory.Script.Requests[0].Tools.Should().Contain(Tool);
-        factory.Script.Requests[0].Instructions.Should().Contain(Tool);
+        Assert.All(factory.Script.ToolResultsSeen, r => Assert.True(r == "milk, eggs"));
+        Assert.Equal(2, factory.Script.ToolResultsSeen.Count);
+        Assert.All(factory.Script.Requests, r => Assert.True(r.ModelId == ProbatioApiFactory.Model));
+        Assert.Contains(Tool, factory.Script.Requests[0].Tools);
+        Assert.Contains(Tool, factory.Script.Requests[0].Instructions, StringComparison.Ordinal);
     }
 
     [Fact]
     public async Task QualityChecks_AreScoredByTheUsersJudge_FrozenAtStart()
     {
         var client = ClientFor(Guid.NewGuid());
-        (await client.PutAsJsonAsync("/api/registry/settings/evaluation", new { judgeModel = ProbatioApiFactory.JudgeModel }, Ct))
-            .StatusCode.Should().Be(HttpStatusCode.OK);
+        Assert.Equal(HttpStatusCode.OK, (await client.PutAsJsonAsync("/api/registry/settings/evaluation", new { judgeModel = ProbatioApiFactory.JudgeModel }, Ct))
+            .StatusCode);
         var suite = await CreateSuiteAsync(client, ShoppingCase() with
         {
             Checks = [new EvalCheck(EvalCheckType.Relevance), new EvalCheck(EvalCheckType.Groundedness, 5)],
         });
 
         var started = await StartAsync(client, suite.Id);
-        started.JudgeModel.Should().Be(ProbatioApiFactory.JudgeModel);
+        Assert.Equal(ProbatioApiFactory.JudgeModel, started.JudgeModel);
 
         // Changing the setting afterwards does not change the Judge of a started Evaluation.
         await client.PutAsJsonAsync("/api/registry/settings/evaluation", new { judgeModel = (string?)null }, Ct);
         await factory.Worker.ProcessAsync(started.Id, Ct);
 
         var checks = (await GetAsync(client, started.Id)).Cases[0].Repetitions[0].Checks;
-        checks[0].Should().Match<CheckOutcome>(c =>
-            c.Status == CheckOutcomeStatus.Passed && c.Score == 4 && c.Threshold == 4 && c.Reason!.Contains("Judged by judge-model"));
-        checks[1].Should().Match<CheckOutcome>(c => c.Status == CheckOutcomeStatus.Failed && c.Score == 4 && c.Threshold == 5);
-        factory.Script.JudgeModels.Should().NotBeEmpty().And.OnlyContain(m => m == ProbatioApiFactory.JudgeModel);
+        Assert.Equal(CheckOutcomeStatus.Passed, checks[0].Status);
+        Assert.Equal(4, checks[0].Score);
+        Assert.Equal(4, checks[0].Threshold);
+        Assert.Contains("Judged by judge-model", checks[0].Reason, StringComparison.Ordinal);
+        Assert.Equal(CheckOutcomeStatus.Failed, checks[1].Status);
+        Assert.Equal(4, checks[1].Score);
+        Assert.Equal(5, checks[1].Threshold);
+        Assert.NotEmpty(factory.Script.JudgeModels);
+        Assert.All(factory.Script.JudgeModels, m => Assert.True(m == ProbatioApiFactory.JudgeModel));
     }
 
     [Fact]
@@ -163,14 +164,15 @@ public sealed class EvaluationApiTests : IClassFixture<ProbatioApiFactory>
         var quality = await CreateSuiteAsync(client, ShoppingCase());
         var deterministic = await CreateSuiteAsync(client, GreetingCase());
 
-        (await StartAsync(client, quality.Id)).JudgeModel.Should().Be(ProbatioApiFactory.DefaultModel);
+        Assert.Equal(ProbatioApiFactory.DefaultModel, (await StartAsync(client, quality.Id)).JudgeModel);
 
         await client.PutAsJsonAsync("/api/registry/settings/evaluation", new { judgeModel = "missing-judge" }, Ct);
         var unusable = await client.PostAsJsonAsync(Evaluations, new StartEvaluationRequest(quality.Id, null, Agent, ProbatioApiFactory.Model), Ct);
-        unusable.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        (await unusable.Content.ReadAsStringAsync(Ct)).Should().Contain("Unknown model 'missing-judge'");
+        Assert.Equal(HttpStatusCode.BadRequest, unusable.StatusCode);
+        Assert.Contains("Unknown model 'missing-judge'", await unusable.Content.ReadAsStringAsync(Ct), StringComparison.Ordinal);
 
-        (await StartAsync(client, deterministic.Id)).JudgeModel.Should().BeNull("a suite without quality Checks needs no Judge");
+        // a suite without quality Checks needs no Judge
+        Assert.Null((await StartAsync(client, deterministic.Id)).JudgeModel);
     }
 
     [Fact]
@@ -185,12 +187,12 @@ public sealed class EvaluationApiTests : IClassFixture<ProbatioApiFactory>
         var emptySuite = await client.PostAsJsonAsync(Evaluations, new StartEvaluationRequest(empty.Id, null, Agent, ProbatioApiFactory.Model), Ct);
         var tooMany = await client.PostAsJsonAsync(Evaluations, new StartEvaluationRequest(suite.Id, null, Agent, ProbatioApiFactory.Model, 99), Ct);
 
-        unknownAgent.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        (await unknownAgent.Content.ReadAsStringAsync(Ct)).Should().Contain("no agent named 'Nobody'");
-        unknownModel.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        (await unknownModel.Content.ReadAsStringAsync(Ct)).Should().Contain("Unknown model 'missing-model'");
-        emptySuite.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        tooMany.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        Assert.Equal(HttpStatusCode.BadRequest, unknownAgent.StatusCode);
+        Assert.Contains("no agent named 'Nobody'", await unknownAgent.Content.ReadAsStringAsync(Ct), StringComparison.Ordinal);
+        Assert.Equal(HttpStatusCode.BadRequest, unknownModel.StatusCode);
+        Assert.Contains("Unknown model 'missing-model'", await unknownModel.Content.ReadAsStringAsync(Ct), StringComparison.Ordinal);
+        Assert.Equal(HttpStatusCode.BadRequest, emptySuite.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, tooMany.StatusCode);
     }
 
     [Fact]
@@ -200,18 +202,19 @@ public sealed class EvaluationApiTests : IClassFixture<ProbatioApiFactory>
         var suite = await CreateSuiteAsync(client, GreetingCase());
         var started = await StartAsync(client, suite.Id);
 
-        (await client.DeleteAsync($"{Evaluations}/{started.Id}", Ct)).StatusCode.Should().Be(HttpStatusCode.Conflict);
+        Assert.Equal(HttpStatusCode.Conflict, (await client.DeleteAsync($"{Evaluations}/{started.Id}", Ct)).StatusCode);
 
         var cancel = await client.PostAsync($"{Evaluations}/{started.Id}/cancel", null, Ct);
-        cancel.StatusCode.Should().Be(HttpStatusCode.OK);
-        (await cancel.Content.ReadFromJsonAsync<EvaluationSummaryDto>(Ct))!.Status.Should().Be(EvaluationStatus.Cancelled);
+        Assert.Equal(HttpStatusCode.OK, cancel.StatusCode);
+        Assert.Equal(EvaluationStatus.Cancelled, (await cancel.Content.ReadFromJsonAsync<EvaluationSummaryDto>(Ct))!.Status);
 
         await factory.Worker.ProcessAsync(started.Id, Ct);
-        (await GetAsync(client, started.Id)).Summary.Status.Should().Be(EvaluationStatus.Cancelled, "a cancelled Evaluation is never claimed");
+        // a cancelled Evaluation is never claimed
+        Assert.Equal(EvaluationStatus.Cancelled, (await GetAsync(client, started.Id)).Summary.Status);
 
-        (await client.PostAsync($"{Evaluations}/{started.Id}/cancel", null, Ct)).StatusCode.Should().Be(HttpStatusCode.Conflict);
-        (await client.DeleteAsync($"{Evaluations}/{started.Id}", Ct)).StatusCode.Should().Be(HttpStatusCode.NoContent);
-        (await client.GetAsync($"{Evaluations}/{started.Id}", Ct)).StatusCode.Should().Be(HttpStatusCode.NotFound);
+        Assert.Equal(HttpStatusCode.Conflict, (await client.PostAsync($"{Evaluations}/{started.Id}/cancel", null, Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await client.DeleteAsync($"{Evaluations}/{started.Id}", Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"{Evaluations}/{started.Id}", Ct)).StatusCode);
     }
 
     [Fact]
@@ -224,14 +227,14 @@ public sealed class EvaluationApiTests : IClassFixture<ProbatioApiFactory>
 
         var processing = factory.Worker.ProcessAsync(started.Id, Ct);
         await factory.Script.Blocked.Task.WaitAsync(TimeSpan.FromSeconds(30), Ct);
-        (await GetAsync(client, started.Id)).Summary.Status.Should().Be(EvaluationStatus.Running);
+        Assert.Equal(EvaluationStatus.Running, (await GetAsync(client, started.Id)).Summary.Status);
 
-        (await client.PostAsync($"{Evaluations}/{started.Id}/cancel", null, Ct)).StatusCode.Should().Be(HttpStatusCode.OK);
+        Assert.Equal(HttpStatusCode.OK, (await client.PostAsync($"{Evaluations}/{started.Id}/cancel", null, Ct)).StatusCode);
         await processing.WaitAsync(TimeSpan.FromSeconds(30), Ct);
 
         var evaluation = await GetAsync(client, started.Id);
-        evaluation.Summary.Status.Should().Be(EvaluationStatus.Cancelled);
-        evaluation.Summary.FinishedAt.Should().NotBeNull();
+        Assert.Equal(EvaluationStatus.Cancelled, evaluation.Summary.Status);
+        Assert.NotNull(evaluation.Summary.FinishedAt);
     }
 
     [Fact]
@@ -241,13 +244,13 @@ public sealed class EvaluationApiTests : IClassFixture<ProbatioApiFactory>
         var suite = await CreateSuiteAsync(client, ShoppingCase());
         var started = await StartAsync(client, suite.Id);
 
-        (await client.DeleteAsync($"/api/probatio/suites/{suite.Id}", Ct)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        Assert.Equal(HttpStatusCode.NoContent, (await client.DeleteAsync($"/api/probatio/suites/{suite.Id}", Ct)).StatusCode);
         await factory.Worker.ProcessAsync(started.Id, Ct);
 
         var evaluation = await GetAsync(client, started.Id);
-        evaluation.Summary.Status.Should().Be(EvaluationStatus.Completed);
-        evaluation.Summary.SuiteName.Should().Be("Shopping");
-        evaluation.Cases.Should().ContainSingle(c => c.Prompt == "What is on the shopping list?" && c.Passed == true);
+        Assert.Equal(EvaluationStatus.Completed, evaluation.Summary.Status);
+        Assert.Equal("Shopping", evaluation.Summary.SuiteName);
+        Assert.Single(evaluation.Cases, c => c.Prompt == "What is on the shopping list?" && c.Passed == true);
     }
 
     [Fact]
@@ -259,15 +262,16 @@ public sealed class EvaluationApiTests : IClassFixture<ProbatioApiFactory>
 
         foreach (var client in new[] { ClientFor(Guid.NewGuid()), factory.CreateClient() })
         {
-            (await client.GetAsync($"{Evaluations}/{started.Id}", Ct)).StatusCode.Should().Be(HttpStatusCode.NotFound);
-            (await client.PostAsync($"{Evaluations}/{started.Id}/cancel", null, Ct)).StatusCode.Should().Be(HttpStatusCode.NotFound);
-            (await client.GetFromJsonAsync<PagedResponse<EvaluationSummaryDto>>(Evaluations, Ct))!.Items.Should().NotContain(e => e.Id == started.Id);
-            (await client.PostAsJsonAsync(Evaluations, new StartEvaluationRequest(suite.Id, null, Agent, ProbatioApiFactory.Model), Ct))
-                .StatusCode.Should().Be(HttpStatusCode.BadRequest, "someone else's suite cannot be evaluated");
+            Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"{Evaluations}/{started.Id}", Ct)).StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, (await client.PostAsync($"{Evaluations}/{started.Id}/cancel", null, Ct)).StatusCode);
+            Assert.DoesNotContain((await client.GetFromJsonAsync<PagedResponse<EvaluationSummaryDto>>(Evaluations, Ct))!.Items, e => e.Id == started.Id);
+            // someone else's suite cannot be evaluated
+            Assert.Equal(HttpStatusCode.BadRequest, (await client.PostAsJsonAsync(Evaluations, new StartEvaluationRequest(suite.Id, null, Agent, ProbatioApiFactory.Model), Ct))
+                .StatusCode);
         }
 
         var page = await owner.GetFromJsonAsync<PagedResponse<EvaluationSummaryDto>>($"{Evaluations}?suiteId={suite.Id}", Ct);
-        page!.Items.Should().ContainSingle(e => e.Id == started.Id);
+        Assert.Single(page!.Items, e => e.Id == started.Id);
     }
 
     [Fact]
@@ -288,7 +292,7 @@ public sealed class EvaluationApiTests : IClassFixture<ProbatioApiFactory>
         await factory.Worker.RecoverAsync(Ct);
 
         var evaluation = await GetAsync(client, started.Id);
-        evaluation.Summary.Status.Should().Be(EvaluationStatus.Failed);
-        evaluation.Summary.Error.Should().Contain("stopped before");
+        Assert.Equal(EvaluationStatus.Failed, evaluation.Summary.Status);
+        Assert.Contains("stopped before", evaluation.Summary.Error, StringComparison.Ordinal);
     }
 }

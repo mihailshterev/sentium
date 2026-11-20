@@ -50,7 +50,12 @@ internal sealed class DockerImageService(IDockerClient dockerClient, ILogger<Doc
                 {
                     if (!string.IsNullOrWhiteSpace(msg.Status))
                     {
-                        logger.LogDebug("Docker pull [{Image}]: {Status} {Progress}", image, msg.Status, msg.ProgressMessage);
+                        logger.LogDebug(
+                            "Docker pull [{Image}]: {Status} {Current}/{Total}",
+                            image,
+                            msg.Status,
+                            msg.Progress?.Current,
+                            msg.Progress?.Total);
                     }
                 }),
                 ct);

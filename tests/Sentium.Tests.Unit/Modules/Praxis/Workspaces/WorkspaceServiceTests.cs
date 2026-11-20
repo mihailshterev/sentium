@@ -1,4 +1,3 @@
-using FluentAssertions;
 using NSubstitute;
 using Sentium.Codex.Contracts;
 using Sentium.Core.Results;
@@ -40,7 +39,7 @@ public sealed class WorkspaceServiceTests
         var result = await _sut.GetWorkspacesAsync(ct);
 
         // Assert
-        result.Should().BeEquivalentTo(workspaces);
+        Assert.Equivalent(workspaces, result);
     }
 
     [Fact]
@@ -56,7 +55,7 @@ public sealed class WorkspaceServiceTests
         var result = await _sut.GetWorkspaceAsync(id, ct);
 
         // Assert
-        result.Should().Be(dto);
+        Assert.Equal(dto, result);
     }
 
     [Fact]
@@ -71,7 +70,7 @@ public sealed class WorkspaceServiceTests
         var result = await _sut.GetWorkspaceAsync(id, ct);
 
         // Assert
-        result.Should().BeNull();
+        Assert.Null(result);
     }
 
     [Fact]
@@ -86,8 +85,8 @@ public sealed class WorkspaceServiceTests
         var result = await _sut.CreateWorkspaceAsync(request, ct);
 
         // Assert
-        result.Status.Should().Be(ResultStatus.Conflict);
-        result.Error.Should().Contain("Existing Workspace");
+        Assert.Equal(ResultStatus.Conflict, result.Status);
+        Assert.Contains("Existing Workspace", result.Error, StringComparison.Ordinal);
         await _repository.DidNotReceive().CreateWorkspaceAsync(Arg.Any<CreateWorkspaceRequest>(), Arg.Any<CancellationToken>());
     }
 
@@ -105,8 +104,8 @@ public sealed class WorkspaceServiceTests
         var result = await _sut.CreateWorkspaceAsync(request, ct);
 
         // Assert
-        result.Status.Should().Be(ResultStatus.Success);
-        result.Value.Should().Be(created);
+        Assert.Equal(ResultStatus.Success, result.Status);
+        Assert.Equal(created, result.Value);
     }
 
     [Fact]
@@ -122,7 +121,7 @@ public sealed class WorkspaceServiceTests
         var result = await _sut.UpdateWorkspaceAsync(id, request, ct);
 
         // Assert
-        result.Status.Should().Be(ResultStatus.NotFound);
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
     [Fact]
@@ -139,7 +138,7 @@ public sealed class WorkspaceServiceTests
         var result = await _sut.UpdateWorkspaceAsync(id, request, ct);
 
         // Assert
-        result.Status.Should().Be(ResultStatus.Conflict);
+        Assert.Equal(ResultStatus.Conflict, result.Status);
     }
 
     [Fact]
@@ -158,8 +157,8 @@ public sealed class WorkspaceServiceTests
         var result = await _sut.UpdateWorkspaceAsync(id, request, ct);
 
         // Assert
-        result.Status.Should().Be(ResultStatus.Success);
-        result.Value.Should().Be(updated);
+        Assert.Equal(ResultStatus.Success, result.Status);
+        Assert.Equal(updated, result.Value);
     }
 
     [Fact]
@@ -174,7 +173,7 @@ public sealed class WorkspaceServiceTests
         var result = await _sut.DeleteWorkspaceAsync(id, ct);
 
         // Assert
-        result.Should().BeFalse();
+        Assert.False(result);
     }
 
     [Fact]
@@ -189,7 +188,7 @@ public sealed class WorkspaceServiceTests
         var result = await _sut.DeleteWorkspaceAsync(id, ct);
 
         // Assert
-        result.Should().BeTrue();
+        Assert.True(result);
         await _repository.Received(1).DeleteWorkspaceAsync(id, ct);
     }
 
@@ -205,7 +204,7 @@ public sealed class WorkspaceServiceTests
         var result = await _sut.GetWorkspaceFilesAsync(id, ct);
 
         // Assert
-        result.Should().BeNull();
+        Assert.Null(result);
     }
 
     [Fact]
@@ -222,8 +221,8 @@ public sealed class WorkspaceServiceTests
         var result = await _sut.GetWorkspaceFilesAsync(id, ct);
 
         // Assert
-        result.Should().NotBeNull();
-        result.Should().HaveCount(1);
+        Assert.NotNull(result);
+        Assert.Single(result);
     }
 
     [Fact]
@@ -240,7 +239,7 @@ public sealed class WorkspaceServiceTests
         var result = await _sut.UploadFileAsync(stream, "test.pdf", workspaceId, ct);
 
         // Assert
-        result.Should().BeNull();
+        Assert.Null(result);
         await _fileService.DidNotReceive().UploadToWorkspaceAsync(Arg.Any<Stream>(), Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
     }
 
@@ -262,7 +261,7 @@ public sealed class WorkspaceServiceTests
         var result = await _sut.UploadFileAsync(stream, "test.pdf", null, ct);
 
         // Assert
-        result.Should().NotBeNull();
+        Assert.NotNull(result);
         await _repository.Received(1).AddFileRecordAsync(Arg.Is<AddFileRecord>(r => r.WorkspaceId == defaultWorkspaceId && r.BlobName == blobId), ct);
         _ingestionQueue.Received(1).Enqueue(new FileIngestionRequest(fileDto.Id, fileDto.WorkspaceId));
     }
@@ -277,7 +276,7 @@ public sealed class WorkspaceServiceTests
 
         var deleted = await _sut.DeleteFileAsync(fileId, ct);
 
-        deleted.Should().BeTrue();
+        Assert.True(deleted);
         await _ingestion.Received(1).RemoveDocumentAsync(WorkspaceFileMetadata.FileId, fileId.ToString(), null, ct);
         await _fileService.Received(1).DeleteFileAsync(blobName, ct);
         await _repository.Received(1).DeleteFileRecordAsync(fileId, ct);
@@ -295,7 +294,7 @@ public sealed class WorkspaceServiceTests
 
         var deleted = await _sut.DeleteWorkspaceAsync(workspaceId, ct);
 
-        deleted.Should().BeTrue();
+        Assert.True(deleted);
         foreach (var file in new[] { first, second })
         {
             await _ingestion.Received(1).RemoveDocumentAsync(WorkspaceFileMetadata.FileId, file.FileId.ToString(), null, ct);
@@ -320,7 +319,7 @@ public sealed class WorkspaceServiceTests
 
         var queued = await _sut.ReindexFileAsync(file.FileId, ct);
 
-        queued.Should().BeTrue();
+        Assert.True(queued);
         _ingestionQueue.Received(1).Enqueue(new FileIngestionRequest(file.FileId, file.WorkspaceId));
     }
 
@@ -331,7 +330,7 @@ public sealed class WorkspaceServiceTests
 
         var queued = await _sut.ReindexFileAsync(Guid.NewGuid(), ct);
 
-        queued.Should().BeFalse();
+        Assert.False(queued);
         _ingestionQueue.DidNotReceive().Enqueue(Arg.Any<FileIngestionRequest>());
     }
 
@@ -345,8 +344,8 @@ public sealed class WorkspaceServiceTests
 
         var result = await _sut.GetFileTextAsync(file.FileId, 4, ct);
 
-        result.Status.Should().Be(ResultStatus.Success);
-        result.Value.Should().BeEquivalentTo(new { Text = "0123", Truncated = true, TotalChars = 10 });
+        Assert.Equal(ResultStatus.Success, result.Status);
+        Assert.Equivalent(new { Text = "0123", Truncated = true, TotalChars = 10 }, result.Value);
     }
 
     [Fact]
@@ -359,6 +358,6 @@ public sealed class WorkspaceServiceTests
 
         var result = await _sut.GetFileTextAsync(file.FileId, 100, ct);
 
-        result.Status.Should().Be(ResultStatus.Invalid);
+        Assert.Equal(ResultStatus.Invalid, result.Status);
     }
 }

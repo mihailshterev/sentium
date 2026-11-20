@@ -3,7 +3,10 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Sentium.Core.Constants;
 using Testcontainers.PostgreSql;
 using Xunit;
@@ -70,6 +73,9 @@ public class MonolithWebApplicationFactory : WebApplicationFactory<Sentium.Web.P
                 services.Remove(descriptor);
             }
 
+            services.Replace(ServiceDescriptor.Singleton<ILoggerFactory>(
+                sp => new DisposalTolerantLoggerFactory(ActivatorUtilities.CreateInstance<LoggerFactory>(sp))));
+
             if (!AuthenticateEveryRequest)
             {
                 return;
@@ -89,5 +95,44 @@ public class MonolithWebApplicationFactory : WebApplicationFactory<Sentium.Web.P
         await base.DisposeAsync();
         await _dbContainer.DisposeAsync();
         GC.SuppressFinalize(this);
+    }
+
+    /// <summary>
+    /// Quartz keeps its logger provider in a process-wide static that points at the logger factory of whichever test
+    /// host resolved its scheduler last. Test hosts run in parallel and are disposed independently, and a disposed
+    /// <see cref="LoggerFactory"/> throws on <c>CreateLogger</c>, so after disposal this factory hands out
+    /// <see cref="NullLogger"/> instead.
+    /// </summary>
+    private sealed class DisposalTolerantLoggerFactory(LoggerFactory inner) : ILoggerFactory
+    {
+        private volatile bool _disposed;
+
+        public ILogger CreateLogger(string categoryName)
+        {
+            if (_disposed)
+            {
+                return NullLogger.Instance;
+            }
+
+            try
+            {
+                return inner.CreateLogger(categoryName);
+            }
+            catch (ObjectDisposedException)
+            {
+                return NullLogger.Instance;
+            }
+        }
+
+        public void AddProvider(ILoggerProvider provider)
+        {
+            inner.AddProvider(provider);
+        }
+
+        public void Dispose()
+        {
+            _disposed = true;
+            inner.Dispose();
+        }
     }
 }

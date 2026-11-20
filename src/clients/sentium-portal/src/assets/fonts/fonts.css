@@ -1,0 +1,78 @@
+/*
+ * Self-hosted web fonts, served from the portal's own origin so the app works fully offline. The files are taken
+ * unmodified from each typeface's official release (see SOURCES.md) under the SIL Open Font License 1.1 (OFL.txt in
+ * each folder). Only the weights the design tokens use are loaded.
+ */
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url(./inter/Inter-Light.woff2) format("woff2");
+}
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(./inter/Inter-Regular.woff2) format("woff2");
+}
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(./inter/Inter-Medium.woff2) format("woff2");
+}
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(./inter/Inter-SemiBold.woff2) format("woff2");
+}
+
+@font-face {
+  font-family: "Inter";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(./inter/Inter-Bold.woff2) format("woff2");
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(./jetbrains-mono/JetBrainsMono-Regular.woff2) format("woff2");
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url(./jetbrains-mono/JetBrainsMono-Medium.woff2) format("woff2");
+}
+
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url(./jetbrains-mono/JetBrainsMono-SemiBold.woff2) format("woff2");
+}
+
+/* One variable file covers every weight from 300 to 700. */
+@font-face {
+  font-family: "Space Grotesk";
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url(./space-grotesk/SpaceGrotesk-Variable.woff2) format("woff2");
+}

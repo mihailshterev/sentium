@@ -76,5 +76,5 @@ echo "Review the generated Up/Down methods before committing."
 
 if [[ $run_tests == true ]]; then
   step "Checking for model drift (MigrationSnapshotTests)"
-  dotnet test "$UNIT_TESTS" --filter "FullyQualifiedName~MigrationSnapshotTests"
+  dotnet test --project "$UNIT_TESTS" --filter-class "*.MigrationSnapshotTests"
 fi

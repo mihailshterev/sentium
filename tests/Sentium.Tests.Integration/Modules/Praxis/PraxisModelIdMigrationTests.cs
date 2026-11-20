@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
@@ -72,13 +71,15 @@ public sealed class PraxisModelIdMigrationTests(MonolithWebApplicationFactory fa
             await mcpMigrator.MigrateAsync(cancellationToken: Ct);
         }
 
-        (await ModelOfAsync(db, "Agents", agents["gemma4:e4b"])).Should().Be("gemma-4-e4b");
-        (await ModelOfAsync(db, "Agents", agents["gemma4:e4b-it-qat"])).Should().Be("gemma-4-e4b");
-        (await ModelOfAsync(db, "Agents", agents["qwen3:4b"])).Should().BeEmpty("an agent without a served model falls back to the default");
-        (await ModelOfAsync(db, "Agents", agents[""])).Should().BeEmpty();
+        Assert.Equal("gemma-4-e4b", await ModelOfAsync(db, "Agents", agents["gemma4:e4b"]));
+        Assert.Equal("gemma-4-e4b", await ModelOfAsync(db, "Agents", agents["gemma4:e4b-it-qat"]));
+        // an agent without a served model falls back to the default
+        Assert.Empty(await ModelOfAsync(db, "Agents", agents["qwen3:4b"]));
+        Assert.Empty(await ModelOfAsync(db, "Agents", agents[""]));
 
-        (await ModelOfAsync(db, "Conversations", conversations["gemma4:e4b"])).Should().Be("gemma-4-e4b");
-        (await ModelOfAsync(db, "Conversations", conversations["qwen3:4b"])).Should().Be("gemma-4-e4b", "a resumed conversation must name a served model");
+        Assert.Equal("gemma-4-e4b", await ModelOfAsync(db, "Conversations", conversations["gemma4:e4b"]));
+        // a resumed conversation must name a served model
+        Assert.Equal("gemma-4-e4b", await ModelOfAsync(db, "Conversations", conversations["qwen3:4b"]));
     }
 
     private static Task<string> ModelOfAsync(PraxisDbContext db, string table, Guid id)

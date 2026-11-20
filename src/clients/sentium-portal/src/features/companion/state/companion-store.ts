@@ -1,4 +1,4 @@
-import { create } from "zustand";
+import { createStore } from "@/shared/state/create-store";
 import type { CompanionSignals, CompanionState } from "../types/companion";
 import { advance, initialMachine, resolveState, settleDelay, type CompanionMachine } from "./companion-machine";
 
@@ -54,7 +54,7 @@ let settleTimer: ReturnType<typeof setTimeout> | undefined;
 let pleasedTimer: ReturnType<typeof setTimeout> | undefined;
 
 /** Module scope, like the conversation stores: the Companion keeps its state across navigation. */
-export const useCompanionStore = create<CompanionStoreState>((set, get) => {
+export const useCompanionStore = createStore<CompanionStoreState>((set, get) => {
   const step = () => {
     clearTimeout(settleTimer);
     const now = Date.now();

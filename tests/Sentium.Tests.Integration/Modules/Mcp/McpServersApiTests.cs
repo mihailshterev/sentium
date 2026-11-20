@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Http.Json;
-using FluentAssertions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Hosting.Server;
@@ -84,56 +83,56 @@ public sealed class McpServersApiTests(MonolithWebApplicationFactory factory)
             name, "Echo server", null, McpTransport.Http, _mcpEndpoint, null, null, null, null, null,
             new Dictionary<string, string> { ["Authorization"] = "Bearer test-token" }), Ct);
 
-        created.StatusCode.Should().Be(HttpStatusCode.Created, await created.Content.ReadAsStringAsync(Ct));
+        Assert.True(created.StatusCode == HttpStatusCode.Created, $"{created.StatusCode}: {await created.Content.ReadAsStringAsync(Ct)}");
         var server = (await created.Content.ReadFromJsonAsync<McpServerDto>(Ct))!;
-        server.SecretNames.Should().Equal("Authorization");
-        (await created.Content.ReadAsStringAsync(Ct)).Should().NotContain("test-token");
+        Assert.Equal(new string[] { "Authorization" }, server.SecretNames);
+        Assert.DoesNotContain("test-token", await created.Content.ReadAsStringAsync(Ct), StringComparison.Ordinal);
 
         // Discover - new tools start disabled and unapproved, so agents cannot see them yet.
         var synced = await _client.PostAsync($"{BaseUrl}/{server.Id}/sync", null, Ct);
-        synced.StatusCode.Should().Be(HttpStatusCode.OK, await synced.Content.ReadAsStringAsync(Ct));
+        Assert.True(synced.StatusCode == HttpStatusCode.OK, $"{synced.StatusCode}: {await synced.Content.ReadAsStringAsync(Ct)}");
         server = (await synced.Content.ReadFromJsonAsync<McpServerDto>(Ct))!;
 
-        server.Tools.Select(t => t.QualifiedName).Should().BeEquivalentTo([$"{name}__echo", $"{name}__delete_everything"]);
-        server.Tools.Should().OnlyContain(t => !t.Enabled && !t.Approved && !t.Usable);
-        server.Tools.Single(t => t.Name == "echo").ReadOnlyHint.Should().BeTrue();
-        _authorizationHeaders.Should().Contain("Bearer test-token", "the decrypted secret header reaches the MCP server");
+        Assert.Equivalent(new[] { $"{name}__echo", $"{name}__delete_everything" }, server.Tools.Select(t => t.QualifiedName));
+        Assert.All(server.Tools, t => Assert.True(!t.Enabled && !t.Approved && !t.Usable));
+        Assert.True(server.Tools.Single(t => t.Name == "echo").ReadOnlyHint);
+        // the decrypted secret header reaches the MCP server
+        Assert.Contains("Bearer test-token", _authorizationHeaders);
 
-        (await GetToolNamesAsync()).Should().NotContain($"{name}__echo");
+        Assert.DoesNotContain($"{name}__echo", await GetToolNamesAsync());
 
         // Approve and enable only the read-only tool.
         var approved = await _client.PutAsJsonAsync($"{BaseUrl}/{server.Id}/tools",
             new UpdateMcpToolsRequest([new McpToolUpdate("echo", Enabled: true, Approve: true)]), Ct);
-        approved.StatusCode.Should().Be(HttpStatusCode.OK);
+        Assert.Equal(HttpStatusCode.OK, approved.StatusCode);
 
         var catalogue = await _client.GetFromJsonAsync<List<ToolDescriptor>>("/api/praxis/tools", Ct);
-        var echo = catalogue!.Should().ContainSingle(t => t.Name == $"{name}__echo").Subject;
-        echo.Server.Should().Be("Echo server");
-        echo.Resource.Should().Be("External");
-        echo.RequiresApproval.Should().BeTrue("approval is required by default");
-        catalogue.Should().NotContain(t => t.Name == $"{name}__delete_everything");
+        var echo = Assert.Single(catalogue!, t => t.Name == $"{name}__echo");
+        Assert.Equal("Echo server", echo.Server);
+        Assert.Equal("External", echo.Resource);
+        Assert.True(echo.RequiresApproval, "approval is required by default");
+        Assert.DoesNotContain(catalogue!, t => t.Name == $"{name}__delete_everything");
 
         // Assignable to an agent (the validator knows MCP names) ...
         var agentResponse = await _client.PostAsJsonAsync("/api/praxis/agents",
             new CreateAgentRequest($"MCP agent {name}", "Uses the echo server.", Tools: [$"{name}__echo"]), Ct);
-        agentResponse.StatusCode.Should().Be(HttpStatusCode.Created, await agentResponse.Content.ReadAsStringAsync(Ct));
+        Assert.True(agentResponse.StatusCode == HttpStatusCode.Created, $"{agentResponse.StatusCode}: {await agentResponse.Content.ReadAsStringAsync(Ct)}");
         var agent = (await agentResponse.Content.ReadFromJsonAsync<AgentResponse>(Ct))!;
 
         // ... and callable through the agent tool surface (the function an agent would get).
-        var function = factory.Services.GetRequiredService<IMcpToolCatalog>()
-            .GetFunctions(new HashSet<string> { $"{name}__echo" })
-            .Should().ContainSingle().Subject;
-        function.GetService<ApprovalRequiredAIFunction>().Should().NotBeNull();
+        var function = Assert.Single(factory.Services.GetRequiredService<IMcpToolCatalog>()
+            .GetFunctions(new HashSet<string> { $"{name}__echo" }));
+        Assert.NotNull(function.GetService<ApprovalRequiredAIFunction>());
 
         var result = await function.InvokeAsync(new AIFunctionArguments(new Dictionary<string, object?> { ["text"] = "hi" }), Ct);
-        result.Should().Be("echo: hi");
+        Assert.Equal("echo: hi", result);
 
         // Deleting the server removes its tools from the catalogue and from the agent.
-        (await _client.DeleteAsync($"{BaseUrl}/{server.Id}", Ct)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        Assert.Equal(HttpStatusCode.NoContent, (await _client.DeleteAsync($"{BaseUrl}/{server.Id}", Ct)).StatusCode);
 
-        (await GetToolNamesAsync()).Should().NotContain($"{name}__echo");
+        Assert.DoesNotContain($"{name}__echo", await GetToolNamesAsync());
         var reloaded = await _client.GetFromJsonAsync<AgentResponse>($"/api/praxis/agents/{agent.Id}", Ct);
-        reloaded!.Tools.Should().NotContain($"{name}__echo");
+        Assert.DoesNotContain($"{name}__echo", reloaded!.Tools!);
     }
 
     [Fact]
@@ -146,32 +145,32 @@ public sealed class McpServersApiTests(MonolithWebApplicationFactory factory)
             new Dictionary<string, string> { ["Authorization"] = "Bearer secret-value" },
             Variables: new Dictionary<string, string> { ["X-Region"] = "eu" }), Ct);
 
-        created.StatusCode.Should().Be(HttpStatusCode.Created, await created.Content.ReadAsStringAsync(Ct));
+        Assert.True(created.StatusCode == HttpStatusCode.Created, $"{created.StatusCode}: {await created.Content.ReadAsStringAsync(Ct)}");
         var server = (await created.Content.ReadFromJsonAsync<McpServerDto>(Ct))!;
-        server.SecretNames.Should().Equal("Authorization");
-        server.Variables.Should().Equal(new Dictionary<string, string> { ["X-Region"] = "eu" });
-        (await created.Content.ReadAsStringAsync(Ct)).Should().NotContain("secret-value");
+        Assert.Equal(new string[] { "Authorization" }, server.SecretNames);
+        Assert.Equal(new Dictionary<string, string> { ["X-Region"] = "eu" }, server.Variables);
+        Assert.DoesNotContain("secret-value", await created.Content.ReadAsStringAsync(Ct), StringComparison.Ordinal);
 
         // Make the secret plain text and edit the other variable; the name moves instead of being duplicated.
         var updated = await _client.PutAsJsonAsync($"{BaseUrl}/{server.Id}", new UpdateMcpServerRequest(
             "Variables server", null, _mcpEndpoint, null, null, null, null, null, null, true,
             new Dictionary<string, string?> { ["Authorization"] = "Bearer now-visible", ["X-Region"] = "us" }), Ct);
 
-        updated.StatusCode.Should().Be(HttpStatusCode.OK, await updated.Content.ReadAsStringAsync(Ct));
+        Assert.True(updated.StatusCode == HttpStatusCode.OK, $"{updated.StatusCode}: {await updated.Content.ReadAsStringAsync(Ct)}");
         server = (await updated.Content.ReadFromJsonAsync<McpServerDto>(Ct))!;
-        server.SecretNames.Should().BeEmpty();
-        server.Variables.Should().Equal(new Dictionary<string, string> { ["Authorization"] = "Bearer now-visible", ["X-Region"] = "us" });
+        Assert.Empty(server.SecretNames);
+        Assert.Equal(new Dictionary<string, string> { ["Authorization"] = "Bearer now-visible", ["X-Region"] = "us" }, server.Variables);
 
         // Plain variables are sent to the server just like secrets.
-        (await _client.PostAsync($"{BaseUrl}/{server.Id}/sync", null, Ct)).StatusCode.Should().Be(HttpStatusCode.OK);
-        _authorizationHeaders.Should().Contain("Bearer now-visible");
+        Assert.Equal(HttpStatusCode.OK, (await _client.PostAsync($"{BaseUrl}/{server.Id}/sync", null, Ct)).StatusCode);
+        Assert.Contains("Bearer now-visible", _authorizationHeaders);
 
         // A name cannot be both.
         var both = await _client.PutAsJsonAsync($"{BaseUrl}/{server.Id}", new UpdateMcpServerRequest(
             "Variables server", null, _mcpEndpoint, null, null, null, null, null,
             new Dictionary<string, string?> { ["X-Region"] = "x" }, true,
             new Dictionary<string, string?> { ["X-Region"] = "y" }), Ct);
-        both.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        Assert.Equal(HttpStatusCode.BadRequest, both.StatusCode);
 
         await _client.DeleteAsync($"{BaseUrl}/{server.Id}", Ct);
     }
@@ -182,7 +181,7 @@ public sealed class McpServersApiTests(MonolithWebApplicationFactory factory)
         var response = await _client.PostAsJsonAsync(BaseUrl, new CreateMcpServerRequest(
             "public", "Public", null, McpTransport.Http, "http://8.8.8.8/mcp", null, null, null, null, null, null), Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
@@ -191,7 +190,7 @@ public sealed class McpServersApiTests(MonolithWebApplicationFactory factory)
         var response = await _client.PostAsJsonAsync("/api/praxis/agents",
             new CreateAgentRequest($"Agent {Guid.NewGuid():N}", "x", Tools: ["nosuch__tool"]), Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
@@ -202,7 +201,7 @@ public sealed class McpServersApiTests(MonolithWebApplicationFactory factory)
 
         var response = await _client.SendAsync(request, Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
     }
 
     private async Task<List<string>> GetToolNamesAsync() =>

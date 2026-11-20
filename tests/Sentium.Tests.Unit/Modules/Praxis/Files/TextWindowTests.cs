@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Sentium.Praxis.Features.Files;
 using Sentium.Praxis.Features.Workspaces;
 using Xunit;
@@ -14,8 +13,8 @@ public sealed class TextWindowTests
     {
         var slice = TextWindow.Slice(FiveLines, startLine: 2, maxLines: 2, maxChars: 1000);
 
-        slice.Text.Should().Be("two\nthree");
-        slice.Should().BeEquivalentTo(new { StartLine = 2, EndLine = 3, TotalLines = 5, HasMore = true });
+        Assert.Equal("two\nthree", slice.Text);
+        Assert.Equivalent(new { StartLine = 2, EndLine = 3, TotalLines = 5, HasMore = true }, slice);
     }
 
     [Fact]
@@ -23,9 +22,9 @@ public sealed class TextWindowTests
     {
         var slice = TextWindow.Slice(FiveLines, startLine: 1, maxLines: 100, maxChars: 8);
 
-        slice.Text.Should().Be("one\ntwo");
-        slice.EndLine.Should().Be(2);
-        slice.HasMore.Should().BeTrue();
+        Assert.Equal("one\ntwo", slice.Text);
+        Assert.Equal(2, slice.EndLine);
+        Assert.True(slice.HasMore);
     }
 
     [Fact]
@@ -33,8 +32,8 @@ public sealed class TextWindowTests
     {
         var slice = TextWindow.Slice(new string('x', 50), startLine: 1, maxLines: 10, maxChars: 20);
 
-        slice.Text.Should().HaveLength(20);
-        slice.EndLine.Should().Be(1);
+        Assert.Equal(20, slice.Text.Length);
+        Assert.Equal(1, slice.EndLine);
     }
 
     [Fact]
@@ -42,8 +41,8 @@ public sealed class TextWindowTests
     {
         var slice = TextWindow.Slice(FiveLines, startLine: 99, maxLines: 10, maxChars: 1000);
 
-        slice.Text.Should().Be("five");
-        slice.HasMore.Should().BeFalse();
+        Assert.Equal("five", slice.Text);
+        Assert.False(slice.HasMore);
     }
 
     [Theory]
@@ -52,6 +51,6 @@ public sealed class TextWindowTests
     [InlineData(1_000_000, 160_000)]
     public void AttachmentBudget_ScalesWithTheContextWindow_WithinBounds(int contextWindowTokens, int expectedChars)
     {
-        WorkspaceContextProviderFactory.BudgetFor(contextWindowTokens).Should().Be(expectedChars);
+        Assert.Equal(expectedChars, WorkspaceContextProviderFactory.BudgetFor(contextWindowTokens));
     }
 }

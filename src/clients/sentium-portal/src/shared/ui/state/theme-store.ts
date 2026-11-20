@@ -1,5 +1,4 @@
-import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { createPersistedStore } from "@/shared/state/create-store";
 
 export type ThemePreference = "dark" | "light" | "system";
 export type ResolvedTheme = "dark" | "light";
@@ -25,32 +24,26 @@ interface ThemeState {
   toggle: () => void;
 }
 
-export const useThemeStore = create<ThemeState>()(
-  persist(
-    (set, get) => ({
-      preference: "system",
+export const useThemeStore = createPersistedStore<ThemeState, Pick<ThemeState, "preference">>(
+  (set, get) => ({
+    preference: "system",
 
-      setPreference: (preference) => {
-        applyTheme(resolveTheme(preference));
-        set({ preference });
-      },
-
-      toggle: () => {
-        const next: ResolvedTheme = resolveTheme(get().preference) === "dark" ? "light" : "dark";
-        applyTheme(next);
-        set({ preference: next });
-      },
-    }),
-    {
-      name: "sentium-theme",
-
-      partialize: (state) => ({ preference: state.preference }),
-      onRehydrateStorage: () => (state) => {
-        if (!state) return;
-        applyTheme(resolveTheme(state.preference));
-      },
+    setPreference: (preference) => {
+      applyTheme(resolveTheme(preference));
+      set({ preference });
     },
-  ),
+
+    toggle: () => {
+      const next: ResolvedTheme = resolveTheme(get().preference) === "dark" ? "light" : "dark";
+      applyTheme(next);
+      set({ preference: next });
+    },
+  }),
+  {
+    name: "sentium-theme",
+    partialize: (state) => ({ preference: state.preference }),
+    onRehydrate: (state) => applyTheme(resolveTheme(state.preference)),
+  },
 );
 
 colorSchemeQuery()?.addEventListener("change", () => {

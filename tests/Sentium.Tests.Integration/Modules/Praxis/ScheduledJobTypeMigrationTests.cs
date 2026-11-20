@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
@@ -56,7 +55,7 @@ public sealed class ScheduledJobTypeMigrationTests(MonolithWebApplicationFactory
                 "SELECT job_class_name FROM praxis.qrtz_job_details WHERE job_name = @name", connection);
             command.Parameters.AddWithValue("name", jobName);
 
-            (await command.ExecuteScalarAsync(Ct)).Should().Be("Sentium.Scheduling.Features.Jobs.ExecuteJob, Sentium.Scheduling");
+            Assert.Equal("Sentium.Scheduling.Features.Jobs.ExecuteJob, Sentium.Scheduling", await command.ExecuteScalarAsync(Ct));
         }
         finally
         {

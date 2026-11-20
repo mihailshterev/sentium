@@ -1,5 +1,4 @@
 using System.Text.Json;
-using FluentAssertions;
 using Microsoft.Extensions.AI;
 using Sentium.Probatio.Entities;
 using Sentium.Probatio.Features.Evaluations;
@@ -52,8 +51,8 @@ public sealed class EvalCheckGraderTests
     {
         var evalCase = Case("Milk", checks: EvalCheckType.ContainsExpectedAnswer);
 
-        Grade(evalCase, "You still need milk and eggs.", null).Should().Be(CheckOutcomeStatus.Passed);
-        Grade(evalCase, "Nothing.", null).Should().Be(CheckOutcomeStatus.Failed);
+        Assert.Equal(CheckOutcomeStatus.Passed, Grade(evalCase, "You still need milk and eggs.", null));
+        Assert.Equal(CheckOutcomeStatus.Failed, Grade(evalCase, "Nothing.", null));
     }
 
     [Fact]
@@ -61,8 +60,8 @@ public sealed class EvalCheckGraderTests
     {
         var evalCase = Case(checks: EvalCheckType.ToolsCalled);
 
-        Grade(evalCase, "Milk.", """{"query":"milk"}""").Should().Be(CheckOutcomeStatus.Passed);
-        Grade(evalCase, "Milk.", null).Should().Be(CheckOutcomeStatus.Failed);
+        Assert.Equal(CheckOutcomeStatus.Passed, Grade(evalCase, "Milk.", """{"query":"milk"}"""));
+        Assert.Equal(CheckOutcomeStatus.Failed, Grade(evalCase, "Milk.", null));
     }
 
     [Theory]
@@ -75,6 +74,6 @@ public sealed class EvalCheckGraderTests
     {
         var evalCase = Case(arguments: Args(expected), checks: EvalCheckType.ToolArgumentsMatch);
 
-        Grade(evalCase, "Milk.", actual).Should().Be(passes ? CheckOutcomeStatus.Passed : CheckOutcomeStatus.Failed);
+        Assert.Equal(passes ? CheckOutcomeStatus.Passed : CheckOutcomeStatus.Failed, Grade(evalCase, "Milk.", actual));
     }
 }

@@ -1,6 +1,16 @@
 import { useEffect, useRef, useState } from "react";
-import * as d3 from "d3";
+import {
+  forceCollide,
+  forceLink,
+  forceManyBody,
+  forceSimulation,
+  forceX,
+  forceY,
+  type SimulationLinkDatum,
+  type SimulationNodeDatum,
+} from "d3-force";
 import type { VaultGraph, VaultGraphNode } from "@/features/vault/types/vault";
+import { attachPanZoom, identityTransform, type ViewTransform } from "@/shared/utils/pan-zoom";
 import styles from "../vault.module.css";
 
 interface VaultGraphCanvasProps {
@@ -9,17 +19,19 @@ interface VaultGraphCanvasProps {
   onSelect: (id: string) => void;
 }
 
-type SimNode = VaultGraphNode & d3.SimulationNodeDatum;
-type SimLink = d3.SimulationLinkDatum<SimNode>;
+type SimNode = VaultGraphNode & SimulationNodeDatum;
+type SimLink = SimulationLinkDatum<SimNode>;
 
 /** CSS custom properties the folder hues cycle through, so both themes colour the graph. */
 const HUES = ["--accent-cyan", "--accent-purple", "--accent-amber", "--accent-green", "--accent-blue", "--accent-red"];
 const LABEL_ZOOM = 1.6;
 const LABEL_MIN_DEGREE = 6;
 const HIT_RADIUS = 10;
+const MIN_ZOOM = 0.1;
+const MAX_ZOOM = 8;
 
 /**
- * Obsidian-style note graph: a d3 force layout drawn on a 2D canvas (thousands of nodes stay smooth where SVG would
+ * Obsidian-style note graph: a force layout drawn on a 2D canvas (thousands of nodes stay smooth where SVG would
  * not). Drag pans, the wheel zooms, hover highlights a note's neighbours and a click opens it.
  */
 export function VaultGraphCanvas({ graph, selectedId, onSelect }: VaultGraphCanvasProps) {
@@ -47,7 +59,7 @@ export function VaultGraphCanvas({ graph, selectedId, onSelect }: VaultGraphCanv
     const palette = readPalette(canvas);
     const folderColour = colourByFolder(nodes, palette.hues);
 
-    let transform = d3.zoomIdentity;
+    let transform: ViewTransform = identityTransform;
     let width = 0;
     let height = 0;
 
@@ -108,13 +120,12 @@ export function VaultGraphCanvas({ graph, selectedId, onSelect }: VaultGraphCanv
       draw();
     };
 
-    const simulation = d3
-      .forceSimulation(nodes)
-      .force("link", d3.forceLink<SimNode, SimLink>(links).id((n) => n.id).distance(40).strength(0.4))
-      .force("charge", d3.forceManyBody().strength(-60).distanceMax(400))
-      .force("x", d3.forceX(0).strength(0.04))
-      .force("y", d3.forceY(0).strength(0.04))
-      .force("collide", d3.forceCollide<SimNode>((n) => radius(n) + 2))
+    const simulation = forceSimulation(nodes)
+      .force("link", forceLink<SimNode, SimLink>(links).id((n) => n.id).distance(40).strength(0.4))
+      .force("charge", forceManyBody().strength(-60).distanceMax(400))
+      .force("x", forceX(0).strength(0.04))
+      .force("y", forceY(0).strength(0.04))
+      .force("collide", forceCollide<SimNode>((n) => radius(n) + 2))
       .on("tick", draw);
 
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -122,22 +133,21 @@ export function VaultGraphCanvas({ graph, selectedId, onSelect }: VaultGraphCanv
       simulation.tick(300);
     }
 
-    const zoom = d3
-      .zoom<HTMLCanvasElement, unknown>()
-      .scaleExtent([0.1, 8])
-      .on("zoom", (event: d3.D3ZoomEvent<HTMLCanvasElement, unknown>) => {
-        transform = event.transform;
+    const panZoom = attachPanZoom(canvas, {
+      minScale: MIN_ZOOM,
+      maxScale: MAX_ZOOM,
+      onChange: (next) => {
+        transform = next;
         draw();
-      });
-
-    const selection = d3.select(canvas);
-    selection.call(zoom);
+      },
+    });
 
     resize();
-    selection.call(zoom.transform, d3.zoomIdentity.translate(width / 2, height / 2));
+    panZoom.setTransform({ x: width / 2, y: height / 2, k: 1 });
 
     const findNode = (event: MouseEvent) => {
-      const [x, y] = transform.invert(d3.pointer(event, canvas));
+      const rect = canvas.getBoundingClientRect();
+      const [x, y] = panZoom.toWorld(event.clientX - rect.left, event.clientY - rect.top);
       return simulation.find(x, y, HIT_RADIUS / transform.k) ?? null;
     };
 
@@ -152,6 +162,9 @@ export function VaultGraphCanvas({ graph, selectedId, onSelect }: VaultGraphCanv
     };
 
     const onClick = (event: MouseEvent) => {
+      if (panZoom.dragged) {
+        return;
+      }
       const node = findNode(event);
       if (node) {
         onSelect(node.id);
@@ -166,7 +179,7 @@ export function VaultGraphCanvas({ graph, selectedId, onSelect }: VaultGraphCanv
     return () => {
       simulation.stop();
       observer.disconnect();
-      selection.on(".zoom", null);
+      panZoom.detach();
       canvas.removeEventListener("mousemove", onMove);
       canvas.removeEventListener("click", onClick);
       drawRef.current = () => {};

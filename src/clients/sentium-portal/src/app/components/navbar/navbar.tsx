@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { NavLink } from "react-router";
-import { MotionConfig, motion } from "framer-motion";
+import { SharedLayoutIndicator } from "@/shared/ui/motion";
 import {
   BookOpen,
   Bot,
@@ -114,8 +114,6 @@ const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
-const ACTIVE_PILL_TRANSITION = { type: "spring", stiffness: 520, damping: 40 } as const;
-
 function initialsOf(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   return (parts.length > 1 ? parts[0][0] + parts[parts.length - 1][0] : (parts[0] ?? "?").slice(0, 2)).toUpperCase();
@@ -141,13 +139,7 @@ function NavItem({ to, label, icon: Icon, end, collapsed, busy }: NavItemProps) 
       >
         {({ isActive }) => (
           <>
-            {isActive && (
-              <motion.span
-                layoutId="nav-active-pill"
-                className={styles.activePill}
-                transition={ACTIVE_PILL_TRANSITION}
-              />
-            )}
+            {isActive && <SharedLayoutIndicator layoutId="nav-active-pill" className={styles.activePill} />}
             <Icon size={18} strokeWidth={1.75} className={styles.icon} aria-hidden="true" />
             <span className={styles.label}>{label}</span>
             {busy && (
@@ -211,89 +203,87 @@ export function Navbar() {
   const actionTooltipSide = collapsed ? "right" : "top";
 
   return (
-    <MotionConfig reducedMotion="user">
-      <nav className={`frame ${styles.nav}`} data-collapsed={collapsed || undefined} aria-label="Main navigation">
-        <div className={styles.brand}>
-          <SentiumMark className={styles.logo} />
-          <span className={styles.wordmark}>Sentium</span>
-        </div>
+    <nav className={`frame ${styles.nav}`} data-collapsed={collapsed || undefined} aria-label="Main navigation">
+      <div className={styles.brand}>
+        <SentiumMark className={styles.logo} />
+        <span className={styles.wordmark}>Sentium</span>
+      </div>
 
-        <div className={styles.scroll}>
-          {NAV_GROUPS.map((group) => {
-            const links = group.links.filter((link) => !link.sovereignOnly || isSovereign);
-            if (links.length === 0) {
-              return null;
-            }
-            return (
-              <div key={group.id} className={styles.group}>
-                {group.label && (
-                  <span className={styles.groupLabel} aria-hidden={collapsed || undefined}>
-                    {group.label}
-                  </span>
-                )}
-                {links.map((link) => (
-                  <NavItem key={link.to} {...link} collapsed={collapsed} busy={busyRoutes.has(link.to)} />
-                ))}
-              </div>
-            );
-          })}
-        </div>
+      <div className={styles.scroll}>
+        {NAV_GROUPS.map((group) => {
+          const links = group.links.filter((link) => !link.sovereignOnly || isSovereign);
+          if (links.length === 0) {
+            return null;
+          }
+          return (
+            <div key={group.id} className={styles.group}>
+              {group.label && (
+                <span className={styles.groupLabel} aria-hidden={collapsed || undefined}>
+                  {group.label}
+                </span>
+              )}
+              {links.map((link) => (
+                <NavItem key={link.to} {...link} collapsed={collapsed} busy={busyRoutes.has(link.to)} />
+              ))}
+            </div>
+          );
+        })}
+      </div>
 
-        {!isPhone && <Companion placement="sidebar" collapsed={collapsed} />}
+      {!isPhone && <Companion placement="sidebar" collapsed={collapsed} />}
 
-        <div className={styles.footer}>
-          <Tooltip content={displayName || "Profile"} side="right" disabled={!collapsed}>
-            <NavLink
-              to="/profile"
-              className={({ isActive }) => (isActive ? `${styles.account} ${styles.accountActive}` : styles.account)}
-            >
-              <span className={styles.avatar} aria-hidden="true">
-                {initialsOf(displayName)}
-              </span>
-              <span className={styles.userInfo}>
-                <span className={styles.userDisplayName}>{displayName}</span>
-                {highestRole && (
-                  <Badge tone={highestRole === "Sovereign" ? "accent" : "info"} className={styles.roleBadge}>
-                    {highestRole}
-                  </Badge>
-                )}
-              </span>
-            </NavLink>
+      <div className={styles.footer}>
+        <Tooltip content={displayName || "Profile"} side="right" disabled={!collapsed}>
+          <NavLink
+            to="/profile"
+            className={({ isActive }) => (isActive ? `${styles.account} ${styles.accountActive}` : styles.account)}
+          >
+            <span className={styles.avatar} aria-hidden="true">
+              {initialsOf(displayName)}
+            </span>
+            <span className={styles.userInfo}>
+              <span className={styles.userDisplayName}>{displayName}</span>
+              {highestRole && (
+                <Badge tone={highestRole === "Sovereign" ? "accent" : "info"} className={styles.roleBadge}>
+                  {highestRole}
+                </Badge>
+              )}
+            </span>
+          </NavLink>
+        </Tooltip>
+
+        <div className={styles.actions}>
+          <NotificationBell tooltipSide={actionTooltipSide} />
+          <Tooltip content="Toggle theme" side={actionTooltipSide}>
+            <ThemeToggle />
           </Tooltip>
-
-          <div className={styles.actions}>
-            <NotificationBell tooltipSide={actionTooltipSide} />
-            <Tooltip content="Toggle theme" side={actionTooltipSide}>
-              <ThemeToggle />
-            </Tooltip>
-            {!isNarrow && (
-              <Tooltip content={`${toggleLabel} (Ctrl+B)`} side={actionTooltipSide}>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  iconOnly
-                  aria-label={toggleLabel}
-                  aria-keyshortcuts="Control+B Meta+B"
-                  onClick={toggleSidebar}
-                  icon={collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
-                />
-              </Tooltip>
-            )}
-            <Tooltip content="Log out" side={actionTooltipSide}>
+          {!isNarrow && (
+            <Tooltip content={`${toggleLabel} (Ctrl+B)`} side={actionTooltipSide}>
               <Button
                 variant="ghost"
                 size="sm"
                 iconOnly
-                aria-label="Log out"
-                onClick={logout}
-                icon={<LogOut size={16} />}
-                className={styles.logout}
+                aria-label={toggleLabel}
+                aria-keyshortcuts="Control+B Meta+B"
+                onClick={toggleSidebar}
+                icon={collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
               />
             </Tooltip>
-            <span className={styles.version}>v1.0.0</span>
-          </div>
+          )}
+          <Tooltip content="Log out" side={actionTooltipSide}>
+            <Button
+              variant="ghost"
+              size="sm"
+              iconOnly
+              aria-label="Log out"
+              onClick={logout}
+              icon={<LogOut size={16} />}
+              className={styles.logout}
+            />
+          </Tooltip>
+          <span className={styles.version}>v1.0.0</span>
         </div>
-      </nav>
-    </MotionConfig>
+      </div>
+    </nav>
   );
 }

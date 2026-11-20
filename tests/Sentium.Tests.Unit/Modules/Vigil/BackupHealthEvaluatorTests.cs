@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Sentium.Vigil.Features.Backups;
 using Sentium.Vigil.Features.Monitoring;
 using Xunit;
@@ -15,7 +14,7 @@ public sealed class BackupHealthEvaluatorTests
     {
         var health = BackupHealthEvaluator.Evaluate(Status(backups: [Archive(Now.AddHours(-9))]), Now, MaxAge);
 
-        health.Status.Should().Be(ServiceStatus.Healthy);
+        Assert.Equal(ServiceStatus.Healthy, health.Status);
     }
 
     [Fact]
@@ -24,8 +23,8 @@ public sealed class BackupHealthEvaluatorTests
         var health = BackupHealthEvaluator.Evaluate(
             Status(backups: [Archive(Now.AddHours(-40)), Archive(Now.AddHours(-64))]), Now, MaxAge);
 
-        health.Status.Should().Be(ServiceStatus.Unhealthy);
-        health.Details.Should().Contain("40 hours");
+        Assert.Equal(ServiceStatus.Unhealthy, health.Status);
+        Assert.Contains("40 hours", health.Details, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -33,7 +32,7 @@ public sealed class BackupHealthEvaluatorTests
     {
         var health = BackupHealthEvaluator.Evaluate(Status(backups: [Archive(Now - MaxAge)]), Now, MaxAge);
 
-        health.Status.Should().Be(ServiceStatus.Healthy);
+        Assert.Equal(ServiceStatus.Healthy, health.Status);
     }
 
     [Fact]
@@ -43,8 +42,8 @@ public sealed class BackupHealthEvaluatorTests
 
         var health = BackupHealthEvaluator.Evaluate(Status(backups: [Archive(Now.AddHours(-2))], lastRun: failed), Now, MaxAge);
 
-        health.Status.Should().Be(ServiceStatus.Unhealthy);
-        health.Details.Should().Contain("pg_dump exited with code 1");
+        Assert.Equal(ServiceStatus.Unhealthy, health.Status);
+        Assert.Contains("pg_dump exited with code 1", health.Details, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -53,8 +52,8 @@ public sealed class BackupHealthEvaluatorTests
         var health = BackupHealthEvaluator.Evaluate(
             Status(backups: [], destinationProblem: "The backup destination is not mounted."), Now, MaxAge);
 
-        health.Status.Should().Be(ServiceStatus.Unhealthy);
-        health.Details.Should().Be("The backup destination is not mounted.");
+        Assert.Equal(ServiceStatus.Unhealthy, health.Status);
+        Assert.Equal("The backup destination is not mounted.", health.Details);
     }
 
     [Fact]
@@ -62,7 +61,7 @@ public sealed class BackupHealthEvaluatorTests
     {
         var health = BackupHealthEvaluator.Evaluate(Status(backups: [], startedAt: Now.AddHours(-10)), Now, MaxAge);
 
-        health.Status.Should().Be(ServiceStatus.Healthy);
+        Assert.Equal(ServiceStatus.Healthy, health.Status);
     }
 
     [Fact]
@@ -70,7 +69,7 @@ public sealed class BackupHealthEvaluatorTests
     {
         var health = BackupHealthEvaluator.Evaluate(Status(backups: [], startedAt: Now.AddHours(-37)), Now, MaxAge);
 
-        health.Status.Should().Be(ServiceStatus.Unhealthy);
+        Assert.Equal(ServiceStatus.Unhealthy, health.Status);
     }
 
     private static BackupArchiveDto Archive(DateTimeOffset createdAt) => new("sentium.tar", createdAt, 1024, Encrypted: false);

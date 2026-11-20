@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection;
@@ -35,7 +34,7 @@ public sealed class EmbeddingReindexerTests(MonolithWebApplicationFactory factor
         await repo.UpsertAsync(collection, Chunk("stamped"), Basis(0), Ct);
 
         var row = await db.KnowledgeChunks.AsNoTracking().SingleAsync(c => c.Collection == collection, Ct);
-        row.EmbeddingModel.Should().Be(AIModels.EmbeddingGemma2);
+        Assert.Equal(AIModels.EmbeddingGemma2, row.EmbeddingModel);
     }
 
     [Fact]
@@ -55,18 +54,20 @@ public sealed class EmbeddingReindexerTests(MonolithWebApplicationFactory factor
         using var generator = new FakeEmbeddingGenerator(Basis(5));
         var reindexer = Reindexer(db, generator);
 
-        (await reindexer.CountPendingAsync(Ct)).Should().Be(2);
-        (await reindexer.ReindexBatchAsync(Ct)).Should().Be(2);
-        (await reindexer.ReindexBatchAsync(Ct)).Should().Be(0, "every chunk now carries the configured model");
+        Assert.Equal(2, await reindexer.CountPendingAsync(Ct));
+        Assert.Equal(2, await reindexer.ReindexBatchAsync(Ct));
+        // every chunk now carries the configured model
+        Assert.Equal(0, await reindexer.ReindexBatchAsync(Ct));
 
-        generator.Inputs.Should().BeEquivalentTo("stale one", "stale two");
+        Assert.Equivalent(new string[] { "stale one", "stale two" }, generator.Inputs);
 
         db.ChangeTracker.Clear();
         var rows = await db.KnowledgeChunks.AsNoTracking().Where(c => c.Collection == collection).ToDictionaryAsync(c => c.Content, Ct);
-        rows.Values.Should().OnlyContain(c => c.EmbeddingModel == AIModels.EmbeddingGemma2);
-        rows["stale one"].Embedding.ToArray()[5].Should().Be(1f);
-        rows["stale two"].Embedding.ToArray()[5].Should().Be(1f);
-        rows["fresh"].Embedding.ToArray()[2].Should().Be(1f, "chunks already from the configured model are left alone");
+        Assert.All(rows.Values, c => Assert.True(c.EmbeddingModel == AIModels.EmbeddingGemma2));
+        Assert.Equal(1f, rows["stale one"].Embedding.ToArray()[5]);
+        Assert.Equal(1f, rows["stale two"].Embedding.ToArray()[5]);
+        // chunks already from the configured model are left alone
+        Assert.Equal(1f, rows["fresh"].Embedding.ToArray()[2]);
     }
 
     [Fact]
@@ -86,9 +87,9 @@ public sealed class EmbeddingReindexerTests(MonolithWebApplicationFactory factor
 
         var act = () => reindexer.ReindexBatchAsync(Ct);
 
-        await act.Should().ThrowAsync<InvalidOperationException>().WithMessage("*768*");
+        Assert.Contains("768", (await Assert.ThrowsAnyAsync<InvalidOperationException>(act)).Message, StringComparison.Ordinal);
         db.ChangeTracker.Clear();
-        (await db.KnowledgeChunks.AsNoTracking().SingleAsync(c => c.Collection == collection, Ct)).EmbeddingModel.Should().Be(OldModel);
+        Assert.Equal(OldModel, (await db.KnowledgeChunks.AsNoTracking().SingleAsync(c => c.Collection == collection, Ct)).EmbeddingModel);
     }
 
     private static EmbeddingReindexer Reindexer(CodexDbContext db, IEmbeddingGenerator<string, Embedding<float>> generator) =>

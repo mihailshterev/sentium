@@ -6,7 +6,6 @@ WORKDIR /src
 # The lockfile covers the whole pnpm workspace, so every member's manifest must be present for a frozen install.
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY src/clients/sentium-portal/package.json src/clients/sentium-portal/
-COPY src/clients/sentium-satelles/package.json src/clients/sentium-satelles/
 COPY e2e/package.json e2e/
 RUN pnpm install --frozen-lockfile --filter sentium-portal
 COPY src/clients/sentium-portal/ src/clients/sentium-portal/
@@ -18,7 +17,7 @@ COPY . .
 COPY --from=portal /src/src/hosts/Sentium.Web/wwwroot src/hosts/Sentium.Web/wwwroot
 RUN --mount=type=cache,target=/root/.nuget/packages,sharing=locked \
     dotnet publish src/hosts/Sentium.Web/Sentium.Web.csproj \
-    -c Release -o /app /p:UseAppHost=false /p:TreatWarningsAsErrors=false
+    -c Release -o /app /p:UseAppHost=false /p:TreatWarningsAsErrors=false /p:RestoreLockedMode=true
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app

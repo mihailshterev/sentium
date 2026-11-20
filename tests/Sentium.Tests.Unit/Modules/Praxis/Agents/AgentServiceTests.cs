@@ -1,4 +1,3 @@
-using FluentAssertions;
 using NSubstitute;
 using Sentium.Core.Results;
 using Sentium.Praxis.Features.Agents;
@@ -37,7 +36,7 @@ public sealed class AgentServiceTests
         var result = await _service.GetAgentsAsync(ct);
 
         // Assert
-        result.Should().BeEquivalentTo(agents);
+        Assert.Equivalent(agents, result);
         await _repository.Received(1).GetAgentsAsync(ct);
     }
 
@@ -54,7 +53,7 @@ public sealed class AgentServiceTests
         var result = await _service.GetAgentByIdAsync(id, ct);
 
         // Assert
-        result.Should().Be(expected);
+        Assert.Equal(expected, result);
         await _repository.Received(1).GetAgentByIdAsync(id, ct);
     }
 
@@ -72,8 +71,8 @@ public sealed class AgentServiceTests
         var result = await _service.CreateAgentAsync(request, ct);
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
-        result.Value.Should().Be(expected);
+        Assert.True(result.IsSuccess);
+        Assert.Equal(expected, result.Value);
         await _repository.Received(1).CreateAgentAsync(request, ct);
     }
 
@@ -89,8 +88,8 @@ public sealed class AgentServiceTests
         var result = await _service.CreateAgentAsync(request, ct);
 
         // Assert
-        result.Status.Should().Be(ResultStatus.Conflict);
-        result.Error.Should().Contain("Existing");
+        Assert.Equal(ResultStatus.Conflict, result.Status);
+        Assert.Contains("Existing", result.Error, StringComparison.Ordinal);
         await _repository.DidNotReceive().CreateAgentAsync(Arg.Any<CreateAgentRequest>(), Arg.Any<CancellationToken>());
     }
 
@@ -108,8 +107,8 @@ public sealed class AgentServiceTests
         var result = await _service.CreateAgentAsync(request, ct);
 
         // Assert
-        result.Status.Should().Be(ResultStatus.Conflict);
-        result.Error.Should().Contain("reserved");
+        Assert.Equal(ResultStatus.Conflict, result.Status);
+        Assert.Contains("reserved", result.Error, StringComparison.Ordinal);
         await _repository.DidNotReceive().NameExistsAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
         await _repository.DidNotReceive().CreateAgentAsync(Arg.Any<CreateAgentRequest>(), Arg.Any<CancellationToken>());
     }
@@ -126,8 +125,8 @@ public sealed class AgentServiceTests
         var result = await _service.UpdateAgentAsync(id, request, ct);
 
         // Assert
-        result.Status.Should().Be(ResultStatus.Conflict);
-        result.Error.Should().Contain("reserved");
+        Assert.Equal(ResultStatus.Conflict, result.Status);
+        Assert.Contains("reserved", result.Error, StringComparison.Ordinal);
         await _repository.DidNotReceive().UpdateAgentAsync(Arg.Any<Guid>(), Arg.Any<UpdateAgentRequest>(), Arg.Any<CancellationToken>());
     }
 
@@ -146,7 +145,7 @@ public sealed class AgentServiceTests
         var result = await _service.UpdateAgentAsync(id, request, ct);
 
         // Assert
-        result.IsSuccess.Should().BeTrue();
+        Assert.True(result.IsSuccess);
         await _repository.Received(1).UpdateAgentAsync(id, request, ct);
     }
 
@@ -163,8 +162,8 @@ public sealed class AgentServiceTests
         var result = await _service.UpdateAgentAsync(id, request, ct);
 
         // Assert
-        result.Status.Should().Be(ResultStatus.Conflict);
-        result.Error.Should().Contain("Taken");
+        Assert.Equal(ResultStatus.Conflict, result.Status);
+        Assert.Contains("Taken", result.Error, StringComparison.Ordinal);
         await _repository.DidNotReceive().UpdateAgentAsync(Arg.Any<Guid>(), Arg.Any<UpdateAgentRequest>(), Arg.Any<CancellationToken>());
     }
 
@@ -182,7 +181,7 @@ public sealed class AgentServiceTests
         var result = await _service.UpdateAgentAsync(id, request, ct);
 
         // Assert
-        result.Status.Should().Be(ResultStatus.NotFound);
+        Assert.Equal(ResultStatus.NotFound, result.Status);
     }
 
     [Fact]

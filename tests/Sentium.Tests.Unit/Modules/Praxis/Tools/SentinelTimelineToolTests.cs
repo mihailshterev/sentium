@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -98,20 +97,20 @@ public sealed class SentinelTimelineToolTests
             (_, _) => ValueTask.FromResult<object?>("result"),
             Ct);
 
-        result.Should().Be("result");
-        _captured.Should().NotBeNull();
-        _captured!.SkillName.Should().Be(toolName);
-        _captured.ResourceType.Should().Be("Timeline");
-        _captured.Action.Should().Be(expectedAction);
-        _captured.ResourceId.Should().Be(expectedResourceId);
+        Assert.Equal("result", result);
+        Assert.NotNull(_captured);
+        Assert.Equal(toolName, _captured!.SkillName);
+        Assert.Equal("Timeline", _captured.ResourceType);
+        Assert.Equal(expectedAction, _captured.Action);
+        Assert.Equal(expectedResourceId, _captured.ResourceId);
 
         if (forwardsPayload)
         {
-            _captured.Metadata.Should().ContainKey("payload");
+            Assert.Contains("payload", _captured.Metadata);
         }
         else
         {
-            _captured.Metadata.Should().BeEmpty();
+            Assert.Empty(_captured.Metadata);
         }
     }
 
@@ -122,7 +121,7 @@ public sealed class SentinelTimelineToolTests
 
         foreach (var name in names)
         {
-            CreateFunction(name).GetService<ApprovalRequiredAIFunction>().Should().BeNull(name);
+            Assert.True(CreateFunction(name).GetService<ApprovalRequiredAIFunction>() is null, name);
         }
     }
 }

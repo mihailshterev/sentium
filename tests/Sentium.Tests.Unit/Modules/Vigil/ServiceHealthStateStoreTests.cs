@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Sentium.Vigil.Features.Monitoring;
 using Xunit;
 
@@ -27,7 +26,7 @@ public sealed class ServiceHealthStateStoreTests
         var result = _sut.GetAll();
 
         // Assert
-        result.Should().BeEmpty();
+        Assert.Empty(result);
     }
 
     [Fact]
@@ -41,8 +40,7 @@ public sealed class ServiceHealthStateStoreTests
         var result = _sut.GetAll();
 
         // Assert
-        result.Should().ContainSingle()
-            .Which.ServiceName.Should().Be("agentruntime");
+        Assert.Equal("agentruntime", Assert.Single(result).ServiceName);
     }
 
     [Fact]
@@ -70,8 +68,7 @@ public sealed class ServiceHealthStateStoreTests
         var result = _sut.GetAll();
 
         // Assert
-        result.Should().ContainSingle()
-            .Which.Status.Should().Be(ServiceStatus.Unhealthy);
+        Assert.Equal(ServiceStatus.Unhealthy, Assert.Single(result).Status);
     }
 
     [Fact]
@@ -85,8 +82,8 @@ public sealed class ServiceHealthStateStoreTests
         var result = _sut.Get("sentinel");
 
         // Assert
-        result.Should().NotBeNull();
-        result!.ServiceName.Should().Be("sentinel");
+        Assert.NotNull(result);
+        Assert.Equal("sentinel", result!.ServiceName);
     }
 
     [Fact]
@@ -96,7 +93,7 @@ public sealed class ServiceHealthStateStoreTests
         var result = _sut.Get("nonexistent");
 
         // Assert
-        result.Should().BeNull();
+        Assert.Null(result);
     }
 
     [Fact]
@@ -111,7 +108,8 @@ public sealed class ServiceHealthStateStoreTests
         var result = _sut.GetAll();
 
         // Assert
-        result.Select(s => s.ServiceName).Should().BeInAscendingOrder();
+        var names = result.Select(s => s.ServiceName).ToList();
+        Assert.Equal(names.Order(), names);
     }
 
     [Fact]
@@ -122,7 +120,9 @@ public sealed class ServiceHealthStateStoreTests
 
         var result = _sut.GetAll();
 
-        result.Select(s => s.Kind).Should().ContainInOrder(ComponentKind.Service, ComponentKind.Infrastructure);
+        var kinds = result.Select(s => s.Kind).ToList();
+        var service = kinds.IndexOf(ComponentKind.Service);
+        Assert.True(service >= 0 && kinds.IndexOf(ComponentKind.Infrastructure, service + 1) > service);
     }
 
     [Fact]
@@ -134,7 +134,7 @@ public sealed class ServiceHealthStateStoreTests
         _sut.UpdateStatus(MakeStatus("svc", ServiceStatus.Unhealthy));
         var enriched = _sut.UpdateStatus(MakeStatus("svc", ServiceStatus.Healthy));
 
-        enriched.UptimePercent.Should().Be(75);
+        Assert.Equal(75, enriched.UptimePercent);
     }
 
     [Fact]
@@ -143,7 +143,7 @@ public sealed class ServiceHealthStateStoreTests
         _sut.UpdateStatus(MakeStatus("svc", ServiceStatus.Degraded));
         var enriched = _sut.UpdateStatus(MakeStatus("svc", ServiceStatus.Healthy));
 
-        enriched.UptimePercent.Should().Be(100);
+        Assert.Equal(100, enriched.UptimePercent);
     }
 
     [Fact]
@@ -151,10 +151,10 @@ public sealed class ServiceHealthStateStoreTests
     {
         _sut.UpdateStatus(MakeStatus("svc", ServiceStatus.Unhealthy));
         var two = _sut.UpdateStatus(MakeStatus("svc", ServiceStatus.Degraded));
-        two.ConsecutiveFailures.Should().Be(2);
+        Assert.Equal(2, two.ConsecutiveFailures);
 
         var recovered = _sut.UpdateStatus(MakeStatus("svc", ServiceStatus.Healthy));
-        recovered.ConsecutiveFailures.Should().Be(0);
+        Assert.Equal(0, recovered.ConsecutiveFailures);
     }
 
     [Fact]
@@ -165,8 +165,8 @@ public sealed class ServiceHealthStateStoreTests
             _sut.UpdateStatus(MakeStatus("svc"));
         }
 
-        _sut.GetSamples("svc", 3).Should().HaveCount(3);
-        _sut.GetSamples("svc", 100).Should().HaveCount(5);
-        _sut.GetSamples("missing", 10).Should().BeEmpty();
+        Assert.Equal(3, _sut.GetSamples("svc", 3).Count);
+        Assert.Equal(5, _sut.GetSamples("svc", 100).Count);
+        Assert.Empty(_sut.GetSamples("missing", 10));
     }
 }

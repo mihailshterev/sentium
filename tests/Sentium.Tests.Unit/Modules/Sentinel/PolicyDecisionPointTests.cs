@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -48,7 +47,7 @@ public sealed class PolicyDecisionPointTests : IDisposable
         var decision = await _sut.EvaluateAsync(body, ct);
 
         // Assert
-        decision.Allowed.Should().BeTrue();
+        Assert.True(decision.Allowed);
     }
 
     [Fact]
@@ -71,8 +70,8 @@ public sealed class PolicyDecisionPointTests : IDisposable
         var decision = await _sut.EvaluateAsync(body, ct);
 
         // Assert - fail-closed: an invalid request is a deny decision, not an exception.
-        decision.Allowed.Should().BeFalse();
-        decision.Effect.Should().Be("Deny");
+        Assert.False(decision.Allowed);
+        Assert.Equal("Deny", decision.Effect);
     }
 
     [Fact]
@@ -93,7 +92,7 @@ public sealed class PolicyDecisionPointTests : IDisposable
             CorrelationId = Guid.NewGuid().ToString()
         }, ct);
 
-        decision.Allowed.Should().BeFalse();
-        decision.TriggeredPolicies.Should().Equal("FailClosed");
+        Assert.False(decision.Allowed);
+        Assert.Equal(new string[] { "FailClosed" }, decision.TriggeredPolicies);
     }
 }

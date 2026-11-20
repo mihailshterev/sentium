@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Sentium.Memoria.Features.Links;
 using Xunit;
 
@@ -22,37 +21,37 @@ public sealed class LinkResolverTests
     [Fact]
     public void ABareName_PrefersTheShortestPath()
     {
-        Resolver.Resolve("ideas").Should().Be(RootNote);
+        Assert.Equal(RootNote, Resolver.Resolve("ideas"));
     }
 
     [Fact]
     public void APartialPath_MatchesTheNoteEndingWithIt()
     {
-        Resolver.Resolve("sentium/ideas").Should().Be(DeepNote);
+        Assert.Equal(DeepNote, Resolver.Resolve("sentium/ideas"));
     }
 
     [Fact]
     public void AnExactPath_BeatsShorterSuffixMatches()
     {
-        Resolver.Resolve("archive/ideas").Should().Be(OtherDeepNote);
+        Assert.Equal(OtherDeepNote, Resolver.Resolve("archive/ideas"));
     }
 
     [Fact]
     public void AnAlias_ResolvesWhenNoPathMatches()
     {
-        Resolver.Resolve("countess").Should().Be(AliasedNote);
+        Assert.Equal(AliasedNote, Resolver.Resolve("countess"));
     }
 
     [Fact]
     public void AnUnknownTarget_StaysUnresolved()
     {
-        Resolver.Resolve("missing").Should().BeNull();
-        Resolver.Resolve("other/countess").Should().BeNull();
+        Assert.Null(Resolver.Resolve("missing"));
+        Assert.Null(Resolver.Resolve("other/countess"));
     }
 
     [Fact]
     public void KeysAffectedBy_CoversEveryPathSuffixAndAlias()
     {
-        LinkResolver.KeysAffectedBy("a/b/c", ["alias"]).Should().Equal("a/b/c", "b/c", "c", "alias");
+        Assert.Equal(new string[] { "a/b/c", "b/c", "c", "alias" }, LinkResolver.KeysAffectedBy("a/b/c", ["alias"]));
     }
 }

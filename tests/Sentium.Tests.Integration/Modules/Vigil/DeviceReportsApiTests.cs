@@ -2,7 +2,6 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
-using FluentAssertions;
 using Sentium.Tests.Integration.Common;
 using Sentium.Tests.Integration.Modules.Identity;
 using Sentium.Vigil.Features.Devices;
@@ -43,17 +42,18 @@ public sealed class DeviceReportsApiTests(MonolithWebApplicationFactory factory)
 
         using var response = await PostReportAsync(device, SatellesReportJson);
 
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<Dictionary<string, JsonElement>>(Ct);
-        body!.Keys.Should().BeEquivalentTo(["nextReportSeconds"], "the Satelles app reads exactly this field");
-        body["nextReportSeconds"].GetInt32().Should().Be(30);
+        // the Satelles app reads exactly this field
+        Assert.Equivalent(new[] { "nextReportSeconds" }, body!.Keys);
+        Assert.Equal(30, body["nextReportSeconds"].GetInt32());
 
-        var status = (await portal.GetFromJsonAsync<List<DeviceStatusDto>>(Devices, WebJson, Ct))!.Should().ContainSingle().Subject;
-        status.IsOnline.Should().BeTrue();
-        status.Report!.MachineName.Should().Be("DESKTOP-REPORT");
-        status.Report.CpuPercent.Should().Be(12.5);
-        status.Report.Disks.Should().ContainSingle().Which.Name.Should().Be("C:");
-        status.LastSeenAt.Should().BeCloseTo(DateTimeOffset.UtcNow, TimeSpan.FromMinutes(1));
+        var status = Assert.Single((await portal.GetFromJsonAsync<List<DeviceStatusDto>>(Devices, WebJson, Ct))!);
+        Assert.True(status.IsOnline);
+        Assert.Equal("DESKTOP-REPORT", status.Report!.MachineName);
+        Assert.Equal(12.5, status.Report.CpuPercent);
+        Assert.Equal("C:", Assert.Single(status.Report.Disks).Name);
+        Assert.Equal(DateTimeOffset.UtcNow, Assert.NotNull(status.LastSeenAt), TimeSpan.FromMinutes(1));
     }
 
     [Fact]
@@ -62,10 +62,10 @@ public sealed class DeviceReportsApiTests(MonolithWebApplicationFactory factory)
         var (owner, _) = await PairAsync("DESKTOP-QUIET");
         using var portal = factory.CreateClientFor(owner);
 
-        var status = (await portal.GetFromJsonAsync<List<DeviceStatusDto>>(Devices, WebJson, Ct))!.Should().ContainSingle().Subject;
+        var status = Assert.Single((await portal.GetFromJsonAsync<List<DeviceStatusDto>>(Devices, WebJson, Ct))!);
 
-        status.IsOnline.Should().BeFalse();
-        status.Report.Should().BeNull();
+        Assert.False(status.IsOnline);
+        Assert.Null(status.Report);
     }
 
     [Fact]
@@ -75,7 +75,7 @@ public sealed class DeviceReportsApiTests(MonolithWebApplicationFactory factory)
 
         using var response = await PostReportAsync(device, SatellesReportJson.Replace("12.5", "250", StringComparison.Ordinal));
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
@@ -88,16 +88,16 @@ public sealed class DeviceReportsApiTests(MonolithWebApplicationFactory factory)
 
         using var bobPortal = factory.CreateClientFor(bob);
         var bobSees = (await bobPortal.GetFromJsonAsync<List<DeviceStatusDto>>(Devices, WebJson, Ct))!;
-        bobSees.Should().ContainSingle().Which.Name.Should().Be("BOB-DESKTOP");
+        Assert.Equal("BOB-DESKTOP", Assert.Single(bobSees).Name);
 
         using var alicePortal = factory.CreateClientFor(alice);
         var aliceDeviceId = (await alicePortal.GetFromJsonAsync<List<DeviceStatusDto>>(Devices, WebJson, Ct))!.Single().Id;
-        (await bobPortal.GetAsync($"{Devices}/{aliceDeviceId}", Ct)).StatusCode.Should().Be(HttpStatusCode.NotFound);
+        Assert.Equal(HttpStatusCode.NotFound, (await bobPortal.GetAsync($"{Devices}/{aliceDeviceId}", Ct)).StatusCode);
 
         using var sovereign = factory.CreateClient();
         var sovereignSees = (await sovereign.GetFromJsonAsync<List<DeviceStatusDto>>(Devices, WebJson, Ct))!;
-        sovereignSees.Select(d => d.Name).Should().Contain(["ALICE-DESKTOP", "BOB-DESKTOP"]);
-        (await sovereign.GetAsync($"{Devices}/{aliceDeviceId}", Ct)).StatusCode.Should().Be(HttpStatusCode.OK);
+        Assert.All(new[] { "ALICE-DESKTOP", "BOB-DESKTOP" }, expected => Assert.Contains(expected, sovereignSees.Select(d => d.Name)));
+        Assert.Equal(HttpStatusCode.OK, (await sovereign.GetAsync($"{Devices}/{aliceDeviceId}", Ct)).StatusCode);
     }
 
     [Fact]
@@ -108,10 +108,10 @@ public sealed class DeviceReportsApiTests(MonolithWebApplicationFactory factory)
         using var portal = factory.CreateClientFor(owner);
         var id = (await portal.GetFromJsonAsync<List<DeviceStatusDto>>(Devices, WebJson, Ct))!.Single().Id;
 
-        (await portal.DeleteAsync($"/api/identity/devices/{id}", Ct)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        Assert.Equal(HttpStatusCode.NoContent, (await portal.DeleteAsync($"/api/identity/devices/{id}", Ct)).StatusCode);
 
-        (await portal.GetFromJsonAsync<List<DeviceStatusDto>>(Devices, WebJson, Ct)).Should().BeEmpty();
-        (await PostReportAsync(device, SatellesReportJson)).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        Assert.Empty((await portal.GetFromJsonAsync<List<DeviceStatusDto>>(Devices, WebJson, Ct))!);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await PostReportAsync(device, SatellesReportJson)).StatusCode);
     }
 
     private async Task<(Guid Owner, HttpClient Device)> PairAsync(string name)

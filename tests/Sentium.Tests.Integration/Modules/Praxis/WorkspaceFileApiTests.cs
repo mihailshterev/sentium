@@ -3,7 +3,6 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
-using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
 using Sentium.Praxis.Features.Conversations;
@@ -44,8 +43,9 @@ public sealed class WorkspaceFileApiTests : IClassFixture<WorkspaceApiFactory>
     {
         var rules = await _client.GetFromJsonAsync<UploadRulesResponse>("/api/praxis/workspaces/files/rules", Ct);
 
-        rules!.Extensions.Should().Contain([".pdf", ".docx", ".md"]);
-        rules.MaxFileSizeBytes.Should().Be(100 * 1024 * 1024);
+        Assert.NotNull(rules);
+        Assert.All(new[] { ".pdf", ".docx", ".md" }, expected => Assert.Contains(expected, rules.Extensions));
+        Assert.Equal(100 * 1024 * 1024, rules.MaxFileSizeBytes);
     }
 
     [Fact]
@@ -56,8 +56,8 @@ public sealed class WorkspaceFileApiTests : IClassFixture<WorkspaceApiFactory>
 
         var text = await _client.GetFromJsonAsync<WorkspaceFileText>($"/api/praxis/workspaces/files/{file.Id}/text", Ct);
 
-        text!.Text.Should().Contain("Revenue grew nine percent");
-        text.Truncated.Should().BeFalse();
+        Assert.Contains("Revenue grew nine percent", text!.Text, StringComparison.Ordinal);
+        Assert.False(text.Truncated);
     }
 
     [Fact]
@@ -67,9 +67,9 @@ public sealed class WorkspaceFileApiTests : IClassFixture<WorkspaceApiFactory>
 
         var text = await _client.GetFromJsonAsync<WorkspaceFileText>($"/api/praxis/workspaces/files/{file.Id}/text?maxChars=100", Ct);
 
-        text!.Text.Should().HaveLength(100);
-        text.Truncated.Should().BeTrue();
-        text.TotalChars.Should().Be(500);
+        Assert.Equal(100, text!.Text.Length);
+        Assert.True(text.Truncated);
+        Assert.Equal(500, text.TotalChars);
     }
 
     [Fact]
@@ -79,10 +79,10 @@ public sealed class WorkspaceFileApiTests : IClassFixture<WorkspaceApiFactory>
 
         var response = await _client.GetAsync($"/api/praxis/workspaces/files/{file.Id}/content", Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        response.Content.Headers.ContentType!.MediaType.Should().Be("text/plain");
-        response.Content.Headers.ContentDisposition!.DispositionType.Should().Be("attachment");
-        (await response.Content.ReadAsStringAsync(Ct)).Should().Be("<script>alert(1)</script>");
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("text/plain", response.Content.Headers.ContentType!.MediaType);
+        Assert.Equal("attachment", response.Content.Headers.ContentDisposition!.DispositionType);
+        Assert.Equal("<script>alert(1)</script>", await response.Content.ReadAsStringAsync(Ct));
     }
 
     [Fact]
@@ -90,9 +90,9 @@ public sealed class WorkspaceFileApiTests : IClassFixture<WorkspaceApiFactory>
     {
         var file = await UploadAsync("loose.txt", Encoding.UTF8.GetBytes("loose"), workspaceId: null);
 
-        file.WorkspaceId.Should().NotBeNull();
+        Assert.NotNull(file.WorkspaceId);
         var workspace = await _client.GetFromJsonAsync<WorkspaceDto>($"/api/praxis/workspaces/{file.WorkspaceId}", Ct);
-        workspace!.Name.Should().Be(WorkspaceService.DefaultWorkspaceName);
+        Assert.Equal(WorkspaceService.DefaultWorkspaceName, workspace!.Name);
     }
 
     [Fact]
@@ -102,8 +102,9 @@ public sealed class WorkspaceFileApiTests : IClassFixture<WorkspaceApiFactory>
 
         var response = await _client.PostAsync("/api/praxis/workspaces/files", form, Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        _blobs.Should().BeEmpty("validation happens before anything is stored");
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        // validation happens before anything is stored
+        Assert.Empty(_blobs);
     }
 
     [Fact]
@@ -111,8 +112,8 @@ public sealed class WorkspaceFileApiTests : IClassFixture<WorkspaceApiFactory>
     {
         var file = await UploadAsync("notes.md", "# notes"u8.ToArray(), (await CreateWorkspaceAsync()).Id);
 
-        (await _client.PostAsync($"/api/praxis/workspaces/files/{file.Id}/reindex", null, Ct)).StatusCode.Should().Be(HttpStatusCode.Accepted);
-        (await _client.PostAsync($"/api/praxis/workspaces/files/{Guid.NewGuid()}/reindex", null, Ct)).StatusCode.Should().Be(HttpStatusCode.NotFound);
+        Assert.Equal(HttpStatusCode.Accepted, (await _client.PostAsync($"/api/praxis/workspaces/files/{file.Id}/reindex", null, Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await _client.PostAsync($"/api/praxis/workspaces/files/{Guid.NewGuid()}/reindex", null, Ct)).StatusCode);
     }
 
     [Fact]
@@ -121,11 +122,12 @@ public sealed class WorkspaceFileApiTests : IClassFixture<WorkspaceApiFactory>
         var workspace = await CreateWorkspaceAsync();
         var file = await UploadAsync("doomed.md", "bye"u8.ToArray(), workspace.Id);
 
-        (await _client.DeleteAsync($"/api/praxis/workspaces/{workspace.Id}", Ct)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        Assert.Equal(HttpStatusCode.NoContent, (await _client.DeleteAsync($"/api/praxis/workspaces/{workspace.Id}", Ct)).StatusCode);
 
         var all = await _client.GetFromJsonAsync<List<WorkspaceFileDto>>("/api/praxis/workspaces/files", Ct);
-        all.Should().NotContain(f => f.Id == file.Id, "a deleted workspace must not leave orphaned files behind");
-        (await _client.GetAsync($"/api/praxis/workspaces/files/{file.Id}/text", Ct)).StatusCode.Should().Be(HttpStatusCode.NotFound);
+        // a deleted workspace must not leave orphaned files behind
+        Assert.DoesNotContain(all!, f => f.Id == file.Id);
+        Assert.Equal(HttpStatusCode.NotFound, (await _client.GetAsync($"/api/praxis/workspaces/files/{file.Id}/text", Ct)).StatusCode);
     }
 
     [Fact]
@@ -133,15 +135,15 @@ public sealed class WorkspaceFileApiTests : IClassFixture<WorkspaceApiFactory>
     {
         var workspace = await CreateWorkspaceAsync();
         var created = await _client.PostAsJsonAsync("/api/praxis/conversations", new CreateConversationRequest(null, "test-model", WorkspaceId: workspace.Id), Ct);
-        created.StatusCode.Should().Be(HttpStatusCode.Created);
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
         var summary = await created.Content.ReadFromJsonAsync<ConversationSummary>(Ct);
-        summary!.WorkspaceName.Should().Be(workspace.Name);
+        Assert.Equal(workspace.Name, summary!.WorkspaceName);
 
         var unbind = await _client.PutAsJsonAsync($"/api/praxis/conversations/{summary.Id}/workspace", new UpdateConversationWorkspaceRequest(null), Ct);
-        unbind.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        Assert.Equal(HttpStatusCode.NoContent, unbind.StatusCode);
 
         var detail = await _client.GetFromJsonAsync<ConversationResponse>($"/api/praxis/conversations/{summary.Id}", Ct);
-        detail!.WorkspaceId.Should().BeNull();
+        Assert.Null(detail!.WorkspaceId);
     }
 
     [Fact]
@@ -152,7 +154,7 @@ public sealed class WorkspaceFileApiTests : IClassFixture<WorkspaceApiFactory>
 
         var bind = await _client.PutAsJsonAsync($"/api/praxis/conversations/{summary!.Id}/workspace", new UpdateConversationWorkspaceRequest(Guid.NewGuid()), Ct);
 
-        bind.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        Assert.Equal(HttpStatusCode.BadRequest, bind.StatusCode);
     }
 
     private Guid Store(Stream content)
@@ -180,7 +182,7 @@ public sealed class WorkspaceFileApiTests : IClassFixture<WorkspaceApiFactory>
     {
         using var form = Form(fileName, content, workspaceId);
         var response = await _client.PostAsync("/api/praxis/workspaces/files", form, Ct);
-        response.StatusCode.Should().Be(HttpStatusCode.Created);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         return (await response.Content.ReadFromJsonAsync<WorkspaceFileDto>(Ct))!;
     }
 

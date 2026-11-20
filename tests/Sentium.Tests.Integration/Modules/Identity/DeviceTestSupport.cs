@@ -1,11 +1,11 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.DependencyInjection;
 using Sentium.Identity.Entities;
 using Sentium.Identity.Features.Devices;
 using Sentium.Tests.Integration.Common;
+using Xunit;
 
 namespace Sentium.Tests.Integration.Modules.Identity;
 
@@ -26,7 +26,7 @@ internal static class DeviceTestSupport
         user.UserName = $"owner-{user.Id:N}";
 
         var result = await users.CreateAsync(user);
-        result.Succeeded.Should().BeTrue(string.Join(", ", result.Errors.Select(e => e.Description)));
+        Assert.True(result.Succeeded, string.Join(", ", result.Errors.Select(e => e.Description)));
 
         return user.Id;
     }
@@ -40,10 +40,10 @@ internal static class DeviceTestSupport
         var devices = scope.ServiceProvider.GetRequiredService<IDeviceService>();
 
         var code = await devices.CreatePairingCodeAsync(userId, ct);
-        code.IsSuccess.Should().BeTrue(code.Error);
+        Assert.True(code.IsSuccess, code.Error);
 
         var paired = await devices.PairAsync(code.Value!.Code, name, appVersion: null, ct);
-        paired.IsSuccess.Should().BeTrue(paired.Error);
+        Assert.True(paired.IsSuccess, paired.Error);
 
         return paired.Value!;
     }

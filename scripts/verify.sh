@@ -49,14 +49,14 @@ verify_dotnet() {
   dotnet build Sentium.slnx --no-restore --configuration "$BUILD_CONFIGURATION"
 
   step "Unit tests"
-  dotnet test tests/Sentium.Tests.Unit --no-build --configuration "$BUILD_CONFIGURATION"
+  dotnet test --project tests/Sentium.Tests.Unit --no-build --configuration "$BUILD_CONFIGURATION"
 
   if [[ $run_integration == true ]]; then
     docker info >/dev/null 2>&1 || die "Integration tests need a running Docker daemon."
     step "Integration tests"
-    dotnet test tests/Sentium.Tests.Integration --no-build --configuration "$BUILD_CONFIGURATION"
+    dotnet test --project tests/Sentium.Tests.Integration --no-build --configuration "$BUILD_CONFIGURATION"
     step "AppHost tests"
-    dotnet test tests/Sentium.Tests.AppHost --no-build --configuration "$BUILD_CONFIGURATION"
+    dotnet test --project tests/Sentium.Tests.AppHost --no-build --configuration "$BUILD_CONFIGURATION"
   fi
 }
 

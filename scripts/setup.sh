@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # First-run bootstrap for a development checkout: checks the prerequisites, creates .env with fresh random
-# secrets, and installs the JavaScript dependencies of the portal, Satelles and e2e projects.
+# secrets, and installs the JavaScript dependencies of the portal and e2e projects (one pnpm workspace).
 #
 #   scripts/setup.sh [--skip-install]
 #

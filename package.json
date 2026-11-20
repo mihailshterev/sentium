@@ -4,7 +4,6 @@
   "type": "module",
   "scripts": {
     "portal": "pnpm --filter sentium-portal",
-    "satelles": "pnpm --filter sentium-satelles",
     "e2e": "pnpm --filter sentium-e2e",
     "audit:all": "pnpm audit --prod"
   },

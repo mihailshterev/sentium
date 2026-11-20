@@ -1,7 +1,6 @@
 using System.Net;
 using System.Text;
 using System.Text.Json;
-using FluentAssertions;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -48,16 +47,17 @@ public sealed class InferenceClientFactoryTests
         using var client = services.GetRequiredService<IInferenceClientFactory>().CreateChatClient(ChatClientName, "model-a");
         var response = await client.GetResponseAsync("hello", new ChatOptions { Temperature = 0f }, Ct);
 
-        response.Text.Should().Be("ALIGNED");
-        handler.Requests.Should().ContainSingle();
+        Assert.Equal("ALIGNED", response.Text);
+        Assert.Single(handler.Requests);
 
         var request = handler.Requests[0];
-        request.Uri.Should().Be(new Uri("http://llm.test:8080/v1/chat/completions"));
-        request.Authorization.Should().Be("Bearer s3cret");
+        Assert.Equal(new Uri("http://llm.test:8080/v1/chat/completions"), request.Uri);
+        Assert.Equal("Bearer s3cret", request.Authorization);
 
         using var body = JsonDocument.Parse(request.Body);
-        body.RootElement.GetProperty("model").GetString().Should().Be("model-a");
-        request.Body.Should().NotContain("num_ctx", "per-request context size is Ollama-only and not part of the OpenAI API");
+        Assert.Equal("model-a", body.RootElement.GetProperty("model").GetString());
+        // per-request context size is Ollama-only and not part of the OpenAI API
+        Assert.DoesNotContain("num_ctx", request.Body, StringComparison.Ordinal);
     }
 
     [Theory]
@@ -73,7 +73,7 @@ public sealed class InferenceClientFactoryTests
         using var client = services.GetRequiredService<IInferenceClientFactory>().CreateChatClient(ChatClientName, "model-a");
         await client.GetResponseAsync("hello", cancellationToken: Ct);
 
-        handler.Requests.Single().Uri.Should().Be(new Uri(expected));
+        Assert.Equal(new Uri(expected), handler.Requests.Single().Uri);
     }
 
     [Fact]
@@ -85,7 +85,7 @@ public sealed class InferenceClientFactoryTests
         using var client = services.GetRequiredService<IInferenceClientFactory>().CreateChatClient(ChatClientName, "model-a");
         await client.GetResponseAsync("hello", cancellationToken: Ct);
 
-        handler.Requests.Single().Authorization.Should().Be("Bearer unused");
+        Assert.Equal("Bearer unused", handler.Requests.Single().Authorization);
     }
 
     [Fact]
@@ -100,8 +100,7 @@ public sealed class InferenceClientFactoryTests
         await first.GetResponseAsync("hello", cancellationToken: Ct);
         await second.GetResponseAsync("hello", cancellationToken: Ct);
 
-        handler.Requests.Select(r => JsonDocument.Parse(r.Body).RootElement.GetProperty("model").GetString())
-            .Should().Equal("model-a", "model-b");
+        Assert.Equal(new string[] { "model-a", "model-b" }, handler.Requests.Select(r => JsonDocument.Parse(r.Body).RootElement.GetProperty("model").GetString()));
     }
 
     [Fact]
@@ -115,7 +114,7 @@ public sealed class InferenceClientFactoryTests
         await client.GetResponseAsync("hello", new ChatOptions { ModelId = "override-model" }, Ct);
 
         using var body = JsonDocument.Parse(handler.Requests.Single().Body);
-        body.RootElement.GetProperty("model").GetString().Should().Be("override-model");
+        Assert.Equal("override-model", body.RootElement.GetProperty("model").GetString());
     }
 
     // Ollama's /v1 streams thinking as "reasoning"; llama-server (and DeepSeek) as "reasoning_content",
@@ -152,8 +151,8 @@ public sealed class InferenceClientFactoryTests
             text.Append(update.Text);
         }
 
-        reasoning.ToString().Should().Be("Thinking.");
-        text.ToString().Should().Be("Yes");
+        Assert.Equal("Thinking.", reasoning.ToString());
+        Assert.Equal("Yes", text.ToString());
     }
 
     [Theory]
@@ -172,9 +171,8 @@ public sealed class InferenceClientFactoryTests
 
         var response = await client.GetResponseAsync("Is 17 prime?", cancellationToken: Ct);
 
-        response.Messages.SelectMany(m => m.Contents).OfType<TextReasoningContent>()
-            .Should().ContainSingle().Which.Text.Should().Be("Thinking.");
-        response.Text.Should().Be("Yes");
+        Assert.Equal("Thinking.", Assert.Single(response.Messages.SelectMany(m => m.Contents).OfType<TextReasoningContent>()).Text);
+        Assert.Equal("Yes", response.Text);
     }
 
     [Fact]
@@ -190,12 +188,12 @@ public sealed class InferenceClientFactoryTests
         using var generator = services.GetRequiredService<IInferenceClientFactory>().CreateEmbeddingGenerator(EmbeddingClientName, "embedder");
         var embeddings = await generator.GenerateAsync(["some text"], cancellationToken: Ct);
 
-        embeddings.Should().ContainSingle();
-        embeddings[0].Vector.ToArray().Should().Equal(0.25f, 0.5f, 0.75f);
+        Assert.Single(embeddings);
+        Assert.Equal(new float[] { 0.25f, 0.5f, 0.75f }, embeddings[0].Vector.ToArray());
 
         var request = handler.Requests.Single();
-        request.Uri.Should().Be(new Uri("http://embeddings.test:8081/v1/embeddings"));
-        JsonDocument.Parse(request.Body).RootElement.GetProperty("model").GetString().Should().Be("embedder");
+        Assert.Equal(new Uri("http://embeddings.test:8081/v1/embeddings"), request.Uri);
+        Assert.Equal("embedder", JsonDocument.Parse(request.Body).RootElement.GetProperty("model").GetString());
     }
 
     [Fact]
@@ -213,8 +211,8 @@ public sealed class InferenceClientFactoryTests
         using var response = await http.GetAsync(new Uri("models", UriKind.Relative), Ct);
 
         var request = handler.Requests.Single();
-        request.Uri.Should().Be(new Uri("http://llm.test/models"));
-        request.Authorization.Should().Be("Bearer s3cret");
+        Assert.Equal(new Uri("http://llm.test/models"), request.Uri);
+        Assert.Equal("Bearer s3cret", request.Authorization);
     }
 
     [Fact]
@@ -226,7 +224,7 @@ public sealed class InferenceClientFactoryTests
         using var http = services.GetRequiredService<IHttpClientFactory>().CreateClient(ChatClientName);
         using var response = await http.GetAsync(new Uri("models", UriKind.Relative), Ct);
 
-        handler.Requests.Single().Authorization.Should().BeNull();
+        Assert.Null(handler.Requests.Single().Authorization);
     }
 
     [Fact]
@@ -237,7 +235,7 @@ public sealed class InferenceClientFactoryTests
 
         var act = () => services.GetRequiredService<IInferenceClientFactory>().CreateChatClient("unknown", "model-a");
 
-        act.Should().Throw<InvalidOperationException>().WithMessage("*unknown*");
+        Assert.Contains("unknown", Assert.ThrowsAny<InvalidOperationException>(act).Message, StringComparison.Ordinal);
     }
 
     [Theory]
@@ -256,7 +254,7 @@ public sealed class InferenceClientFactoryTests
 
         var act = () => services.GetRequiredService<IOptions<InferenceOptions>>().Value;
 
-        act.Should().Throw<OptionsValidationException>();
+        Assert.ThrowsAny<OptionsValidationException>(act);
     }
 
     [Fact]
@@ -267,9 +265,9 @@ public sealed class InferenceClientFactoryTests
 
         var options = services.GetRequiredService<IOptions<InferenceOptions>>().Value;
 
-        options.ChatEndpoint.Should().NotBeNull();
-        options.DefaultModel.Should().NotBeNullOrWhiteSpace();
-        options.AttemptTimeout.Should().BeLessThanOrEqualTo(options.Timeout);
+        Assert.NotNull(options.ChatEndpoint);
+        Assert.False(string.IsNullOrWhiteSpace(options.DefaultModel));
+        Assert.True(options.AttemptTimeout <= options.Timeout);
     }
 
     private static ServiceProvider BuildServices(RecordingHandler handler, Dictionary<string, string?> settings)

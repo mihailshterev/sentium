@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 using NSubstitute;
 using Sentium.Core.Results;
@@ -33,8 +32,7 @@ public sealed class WorkspacesControllerTests
         var result = await _controller.GetWorkspaces(1, 20, ct);
 
         // Assert
-        result.Should().BeOfType<OkObjectResult>()
-            .Which.Value.Should().Be(paged);
+        Assert.Equal(paged, Assert.IsType<OkObjectResult>(result).Value);
     }
 
     [Fact]
@@ -50,8 +48,7 @@ public sealed class WorkspacesControllerTests
         var result = await _controller.GetWorkspace(id, ct);
 
         // Assert
-        result.Should().BeOfType<OkObjectResult>()
-            .Which.Value.Should().Be(dto);
+        Assert.Equal(dto, Assert.IsType<OkObjectResult>(result).Value);
     }
 
     [Fact]
@@ -66,7 +63,7 @@ public sealed class WorkspacesControllerTests
         var result = await _controller.GetWorkspace(id, ct);
 
         // Assert
-        result.Should().BeOfType<NotFoundResult>();
+        Assert.IsType<NotFoundResult>(result);
     }
 
     [Fact]
@@ -82,8 +79,7 @@ public sealed class WorkspacesControllerTests
         var result = await _controller.CreateWorkspace(request, ct);
 
         // Assert
-        result.Should().BeOfType<CreatedAtActionResult>()
-            .Which.Value.Should().Be(dto);
+        Assert.Equal(dto, Assert.IsType<CreatedAtActionResult>(result).Value);
     }
 
     [Fact]
@@ -99,7 +95,7 @@ public sealed class WorkspacesControllerTests
         var result = await _controller.CreateWorkspace(request, ct);
 
         // Assert
-        result.Should().BeOfType<ConflictObjectResult>();
+        Assert.IsType<ConflictObjectResult>(result);
     }
 
     [Fact]
@@ -116,8 +112,7 @@ public sealed class WorkspacesControllerTests
         var result = await _controller.UpdateWorkspace(id, request, ct);
 
         // Assert
-        result.Should().BeOfType<OkObjectResult>()
-            .Which.Value.Should().Be(dto);
+        Assert.Equal(dto, Assert.IsType<OkObjectResult>(result).Value);
     }
 
     [Fact]
@@ -133,7 +128,7 @@ public sealed class WorkspacesControllerTests
         var result = await _controller.UpdateWorkspace(id, request, ct);
 
         // Assert
-        result.Should().BeOfType<NotFoundResult>();
+        Assert.IsType<NotFoundResult>(result);
     }
 
     [Fact]
@@ -150,7 +145,7 @@ public sealed class WorkspacesControllerTests
         var result = await _controller.UpdateWorkspace(id, request, ct);
 
         // Assert
-        result.Should().BeOfType<ConflictObjectResult>();
+        Assert.IsType<ConflictObjectResult>(result);
     }
 
     [Fact]
@@ -165,7 +160,7 @@ public sealed class WorkspacesControllerTests
         var result = await _controller.DeleteWorkspace(id, ct);
 
         // Assert
-        result.Should().BeOfType<NoContentResult>();
+        Assert.IsType<NoContentResult>(result);
     }
 
     [Fact]
@@ -180,7 +175,7 @@ public sealed class WorkspacesControllerTests
         var result = await _controller.DeleteWorkspace(id, ct);
 
         // Assert
-        result.Should().BeOfType<NotFoundResult>();
+        Assert.IsType<NotFoundResult>(result);
     }
 
     [Fact]
@@ -196,7 +191,7 @@ public sealed class WorkspacesControllerTests
         var result = await _controller.GetWorkspaceFiles(id, ct);
 
         // Assert
-        result.Should().BeOfType<OkObjectResult>();
+        Assert.IsType<OkObjectResult>(result);
     }
 
     [Fact]
@@ -211,6 +206,6 @@ public sealed class WorkspacesControllerTests
         var result = await _controller.GetWorkspaceFiles(id, ct);
 
         // Assert
-        result.Should().BeOfType<NotFoundResult>();
+        Assert.IsType<NotFoundResult>(result);
     }
 }

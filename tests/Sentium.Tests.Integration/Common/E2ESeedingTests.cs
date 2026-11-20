@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Sentium.E2ESeed;
@@ -37,8 +36,8 @@ public sealed class E2ESeedingTests(TestingEnvironmentWebApplicationFactory fact
             .SqlQuery<int>($"""SELECT count(*)::int AS "Value" FROM locus."Assets" WHERE "DisplayName" = {LocusE2EDataSeeder.AssetName}""")
             .SingleAsync(Ct);
 
-        agents.Should().Be(1);
-        tasks.Should().Be(1);
-        assets.Should().Be(1);
+        Assert.Equal(1, agents);
+        Assert.Equal(1, tasks);
+        Assert.Equal(1, assets);
     }
 }

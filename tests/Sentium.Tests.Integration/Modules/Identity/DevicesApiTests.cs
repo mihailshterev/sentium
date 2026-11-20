@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Sentium.Identity.Contracts;
@@ -30,15 +29,16 @@ public sealed class DevicesApiTests(MonolithWebApplicationFactory factory) : ICl
 
         var paired = await factory.PairAsync(portal, "DESKTOP-PAIR", Ct);
 
-        paired.Token.Should().NotBeNullOrWhiteSpace();
+        Assert.False(string.IsNullOrWhiteSpace(paired.Token));
         using var device = factory.CreateDeviceClient(paired.Token);
-        (await device.GetAsync("/api/nuntius/devices/unread-count", Ct)).StatusCode.Should().Be(HttpStatusCode.OK);
+        Assert.Equal(HttpStatusCode.OK, (await device.GetAsync("/api/nuntius/devices/unread-count", Ct)).StatusCode);
 
-        var listed = (await portal.GetFromJsonAsync<List<DeviceInfo>>(Devices, Ct))!.Should().ContainSingle().Subject;
-        listed.Id.Should().Be(paired.DeviceId);
-        listed.Name.Should().Be("DESKTOP-PAIR");
-        listed.OwnerUserId.Should().Be(owner);
-        listed.AppVersion.Should().Be("1.2.3", "the Satelles app's User-Agent carries its version");
+        var listed = Assert.Single((await portal.GetFromJsonAsync<List<DeviceInfo>>(Devices, Ct))!);
+        Assert.Equal(paired.DeviceId, listed.Id);
+        Assert.Equal("DESKTOP-PAIR", listed.Name);
+        Assert.Equal(owner, listed.OwnerUserId);
+        // the Satelles app's User-Agent carries its version
+        Assert.Equal("1.2.3", listed.AppVersion);
     }
 
     [Fact]
@@ -49,8 +49,8 @@ public sealed class DevicesApiTests(MonolithWebApplicationFactory factory) : ICl
         var code = await CreateCodeAsync(portal);
 
         using var app = factory.CreateClient();
-        (await app.PostAsJsonAsync($"{Devices}/pair", new PairDeviceRequest(code.Code, "First"), Ct)).StatusCode.Should().Be(HttpStatusCode.OK);
-        (await app.PostAsJsonAsync($"{Devices}/pair", new PairDeviceRequest(code.Code, "Second"), Ct)).StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        Assert.Equal(HttpStatusCode.OK, (await app.PostAsJsonAsync($"{Devices}/pair", new PairDeviceRequest(code.Code, "First"), Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, (await app.PostAsJsonAsync($"{Devices}/pair", new PairDeviceRequest(code.Code, "Second"), Ct)).StatusCode);
     }
 
     [Fact]
@@ -59,7 +59,7 @@ public sealed class DevicesApiTests(MonolithWebApplicationFactory factory) : ICl
         var owner = await factory.CreateUserAsync();
         using var portal = factory.CreateClientFor(owner);
         var code = await CreateCodeAsync(portal);
-        code.ExpiresAt.Should().BeCloseTo(DateTimeOffset.UtcNow.AddMinutes(10), TimeSpan.FromMinutes(1));
+        Assert.Equal(DateTimeOffset.UtcNow.AddMinutes(10), code.ExpiresAt, TimeSpan.FromMinutes(1));
 
         await using (var scope = factory.Services.CreateAsyncScope())
         {
@@ -70,7 +70,7 @@ public sealed class DevicesApiTests(MonolithWebApplicationFactory factory) : ICl
         }
 
         using var app = factory.CreateClient();
-        (await app.PostAsJsonAsync($"{Devices}/pair", new PairDeviceRequest(code.Code, "Late"), Ct)).StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        Assert.Equal(HttpStatusCode.BadRequest, (await app.PostAsJsonAsync($"{Devices}/pair", new PairDeviceRequest(code.Code, "Late"), Ct)).StatusCode);
     }
 
     [Fact]
@@ -82,10 +82,10 @@ public sealed class DevicesApiTests(MonolithWebApplicationFactory factory) : ICl
         var second = await CreateCodeAsync(portal);
 
         using var app = factory.CreateClient();
-        (await app.PostAsJsonAsync($"{Devices}/pair", new PairDeviceRequest(first.Code, "Old code"), Ct)).StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        Assert.Equal(HttpStatusCode.BadRequest, (await app.PostAsJsonAsync($"{Devices}/pair", new PairDeviceRequest(first.Code, "Old code"), Ct)).StatusCode);
 
         var typed = $"{second.Code[..4].ToLowerInvariant()}-{second.Code[4..].ToLowerInvariant()}";
-        (await app.PostAsJsonAsync($"{Devices}/pair", new PairDeviceRequest(typed, "Typed"), Ct)).StatusCode.Should().Be(HttpStatusCode.OK);
+        Assert.Equal(HttpStatusCode.OK, (await app.PostAsJsonAsync($"{Devices}/pair", new PairDeviceRequest(typed, "Typed"), Ct)).StatusCode);
     }
 
     [Fact]
@@ -99,7 +99,7 @@ public sealed class DevicesApiTests(MonolithWebApplicationFactory factory) : ICl
             await factory.PairAsync(portal, $"PC-{i}", Ct);
         }
 
-        (await portal.PostAsync($"{Devices}/pairing-codes", null, Ct)).StatusCode.Should().Be(HttpStatusCode.Conflict);
+        Assert.Equal(HttpStatusCode.Conflict, (await portal.PostAsync($"{Devices}/pairing-codes", null, Ct)).StatusCode);
     }
 
     [Fact]
@@ -109,12 +109,12 @@ public sealed class DevicesApiTests(MonolithWebApplicationFactory factory) : ICl
         using var portal = factory.CreateClientFor(owner);
         var paired = await factory.PairAsync(portal, "DESKTOP-GONE", Ct);
         using var device = factory.CreateDeviceClient(paired.Token);
-        (await device.GetAsync("/api/nuntius/devices/unread-count", Ct)).StatusCode.Should().Be(HttpStatusCode.OK);
+        Assert.Equal(HttpStatusCode.OK, (await device.GetAsync("/api/nuntius/devices/unread-count", Ct)).StatusCode);
 
-        (await portal.DeleteAsync($"{Devices}/{paired.DeviceId}", Ct)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        Assert.Equal(HttpStatusCode.NoContent, (await portal.DeleteAsync($"{Devices}/{paired.DeviceId}", Ct)).StatusCode);
 
-        (await device.GetAsync("/api/nuntius/devices/unread-count", Ct)).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-        (await portal.GetFromJsonAsync<List<DeviceInfo>>(Devices, Ct)).Should().BeEmpty();
+        Assert.Equal(HttpStatusCode.Unauthorized, (await device.GetAsync("/api/nuntius/devices/unread-count", Ct)).StatusCode);
+        Assert.Empty((await portal.GetFromJsonAsync<List<DeviceInfo>>(Devices, Ct))!);
     }
 
     [Fact]
@@ -125,10 +125,10 @@ public sealed class DevicesApiTests(MonolithWebApplicationFactory factory) : ICl
         var paired = await factory.PairAsync(portal, "DESKTOP-SELF", Ct);
         using var device = factory.CreateDeviceClient(paired.Token);
 
-        (await device.DeleteAsync($"{Devices}/current", Ct)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        Assert.Equal(HttpStatusCode.NoContent, (await device.DeleteAsync($"{Devices}/current", Ct)).StatusCode);
 
-        (await device.DeleteAsync($"{Devices}/current", Ct)).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-        (await portal.GetFromJsonAsync<List<DeviceInfo>>(Devices, Ct)).Should().BeEmpty();
+        Assert.Equal(HttpStatusCode.Unauthorized, (await device.DeleteAsync($"{Devices}/current", Ct)).StatusCode);
+        Assert.Empty((await portal.GetFromJsonAsync<List<DeviceInfo>>(Devices, Ct))!);
     }
 
     [Fact]
@@ -142,16 +142,16 @@ public sealed class DevicesApiTests(MonolithWebApplicationFactory factory) : ICl
         var alicePc = await factory.PairAsync(alicePortal, "ALICE-PC", Ct);
         var bobPc = await factory.PairAsync(bobPortal, "BOB-PC", Ct);
 
-        (await bobPortal.GetFromJsonAsync<List<DeviceInfo>>(Devices, Ct))!.Select(d => d.Id).Should().Equal(bobPc.DeviceId);
-        (await bobPortal.GetAsync($"{Devices}?all=true", Ct)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
-        (await bobPortal.DeleteAsync($"{Devices}/{alicePc.DeviceId}", Ct)).StatusCode.Should().Be(HttpStatusCode.NotFound);
+        Assert.Equal(new Guid[] { bobPc.DeviceId }, (await bobPortal.GetFromJsonAsync<List<DeviceInfo>>(Devices, Ct))!.Select(d => d.Id));
+        Assert.Equal(HttpStatusCode.Forbidden, (await bobPortal.GetAsync($"{Devices}?all=true", Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await bobPortal.DeleteAsync($"{Devices}/{alicePc.DeviceId}", Ct)).StatusCode);
 
         var all = (await sovereign.GetFromJsonAsync<List<DeviceInfo>>($"{Devices}?all=true", Ct))!;
-        all.Select(d => d.Id).Should().Contain([alicePc.DeviceId, bobPc.DeviceId]);
-        all.Single(d => d.Id == alicePc.DeviceId).OwnerUserName.Should().StartWith("owner-");
+        Assert.All(new[] { alicePc.DeviceId, bobPc.DeviceId }, expected => Assert.Contains(expected, all.Select(d => d.Id)));
+        Assert.StartsWith("owner-", all.Single(d => d.Id == alicePc.DeviceId).OwnerUserName, StringComparison.Ordinal);
 
-        (await sovereign.DeleteAsync($"{Devices}/{alicePc.DeviceId}", Ct)).StatusCode.Should().Be(HttpStatusCode.NoContent);
-        (await alicePortal.GetFromJsonAsync<List<DeviceInfo>>(Devices, Ct)).Should().BeEmpty();
+        Assert.Equal(HttpStatusCode.NoContent, (await sovereign.DeleteAsync($"{Devices}/{alicePc.DeviceId}", Ct)).StatusCode);
+        Assert.Empty((await alicePortal.GetFromJsonAsync<List<DeviceInfo>>(Devices, Ct))!);
     }
 
     [Fact]
@@ -165,7 +165,7 @@ public sealed class DevicesApiTests(MonolithWebApplicationFactory factory) : ICl
         using var response = await app.PostAsJsonAsync($"{Devices}/pair", new { code = code.Code, name = "SHAPE" }, Ct);
 
         var json = await response.Content.ReadFromJsonAsync<Dictionary<string, object>>(Ct);
-        json!.Keys.Should().BeEquivalentTo("deviceId", "token");
+        Assert.Equivalent(new string[] { "deviceId", "token" }, json!.Keys);
     }
 
     private async Task<PairingCodeResponse> CreateCodeAsync(HttpClient portal)

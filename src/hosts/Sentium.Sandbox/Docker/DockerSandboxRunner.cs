@@ -93,7 +93,6 @@ internal sealed class DockerSandboxRunner(
 
             using var attachStream = await dockerClient.Containers.AttachContainerAsync(
                 containerId,
-                tty: false,
                 new ContainerAttachParameters { Stdout = true, Stderr = true, Stream = true },
                 ct
             );
@@ -120,7 +119,7 @@ internal sealed class DockerSandboxRunner(
                 stderr = stderrBuffer.ToText("stderr");
 
                 var inspect = await dockerClient.Containers.InspectContainerAsync(containerId, ct);
-                exitCode = inspect.State.ExitCode;
+                exitCode = inspect.State!.ExitCode;
                 timedOut = false;
             }
             catch (OperationCanceledException) when (!ct.IsCancellationRequested)

@@ -1,5 +1,4 @@
 using System.Security.Claims;
-using FluentAssertions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
@@ -49,9 +48,9 @@ public sealed class ModelsControllerTests
 
         var result = await Controller().GetModels(Ct);
 
-        var body = result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeOfType<ModelsResponse>().Which;
-        body.DefaultModel.Should().Be("gemma-4-e4b");
-        body.Models.Should().Equal(new ModelInfo("gemma-4-e4b", "loaded", 16384));
+        var body = Assert.IsType<ModelsResponse>(Assert.IsType<OkObjectResult>(result).Value);
+        Assert.Equal("gemma-4-e4b", body.DefaultModel);
+        Assert.Equal(new ModelInfo[] { new ModelInfo("gemma-4-e4b", "loaded", 16384) }, body.Models);
     }
 
     [Fact]
@@ -62,8 +61,7 @@ public sealed class ModelsControllerTests
 
         var result = await Controller().GetModels(Ct);
 
-        result.Should().BeOfType<OkObjectResult>().Which.Value.Should().BeOfType<ModelsResponse>()
-            .Which.DefaultModel.Should().Be("config-default");
+        Assert.Equal("config-default", Assert.IsType<ModelsResponse>(Assert.IsType<OkObjectResult>(result).Value).DefaultModel);
     }
 
     [Fact]
@@ -73,7 +71,7 @@ public sealed class ModelsControllerTests
 
         var result = await Controller().GetModels(Ct);
 
-        result.Should().BeOfType<ObjectResult>().Which.StatusCode.Should().Be(StatusCodes.Status503ServiceUnavailable);
+        Assert.Equal(StatusCodes.Status503ServiceUnavailable, Assert.IsType<ObjectResult>(result).StatusCode);
     }
 
     [Theory]
@@ -87,7 +85,7 @@ public sealed class ModelsControllerTests
 
         var result = await Controller().LoadModel(new ModelActionRequest("gemma-4-e4b"), Ct);
 
-        result.Should().BeAssignableTo<IStatusCodeActionResult>().Which.StatusCode.Should().Be(expectedStatus);
+        Assert.Equal(expectedStatus, Assert.IsAssignableFrom<IStatusCodeActionResult>(result).StatusCode);
     }
 
     [Fact]
@@ -97,7 +95,7 @@ public sealed class ModelsControllerTests
 
         var result = await Controller().UnloadModel(new ModelActionRequest("gemma-4-e4b"), Ct);
 
-        result.Should().BeOfType<AcceptedResult>();
+        Assert.IsType<AcceptedResult>(result);
         await _catalog.Received(1).UnloadAsync("gemma-4-e4b", Arg.Any<CancellationToken>());
     }
 
@@ -106,8 +104,8 @@ public sealed class ModelsControllerTests
     {
         var controller = Controller(sovereign: false);
 
-        (await controller.LoadModel(new ModelActionRequest("gemma-4-e4b"), Ct)).Should().BeOfType<ForbidResult>();
-        (await controller.UnloadModel(new ModelActionRequest("gemma-4-e4b"), Ct)).Should().BeOfType<ForbidResult>();
+        Assert.IsType<ForbidResult>(await controller.LoadModel(new ModelActionRequest("gemma-4-e4b"), Ct));
+        Assert.IsType<ForbidResult>(await controller.UnloadModel(new ModelActionRequest("gemma-4-e4b"), Ct));
 
         await _catalog.DidNotReceiveWithAnyArgs().LoadAsync(default!, Ct);
         await _catalog.DidNotReceiveWithAnyArgs().UnloadAsync(default!, Ct);

@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Sentium.Identity.Features.Devices;
 using Xunit;
 
@@ -11,9 +10,9 @@ public sealed class DeviceSecretsTests
     {
         var codes = Enumerable.Range(0, 200).Select(_ => DeviceSecrets.NewPairingCode()).ToList();
 
-        codes.Should().OnlyContain(c => c.Length == DeviceLimits.PairingCodeLength);
-        string.Concat(codes).Should().NotContainAny("0", "O", "1", "I", "L");
-        codes.Distinct().Should().HaveCountGreaterThan(190, "codes are random");
+        Assert.All(codes, c => Assert.True(c.Length == DeviceLimits.PairingCodeLength));
+        Assert.DoesNotMatch("[01OIL]", string.Concat(codes));
+        Assert.True(codes.Distinct().Count() > 190, "codes are random");
     }
 
     [Theory]
@@ -22,7 +21,7 @@ public sealed class DeviceSecretsTests
     [InlineData("a2c4e6g8", "A2C4E6G8")]
     public void NormalizePairingCode_IgnoresCaseAndSeparators(string typed, string expected)
     {
-        DeviceSecrets.NormalizePairingCode(typed).Should().Be(expected);
+        Assert.Equal(expected, DeviceSecrets.NormalizePairingCode(typed));
     }
 
     [Fact]
@@ -31,9 +30,10 @@ public sealed class DeviceSecretsTests
         var first = DeviceSecrets.NewToken();
         var second = DeviceSecrets.NewToken();
 
-        first.Should().HaveLength(43, "32 bytes are 43 unpadded base64url characters");
-        first.Should().MatchRegex("^[A-Za-z0-9_-]+$");
-        second.Should().NotBe(first);
+        // 32 bytes are 43 unpadded base64url characters
+        Assert.Equal(43, first.Length);
+        Assert.Matches("^[A-Za-z0-9_-]+$", first);
+        Assert.NotEqual(first, second);
     }
 
     [Fact]
@@ -41,9 +41,10 @@ public sealed class DeviceSecretsTests
     {
         var hash = DeviceSecrets.Hash("secret");
 
-        hash.Should().HaveLength(64).And.MatchRegex("^[0-9A-F]+$");
-        DeviceSecrets.Hash("secret").Should().Be(hash);
-        DeviceSecrets.Hash("Secret").Should().NotBe(hash);
+        Assert.Equal(64, hash.Length);
+        Assert.Matches("^[0-9A-F]+$", hash);
+        Assert.Equal(hash, DeviceSecrets.Hash("secret"));
+        Assert.NotEqual(hash, DeviceSecrets.Hash("Secret"));
     }
 
     [Theory]
@@ -52,7 +53,7 @@ public sealed class DeviceSecretsTests
     [InlineData("Mozilla/5.0 sentiumsatelles/0.1", "0.1")]
     public void ParseAppVersion_ReadsTheSatellesProduct(string userAgent, string expected)
     {
-        DeviceUserAgent.ParseAppVersion(userAgent).Should().Be(expected);
+        Assert.Equal(expected, DeviceUserAgent.ParseAppVersion(userAgent));
     }
 
     [Theory]
@@ -64,6 +65,6 @@ public sealed class DeviceSecretsTests
     [InlineData("SentiumSatelles/123456789012345678901234567890123")]
     public void ParseAppVersion_ReturnsNull_ForAnythingElse(string? userAgent)
     {
-        DeviceUserAgent.ParseAppVersion(userAgent).Should().BeNull();
+        Assert.Null(DeviceUserAgent.ParseAppVersion(userAgent));
     }
 }

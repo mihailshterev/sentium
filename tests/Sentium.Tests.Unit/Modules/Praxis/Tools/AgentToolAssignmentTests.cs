@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.Extensions.AI;
 using NSubstitute;
 using Sentium.Praxis.Features.Agents;
@@ -36,7 +35,7 @@ public sealed class AgentToolAssignmentTests
 
         var offered = await OfferedToolsAsync("Scout", ct);
 
-        offered.Should().Equal(ToolNames.FindAssets);
+        Assert.Equal(new string[] { ToolNames.FindAssets }, offered);
     }
 
     [Fact]
@@ -48,7 +47,7 @@ public sealed class AgentToolAssignmentTests
 
         var offered = await OfferedToolsAsync("Scout", ct);
 
-        offered.Should().HaveCount(4);
+        Assert.Equal(4, offered.Count);
     }
 
     [Fact]
@@ -58,7 +57,7 @@ public sealed class AgentToolAssignmentTests
 
         var offered = await OfferedToolsAsync(AgentRole.ResearchAnalyst, ct);
 
-        offered.Should().BeEquivalentTo(ToolNames.KnowledgeBaseSearch, ToolNames.RecallLearnings, ToolNames.FindAssets);
+        Assert.Equivalent(new string[] { ToolNames.KnowledgeBaseSearch, ToolNames.RecallLearnings, ToolNames.FindAssets }, offered);
     }
 
     [Fact]
@@ -70,7 +69,7 @@ public sealed class AgentToolAssignmentTests
 
         var offered = await OfferedToolsAsync(AgentRole.ResearchAnalyst, ct);
 
-        offered.Should().Equal(ToolNames.GetTimelineOverview);
+        Assert.Equal(new string[] { ToolNames.GetTimelineOverview }, offered);
     }
 
     [Fact]
@@ -82,7 +81,7 @@ public sealed class AgentToolAssignmentTests
 
         var offered = await OfferedToolsAsync(AgentRole.ResearchAnalyst, ct);
 
-        offered.Should().HaveCount(4);
+        Assert.Equal(4, offered.Count);
     }
 
     [Fact]
@@ -95,11 +94,11 @@ public sealed class AgentToolAssignmentTests
 
         var agents = await service.GetAsync(_userId, ct);
 
-        agents.Select(a => a.Name).Should().Equal(AgentRole.GeneralAssistant, AgentRole.ResearchAnalyst);
-        agents[0].Should().BeEquivalentTo(new { DefaultTools = (IReadOnlyList<string>?)null, Tools = (IReadOnlyList<string>?)null, IsCustomized = false });
-        agents[1].IsCustomized.Should().BeTrue();
-        agents[1].Tools.Should().Equal(ToolNames.FindAssets);
-        agents[1].DefaultTools.Should().Contain(ToolNames.KnowledgeBaseSearch);
+        Assert.Equal(new string[] { AgentRole.GeneralAssistant, AgentRole.ResearchAnalyst }, agents.Select(a => a.Name));
+        Assert.Equivalent(new { DefaultTools = (IReadOnlyList<string>?)null, Tools = (IReadOnlyList<string>?)null, IsCustomized = false }, agents[0]);
+        Assert.True(agents[1].IsCustomized);
+        Assert.Equal(new string[] { ToolNames.FindAssets }, agents[1].Tools);
+        Assert.Contains(ToolNames.KnowledgeBaseSearch, agents[1].DefaultTools!);
     }
 
     [Fact]
@@ -110,7 +109,7 @@ public sealed class AgentToolAssignmentTests
 
         var result = await service.SetToolsAsync(AgentRole.Orchestrator, _userId, [ToolNames.FindAssets], ct);
 
-        result.Status.Should().Be(Sentium.Core.Results.ResultStatus.NotFound);
+        Assert.Equal(Sentium.Core.Results.ResultStatus.NotFound, result.Status);
         await _host.ToolOverrides.DidNotReceiveWithAnyArgs().UpsertAsync(default!, default, default, ct);
     }
 
@@ -119,7 +118,7 @@ public sealed class AgentToolAssignmentTests
         var agent = await _host.CreateFactory().CreateAsync(agentName, actingUserId: _userId, ct: ct);
         await agent.RunAsync("hi", await agent.CreateSessionAsync(ct), cancellationToken: ct);
 
-        var options = _host.Model.Requests.Should().ContainSingle().Subject.Options!;
+        var options = Assert.Single(_host.Model.Requests).Options!;
         return [.. options.Tools!.Select(t => t.Name).Where(n => n is not ("load_skill" or "read_skill_resource" or "run_skill_script"))];
     }
 }

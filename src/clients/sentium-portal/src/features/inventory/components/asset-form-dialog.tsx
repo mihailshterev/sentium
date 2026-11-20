@@ -1,6 +1,6 @@
 import { useId, useMemo } from "react";
 import { Controller, useForm, useWatch } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { zodResolver } from "@/shared/forms/zod-resolver";
 import { Package } from "lucide-react";
 import styles from "../inventory.module.css";
 import { Button } from "@/shared/ui/button";

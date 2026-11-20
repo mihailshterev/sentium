@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Sentium.Infrastructure.Storage;
 using Xunit;
 
@@ -11,10 +10,10 @@ public sealed class ObjectStoreSettingsTests
     {
         var settings = ObjectStoreSettings.Parse("Endpoint=http://storage:8333;AccessKey=ak;SecretKey=s3cr3t+/=");
 
-        settings.Endpoint.Should().Be(new Uri("http://storage:8333"));
-        settings.AccessKey.Should().Be("ak");
-        settings.SecretKey.Should().Be("s3cr3t+/=");
-        settings.Region.Should().Be(ObjectStoreSettings.DefaultRegion);
+        Assert.Equal(new Uri("http://storage:8333"), settings.Endpoint);
+        Assert.Equal("ak", settings.AccessKey);
+        Assert.Equal("s3cr3t+/=", settings.SecretKey);
+        Assert.Equal(ObjectStoreSettings.DefaultRegion, settings.Region);
     }
 
     [Fact]
@@ -22,8 +21,8 @@ public sealed class ObjectStoreSettingsTests
     {
         var settings = ObjectStoreSettings.Parse("endpoint=https://s3.lan;accesskey=ak;secretkey=sk;region=eu-west-1");
 
-        settings.Region.Should().Be("eu-west-1");
-        settings.Endpoint.Scheme.Should().Be("https");
+        Assert.Equal("eu-west-1", settings.Region);
+        Assert.Equal("https", settings.Endpoint.Scheme);
     }
 
     [Theory]
@@ -38,7 +37,7 @@ public sealed class ObjectStoreSettingsTests
     {
         var parse = () => ObjectStoreSettings.Parse(connectionString);
 
-        parse.Should().Throw<InvalidOperationException>();
+        Assert.ThrowsAny<InvalidOperationException>(parse);
     }
 
     [Fact]
@@ -49,7 +48,7 @@ public sealed class ObjectStoreSettingsTests
         var settings = ObjectStoreSettings.Parse($"Endpoint=http://storage:8333;AccessKey=ak;SecretKey={secret}");
         var invalid = () => ObjectStoreSettings.Parse($"Endpoint=nope;AccessKey=ak;SecretKey={secret}");
 
-        settings.ToString().Should().NotContain(secret);
-        invalid.Should().Throw<InvalidOperationException>().Which.Message.Should().NotContain(secret);
+        Assert.DoesNotContain(secret, settings.ToString(), StringComparison.Ordinal);
+        Assert.DoesNotContain(secret, Assert.ThrowsAny<InvalidOperationException>(invalid).Message, StringComparison.Ordinal);
     }
 }

@@ -1,8 +1,6 @@
 using System.Reflection;
-using FluentAssertions;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using NetArchTest.Rules;
 using Sentium.Codex;
 using Sentium.Identity;
 using Sentium.Locus;
@@ -70,15 +68,11 @@ public sealed class ModuleLayeringTests
             return;
         }
 
-        var result = Types.InAssembly(module)
-            .That().Inherit(typeof(ControllerBase))
-            .ShouldNot().HaveDependencyOnAny(dbContexts)
-            .GetResult();
+        var failing = TypeDependencyScanner.TypesDependingOnAny(module, module.GetTypes().Where(IsController), dbContexts);
 
-        result.IsSuccessful.Should().BeTrue(
-            "{0} controllers must go through services, not a DbContext: {1}",
-            moduleName,
-            string.Join(", ", result.FailingTypeNames ?? []));
+        Assert.True(
+            failing.Count == 0,
+            $"{moduleName} controllers must go through services, not a DbContext: {string.Join(", ", failing)}");
     }
 
     [Theory]
@@ -86,20 +80,15 @@ public sealed class ModuleLayeringTests
     public void Entities_DoNotDependOnFeaturesControllersOrData(string moduleName)
     {
         var module = Module(moduleName);
-        var upperLayers = TypeNames(module, t =>
-                t.IsAssignableTo(typeof(ControllerBase)) || InLayer(t, ".Features") || InLayer(t, ".Data"))
+        var upperLayers = TypeNames(module, t => IsController(t) || InLayer(t, ".Features") || InLayer(t, ".Data"))
             .Where(name => !EntityFeatureTypeAllowList.Contains(name))
             .ToArray();
 
-        var result = Types.InAssembly(module)
-            .That().ResideInNamespaceEndingWith(".Entities")
-            .ShouldNot().HaveDependencyOnAny(upperLayers)
-            .GetResult();
+        var failing = TypeDependencyScanner.TypesDependingOnAny(module, Entities(module), upperLayers);
 
-        result.IsSuccessful.Should().BeTrue(
-            "{0} entities must not reach up into features, controllers or data: {1}",
-            moduleName,
-            string.Join(", ", result.FailingTypeNames ?? []));
+        Assert.True(
+            failing.Count == 0,
+            $"{moduleName} entities must not reach up into features, controllers or data: {string.Join(", ", failing)}");
     }
 
     [Theory]
@@ -107,23 +96,19 @@ public sealed class ModuleLayeringTests
     public void NothingDependsOnControllers(string moduleName)
     {
         var module = Module(moduleName);
-        var controllers = TypeNames(module, t => t.IsAssignableTo(typeof(ControllerBase)));
+        var controllers = TypeNames(module, IsController);
 
         if (controllers.Length == 0)
         {
             return;
         }
 
-        var result = Types.InAssembly(module)
-            .That().DoNotInherit(typeof(ControllerBase))
-            .And().DoNotHaveNameMatching("<")
-            .ShouldNot().HaveDependencyOnAny(controllers)
-            .GetResult();
+        var others = module.GetTypes().Where(t => !IsController(t) && !t.Name.Contains('<', StringComparison.Ordinal));
+        var failing = TypeDependencyScanner.TypesDependingOnAny(module, others, controllers);
 
-        result.IsSuccessful.Should().BeTrue(
-            "{0}: controllers are the HTTP edge, no other type may depend on them: {1}",
-            moduleName,
-            string.Join(", ", result.FailingTypeNames ?? []));
+        Assert.True(
+            failing.Count == 0,
+            $"{moduleName}: controllers are the HTTP edge, no other type may depend on them: {string.Join(", ", failing)}");
     }
 
     [Fact]
@@ -132,21 +117,28 @@ public sealed class ModuleLayeringTests
         // Guards against the rules above passing vacuously.
         var praxis = typeof(PraxisModuleExtensions).Assembly;
 
-        TypeNames(praxis, t => t.IsAssignableTo(typeof(ControllerBase))).Should().NotBeEmpty();
-        TypeNames(praxis, t => t.IsAssignableTo(typeof(DbContext))).Should().NotBeEmpty();
-        TypeNames(praxis, t => InLayer(t, ".Features")).Should().NotBeEmpty();
-        Types.InAssembly(praxis).That().ResideInNamespaceEndingWith(".Entities").GetTypes().Should().NotBeEmpty();
+        Assert.NotEmpty(TypeNames(praxis, IsController));
+        Assert.NotEmpty(TypeNames(praxis, t => t.IsAssignableTo(typeof(DbContext))));
+        Assert.NotEmpty(TypeNames(praxis, t => InLayer(t, ".Features")));
+        Assert.NotEmpty(Entities(praxis));
 
         // And that the entity rule can fail: AgentSkill really embeds a Features type, which is only allow-listed.
-        var withoutAllowList = Types.InAssembly(praxis)
-            .That().ResideInNamespaceEndingWith(".Entities")
-            .ShouldNot().HaveDependencyOnAny("Sentium.Praxis.Features.Skills.AgentSkillType")
-            .GetResult();
+        var withoutAllowList = TypeDependencyScanner.TypesDependingOnAny(
+            praxis,
+            Entities(praxis),
+            ["Sentium.Praxis.Features.Skills.AgentSkillType"]);
 
-        withoutAllowList.IsSuccessful.Should().BeFalse();
+        Assert.NotEmpty(withoutAllowList);
     }
 
     private static Assembly Module(string name) => Modules.Single(m => m.GetName().Name == name);
+
+    private static bool IsController(Type type) => type.IsAssignableTo(typeof(ControllerBase));
+
+    private static IEnumerable<Type> Entities(Assembly module)
+    {
+        return module.GetTypes().Where(t => t.Namespace?.EndsWith(".Entities", StringComparison.Ordinal) == true);
+    }
 
     private static string[] TypeNames(Assembly module, Func<Type, bool> predicate)
     {

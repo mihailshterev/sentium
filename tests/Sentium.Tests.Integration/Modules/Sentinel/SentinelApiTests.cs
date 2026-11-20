@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Sentium.Core.Constants;
 using Sentium.Sentinel.Contracts;
@@ -25,7 +24,7 @@ public sealed class SentinelApiTests(MonolithWebApplicationFactory factory) : IC
     public async Task GetAudit_ReturnsOk_WhenAuthenticated()
     {
         var response = await _client.GetAsync("/api/sentinel/policy/audit", Ct);
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     [Fact]
@@ -33,17 +32,17 @@ public sealed class SentinelApiTests(MonolithWebApplicationFactory factory) : IC
     {
         var response = await _client.GetAsync("/api/sentinel/policy/audit/stats", Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var stats = await response.Content.ReadFromJsonAsync<AuditStatsDto>(Ct);
-        stats.Should().NotBeNull();
-        stats!.Total.Should().BeGreaterThanOrEqualTo(0);
+        Assert.NotNull(stats);
+        Assert.True(stats!.Total >= 0);
     }
 
     [Fact]
     public async Task GetAuditByAgent_ReturnsOk_WithEmptyList()
     {
         var response = await _client.GetAsync("/api/sentinel/policy/audit/agent/test-agent-integration", Ct);
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     [Fact]
@@ -62,7 +61,7 @@ public sealed class SentinelApiTests(MonolithWebApplicationFactory factory) : IC
 
         var result = await EvaluateAsync(body);
 
-        result.AuditId.Should().NotBe(Guid.Empty);
+        Assert.NotEqual(Guid.Empty, result.AuditId);
     }
 
     [Fact]
@@ -81,7 +80,7 @@ public sealed class SentinelApiTests(MonolithWebApplicationFactory factory) : IC
 
         var result = await EvaluateAsync(body);
 
-        result!.Allowed.Should().BeTrue();
+        Assert.True(result!.Allowed);
     }
 
     [Fact]
@@ -100,7 +99,7 @@ public sealed class SentinelApiTests(MonolithWebApplicationFactory factory) : IC
 
         var result = await EvaluateAsync(body);
 
-        result!.Allowed.Should().BeTrue(result.Reason);
+        Assert.True(result!.Allowed, result.Reason);
     }
 
     [Fact]
@@ -119,7 +118,7 @@ public sealed class SentinelApiTests(MonolithWebApplicationFactory factory) : IC
 
         var result = await EvaluateAsync(body);
 
-        result!.Allowed.Should().BeTrue(result.Reason);
+        Assert.True(result!.Allowed, result.Reason);
     }
 
     [Fact]
@@ -145,6 +144,6 @@ public sealed class SentinelApiTests(MonolithWebApplicationFactory factory) : IC
 
         var response = await _client.SendAsync(request, Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 }

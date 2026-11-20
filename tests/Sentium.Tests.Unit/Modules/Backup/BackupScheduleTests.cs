@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Sentium.Backup.Running;
 using Xunit;
 
@@ -13,8 +12,7 @@ public sealed class BackupScheduleTests
     {
         var now = new DateTimeOffset(2026, 11, 15, 1, 0, 0, TimeSpan.Zero);
 
-        BackupSchedule.NextOccurrence(now, ThreeAm, TimeZoneInfo.Utc)
-            .Should().Be(new DateTimeOffset(2026, 11, 15, 3, 0, 0, TimeSpan.Zero));
+        Assert.Equal(new DateTimeOffset(2026, 11, 15, 3, 0, 0, TimeSpan.Zero), BackupSchedule.NextOccurrence(now, ThreeAm, TimeZoneInfo.Utc));
     }
 
     [Fact]
@@ -22,8 +20,7 @@ public sealed class BackupScheduleTests
     {
         var now = new DateTimeOffset(2026, 11, 15, 3, 0, 0, TimeSpan.Zero);
 
-        BackupSchedule.NextOccurrence(now, ThreeAm, TimeZoneInfo.Utc)
-            .Should().Be(new DateTimeOffset(2026, 11, 16, 3, 0, 0, TimeSpan.Zero));
+        Assert.Equal(new DateTimeOffset(2026, 11, 16, 3, 0, 0, TimeSpan.Zero), BackupSchedule.NextOccurrence(now, ThreeAm, TimeZoneInfo.Utc));
     }
 
     [Fact]
@@ -34,8 +31,8 @@ public sealed class BackupScheduleTests
 
         var next = BackupSchedule.NextOccurrence(now, ThreeAm, zone);
 
-        next.Should().Be(new DateTimeOffset(2026, 11, 15, 3, 0, 0, TimeSpan.FromHours(2)));
-        next.UtcDateTime.Hour.Should().Be(1);
+        Assert.Equal(new DateTimeOffset(2026, 11, 15, 3, 0, 0, TimeSpan.FromHours(2)), next);
+        Assert.Equal(1, next.UtcDateTime.Hour);
     }
 
     [Fact]
@@ -52,6 +49,6 @@ public sealed class BackupScheduleTests
 
         var next = BackupSchedule.NextOccurrence(now, new TimeOnly(2, 30), zone);
 
-        next.Should().Be(new DateTimeOffset(2026, 3, 29, 3, 30, 0, TimeSpan.FromHours(1)));
+        Assert.Equal(new DateTimeOffset(2026, 3, 29, 3, 30, 0, TimeSpan.FromHours(1)), next);
     }
 }

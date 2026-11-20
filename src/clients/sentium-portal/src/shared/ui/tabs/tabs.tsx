@@ -1,5 +1,5 @@
 import { useId } from "react";
-import { MotionConfig, motion } from "framer-motion";
+import { SharedLayoutIndicator } from "@/shared/ui/motion";
 import styles from "./tabs.module.css";
 
 export interface TabItem {
@@ -44,40 +44,32 @@ export function Tabs({ tabs, active, onChange, label, className }: TabsProps) {
   };
 
   return (
-    <MotionConfig reducedMotion="user">
-      <div
-        className={[styles.tabs, className ?? ""].filter(Boolean).join(" ")}
-        role="tablist"
-        aria-label={label}
-        onKeyDown={onKeyDown}
-      >
-        {tabs.map((tab) => {
-          const selected = active === tab.id;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              role="tab"
-              aria-selected={selected}
-              tabIndex={selected ? 0 : -1}
-              className={`${styles.tab} ${selected ? styles.active : ""}`}
-              onClick={() => onChange(tab.id)}
-              data-testid={tab.testId}
-            >
-              {selected && (
-                <motion.span
-                  layoutId={indicatorId}
-                  className={styles.indicator}
-                  transition={{ type: "spring", stiffness: 520, damping: 40 }}
-                />
-              )}
-              {tab.icon && <span className={styles.icon}>{tab.icon}</span>}
-              <span className={styles.text}>{tab.label}</span>
-              {tab.count != null && <span className={styles.count}>{tab.count}</span>}
-            </button>
-          );
-        })}
-      </div>
-    </MotionConfig>
+    <div
+      className={[styles.tabs, className ?? ""].filter(Boolean).join(" ")}
+      role="tablist"
+      aria-label={label}
+      onKeyDown={onKeyDown}
+    >
+      {tabs.map((tab) => {
+        const selected = active === tab.id;
+        return (
+          <button
+            key={tab.id}
+            type="button"
+            role="tab"
+            aria-selected={selected}
+            tabIndex={selected ? 0 : -1}
+            className={`${styles.tab} ${selected ? styles.active : ""}`}
+            onClick={() => onChange(tab.id)}
+            data-testid={tab.testId}
+          >
+            {selected && <SharedLayoutIndicator layoutId={indicatorId} className={styles.indicator} />}
+            {tab.icon && <span className={styles.icon}>{tab.icon}</span>}
+            <span className={styles.text}>{tab.label}</span>
+            {tab.count != null && <span className={styles.count}>{tab.count}</span>}
+          </button>
+        );
+      })}
+    </div>
   );
 }

@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using FluentAssertions;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
@@ -30,9 +29,9 @@ public class SchedulerPersistenceTests(MonolithWebApplicationFactory factory) : 
         var scheduler = await factory.Services.GetRequiredService<ISchedulerFactory>().GetScheduler(Ct);
         var metadata = await scheduler.GetMetaData(Ct);
 
-        metadata.SchedulerName.Should().Be(SchedulerDefaults.SchedulerName);
-        metadata.JobStoreType.Should().Be<JobStoreTX>();
-        metadata.JobStoreSupportsPersistence.Should().BeTrue();
+        Assert.Equal(SchedulerDefaults.SchedulerName, metadata.SchedulerName);
+        Assert.Equal(typeof(JobStoreTX), metadata.JobStoreType);
+        Assert.True(metadata.JobStoreSupportsPersistence);
     }
 
     [Fact]
@@ -73,20 +72,20 @@ public class SchedulerPersistenceTests(MonolithWebApplicationFactory factory) : 
             command.Parameters.AddWithValue("group", jobKey.Group);
 
             await using var reader = await command.ExecuteReaderAsync(Ct);
-            (await reader.ReadAsync(Ct)).Should().BeTrue("the job and its cron trigger must be persisted");
-            reader.GetString(0).Should().Be(FarFuture);
-            reader.GetString(1).Should().Be(TimeZoneInfo.Utc.Id);
-            reader.GetString(2).Should().Be("Sentium.Scheduling.Features.Jobs.ExecuteJob, Sentium.Scheduling",
-                "the RenameScheduledJobType migration rewrites persisted jobs to exactly this name");
+            Assert.True(await reader.ReadAsync(Ct), "the job and its cron trigger must be persisted");
+            Assert.Equal(FarFuture, reader.GetString(0));
+            Assert.Equal(TimeZoneInfo.Utc.Id, reader.GetString(1));
+            // the RenameScheduledJobType migration rewrites persisted jobs to exactly this name
+            Assert.Equal("Sentium.Scheduling.Features.Jobs.ExecuteJob, Sentium.Scheduling", reader.GetString(2));
         }
 
         var response = await _client.GetAsync("/api/praxis/scheduler/jobs", Ct);
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var jobs = await response.Content.ReadFromJsonAsync<List<ScheduledJobResponse>>(Ct);
-        jobs.Should().Contain(j => j.JobId == jobKey.Name && j.AgentId == "IntegrationAgent" && j.JobName == "persisted-job");
+        Assert.Contains(jobs!, j => j.JobId == jobKey.Name && j.AgentId == "IntegrationAgent" && j.JobName == "persisted-job");
 
         var delete = await _client.DeleteAsync($"/api/praxis/scheduler/agents/IntegrationAgent/jobs/{jobKey.Name}", Ct);
-        delete.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        (await scheduler.CheckExists(jobKey, Ct)).Should().BeFalse();
+        Assert.Equal(HttpStatusCode.NoContent, delete.StatusCode);
+        Assert.False(await scheduler.CheckExists(jobKey, Ct));
     }
 }

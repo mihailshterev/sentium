@@ -2,7 +2,6 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using FluentAssertions;
 using Sentium.Tests.Integration.Common;
 using Sentium.Vigil.Features.Metrics;
 using Sentium.Vigil.Features.Monitoring;
@@ -28,7 +27,7 @@ public sealed class VigilApiTests(MonolithWebApplicationFactory factory)
         var response = await _client.GetAsync("/api/vigil/system/metrics", Ct);
 
         // Assert
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     [Fact]
@@ -41,10 +40,10 @@ public sealed class VigilApiTests(MonolithWebApplicationFactory factory)
         var metrics = await response.Content.ReadFromJsonAsync<SystemMetrics>(Ct);
 
         // Assert
-        metrics.Should().NotBeNull();
-        metrics!.Host.MachineName.Should().NotBeNullOrWhiteSpace();
-        metrics.Memory.TotalMb.Should().BeGreaterThan(0);
-        metrics.Process.Id.Should().BeGreaterThan(0);
+        Assert.NotNull(metrics);
+        Assert.False(string.IsNullOrWhiteSpace(metrics!.Host.MachineName));
+        Assert.True(metrics.Memory.TotalMb > 0);
+        Assert.True(metrics.Process.Id > 0);
     }
 
     [Fact]
@@ -52,9 +51,9 @@ public sealed class VigilApiTests(MonolithWebApplicationFactory factory)
     {
         var response = await _client.GetAsync("/api/vigil/status", Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var statuses = await response.Content.ReadFromJsonAsync<List<ServiceHealthStatus>>(JsonOptions, Ct);
-        statuses.Should().NotBeNull();
+        Assert.NotNull(statuses);
     }
 
     [Fact]
@@ -65,8 +64,8 @@ public sealed class VigilApiTests(MonolithWebApplicationFactory factory)
         response.EnsureSuccessStatusCode();
         var overview = await response.Content.ReadFromJsonAsync<SystemHealthOverview>(JsonOptions, Ct);
 
-        overview.Should().NotBeNull();
-        overview!.Total.Should().Be(overview.Healthy + overview.Degraded + overview.Unhealthy + overview.Unknown);
+        Assert.NotNull(overview);
+        Assert.Equal(overview.Healthy + overview.Degraded + overview.Unhealthy + overview.Unknown, overview!.Total);
     }
 
     [Fact]
@@ -74,9 +73,9 @@ public sealed class VigilApiTests(MonolithWebApplicationFactory factory)
     {
         var response = await _client.GetAsync("/api/vigil/incidents", Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var incidents = await response.Content.ReadFromJsonAsync<List<Incident>>(JsonOptions, Ct);
-        incidents.Should().NotBeNull();
+        Assert.NotNull(incidents);
     }
 
     [Fact]
@@ -84,6 +83,6 @@ public sealed class VigilApiTests(MonolithWebApplicationFactory factory)
     {
         var response = await _client.GetAsync("/api/vigil/status/does-not-exist", Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 }

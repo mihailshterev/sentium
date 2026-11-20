@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Sentium.Praxis.Common.Streaming;
@@ -29,16 +28,11 @@ public sealed class AgentRunStreamTests
                 [new TextContent("lo")]),
             ct);
 
-        _sink.Writes.Select(w => w.Type).Should().Equal(
-            AgentUpdateTypes.Thought,
-            AgentUpdateTypes.ToolCall,
-            AgentUpdateTypes.Message,
-            AgentUpdateTypes.ToolResult,
-            AgentUpdateTypes.Message);
-        _sink.Writes.Where(w => w.Type == AgentUpdateTypes.Message).Select(w => w.Content).Should().Equal("Hel", "lo");
-        run.Text.Should().Be("Hello");
-        run.Contents.Should().HaveCount(5);
-        run.Activity.Durations.Should().ContainKey("c1");
+        Assert.Equal(new string[] { AgentUpdateTypes.Thought, AgentUpdateTypes.ToolCall, AgentUpdateTypes.Message, AgentUpdateTypes.ToolResult, AgentUpdateTypes.Message }, _sink.Writes.Select(w => w.Type));
+        Assert.Equal(new string[] { "Hel", "lo" }, _sink.Writes.Where(w => w.Type == AgentUpdateTypes.Message).Select(w => w.Content));
+        Assert.Equal("Hello", run.Text);
+        Assert.Equal(5, run.Contents.Count);
+        Assert.Contains("c1", run.Activity.Durations);
     }
 
     [Fact]
@@ -49,8 +43,8 @@ public sealed class AgentRunStreamTests
 
         await run.RunAsync(Updates([new TextContent(string.Empty)]), ct);
 
-        _sink.Writes.Should().BeEmpty();
-        run.Text.Should().BeEmpty();
+        Assert.Empty(_sink.Writes);
+        Assert.Empty(run.Text);
     }
 
     private static async IAsyncEnumerable<AgentResponseUpdate> Updates(params AIContent[][] updates)

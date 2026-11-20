@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Sentium.Sentinel.Features.Policies;
@@ -36,11 +35,11 @@ public sealed class SensitiveDataEgressPolicyTests
 
         var result = await sut.EvaluateAsync(MakeRequest(resourceId: "my key is AKIAIOSFODNN7EXAMPLE"), ct);
 
-        result.Should().NotBeNull();
-        result!.Allowed.Should().BeFalse();
-        result.Effect.Should().Be(PolicyEffect.DenyWithAlert);
-        result.Risk.Should().Be(PolicyRiskLevel.High);
-        result.TriggeredPolicies.Should().Contain("SensitiveDataEgress");
+        Assert.NotNull(result);
+        Assert.False(result!.Allowed);
+        Assert.Equal(PolicyEffect.DenyWithAlert, result.Effect);
+        Assert.Equal(PolicyRiskLevel.High, result.Risk);
+        Assert.Contains("SensitiveDataEgress", result.TriggeredPolicies);
     }
 
     [Fact]
@@ -55,8 +54,8 @@ public sealed class SensitiveDataEgressPolicyTests
 
         var result = await sut.EvaluateAsync(MakeRequest(metadata: metadata), ct);
 
-        result.Should().NotBeNull();
-        result!.Allowed.Should().BeFalse();
+        Assert.NotNull(result);
+        Assert.False(result!.Allowed);
     }
 
     [Fact]
@@ -67,7 +66,7 @@ public sealed class SensitiveDataEgressPolicyTests
 
         var result = await sut.EvaluateAsync(MakeRequest(resourceId: "The user prefers dark mode."), ct);
 
-        result.Should().BeNull();
+        Assert.Null(result);
     }
 
     [Theory]
@@ -83,10 +82,10 @@ public sealed class SensitiveDataEgressPolicyTests
 
         var result = await sut.EvaluateAsync(MakeRequest(metadata: metadata), ct);
 
-        result.Should().NotBeNull();
-        result!.Allowed.Should().BeFalse();
-        result.Risk.Should().Be(PolicyRiskLevel.High);
-        result.TriggeredPolicies.Should().Contain("SensitiveDataEgress");
+        Assert.NotNull(result);
+        Assert.False(result!.Allowed);
+        Assert.Equal(PolicyRiskLevel.High, result.Risk);
+        Assert.Contains("SensitiveDataEgress", result.TriggeredPolicies);
     }
 
     [Theory]
@@ -102,7 +101,7 @@ public sealed class SensitiveDataEgressPolicyTests
 
         var result = await sut.EvaluateAsync(MakeRequest(metadata: metadata), ct);
 
-        result.Should().BeNull();
+        Assert.Null(result);
     }
 
     [Fact]
@@ -113,8 +112,8 @@ public sealed class SensitiveDataEgressPolicyTests
         var realKey = new Dictionary<string, string> { ["payload"] = "key=sk-proj-abcdefghijklmnopqrstuvwxyz0123456789ABCDEFGH" };
         var falsePositive = new Dictionary<string, string> { ["payload"] = "the sku is sk-1234 for that item" };
 
-        (await sut.EvaluateAsync(MakeRequest(metadata: realKey), ct)).Should().NotBeNull();
-        (await sut.EvaluateAsync(MakeRequest(metadata: falsePositive), ct)).Should().BeNull();
+        Assert.NotNull(await sut.EvaluateAsync(MakeRequest(metadata: realKey), ct));
+        Assert.Null(await sut.EvaluateAsync(MakeRequest(metadata: falsePositive), ct));
     }
 
     [Fact]
@@ -125,9 +124,9 @@ public sealed class SensitiveDataEgressPolicyTests
 
         var result = await sut.EvaluateAsync(MakeRequest(resourceId: "my key is AKIAIOSFODNN7EXAMPLE"), ct);
 
-        result.Should().NotBeNull();
-        result!.Reason.Should().NotContain("AKIA");
-        result.Reason.Should().NotContain("[0-9A-Z]");
+        Assert.NotNull(result);
+        Assert.DoesNotContain("AKIA", result!.Reason, StringComparison.Ordinal);
+        Assert.DoesNotContain("[0-9A-Z]", result.Reason, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -139,7 +138,7 @@ public sealed class SensitiveDataEgressPolicyTests
         // Even with a secret present, a read/search action is out of scope for egress.
         var result = await sut.EvaluateAsync(MakeRequest(action: "search", resourceId: "AKIAIOSFODNN7EXAMPLE"), ct);
 
-        result.Should().BeNull();
+        Assert.Null(result);
     }
 
     [Fact]
@@ -150,7 +149,7 @@ public sealed class SensitiveDataEgressPolicyTests
 
         var result = await sut.EvaluateAsync(MakeRequest(resourceId: "AKIAIOSFODNN7EXAMPLE"), ct);
 
-        result.Should().BeNull();
+        Assert.Null(result);
     }
 
     [Fact]
@@ -161,6 +160,6 @@ public sealed class SensitiveDataEgressPolicyTests
 
         var act = async () => await sut.EvaluateAsync(null!, ct);
 
-        await act.Should().ThrowAsync<ArgumentNullException>();
+        await Assert.ThrowsAnyAsync<ArgumentNullException>(act);
     }
 }

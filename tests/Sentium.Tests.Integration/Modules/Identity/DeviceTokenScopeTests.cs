@@ -1,7 +1,6 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text.RegularExpressions;
-using FluentAssertions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.Metadata;
 using Microsoft.AspNetCore.Mvc.Controllers;
@@ -30,8 +29,8 @@ public sealed partial class DeviceTokenScopeTests(RealAuthWebApplicationFactory 
         using var client = factory.CreateDeviceClient(device.Token);
 
         var endpoints = ProtectedEndpoints(deviceEndpoints: false);
-        endpoints.Should().HaveCountGreaterThan(50, "the scan must find the module controllers");
-        endpoints.Select(e => e.Module).Distinct().Should().HaveCountGreaterThanOrEqualTo(9, "every module has protected endpoints");
+        Assert.True(endpoints.Count > 50, "the scan must find the module controllers");
+        Assert.True(endpoints.Select(e => e.Module).Distinct().Count() >= 9, "every module has protected endpoints");
 
         List<string> accepted = [];
         foreach (var (method, path, _, contentType) in endpoints)
@@ -53,7 +52,8 @@ public sealed partial class DeviceTokenScopeTests(RealAuthWebApplicationFactory 
             }
         }
 
-        accepted.Should().BeEmpty("a Device token must never be accepted outside the Device endpoints");
+        // a Device token must never be accepted outside the Device endpoints
+        Assert.Empty(accepted);
     }
 
     [Fact]
@@ -63,20 +63,10 @@ public sealed partial class DeviceTokenScopeTests(RealAuthWebApplicationFactory 
         var device = await factory.PairDirectlyAsync(owner, "DESKTOP-OPEN", Ct);
         using var client = factory.CreateDeviceClient(device.Token);
 
-        ProtectedEndpoints(deviceEndpoints: true).Select(e => $"{e.Method} {e.Path}").Should().BeEquivalentTo(
-            "DELETE /api/identity/devices/current",
-            "POST /api/vigil/devices/report",
-            "GET /api/nuntius/devices/stream",
-            "GET /api/nuntius/devices/unread-count",
-            "GET /api/memoria/device/vault",
-            "PUT /api/memoria/device/vault",
-            "POST /api/memoria/device/vault/manifest",
-            "PUT /api/memoria/device/vault/notes",
-            "POST /api/memoria/device/vault/notes/remove",
-            "POST /api/memoria/device/vault/notes/move");
+        Assert.Equivalent(new string[] { "DELETE /api/identity/devices/current", "POST /api/vigil/devices/report", "GET /api/nuntius/devices/stream", "GET /api/nuntius/devices/unread-count", "GET /api/memoria/device/vault", "PUT /api/memoria/device/vault", "POST /api/memoria/device/vault/manifest", "PUT /api/memoria/device/vault/notes", "POST /api/memoria/device/vault/notes/remove", "POST /api/memoria/device/vault/notes/move" }, ProtectedEndpoints(deviceEndpoints: true).Select(e => $"{e.Method} {e.Path}"));
 
-        (await client.GetAsync("/api/nuntius/devices/unread-count", Ct)).StatusCode.Should().Be(HttpStatusCode.OK);
-        (await client.DeleteAsync("/api/identity/devices/current", Ct)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/api/nuntius/devices/unread-count", Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await client.DeleteAsync("/api/identity/devices/current", Ct)).StatusCode);
     }
 
     [Fact]
@@ -85,8 +75,8 @@ public sealed partial class DeviceTokenScopeTests(RealAuthWebApplicationFactory 
         using var stranger = factory.CreateDeviceClient("not-a-device-token");
         using var anonymous = factory.CreateClient();
 
-        (await stranger.GetAsync("/api/nuntius/devices/unread-count", Ct)).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-        (await anonymous.GetAsync("/api/nuntius/devices/unread-count", Ct)).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await stranger.GetAsync("/api/nuntius/devices/unread-count", Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await anonymous.GetAsync("/api/nuntius/devices/unread-count", Ct)).StatusCode);
     }
 
     [Fact]
@@ -95,16 +85,16 @@ public sealed partial class DeviceTokenScopeTests(RealAuthWebApplicationFactory 
         var owner = await factory.CreateUserAsync();
         var device = await factory.PairDirectlyAsync(owner, "DESKTOP-ORPHAN", Ct);
         using var client = factory.CreateDeviceClient(device.Token);
-        (await client.GetAsync("/api/nuntius/devices/unread-count", Ct)).StatusCode.Should().Be(HttpStatusCode.OK);
+        Assert.Equal(HttpStatusCode.OK, (await client.GetAsync("/api/nuntius/devices/unread-count", Ct)).StatusCode);
 
         await using (var scope = factory.Services.CreateAsyncScope())
         {
             var users = scope.ServiceProvider.GetRequiredService<IUserService>();
             var (succeeded, errors) = await users.DeleteUserAsync(requesterId: Guid.NewGuid(), owner, Ct);
-            succeeded.Should().BeTrue(string.Join(", ", errors));
+            Assert.True(succeeded, string.Join(", ", errors));
         }
 
-        (await client.GetAsync("/api/nuntius/devices/unread-count", Ct)).StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        Assert.Equal(HttpStatusCode.Unauthorized, (await client.GetAsync("/api/nuntius/devices/unread-count", Ct)).StatusCode);
     }
 
     private List<(string Method, string Path, string Module, string? ContentType)> ProtectedEndpoints(bool deviceEndpoints)

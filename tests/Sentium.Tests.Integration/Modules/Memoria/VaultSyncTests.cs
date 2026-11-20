@@ -2,7 +2,6 @@ using System.Net;
 using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
-using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Sentium.Core.Results;
@@ -41,31 +40,31 @@ public sealed class VaultSyncTests(MonolithWebApplicationFactory factory) : ICla
 
         var manifest = await PostAsync<VaultManifestResponse>(device, $"{DeviceVault}/manifest",
             new VaultManifestRequest([new(hub.Path, hub.Hash), new(ideas.Path, ideas.Hash), new(sentium.Path, sentium.Hash)]));
-        manifest.Upload.Should().BeEquivalentTo(hub.Path, ideas.Path, sentium.Path);
+        Assert.Equivalent(new string[] { hub.Path, ideas.Path, sentium.Path }, manifest.Upload);
 
         var uploaded = await PutAsync<VaultSyncResult>(device, $"{DeviceVault}/notes", new UploadNotesRequest([hub, ideas, sentium]));
-        uploaded.Changed.Should().Be(3);
-        uploaded.NoteCount.Should().Be(3);
+        Assert.Equal(3, uploaded.Changed);
+        Assert.Equal(3, uploaded.NoteCount);
 
         var again = await PostAsync<VaultManifestResponse>(device, $"{DeviceVault}/manifest",
             new VaultManifestRequest([new(hub.Path, hub.Hash), new(ideas.Path, ideas.Hash), new(sentium.Path, sentium.Hash)]));
-        again.Upload.Should().BeEmpty();
+        Assert.Empty(again.Upload);
 
         var summary = (await portal.GetFromJsonAsync<VaultSummaryDto>(PortalVault, Ct))!;
-        summary.Name.Should().Be("Second Brain");
-        summary.DeviceName.Should().Be("DESKTOP-VAULT");
-        summary.NoteCount.Should().Be(3);
-        summary.UnresolvedLinkCount.Should().Be(1);
+        Assert.Equal("Second Brain", summary.Name);
+        Assert.Equal("DESKTOP-VAULT", summary.DeviceName);
+        Assert.Equal(3, summary.NoteCount);
+        Assert.Equal(1, summary.UnresolvedLinkCount);
 
         var ideasNote = await GetNoteByPathAsync(portal, "Ideas.md");
-        ideasNote.Tags.Should().Equal("thinking");
-        ideasNote.Backlinks.Select(b => b.Path).Should().BeEquivalentTo("Hub.md", "Projects/Sentium.md");
-        ideasNote.ObsidianUri.Should().Be("obsidian://open?vault=Second%20Brain&file=Ideas");
+        Assert.Equal(new string[] { "thinking" }, ideasNote.Tags);
+        Assert.Equivalent(new string[] { "Hub.md", "Projects/Sentium.md" }, ideasNote.Backlinks.Select(b => b.Path));
+        Assert.Equal("obsidian://open?vault=Second%20Brain&file=Ideas", ideasNote.ObsidianUri);
 
         await using var scope = factory.Services.CreateAsyncScope();
         scope.ServiceProvider.GetRequiredService<SystemScopeContext>().Activate();
         var db = scope.ServiceProvider.GetRequiredService<MemoriaDbContext>();
-        (await db.IndexEntries.CountAsync(e => e.UserId == owner, Ct)).Should().Be(3);
+        Assert.Equal(3, await db.IndexEntries.CountAsync(e => e.UserId == owner, Ct));
     }
 
     [Fact]
@@ -86,13 +85,13 @@ public sealed class VaultSyncTests(MonolithWebApplicationFactory factory) : ICla
         await PostAsync<VaultSyncResult>(device, $"{DeviceVault}/notes/move", new MoveNoteRequest("Inbox/Target.md", "Archive/Target.md"));
 
         var moved = await GetNoteByPathAsync(portal, "Archive/Target.md");
-        moved.Id.Should().Be(before.Id);
-        moved.Backlinks.Select(b => b.Path).Should().Equal("Source.md");
+        Assert.Equal(before.Id, moved.Id);
+        Assert.Equal(new string[] { "Source.md" }, moved.Backlinks.Select(b => b.Path));
 
         await PostAsync<VaultSyncResult>(device, $"{DeviceVault}/notes/remove", new RemoveNotesRequest(["Archive/Target.md"]));
 
         var source = await GetNoteByPathAsync(portal, "Source.md");
-        source.Links.Should().ContainSingle().Which.Target.Should().BeNull();
+        Assert.Null(Assert.Single(source.Links).Target);
     }
 
     [Fact]
@@ -107,10 +106,10 @@ public sealed class VaultSyncTests(MonolithWebApplicationFactory factory) : ICla
 
         var result = await PostAsync<VaultManifestResponse>(device, $"{DeviceVault}/manifest", new VaultManifestRequest([new(kept.Path, kept.Hash)]));
 
-        result.Removed.Should().Be(1);
-        result.NoteCount.Should().Be(1);
+        Assert.Equal(1, result.Removed);
+        Assert.Equal(1, result.NoteCount);
         var notes = (await portal.GetFromJsonAsync<PagedResponse<VaultNoteSummaryDto>>($"{PortalVault}/notes", Ct))!;
-        notes.Items.Select(n => n.Path).Should().Equal("Kept.md");
+        Assert.Equal(new string[] { "Kept.md" }, notes.Items.Select(n => n.Path));
     }
 
     [Fact]
@@ -122,11 +121,11 @@ public sealed class VaultSyncTests(MonolithWebApplicationFactory factory) : ICla
 
         (await first.PutAsJsonAsync(DeviceVault, new ClaimVaultRequest("Vault"), Ct)).EnsureSuccessStatusCode();
 
-        (await second.PutAsJsonAsync(DeviceVault, new ClaimVaultRequest("Vault"), Ct)).StatusCode.Should().Be(HttpStatusCode.Conflict);
+        Assert.Equal(HttpStatusCode.Conflict, (await second.PutAsJsonAsync(DeviceVault, new ClaimVaultRequest("Vault"), Ct)).StatusCode);
         (await second.PutAsJsonAsync(DeviceVault, new ClaimVaultRequest("Vault", Takeover: true), Ct)).EnsureSuccessStatusCode();
 
         var response = await first.PutAsJsonAsync($"{DeviceVault}/notes", new UploadNotesRequest([Note("A.md", "a")]), Ct);
-        response.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
     }
 
     [Fact]
@@ -136,10 +135,10 @@ public sealed class VaultSyncTests(MonolithWebApplicationFactory factory) : ICla
         (await device.PutAsJsonAsync(DeviceVault, new ClaimVaultRequest("Vault"), Ct)).EnsureSuccessStatusCode();
 
         var forged = Note("A.md", "real") with { Content = "tampered" };
-        (await device.PutAsJsonAsync($"{DeviceVault}/notes", new UploadNotesRequest([forged]), Ct)).StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        Assert.Equal(HttpStatusCode.BadRequest, (await device.PutAsJsonAsync($"{DeviceVault}/notes", new UploadNotesRequest([forged]), Ct)).StatusCode);
 
         var escaping = Note("../outside.md", "x");
-        (await device.PutAsJsonAsync($"{DeviceVault}/notes", new UploadNotesRequest([escaping]), Ct)).StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        Assert.Equal(HttpStatusCode.BadRequest, (await device.PutAsJsonAsync($"{DeviceVault}/notes", new UploadNotesRequest([escaping]), Ct)).StatusCode);
     }
 
     [Fact]
@@ -153,13 +152,13 @@ public sealed class VaultSyncTests(MonolithWebApplicationFactory factory) : ICla
         using var member = factory.CreateClientFor(someoneElse);
         using var sovereign = factory.CreateClient();
 
-        (await member.GetAsync(PortalVault, Ct)).StatusCode.Should().Be(HttpStatusCode.NoContent);
-        (await sovereign.GetAsync(PortalVault, Ct)).StatusCode.Should().Be(HttpStatusCode.NoContent);
-        (await sovereign.GetFromJsonAsync<PagedResponse<VaultNoteSummaryDto>>($"{PortalVault}/notes", Ct))!.Items.Should().BeEmpty();
+        Assert.Equal(HttpStatusCode.NoContent, (await member.GetAsync(PortalVault, Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await sovereign.GetAsync(PortalVault, Ct)).StatusCode);
+        Assert.Empty((await sovereign.GetFromJsonAsync<PagedResponse<VaultNoteSummaryDto>>($"{PortalVault}/notes", Ct))!.Items);
 
         using var ownerPortal = factory.CreateClientFor(owner);
-        (await ownerPortal.DeleteAsync(PortalVault, Ct)).StatusCode.Should().Be(HttpStatusCode.NoContent);
-        (await ownerPortal.GetAsync(PortalVault, Ct)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        Assert.Equal(HttpStatusCode.NoContent, (await ownerPortal.DeleteAsync(PortalVault, Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.NoContent, (await ownerPortal.GetAsync(PortalVault, Ct)).StatusCode);
     }
 
     private async Task<(Guid Owner, HttpClient Device)> PairAsync(string deviceName)
@@ -172,21 +171,21 @@ public sealed class VaultSyncTests(MonolithWebApplicationFactory factory) : ICla
     private static async Task<VaultNoteDto> GetNoteByPathAsync(HttpClient portal, string path)
     {
         var page = (await portal.GetFromJsonAsync<PagedResponse<VaultNoteSummaryDto>>($"{PortalVault}/notes?pageSize=100", Ct))!;
-        var summary = page.Items.Should().ContainSingle(n => n.Path == path).Subject;
+        var summary = Assert.Single(page.Items, n => n.Path == path);
         return (await portal.GetFromJsonAsync<VaultNoteDto>($"{PortalVault}/notes/{summary.Id}", Ct))!;
     }
 
     private static async Task<T> PostAsync<T>(HttpClient client, string url, object body)
     {
         var response = await client.PostAsJsonAsync(url, body, Ct);
-        response.StatusCode.Should().Be(HttpStatusCode.OK, await response.Content.ReadAsStringAsync(Ct));
+        Assert.True(response.StatusCode == HttpStatusCode.OK, $"{response.StatusCode}: {await response.Content.ReadAsStringAsync(Ct)}");
         return (await response.Content.ReadFromJsonAsync<T>(Ct))!;
     }
 
     private static async Task<T> PutAsync<T>(HttpClient client, string url, object body)
     {
         var response = await client.PutAsJsonAsync(url, body, Ct);
-        response.StatusCode.Should().Be(HttpStatusCode.OK, await response.Content.ReadAsStringAsync(Ct));
+        Assert.True(response.StatusCode == HttpStatusCode.OK, $"{response.StatusCode}: {await response.Content.ReadAsStringAsync(Ct)}");
         return (await response.Content.ReadFromJsonAsync<T>(Ct))!;
     }
 

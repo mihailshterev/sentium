@@ -8,8 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
-    <PackageReference Include="Scalar.AspNetCore" />
-    <PackageReference Include="Docker.DotNet" />
+    <PackageReference Include="Docker.DotNet.Enhanced" />
     <PackageReference Include="ModelContextProtocol.Core" />
   </ItemGroup>
 

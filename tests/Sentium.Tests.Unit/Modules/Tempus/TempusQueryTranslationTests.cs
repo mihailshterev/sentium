@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Sentium.Infrastructure.Extensions;
 using Sentium.Infrastructure.Security;
@@ -29,8 +28,9 @@ public sealed class TempusQueryTranslationTests
 
         var sql = db.TimelineTasks.ToQueryString();
 
-        sql.Should().Contain("\"UserId\" =").And.Contain(UserId.ToString());
-        sql.Should().MatchRegex("IsSystemScope[^=\\n]*='False'");
+        Assert.Contains("\"UserId\" =", sql, StringComparison.Ordinal);
+        Assert.Contains(UserId.ToString(), sql, StringComparison.Ordinal);
+        Assert.Matches("IsSystemScope[^=\\n]*='False'", sql);
     }
 
     [Fact]
@@ -38,7 +38,7 @@ public sealed class TempusQueryTranslationTests
     {
         using var db = CreateContext(sovereign: false, system: true);
 
-        db.TimelineProposals.ToQueryString().Should().MatchRegex("IsSystemScope[^=\\n]*='True'");
+        Assert.Matches("IsSystemScope[^=\\n]*='True'", db.TimelineProposals.ToQueryString());
     }
 
     [Fact]
@@ -48,7 +48,7 @@ public sealed class TempusQueryTranslationTests
 
         var sql = db.TimelineTasks.Where(t => t.Tags.Contains("health")).ToQueryString();
 
-        sql.Should().Contain("\"Tags\"");
+        Assert.Contains("\"Tags\"", sql, StringComparison.Ordinal);
     }
 
     private sealed class StubUser(Guid? userId, bool sovereign, bool system) : ICurrentUser

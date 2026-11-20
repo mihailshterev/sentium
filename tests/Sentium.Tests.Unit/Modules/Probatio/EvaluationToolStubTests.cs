@@ -1,5 +1,4 @@
 using System.Text.Json;
-using FluentAssertions;
 using Microsoft.Extensions.AI;
 using Sentium.Praxis.Contracts;
 using Sentium.Praxis.Features.Agents.Runtime;
@@ -21,10 +20,10 @@ public sealed class EvaluationToolStubTests
         var canned = await stub.AnswerAsync("Knowledge_Base_Search", new Dictionary<string, object?> { ["query"] = "milk" }, Ct);
         var neutral = await stub.AnswerAsync("store_memory", new Dictionary<string, object?>(), Ct);
 
-        canned.Should().Be("milk, eggs");
-        neutral.Should().Be(CannedToolStub.NeutralResult);
-        stub.Calls.Select(c => (c.ToolName, c.Result)).Should().Equal(("Knowledge_Base_Search", "milk, eggs"), ("store_memory", CannedToolStub.NeutralResult));
-        stub.Calls[0].Arguments.GetProperty("query").GetString().Should().Be("milk");
+        Assert.Equal("milk, eggs", canned);
+        Assert.Equal(CannedToolStub.NeutralResult, neutral);
+        Assert.Equal(new (string ToolName, string Result)[] { ("Knowledge_Base_Search", "milk, eggs"), ("store_memory", CannedToolStub.NeutralResult) }, stub.Calls.Select(c => (c.ToolName, c.Result)));
+        Assert.Equal("milk", stub.Calls[0].Arguments.GetProperty("query").GetString());
     }
 
     [Fact]
@@ -42,10 +41,10 @@ public sealed class EvaluationToolStubTests
         var function = new EvaluationStubFunction(declaration, stub);
         var result = await function.InvokeAsync(new AIFunctionArguments { ["query"] = "milk" }, Ct);
 
-        function.Name.Should().Be("knowledge_base_search");
-        function.Description.Should().Be("Searches the knowledge base.");
-        function.JsonSchema.GetProperty("properties").GetProperty("query").GetProperty("type").GetString().Should().Be("string");
-        result?.ToString().Should().Contain("stubbed");
-        seen.Should().ContainSingle().Which.Item2["query"].Should().Be("milk");
+        Assert.Equal("knowledge_base_search", function.Name);
+        Assert.Equal("Searches the knowledge base.", function.Description);
+        Assert.Equal("string", function.JsonSchema.GetProperty("properties").GetProperty("query").GetProperty("type").GetString());
+        Assert.Contains("stubbed", result?.ToString(), StringComparison.Ordinal);
+        Assert.Equal("milk", Assert.Single(seen).Item2["query"]);
     }
 }

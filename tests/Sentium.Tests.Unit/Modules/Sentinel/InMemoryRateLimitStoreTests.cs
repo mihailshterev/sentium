@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Sentium.Sentinel.Features.RateLimiting;
 using Xunit;
 
@@ -18,7 +17,7 @@ public sealed class InMemoryRateLimitStoreTests
         var result = _sut.TryConsume("agent-1", window, 10);
 
         // Assert
-        result.Should().BeTrue();
+        Assert.True(result);
     }
 
     [Fact]
@@ -38,7 +37,7 @@ public sealed class InMemoryRateLimitStoreTests
         var result = _sut.TryConsume("agent-X", window, max);
 
         // Assert
-        result.Should().BeFalse();
+        Assert.False(result);
     }
 
     [Fact]
@@ -55,7 +54,7 @@ public sealed class InMemoryRateLimitStoreTests
         var result = _sut.TryConsume("agent-B", window, 1);
 
         // Assert
-        result.Should().BeTrue();
+        Assert.True(result);
     }
 
     [Fact]
@@ -65,7 +64,7 @@ public sealed class InMemoryRateLimitStoreTests
         var count = _sut.GetCurrentCount("unknown-agent", TimeSpan.FromMinutes(1));
 
         // Assert
-        count.Should().Be(0);
+        Assert.Equal(0, count);
     }
 
     [Fact]
@@ -80,6 +79,6 @@ public sealed class InMemoryRateLimitStoreTests
         var count = _sut.GetCurrentCount("counting-agent", window);
 
         // Assert
-        count.Should().Be(2);
+        Assert.Equal(2, count);
     }
 }

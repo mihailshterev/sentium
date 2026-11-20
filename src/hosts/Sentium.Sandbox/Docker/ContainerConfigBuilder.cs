@@ -46,9 +46,9 @@ internal sealed class ContainerConfigBuilder(IOptions<SandboxOptions> options, I
         return new CreateContainerParameters
         {
             Image = spec.Image,
-            Cmd = spec.Args is { Count: > 0 } args ? [.. args] : null,
+            Cmd = spec.Args is { Count: > 0 } args ? [.. args] : null!,
             Hostname = $"mcp-{serverName}",
-            User = string.IsNullOrWhiteSpace(_mcpOptions.RunAsUser) ? null : _mcpOptions.RunAsUser,
+            User = string.IsNullOrWhiteSpace(_mcpOptions.RunAsUser) ? null! : _mcpOptions.RunAsUser,
             Env = env,
 
             OpenStdin = true,
@@ -69,7 +69,7 @@ internal sealed class ContainerConfigBuilder(IOptions<SandboxOptions> options, I
 
             HostConfig = new HostConfig
             {
-                NetworkMode = hasNetwork ? spec.Network : "none",
+                NetworkMode = hasNetwork ? spec.Network! : "none",
                 ReadonlyRootfs = true,
                 Memory = memoryBytes,
                 MemorySwap = memoryBytes,

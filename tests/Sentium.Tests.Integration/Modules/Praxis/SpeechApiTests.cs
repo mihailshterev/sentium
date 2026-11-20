@@ -2,7 +2,6 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text.Json;
-using FluentAssertions;
 using Sentium.Tests.Integration.Common;
 using Xunit;
 
@@ -42,13 +41,14 @@ public sealed class SpeechApiTests : IClassFixture<SpeechApiFactory>, IDisposabl
 
         var response = await _client.PostAsync(TranscribeUrl, form, Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         var body = await response.Content.ReadFromJsonAsync<JsonElement>(Ct);
-        body.GetProperty("text").GetString().Should().Be("The drill is in the garage on the second shelf.");
+        Assert.Equal("The drill is in the garage on the second shelf.", body.GetProperty("text").GetString());
 
         var upstream = _factory.Speech.Requests.Single(r => r.Uri.AbsolutePath == "/v1/audio/transcriptions");
-        upstream.Uri.Host.Should().Be("whisper.test");
-        upstream.Body.Should().Contain("name=file").And.Contain("whisper-1");
+        Assert.Equal("whisper.test", upstream.Uri.Host);
+        Assert.Contains("name=file", upstream.Body, StringComparison.Ordinal);
+        Assert.Contains("whisper-1", upstream.Body, StringComparison.Ordinal);
     }
 
     [Fact]
@@ -59,8 +59,8 @@ public sealed class SpeechApiTests : IClassFixture<SpeechApiFactory>, IDisposabl
 
         var response = await _client.PostAsync(TranscribeUrl, form, Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        _factory.Speech.Requests.Should().BeEmpty();
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Empty(_factory.Speech.Requests);
     }
 
     [Fact]
@@ -71,7 +71,7 @@ public sealed class SpeechApiTests : IClassFixture<SpeechApiFactory>, IDisposabl
 
         var response = await _client.PostAsync(TranscribeUrl, form, Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, response.StatusCode);
     }
 
     [Fact]
@@ -79,19 +79,19 @@ public sealed class SpeechApiTests : IClassFixture<SpeechApiFactory>, IDisposabl
     {
         var response = await _client.PostAsJsonAsync(SpeakUrl, new { text = "The drill is in the garage.", voice = "am_adam", speed = 1.5 }, Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
-        response.Content.Headers.ContentType!.MediaType.Should().Be("audio/mpeg");
-        response.Headers.CacheControl!.NoStore.Should().BeTrue();
-        (await response.Content.ReadAsByteArrayAsync(Ct)).Should().Equal(StubSpeechServer.Audio);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("audio/mpeg", response.Content.Headers.ContentType!.MediaType);
+        Assert.True(response.Headers.CacheControl!.NoStore);
+        Assert.Equal(StubSpeechServer.Audio, await response.Content.ReadAsByteArrayAsync(Ct));
 
         var upstream = _factory.Speech.Requests.Single(r => r.Uri.AbsolutePath == "/v1/audio/speech");
-        upstream.Uri.Host.Should().Be("tts.test");
+        Assert.Equal("tts.test", upstream.Uri.Host);
         using var sent = JsonDocument.Parse(upstream.Body);
-        sent.RootElement.GetProperty("input").GetString().Should().Be("The drill is in the garage.");
-        sent.RootElement.GetProperty("voice").GetString().Should().Be("am_adam");
-        sent.RootElement.GetProperty("model").GetString().Should().Be("kokoro");
-        sent.RootElement.GetProperty("response_format").GetString().Should().Be("mp3");
-        sent.RootElement.GetProperty("speed").GetDouble().Should().Be(1.5);
+        Assert.Equal("The drill is in the garage.", sent.RootElement.GetProperty("input").GetString());
+        Assert.Equal("am_adam", sent.RootElement.GetProperty("voice").GetString());
+        Assert.Equal("kokoro", sent.RootElement.GetProperty("model").GetString());
+        Assert.Equal("mp3", sent.RootElement.GetProperty("response_format").GetString());
+        Assert.Equal(1.5, sent.RootElement.GetProperty("speed").GetDouble());
     }
 
     [Fact]
@@ -99,9 +99,9 @@ public sealed class SpeechApiTests : IClassFixture<SpeechApiFactory>, IDisposabl
     {
         var response = await _client.PostAsJsonAsync(SpeakUrl, new { text = "Hello there." }, Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.OK);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         using var sent = JsonDocument.Parse(_factory.Speech.Requests.Single(r => r.Uri.AbsolutePath == "/v1/audio/speech").Body);
-        sent.RootElement.GetProperty("voice").GetString().Should().Be("af_heart");
+        Assert.Equal("af_heart", sent.RootElement.GetProperty("voice").GetString());
     }
 
     [Theory]
@@ -112,8 +112,8 @@ public sealed class SpeechApiTests : IClassFixture<SpeechApiFactory>, IDisposabl
     {
         var response = await _client.PostAsJsonAsync(SpeakUrl, new { text, voice, speed }, Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-        _factory.Speech.Requests.Should().BeEmpty();
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Empty(_factory.Speech.Requests);
     }
 
     [Fact]
@@ -121,7 +121,7 @@ public sealed class SpeechApiTests : IClassFixture<SpeechApiFactory>, IDisposabl
     {
         var response = await _client.PostAsJsonAsync(SpeakUrl, new { text = new string('a', 1001) }, Ct);
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
 
     [Fact]
@@ -129,13 +129,13 @@ public sealed class SpeechApiTests : IClassFixture<SpeechApiFactory>, IDisposabl
     {
         for (var i = 0; i < SpeechApiFactory.SynthesesPerMinute; i++)
         {
-            (await _client.PostAsJsonAsync(SpeakUrl, new { text = $"Sentence {i}." }, Ct)).StatusCode.Should().Be(HttpStatusCode.OK);
+            Assert.Equal(HttpStatusCode.OK, (await _client.PostAsJsonAsync(SpeakUrl, new { text = $"Sentence {i}." }, Ct)).StatusCode);
         }
 
         var overBudget = await _client.PostAsJsonAsync(SpeakUrl, new { text = "One too many." }, Ct);
 
-        overBudget.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
-        _factory.Speech.Requests.Count(r => r.Uri.AbsolutePath == "/v1/audio/speech").Should().Be(SpeechApiFactory.SynthesesPerMinute);
+        Assert.Equal(HttpStatusCode.TooManyRequests, overBudget.StatusCode);
+        Assert.Equal(SpeechApiFactory.SynthesesPerMinute, _factory.Speech.Requests.Count(r => r.Uri.AbsolutePath == "/v1/audio/speech"));
     }
 
     [Fact]
@@ -147,8 +147,8 @@ public sealed class SpeechApiTests : IClassFixture<SpeechApiFactory>, IDisposabl
         var transcribe = await _client.PostAsync(TranscribeUrl, form, Ct);
         var speak = await _client.PostAsJsonAsync(SpeakUrl, new { text = "Hello there." }, Ct);
 
-        transcribe.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable);
-        speak.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable);
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, transcribe.StatusCode);
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, speak.StatusCode);
     }
 
     [Fact]
@@ -156,10 +156,10 @@ public sealed class SpeechApiTests : IClassFixture<SpeechApiFactory>, IDisposabl
     {
         var status = await _client.GetFromJsonAsync<JsonElement>(StatusUrl, Ct);
 
-        status.GetProperty("transcription").GetBoolean().Should().BeTrue();
-        status.GetProperty("synthesis").GetBoolean().Should().BeTrue();
-        status.GetProperty("defaultVoice").GetString().Should().Be("af_heart");
-        status.GetProperty("voices").EnumerateArray().Select(v => v.GetProperty("id").GetString()).Should().Equal("af_heart", "am_adam");
+        Assert.True(status.GetProperty("transcription").GetBoolean());
+        Assert.True(status.GetProperty("synthesis").GetBoolean());
+        Assert.Equal("af_heart", status.GetProperty("defaultVoice").GetString());
+        Assert.Equal(new string[] { "af_heart", "am_adam" }, status.GetProperty("voices").EnumerateArray().Select(v => v.GetProperty("id").GetString()));
     }
 
     [Fact]
@@ -175,12 +175,12 @@ public sealed class SpeechApiTests : IClassFixture<SpeechApiFactory>, IDisposabl
         var transcribe = await client.PostAsync(TranscribeUrl, form, Ct);
         var speak = await client.PostAsJsonAsync(SpeakUrl, new { text = "Hello there." }, Ct);
 
-        status.GetProperty("transcription").GetBoolean().Should().BeFalse();
-        status.GetProperty("synthesis").GetBoolean().Should().BeFalse();
-        status.GetProperty("voices").GetArrayLength().Should().Be(0);
-        transcribe.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable);
-        speak.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable);
-        _factory.Speech.Requests.Should().BeEmpty();
+        Assert.False(status.GetProperty("transcription").GetBoolean());
+        Assert.False(status.GetProperty("synthesis").GetBoolean());
+        Assert.Equal(0, status.GetProperty("voices").GetArrayLength());
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, transcribe.StatusCode);
+        Assert.Equal(HttpStatusCode.ServiceUnavailable, speak.StatusCode);
+        Assert.Empty(_factory.Speech.Requests);
     }
 
     /// <summary>

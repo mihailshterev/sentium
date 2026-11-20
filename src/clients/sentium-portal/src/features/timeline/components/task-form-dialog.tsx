@@ -1,5 +1,5 @@
 import { Controller, useForm, useWatch, type Control, type UseFormRegister } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { zodResolver } from "@/shared/forms/zod-resolver";
 import { Bot, CalendarCheck, CalendarDays, Trash2 } from "lucide-react";
 import styles from "../timeline.module.css";
 import { Button } from "@/shared/ui/button";

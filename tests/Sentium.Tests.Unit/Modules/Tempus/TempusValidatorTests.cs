@@ -1,4 +1,3 @@
-using FluentAssertions;
 using Sentium.Tempus.Common;
 using Sentium.Tempus.Contracts.Models;
 using Sentium.Tempus.Features.Notes;
@@ -21,28 +20,28 @@ public sealed class TempusValidatorTests
     {
         var validator = new SaveTimelineTaskRequestValidator();
 
-        validator.Validate(Task(date: new DateOnly(2026, 11, 14))).IsValid.Should().BeTrue();
-        validator.Validate(Task()).IsValid.Should().BeTrue();
+        Assert.True(validator.Validate(Task(date: new DateOnly(2026, 11, 14))).IsValid);
+        Assert.True(validator.Validate(Task()).IsValid);
     }
 
     [Fact]
     public void SaveTask_RejectsADayOutsideTheMonth()
-        => new SaveTimelineTaskRequestValidator().Validate(Task(date: new DateOnly(2026, 12, 1))).IsValid.Should().BeFalse();
+        => Assert.False(new SaveTimelineTaskRequestValidator().Validate(Task(date: new DateOnly(2026, 12, 1))).IsValid);
 
     [Theory]
     [InlineData("", 2026, 11)]
     [InlineData("Plan", 1999, 11)]
     [InlineData("Plan", 2026, 13)]
     public void SaveTask_RejectsMissingTitles_AndOutOfRangeMonths(string title, int year, int month)
-        => new SaveTimelineTaskRequestValidator().Validate(Task(title, year, month)).IsValid.Should().BeFalse();
+        => Assert.False(new SaveTimelineTaskRequestValidator().Validate(Task(title, year, month)).IsValid);
 
     [Fact]
     public void SaveTask_RejectsTagsWithCommas_AndTooManyTags()
     {
         var validator = new SaveTimelineTaskRequestValidator();
 
-        validator.Validate(Task(tags: ["health, family"])).IsValid.Should().BeFalse();
-        validator.Validate(Task(tags: [.. Enumerable.Range(0, 11).Select(i => $"t{i}")])).IsValid.Should().BeFalse();
+        Assert.False(validator.Validate(Task(tags: ["health, family"])).IsValid);
+        Assert.False(validator.Validate(Task(tags: [.. Enumerable.Range(0, 11).Select(i => $"t{i}")])).IsValid);
     }
 
     [Fact]
@@ -50,7 +49,7 @@ public sealed class TempusValidatorTests
     {
         var request = Task() with { Priority = (TimelineTaskPriority)42 };
 
-        new SaveTimelineTaskRequestValidator().Validate(request).IsValid.Should().BeFalse();
+        Assert.False(new SaveTimelineTaskRequestValidator().Validate(request).IsValid);
     }
 
     private static SaveTimelineTaskRequest Event(DateOnly? date = null, DateOnly? endDate = null) => new(
@@ -61,9 +60,9 @@ public sealed class TempusValidatorTests
     {
         var validator = new SaveTimelineTaskRequestValidator();
 
-        validator.Validate(Event(new DateOnly(2026, 11, 14))).IsValid.Should().BeTrue();
-        validator.Validate(Event(new DateOnly(2026, 11, 14), new DateOnly(2026, 12, 2))).IsValid.Should().BeTrue();
-        validator.Validate(Event()).IsValid.Should().BeTrue();
+        Assert.True(validator.Validate(Event(new DateOnly(2026, 11, 14))).IsValid);
+        Assert.True(validator.Validate(Event(new DateOnly(2026, 11, 14), new DateOnly(2026, 12, 2))).IsValid);
+        Assert.True(validator.Validate(Event()).IsValid);
     }
 
     [Fact]
@@ -71,7 +70,7 @@ public sealed class TempusValidatorTests
     {
         var update = Event(new DateOnly(2026, 11, 14), new DateOnly(2026, 11, 16)) with { Kind = null };
 
-        new SaveTimelineTaskRequestValidator().Validate(update).IsValid.Should().BeTrue();
+        Assert.True(new SaveTimelineTaskRequestValidator().Validate(update).IsValid);
     }
 
     [Fact]
@@ -80,10 +79,10 @@ public sealed class TempusValidatorTests
         var validator = new SaveTimelineTaskRequestValidator();
         var day = new DateOnly(2026, 11, 14);
 
-        validator.Validate(Event(day) with { Status = TimelineTaskStatus.Done }).IsValid.Should().BeFalse();
-        validator.Validate(Event(day) with { Priority = TimelineTaskPriority.High }).IsValid.Should().BeFalse();
-        validator.Validate(Event(day) with { DueDate = day }).IsValid.Should().BeFalse();
-        validator.Validate(Event(day) with { AssignedAgent = "Planner" }).IsValid.Should().BeFalse();
+        Assert.False(validator.Validate(Event(day) with { Status = TimelineTaskStatus.Done }).IsValid);
+        Assert.False(validator.Validate(Event(day) with { Priority = TimelineTaskPriority.High }).IsValid);
+        Assert.False(validator.Validate(Event(day) with { DueDate = day }).IsValid);
+        Assert.False(validator.Validate(Event(day) with { AssignedAgent = "Planner" }).IsValid);
     }
 
     [Fact]
@@ -91,9 +90,9 @@ public sealed class TempusValidatorTests
     {
         var validator = new SaveTimelineTaskRequestValidator();
 
-        validator.Validate(Event(new DateOnly(2026, 11, 14), new DateOnly(2026, 11, 13))).IsValid.Should().BeFalse();
-        validator.Validate(Event(null, new DateOnly(2026, 11, 13))).IsValid.Should().BeFalse();
-        validator.Validate(Task(date: new DateOnly(2026, 11, 14)) with { EndDate = new DateOnly(2026, 11, 15) }).IsValid.Should().BeFalse();
+        Assert.False(validator.Validate(Event(new DateOnly(2026, 11, 14), new DateOnly(2026, 11, 13))).IsValid);
+        Assert.False(validator.Validate(Event(null, new DateOnly(2026, 11, 13))).IsValid);
+        Assert.False(validator.Validate(Task(date: new DateOnly(2026, 11, 14)) with { EndDate = new DateOnly(2026, 11, 15) }).IsValid);
     }
 
     [Fact]
@@ -101,8 +100,8 @@ public sealed class TempusValidatorTests
     {
         var validator = new SaveTimelineTaskRequestValidator();
 
-        validator.Validate(Task(date: new DateOnly(2026, 11, 14)) with { StartTime = new TimeOnly(9, 0) }).IsValid.Should().BeTrue();
-        validator.Validate(Task() with { StartTime = new TimeOnly(9, 0) }).IsValid.Should().BeFalse();
+        Assert.True(validator.Validate(Task(date: new DateOnly(2026, 11, 14)) with { StartTime = new TimeOnly(9, 0) }).IsValid);
+        Assert.False(validator.Validate(Task() with { StartTime = new TimeOnly(9, 0) }).IsValid);
     }
 
     [Theory]
@@ -114,7 +113,7 @@ public sealed class TempusValidatorTests
     {
         var request = Task() with { Repeat = new TimelineRepeat(frequency, 1, null, null) };
 
-        new SaveTimelineTaskRequestValidator().Validate(request).IsValid.Should().Be(valid);
+        Assert.Equal(valid, new SaveTimelineTaskRequestValidator().Validate(request).IsValid);
     }
 
     [Fact]
@@ -123,10 +122,10 @@ public sealed class TempusValidatorTests
         var validator = new SaveTimelineTaskRequestValidator();
         var day = new DateOnly(2026, 11, 14);
 
-        validator.Validate(Task(date: day) with { Repeat = new TimelineRepeat(TimelineRepeatFrequency.Weekly, 0, null, null) }).IsValid.Should().BeFalse();
-        validator.Validate(Task(date: day) with { Repeat = new TimelineRepeat(TimelineRepeatFrequency.Daily, 1, [DayOfWeek.Monday], null) }).IsValid.Should().BeFalse();
-        validator.Validate(Task(date: day) with { Repeat = new TimelineRepeat(TimelineRepeatFrequency.Daily, 1, null, day.AddDays(-1)) }).IsValid.Should().BeFalse();
-        validator.Validate(Task(date: day) with { Repeat = new TimelineRepeat(TimelineRepeatFrequency.Weekly, 2, [DayOfWeek.Monday, DayOfWeek.Friday], day.AddMonths(3)) }).IsValid.Should().BeTrue();
+        Assert.False(validator.Validate(Task(date: day) with { Repeat = new TimelineRepeat(TimelineRepeatFrequency.Weekly, 0, null, null) }).IsValid);
+        Assert.False(validator.Validate(Task(date: day) with { Repeat = new TimelineRepeat(TimelineRepeatFrequency.Daily, 1, [DayOfWeek.Monday], null) }).IsValid);
+        Assert.False(validator.Validate(Task(date: day) with { Repeat = new TimelineRepeat(TimelineRepeatFrequency.Daily, 1, null, day.AddDays(-1)) }).IsValid);
+        Assert.True(validator.Validate(Task(date: day) with { Repeat = new TimelineRepeat(TimelineRepeatFrequency.Weekly, 2, [DayOfWeek.Monday, DayOfWeek.Friday], day.AddMonths(3)) }).IsValid);
     }
 
     [Theory]
@@ -145,7 +144,7 @@ public sealed class TempusValidatorTests
             ReminderOffsetMinutes = offset
         };
 
-        new SaveTimelineTaskRequestValidator().Validate(request).IsValid.Should().Be(valid);
+        Assert.Equal(valid, new SaveTimelineTaskRequestValidator().Validate(request).IsValid);
     }
 
     [Fact]
@@ -153,9 +152,9 @@ public sealed class TempusValidatorTests
     {
         var validator = new ScheduleTimelineTaskRequestValidator();
 
-        validator.Validate(new ScheduleTimelineTaskRequest(2026, 11, new DateOnly(2026, 11, 30))).IsValid.Should().BeTrue();
-        validator.Validate(new ScheduleTimelineTaskRequest(2026, 11, null)).IsValid.Should().BeTrue();
-        validator.Validate(new ScheduleTimelineTaskRequest(2026, 11, new DateOnly(2026, 10, 31))).IsValid.Should().BeFalse();
+        Assert.True(validator.Validate(new ScheduleTimelineTaskRequest(2026, 11, new DateOnly(2026, 11, 30))).IsValid);
+        Assert.True(validator.Validate(new ScheduleTimelineTaskRequest(2026, 11, null)).IsValid);
+        Assert.False(validator.Validate(new ScheduleTimelineTaskRequest(2026, 11, new DateOnly(2026, 10, 31))).IsValid);
     }
 
     [Fact]
@@ -163,8 +162,8 @@ public sealed class TempusValidatorTests
     {
         var validator = new CreateTimelineNoteRequestValidator();
 
-        validator.Validate(new CreateTimelineNoteRequest(2026, 11, null, null, "Looks good")).IsValid.Should().BeTrue();
-        validator.Validate(new CreateTimelineNoteRequest(2026, 11, null, null, "  ")).IsValid.Should().BeFalse();
-        validator.Validate(new CreateTimelineNoteRequest(2026, 11, null, Guid.Empty, "x")).IsValid.Should().BeFalse();
+        Assert.True(validator.Validate(new CreateTimelineNoteRequest(2026, 11, null, null, "Looks good")).IsValid);
+        Assert.False(validator.Validate(new CreateTimelineNoteRequest(2026, 11, null, null, "  ")).IsValid);
+        Assert.False(validator.Validate(new CreateTimelineNoteRequest(2026, 11, null, Guid.Empty, "x")).IsValid);
     }
 }

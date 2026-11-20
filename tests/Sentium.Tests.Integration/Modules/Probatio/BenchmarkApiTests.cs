@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http.Json;
-using FluentAssertions;
 using Sentium.Core.Results;
 using Sentium.Probatio.Entities;
 using Sentium.Probatio.Features.Benchmarks;
@@ -53,14 +52,14 @@ public sealed class BenchmarkApiTests : IClassFixture<ProbatioApiFactory>
             [new EvalCheck(EvalCheckType.ContainsExpectedAnswer), new EvalCheck(EvalCheckType.ToolsCalled), new EvalCheck(EvalCheckType.Relevance)]);
 
         var response = await client.PostAsJsonAsync("/api/probatio/suites", new CreateEvalSuiteRequest("Shopping", null, [shopping]), Ct);
-        response.StatusCode.Should().Be(HttpStatusCode.Created, await response.Content.ReadAsStringAsync(Ct));
+        Assert.True(response.StatusCode == HttpStatusCode.Created, $"{response.StatusCode}: {await response.Content.ReadAsStringAsync(Ct)}");
         return (await response.Content.ReadFromJsonAsync<EvalSuiteDto>(Ct))!;
     }
 
     private static async Task<BenchmarkSummaryDto> StartAsync(HttpClient client, Guid suiteId, params string[] models)
     {
         var response = await client.PostAsJsonAsync(Benchmarks, new StartBenchmarkRequest(suiteId, null, Agent, models), Ct);
-        response.StatusCode.Should().Be(HttpStatusCode.Accepted, await response.Content.ReadAsStringAsync(Ct));
+        Assert.True(response.StatusCode == HttpStatusCode.Accepted, $"{response.StatusCode}: {await response.Content.ReadAsStringAsync(Ct)}");
         return (await response.Content.ReadFromJsonAsync<BenchmarkSummaryDto>(Ct))!;
     }
 
@@ -83,24 +82,22 @@ public sealed class BenchmarkApiTests : IClassFixture<ProbatioApiFactory>
 
         var started = await StartAsync(client, suite.Id, BothModels);
 
-        started.Evaluations.Select(e => e.Model).Should().Equal(BothModels);
-        started.Evaluations.Should().OnlyContain(e =>
-            e.BenchmarkId == started.Id && e.SuiteVersion == suite.Version && e.AgentName == Agent && e.Status == EvaluationStatus.Queued);
-        started.JudgeModel.Should().Be(ProbatioApiFactory.DefaultModel);
-        started.Evaluations.Should().OnlyContain(e => e.JudgeModel == started.JudgeModel);
+        Assert.Equal(BothModels, started.Evaluations.Select(e => e.Model));
+        Assert.All(started.Evaluations, e => Assert.True(e.BenchmarkId == started.Id && e.SuiteVersion == suite.Version && e.AgentName == Agent && e.Status == EvaluationStatus.Queued));
+        Assert.Equal(ProbatioApiFactory.DefaultModel, started.JudgeModel);
+        Assert.All(started.Evaluations, e => Assert.True(e.JudgeModel == started.JudgeModel));
 
         await ProcessAsync(started);
         var benchmark = await GetAsync(client, started.Id);
 
-        benchmark.Evaluations.Select(e => e.Summary.Model).Should().Equal(BothModels);
-        benchmark.Evaluations.Should().OnlyContain(e =>
-            e.Summary.Status == EvaluationStatus.Completed && e.Summary.PassedCaseCount == 1 && e.ModelDeleted == false);
-        benchmark.Evaluations.Should().OnlyContain(e => e.Cases.Single().Repetitions.Single().LatencyMs >= 0);
-        factory.Script.Requests.Select(r => r.ModelId).Distinct().Should().BeEquivalentTo(BothModels);
-        factory.Script.JudgeModels.Should().OnlyContain(m => m == ProbatioApiFactory.DefaultModel);
+        Assert.Equal(BothModels, benchmark.Evaluations.Select(e => e.Summary.Model));
+        Assert.All(benchmark.Evaluations, e => Assert.True(e.Summary.Status == EvaluationStatus.Completed && e.Summary.PassedCaseCount == 1 && e.ModelDeleted == false));
+        Assert.All(benchmark.Evaluations, e => Assert.True(e.Cases.Single().Repetitions.Single().LatencyMs >= 0));
+        Assert.Equivalent(BothModels, factory.Script.Requests.Select(r => r.ModelId).Distinct());
+        Assert.All(factory.Script.JudgeModels, m => Assert.True(m == ProbatioApiFactory.DefaultModel));
 
         var list = await client.GetFromJsonAsync<PagedResponse<BenchmarkSummaryDto>>(Benchmarks, Ct);
-        list!.Items.Should().ContainSingle(b => b.Id == started.Id).Which.Evaluations.Should().HaveCount(2);
+        Assert.Equal(2, Assert.Single(list!.Items, b => b.Id == started.Id).Evaluations.Count);
     }
 
     [Fact]
@@ -113,11 +110,11 @@ public sealed class BenchmarkApiTests : IClassFixture<ProbatioApiFactory>
         try
         {
             var benchmark = await GetAsync(client, started.Id);
-            benchmark.Evaluations.Single(e => e.Summary.Model == ProbatioApiFactory.Model).ModelDeleted.Should().BeFalse();
-            benchmark.Evaluations.Single(e => e.Summary.Model == ProbatioApiFactory.OtherModel).ModelDeleted.Should().BeTrue();
+            Assert.False(benchmark.Evaluations.Single(e => e.Summary.Model == ProbatioApiFactory.Model).ModelDeleted);
+            Assert.True(benchmark.Evaluations.Single(e => e.Summary.Model == ProbatioApiFactory.OtherModel).ModelDeleted);
 
             var other = started.Evaluations.Single(e => e.Model == ProbatioApiFactory.OtherModel);
-            (await client.GetFromJsonAsync<EvaluationDto>($"/api/probatio/evaluations/{other.Id}", Ct))!.ModelDeleted.Should().BeTrue();
+            Assert.True((await client.GetFromJsonAsync<EvaluationDto>($"/api/probatio/evaluations/{other.Id}", Ct))!.ModelDeleted);
         }
         finally
         {
@@ -141,11 +138,11 @@ public sealed class BenchmarkApiTests : IClassFixture<ProbatioApiFactory>
         foreach (var models in invalid)
         {
             var response = await client.PostAsJsonAsync(Benchmarks, new StartBenchmarkRequest(suite.Id, null, Agent, models), Ct);
-            response.StatusCode.Should().Be(HttpStatusCode.BadRequest, string.Join(", ", models));
+            Assert.True(response.StatusCode == HttpStatusCode.BadRequest, string.Join(", ", models));
         }
 
-        (await client.GetFromJsonAsync<PagedResponse<BenchmarkSummaryDto>>(Benchmarks, Ct))!.Items.Should().BeEmpty();
-        (await client.GetFromJsonAsync<PagedResponse<EvaluationSummaryDto>>("/api/probatio/evaluations", Ct))!.Items.Should().BeEmpty();
+        Assert.Empty((await client.GetFromJsonAsync<PagedResponse<BenchmarkSummaryDto>>(Benchmarks, Ct))!.Items);
+        Assert.Empty((await client.GetFromJsonAsync<PagedResponse<EvaluationSummaryDto>>("/api/probatio/evaluations", Ct))!.Items);
     }
 
     [Fact]
@@ -154,16 +151,16 @@ public sealed class BenchmarkApiTests : IClassFixture<ProbatioApiFactory>
         var client = ClientFor(Guid.NewGuid());
         var started = await StartAsync(client, (await CreateSuiteAsync(client)).Id, BothModels);
 
-        (await client.DeleteAsync($"{Benchmarks}/{started.Id}", Ct)).StatusCode.Should().Be(HttpStatusCode.Conflict);
+        Assert.Equal(HttpStatusCode.Conflict, (await client.DeleteAsync($"{Benchmarks}/{started.Id}", Ct)).StatusCode);
 
         var cancel = await client.PostAsync($"{Benchmarks}/{started.Id}/cancel", null, Ct);
-        cancel.StatusCode.Should().Be(HttpStatusCode.OK);
-        (await cancel.Content.ReadFromJsonAsync<BenchmarkSummaryDto>(Ct))!.Evaluations.Should().OnlyContain(e => e.Status == EvaluationStatus.Cancelled);
-        (await client.PostAsync($"{Benchmarks}/{started.Id}/cancel", null, Ct)).StatusCode.Should().Be(HttpStatusCode.Conflict);
+        Assert.Equal(HttpStatusCode.OK, cancel.StatusCode);
+        Assert.All((await cancel.Content.ReadFromJsonAsync<BenchmarkSummaryDto>(Ct))!.Evaluations, e => Assert.True(e.Status == EvaluationStatus.Cancelled));
+        Assert.Equal(HttpStatusCode.Conflict, (await client.PostAsync($"{Benchmarks}/{started.Id}/cancel", null, Ct)).StatusCode);
 
-        (await client.DeleteAsync($"{Benchmarks}/{started.Id}", Ct)).StatusCode.Should().Be(HttpStatusCode.NoContent);
-        (await client.GetAsync($"{Benchmarks}/{started.Id}", Ct)).StatusCode.Should().Be(HttpStatusCode.NotFound);
-        (await client.GetAsync($"/api/probatio/evaluations/{started.Evaluations[0].Id}", Ct)).StatusCode.Should().Be(HttpStatusCode.NotFound);
+        Assert.Equal(HttpStatusCode.NoContent, (await client.DeleteAsync($"{Benchmarks}/{started.Id}", Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"{Benchmarks}/{started.Id}", Ct)).StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"/api/probatio/evaluations/{started.Evaluations[0].Id}", Ct)).StatusCode);
     }
 
     [Fact]
@@ -174,10 +171,10 @@ public sealed class BenchmarkApiTests : IClassFixture<ProbatioApiFactory>
 
         foreach (var client in new[] { ClientFor(Guid.NewGuid()), factory.CreateClient() })
         {
-            (await client.GetAsync($"{Benchmarks}/{started.Id}", Ct)).StatusCode.Should().Be(HttpStatusCode.NotFound);
-            (await client.PostAsync($"{Benchmarks}/{started.Id}/cancel", null, Ct)).StatusCode.Should().Be(HttpStatusCode.NotFound);
-            (await client.DeleteAsync($"{Benchmarks}/{started.Id}", Ct)).StatusCode.Should().Be(HttpStatusCode.NotFound);
-            (await client.GetFromJsonAsync<PagedResponse<BenchmarkSummaryDto>>(Benchmarks, Ct))!.Items.Should().NotContain(b => b.Id == started.Id);
+            Assert.Equal(HttpStatusCode.NotFound, (await client.GetAsync($"{Benchmarks}/{started.Id}", Ct)).StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, (await client.PostAsync($"{Benchmarks}/{started.Id}/cancel", null, Ct)).StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, (await client.DeleteAsync($"{Benchmarks}/{started.Id}", Ct)).StatusCode);
+            Assert.DoesNotContain((await client.GetFromJsonAsync<PagedResponse<BenchmarkSummaryDto>>(Benchmarks, Ct))!.Items, b => b.Id == started.Id);
         }
     }
 }

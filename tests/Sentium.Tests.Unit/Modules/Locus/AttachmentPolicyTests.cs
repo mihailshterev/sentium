@@ -1,5 +1,4 @@
 using System.Text;
-using FluentAssertions;
 using Sentium.Locus.Features.Attachments;
 using Xunit;
 
@@ -22,14 +21,14 @@ public sealed class AttachmentPolicyTests
     [MemberData(nameof(AllowedFiles))]
     public void DetectContentType_RecognisesAllowedFormatsFromTheirBytes(byte[] header, string fileName, string expected)
     {
-        AttachmentPolicy.DetectContentType(header, fileName).Should().Be(expected);
+        Assert.Equal(expected, AttachmentPolicy.DetectContentType(header, fileName));
     }
 
     [Fact]
     public void DetectContentType_IgnoresTheFileExtensionForBinaryFormats()
     {
         // A PNG named .pdf is still a PNG; the client's claim never decides the stored type.
-        AttachmentPolicy.DetectContentType([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A], "fake.pdf").Should().Be("image/png");
+        Assert.Equal("image/png", AttachmentPolicy.DetectContentType([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A], "fake.pdf"));
     }
 
     [Theory]
@@ -38,13 +37,13 @@ public sealed class AttachmentPolicyTests
     [InlineData("MZ\u0090\0", "setup.exe")]
     public void DetectContentType_RejectsActiveOrUnknownFormats(string content, string fileName)
     {
-        AttachmentPolicy.DetectContentType(Encoding.UTF8.GetBytes(content), fileName).Should().BeNull();
+        Assert.Null(AttachmentPolicy.DetectContentType(Encoding.UTF8.GetBytes(content), fileName));
     }
 
     [Fact]
     public void DetectContentType_RejectsBinaryContentDisguisedAsText()
     {
-        AttachmentPolicy.DetectContentType([0x41, 0x00, 0x42, 0x43], "notes.txt").Should().BeNull();
+        Assert.Null(AttachmentPolicy.DetectContentType([0x41, 0x00, 0x42, 0x43], "notes.txt"));
     }
 
     [Theory]
@@ -55,7 +54,7 @@ public sealed class AttachmentPolicyTests
     [InlineData("bad\u0007name.png", "badname.png")]
     public void SanitizeFileName_StripsPathsAndControlCharacters(string? input, string expected)
     {
-        AttachmentPolicy.SanitizeFileName(input).Should().Be(expected);
+        Assert.Equal(expected, AttachmentPolicy.SanitizeFileName(input));
     }
 
     [Fact]
@@ -63,6 +62,7 @@ public sealed class AttachmentPolicyTests
     {
         var name = AttachmentPolicy.SanitizeFileName(new string('a', 400) + ".pdf");
 
-        name.Should().HaveLength(255).And.EndWith(".pdf");
+        Assert.Equal(255, name.Length);
+        Assert.EndsWith(".pdf", name, StringComparison.Ordinal);
     }
 }
