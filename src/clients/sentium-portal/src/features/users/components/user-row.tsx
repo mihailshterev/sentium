@@ -2,6 +2,7 @@ import { ShieldMinus, Trash2 } from "lucide-react";
 import styles from "../users.module.css";
 import type { UserListItem } from "../../auth/api/identity.service";
 import type { Role } from "../../../shared/utils/roles";
+import { Avatar } from "@/shared/ui/avatar";
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { Select } from "@/shared/ui/form-controls";
@@ -16,12 +17,6 @@ interface UserRowProps {
   onAssignRole: (userId: string, role: Role) => void;
   onRemoveRole: (userId: string, role: Role) => void;
   onDeleteUser: (userId: string) => void;
-}
-
-function getInitials(user: UserListItem): string {
-  const first = user.firstName?.[0] ?? "";
-  const last = user.lastName?.[0] ?? "";
-  return (first + last).toUpperCase() || user.userName[0].toUpperCase();
 }
 
 export function UserRow({
@@ -40,9 +35,7 @@ export function UserRow({
     <tr className={styles.row} data-pending={isPending || undefined}>
       <td>
         <div className={styles.userCell}>
-          <span className={styles.avatar} aria-hidden="true">
-            {getInitials(user)}
-          </span>
+          <Avatar name={fullName === "—" ? user.userName : fullName} src={user.avatarUrl} />
           <div className={styles.userText}>
             <div className={styles.nameRow}>
               <span className={styles.name}>{fullName}</span>

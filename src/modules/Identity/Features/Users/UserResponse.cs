@@ -6,4 +6,5 @@ internal sealed record UserResponse(
     string FirstName,
     string? LastName,
     IList<string> Roles,
-    bool IsLockedOut);
+    bool IsLockedOut,
+    string? AvatarUrl);

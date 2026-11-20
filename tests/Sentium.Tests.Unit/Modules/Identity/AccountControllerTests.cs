@@ -162,7 +162,7 @@ public sealed class AccountControllerTests
         // Arrange
         var ct = TestContext.Current.CancellationToken;
         var userId = Guid.NewGuid();
-        var user = new UserDto(userId, "user1", "Test", "User", null, []);
+        var user = new UserDto(userId, "user1", "Test", "User", null, [], null);
         _userManagementService.GetUserByIdAsync(userId, ct).Returns(user);
 
         _controller.ControllerContext = new ControllerContext

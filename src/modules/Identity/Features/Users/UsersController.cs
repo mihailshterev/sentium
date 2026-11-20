@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sentium.Core.Results;
+using Sentium.Identity.Features.Avatars;
 using Sentium.Identity.Features.Security;
 using Sentium.Infrastructure.Security;
 
@@ -84,5 +85,5 @@ internal sealed class UsersController(IUserService userService, ICurrentUser cur
     }
 
     private static UserResponse ToResponse(UserDto user) =>
-        new(user.Id, user.UserName!, user.FirstName, user.LastName, [.. user.Roles], user.IsLockedOut);
+        new(user.Id, user.UserName!, user.FirstName, user.LastName, [.. user.Roles], user.IsLockedOut, AvatarUrls.For(user.Id, user.AvatarUpdatedAt));
 }

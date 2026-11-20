@@ -245,21 +245,6 @@
   box-shadow: inset 2px 0 0 var(--accent);
 }
 
-.avatar {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  flex-shrink: 0;
-  border: 1px solid var(--border-strong);
-  border-radius: 50%;
-  color: var(--text-primary);
-  font-family: var(--font-mono);
-  font-size: var(--text-2xs);
-  font-weight: var(--fw-medium);
-  letter-spacing: 0.04em;
-}
-
 .userInfo {
   display: flex;
   flex-direction: column;

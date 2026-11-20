@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
+using Sentium.Identity.Features.Avatars;
 using Sentium.Identity.Features.Users;
 using Sentium.Infrastructure.Security;
 
@@ -148,7 +149,7 @@ internal sealed class AccountController(
             return NotFound();
         }
 
-        return Ok(new ProfileResponse(user.Id, user.UserName, user.FirstName, user.LastName));
+        return Ok(new ProfileResponse(user.Id, user.UserName, user.FirstName, user.LastName, AvatarUrls.For(user.Id, user.AvatarUpdatedAt)));
     }
 
     /// <summary>

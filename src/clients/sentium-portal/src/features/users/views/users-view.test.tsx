@@ -13,6 +13,7 @@ const mockUser: UserListItem = {
   userName: "alice",
   firstName: "Alice",
   lastName: "Smith",
+  avatarUrl: null,
   roles: ["Member"],
   isLockedOut: false,
 };
@@ -22,6 +23,7 @@ const mockUserNoName: UserListItem = {
   userName: "bob",
   firstName: "",
   lastName: null,
+  avatarUrl: null,
   roles: [],
   isLockedOut: true,
 };
