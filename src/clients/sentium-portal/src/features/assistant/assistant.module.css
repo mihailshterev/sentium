@@ -14,26 +14,133 @@
   }
 }
 
+@property --fade-start {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+@property --fade-end {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+/*
+ * No card: the conversation sits on the page itself. A soft "reading veil" behind the text column keeps it
+ * legible over the live background; it fades out sideways (and at the top and bottom) so it has no edge.
+ * It is a mask, not a backdrop blur, because blurring a tall scroller over the animated shader is costly.
+ */
 .chatPanel {
+  --column: 780px;
+  --veil-fade: 280px;
+  --veil-fade-top: 128px;
+  --veil-fade-bottom: 64px;
+  /* Where the left fade starts and the right fade starts. */
+  --veil-l: calc(50% - var(--column) / 2 - var(--veil-fade));
+  --veil-r: calc(50% + var(--column) / 2);
+
   position: relative;
+  isolation: isolate;
   display: flex;
   flex-direction: column;
   min-width: 0;
   min-height: 0;
   overflow: hidden;
-  border: 1px solid var(--mat-regular-border);
-  border-radius: var(--radius-xl);
-  background: var(--mat-regular-bg);
-  box-shadow: var(--mat-regular-shadow);
-  backdrop-filter: var(--mat-regular-filter);
+
+  /* The fades follow a smoothstep curve; a linear ramp shows a visible band where it starts and stops. */
+  &::before {
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: color-mix(in srgb, var(--mat-regular-bg) 70%, transparent);
+    content: "";
+    pointer-events: none;
+    mask-image:
+      linear-gradient(
+        to right,
+        transparent var(--veil-l),
+        rgb(0 0 0 / 0.04) calc(var(--veil-l) + var(--veil-fade) * 0.125),
+        rgb(0 0 0 / 0.16) calc(var(--veil-l) + var(--veil-fade) * 0.25),
+        rgb(0 0 0 / 0.32) calc(var(--veil-l) + var(--veil-fade) * 0.375),
+        rgb(0 0 0 / 0.5) calc(var(--veil-l) + var(--veil-fade) * 0.5),
+        rgb(0 0 0 / 0.68) calc(var(--veil-l) + var(--veil-fade) * 0.625),
+        rgb(0 0 0 / 0.84) calc(var(--veil-l) + var(--veil-fade) * 0.75),
+        rgb(0 0 0 / 0.96) calc(var(--veil-l) + var(--veil-fade) * 0.875),
+        black calc(var(--veil-l) + var(--veil-fade)),
+        black var(--veil-r),
+        rgb(0 0 0 / 0.96) calc(var(--veil-r) + var(--veil-fade) * 0.125),
+        rgb(0 0 0 / 0.84) calc(var(--veil-r) + var(--veil-fade) * 0.25),
+        rgb(0 0 0 / 0.68) calc(var(--veil-r) + var(--veil-fade) * 0.375),
+        rgb(0 0 0 / 0.5) calc(var(--veil-r) + var(--veil-fade) * 0.5),
+        rgb(0 0 0 / 0.32) calc(var(--veil-r) + var(--veil-fade) * 0.625),
+        rgb(0 0 0 / 0.16) calc(var(--veil-r) + var(--veil-fade) * 0.75),
+        rgb(0 0 0 / 0.04) calc(var(--veil-r) + var(--veil-fade) * 0.875),
+        transparent calc(var(--veil-r) + var(--veil-fade))
+      ),
+      linear-gradient(
+        to bottom,
+        transparent,
+        rgb(0 0 0 / 0.16) calc(var(--veil-fade-top) * 0.25),
+        rgb(0 0 0 / 0.5) calc(var(--veil-fade-top) * 0.5),
+        rgb(0 0 0 / 0.84) calc(var(--veil-fade-top) * 0.75),
+        black var(--veil-fade-top),
+        black calc(100% - var(--veil-fade-bottom)),
+        rgb(0 0 0 / 0.5) calc(100% - var(--veil-fade-bottom) / 2),
+        transparent
+      );
+    mask-composite: intersect;
+    transition: opacity var(--dur-slow) var(--ease-out);
+  }
+
+  /* The welcome screen sits straight on the (calmed) background, like the login page. */
+  &[data-empty]::before {
+    opacity: 0;
+  }
 }
 
+/*
+ * Messages fade out under the page header and into the composer instead of being cut at a hard line. Each fade
+ * grows from 0 as you scroll away from that end, so the newest message is crisp while you are pinned to the
+ * bottom. Without scroll-driven animations there is simply no fade.
+ * The fades stay short: a long one turns an image scrolled past the edge into a washed-out ghost.
+ */
 .chatArea {
+  --fade-size-start: 20px;
+  --fade-size-end: 20px;
+
   flex: 1;
   min-height: 0;
   overflow-y: auto;
   /* No smooth scrolling: following a streaming answer re-targets the bottom on every chunk, and an animated
      scroll falls behind it, which reads as the view no longer being pinned to the bottom. */
+  mask:
+    linear-gradient(black, black) no-clip subtract,
+    linear-gradient(to bottom, black, rgb(0 0 0 / 0.84) 25%, rgb(0 0 0 / 0.5) 50%, rgb(0 0 0 / 0.16) 75%, transparent) 0
+      0 / 100% var(--fade-start) no-repeat no-clip,
+    linear-gradient(to bottom, transparent, rgb(0 0 0 / 0.16) 25%, rgb(0 0 0 / 0.5) 50%, rgb(0 0 0 / 0.84) 75%, black) 0
+      100% / 100% var(--fade-end) no-repeat no-clip;
+  /* Longhands: the shorthand gets expanded at build time with a 0s duration, which a scroll timeline needs as auto. */
+  animation-name: reveal-fade-start, hide-fade-end;
+  animation-duration: auto;
+  animation-timing-function: linear;
+  animation-fill-mode: both;
+  animation-timeline: scroll(self block);
+  animation-range:
+    0 var(--fade-size-start),
+    calc(100% - var(--fade-size-end)) 100%;
+}
+
+@keyframes reveal-fade-start {
+  to {
+    --fade-start: var(--fade-size-start);
+  }
+}
+
+@keyframes hide-fade-end {
+  from {
+    --fade-end: var(--fade-size-end);
+  }
 }
 
 .loadingConversation {
@@ -67,8 +174,11 @@
   position: absolute;
   top: calc(-1 * var(--space-9));
   left: 50%;
+  border: 1px solid var(--mat-thick-border);
   border-radius: var(--radius-full);
-  box-shadow: var(--shadow-md);
+  /* Solid like the composer: with no card behind it, the button floats over whatever content is scrolling. */
+  background: var(--mat-thick-bg);
+  box-shadow: var(--mat-thick-shadow);
   transform: translateX(-50%);
 }
 
@@ -822,60 +932,143 @@
 
 .suggestionChip {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  align-items: center;
   gap: var(--space-3);
-  min-height: 64px;
-  padding: 12px 14px;
-  border: 1px solid var(--border-color);
+  padding: 12px 14px 12px 12px;
+  border: 1px solid var(--mat-regular-border);
   border-radius: var(--radius-lg);
-  background: var(--mat-thin-bg);
+  background: var(--mat-regular-bg);
+  box-shadow: var(--mat-regular-shadow);
   color: var(--text-secondary);
   font-family: inherit;
   font-size: var(--text-sm);
-  line-height: 1.45;
+  line-height: 1.4;
   text-align: left;
   cursor: pointer;
   transition:
     border-color var(--transition-fast),
-    background-color var(--transition-fast),
-    color var(--transition-fast);
+    background var(--transition-fast),
+    box-shadow var(--transition-fast),
+    color var(--transition-fast),
+    transform var(--transition-fast);
 
-  & svg {
-    flex-shrink: 0;
-    margin-top: 2px;
-    color: var(--text-dim);
-    transition: color var(--transition-fast);
-  }
-
+  /* Hover tints with the accent over the panel fill, rather than greying it. */
   &:hover {
-    border-color: var(--border-strong);
-    background: var(--mat-thin-bg-hover);
+    border-color: var(--accent-line);
+    background: linear-gradient(color-mix(in srgb, var(--accent) 7%, transparent) 0 0), var(--mat-regular-bg);
+    box-shadow:
+      var(--mat-regular-shadow),
+      0 12px 32px -20px var(--accent-glow);
     color: var(--text-primary);
-  }
-
-  &:hover svg {
-    color: var(--accent);
   }
 
   &:focus-visible {
     outline: none;
     box-shadow: var(--focus-ring);
   }
+
+  @media (prefers-reduced-motion: no-preference) {
+    &:hover {
+      transform: translateY(-1px);
+    }
+
+    &:active {
+      transform: translateY(0);
+    }
+  }
+}
+
+.suggestionIcon {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--accent-line);
+  border-radius: var(--radius-md);
+  background: var(--accent-soft);
+  color: var(--accent);
+  transition: background var(--transition-fast);
+
+  .suggestionChip:hover & {
+    background: color-mix(in srgb, var(--accent) 18%, transparent);
+  }
+}
+
+.suggestionBody {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.suggestionKind {
+  color: var(--text-dim);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-label);
+  transition: color var(--transition-fast);
+
+  .suggestionChip:hover & {
+    color: var(--accent);
+  }
+}
+
+.suggestionText {
+  overflow-wrap: anywhere;
+}
+
+.suggestionArrow {
+  flex-shrink: 0;
+  align-self: flex-start;
+  color: var(--text-dim);
+  opacity: 0.6;
+  transition:
+    color var(--transition-fast),
+    opacity var(--transition-fast),
+    transform var(--transition-fast);
+
+  .suggestionChip:hover & {
+    color: var(--accent);
+    opacity: 1;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .suggestionChip:hover & {
+      transform: translate(2px, -2px);
+    }
+  }
 }
 
 /* ---------- Conversation sidebar ---------- */
 
+/* A quiet rail rather than a card, to match the cardless conversation: translucent fill and a hairline that
+   fades out at both ends. */
 .sidebar {
+  position: relative;
   display: none;
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
-  border: 1px solid var(--mat-regular-border);
-  border-radius: var(--radius-xl);
-  background: var(--mat-regular-bg);
-  box-shadow: var(--mat-regular-shadow);
-  backdrop-filter: var(--mat-regular-filter);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--mat-regular-bg) 70%, transparent);
+
+  &::before {
+    position: absolute;
+    inset-block: var(--space-4);
+    left: 0;
+    width: 1px;
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      var(--mat-regular-border) 15%,
+      var(--mat-regular-border) 85%,
+      transparent
+    );
+    content: "";
+    pointer-events: none;
+  }
 
   &[data-open] {
     display: flex;

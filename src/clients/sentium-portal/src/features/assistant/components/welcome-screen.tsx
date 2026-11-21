@@ -1,12 +1,39 @@
 import { useState } from "react";
-import { ArrowUpRight, Sparkles, Lightbulb, Compass, Zap, Telescope, FlaskConical, Rocket } from "lucide-react";
+import {
+  ArrowUpRight,
+  CalendarCheck,
+  ChartLine,
+  CodeXml,
+  Compass,
+  FlaskConical,
+  GraduationCap,
+  Lightbulb,
+  PenLine,
+  Rocket,
+  ScrollText,
+  Sparkles,
+  Telescope,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
 import { useProfile } from "@/features/profile/hooks/useProfile";
+import type { Suggestion, SuggestionKind } from "@/shared/utils/constants";
 import styles from "../assistant.module.css";
 
 interface WelcomeScreenProps {
-  suggestions: string[];
+  suggestions: Suggestion[];
   onSelectSuggestion: (text: string) => void;
 }
+
+const SUGGESTION_ICONS: Record<SuggestionKind, LucideIcon> = {
+  write: PenLine,
+  code: CodeXml,
+  summarize: ScrollText,
+  plan: CalendarCheck,
+  ideate: Lightbulb,
+  learn: GraduationCap,
+  analyze: ChartLine,
+};
 
 type Greeting = {
   icon: React.ReactNode;
@@ -130,12 +157,23 @@ export function WelcomeScreen({ suggestions, onSelectSuggestion }: WelcomeScreen
       <h2 className={styles.welcomeSubtitle}>{greeting.subtitle}</h2>
       <p className={styles.welcomeMeta}>{greeting.meta}</p>
       <div className={styles.suggestions}>
-        {suggestions.map((s) => (
-          <button key={s} type="button" className={styles.suggestionChip} onClick={() => onSelectSuggestion(s)}>
-            <span>{s}</span>
-            <ArrowUpRight size={14} aria-hidden="true" />
-          </button>
-        ))}
+        {suggestions.map(({ text, kind }) => {
+          const Icon = SUGGESTION_ICONS[kind];
+          return (
+            <button key={text} type="button" className={styles.suggestionChip} onClick={() => onSelectSuggestion(text)}>
+              <span className={styles.suggestionIcon} aria-hidden="true">
+                <Icon size={16} />
+              </span>
+              <span className={styles.suggestionBody}>
+                <span className={styles.suggestionKind} aria-hidden="true">
+                  {kind}
+                </span>
+                <span className={styles.suggestionText}>{text}</span>
+              </span>
+              <ArrowUpRight size={14} className={styles.suggestionArrow} aria-hidden="true" />
+            </button>
+          );
+        })}
       </div>
     </div>
   );

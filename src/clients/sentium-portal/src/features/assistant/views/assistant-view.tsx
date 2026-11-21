@@ -351,7 +351,11 @@ export function AssistantView() {
       }
     >
       <div className={styles.layout} data-sidebar-open={sidebarOpen || undefined}>
-        <section className={styles.chatPanel} aria-label="Conversation">
+        <section
+          className={styles.chatPanel}
+          aria-label="Conversation"
+          data-empty={(isEmpty && !isLoadingConversation) || undefined}
+        >
           <div className={styles.chatArea} ref={chatAreaRef}>
             {isLoadingConversation ? (
               <div className={styles.loadingConversation} role="status">

@@ -128,6 +128,20 @@
   );
 }
 
+/* Calm mode: a wash of the base colour over everything (shader and static fallback alike), eased in and out
+   on navigation so the field never snaps. */
+.hush {
+  position: absolute;
+  inset: 0;
+  background: var(--field-base);
+  opacity: 0;
+  transition: opacity 0.8s var(--ease-out);
+}
+
+.root[data-calm] .hush {
+  opacity: 0.5;
+}
+
 @keyframes orbit {
   to {
     transform: rotate(360deg);

@@ -16,14 +16,17 @@ describe("WelcomeScreen", () => {
   });
 
   it("renders a chip for each suggestion", () => {
-    render(<WelcomeScreen suggestions={["Idea one", "Idea two"]} onSelectSuggestion={() => {}} />);
+    render(<WelcomeScreen suggestions={[
+          { text: "Idea one", kind: "write" },
+          { text: "Idea two", kind: "code" },
+        ]} onSelectSuggestion={() => {}} />);
     expect(screen.getByRole("button", { name: "Idea one" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Idea two" })).toBeInTheDocument();
   });
 
   it("calls onSelectSuggestion when a chip is clicked", () => {
     const onSelect = vi.fn();
-    render(<WelcomeScreen suggestions={["Idea one"]} onSelectSuggestion={onSelect} />);
+    render(<WelcomeScreen suggestions={[{ text: "Idea one", kind: "learn" }]} onSelectSuggestion={onSelect} />);
     fireEvent.click(screen.getByRole("button", { name: "Idea one" }));
     expect(onSelect).toHaveBeenCalledWith("Idea one");
   });
