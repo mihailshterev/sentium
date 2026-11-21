@@ -9,4 +9,5 @@ public static class NotificationCategories
     public const string ScheduleRun = "schedule.run";
     public const string DeviceDisk = "device.disk";
     public const string SystemBackup = "system.backup";
+    public const string SystemInference = "system.inference";
 }

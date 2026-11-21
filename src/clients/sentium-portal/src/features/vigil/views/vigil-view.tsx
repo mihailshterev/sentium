@@ -17,6 +17,7 @@ import { DeviceRow } from "../components/device-row";
 import { ServiceRow } from "../components/service-row";
 import { SummaryStats } from "../components/summary-stats";
 import { IncidentTimeline } from "../components/incident-timeline";
+import { InferencePanel } from "../components/inference-panel";
 import type { ServiceHealthStatus, ServiceStatus } from "@/features/vigil/types/serviceHealth";
 
 const countBy = (services: ServiceHealthStatus[], status: ServiceStatus) =>
@@ -229,6 +230,8 @@ export function VigilView() {
           </Card>
         </div>
       </div>
+
+      {isSovereign && <InferencePanel />}
     </Page>
   );
 }

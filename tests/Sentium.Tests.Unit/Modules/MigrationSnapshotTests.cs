@@ -10,6 +10,7 @@ using Sentium.Probatio.Data;
 using Sentium.Registry.Data;
 using Sentium.Sentinel.Data;
 using Sentium.Tempus.Data;
+using Sentium.Vigil.Data;
 using Xunit;
 
 namespace Sentium.Tests.Unit.Modules;
@@ -34,6 +35,7 @@ public sealed class MigrationSnapshotTests
         ["Praxis"] = () => new PraxisDbContextFactory().CreateDbContext([]),
         ["Mcp"] = () => new McpDbContextFactory().CreateDbContext([]),
         ["Probatio"] = () => new ProbatioDbContextFactory().CreateDbContext([]),
+        ["Vigil"] = () => new VigilDbContextFactory().CreateDbContext([]),
     };
 
     public static TheoryData<string> ModuleNames() => [.. Contexts.Keys];

@@ -212,11 +212,11 @@ public static class PraxisModuleExtensions
         // Direct (non-agent) calls on the default model: prompt enhancement, learning sanitization.
         services.AddChatClient(CreateDefaultModelClient)
             .UseFunctionInvocation()
-            .UseOpenTelemetry();
+            .UseOpenTelemetry(sourceName: GenAiTelemetry.SourceName(GenAiTelemetry.DirectCaller));
 
         // Shared agent base: telemetry records each request exactly as sent. Agents pick their model via ChatOptions.ModelId.
         services.AddKeyedChatClient(AgentChatClientKey, CreateDefaultModelClient)
-            .UseOpenTelemetry();
+            .UseOpenTelemetry(sourceName: GenAiTelemetry.SourceName(GenAiTelemetry.AgentsCaller));
     }
 
     private static IChatClient CreateDefaultModelClient(IServiceProvider sp)

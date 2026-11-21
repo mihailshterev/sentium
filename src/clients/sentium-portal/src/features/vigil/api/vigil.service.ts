@@ -5,6 +5,7 @@ import type {
   ServiceHealthStatus,
   SystemHealthOverview,
 } from "@/features/vigil/types/serviceHealth";
+import type { InferenceOverview, InferenceRange } from "@/features/vigil/types/inference";
 import { client } from "@/shared/api/client";
 
 export const fetchSystemMetrics = async (): Promise<SystemMetrics> => {
@@ -25,4 +26,8 @@ export const fetchSystemOverview = async (): Promise<SystemHealthOverview> => {
 
 export const fetchIncidents = async (): Promise<Incident[]> => {
   return client.get<Incident[]>("/vigil/incidents");
+};
+
+export const fetchInferenceOverview = async (range: InferenceRange): Promise<InferenceOverview> => {
+  return client.get<InferenceOverview>(`/vigil/inference?range=${encodeURIComponent(range)}`);
 };
