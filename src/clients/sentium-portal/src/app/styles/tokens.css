@@ -109,7 +109,7 @@
   --accent-cyan: #45c6da;
   --accent-cyan-rgb: 69, 198, 218;
 
-  /* Surfaces (legacy opaque fills - prefer materials) */
+  /* Opaque surface fills; prefer the materials for panels */
   --bg-base: #0a0806;
   --bg-surface: #12100d;
   --bg-elevated: #1a1713;
@@ -177,9 +177,6 @@
   --code-fg: #e6ded2;
   --code-dim: #8a8172;
   --code-ink-rgb: 230, 210, 180;
-
-  /* Legacy one-offs, removed as pages migrate */
-  --texture-dot: rgba(var(--ink-rgb), 0.05);
 }
 
 /* ---------- Color: light ("parchment blueprint") ---------- */
@@ -252,8 +249,6 @@
   --field-star: #1a1510;
   --field-stars: 0;
   --grain-opacity: 0.05;
-
-  --texture-dot: rgba(var(--ink-rgb), 0.05);
 }
 
 /* ---------- Derived tokens (theme-independent formulas) ---------- */
@@ -295,12 +290,4 @@
   --danger-line: var(--accent-red-border);
   --info-soft: var(--accent-cyan-subtle);
   --info-line: var(--accent-cyan-border);
-
-  /* Legacy glass names, mapped onto the materials */
-  --glass-bg: var(--mat-regular-bg);
-  --glass-bg-strong: var(--mat-thick-bg);
-  --glass-border: var(--mat-regular-border);
-  --glass-highlight: var(--mat-thin-bg-hover);
-
-  --text-main: var(--text-primary);
 }

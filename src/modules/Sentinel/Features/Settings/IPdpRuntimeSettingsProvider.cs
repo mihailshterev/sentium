@@ -5,8 +5,5 @@ namespace Sentium.Sentinel.Features.Settings;
 /// </summary>
 internal interface IPdpRuntimeSettingsProvider
 {
-    /// <summary>
-    /// Returns the current runtime PDP settings.
-    /// </summary>
     ValueTask<PdpRuntimeSettings> GetAsync(CancellationToken ct = default);
 }

@@ -3,9 +3,6 @@ using Sentium.Praxis.Features.Workflows;
 
 namespace Sentium.Praxis.Features.WorkflowManagement;
 
-/// <summary>
-/// Application-layer operations for agent workflows.
-/// </summary>
 internal interface IWorkflowService
 {
     Task<IReadOnlyList<WorkflowResponse>> GetWorkflowsAsync(CancellationToken ct = default);

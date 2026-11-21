@@ -1,11 +1,7 @@
 using Sentium.Praxis.Features.Workflows;
 
-
 namespace Sentium.Praxis.Features.WorkflowManagement;
 
-/// <summary>
-/// Persistence-layer CRUD operations for agent workflows.
-/// </summary>
 internal interface IWorkflowRepository
 {
     Task<IReadOnlyList<WorkflowResponse>> GetWorkflowsAsync(CancellationToken ct = default);

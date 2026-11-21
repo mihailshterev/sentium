@@ -10,8 +10,7 @@ namespace Sentium.Mcp.Features.Servers;
 /// </summary>
 internal sealed class McpSecretProtector(IDataProtectionProvider provider)
 {
-    // Deliberately still "Sentium.Praxis...": the Data Protection purpose keys the stored secrets, so renaming it after
-    // MCP moved out of Praxis would make every existing server secret undecryptable.
+    // The Data Protection purpose keys the stored secrets: changing it makes every existing server secret undecryptable.
     private const string Purpose = "Sentium.Praxis.Mcp.Secrets.v1";
 
     private readonly IDataProtector protector = provider.CreateProtector(Purpose);

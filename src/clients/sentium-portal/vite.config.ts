@@ -12,7 +12,6 @@ const proxy = { target: apiTarget, changeOrigin: true, secure: false };
 
 const MAP_ONLY_PACKAGES = /node_modules\/(d3-[a-z-]+)\//;
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [
     react({

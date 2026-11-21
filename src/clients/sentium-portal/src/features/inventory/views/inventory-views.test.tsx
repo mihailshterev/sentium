@@ -78,7 +78,7 @@ describe("inventory views", () => {
 
     expect(screen.getByTestId("url")).toHaveTextContent("/inventory?location=garage");
     expect(hooks.useAssetSearch).toHaveBeenLastCalledWith(expect.objectContaining({ locationId: "garage" }));
-    // The list header now shows the selected path (the asset row shows it too).
+    // The list header shows the selected path, as does the asset row.
     expect(screen.getAllByText("Home › Garage").length).toBeGreaterThan(1);
   });
 

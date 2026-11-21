@@ -15,9 +15,6 @@ internal interface IAgentLearningService
     /// </summary>
     Task<PagedResponse<AgentLearningResponse>> GetLearningsAsync(string? agentName, int page, int pageSize, CancellationToken ct = default);
 
-    /// <summary>
-    /// Returns aggregate statistics across all learnings.
-    /// </summary>
     Task<AgentLearningStats> GetStatsAsync(CancellationToken ct = default);
 
     /// <summary>

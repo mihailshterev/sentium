@@ -1,9 +1,6 @@
 
 namespace Sentium.Praxis.Features.Agents;
 
-/// <summary>
-/// Persistence-layer access to user-defined agents.
-/// </summary>
 internal interface IAgentRepository
 {
     /// <param name="request">The agent's name, description, and optional model.</param>

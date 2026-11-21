@@ -101,7 +101,7 @@ internal sealed class ScheduleService(
             return Result<ScheduledJobResponse>.Invalid("A script schedule cannot become an agent or workflow schedule, or the other way round.");
         }
 
-        // Script schedules were always UTC and stay so; the others follow the owner's current zone.
+        // Script schedules run in UTC; the others follow the owner's current zone.
         var zone = kind == ScheduleKind.Script ? TimeZoneInfo.Utc : await timeZones.ResolveAsync(ownerId, ct);
         if (ScheduleCron.Validate(request.CronExpression, zone, clock.GetUtcNow()) is { } cronError)
         {
