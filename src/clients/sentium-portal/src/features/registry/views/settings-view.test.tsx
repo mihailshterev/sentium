@@ -287,6 +287,27 @@ describe("Settings search and filters", () => {
     expect(screen.queryByRole("heading", { level: 2, name: "Calendar" })).not.toBeInTheDocument();
   });
 
+  it("shows the browser-only Appearance section above the server settings", async () => {
+    renderSettings();
+    await loaded();
+
+    expect(screen.getByRole("region", { name: "Appearance" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Appearance" })).toBeInTheDocument();
+  });
+
+  it("keeps Appearance when only it matches the search, and hides it under Modified only", async () => {
+    renderSettings();
+    await loaded();
+
+    fireEvent.change(screen.getByRole("searchbox", { name: "Search settings" }), { target: { value: "palette" } });
+    expect(screen.getByRole("region", { name: "Appearance" })).toBeInTheDocument();
+    expect(screen.queryByText("No settings match")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /modified only/i }));
+    expect(screen.queryByRole("region", { name: "Appearance" })).not.toBeInTheDocument();
+    expect(screen.getByText("No settings match")).toBeInTheDocument();
+  });
+
   it("scrolls to the section named in the URL", async () => {
     renderSettings("/settings/calendar");
     await loaded();

@@ -1,0 +1,139 @@
+/* Visually hidden but focusable, so the labels act as the controls. */
+.radio {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.modes {
+  display: inline-flex;
+  justify-self: end;
+  padding: 2px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--mat-thin-bg);
+}
+
+.mode {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  cursor: pointer;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast);
+
+  &:hover {
+    color: var(--text-primary);
+  }
+
+  &:has(.radio:checked) {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+
+  &:has(.radio:focus-visible) {
+    box-shadow: var(--focus-ring);
+  }
+}
+
+.palettes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--space-3);
+}
+
+.palette {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-2);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+  transition:
+    border-color var(--transition-fast),
+    background var(--transition-fast);
+
+  &:hover {
+    border-color: var(--border-strong);
+    background: var(--mat-thin-bg);
+  }
+
+  &:has(.radio:checked) {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+
+  &:has(.radio:focus-visible) {
+    box-shadow: var(--focus-ring);
+  }
+}
+
+/* A miniature of the palette: its field with two haze glows and a panel holding text lines and an accent button. */
+.preview {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 9;
+  margin-bottom: var(--space-2);
+  overflow: hidden;
+  border-radius: var(--radius-md);
+  background:
+    radial-gradient(circle at 20% 25%, var(--preview-haze-a), transparent 60%),
+    radial-gradient(circle at 85% 80%, var(--preview-haze-b), transparent 55%),
+    var(--preview-base);
+}
+
+.previewPanel {
+  position: absolute;
+  inset: 22% 14% 18% 14%;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px;
+  border: 1px solid color-mix(in srgb, var(--preview-text) 14%, transparent);
+  border-radius: var(--radius-sm);
+  background: var(--preview-surface);
+}
+
+.previewLine,
+.previewLineShort {
+  display: block;
+  height: 4px;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--preview-text) 70%, transparent);
+}
+
+.previewLineShort {
+  width: 60%;
+  background: color-mix(in srgb, var(--preview-text) 35%, transparent);
+}
+
+.previewButton {
+  display: block;
+  width: 34%;
+  height: 8px;
+  margin-top: auto;
+  border-radius: var(--radius-xs);
+  background: var(--preview-accent);
+}
+
+.paletteName {
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  font-weight: var(--fw-medium);
+}
+
+.paletteDescription {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+}

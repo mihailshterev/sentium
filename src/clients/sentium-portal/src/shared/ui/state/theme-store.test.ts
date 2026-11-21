@@ -1,10 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { act } from "@testing-library/react";
-import { useThemeStore, resolveTheme, applyTheme } from "./theme-store";
+import { useThemeStore, resolveTheme, applyTheme, observeThemeChanges } from "./theme-store";
+import { DEFAULT_PALETTE } from "./palettes";
 
 beforeEach(() => {
-  act(() => useThemeStore.setState({ preference: "system" }));
+  act(() => useThemeStore.setState({ preference: "system", palette: DEFAULT_PALETTE }));
   document.documentElement.removeAttribute("data-theme");
+  document.documentElement.removeAttribute("data-palette");
 });
 
 afterEach(() => {
@@ -61,5 +63,38 @@ describe("useThemeStore", () => {
     act(() => useThemeStore.getState().toggle());
     expect(useThemeStore.getState().preference).toBe("light");
     expect(document.documentElement.getAttribute("data-theme")).toBe("light");
+  });
+
+  it("defaults to the warm palette", () => {
+    expect(useThemeStore.getState().palette).toBe("warm");
+  });
+
+  it("setPalette stores the palette and applies it to the document root", () => {
+    act(() => useThemeStore.getState().setPalette("forest"));
+    expect(useThemeStore.getState().palette).toBe("forest");
+    expect(document.documentElement.getAttribute("data-palette")).toBe("forest");
+  });
+
+  it("toggling the mode keeps the palette", () => {
+    act(() => useThemeStore.getState().setPalette("ember"));
+    act(() => useThemeStore.getState().toggle());
+    expect(useThemeStore.getState().palette).toBe("ember");
+  });
+});
+
+describe("observeThemeChanges", () => {
+  it("fires when the mode or the palette changes, until unsubscribed", async () => {
+    const onChange = vi.fn();
+    const stop = observeThemeChanges(onChange);
+
+    applyTheme("dark");
+    await vi.waitFor(() => expect(onChange).toHaveBeenCalledTimes(1));
+    act(() => useThemeStore.getState().setPalette("cosmos"));
+    await vi.waitFor(() => expect(onChange).toHaveBeenCalledTimes(2));
+
+    stop();
+    applyTheme("light");
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(onChange).toHaveBeenCalledTimes(2);
   });
 });

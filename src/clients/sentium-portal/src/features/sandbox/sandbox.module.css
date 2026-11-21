@@ -181,10 +181,7 @@
 /* Code + terminal: always a dark code surface, in both themes. */
 .code,
 .terminal {
-  --code-bg: #0a0e19;
-  --code-fg: #d3dbe8;
-  --code-dim: #7d889e;
-  --code-border: rgba(160, 180, 230, 0.14);
+  --code-border: rgba(var(--code-ink-rgb), 0.14);
 }
 
 .code {

@@ -2,6 +2,7 @@
  * Minimal WebGL1 runner for a single full-canvas fragment shader: compiles, renders at a reduced
  * resolution, throttles to a target fps, and pauses while hidden, off-screen, reduced-motion or on request.
  */
+import { observeThemeChanges } from "@/shared/ui/state/theme-store";
 
 const VERTEX_SHADER = `
 attribute vec2 aPosition;
@@ -159,13 +160,12 @@ export function startShader(canvas: HTMLCanvasElement, options: ShaderRunnerOpti
   });
   resizeObserver.observe(canvas);
 
-  const themeObserver = new MutationObserver(() => {
+  const stopObservingTheme = observeThemeChanges(() => {
     options.setup(gl, uniform);
     if (!raf) {
       draw();
     }
   });
-  themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 
   const intersection =
     options.pauseOffscreen && typeof IntersectionObserver !== "undefined"
@@ -195,7 +195,7 @@ export function startShader(canvas: HTMLCanvasElement, options: ShaderRunnerOpti
     dispose: () => {
       cancelAnimationFrame(raf);
       resizeObserver.disconnect();
-      themeObserver.disconnect();
+      stopObservingTheme();
       intersection?.disconnect();
       document.removeEventListener("visibilitychange", sync);
       reducedMotion?.removeEventListener("change", sync);

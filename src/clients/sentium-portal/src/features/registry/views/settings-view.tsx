@@ -12,7 +12,20 @@ import { SCOPES } from "../catalog/settings-presentation";
 import { matchesSearch } from "../catalog/settings-rules";
 import { SettingsSaveBar, type SaveOutcome } from "../components/settings-save-bar";
 import { SettingsSection } from "../components/settings-section";
-import { SettingsSidebar, type SidebarGroup } from "../components/settings-sidebar";
+import {
+  APPEARANCE_ICON,
+  APPEARANCE_SECTION_ID,
+  APPEARANCE_TITLE,
+  matchesAppearanceSearch,
+} from "../catalog/appearance";
+import { AppearanceSection } from "../components/appearance-section";
+import {
+  LOCAL_GROUP_DESCRIPTION,
+  LOCAL_GROUP_TITLE,
+  SettingsSidebar,
+  type SidebarGroup,
+  type SidebarLocalItem,
+} from "../components/settings-sidebar";
 import { useActiveSection } from "../hooks/useActiveSection";
 import { useSettingsDraft } from "../hooks/useSettingsDraft";
 import { useSettingsSchema } from "../hooks/useSettingsSchema";
@@ -60,9 +73,16 @@ export function SettingsView() {
     ),
   }));
   const shown = filtered.filter((f) => f.visible.length > 0);
+  // Appearance has no defaults to differ from, so "Modified only" hides it.
+  const showAppearance = !modifiedOnly && matchesAppearanceSearch(query);
+  const localItems: SidebarLocalItem[] = showAppearance
+    ? [{ id: APPEARANCE_SECTION_ID, title: APPEARANCE_TITLE, icon: APPEARANCE_ICON }]
+    : [];
 
   // Sections only mount once loaded, so observe nothing until then.
-  const [activeId, setActiveId] = useActiveSection(isLoading ? [] : shown.map((f) => f.section.id));
+  const [activeId, setActiveId] = useActiveSection(
+    isLoading ? [] : [...localItems.map((item) => item.id), ...shown.map((f) => f.section.id)],
+  );
 
   const hasUnsaved = draft.dirtyCount > 0;
   useEffect(() => {
@@ -178,6 +198,7 @@ export function SettingsView() {
     <Page title={PAGE_TITLE} subtitle={PAGE_SUBTITLE}>
       <div className={styles.layout}>
         <SettingsSidebar
+          localItems={localItems}
           groups={sidebarGroups}
           activeId={activeId}
           query={query}
@@ -189,7 +210,16 @@ export function SettingsView() {
         />
 
         <div className={styles.content}>
-          {shown.length === 0 ? (
+          {showAppearance && (
+            <div className={styles.scope}>
+              <p className={styles.scopeLabel}>
+                {LOCAL_GROUP_TITLE.toLowerCase()} <span>· {LOCAL_GROUP_DESCRIPTION.toLowerCase()}</span>
+              </p>
+              <AppearanceSection />
+            </div>
+          )}
+
+          {shown.length === 0 && !showAppearance ? (
             <EmptyState
               icon={<SearchX />}
               title="No settings match"
