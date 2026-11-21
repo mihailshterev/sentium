@@ -44,7 +44,7 @@ public static class CodexModuleExtensions
                 .CreateEmbeddingGenerator(EmbeddingsHttpClientName, ragOptions.EmbeddingModelName);
 
             return new EmbeddingGeneratorBuilder<string, Embedding<float>>(generator)
-                .UseOpenTelemetry()
+                .UseOpenTelemetry(sourceName: GenAiTelemetry.SourceName(GenAiTelemetry.EmbeddingsCaller))
                 .Build();
         });
 

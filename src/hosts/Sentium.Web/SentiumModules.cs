@@ -42,7 +42,7 @@ internal static class SentiumModules
         new(typeof(SchedulingModuleExtensions), b => b.AddSchedulingModule()),
         new(typeof(McpModuleExtensions), b => b.AddMcpModule(), a => a.InitializeMcpModuleAsync()),
         new(typeof(ProbatioModuleExtensions), b => b.AddProbatioModule(), a => a.InitializeProbatioModuleAsync()),
-        new(typeof(VigilModuleExtensions), b => b.AddVigilModule()),
+        new(typeof(VigilModuleExtensions), b => b.AddVigilModule(), a => a.InitializeVigilModuleAsync()),
     ];
 
     public static IReadOnlyList<Assembly> Assemblies { get; } = [.. Modules.Select(m => m.Marker.Assembly)];

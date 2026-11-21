@@ -25,9 +25,11 @@ public static class Extensions
     /// ActivitySource / Meter names used by Microsoft.Extensions.AI (<c>UseOpenTelemetry</c> on chat clients and
     /// embedding generators) and by Agent Framework agents and workflows. Without these the GenAI spans
     /// (<c>chat</c>, <c>execute_tool</c>, <c>invoke_agent</c>) and token-usage metrics are created but never exported.
+    /// Sentium's own pipelines name their source per caller under <c>Sentium.GenAI</c> (see <c>GenAiTelemetry</c>).
     /// </summary>
     private static readonly string[] GenAiTelemetrySources =
     [
+        "Sentium.GenAI*",
         "Experimental.Microsoft.Extensions.AI*",
         "Experimental.Microsoft.Agents.AI*",
         "Experimental.ModelContextProtocol*",

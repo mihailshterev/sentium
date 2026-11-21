@@ -73,7 +73,7 @@ public static class SentinelModuleExtensions
         // Registry's IntentCheckModel through ChatOptions.ModelId.
         services.AddKeyedChatClient(ChatClientKey, sp => sp.GetRequiredService<IInferenceClientFactory>()
             .CreateChatClient(LlmHttpClientName, sp.GetRequiredService<IOptions<InferenceOptions>>().Value.DefaultModel))
-            .UseOpenTelemetry();
+            .UseOpenTelemetry(sourceName: GenAiTelemetry.SourceName(GenAiTelemetry.IntentCheckCaller));
 
         services.AddSingleton<IPdpRuntimeSettingsProvider, RegistryPdpSettingsProvider>();
 

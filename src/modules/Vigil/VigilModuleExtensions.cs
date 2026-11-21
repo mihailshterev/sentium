@@ -2,11 +2,15 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Sentium.Core.Constants;
 using Sentium.Identity.Contracts;
+using Sentium.Infrastructure.Extensions;
 using Sentium.Infrastructure.Inference;
+using Sentium.Infrastructure.Retention;
 using Sentium.Infrastructure.Security;
 using Sentium.Infrastructure.Speech;
+using Sentium.Vigil.Data;
 using Sentium.Vigil.Features.Backups;
 using Sentium.Vigil.Features.Devices;
+using Sentium.Vigil.Features.Inference;
 using Sentium.Vigil.Features.Metrics;
 using Sentium.Vigil.Features.Monitoring;
 using Sentium.Vigil.Features.Monitoring.Probes;
@@ -16,6 +20,11 @@ namespace Sentium.Vigil;
 
 public static class VigilModuleExtensions
 {
+    internal const string ModuleName = "vigil";
+
+    // Metrics reads are small; a server that takes longer is effectively unavailable for this sample.
+    private static readonly TimeSpan MetricsRequestTimeout = TimeSpan.FromSeconds(10);
+
     /// <summary>
     /// Modules hosted in Sentium.Web, probed in-process through the health checks each one tags with its name.
     /// </summary>
@@ -45,6 +54,8 @@ public static class VigilModuleExtensions
     {
         ArgumentNullException.ThrowIfNull(builder);
 
+        builder.AddModuleDbContext<VigilDbContext>(VigilDbContext.Schema);
+
         var services = builder.Services;
 
         services.AddSingleton<IVigilSettingsProvider, RegistryVigilSettingsProvider>();
@@ -68,7 +79,45 @@ public static class VigilModuleExtensions
         services.AddSingleton<IDeviceRemovalObserver, DeviceStateRemover>();
         services.AddHostedService<DeviceOfflineWatcher>();
 
+        RegisterInferenceMetrics(services, builder.Configuration);
+
+        services.AddHealthChecks().AddDbContextCheck<VigilDbContext>("vigil-db", tags: [ModuleName]);
+
         return builder;
+    }
+
+    public static async Task InitializeVigilModuleAsync(this WebApplication app)
+    {
+        ArgumentNullException.ThrowIfNull(app);
+
+        await app.Services.MigrateModuleDbContextAsync<VigilDbContext>();
+    }
+
+    private static void RegisterInferenceMetrics(IServiceCollection services, IConfiguration configuration)
+    {
+        AddMetricsHttpClient(services, configuration, LlamaMetricsClient.ChatClientName, InferenceEndpoint.Chat);
+        AddMetricsHttpClient(services, configuration, LlamaMetricsClient.EmbeddingsClientName, InferenceEndpoint.Embedding);
+        services.AddSingleton<ILlamaMetricsClient, LlamaMetricsClient>();
+
+        services.AddSingleton<GenAiUsageAccumulator>();
+        services.AddHostedService<GenAiUsageListener>();
+
+        services.AddSingleton<InferenceLiveState>();
+        services.AddSingleton<IHealthProbe, InferenceHealthProbe>();
+
+        services.AddScoped<InferenceMetricsWriter>();
+        services.AddScoped<IInferenceMetricsQuery, InferenceMetricsQuery>();
+        services.AddRetentionSweep<InferenceMetricsRetention>();
+
+        services.AddHostedService<InferenceMetricsCollector>();
+    }
+
+    private static void AddMetricsHttpClient(IServiceCollection services, IConfiguration configuration, string name, InferenceEndpoint endpoint)
+    {
+#pragma warning disable EXTEXP0001
+        services.AddInferenceHttpClient(configuration, name, endpoint, totalTimeout: MetricsRequestTimeout, attemptTimeout: MetricsRequestTimeout)
+            .RemoveAllLoggers();
+#pragma warning restore EXTEXP0001
     }
 
     private static void RegisterModuleProbes(IServiceCollection services)
