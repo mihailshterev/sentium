@@ -33,7 +33,12 @@
  */
 .chatPanel {
   --column: 780px;
-  --veil-fade: 120px;
+  --veil-fade: 280px;
+  --veil-fade-top: 128px;
+  --veil-fade-bottom: 64px;
+  /* Where the left fade starts and the right fade starts. */
+  --veil-l: calc(50% - var(--column) / 2 - var(--veil-fade));
+  --veil-r: calc(50% + var(--column) / 2);
 
   position: relative;
   isolation: isolate;
@@ -43,22 +48,47 @@
   min-height: 0;
   overflow: hidden;
 
+  /* The fades follow a smoothstep curve; a linear ramp shows a visible band where it starts and stops. */
   &::before {
     position: absolute;
     inset: 0;
     z-index: -1;
-    background: var(--mat-regular-bg);
+    background: color-mix(in srgb, var(--mat-regular-bg) 70%, transparent);
     content: "";
     pointer-events: none;
     mask-image:
       linear-gradient(
         to right,
-        transparent calc(50% - var(--column) / 2 - var(--veil-fade)),
-        black calc(50% - var(--column) / 2),
-        black calc(50% + var(--column) / 2),
-        transparent calc(50% + var(--column) / 2 + var(--veil-fade))
+        transparent var(--veil-l),
+        rgb(0 0 0 / 0.04) calc(var(--veil-l) + var(--veil-fade) * 0.125),
+        rgb(0 0 0 / 0.16) calc(var(--veil-l) + var(--veil-fade) * 0.25),
+        rgb(0 0 0 / 0.32) calc(var(--veil-l) + var(--veil-fade) * 0.375),
+        rgb(0 0 0 / 0.5) calc(var(--veil-l) + var(--veil-fade) * 0.5),
+        rgb(0 0 0 / 0.68) calc(var(--veil-l) + var(--veil-fade) * 0.625),
+        rgb(0 0 0 / 0.84) calc(var(--veil-l) + var(--veil-fade) * 0.75),
+        rgb(0 0 0 / 0.96) calc(var(--veil-l) + var(--veil-fade) * 0.875),
+        black calc(var(--veil-l) + var(--veil-fade)),
+        black var(--veil-r),
+        rgb(0 0 0 / 0.96) calc(var(--veil-r) + var(--veil-fade) * 0.125),
+        rgb(0 0 0 / 0.84) calc(var(--veil-r) + var(--veil-fade) * 0.25),
+        rgb(0 0 0 / 0.68) calc(var(--veil-r) + var(--veil-fade) * 0.375),
+        rgb(0 0 0 / 0.5) calc(var(--veil-r) + var(--veil-fade) * 0.5),
+        rgb(0 0 0 / 0.32) calc(var(--veil-r) + var(--veil-fade) * 0.625),
+        rgb(0 0 0 / 0.16) calc(var(--veil-r) + var(--veil-fade) * 0.75),
+        rgb(0 0 0 / 0.04) calc(var(--veil-r) + var(--veil-fade) * 0.875),
+        transparent calc(var(--veil-r) + var(--veil-fade))
       ),
-      linear-gradient(to bottom, transparent, black var(--space-7), black calc(100% - var(--space-4)), transparent);
+      linear-gradient(
+        to bottom,
+        transparent,
+        rgb(0 0 0 / 0.16) calc(var(--veil-fade-top) * 0.25),
+        rgb(0 0 0 / 0.5) calc(var(--veil-fade-top) * 0.5),
+        rgb(0 0 0 / 0.84) calc(var(--veil-fade-top) * 0.75),
+        black var(--veil-fade-top),
+        black calc(100% - var(--veil-fade-bottom)),
+        rgb(0 0 0 / 0.5) calc(100% - var(--veil-fade-bottom) / 2),
+        transparent
+      );
     mask-composite: intersect;
     transition: opacity var(--dur-slow) var(--ease-out);
   }
@@ -73,9 +103,11 @@
  * Messages fade out under the page header and into the composer instead of being cut at a hard line. Each fade
  * grows from 0 as you scroll away from that end, so the newest message is crisp while you are pinned to the
  * bottom. Without scroll-driven animations there is simply no fade.
+ * The fades stay short: a long one turns an image scrolled past the edge into a washed-out ghost.
  */
 .chatArea {
-  --fade-size: var(--space-8);
+  --fade-size-start: 20px;
+  --fade-size-end: 20px;
 
   flex: 1;
   min-height: 0;
@@ -84,8 +116,10 @@
      scroll falls behind it, which reads as the view no longer being pinned to the bottom. */
   mask:
     linear-gradient(black, black) no-clip subtract,
-    linear-gradient(to bottom, black, transparent) 0 0 / 100% var(--fade-start) no-repeat no-clip,
-    linear-gradient(to bottom, transparent, black) 0 100% / 100% var(--fade-end) no-repeat no-clip;
+    linear-gradient(to bottom, black, rgb(0 0 0 / 0.84) 25%, rgb(0 0 0 / 0.5) 50%, rgb(0 0 0 / 0.16) 75%, transparent) 0
+      0 / 100% var(--fade-start) no-repeat no-clip,
+    linear-gradient(to bottom, transparent, rgb(0 0 0 / 0.16) 25%, rgb(0 0 0 / 0.5) 50%, rgb(0 0 0 / 0.84) 75%, black) 0
+      100% / 100% var(--fade-end) no-repeat no-clip;
   /* Longhands: the shorthand gets expanded at build time with a 0s duration, which a scroll timeline needs as auto. */
   animation-name: reveal-fade-start, hide-fade-end;
   animation-duration: auto;
@@ -93,19 +127,19 @@
   animation-fill-mode: both;
   animation-timeline: scroll(self block);
   animation-range:
-    0 var(--fade-size),
-    calc(100% - var(--fade-size)) 100%;
+    0 var(--fade-size-start),
+    calc(100% - var(--fade-size-end)) 100%;
 }
 
 @keyframes reveal-fade-start {
   to {
-    --fade-start: var(--fade-size);
+    --fade-start: var(--fade-size-start);
   }
 }
 
 @keyframes hide-fade-end {
   from {
-    --fade-end: var(--fade-size);
+    --fade-end: var(--fade-size-end);
   }
 }
 
@@ -140,8 +174,11 @@
   position: absolute;
   top: calc(-1 * var(--space-9));
   left: 50%;
+  border: 1px solid var(--mat-thick-border);
   border-radius: var(--radius-full);
-  box-shadow: var(--shadow-md);
+  /* Solid like the composer: with no card behind it, the button floats over whatever content is scrolling. */
+  background: var(--mat-thick-bg);
+  box-shadow: var(--mat-thick-shadow);
   transform: translateX(-50%);
 }
 
@@ -918,9 +955,7 @@
   /* Hover tints with the accent over the panel fill, rather than greying it. */
   &:hover {
     border-color: var(--accent-line);
-    background:
-      linear-gradient(color-mix(in srgb, var(--accent) 7%, transparent) 0 0),
-      var(--mat-regular-bg);
+    background: linear-gradient(color-mix(in srgb, var(--accent) 7%, transparent) 0 0), var(--mat-regular-bg);
     box-shadow:
       var(--mat-regular-shadow),
       0 12px 32px -20px var(--accent-glow);
@@ -1024,7 +1059,13 @@
     inset-block: var(--space-4);
     left: 0;
     width: 1px;
-    background: linear-gradient(to bottom, transparent, var(--mat-regular-border) 15%, var(--mat-regular-border) 85%, transparent);
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      var(--mat-regular-border) 15%,
+      var(--mat-regular-border) 85%,
+      transparent
+    );
     content: "";
     pointer-events: none;
   }
