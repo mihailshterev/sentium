@@ -2,9 +2,6 @@ using Sentium.Praxis.Entities;
 
 namespace Sentium.Praxis.Features.Skills;
 
-/// <summary>
-/// Data-access contract for persisted agent skills.
-/// </summary>
 internal interface IAgentSkillRepository
 {
     /// <summary>
@@ -40,9 +37,6 @@ internal interface IAgentSkillRepository
     /// </summary>
     Task AddAsync(AgentSkill skill, CancellationToken ct = default);
 
-    /// <summary>
-    /// Applies changes to an existing skill.
-    /// </summary>
     Task UpdateAsync(AgentSkill skill, CancellationToken ct = default);
 
     /// <summary>

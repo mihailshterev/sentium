@@ -11,7 +11,7 @@ namespace Sentium.Praxis.Features.CodeExecution;
 /// <summary>
 /// Sandbox execution history and artifact downloads. Code runs in the separate Sentium.Sandbox service;
 /// Praxis records every run it dispatches (see <see cref="ISandboxClient"/>) and serves the history here.
-/// The routes keep the <c>/api/sandbox</c> prefix the portal has always used.
+/// The routes use the <c>/api/sandbox</c> prefix the portal calls.
 /// </summary>
 [ApiController]
 [Authorize]

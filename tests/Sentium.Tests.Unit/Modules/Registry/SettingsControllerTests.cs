@@ -61,8 +61,7 @@ public sealed class SettingsControllerTests
     [Fact]
     public async Task Get_Harness_AlwaysResolvesCallerUserId_EvenWithLegacySystemClaim()
     {
-        // There is no internal HTTP caller any more: modules read settings in-process, so a request
-        // carrying the old "internal-system" claim must still only see its own settings.
+        // Modules read settings in-process, so a request carrying an "internal-system" claim only sees its own settings.
         var ct = TestContext.Current.CancellationToken;
         var userId = Guid.NewGuid();
         _service.GetAsync(SettingsKeys.Harness, Arg.Any<Guid?>(), ct).Returns(Env(SettingsKeys.Harness, new HarnessSettings()));

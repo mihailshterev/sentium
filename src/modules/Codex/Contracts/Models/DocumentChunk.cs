@@ -18,9 +18,6 @@ public sealed class DocumentChunk
     /// </summary>
     public required string Source { get; init; }
 
-    /// <summary>
-    /// Enum-typed classification of the data origin.
-    /// </summary>
     public IngestionSourceType SourceType { get; init; }
 
     /// <summary>

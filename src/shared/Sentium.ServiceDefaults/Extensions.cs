@@ -95,7 +95,6 @@ public static class Extensions
     public static TBuilder AddDefaultHealthChecks<TBuilder>(this TBuilder builder) where TBuilder : IHostApplicationBuilder
     {
         builder.Services.AddHealthChecks()
-            // Add a default liveness check to ensure app is responsive
             .AddCheck("self", () => HealthCheckResult.Healthy(), ["live"]);
 
         return builder;
@@ -107,7 +106,6 @@ public static class Extensions
         // Sandbox service through them. In-process modules are probed directly via their tagged
         // health checks. See https://aka.ms/dotnet/aspire/healthchecks for the security considerations.
 
-        // All health checks must pass for the app to be considered ready to accept traffic.
         // A JSON response writer surfaces per-dependency detail so Vigil can derive Degraded
         // states and report individual checks, instead of only the overall pass/fail.
         app.MapHealthChecks(HealthEndpointPath, new HealthCheckOptions
@@ -115,7 +113,6 @@ public static class Extensions
             ResponseWriter = WriteHealthReportAsJsonAsync
         });
 
-        // Only health checks tagged with the "live" tag must pass for the app to be considered alive
         app.MapHealthChecks(AlivenessEndpointPath, new HealthCheckOptions
         {
             Predicate = r => r.Tags.Contains("live")

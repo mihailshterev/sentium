@@ -2,9 +2,6 @@ using Sentium.Core.Results;
 
 namespace Sentium.Praxis.Features.Skills;
 
-/// <summary>
-/// Business-logic contract for managing agent skills.
-/// </summary>
 internal interface IAgentSkillService
 {
     /// <summary>

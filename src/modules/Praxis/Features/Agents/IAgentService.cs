@@ -2,9 +2,6 @@ using Sentium.Core.Results;
 
 namespace Sentium.Praxis.Features.Agents;
 
-/// <summary>
-/// Application-level operations for managing user-defined agents.
-/// </summary>
 internal interface IAgentService
 {
     /// <summary>

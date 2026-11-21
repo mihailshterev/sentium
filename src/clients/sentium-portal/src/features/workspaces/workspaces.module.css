@@ -287,52 +287,6 @@
   line-height: 1.5;
 }
 
-/* ---------- Sidebar (legacy list component) ---------- */
-
-.sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.sidebarTitle {
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: var(--text-sm);
-  font-weight: var(--fw-semibold);
-}
-
-.errorText {
-  margin: 0;
-  color: var(--danger);
-  font-size: var(--text-sm);
-}
-
-.sidebarList {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.sidebarItem {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: 8px 8px 8px 12px;
-  border: 1px solid transparent;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-
-  &:hover {
-    background: var(--bg-hover);
-  }
-
-  &[data-active] {
-    border-color: var(--accent-line);
-    background: var(--accent-soft);
-  }
-}
-
 .pageError {
   margin-bottom: var(--space-4);
 }
