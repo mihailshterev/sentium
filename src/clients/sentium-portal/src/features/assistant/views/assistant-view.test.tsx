@@ -91,7 +91,7 @@ describe("Assistant – initial render", () => {
   it("renders four suggestion chips from the pool when no conversation", () => {
     renderAssistant();
     // The view picks a random subset, so match against the whole pool rather than specific wording.
-    const chips = SUGGESTIONS_POOL.flatMap((suggestion) => screen.queryAllByRole("button", { name: suggestion }));
+    const chips = SUGGESTIONS_POOL.flatMap(({ text }) => screen.queryAllByRole("button", { name: text }));
     expect(chips).toHaveLength(4);
   });
 

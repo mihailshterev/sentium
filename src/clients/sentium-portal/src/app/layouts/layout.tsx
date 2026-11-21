@@ -11,6 +11,8 @@ export function Layout() {
   // The semantic map paints its own opaque canvas over everything, so there is nothing to animate behind it.
   const { pathname } = useLocation();
   const backgroundPaused = pathname.startsWith("/semantic-map");
+  // The chat has no card, so its text reads straight off the background.
+  const backgroundCalm = pathname.startsWith("/assistant");
 
   // Mounted here, above the routes, so the Companion's state and speech survive navigation.
   useCompanionRuntime();
@@ -18,7 +20,7 @@ export function Layout() {
 
   return (
     <div className={styles.layoutWrapper}>
-      <CosmosBackground paused={backgroundPaused} />
+      <CosmosBackground paused={backgroundPaused} calm={backgroundCalm} />
       <Navbar />
       <main className={styles.contentArea}>
         <Suspense

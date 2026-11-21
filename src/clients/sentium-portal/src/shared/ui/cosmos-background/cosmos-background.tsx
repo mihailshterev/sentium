@@ -66,13 +66,15 @@ function Orrery() {
 interface CosmosBackgroundProps {
   /** Stops animating (keeps the last frame), e.g. while a page covers the background entirely. */
   paused?: boolean;
+  /** Hushes the field, for pages whose long-form text sits directly on it (e.g. the assistant chat). */
+  calm?: boolean;
 }
 
 /**
  * Deep-space backdrop behind the whole app: shader haze + stars, an isometric point grid and a celestial
  * coordinate chart. A static CSS composition from the same tokens covers WebGL-less environments.
  */
-export function CosmosBackground({ paused = false }: CosmosBackgroundProps) {
+export function CosmosBackground({ paused = false, calm = false }: CosmosBackgroundProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const runnerRef = useRef<ShaderRunner | null>(null);
 
@@ -109,7 +111,7 @@ export function CosmosBackground({ paused = false }: CosmosBackgroundProps) {
   }, [paused]);
 
   return (
-    <div className={styles.root} data-paused={paused || undefined} aria-hidden="true">
+    <div className={styles.root} data-paused={paused || undefined} data-calm={calm || undefined} aria-hidden="true">
       <div className={styles.fallback} />
       <canvas ref={canvasRef} className={styles.canvas} />
       <div className={styles.grid} />
@@ -120,6 +122,7 @@ export function CosmosBackground({ paused = false }: CosmosBackgroundProps) {
         <Orrery />
       </div>
       <div className={styles.vignette} />
+      <div className={styles.hush} />
     </div>
   );
 }
