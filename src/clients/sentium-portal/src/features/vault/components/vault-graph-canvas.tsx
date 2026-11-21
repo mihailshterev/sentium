@@ -10,6 +10,7 @@ import {
   type SimulationNodeDatum,
 } from "d3-force";
 import type { VaultGraph, VaultGraphNode } from "@/features/vault/types/vault";
+import { observeThemeChanges } from "@/shared/ui/state/theme-store";
 import { attachPanZoom, identityTransform, type ViewTransform } from "@/shared/utils/pan-zoom";
 import styles from "../vault.module.css";
 
@@ -56,8 +57,8 @@ export function VaultGraphCanvas({ graph, selectedId, onSelect }: VaultGraphCanv
     const nodes: SimNode[] = graph.nodes.map((n) => ({ ...n }));
     const links: SimLink[] = graph.edges.map((e) => ({ source: e.source, target: e.target }));
     const neighbours = buildNeighbours(graph);
-    const palette = readPalette(canvas);
-    const folderColour = colourByFolder(nodes, palette.hues);
+    let palette = readPalette(canvas);
+    let folderColour = colourByFolder(nodes, palette.hues);
 
     let transform: ViewTransform = identityTransform;
     let width = 0;
@@ -173,12 +174,18 @@ export function VaultGraphCanvas({ graph, selectedId, onSelect }: VaultGraphCanv
 
     const observer = new ResizeObserver(resize);
     observer.observe(canvas);
+    const stopObservingTheme = observeThemeChanges(() => {
+      palette = readPalette(canvas);
+      folderColour = colourByFolder(nodes, palette.hues);
+      draw();
+    });
     canvas.addEventListener("mousemove", onMove);
     canvas.addEventListener("click", onClick);
 
     return () => {
       simulation.stop();
       observer.disconnect();
+      stopObservingTheme();
       panZoom.detach();
       canvas.removeEventListener("mousemove", onMove);
       canvas.removeEventListener("click", onClick);
@@ -228,9 +235,9 @@ function readPalette(element: HTMLElement) {
 
   return {
     hues: HUES.map((name) => read(name, "#45c6da")),
-    accent: read("--accent", "#7fd8b4"),
-    edge: read("--border-strong", "rgba(200, 212, 235, 0.22)"),
-    text: read("--text-secondary", "#a4abbb"),
+    accent: read("--accent", "#e3b873"),
+    edge: read("--border-strong", "rgba(235, 222, 200, 0.22)"),
+    text: read("--text-secondary", "#b3aa9c"),
     font: read("--font-mono", "monospace"),
   };
 }

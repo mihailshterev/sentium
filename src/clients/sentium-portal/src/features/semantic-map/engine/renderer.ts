@@ -1,3 +1,4 @@
+import { readMapColors, type MapColors } from "./map-colors";
 import type { GraphNode, GraphLink, Particle, TraversalWave, CameraState } from "./types";
 
 const MIN_ZOOM = 0.15;
@@ -61,8 +62,9 @@ const STAR_RADIUS = 2;
 const STAR_TWINKLE_EVERY_FRAMES = 4;
 
 const LABEL_FONT = "'JetBrains Mono', ui-monospace, monospace";
-const LIGHT_LABEL_COLOR = 0x1b2233;
 const WHITE = 0xffffff;
+/** Share of stars drawn in the palette's star tint; the rest are white. */
+const TINTED_STAR_SHARE = 0.3;
 const LABEL_SHADOW_DISTANCE = 2;
 const LABEL_SHADOW_ANGLE = Math.PI / 6;
 
@@ -91,7 +93,7 @@ interface Star {
   v: number;
   radius: number;
   alpha: number;
-  color: number;
+  tinted: boolean;
 }
 
 interface GridZone {
@@ -237,6 +239,7 @@ export class UniverseRenderer {
   private camera: CameraState = { x: 0, y: 0, zoom: DEFAULT_ZOOM, targetX: 0, targetY: 0, targetZoom: DEFAULT_ZOOM };
 
   private isLight = false;
+  private colors: MapColors = readMapColors(false);
   private reducedMotion = false;
   /** Animation clock in 60fps-frame units, so motion speed does not depend on the display's refresh rate. */
   private time = 0;
@@ -260,6 +263,7 @@ export class UniverseRenderer {
     this.worldWidth = width;
     this.worldHeight = height;
     this.isLight = isLight;
+    this.colors = readMapColors(isLight);
     this.resetCamera(true);
 
     this.reducedMotion =
@@ -287,8 +291,10 @@ export class UniverseRenderer {
     this.frameHandle = requestAnimationFrame(this.tick);
   }
 
+  /** Call when the mode or the palette changed; re-reads the colours from the CSS tokens. */
   setTheme(isLight: boolean) {
     this.isLight = isLight;
+    this.colors = readMapColors(isLight);
     this.markLayoutDirty();
   }
 
@@ -628,7 +634,7 @@ export class UniverseRenderer {
   }
 
   private backgroundColor(): number {
-    return this.isLight ? 0xedf1f8 : 0x060a14;
+    return this.colors.background;
   }
 
   private glowSprite(color: number): HTMLCanvasElement {
@@ -663,7 +669,7 @@ export class UniverseRenderer {
           v: Math.random(),
           radius: STAR_RADIUS * (layer.scale + Math.random() * 0.3),
           alpha: layer.alpha + Math.random() * 0.15,
-          color: Math.random() > 0.7 ? 0x88ccff : WHITE,
+          tinted: Math.random() < TINTED_STAR_SHARE,
         });
       }
     }
@@ -803,14 +809,14 @@ export class UniverseRenderer {
 
   private drawStars(ctx: CanvasRenderingContext2D) {
     for (const star of this.stars) {
-      fillCircle(ctx, star.u * this.width, star.v * this.height, star.radius, rgba(star.color, 0.8 * star.alpha));
+      fillCircle(ctx, star.u * this.width, star.v * this.height, star.radius, rgba(star.tinted ? this.colors.star : WHITE, 0.8 * star.alpha));
     }
   }
 
   /** Only the grid lines and dots inside the view, each drawn as its own simple shape. */
   private drawGrid(ctx: CanvasRenderingContext2D) {
-    const lineColor = this.isLight ? 0xc8ccd8 : 0x0d1f3c;
-    const dotColor = this.isLight ? 0xa8aec0 : 0x1a3a6c;
+    const lineColor = this.colors.gridLine;
+    const dotColor = this.colors.gridDot;
     const view = this.view;
     const top = Math.max(-GRID_EXTENT, view.top);
     const bottom = Math.min(GRID_EXTENT, view.bottom);
@@ -864,8 +870,8 @@ export class UniverseRenderer {
     const cx = this.worldWidth / 2;
     const cy = this.worldHeight / 2;
     const blobs = [
-      { color: 0x061428, radius: 900, alpha: 0.9 },
-      { color: 0x0d2244, radius: 580, alpha: 0.55 },
+      { color: this.colors.nebulaOuter, radius: 900, alpha: 0.9 },
+      { color: this.colors.nebulaInner, radius: 580, alpha: 0.55 },
     ];
     for (const blob of blobs) {
       ctx.globalAlpha = blob.alpha;
@@ -882,7 +888,7 @@ export class UniverseRenderer {
 
   private drawEdges(ctx: CanvasRenderingContext2D) {
     if (this.plainEdges.length > 0) {
-      ctx.strokeStyle = rgba(this.isLight ? 0x9aa4b8 : 0x4a5568, this.hasSearchResults ? 0.22 : 0.32);
+      ctx.strokeStyle = rgba(this.colors.edge, this.hasSearchResults ? 0.22 : 0.32);
       ctx.lineWidth = 0.8;
       this.strokeCurves(ctx, this.plainEdges);
     }
@@ -1058,7 +1064,7 @@ export class UniverseRenderer {
         ctx.fillText(text, x + shadowX, y + shadowY);
       }
       ctx.globalAlpha = alpha;
-      ctx.fillStyle = this.isLight ? rgba(LIGHT_LABEL_COLOR) : node.colorStr;
+      ctx.fillStyle = this.isLight ? rgba(this.colors.label) : node.colorStr;
       ctx.fillText(text, x, y);
     }
     ctx.globalAlpha = 1;

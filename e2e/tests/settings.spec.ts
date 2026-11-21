@@ -54,4 +54,15 @@ test.describe("Settings", () => {
     await expect(settingsPage.section("MCP")).toBeVisible();
     await expect(settingsPage.section("Monitoring")).toBeVisible();
   });
+
+  test("switches the palette and keeps it after a reload", { tag: "@regression" }, async ({ settingsPage, page }) => {
+    await expect(settingsPage.section("Appearance")).toBeVisible();
+    await settingsPage.choosePalette("Forest");
+    await expect(page.locator("html")).toHaveAttribute("data-palette", "forest");
+
+    await page.reload();
+    await settingsPage.expectLoaded();
+    await expect(page.locator("html")).toHaveAttribute("data-palette", "forest");
+    await expect(page.getByRole("radio", { name: /Forest/ })).toBeChecked();
+  });
 });

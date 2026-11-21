@@ -1,8 +1,9 @@
 /*
  * Design tokens - "deep space / geometric data-viz".
- * Dark is the primary theme: near-black field, hairline wireframe panels, teal-green for action and focus,
- * cyan / purple / gold reserved for data. Light is a "blueprint" variant of the same system.
+ * Dark is the primary theme: warm charcoal field, hairline wireframe panels, brass for action and focus,
+ * cyan / purple / green reserved for data. Light is a warm "parchment blueprint" variant of the same system.
  * Derived tints use color-mix() against the base color, so they follow the active theme automatically.
+ * The values here are the default "warm charcoal" palette; palettes.css overrides them per `data-palette`.
  */
 :root {
   /* Typography */
@@ -86,12 +87,12 @@
 
   /* ---------- Color: dark (default) ---------- */
 
-  /* Action / focus: soft teal-green. --accent for text & icons, --accent-fill for solid fills. */
-  --accent: #7fd8b4;
-  --accent-rgb: 127, 216, 180;
-  --accent-fill: #7fd8b4;
-  --accent-fill-hover: #9be4c6;
-  --on-accent: #04110c;
+  /* Action / focus: brass. --accent for text & icons, --accent-fill for solid fills. */
+  --accent: #e3b873;
+  --accent-rgb: 227, 184, 115;
+  --accent-fill: #e3b873;
+  --accent-fill-hover: #edc98d;
+  --on-accent: #140d04;
 
   /* Gold and data hues */
   --gold: #d9ad5f;
@@ -109,27 +110,28 @@
   --accent-cyan-rgb: 69, 198, 218;
 
   /* Surfaces (legacy opaque fills - prefer materials) */
-  --bg-base: #05070c;
-  --bg-surface: #0a0e17;
-  --bg-elevated: #0f141f;
-  --bg-hover: rgba(200, 212, 235, 0.05);
-  --bg-dark: #03050a;
-  --terminal-bg: #070a12;
+  --bg-base: #0a0806;
+  --bg-surface: #12100d;
+  --bg-elevated: #1a1713;
+  --bg-hover: rgba(var(--ink-rgb), 0.05);
+  --bg-dark: #070504;
+  --terminal-bg: #0d0b08;
   --card-bg: var(--bg-surface);
   --bg-panel: var(--bg-surface);
 
-  /* Hairlines (wireframe) */
-  --border-subtle: rgba(200, 212, 235, 0.07);
-  --border-color: rgba(200, 212, 235, 0.12);
-  --border-strong: rgba(200, 212, 235, 0.22);
-  --tick-color: rgba(200, 212, 235, 0.42);
+  /* Hairlines (wireframe). --ink-rgb is the palette's neutral tint, used for every hairline and tint below. */
+  --ink-rgb: 235, 222, 200;
+  --border-subtle: rgba(var(--ink-rgb), 0.07);
+  --border-color: rgba(var(--ink-rgb), 0.12);
+  --border-strong: rgba(var(--ink-rgb), 0.22);
+  --tick-color: rgba(var(--ink-rgb), 0.42);
 
   /* Text */
-  --text-primary: #e9ecf2;
-  --text-secondary: #a4abbb;
+  --text-primary: #f0ebe3;
+  --text-secondary: #b3aa9c;
   /* Every step clears WCAG AA (4.5:1) on the panel surfaces; --text-dim is the floor for readable text. */
-  --text-muted: #8f97a9;
-  --text-dim: #737b8f;
+  --text-muted: #9c9385;
+  --text-dim: #8a8172;
 
   /*
    * Materials (see materials.css) - flat, near-opaque panels with hairline frames.
@@ -137,50 +139,56 @@
    * has to be recomputed for every panel each time the pixels behind it change. At these opacities the
    * blur was barely visible, but it was the single largest rendering cost in the app.
    */
-  --mat-thin-bg: rgba(200, 212, 235, 0.035);
-  --mat-thin-bg-hover: rgba(200, 212, 235, 0.07);
-  --mat-thin-border: rgba(200, 212, 235, 0.1);
+  --mat-thin-bg: rgba(var(--ink-rgb), 0.035);
+  --mat-thin-bg-hover: rgba(var(--ink-rgb), 0.07);
+  --mat-thin-border: rgba(var(--ink-rgb), 0.1);
 
-  --mat-regular-bg: rgba(8, 11, 19, 0.9);
-  --mat-regular-border: rgba(200, 212, 235, 0.12);
+  --mat-regular-bg: rgba(18, 15, 12, 0.9);
+  --mat-regular-border: rgba(var(--ink-rgb), 0.12);
   --mat-regular-filter: none;
   --mat-regular-shadow: 0 1px 0 rgba(255, 255, 255, 0.02) inset, 0 18px 40px -24px rgba(0, 0, 0, 0.8);
-  --mat-regular-opaque: #090c15;
+  --mat-regular-opaque: #110e0b;
 
-  --mat-thick-bg: rgba(6, 8, 14, 0.95);
-  --mat-thick-border: rgba(200, 212, 235, 0.14);
+  --mat-thick-bg: rgba(12, 10, 8, 0.95);
+  --mat-thick-border: rgba(var(--ink-rgb), 0.14);
   --mat-thick-filter: none;
   --mat-thick-shadow: 0 24px 60px -30px rgba(0, 0, 0, 0.9);
-  --mat-thick-opaque: #070a11;
+  --mat-thick-opaque: #0d0b08;
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
   --shadow-md: 0 10px 30px -12px rgba(0, 0, 0, 0.8);
   --shadow-lg: 0 30px 70px -24px rgba(0, 0, 0, 0.9);
 
   /* Background field (cosmos-background) */
-  --field-base: #04060b;
-  --field-1: #0b2a3a; /* teal haze */
-  --field-2: #1e1640; /* violet haze */
+  --field-base: #080604;
+  --field-1: #2a1a10; /* ember haze */
+  --field-2: #24131c; /* dusk-rose haze */
   --field-3: #2b2010; /* gold dust */
   --field-glint: #d9ad5f;
   --field-glint-strength: 0.5;
-  --field-line: rgba(200, 212, 235, 0.07);
-  --field-dot: rgba(200, 212, 235, 0.15);
-  --field-star: #dfe7ff;
+  --field-line: rgba(var(--ink-rgb), 0.07);
+  --field-dot: rgba(var(--ink-rgb), 0.15);
+  --field-star: #fff3df;
   --field-stars: 1;
   --grain-opacity: 0.06;
 
+  /* Code and terminal surfaces stay dark in both themes. */
+  --code-bg: #0d0b08;
+  --code-fg: #e6ded2;
+  --code-dim: #8a8172;
+  --code-ink-rgb: 230, 210, 180;
+
   /* Legacy one-offs, removed as pages migrate */
-  --texture-dot: rgba(200, 212, 235, 0.05);
+  --texture-dot: rgba(var(--ink-rgb), 0.05);
 }
 
-/* ---------- Color: light ("blueprint") ---------- */
+/* ---------- Color: light ("parchment blueprint") ---------- */
 :root[data-theme="light"] {
-  --accent: #157a59;
-  --accent-rgb: 21, 122, 89;
-  --accent-fill: #7fd8b4;
-  --accent-fill-hover: #6acda5;
-  --on-accent: #04110c;
+  --accent: #8a5a10;
+  --accent-rgb: 138, 90, 16;
+  --accent-fill: #e3b873;
+  --accent-fill-hover: #d9a85c;
+  --on-accent: #140d04;
 
   --gold: #8a6410;
   --accent-green: #17784a;
@@ -196,54 +204,56 @@
   --accent-cyan: #0f7389;
   --accent-cyan-rgb: 15, 115, 137;
 
-  --bg-base: #eef1f5;
-  --bg-surface: #f9fafc;
-  --bg-elevated: #f1f3f7;
-  --bg-hover: rgba(16, 24, 40, 0.045);
-  --bg-dark: #e6e9ef;
-  --terminal-bg: #f3f5f8;
+  --bg-base: #f3efe8;
+  --bg-surface: #fbf9f5;
+  --bg-elevated: #f4f0e9;
+  --bg-hover: rgba(var(--ink-rgb), 0.045);
+  --bg-dark: #ebe5db;
+  --terminal-bg: #f6f2ec;
 
-  --border-subtle: rgba(16, 24, 40, 0.07);
-  --border-color: rgba(16, 24, 40, 0.12);
-  --border-strong: rgba(16, 24, 40, 0.2);
-  --tick-color: rgba(16, 24, 40, 0.45);
+  --ink-rgb: 40, 28, 16;
 
-  --text-primary: #10141f;
-  --text-secondary: #454c5c;
-  --text-muted: #535a6b;
-  --text-dim: #687082;
+  --border-subtle: rgba(var(--ink-rgb), 0.07);
+  --border-color: rgba(var(--ink-rgb), 0.12);
+  --border-strong: rgba(var(--ink-rgb), 0.2);
+  --tick-color: rgba(var(--ink-rgb), 0.45);
 
-  --mat-thin-bg: rgba(16, 24, 40, 0.025);
-  --mat-thin-bg-hover: rgba(16, 24, 40, 0.05);
-  --mat-thin-border: rgba(16, 24, 40, 0.09);
+  --text-primary: #1a1510;
+  --text-secondary: #4b4338;
+  --text-muted: #574e42;
+  --text-dim: #6b6152;
 
-  --mat-regular-bg: rgba(250, 251, 253, 0.92);
-  --mat-regular-border: rgba(16, 24, 40, 0.12);
-  --mat-regular-shadow: 0 18px 40px -28px rgba(16, 24, 40, 0.25);
-  --mat-regular-opaque: #f9fafc;
+  --mat-thin-bg: rgba(var(--ink-rgb), 0.025);
+  --mat-thin-bg-hover: rgba(var(--ink-rgb), 0.05);
+  --mat-thin-border: rgba(var(--ink-rgb), 0.09);
 
-  --mat-thick-bg: rgba(252, 253, 254, 0.96);
-  --mat-thick-border: rgba(16, 24, 40, 0.14);
-  --mat-thick-shadow: 0 24px 60px -32px rgba(16, 24, 40, 0.3);
-  --mat-thick-opaque: #fcfdfe;
+  --mat-regular-bg: rgba(252, 250, 246, 0.92);
+  --mat-regular-border: rgba(var(--ink-rgb), 0.12);
+  --mat-regular-shadow: 0 18px 40px -28px rgba(var(--ink-rgb), 0.25);
+  --mat-regular-opaque: #fbf9f5;
 
-  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
-  --shadow-md: 0 10px 30px -14px rgba(16, 24, 40, 0.2);
-  --shadow-lg: 0 30px 70px -28px rgba(16, 24, 40, 0.3);
+  --mat-thick-bg: rgba(253, 252, 249, 0.96);
+  --mat-thick-border: rgba(var(--ink-rgb), 0.14);
+  --mat-thick-shadow: 0 24px 60px -32px rgba(var(--ink-rgb), 0.3);
+  --mat-thick-opaque: #fdfcf9;
 
-  --field-base: #eef1f5;
-  --field-1: #d3e6ec;
-  --field-2: #dfdaf1;
+  --shadow-sm: 0 1px 2px rgba(var(--ink-rgb), 0.06);
+  --shadow-md: 0 10px 30px -14px rgba(var(--ink-rgb), 0.2);
+  --shadow-lg: 0 30px 70px -28px rgba(var(--ink-rgb), 0.3);
+
+  --field-base: #f3efe8;
+  --field-1: #ecdcc8;
+  --field-2: #eedad6;
   --field-3: #efe4cc;
   --field-glint: #b98824;
   --field-glint-strength: 0.35;
-  --field-line: rgba(16, 24, 40, 0.06);
-  --field-dot: rgba(16, 24, 40, 0.13);
-  --field-star: #10141f;
+  --field-line: rgba(var(--ink-rgb), 0.06);
+  --field-dot: rgba(var(--ink-rgb), 0.13);
+  --field-star: #1a1510;
   --field-stars: 0;
   --grain-opacity: 0.05;
 
-  --texture-dot: rgba(16, 24, 40, 0.05);
+  --texture-dot: rgba(var(--ink-rgb), 0.05);
 }
 
 /* ---------- Derived tokens (theme-independent formulas) ---------- */

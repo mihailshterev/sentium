@@ -10,12 +10,12 @@
   overflow: hidden;
   border: 1px solid var(--mat-regular-border);
   border-radius: var(--radius-xl);
-  background: #060a14;
+  background: var(--bg-base);
   box-shadow: var(--mat-regular-shadow);
   color-scheme: dark;
 
-  --map-toolbar-bg: rgba(8, 12, 24, 0.94);
-  --map-panel-bg: rgba(9, 13, 26, 0.96);
+  --map-toolbar-bg: color-mix(in srgb, var(--bg-surface) 94%, transparent);
+  --map-panel-bg: color-mix(in srgb, var(--bg-surface) 96%, transparent);
   --map-panel-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.6);
   --map-icon: rgba(255, 255, 255, 0.58);
   --map-icon-hover: rgba(255, 255, 255, 0.92);
@@ -23,32 +23,31 @@
   --map-text-meta: rgba(255, 255, 255, 0.6);
   --map-search-bg: rgba(255, 255, 255, 0.05);
   --map-overlay-faint: rgba(255, 255, 255, 0.04);
-  --map-border-faint: rgba(148, 163, 184, 0.14);
-  --map-border-mid: rgba(148, 163, 184, 0.2);
+  --map-border-faint: rgba(var(--ink-rgb), 0.14);
+  --map-border-mid: rgba(var(--ink-rgb), 0.2);
   --map-score-track: rgba(255, 255, 255, 0.1);
-  --map-loading-bg: #060a14;
+  --map-loading-bg: var(--bg-base);
 
   display: flex;
   flex-direction: column;
   user-select: none;
 
   :global([data-theme="light"]) & {
-    background: #edf1f8;
     color-scheme: light;
 
-    --map-toolbar-bg: rgba(255, 255, 255, 0.96);
-    --map-panel-bg: rgba(255, 255, 255, 0.97);
-    --map-panel-shadow: 0 12px 32px -12px rgba(16, 24, 40, 0.28);
-    --map-icon: rgba(16, 24, 40, 0.6);
-    --map-icon-hover: rgba(16, 24, 40, 0.92);
-    --map-text-content: #2f3443;
-    --map-text-meta: #596072;
-    --map-search-bg: rgba(16, 24, 40, 0.03);
-    --map-overlay-faint: rgba(16, 24, 40, 0.025);
-    --map-border-faint: rgba(16, 24, 40, 0.08);
-    --map-border-mid: rgba(16, 24, 40, 0.12);
-    --map-score-track: rgba(16, 24, 40, 0.1);
-    --map-loading-bg: #edf1f8;
+    --map-toolbar-bg: color-mix(in srgb, var(--bg-surface) 96%, transparent);
+    --map-panel-bg: color-mix(in srgb, var(--bg-surface) 97%, transparent);
+    --map-panel-shadow: 0 12px 32px -12px rgba(var(--ink-rgb), 0.28);
+    --map-icon: rgba(var(--ink-rgb), 0.6);
+    --map-icon-hover: rgba(var(--ink-rgb), 0.92);
+    --map-text-content: var(--text-secondary);
+    --map-text-meta: var(--text-muted);
+    --map-search-bg: rgba(var(--ink-rgb), 0.03);
+    --map-overlay-faint: rgba(var(--ink-rgb), 0.025);
+    --map-border-faint: rgba(var(--ink-rgb), 0.08);
+    --map-border-mid: rgba(var(--ink-rgb), 0.12);
+    --map-score-track: rgba(var(--ink-rgb), 0.1);
+    --map-loading-bg: var(--bg-base);
   }
 }
 
@@ -70,12 +69,12 @@
   position: absolute;
   inset: 0;
   height: 160px;
-  background: linear-gradient(180deg, rgba(3, 5, 15, 0.85) 0%, rgba(3, 5, 15, 0.35) 45%, transparent 100%);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--bg-dark) 85%, transparent) 0%, color-mix(in srgb, var(--bg-dark) 35%, transparent) 45%, transparent 100%);
   pointer-events: none;
   z-index: 5;
 
   :global([data-theme="light"]) & {
-    background: linear-gradient(180deg, rgba(244, 245, 250, 0.92) 0%, rgba(244, 245, 250, 0.4) 45%, transparent 100%);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--bg-base) 92%, transparent) 0%, color-mix(in srgb, var(--bg-base) 40%, transparent) 45%, transparent 100%);
   }
 }
 
@@ -85,19 +84,19 @@
   right: 0;
   bottom: 0;
   height: 120px;
-  background: linear-gradient(0deg, rgba(3, 5, 15, 0.7) 0%, rgba(3, 5, 15, 0.25) 55%, transparent 100%);
+  background: linear-gradient(0deg, color-mix(in srgb, var(--bg-dark) 70%, transparent) 0%, color-mix(in srgb, var(--bg-dark) 25%, transparent) 55%, transparent 100%);
   pointer-events: none;
   z-index: 5;
 
   :global([data-theme="light"]) & {
-    background: linear-gradient(0deg, rgba(244, 245, 250, 0.75) 0%, rgba(244, 245, 250, 0.25) 55%, transparent 100%);
+    background: linear-gradient(0deg, color-mix(in srgb, var(--bg-base) 75%, transparent) 0%, color-mix(in srgb, var(--bg-base) 25%, transparent) 55%, transparent 100%);
   }
 }
 
 .vignette {
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at center, transparent 50%, rgba(3, 5, 15, 0.35) 78%, rgba(3, 5, 15, 0.65) 100%);
+  background: radial-gradient(ellipse at center, transparent 50%, color-mix(in srgb, var(--bg-dark) 35%, transparent) 78%, color-mix(in srgb, var(--bg-dark) 65%, transparent) 100%);
   pointer-events: none;
   z-index: 5;
 
@@ -105,8 +104,8 @@
     background: radial-gradient(
       ellipse at center,
       transparent 55%,
-      rgba(200, 205, 220, 0.18) 80%,
-      rgba(200, 205, 220, 0.35) 100%
+      rgba(var(--ink-rgb), 0.06) 80%,
+      rgba(var(--ink-rgb), 0.12) 100%
     );
   }
 }

@@ -17,6 +17,10 @@ export class SettingsPage {
     return this.page.getByRole("region", { name, exact: true });
   }
 
+  async choosePalette(label: string): Promise<void> {
+    await this.page.locator("label").filter({ hasText: label }).click();
+  }
+
   async toggleBuiltInHarness(): Promise<void> {
     await this.page.getByRole("switch", { name: "Built-in governance harness" }).click();
   }

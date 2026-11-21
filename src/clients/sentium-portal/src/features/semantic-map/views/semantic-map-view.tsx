@@ -64,6 +64,7 @@ export function SemanticMapView() {
   const hasSize = width > 0 && height > 0;
 
   const preference = useThemeStore((s) => s.preference);
+  const palette = useThemeStore((s) => s.palette);
   const isLight = resolveTheme(preference) === "light";
 
   const [rawNodes, setRawNodes] = useState<KnowledgeMapNode[]>([]);
@@ -158,7 +159,7 @@ export function SemanticMapView() {
 
   useEffect(() => {
     rendererRef.current?.setTheme(isLight);
-  }, [isLight]);
+  }, [isLight, palette]);
 
   useEffect(() => {
     const world = worldSizeRef.current;

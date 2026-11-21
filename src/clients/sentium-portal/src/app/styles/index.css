@@ -5,6 +5,7 @@
 @layer tokens, base, components, utilities;
 
 @import "./tokens.css" layer(tokens);
+@import "./palettes.css" layer(tokens);
 @import "./animations.css" layer(base);
 @import "./materials.css" layer(components);
 @import "./table.css" layer(components);
