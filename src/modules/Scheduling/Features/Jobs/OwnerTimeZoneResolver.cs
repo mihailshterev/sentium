@@ -1,6 +1,4 @@
-using Sentium.Core.Constants;
 using Sentium.Registry.Contracts;
-using Sentium.Registry.Contracts.Settings;
 
 namespace Sentium.Scheduling.Features.Jobs;
 
@@ -14,11 +12,7 @@ internal sealed class OwnerTimeZoneResolver(ISettingsService settings, ILogger<O
     {
         try
         {
-            var own = await settings.GetValueAsync<UserCalendarSettings>(SettingsKeys.UserCalendar, ownerId, ct);
-            var household = own?.TimeZone is null ? await settings.GetValueAsync<CalendarSettings>(SettingsKeys.Calendar, null, ct) : null;
-            var zoneId = own?.TimeZone ?? household?.TimeZone;
-
-            return zoneId is not null && TimeZoneInfo.TryFindSystemTimeZoneById(zoneId, out var zone) ? zone : TimeZoneInfo.Utc;
+            return (await settings.GetEffectiveCalendarAsync(ownerId, ct)).TimeZone;
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

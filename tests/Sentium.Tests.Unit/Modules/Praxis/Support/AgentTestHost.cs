@@ -18,6 +18,7 @@ using Sentium.Praxis.Features.Skills;
 using Sentium.Praxis.Features.Skills.BuiltIn;
 using Sentium.Praxis.Features.Tools;
 using Sentium.Praxis.Features.Workspaces;
+using Sentium.Registry.Contracts;
 using Sentium.Sentinel.Contracts;
 
 namespace Sentium.Tests.Unit.Modules.Praxis.Support;
@@ -34,6 +35,8 @@ internal sealed class AgentTestHost
     public IWorkspaceContextBuilder WorkspaceContext { get; } = Substitute.For<IWorkspaceContextBuilder>();
     public IAgentSkillRepository Skills { get; } = Substitute.For<IAgentSkillRepository>();
     public IRegistrySettingsService Settings { get; } = Substitute.For<IRegistrySettingsService>();
+    public ISettingsService CalendarSettings { get; } = Substitute.For<ISettingsService>();
+    public TimeProvider Clock { get; } = Substitute.For<TimeProvider>();
     public IPolicyDecisionPoint Pdp { get; } = Substitute.For<IPolicyDecisionPoint>();
     public PdpContextAccessor RunContext { get; } = new();
     public InferenceOptions Inference { get; } = new() { DefaultModel = "gemma-test" };
@@ -55,6 +58,7 @@ internal sealed class AgentTestHost
         Learnings.RecallRelevantAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<int>(), Arg.Any<CancellationToken>())
             .Returns(Array.Empty<RecalledLearning>());
         ContextWindows.GetContextWindowAsync(Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(8192);
+        Clock.GetUtcNow().Returns(new DateTimeOffset(2026, 11, 22, 12, 0, 0, TimeSpan.Zero));
         AllowAllTools();
     }
 
@@ -100,6 +104,7 @@ internal sealed class AgentTestHost
             new BuiltInAgentService([new GeneralAssistant(), new ResearchAnalyst()], ToolOverrides),
             Settings,
             new AgentSkillsProviderFactory(new BuiltInSkillCatalog(), Skills, RunContext, NullLoggerFactory.Instance),
+            new CurrentDateContextProvider(CalendarSettings, RunContext, Clock, NullLogger<CurrentDateContextProvider>.Instance),
             new LearningsContextProvider(Learnings, RunContext),
             new WorkspaceContextProviderFactory(WorkspaceContext, RunContext),
             new SentinelFunctionMiddleware(Pdp, RunContext, NullLogger<SentinelFunctionMiddleware>.Instance),

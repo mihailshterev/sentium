@@ -18,7 +18,7 @@ namespace Sentium.Praxis.Features.Agents.Runtime;
 /// invocation and context-window compaction (see <see cref="AgentChatPipeline"/>). Everything else that varies per agent
 /// is expressed through native Agent Framework / Microsoft.Extensions.AI options: the model via
 /// <see cref="ChatOptions.ModelId"/>, the composed instructions via <see cref="ChatOptions.Instructions"/> (one system
-/// message), skills / learnings / workspace files via <see cref="ChatClientAgentOptions.AIContextProviders"/>, and the Sentinel tool guard
+/// message), skills / current date / learnings / workspace files via <see cref="ChatClientAgentOptions.AIContextProviders"/>, and the Sentinel tool guard
 /// as function-calling middleware.
 /// </summary>
 internal sealed class CompositeAgentFactory(
@@ -31,6 +31,7 @@ internal sealed class CompositeAgentFactory(
     IBuiltInAgentService builtInAgents,
     IRegistrySettingsService registrySettingsService,
     AgentSkillsProviderFactory skillsProviderFactory,
+    CurrentDateContextProvider currentDateProvider,
     LearningsContextProvider learningsProvider,
     WorkspaceContextProviderFactory workspaceContextFactory,
     SentinelFunctionMiddleware sentinelMiddleware,
@@ -64,7 +65,16 @@ internal sealed class CompositeAgentFactory(
             Description = blueprint.Definition.Description,
             ChatOptions = chatOptions,
             ChatHistoryProvider = chatHistory,
-            AIContextProviders = [skillsProviderFactory.Create(), learningsProvider, workspaceContextFactory.Create(blueprint.ContextWindow)],
+
+            // Most stable first, so llama-server's prompt cache keeps the longest prefix: the date changes daily,
+            // learnings and workspace context per message.
+            AIContextProviders =
+            [
+                skillsProviderFactory.Create(),
+                currentDateProvider,
+                learningsProvider,
+                workspaceContextFactory.Create(blueprint.ContextWindow),
+            ],
         };
 
         var chatClient = AgentChatPipeline.Build(baseChatClient, blueprint.ContextWindow, loggerFactory, serviceProvider);
