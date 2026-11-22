@@ -2,7 +2,7 @@
   position: relative;
   z-index: var(--z-header);
   flex-shrink: 0;
-  min-height: var(--header-h, 124px);
+  min-height: var(--header-h, 96px);
   padding: 0 var(--shell-gap);
   /* Inside Page the header overlaps the scroll area; let wheel/clicks through its empty space. */
   pointer-events: none;
@@ -20,7 +20,7 @@
   display: flex;
   flex-direction: column;
   margin: 0 auto;
-  padding: 14px calc(var(--page-pad-x) - var(--shell-gap)) 16px;
+  padding: 18px calc(var(--page-pad-x) - var(--shell-gap)) 16px;
   border: 1px solid transparent;
   border-radius: var(--radius-xl);
   transition:
@@ -44,53 +44,6 @@
   background: var(--mat-thick-bg);
   box-shadow: var(--mat-thick-shadow);
   backdrop-filter: var(--mat-thick-filter);
-}
-
-/* ---------- Eyebrow row ---------- */
-
-.eyebrowRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-4);
-  max-height: 20px;
-  margin-bottom: 12px;
-  overflow: hidden;
-  color: var(--text-dim);
-  font-family: var(--font-mono);
-  font-size: var(--text-2xs);
-  letter-spacing: var(--tracking-label);
-  white-space: nowrap;
-  transition:
-    max-height var(--dur-base) var(--ease-out),
-    margin var(--dur-base) var(--ease-out),
-    opacity var(--dur-base) var(--ease-out);
-}
-
-.header[data-scrolled] .eyebrowRow {
-  max-height: 0;
-  margin-bottom: 0;
-  opacity: 0;
-}
-
-.eyebrow {
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.readout {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  font-variant-numeric: tabular-nums;
-}
-
-.readoutDot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 8px var(--accent-glow);
 }
 
 /* ---------- Title row ---------- */

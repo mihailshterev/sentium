@@ -1,9 +1,10 @@
-/* Shared tone colors for dots, meters and values (data-tone="ok|warn|critical|neutral|unknown"). */
+/* Shared tone colours (data-tone="ok|warn|critical|neutral"). */
 .root [data-tone="ok"] {
   --tone: var(--success);
 }
 
-.root [data-tone="warn"] {
+.root [data-tone="warn"],
+.root [data-tone="warning"] {
   --tone: var(--warning);
 }
 
@@ -11,180 +12,261 @@
   --tone: var(--danger);
 }
 
-.root [data-tone="neutral"],
-.root [data-tone="unknown"] {
+.root [data-tone="neutral"] {
   --tone: var(--text-muted);
 }
 
-/* ---------- Hero: copy, actions and stats on the left; the system map on the right ---------- */
+/* ---------- Status strip ---------- */
 
-.hero {
-  display: grid;
-  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
-  gap: var(--space-7);
-  align-items: center;
-}
-
-.heroText {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-5);
-  min-width: 0;
-
-  & > :last-child {
-    align-self: stretch;
-    margin-top: var(--space-3);
-  }
-}
-
-.lead {
-  max-width: 22ch;
-  margin: 0;
-  color: var(--text-primary);
-  font-family: var(--font-display);
-  font-size: var(--text-3xl);
-  font-weight: var(--fw-regular);
-  letter-spacing: var(--tracking-tight);
-  line-height: 1.12;
-  text-wrap: balance;
-}
-
-.leadMuted {
-  color: var(--text-muted);
-}
-
-.heroBody {
-  max-width: 52ch;
-  margin: 0;
-  color: var(--text-secondary);
-  font-size: var(--text-md);
-  line-height: 1.6;
-}
-
-.heroActions {
+.statusStrip {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-3);
-}
-
-.heroMap {
-  min-width: 0;
-}
-
-@media (max-width: 1180px) {
-  .hero {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .heroMap {
-    max-width: 760px;
-  }
-}
-
-/* ---------- Vitals ---------- */
-
-.vitals {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-}
-
-.vital {
-  display: flex;
   align-items: center;
-  gap: var(--space-3);
-  min-width: 0;
-  padding: var(--space-4) var(--space-5);
-
-  & + & {
-    border-left: 1px solid var(--border-subtle);
-  }
+  gap: var(--space-2) var(--space-3);
+  margin-bottom: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid color-mix(in srgb, var(--tone) 45%, transparent);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--tone) 8%, transparent);
 }
 
-.vitalIcon {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
+.statusDot {
+  width: 8px;
+  height: 8px;
   flex-shrink: 0;
-  border-radius: var(--radius-sm);
-  background: var(--mat-thin-bg);
-  color: var(--text-secondary);
-
-  & svg {
-    width: 16px;
-    height: 16px;
-  }
+  border-radius: 50%;
+  background: var(--tone);
 }
 
-.vitalText {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  min-width: 0;
-}
-
-.vitalValue {
+.statusText {
   color: var(--text-primary);
-  font-size: var(--text-md);
+  font-size: var(--text-sm);
   font-weight: var(--fw-semibold);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
 }
 
-.vitalLabel {
-  color: var(--text-muted);
-  font-size: var(--text-xs);
-  white-space: nowrap;
-}
-
-.meter {
-  flex: 1;
-  min-width: 48px;
-  max-width: 120px;
-  height: 4px;
+.statusFacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-4);
   margin-left: auto;
-  overflow: hidden;
-  border-radius: var(--radius-full);
-  background: var(--mat-thin-bg-hover);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
 }
 
-.meterFill {
-  height: 100%;
-  border-radius: inherit;
-  background: var(--accent);
-  transition: width var(--dur-slow) var(--ease-out);
+/* ---------- Grids ---------- */
 
-  &[data-tone="warn"],
-  &[data-tone="critical"] {
-    background: var(--tone);
-  }
-}
-
-/* ---------- Main grid ---------- */
-
-.mainGrid {
+.topGrid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: var(--space-4);
+  align-items: start;
+  margin-bottom: var(--space-4);
+}
+
+.bottomGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr);
   gap: var(--space-4);
   align-items: start;
 }
 
-.sideColumn {
+@media (max-width: 1180px) {
+  .topGrid,
+  .bottomGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---------- Panel rows ---------- */
+
+.headerLink,
+.panelFooterLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--accent);
+  font-size: var(--text-sm);
+  text-decoration: none;
+  border-radius: var(--radius-sm);
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+  }
+}
+
+.panelFooterLink {
+  margin: 0 var(--space-5) var(--space-4);
+}
+
+.listSkeleton {
   display: flex;
   flex-direction: column;
-  gap: var(--space-4);
+  gap: var(--space-2);
+  padding: 0 var(--space-5) var(--space-4);
+}
+
+.rowList {
+  margin: 0;
+  padding: 0 0 var(--space-2);
+  list-style: none;
+}
+
+.attentionRow,
+.continueRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: 48px;
+  padding: var(--space-2) var(--space-4) var(--space-2) var(--space-5);
+  border-top: 1px solid var(--border-subtle);
+  color: inherit;
+  text-decoration: none;
+  transition: background-color var(--transition-fast);
+
+  &:hover {
+    background: var(--bg-hover);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: inset var(--focus-ring);
+  }
+}
+
+.toneBar {
+  align-self: stretch;
+  width: 3px;
+  flex-shrink: 0;
+  border-radius: 2px;
+  background: var(--tone);
+}
+
+.rowIcon {
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.rowBody {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
   min-width: 0;
 }
 
-@media (max-width: 1180px) {
-  .mainGrid {
-    grid-template-columns: minmax(0, 1fr);
+.rowTitle,
+.rowDetail {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rowTitle {
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+}
+
+.rowDetail {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+.rowMeta {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.rowArrow {
+  flex-shrink: 0;
+  color: var(--text-dim);
+  transition: color var(--transition-fast);
+}
+
+.attentionRow:hover .rowArrow {
+  color: var(--accent);
+}
+
+/* ---------- KPIs ---------- */
+
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.kpi {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--mat-regular-border);
+  border-radius: var(--radius-lg);
+  background: var(--mat-regular-bg);
+  box-shadow: var(--mat-regular-shadow);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color var(--transition-fast);
+
+  &:hover {
+    border-color: var(--border-strong);
   }
 
-  .vital + .vital {
-    border-left: none;
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
   }
+
+  &[data-warn] {
+    border-color: color-mix(in srgb, var(--warning) 50%, transparent);
+  }
+}
+
+.kpiLabel {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-label);
+  text-transform: uppercase;
+}
+
+.kpiValue {
+  color: var(--text-primary);
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-variant-numeric: tabular-nums;
+  line-height: var(--leading-tight);
+}
+
+.kpi[data-warn] .kpiValue {
+  color: var(--warning);
+}
+
+.kpiContext {
+  min-height: 1lh;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+}
+
+/* ---------- Topology ---------- */
+
+.mapCard {
+  overflow: hidden;
+}
+
+.map {
+  max-height: 360px;
+  padding: 0 var(--space-4) var(--space-4);
 }
 
 /* ---------- Runs feed ---------- */
@@ -249,183 +331,4 @@
 
 .runSkeletonTime {
   justify-self: end;
-}
-
-/* ---------- Service health ---------- */
-
-.healthList {
-  margin: 0;
-  padding: 0 0 var(--space-2);
-  list-style: none;
-}
-
-.healthRow {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-  height: 40px;
-  padding: 0 var(--space-5);
-  border-top: 1px solid var(--border-subtle);
-}
-
-.healthDot {
-  width: 8px;
-  height: 8px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: var(--tone);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tone) 18%, transparent);
-}
-
-.healthName {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  color: var(--text-primary);
-  font-size: var(--text-sm);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.healthStatus {
-  color: var(--tone);
-  font-size: var(--text-xs);
-  font-weight: var(--fw-medium);
-}
-
-.latency {
-  min-width: 52px;
-  color: var(--text-muted);
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  text-align: right;
-}
-
-.healthSkeletonEnd {
-  margin-left: auto;
-}
-
-/* ---------- Security ---------- */
-
-.auditCounts {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--space-2);
-  margin: 0 0 var(--space-5);
-}
-
-.auditCount {
-  display: flex;
-  flex-direction: column-reverse;
-  gap: 2px;
-}
-
-.auditValue {
-  margin: 0;
-  color: var(--tone);
-  font-size: var(--text-xl);
-  font-weight: var(--fw-semibold);
-  letter-spacing: -0.01em;
-  font-variant-numeric: tabular-nums;
-
-  &[data-tone="neutral"] {
-    color: var(--text-primary);
-  }
-}
-
-.auditLabel {
-  color: var(--text-muted);
-  font-size: var(--text-xs);
-}
-
-.riskBlock {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
-}
-
-.riskBar {
-  display: flex;
-  gap: 2px;
-  height: 8px;
-  overflow: hidden;
-  border-radius: var(--radius-full);
-  background: var(--mat-thin-bg-hover);
-}
-
-.root [data-tone="low"] {
-  --tone: var(--success);
-}
-
-.root [data-tone="medium"] {
-  --tone: var(--accent);
-}
-
-.root [data-tone="high"] {
-  --tone: var(--warning);
-}
-
-.riskSegment {
-  min-width: 4px;
-  background: var(--tone);
-
-  &[data-tone="critical"] {
-    background: var(--danger);
-  }
-}
-
-.riskLegend {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 6px var(--space-4);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.riskLegendItem {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  color: var(--text-secondary);
-  font-size: var(--text-xs);
-}
-
-.riskSwatch {
-  width: 8px;
-  height: 8px;
-  flex-shrink: 0;
-  border-radius: 2px;
-  background: var(--tone);
-}
-
-.riskLegendValue {
-  margin-left: auto;
-  color: var(--text-primary);
-  font-variant-numeric: tabular-nums;
-}
-
-.alignmentRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: var(--space-5);
-  padding-top: var(--space-4);
-  border-top: 1px solid var(--border-subtle);
-}
-
-.alignmentLabel {
-  color: var(--text-secondary);
-  font-size: var(--text-sm);
-}
-
-.alignmentScore {
-  color: var(--tone);
-  font-size: var(--text-md);
-  font-weight: var(--fw-semibold);
-  font-variant-numeric: tabular-nums;
-}
-
-.auditButton {
-  margin-top: var(--space-5);
 }

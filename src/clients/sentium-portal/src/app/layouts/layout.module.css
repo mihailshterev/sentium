@@ -11,9 +11,26 @@
   overflow: hidden;
 }
 
-.contentArea {
+/* Top bar above the routed page. */
+.column {
   position: relative;
   z-index: var(--z-base);
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--shell-gap);
+}
+
+/*
+ * Its own stacking context, so a page's sticky header or raised controls can never paint over the top bar's menus
+ * (the page header uses the same --z-header as the top bar and comes later in the DOM).
+ */
+.contentArea {
+  position: relative;
+  z-index: 0;
+  isolation: isolate;
   flex: 1;
   min-width: 0;
   min-height: 0;

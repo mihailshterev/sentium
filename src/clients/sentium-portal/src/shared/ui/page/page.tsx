@@ -7,8 +7,6 @@ export type PageWidth = "default" | "wide" | "full";
 interface PageProps {
   title: string;
   subtitle?: React.ReactNode;
-  /** Mono path label above the title. */
-  eyebrow?: string;
   icon?: React.ReactNode;
   /** Interactive element before the title, e.g. a back button. */
   leading?: React.ReactNode;
@@ -29,7 +27,6 @@ interface PageProps {
 export function Page({
   title,
   subtitle,
-  eyebrow,
   icon,
   leading,
   actions,
@@ -46,7 +43,6 @@ export function Page({
       <PageHeader
         title={title}
         subtitle={subtitle}
-        eyebrow={eyebrow}
         icon={icon}
         leading={leading}
         right={actions}

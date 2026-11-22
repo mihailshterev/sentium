@@ -23,16 +23,18 @@ const setUser = (roles: string[], overrides: Partial<{ name: string }> = {}) => 
   });
 };
 
-const renderNav = () => {
+const renderNav = (path = "/") => {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={[path]}>
         <Navbar />
       </MemoryRouter>
     </QueryClientProvider>,
   );
 };
+
+const linkTo = (href: string) => screen.queryAllByRole("link").find((l) => l.getAttribute("href") === href);
 
 beforeEach(() => {
   vi.stubGlobal(
@@ -45,7 +47,7 @@ beforeEach(() => {
     }),
   );
   useAuthStore.setState({ user: null, status: AUTH_STATUS.UNAUTHENTICATED });
-  useUiStore.setState({ sidebarCollapsed: false });
+  useUiStore.setState({ sidebarCollapsed: false, collapsedNavGroups: [] });
 });
 
 describe("Navbar brand", () => {
@@ -68,162 +70,72 @@ describe("Navbar brand", () => {
   });
 });
 
-describe("Navbar user display", () => {
-  it("shows the user name", () => {
-    setUser([], { name: "Alice Smith" });
-    renderNav();
-    expect(screen.getByText("Alice Smith")).toBeInTheDocument();
-  });
-
-  it("shows the username as the name", () => {
-    setUser([], { name: "alice" });
-    renderNav();
-    expect(screen.getByText("alice")).toBeInTheDocument();
-  });
-
-  it("renders the display span when name is blank", () => {
-    setUser([], { name: "   " });
-    renderNav();
-    const displaySpan = document.querySelector(".userDisplayName");
-    expect(displaySpan).toBeInTheDocument();
-  });
-});
-
-describe("Navbar role badge", () => {
-  it("renders Sovereign role badge for Sovereign users", () => {
-    setUser(["Sovereign"]);
-    renderNav();
-    expect(screen.getByText("Sovereign")).toBeInTheDocument();
-  });
-
-  it("renders Member role badge for Member users", () => {
-    setUser(["Member"]);
-    renderNav();
-    expect(screen.getByText("Member")).toBeInTheDocument();
-  });
-
-  it("renders no role badge when user has no recognised roles", () => {
-    setUser([]);
-    renderNav();
-    expect(screen.queryByText(/^(Sovereign|Member)$/)).not.toBeInTheDocument();
-  });
-});
-
 describe("Navbar navigation links", () => {
-  it("shows Dashboard link for all users", () => {
+  it("starts with Home", () => {
     setUser(["Member"]);
     renderNav();
-    expect(screen.getByRole("link", { name: /dashboard/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Home" })).toHaveAttribute("href", "/");
   });
 
-  it("shows Assistant link", () => {
+  it.each([
+    ["Assistant", "/assistant"],
+    ["Orchestration", "/orchestration"],
+    ["Workflows", "/workflows"],
+    ["Agents", "/agents"],
+    ["Models", "/models"],
+    ["Inventory", "/inventory"],
+    ["Vigil", "/vigil"],
+    ["System", "/system"],
+  ])("links to %s", (name, href) => {
     setUser(["Member"]);
     renderNav();
-    expect(screen.getByRole("link", { name: /assistant/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name })).toHaveAttribute("href", href);
   });
 
-  it("shows Orchestration link", () => {
+  it("groups links by what the user is doing", () => {
     setUser(["Member"]);
     renderNav();
-    expect(screen.getByRole("link", { name: /orchestration/i })).toBeInTheDocument();
+    for (const group of ["Work", "Knowledge", "Build", "Operate"]) {
+      expect(screen.getByRole("button", { name: group })).toHaveAttribute("aria-expanded", "true");
+    }
   });
 
-  it("shows Workflows link", () => {
-    setUser(["Member"]);
-    renderNav();
-    expect(screen.getByRole("link", { name: /workflows/i })).toBeInTheDocument();
-  });
-
-  it("shows Agents link", () => {
-    setUser(["Member"]);
-    renderNav();
-    expect(screen.getByRole("link", { name: /^agents$/i })).toBeInTheDocument();
-  });
-
-  it("shows Models link", () => {
-    setUser(["Member"]);
-    renderNav();
-    expect(screen.getByRole("link", { name: /models/i })).toBeInTheDocument();
-  });
-
-  it("shows System link", () => {
-    setUser(["Member"]);
-    renderNav();
-    expect(screen.getByRole("link", { name: /system/i })).toBeInTheDocument();
-  });
-
-  it("shows Settings link", () => {
-    setUser(["Member"]);
-    renderNav();
-    expect(screen.getByRole("link", { name: /settings/i })).toBeInTheDocument();
-  });
-
-  it("shows Inventory link", () => {
-    setUser(["Member"]);
-    renderNav();
-    expect(screen.getByRole("link", { name: /inventory/i })).toHaveAttribute("href", "/inventory");
-  });
-
-  it("shows Vigil link", () => {
-    setUser(["Member"]);
-    renderNav();
-    expect(screen.getByRole("link", { name: /vigil/i })).toBeInTheDocument();
-  });
-});
-
-describe("Navbar sovereign-only links", () => {
-  it("shows Users link for Sovereign users", () => {
+  it("leaves account pages to the account menu", () => {
     setUser(["Sovereign"]);
     renderNav();
-    const links = screen.getAllByRole("link");
-    const usersLink = links.find((l) => l.getAttribute("href") === "/users");
-    expect(usersLink).toBeInTheDocument();
+    expect(linkTo("/settings")).toBeUndefined();
+    expect(linkTo("/users")).toBeUndefined();
+    expect(linkTo("/profile")).toBeUndefined();
   });
 
-  it("hides Users link for Member users", () => {
+  it("shows MCP Servers to Sovereigns only", () => {
     setUser(["Member"]);
-    renderNav();
-    const links = screen.getAllByRole("link");
-    const usersLink = links.find((l) => l.getAttribute("href") === "/users");
-    expect(usersLink).toBeUndefined();
-  });
+    const { unmount } = renderNav();
+    expect(linkTo("/mcp")).toBeUndefined();
+    unmount();
 
-  it("hides Users link for users without the Sovereign role", () => {
-    setUser([]);
+    setUser(["Sovereign"]);
     renderNav();
-    const links = screen.getAllByRole("link");
-    const usersLink = links.find((l) => l.getAttribute("href") === "/users");
-    expect(usersLink).toBeUndefined();
+    expect(linkTo("/mcp")).toBeDefined();
   });
 });
 
-describe("Navbar logout", () => {
-  it("renders a Log out button", () => {
-    setUser(["Member"]);
+describe("Navbar groups", () => {
+  it("folds a group away and remembers it", async () => {
+    setUser([]);
     renderNav();
-    expect(screen.getByRole("button", { name: /log out/i })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Build" }));
+    expect(screen.getByRole("button", { name: "Build" })).toHaveAttribute("aria-expanded", "false");
+    expect(linkTo("/agents")).toBeUndefined();
+    expect(useUiStore.getState().collapsedNavGroups).toEqual(["build"]);
   });
 
-  it("calls logout from auth store when Log out is clicked", async () => {
-    const logoutSpy = vi.fn();
-    useAuthStore.setState({
-      user: { sub: "u1", name: "User", roles: ["Member"] },
-      status: AUTH_STATUS.AUTHENTICATED,
-      logout: logoutSpy as unknown as () => Promise<void>,
-    });
-
-    renderNav();
-    await userEvent.click(screen.getByRole("button", { name: /log out/i }));
-    expect(logoutSpy).toHaveBeenCalledOnce();
-  });
-
-  it("shows the username as displayName", () => {
-    useAuthStore.setState({
-      user: { sub: "u1", name: "user", roles: ["Member"] },
-      status: AUTH_STATUS.AUTHENTICATED,
-    });
-    renderNav();
-    expect(screen.getByText("user")).toBeInTheDocument();
+  it("keeps the group of the current page open", () => {
+    useUiStore.setState({ collapsedNavGroups: ["build"] });
+    setUser([]);
+    renderNav("/agents/123");
+    expect(screen.getByRole("button", { name: "Build" })).toHaveAttribute("aria-expanded", "true");
+    expect(linkTo("/agents")).toBeDefined();
   });
 });
 
@@ -244,10 +156,11 @@ describe("Navbar collapse", () => {
     expect(useUiStore.getState().sidebarCollapsed).toBe(true);
   });
 
-  it("keeps link names accessible while collapsed", () => {
-    useUiStore.setState({ sidebarCollapsed: true });
+  it("lists every link in the rail, even from folded groups", () => {
+    useUiStore.setState({ sidebarCollapsed: true, collapsedNavGroups: ["build"] });
     setUser([]);
     renderNav();
-    expect(screen.getByRole("link", { name: /dashboard/i })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Home" })).toBeInTheDocument();
+    expect(linkTo("/agents")).toBeDefined();
   });
 });

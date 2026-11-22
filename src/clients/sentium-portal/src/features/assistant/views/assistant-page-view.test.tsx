@@ -134,10 +134,10 @@ describe("Assistant page", () => {
     );
   });
 
-  it("creates a new conversation via Ctrl+K", async () => {
+  it("creates a new conversation via Ctrl+Shift+O", async () => {
     renderPage();
     const textarea = screen.getByPlaceholderText("Ask Sentium Assistant...");
-    fireEvent.keyDown(textarea, { key: "k", ctrlKey: true });
+    fireEvent.keyDown(textarea, { key: "O", ctrlKey: true, shiftKey: true });
     await waitFor(() => expect(createConversation).toHaveBeenCalled());
   });
 

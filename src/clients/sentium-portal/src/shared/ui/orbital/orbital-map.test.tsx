@@ -16,7 +16,7 @@ describe("OrbitalMap", () => {
     expect(container.querySelectorAll("[data-lattice] line")).toHaveLength(64);
   });
 
-  it("labels every node except the focused one, which the readout names", () => {
+  it("names the focused node in the readout, keeping its plain label for small maps only", () => {
     render(
       <OrbitalMap
         aria-label="Map"
@@ -27,8 +27,8 @@ describe("OrbitalMap", () => {
         meta="2 svc"
       />,
     );
-    expect(screen.queryByText("svc-one")).toBeNull();
-    expect(screen.getByText("svc-two")).toBeInTheDocument();
+    expect(screen.getByText("svc-one").className).toContain("focusLabel");
+    expect(screen.getByText("svc-two").className).not.toContain("focusLabel");
     expect(screen.getByText("a01")).toBeInTheDocument();
     expect(screen.getByText("focus-node")).toBeInTheDocument();
     expect(screen.getByText("fig.01")).toBeInTheDocument();
@@ -45,7 +45,7 @@ describe("OrbitalMap", () => {
     const { container } = render(
       <OrbitalMap aria-label="Map" bare inner={inner} readout={[{ label: "node", value: "agent" }]} />,
     );
-    expect(screen.queryByText("a01")).toBeNull();
+    expect(screen.getByText("a01").className).toContain("focusLabel");
     expect(screen.getByText("agent")).toBeInTheDocument();
     expect(container.querySelector("figure")?.className).toContain("bare");
   });

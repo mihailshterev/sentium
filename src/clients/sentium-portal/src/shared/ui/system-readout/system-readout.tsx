@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import styles from "./page-header.module.css";
+import styles from "./system-readout.module.css";
 
 const formatLocal = (date: Date) =>
   date.toLocaleTimeString([], {

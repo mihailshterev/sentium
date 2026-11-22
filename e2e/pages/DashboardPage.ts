@@ -9,7 +9,7 @@ export class DashboardPage {
   }
 
   async expectLoaded(): Promise<void> {
-    await expect(this.page.getByRole("heading", { name: "Control Center" })).toBeVisible();
+    await expect(this.page.getByRole("heading", { name: "Home", exact: true })).toBeVisible();
   }
 
   async expectStatCard(label: string): Promise<void> {
