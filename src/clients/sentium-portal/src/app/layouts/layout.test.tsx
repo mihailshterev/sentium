@@ -23,7 +23,7 @@ beforeEach(() => {
 });
 
 describe("Layout", () => {
-  it("renders the navbar and the routed outlet child", () => {
+  it("renders the sidebar, the top bar and the routed outlet child", () => {
     const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(
       <QueryClientProvider client={qc}>
@@ -37,7 +37,9 @@ describe("Layout", () => {
       </QueryClientProvider>,
     );
 
-    expect(screen.getByText("Sentium")).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "Main navigation" })).toBeInTheDocument();
+    expect(screen.getByRole("navigation", { name: "Breadcrumb" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Search or jump to" })).toBeInTheDocument();
     expect(screen.getByText("child page")).toBeInTheDocument();
     expect(screen.getByRole("main")).toBeInTheDocument();
   });

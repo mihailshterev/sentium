@@ -10,3 +10,8 @@ export const isImeComposing = (event: KeyboardEvent | { nativeEvent: KeyboardEve
   const native = "nativeEvent" in event ? event.nativeEvent : event;
   return native.isComposing || native.keyCode === IME_PROCESS_KEY_CODE;
 };
+
+/** True when a key event comes from a text field, so global shortcuts leave typing alone. */
+export const isEditableTarget = (target: EventTarget | null): boolean =>
+  target instanceof HTMLElement &&
+  (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName));

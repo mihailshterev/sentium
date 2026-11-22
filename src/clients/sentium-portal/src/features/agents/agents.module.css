@@ -130,6 +130,13 @@
   opacity: 1;
 }
 
+/* Without hover (touch screens) the actions would stay faded for good. */
+@media (hover: none) {
+  .rowActions {
+    opacity: 1;
+  }
+}
+
 .deleteButton:hover:not(:disabled) {
   background: var(--danger-soft);
   color: var(--danger);

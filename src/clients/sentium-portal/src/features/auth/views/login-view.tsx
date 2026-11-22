@@ -3,7 +3,7 @@ import { AuthForm } from "../components/auth-form/auth-form";
 import { CosmosBackground } from "@/shared/ui/cosmos-background";
 import { OrbitalMap, type OrbitalNode } from "@/shared/ui/orbital";
 import { SentiumMark } from "@/shared/ui/sentium-mark";
-import { SystemReadout } from "@/shared/ui/page-header";
+import { SystemReadout } from "@/shared/ui/system-readout";
 
 /** The platform's modules, drawn around the orb as a quiet map of what sits behind the sign-in. */
 const MODULES: OrbitalNode[] = [

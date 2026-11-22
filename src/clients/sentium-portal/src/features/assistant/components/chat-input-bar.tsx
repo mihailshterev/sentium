@@ -46,7 +46,7 @@ export function ChatInputBar({
   onSetModel,
   textareaRef,
   placeholder = "Ask Sentium Assistant...",
-  hint = "Enter: Send · Shift+Enter: New line · Ctrl+K: New chat",
+  hint = "Enter: Send · Shift+Enter: New line · Ctrl+Shift+O: New chat",
   voiceSlot,
   leadingSlot,
   attachments = [],

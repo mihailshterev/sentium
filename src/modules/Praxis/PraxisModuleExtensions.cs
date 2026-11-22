@@ -90,6 +90,7 @@ public static class PraxisModuleExtensions
         services.AddScoped<IAgentSkillRepository, AgentSkillRepository>();
         services.AddScoped<IAgentSkillService, AgentSkillService>();
         services.AddScoped<AgentSkillsProviderFactory>();
+        services.AddScoped<CurrentDateContextProvider>();
         services.AddScoped<LearningsContextProvider>();
         services.AddScoped<IWorkspaceContextBuilder, WorkspaceContextBuilder>();
         services.AddScoped<WorkspaceContextProviderFactory>();

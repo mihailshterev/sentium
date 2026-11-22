@@ -1,125 +1,20 @@
-import { useEffect } from "react";
-import { NavLink } from "react-router";
+import { useEffect, useId } from "react";
+import { NavLink, useLocation } from "react-router";
+import { ChevronDown, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { SharedLayoutIndicator } from "@/shared/ui/motion";
-import {
-  BookOpen,
-  Bot,
-  BotMessageSquare,
-  BrainCircuit,
-  FlaskConical,
-  CalendarClock,
-  CalendarRange,
-  Cpu,
-  Database,
-  FolderOpen,
-  GitBranch,
-  LayoutDashboard,
-  Library,
-  LogOut,
-  Orbit,
-  Package,
-  PanelLeftClose,
-  PanelLeftOpen,
-  Plug,
-  Settings,
-  ShieldCog,
-  UsersRound,
-  VectorSquare,
-  View,
-  Waypoints,
-  type LucideIcon,
-} from "lucide-react";
 import styles from "./navbar.module.css";
-import { useAuthStore } from "@/shared/auth/state/auth-store";
+import { HOME_LINK, NAV_GROUPS, findNavGroup, visibleLinks, type NavGroup, type NavLinkItem } from "./nav-config";
 import { useConversationStore } from "@/features/assistant/state/assistant-conversation-store";
 import { useOrchestrationRunStore } from "@/features/orchestration/state/orchestration-run-store";
 import { useTimelineChatStore } from "@/features/timeline/state/timeline-chat-store";
 import { Companion, PHONE_QUERY } from "@/features/companion";
-import { NotificationBell } from "@/features/notifications";
 import { useRole } from "@/shared/auth/hooks/useRole";
-import { useProfile } from "@/features/profile/hooks/useProfile";
 import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
+import { isEditableTarget } from "@/shared/utils/keyboard";
 import { useUiStore } from "@/shared/ui/state/ui-store";
-import { Avatar } from "@/shared/ui/avatar";
-import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { SentiumMark } from "@/shared/ui/sentium-mark";
-import { ThemeToggle } from "@/shared/ui/theme-toggle";
 import { Tooltip } from "@/shared/ui/tooltip";
-import { RealtimeIndicator } from "@/shared/realtime";
-
-interface NavLinkItem {
-  to: string;
-  label: string;
-  icon: LucideIcon;
-  end?: boolean;
-  sovereignOnly?: boolean;
-}
-
-interface NavGroup {
-  id: string;
-  label?: string;
-  links: NavLinkItem[];
-}
-
-const NAV_GROUPS: NavGroup[] = [
-  {
-    id: "main",
-    links: [
-      { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
-      { to: "/timeline", label: "Timeline", icon: CalendarRange },
-      { to: "/vault", label: "Vault", icon: Library },
-    ],
-  },
-  {
-    id: "ai",
-    label: "AI & automation",
-    links: [
-      { to: "/assistant", label: "Assistant", icon: BotMessageSquare },
-      { to: "/orchestration", label: "Orchestration", icon: Orbit },
-      { to: "/workflows", label: "Workflows", icon: GitBranch },
-      { to: "/agents", label: "Agents", icon: Bot },
-      { to: "/models", label: "Models", icon: BrainCircuit },
-      { to: "/skills", label: "Skills", icon: BookOpen },
-      { to: "/evaluations", label: "Evaluations", icon: FlaskConical },
-      { to: "/mcp", label: "MCP Servers", icon: Plug, sovereignOnly: true },
-    ],
-  },
-  {
-    id: "management",
-    label: "Management",
-    links: [
-      { to: "/workspaces", label: "Workspaces", icon: FolderOpen },
-      { to: "/inventory", label: "Inventory", icon: Package },
-      { to: "/knowledge-base", label: "Knowledge Base", icon: Database },
-      { to: "/semantic-map", label: "Semantic Map", icon: Waypoints },
-      { to: "/scheduler", label: "Scheduled Jobs", icon: CalendarClock },
-      { to: "/users", label: "Users", icon: UsersRound, sovereignOnly: true },
-    ],
-  },
-  {
-    id: "security",
-    label: "Security",
-    links: [
-      { to: "/sentinel", label: "Sentinel", icon: ShieldCog },
-      { to: "/sandbox", label: "Sandbox", icon: VectorSquare },
-      { to: "/vigil", label: "Vigil", icon: View },
-    ],
-  },
-  {
-    id: "platform",
-    label: "Platform",
-    links: [
-      { to: "/system", label: "System", icon: Cpu },
-      { to: "/settings", label: "Settings", icon: Settings },
-    ],
-  },
-];
-
-function isEditable(target: EventTarget | null): boolean {
-  const el = target as HTMLElement | null;
-  return !!el && (el.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName));
-}
 
 interface NavItemProps extends NavLinkItem {
   collapsed: boolean;
@@ -151,33 +46,51 @@ function NavItem({ to, label, icon: Icon, end, collapsed, busy }: NavItemProps) 
   );
 }
 
-export function Navbar() {
-  const logout = useAuthStore((s) => s.logout);
-  const user = useAuthStore((s) => s.user);
-  const { isSovereign, highestRole } = useRole();
-  const { profile } = useProfile();
+interface NavSectionProps {
+  group: NavGroup;
+  links: NavLinkItem[];
+  collapsed: boolean;
+  open: boolean;
+  busyRoutes: Set<string>;
+  onToggle: () => void;
+}
 
+function NavSection({ group, links, collapsed, open, busyRoutes, onToggle }: NavSectionProps) {
+  const listId = useId();
+  // The rail has no room for headers, so it always lists every link with a hairline between groups.
+  const expanded = collapsed || open;
+
+  return (
+    <div className={styles.group}>
+      {collapsed ? (
+        <span className={styles.groupDivider} aria-hidden="true" />
+      ) : (
+        <button
+          type="button"
+          className={styles.groupToggle}
+          aria-expanded={open}
+          aria-controls={listId}
+          onClick={onToggle}
+        >
+          {group.label}
+          <ChevronDown size={13} className={styles.groupChevron} aria-hidden="true" />
+        </button>
+      )}
+      {expanded && (
+        <div id={listId} className={styles.groupLinks}>
+          {links.map((link) => (
+            <NavItem key={link.to} {...link} collapsed={collapsed} busy={busyRoutes.has(link.to)} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function useBusyRoutes(): Set<string> {
   const assistantStreaming = useConversationStore((s) => s.isStreaming);
   const orchestrationRunning = useOrchestrationRunStore((s) => s.isRunning);
   const timelineChatStreaming = useTimelineChatStore((s) => s.isStreaming);
-
-  const storedCollapsed = useUiStore((s) => s.sidebarCollapsed);
-  const toggleSidebar = useUiStore((s) => s.toggleSidebar);
-  const isNarrow = useMediaQuery("(max-width: 1099px)");
-  const collapsed = isNarrow || storedCollapsed;
-  // At phone width the layout shows the Companion as a floating bubble instead.
-  const isPhone = useMediaQuery(PHONE_QUERY);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === "b" && !isEditable(e.target)) {
-        e.preventDefault();
-        toggleSidebar();
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [toggleSidebar]);
 
   const busyRoutes = new Set<string>();
   if (assistantStreaming) {
@@ -192,93 +105,85 @@ export function Navbar() {
     busyRoutes.add("/timeline");
   }
 
-  const displayName = profile
-    ? [profile.firstName, profile.lastName].filter(Boolean).join(" ") || profile.userName
-    : (user?.name ?? "");
+  return busyRoutes;
+}
+
+export function Navbar() {
+  const { isSovereign } = useRole();
+  const { pathname } = useLocation();
+  const busyRoutes = useBusyRoutes();
+
+  const storedCollapsed = useUiStore((s) => s.sidebarCollapsed);
+  const toggleSidebar = useUiStore((s) => s.toggleSidebar);
+  const collapsedGroups = useUiStore((s) => s.collapsedNavGroups);
+  const toggleNavGroup = useUiStore((s) => s.toggleNavGroup);
+  const isNarrow = useMediaQuery("(max-width: 1099px)");
+  const collapsed = isNarrow || storedCollapsed;
+  // At phone width the layout shows the Companion as a floating bubble instead.
+  const isPhone = useMediaQuery(PHONE_QUERY);
+  const activeGroupId = findNavGroup(pathname)?.id;
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && e.key.toLowerCase() === "b" && !isEditableTarget(e.target)) {
+        e.preventDefault();
+        toggleSidebar();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [toggleSidebar]);
 
   const toggleLabel = collapsed ? "Expand sidebar" : "Collapse sidebar";
-  const actionTooltipSide = collapsed ? "right" : "top";
 
   return (
     <nav className={`frame ${styles.nav}`} data-collapsed={collapsed || undefined} aria-label="Main navigation">
       <div className={styles.brand}>
         <SentiumMark className={styles.logo} />
         <span className={styles.wordmark}>Sentium</span>
-        <RealtimeIndicator className={styles.realtime} />
-      </div>
-
-      <div className={styles.scroll}>
-        {NAV_GROUPS.map((group) => {
-          const links = group.links.filter((link) => !link.sovereignOnly || isSovereign);
-          if (links.length === 0) {
-            return null;
-          }
-          return (
-            <div key={group.id} className={styles.group}>
-              {group.label && (
-                <span className={styles.groupLabel} aria-hidden={collapsed || undefined}>
-                  {group.label}
-                </span>
-              )}
-              {links.map((link) => (
-                <NavItem key={link.to} {...link} collapsed={collapsed} busy={busyRoutes.has(link.to)} />
-              ))}
-            </div>
-          );
-        })}
-      </div>
-
-      {!isPhone && <Companion placement="sidebar" collapsed={collapsed} />}
-
-      <div className={styles.footer}>
-        <Tooltip content={displayName || "Profile"} side="right" disabled={!collapsed}>
-          <NavLink
-            to="/profile"
-            className={({ isActive }) => (isActive ? `${styles.account} ${styles.accountActive}` : styles.account)}
-          >
-            <Avatar name={displayName} src={profile?.avatarUrl} size="sm" />
-            <span className={styles.userInfo}>
-              <span className={styles.userDisplayName}>{displayName}</span>
-              {highestRole && (
-                <Badge tone={highestRole === "Sovereign" ? "accent" : "info"} className={styles.roleBadge}>
-                  {highestRole}
-                </Badge>
-              )}
-            </span>
-          </NavLink>
-        </Tooltip>
-
-        <div className={styles.actions}>
-          <NotificationBell tooltipSide={actionTooltipSide} />
-          <Tooltip content="Toggle theme" side={actionTooltipSide}>
-            <ThemeToggle />
-          </Tooltip>
-          {!isNarrow && (
-            <Tooltip content={`${toggleLabel} (Ctrl+B)`} side={actionTooltipSide}>
-              <Button
-                variant="ghost"
-                size="sm"
-                iconOnly
-                aria-label={toggleLabel}
-                aria-keyshortcuts="Control+B Meta+B"
-                onClick={toggleSidebar}
-                icon={collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
-              />
-            </Tooltip>
-          )}
-          <Tooltip content="Log out" side={actionTooltipSide}>
+        {!isNarrow && (
+          <Tooltip content={`${toggleLabel} (Ctrl+B)`} side="right">
             <Button
               variant="ghost"
               size="sm"
               iconOnly
-              aria-label="Log out"
-              onClick={logout}
-              icon={<LogOut size={16} />}
-              className={styles.logout}
+              aria-label={toggleLabel}
+              aria-keyshortcuts="Control+B Meta+B"
+              onClick={toggleSidebar}
+              icon={collapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+              className={styles.collapseToggle}
             />
           </Tooltip>
-          <span className={styles.version}>v1.0.0</span>
+        )}
+      </div>
+
+      <div className={styles.scroll}>
+        <div className={styles.groupLinks}>
+          <NavItem {...HOME_LINK} collapsed={collapsed} busy={false} />
         </div>
+        {NAV_GROUPS.map((group) => {
+          const links = visibleLinks(group.links, isSovereign);
+          if (links.length === 0) {
+            return null;
+          }
+          return (
+            <NavSection
+              key={group.id}
+              group={group}
+              links={links}
+              collapsed={collapsed}
+              // The group holding the current page stays open so the active link is never hidden.
+              open={group.id === activeGroupId || !collapsedGroups.includes(group.id)}
+              busyRoutes={busyRoutes}
+              onToggle={() => toggleNavGroup(group.id)}
+            />
+          );
+        })}
+      </div>
+
+      <div className={styles.footer}>
+        {!isPhone && <Companion placement="sidebar" collapsed={collapsed} />}
+        <span className={styles.version}>v1.0.0</span>
       </div>
     </nav>
   );

@@ -12,6 +12,10 @@ import * as useSentinelAuditHook from "@/features/sentinel/hooks/useSentinelAudi
 import * as useModelCatalogHook from "@/features/models/hooks/useModelCatalog";
 import * as useSchedulerHook from "@/features/scheduler/hooks/useScheduler";
 import * as useKnowledgeBaseStatsHook from "@/features/knowledge-base/hooks/useKnowledgeBaseStats";
+import * as useIncidentsHook from "@/features/vigil/hooks/useIncidents";
+import * as useInboxHook from "@/features/notifications/hooks/useInbox";
+import * as useConversationsHook from "@/features/assistant/hooks/useConversations";
+import * as useProfileHook from "@/features/profile/hooks/useProfile";
 import type { AgentRecord } from "@/features/agents/types/agents";
 import type { WorkflowRecord, WorkflowRun } from "@/features/workflows/types/workflows";
 import type { ServiceHealthStatus } from "@/features/vigil/types/serviceHealth";
@@ -135,82 +139,89 @@ beforeEach(() => {
   vi.spyOn(useKnowledgeBaseStatsHook, "useKnowledgeBaseStats").mockReturnValue(
     defaultKbHook as ReturnType<typeof useKnowledgeBaseStatsHook.useKnowledgeBaseStats>,
   );
+  vi.spyOn(useIncidentsHook, "useIncidents").mockReturnValue({
+    incidents: [],
+    isLoading: false,
+    error: null,
+    refetch: vi.fn(),
+  } as unknown as ReturnType<typeof useIncidentsHook.useIncidents>);
+  vi.spyOn(useInboxHook, "useNotifications").mockReturnValue({ notifications: [], isLoading: false, error: null });
+  vi.spyOn(useConversationsHook, "useConversations").mockReturnValue({
+    conversations: [{ id: "c1", title: "Trip plan", model: "gemma", createdAt: new Date().toISOString() }],
+    isLoading: false,
+  } as unknown as ReturnType<typeof useConversationsHook.useConversations>);
+  vi.spyOn(useProfileHook, "useProfile").mockReturnValue({
+    profile: { firstName: "Ada" },
+  } as unknown as ReturnType<typeof useProfileHook.useProfile>);
 });
 
-describe("Dashboard initial render", () => {
-  it("renders the page title", () => {
+describe("Home", () => {
+  it("is titled Home and greets the user by first name", () => {
     renderDashboard();
-    expect(screen.getByText("Control Center")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Home" })).toBeInTheDocument();
+    expect(screen.getByText(/good (morning|afternoon|evening), ada/i)).toBeInTheDocument();
   });
 
-  it("renders stat cards section", () => {
+  it("offers the two main actions", () => {
     renderDashboard();
-    expect(screen.getByText("Agents")).toBeInTheDocument();
-    expect(screen.getByText("Workflows")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /new conversation/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /orchestrate a goal/i })).toBeInTheDocument();
   });
 
-  it("renders agents count in stat card", () => {
+  it("shows where the user left off", () => {
     renderDashboard();
-    expect(screen.getAllByText("1").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByRole("link", { name: /trip plan/i })).toHaveAttribute("href", "/assistant/c1");
   });
 
-  it("renders the Service Health section", () => {
+  it("links each key figure to its page", () => {
     renderDashboard();
-    expect(screen.getByText("Service Health")).toBeInTheDocument();
-  });
-
-  it("renders the Security Overview section", () => {
-    renderDashboard();
-    expect(screen.getByText("Security Overview")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /^agents: 1,/i })).toHaveAttribute("href", "/agents");
+    expect(screen.getByRole("link", { name: "Services: 1/1, all healthy" })).toHaveAttribute("href", "/vigil");
   });
 });
 
-describe("Dashboard loading state", () => {
-  it("shows loading skeleton in stat cards when agents are loading", () => {
-    vi.spyOn(useAgentsHook, "useAgents").mockReturnValue({ ...defaultAgentsHook, isLoading: true } as ReturnType<
-      typeof useAgentsHook.useAgents
-    >);
+describe("Home attention", () => {
+  it("is all clear when every service is healthy", () => {
     renderDashboard();
-    expect(screen.getByText("Service Health")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("All systems operational");
+    expect(screen.getByText("All clear")).toBeInTheDocument();
+  });
+
+  it("lists an unhealthy service and says so in the status strip", () => {
+    vi.spyOn(useServiceHealthHook, "useServiceHealth").mockReturnValue({
+      ...defaultHealthHook,
+      services: [healthyService, unhealthyService],
+    });
+    renderDashboard();
+    expect(screen.getByRole("status")).toHaveTextContent("1 critical issue need attention");
+    expect(screen.getByRole("link", { name: /sentinel is unhealthy/i })).toHaveAttribute("href", "/vigil");
+  });
+
+  it("flags high host memory instead of claiming everything is fine", () => {
+    vi.spyOn(useSystemMetricsHook, "useSystemMetrics").mockReturnValue({
+      ...defaultMetricsHook,
+      metrics: {
+        host: { uptime: "01:00:00" },
+        memory: { memoryLoadPercent: 96, availableMb: 1024, totalMb: 32768 },
+        cpu: { processCpuPercent: 1 },
+        disks: [],
+      },
+    } as unknown as ReturnType<typeof useSystemMetricsHook.useSystemMetrics>);
+    renderDashboard();
+    expect(screen.getByRole("status")).toHaveTextContent("Operational with 1 warning");
+    expect(screen.getByRole("link", { name: /host memory at 96%/i })).toHaveAttribute("href", "/system");
   });
 });
 
-describe("Dashboard workflow runs feed", () => {
+describe("Home recent runs", () => {
   it("shows 'No workflow runs yet' when runs list is empty", () => {
     vi.spyOn(useWorkflowRunsHook, "useWorkflowRuns").mockReturnValue({ runs: [], isLoading: false });
     renderDashboard();
     expect(screen.getByText(/no workflow runs yet/i)).toBeInTheDocument();
   });
 
-  it("shows workflow run risk badge when run data is available", () => {
+  it("shows the run risk badge", () => {
     renderDashboard();
     expect(screen.getAllByText("Low").length).toBeGreaterThanOrEqual(1);
-  });
-});
-
-describe("Dashboard service health", () => {
-  it("shows 'Healthy' status for healthy services", () => {
-    renderDashboard();
-    expect(screen.getByText("Healthy")).toBeInTheDocument();
-  });
-
-  it("shows 'No services monitored' when services list is empty", () => {
-    vi.spyOn(useServiceHealthHook, "useServiceHealth").mockReturnValue({ ...defaultHealthHook, services: [] });
-    renderDashboard();
-    expect(screen.getByText("No services monitored")).toBeInTheDocument();
-  });
-
-  it("shows 'Unhealthy' status for unhealthy services", () => {
-    vi.spyOn(useServiceHealthHook, "useServiceHealth").mockReturnValue({
-      ...defaultHealthHook,
-      services: [unhealthyService],
-    });
-    renderDashboard();
-    expect(screen.getByText("Unhealthy")).toBeInTheDocument();
-  });
-
-  it("shows service name in health list", () => {
-    renderDashboard();
-    expect(screen.getByText("Agent Runtime")).toBeInTheDocument();
   });
 });

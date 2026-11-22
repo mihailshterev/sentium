@@ -1,7 +1,9 @@
 import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
 import { Outlet, useLocation } from "react-router";
+import { CommandPalette } from "../components/command-palette/command-palette";
 import { Navbar } from "../components/navbar/navbar";
+import { Topbar } from "../components/topbar/topbar";
 import { Companion, PHONE_QUERY, useCompanionRuntime } from "@/features/companion";
 import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
 import { useRealtimeConnection } from "@/shared/realtime";
@@ -24,18 +26,22 @@ export function Layout() {
     <div className={styles.layoutWrapper}>
       <CosmosBackground paused={backgroundPaused} calm={backgroundCalm} />
       <Navbar />
-      <main className={styles.contentArea}>
-        <Suspense
-          fallback={
-            <div className={styles.routeFallback} role="status" aria-label="Loading page">
-              <Loader2 className="animate-spin" size={22} aria-hidden="true" />
-            </div>
-          }
-        >
-          <Outlet />
-        </Suspense>
-      </main>
+      <div className={styles.column}>
+        <Topbar />
+        <main className={styles.contentArea}>
+          <Suspense
+            fallback={
+              <div className={styles.routeFallback} role="status" aria-label="Loading page">
+                <Loader2 className="animate-spin" size={22} aria-hidden="true" />
+              </div>
+            }
+          >
+            <Outlet />
+          </Suspense>
+        </main>
+      </div>
       {isPhone && <Companion placement="floating" />}
+      <CommandPalette />
     </div>
   );
 }

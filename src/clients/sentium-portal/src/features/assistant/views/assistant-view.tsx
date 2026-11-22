@@ -313,7 +313,8 @@ export function AssistantView() {
         submitMessage();
       }
     }
-    if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+    // Ctrl+K belongs to the command palette, so a new chat uses the Ctrl+Shift+O convention.
+    if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === "o") {
       e.preventDefault();
       createNewConversation();
     }

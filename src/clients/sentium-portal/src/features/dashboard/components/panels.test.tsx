@@ -1,107 +1,129 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import { ServiceHealthPanel } from "./service-health-panel";
-import { VitalsStrip } from "./vitals-strip";
-import { SecurityPanel } from "./security-panel";
+import { MemoryRouter } from "react-router";
+import { AttentionPanel } from "./attention-panel";
+import { ContinuePanel } from "./continue-panel";
+import { KpiGrid } from "./kpi-grid";
+import { StatusStrip } from "./status-strip";
 import { WorkflowRunsFeed } from "./workflow-runs-feed";
+import type { AttentionItem } from "../hooks/useAttention";
+import type { ConversationSummary } from "@/features/assistant/types/assistant";
 import type { ServiceHealthStatus } from "@/features/vigil/types/serviceHealth";
 import type { SystemMetrics } from "@/features/system/types/system";
-import type { AuditStats } from "@/features/sentinel/types/sentinel";
 import type { WorkflowRun } from "@/features/workflows/types/workflows";
 
 const svc = (name: string, status: string, latencyMs = 5): ServiceHealthStatus =>
   ({ serviceName: name, status, latencyMs, uptimePercent: 100, checkedAt: "t", details: null }) as ServiceHealthStatus;
 
-describe("ServiceHealthPanel", () => {
-  it("shows a placeholder count while loading", () => {
-    render(<ServiceHealthPanel services={[]} loading />);
-    expect(screen.getByText("…")).toBeInTheDocument();
+const metrics = (memoryLoadPercent: number): SystemMetrics =>
+  ({
+    host: { uptime: "01:22:00" },
+    memory: { memoryLoadPercent },
+    cpu: { processCpuPercent: 0.9 },
+    disks: [],
+  }) as unknown as SystemMetrics;
+
+const item = (id: string, tone: AttentionItem["tone"], title = `Item ${id}`): AttentionItem => ({
+  id,
+  tone,
+  source: "Vigil",
+  title,
+  to: "/vigil",
+});
+
+const inRouter = (ui: React.ReactNode) => render(<MemoryRouter>{ui}</MemoryRouter>);
+
+describe("StatusStrip", () => {
+  it("reports all clear when nothing needs attention", () => {
+    render(<StatusStrip items={[]} services={[svc("codex", "Healthy")]} metrics={metrics(40)} loading={false} />);
+    expect(screen.getByRole("status")).toHaveTextContent("All systems operational");
+    expect(screen.getByText("1/1 services healthy")).toBeInTheDocument();
+    expect(screen.getByText("memory 40%")).toBeInTheDocument();
   });
 
-  it("renders an empty state when there are no services", () => {
-    render(<ServiceHealthPanel services={[]} loading={false} />);
-    expect(screen.getByText("No services monitored")).toBeInTheDocument();
+  it("counts warnings, so it never contradicts the attention list", () => {
+    render(<StatusStrip items={[item("m", "warning")]} services={[]} loading={false} />);
+    expect(screen.getByRole("status")).toHaveTextContent("Operational with 1 warning");
   });
 
-  it("renders rows across all status kinds", () => {
-    render(
-      <ServiceHealthPanel
-        services={[svc("A", "Healthy"), svc("B", "Degraded"), svc("C", "Unhealthy"), svc("D", "Other")]}
-        loading={false}
-      />,
-    );
-    expect(screen.getByText("A")).toBeInTheDocument();
-    expect(screen.getByText("Degraded")).toBeInTheDocument();
-    expect(screen.getByText("Unhealthy")).toBeInTheDocument();
-    expect(screen.getByText("1/4")).toBeInTheDocument();
+  it("leads with critical issues", () => {
+    render(<StatusStrip items={[item("a", "critical"), item("b", "warning")]} services={[]} loading={false} />);
+    expect(screen.getByRole("status")).toHaveTextContent("1 critical issue need attention");
+  });
+
+  it("says it is checking while loading", () => {
+    render(<StatusStrip items={[]} services={[]} loading />);
+    expect(screen.getByRole("status")).toHaveTextContent("Checking status…");
   });
 });
 
-describe("VitalsStrip", () => {
-  const metrics = (cpu: number, mem: number): SystemMetrics =>
-    ({
-      cpu: { processCpuPercent: cpu },
-      memory: { memoryLoadPercent: mem },
-      host: { uptime: "01:00:00" },
-    }) as unknown as SystemMetrics;
-
-  it("shows dashes while loading", () => {
-    render(<VitalsStrip metrics={undefined} services={[]} loading />);
-    expect(screen.getAllByText("—").length).toBeGreaterThan(0);
+describe("AttentionPanel", () => {
+  it("shows an all-clear state", () => {
+    inRouter(<AttentionPanel items={[]} loading={false} />);
+    expect(screen.getByText("All clear")).toBeInTheDocument();
   });
 
-  it("renders critical CPU and warning memory percentages", () => {
-    render(<VitalsStrip metrics={metrics(95, 80)} services={[svc("A", "Healthy")]} loading={false} />);
-    expect(screen.getByText("95.0%")).toBeInTheDocument();
-    expect(screen.getByText("80.0%")).toBeInTheDocument();
-    expect(screen.getByText("1/1")).toBeInTheDocument();
+  it("links each item to where it can be dealt with", () => {
+    inRouter(<AttentionPanel items={[item("m", "warning", "Host memory at 96%")]} loading={false} />);
+    expect(screen.getByRole("link", { name: /host memory at 96%/i })).toHaveAttribute("href", "/vigil");
+  });
+
+  it("caps the list and points to the inbox for the rest", () => {
+    const items = Array.from({ length: 8 }, (_, i) => item(String(i), "warning"));
+    inRouter(<AttentionPanel items={items} loading={false} />);
+    expect(screen.getAllByRole("listitem")).toHaveLength(6);
+    expect(screen.getByRole("link", { name: /2 more in the inbox/i })).toHaveAttribute("href", "/inbox");
   });
 });
 
-describe("SecurityPanel", () => {
-  const stats = {
-    total: 10,
-    allowed: 8,
-    denied: 2,
-    alerts: 1,
-    lowRisk: 5,
-    mediumRisk: 3,
-    highRisk: 1,
-    criticalRisk: 1,
-    latestAlignmentScore: 0.9,
-  } as unknown as AuditStats;
-
-  it("shows dashes while loading", () => {
-    render(<SecurityPanel stats={undefined} loading onNavigate={() => {}} />);
-    expect(screen.getAllByText("—").length).toBeGreaterThan(0);
+describe("ContinuePanel", () => {
+  const conversation = (id: string, title: string): ConversationSummary => ({
+    id,
+    title,
+    model: "gemma",
+    createdAt: new Date().toISOString(),
   });
 
-  it("renders audit counts and the alignment score", () => {
-    render(<SecurityPanel stats={stats} loading={false} onNavigate={() => {}} />);
-    expect(screen.getByText("Total")).toBeInTheDocument();
-    expect(screen.getByText("90%")).toBeInTheDocument();
+  it("links recent conversations", () => {
+    inRouter(<ContinuePanel conversations={[conversation("c1", "Trip plan")]} loading={false} />);
+    expect(screen.getByRole("link", { name: /trip plan/i })).toHaveAttribute("href", "/assistant/c1");
   });
 
-  it("navigates to the audit log", () => {
-    const onNavigate = vi.fn();
-    render(<SecurityPanel stats={stats} loading={false} onNavigate={onNavigate} />);
-    fireEvent.click(screen.getByRole("button", { name: /view audit log/i }));
-    expect(onNavigate).toHaveBeenCalledWith("/sentinel");
+  it("shows an empty state", () => {
+    inRouter(<ContinuePanel conversations={[]} loading={false} />);
+    expect(screen.getByText("No conversations yet")).toBeInTheDocument();
   });
+});
 
-  it.each([
-    [0.2, "20%"],
-    [0.5, "50%"],
-    [0.9, "90%"],
-  ])("colours the alignment score for %s", (score, label) => {
-    render(
-      <SecurityPanel
-        stats={{ ...stats, latestAlignmentScore: score } as AuditStats}
+describe("KpiGrid", () => {
+  const renderGrid = (overrides: Partial<React.ComponentProps<typeof KpiGrid>> = {}) =>
+    inRouter(
+      <KpiGrid
+        services={[svc("codex", "Healthy"), svc("praxis", "Degraded")]}
+        metrics={metrics(96)}
+        stats={{ total: 35, allowed: 32, denied: 3, alerts: 0, lowRisk: 35, mediumRisk: 0, highRisk: 0, criticalRisk: 0, latestAlignmentScore: null }}
+        runs={[]}
+        agentCount={2}
+        workflowCount={1}
+        modelCount={1}
+        collectionCount={2}
+        jobCount={0}
         loading={false}
-        onNavigate={() => {}}
+        {...overrides}
       />,
     );
-    expect(screen.getByText(label)).toBeInTheDocument();
+
+  it("gives every figure its context and a link", () => {
+    renderGrid();
+    expect(screen.getByRole("link", { name: "Services: 1/2, 1 not healthy" })).toHaveAttribute("href", "/vigil");
+    expect(screen.getByRole("link", { name: "Tool calls: 35, 3 denied · 0 high risk" })).toHaveAttribute("href", "/sentinel");
+    expect(screen.getByRole("link", { name: "Agents: 2, 1 workflow · 1 model" })).toHaveAttribute("href", "/agents");
+  });
+
+  it("marks figures that need attention", () => {
+    renderGrid();
+    expect(screen.getByRole("link", { name: /^host memory: 96%/i })).toHaveAttribute("data-warn", "true");
+    expect(screen.getByRole("link", { name: /^tool calls/i })).not.toHaveAttribute("data-warn");
   });
 });
 

@@ -1,6 +1,4 @@
-using Sentium.Core.Constants;
 using Sentium.Registry.Contracts;
-using Sentium.Registry.Contracts.Settings;
 using Sentium.Tempus.Common;
 
 namespace Sentium.Tempus.Features.Calendar;
@@ -14,13 +12,8 @@ internal sealed class UserCalendarProvider(ISettingsService settings, ILogger<Us
     {
         try
         {
-            var household = await settings.GetValueAsync<CalendarSettings>(SettingsKeys.Calendar, null, ct);
-            var own = userId == Guid.Empty ? null : await settings.GetValueAsync<UserCalendarSettings>(SettingsKeys.UserCalendar, userId, ct);
-
-            var zoneId = own?.TimeZone ?? household?.TimeZone;
-            var zone = zoneId is not null && TimeZoneInfo.TryFindSystemTimeZoneById(zoneId, out var found) ? found : TimeZoneInfo.Utc;
-
-            return new UserCalendar(zone, own?.DayStart ?? household?.DayStart ?? UserCalendar.DefaultDayStart);
+            var calendar = await settings.GetEffectiveCalendarAsync(userId, ct);
+            return new UserCalendar(calendar.TimeZone, calendar.DayStart);
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
