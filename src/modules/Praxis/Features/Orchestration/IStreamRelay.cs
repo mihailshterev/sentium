@@ -13,7 +13,8 @@ internal interface IStreamRelay
 {
     /// <summary>
     /// Replays buffered frames with <c>Seq &gt; <paramref name="fromSeqExclusive"/></c> then yields live frames,
-    /// completing when a terminal (Done/Error) frame has been delivered or <paramref name="ct"/> fires.
+    /// completing when a terminal (Done/Error) frame has been delivered or <paramref name="ct"/> fires. Yields nothing
+    /// for a stream the relay does not hold, and never creates one.
     /// </summary>
     IAsyncEnumerable<StreamFrame> Subscribe(string streamId, long fromSeqExclusive, CancellationToken ct);
 
@@ -23,7 +24,8 @@ internal interface IStreamRelay
     void Claim(string streamId, Guid ownerId);
 
     /// <summary>
-    /// Whether <paramref name="userId"/> may read the stream: it is theirs, or nobody has claimed it.
+    /// Whether <paramref name="userId"/> may read the stream: it is theirs, nobody has claimed it, or the relay does not
+    /// hold it (reading an unknown stream yields only a "gone" frame).
     /// </summary>
     bool IsVisibleTo(string streamId, Guid userId);
 

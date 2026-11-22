@@ -2,6 +2,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;
+using Sentium.Sentinel.Contracts;
 using Sentium.Sentinel.Features.Engine;
 using Sentium.Sentinel.Features.Policies;
 using Sentium.Sentinel.Features.Audit;
@@ -15,7 +16,7 @@ public sealed class SentinelPolicyEngineTests
     private readonly IAuditLog _auditLog = Substitute.For<IAuditLog>();
     private readonly ILogger<SentinelPolicyEngine> _logger = NullLogger<SentinelPolicyEngine>.Instance;
 
-    private static PolicyRequest MakeRequest(string action = "read", string resourceId = "docs/1")
+    private static PolicyEvaluationRequest MakeRequest(string action = "read", string resourceId = "docs/1")
     {
         return new()
         {
@@ -55,7 +56,7 @@ public sealed class SentinelPolicyEngineTests
 
         var denyingPolicy = Substitute.For<IPdpPolicy>();
         denyingPolicy.Name.Returns("TestDeny");
-        denyingPolicy.EvaluateAsync(Arg.Any<PolicyRequest>(), ct)
+        denyingPolicy.EvaluateAsync(Arg.Any<PolicyEvaluationRequest>(), ct)
             .Returns(PolicyDecision.Deny("blocked", Guid.Empty, ["TestDeny"]));
 
         var secondPolicy = Substitute.For<IPdpPolicy>();
@@ -67,7 +68,7 @@ public sealed class SentinelPolicyEngineTests
 
         // Assert
         Assert.False(result.Allowed);
-        await secondPolicy.DidNotReceive().EvaluateAsync(Arg.Any<PolicyRequest>(), Arg.Any<CancellationToken>());
+        await secondPolicy.DidNotReceive().EvaluateAsync(Arg.Any<PolicyEvaluationRequest>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -93,7 +94,7 @@ public sealed class SentinelPolicyEngineTests
 
         var throwingPolicy = Substitute.For<IPdpPolicy>();
         throwingPolicy.Name.Returns("ThrowingPolicy");
-        throwingPolicy.EvaluateAsync(Arg.Any<PolicyRequest>(), ct)
+        throwingPolicy.EvaluateAsync(Arg.Any<PolicyEvaluationRequest>(), ct)
             .ThrowsAsync(new InvalidOperationException("unexpected!"));
 
         var engine = MakeEngine(throwingPolicy);
@@ -114,7 +115,7 @@ public sealed class SentinelPolicyEngineTests
 
         var policy = Substitute.For<IPdpPolicy>();
         policy.Name.Returns("SemanticPolicy");
-        policy.EvaluateAsync(Arg.Any<PolicyRequest>(), ct)
+        policy.EvaluateAsync(Arg.Any<PolicyEvaluationRequest>(), ct)
             .Returns(PolicyDecision.Allow(Guid.Empty, ["SemanticPolicy"]) with
             {
                 AlignmentVerdict = "Aligned"
@@ -150,7 +151,7 @@ public sealed class SentinelPolicyEngineTests
         // Assert
         Assert.False(result.Allowed);
         Assert.Equal(PolicyRiskLevel.Critical, result.Risk);
-        await laterPolicy.DidNotReceive().EvaluateAsync(Arg.Any<PolicyRequest>(), Arg.Any<CancellationToken>());
+        await laterPolicy.DidNotReceive().EvaluateAsync(Arg.Any<PolicyEvaluationRequest>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -194,7 +195,8 @@ public sealed class SentinelPolicyEngineTests
         var request = MakeRequest("write") with
         {
             UserId = userId,
-            Metadata = new Dictionary<string, string> { ["payload"] = "AKIAIOSFODNN7EXAMPLE secret", ["language"] = "Python" }
+            Payload = "AKIAIOSFODNN7EXAMPLE secret",
+            Metadata = new Dictionary<string, string> { ["language"] = "Python" }
         };
 
         await MakeEngine().EvaluateAsync(request, ct);

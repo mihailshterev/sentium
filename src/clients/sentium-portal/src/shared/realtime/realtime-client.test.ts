@@ -1,5 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { startRealtime, stopRealtime, subscribeTopic, useRealtimeStatusStore, type RealtimeMessage } from "./realtime-client";
+import {
+  startRealtime,
+  stopRealtime,
+  subscribeTopic,
+  useRealtimeStatusStore,
+  type RealtimeMessage,
+} from "./realtime-client";
 import { REALTIME_TOPICS } from "./topics";
 import { FakeEventSource } from "@/test/fake-event-source";
 
@@ -41,7 +47,7 @@ describe("realtime client without cross-tab support", () => {
     expect(other).toEqual([]);
   });
 
-  it("asks every subscriber to resync when the stream (re)connects", () => {
+  it("asks every subscriber to resync once when the stream (re)connects, whatever its topic count", () => {
     const messages: RealtimeMessage[] = [];
     const unsubscribe = subscribeTopic([REALTIME_TOPICS.vault, REALTIME_TOPICS.evaluations], (m) => messages.push(m));
     startRealtime();
@@ -50,7 +56,7 @@ describe("realtime client without cross-tab support", () => {
     unsubscribe();
     FakeEventSource.last().emit(frame(REALTIME_TOPICS.vault));
 
-    expect(messages).toEqual([{ kind: "resync" }, { kind: "resync" }]);
+    expect(messages).toEqual([{ kind: "resync" }]);
   });
 
   it("keeps delivering to the others when one subscriber throws", () => {

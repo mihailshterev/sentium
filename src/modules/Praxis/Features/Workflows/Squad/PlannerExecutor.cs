@@ -1,4 +1,5 @@
 using Microsoft.Agents.AI.Workflows;
+using Sentium.Praxis.Common.Streaming;
 using Sentium.Praxis.Features.Agents;
 using Sentium.Praxis.Features.Orchestration;
 
@@ -15,6 +16,7 @@ internal sealed class PlannerExecutor(SquadRunContext run) : Executor<string>("p
 
     public override async ValueTask HandleAsync(string message, IWorkflowContext context, CancellationToken cancellationToken = default)
     {
+        run.EnterPhase(WorkflowPhases.Planning);
         run.Status(AgentRole.Orchestrator, "Planning which specialists handle this request");
 
         var planner = await run.CreateControlAgentAsync(AgentRole.Orchestrator, instructions: null, cancellationToken);

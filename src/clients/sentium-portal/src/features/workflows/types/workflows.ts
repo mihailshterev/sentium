@@ -2,6 +2,8 @@ import type { LogEntry } from "@/features/orchestration/types/orchestration";
 
 export interface WorkflowRecord {
   id: string;
+  /** The owner. A run acts as the user who starts it, so only the owner can run a workflow. */
+  userId: string;
   name: string;
   description: string;
   createdAt: string;

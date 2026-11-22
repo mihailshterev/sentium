@@ -14,8 +14,9 @@ vi.mock("@/features/vigil/hooks/useSystemOverview", () => ({
 vi.mock("@/features/vigil/hooks/useIncidents", () => ({
   useIncidents: () => ({ incidents: [], isLoading: false, error: null, refetch: vi.fn() }),
 }));
-vi.mock("@/features/vigil/hooks/useVigilStream", () => ({
-  useVigilStream: () => ({ isLive: true }),
+vi.mock("@/shared/realtime", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/shared/realtime")>()),
+  useRealtimeStatus: () => "live",
 }));
 vi.mock("@/shared/auth/hooks/useRole", () => ({
   useRole: () => ({

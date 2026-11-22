@@ -14,7 +14,8 @@ vi.mock("react-router", async (orig) => ({
 
 const storeState: Record<string, unknown> = {};
 vi.mock("@/features/assistant/state/assistant-conversation-store", () => ({
-  useConversationStore: () => storeState,
+  useConversationStore: (selector?: (state: Record<string, unknown>) => unknown) =>
+    selector ? selector(storeState) : storeState,
 }));
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

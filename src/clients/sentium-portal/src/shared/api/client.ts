@@ -44,7 +44,8 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
         },
   };
 
-  if (body) {
+  // `false`, `0` and `""` are valid JSON bodies; only a missing body is left out.
+  if (body !== undefined && body !== null) {
     config.body = isForm ? (body as FormData) : JSON.stringify(body);
   }
 
@@ -64,7 +65,15 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
     return {} as T;
   }
 
-  return response.json().catch(() => ({}) as T);
+  try {
+    return (await response.json()) as T;
+  } catch {
+    // A body that claims to be JSON but is not is a server fault, not an empty result.
+    if (response.headers.get("Content-Type")?.includes("json")) {
+      throw new ApiError(response.status, "The server sent a malformed response.");
+    }
+    return {} as T;
+  }
 }
 
 export const client = {

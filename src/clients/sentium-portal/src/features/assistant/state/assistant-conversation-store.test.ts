@@ -149,15 +149,6 @@ describe("updateLastMessage()", () => {
     ]);
   });
 
-  it("records a legacy tool label as a tool step", () => {
-    const { result } = renderHook(() => useConversationStore());
-    act(() => result.current.appendMessage(makeMessage({ id: "msg-1", role: "assistant", content: "" })));
-
-    act(() => result.current.updateLastMessage("msg-1", "Calling search...", "tool"));
-
-    expect(result.current.messages[0].steps).toMatchObject([{ kind: "tool", name: "search" }]);
-  });
-
   it("does not modify other messages", () => {
     const { result } = renderHook(() => useConversationStore());
     act(() => result.current.appendMessage(makeMessage({ id: "msg-1", content: "A" })));

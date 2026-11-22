@@ -1,5 +1,6 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using Sentium.Sentinel.Contracts;
 using Sentium.Sentinel.Features.Policies;
 using Sentium.Sentinel.Features.Options;
 using Xunit;
@@ -11,7 +12,7 @@ public sealed class SensitiveDataEgressPolicyTests
     private static SensitiveDataEgressPolicy MakePolicy(PdpOptions? options = null) =>
         new(Options.Create(options ?? new PdpOptions()), NullLogger<SensitiveDataEgressPolicy>.Instance);
 
-    private static PolicyRequest MakeRequest(
+    private static PolicyEvaluationRequest MakeRequest(
         string action = "write",
         string resourceId = "memory/note",
         IReadOnlyDictionary<string, string>? metadata = null) =>

@@ -1,7 +1,5 @@
-using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Sentium.Infrastructure.Middleware;
 
 namespace Sentium.Infrastructure.Extensions;
 
@@ -14,7 +12,7 @@ public static class LoggingExtensions
     /// Export to the OTLP collector comes from the OpenTelemetry logger provider that <c>AddServiceDefaults</c>
     /// registers, and the <c>Logging:LogLevel</c> configuration filters both.
     /// </summary>
-    public static void AddSentiumAuditLogging(this IHostApplicationBuilder builder)
+    public static void AddSentiumConsoleLogging(this IHostApplicationBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder, nameof(builder));
 
@@ -23,10 +21,5 @@ public static class LoggingExtensions
             options.SingleLine = false;
             options.TimestampFormat = ConsoleTimestampFormat;
         });
-    }
-
-    public static IApplicationBuilder UseSentiumTracing(this IApplicationBuilder app)
-    {
-        return app.UseMiddleware<RequestTracingMiddleware>();
     }
 }

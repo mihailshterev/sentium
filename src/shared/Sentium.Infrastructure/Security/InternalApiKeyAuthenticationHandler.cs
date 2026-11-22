@@ -3,7 +3,6 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Sentium.Core.Constants;
@@ -18,21 +17,16 @@ internal sealed class InternalApiKeyAuthenticationHandler(
     IOptionsMonitor<AuthenticationSchemeOptions> options,
     ILoggerFactory logger,
     UrlEncoder encoder,
-    IOptionsMonitor<InternalApiOptions> apiOptions,
-    IHostEnvironment environment) : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
+    IOptionsMonitor<InternalApiOptions> apiOptions) : AuthenticationHandler<AuthenticationSchemeOptions>(options, logger, encoder)
 {
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
         var expected = apiOptions.CurrentValue.ApiKey;
 
+        // Fails closed in every environment: the Sandbox holds the Docker socket, so an unconfigured key must never
+        // mean "anyone may call". The AppHost and Compose always supply one.
         if (string.IsNullOrEmpty(expected))
         {
-            if (environment.IsDevelopment())
-            {
-                Logger.LogWarning("InternalApi:ApiKey is not configured.");
-                return Task.FromResult(AuthenticateResult.Success(CreateTicket()));
-            }
-
             Logger.LogCritical("InternalApi:ApiKey is not configured - all internal service calls will be rejected.");
 
             return Task.FromResult(AuthenticateResult.Fail("Internal API key is not configured."));

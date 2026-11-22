@@ -52,7 +52,7 @@ public sealed class SentinelApiTests(MonolithWebApplicationFactory factory) : IC
         {
             AgentId = "integration-test-agent",
             SkillName = "TestSkill",
-            ResourceType = "File",
+            ResourceType = ResourceType.File,
             ResourceId = "docs/integration-test",
             Action = "read",
             OriginalUserPrompt = "test prompt",
@@ -71,7 +71,7 @@ public sealed class SentinelApiTests(MonolithWebApplicationFactory factory) : IC
         {
             AgentId = $"agent-{Guid.NewGuid()}",
             SkillName = "ReadSkill",
-            ResourceType = "File",
+            ResourceType = ResourceType.File,
             ResourceId = "reports/q1",
             Action = "read",
             OriginalUserPrompt = "summarize the Q1 report",
@@ -90,7 +90,7 @@ public sealed class SentinelApiTests(MonolithWebApplicationFactory factory) : IC
         {
             AgentId = $"agent-{Guid.NewGuid()}",
             SkillName = "find_assets",
-            ResourceType = "Inventory",
+            ResourceType = ResourceType.Inventory,
             ResourceId = "cordless drill",
             Action = "Search",
             OriginalUserPrompt = "where is the cordless drill?",
@@ -109,7 +109,7 @@ public sealed class SentinelApiTests(MonolithWebApplicationFactory factory) : IC
         {
             AgentId = $"agent-{Guid.NewGuid()}",
             SkillName = "get_timeline_overview",
-            ResourceType = "Timeline",
+            ResourceType = ResourceType.Timeline,
             ResourceId = "*",
             Action = "Read",
             OriginalUserPrompt = "how busy is my November?",
@@ -128,7 +128,7 @@ public sealed class SentinelApiTests(MonolithWebApplicationFactory factory) : IC
         {
             AgentId = "integration-test-agent",
             SkillName = "TestSkill",
-            ResourceType = "File",
+            ResourceType = ResourceType.File,
             ResourceId = "docs/integration-test",
             Action = "read",
             OriginalUserPrompt = "test prompt",

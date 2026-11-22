@@ -4,13 +4,13 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 namespace Sentium.Vigil.Features.Monitoring.Probes;
 
 /// <summary>
-/// Probes a module hosted in this process by running the health checks the module tagged with its
-/// name (its DbContext and so on), instead of calling a remote <c>/health</c> endpoint.
+/// Probes a dependency of this process by running the in-process health checks registered with <paramref name="tag"/>,
+/// instead of calling a remote <c>/health</c> endpoint.
 /// </summary>
-internal sealed class ModuleHealthProbe(HealthCheckService healthChecks, string target, string tag) : IHealthProbe
+internal sealed class HealthCheckProbe(HealthCheckService healthChecks, string target, string tag, ComponentKind kind) : IHealthProbe
 {
     public string Target => target;
-    public ComponentKind Kind => ComponentKind.Service;
+    public ComponentKind Kind => kind;
 
     public async Task<ServiceHealthStatus> ProbeAsync(CancellationToken ct)
     {

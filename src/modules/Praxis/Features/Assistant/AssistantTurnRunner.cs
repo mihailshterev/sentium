@@ -137,7 +137,7 @@ internal sealed class AssistantTurnRunner(
     {
         var serializedSession = await agent.SerializeSessionAsync(session, cancellationToken: ct);
 
-        approvalStore.Add(request.RequestId, new PendingApproval(
+        await approvalStore.AddAsync(request.RequestId, new PendingApproval(
             serializedSession,
             request,
             turn.ConversationId,
@@ -145,7 +145,7 @@ internal sealed class AssistantTurnRunner(
             turn.UserId,
             turn.CorrelationId,
             turn.OriginalUserPrompt,
-            agentName));
+            agentName), ct);
 
         var call = request.ToolCall as FunctionCallContent;
         var approvalData = new ToolApprovalData(request.RequestId, call?.Name ?? "unknown", call?.Arguments, call?.CallId);

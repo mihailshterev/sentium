@@ -18,8 +18,6 @@ namespace Sentium.Sentinel;
 
 public static class SentinelModuleExtensions
 {
-    internal const string ModuleName = "sentinel";
-
     /// <summary>
     /// DI key of Sentinel's raw (un-harnessed) chat client used for semantic intent checks.
     /// Keyed so it never collides with the agent chat pipeline Praxis registers.
@@ -44,7 +42,7 @@ public static class SentinelModuleExtensions
         services.AddScoped<SentinelPolicyEngine>();
         services.AddSingleton<IPolicyDecisionPoint, PolicyDecisionPoint>();
 
-        services.AddSingleton<IRateLimitStore, InMemoryRateLimitStore>();
+        services.AddSingleton<AgentRateLimiter>();
 
         // Defense-in-depth policy chain. Order matters: the engine evaluates in registration
         // order and short-circuits on the first deny. Cheap, deterministic, hard-deny policies
@@ -76,8 +74,6 @@ public static class SentinelModuleExtensions
             .UseOpenTelemetry(sourceName: GenAiTelemetry.SourceName(GenAiTelemetry.IntentCheckCaller));
 
         services.AddSingleton<IPdpRuntimeSettingsProvider, RegistryPdpSettingsProvider>();
-
-        services.AddHealthChecks().AddDbContextCheck<SentinelDbContext>("sentinel-db", tags: [ModuleName]);
 
         return builder;
     }

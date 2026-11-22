@@ -39,7 +39,7 @@ function applyStatus(queryClient: QueryClient, update: StatusPayload) {
         : s,
     ),
   );
-  void queryClient.invalidateQueries({ queryKey: SYSTEM_OVERVIEW_KEY });
+  void queryClient.invalidateQueries({ queryKey: SYSTEM_OVERVIEW_KEY }, { cancelRefetch: false });
 }
 
 function applyDeviceUpdate(queryClient: QueryClient, update: DeviceUpdate) {
@@ -51,7 +51,9 @@ function applyDeviceUpdate(queryClient: QueryClient, update: DeviceUpdate) {
   }
   queryClient.setQueryData<DeviceStatus[]>(DEVICE_STATUSES_KEY, (prev) =>
     prev?.map((d) =>
-      d.id === update.id ? { ...d, isOnline: update.isOnline, lastSeenAt: update.lastSeenAt, report: update.report } : d,
+      d.id === update.id
+        ? { ...d, isOnline: update.isOnline, lastSeenAt: update.lastSeenAt, report: update.report }
+        : d,
     ),
   );
 }
@@ -64,7 +66,7 @@ export function useVigilStream() {
   useRealtimeTopic(VIGIL_TOPICS, (message: RealtimeMessage) => {
     if (message.kind === "resync") {
       for (const queryKey of [SERVICE_HEALTH_KEY, SYSTEM_OVERVIEW_KEY, INCIDENTS_KEY, DEVICE_STATUSES_KEY]) {
-        void queryClient.invalidateQueries({ queryKey });
+        void queryClient.invalidateQueries({ queryKey }, { cancelRefetch: false });
       }
       return;
     }
@@ -75,15 +77,17 @@ export function useVigilStream() {
         break;
       case REALTIME_TOPICS.vigilIncidentOpened:
       case REALTIME_TOPICS.vigilIncidentResolved:
-        void queryClient.invalidateQueries({ queryKey: INCIDENTS_KEY });
-        void queryClient.invalidateQueries({ queryKey: SYSTEM_OVERVIEW_KEY });
+        void queryClient.invalidateQueries({ queryKey: INCIDENTS_KEY }, { cancelRefetch: false });
+        void queryClient.invalidateQueries({ queryKey: SYSTEM_OVERVIEW_KEY }, { cancelRefetch: false });
         break;
       case REALTIME_TOPICS.vigilDeviceUpdated:
         applyDeviceUpdate(queryClient, message.data as DeviceUpdate);
         break;
       case REALTIME_TOPICS.vigilDeviceRemoved: {
         const removedId = (message.data as { id: string }).id;
-        queryClient.setQueryData<DeviceStatus[]>(DEVICE_STATUSES_KEY, (prev) => prev?.filter((d) => d.id !== removedId));
+        queryClient.setQueryData<DeviceStatus[]>(DEVICE_STATUSES_KEY, (prev) =>
+          prev?.filter((d) => d.id !== removedId),
+        );
         break;
       }
     }

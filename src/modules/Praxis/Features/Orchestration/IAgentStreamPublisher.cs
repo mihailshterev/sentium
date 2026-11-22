@@ -8,8 +8,9 @@ namespace Sentium.Praxis.Features.Orchestration;
 internal interface IAgentStreamPublisher
 {
     /// <summary>
-    /// Appends <paramref name="update"/> to the stream's replay buffer and fans it out to live subscribers.
-    /// Never blocks: slow subscribers drop their oldest queued frames instead of stalling the producer.
+    /// Appends <paramref name="update"/> to the stream's replay buffer and fans it out to live subscribers; consecutive
+    /// text tokens are joined into one frame first. Never blocks: a subscriber that falls too far behind is disconnected
+    /// and catches up from the buffer when its client reconnects.
     /// </summary>
     void Publish(string streamId, AgentStreamUpdate update);
 }

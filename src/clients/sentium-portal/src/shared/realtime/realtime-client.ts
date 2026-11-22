@@ -55,7 +55,10 @@ const dispatchFrame = (raw: string) => {
   }
 
   if (frame.topic === REALTIME_TOPICS.connected) {
-    handlers.forEach((set) => set.forEach((handler) => notify(handler, { kind: "resync" })));
+    // A handler subscribed to several topics is in several sets, but must refetch once per reconnect.
+    const unique = new Set<RealtimeHandler>();
+    handlers.forEach((set) => set.forEach((handler) => unique.add(handler)));
+    unique.forEach((handler) => notify(handler, { kind: "resync" }));
     return;
   }
 

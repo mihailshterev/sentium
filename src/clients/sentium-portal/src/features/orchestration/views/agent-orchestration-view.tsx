@@ -8,6 +8,7 @@ import { fetchWorkspaces } from "@/features/workspaces/api/workspaces.service";
 import { useWorkflows } from "@/features/workflows/hooks/useWorkflows";
 import { useRenameWorkflowRun, useWorkflowRun } from "@/features/workflows/hooks/useWorkflowRuns";
 import { describeRun } from "@/features/workflows/utils/describe-run";
+import { useAuthStore } from "@/shared/auth/state/auth-store";
 import { useInfiniteList } from "@/shared/hooks/useInfiniteList";
 import { useDebouncedValue } from "@/shared/hooks/useDebouncedValue";
 import type { Phase } from "@/features/orchestration/types/orchestration";
@@ -37,7 +38,10 @@ const PHASE_ORDER: Phase[] = ["IDLE", "PLANNING", "SQUAD", "VALIDATING", "COMPLE
 
 const RUN_HISTORY_KEYS = [["workflowRuns"]] as const;
 export function AgentOrchestrationView() {
-  const { workflows } = useWorkflows();
+  const { workflows: visibleWorkflows } = useWorkflows();
+  const userId = useAuthStore((s) => s.user?.sub);
+  // A Sovereign sees every member's workflows, but a run acts as its starter and can only use their own.
+  const workflows = useMemo(() => visibleWorkflows.filter((w) => w.userId === userId), [visibleWorkflows, userId]);
   const { runId } = useParams<{ runId?: string }>();
   const navigate = useNavigate();
 

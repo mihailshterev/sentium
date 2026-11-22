@@ -66,7 +66,9 @@ describe("useVigilStream", () => {
 
     push("vigil.incident.opened", { id: "i1" });
 
-    expect(invalidate).toHaveBeenCalledWith(expect.objectContaining({ queryKey: INCIDENTS_KEY }));
+    expect(invalidate).toHaveBeenCalledWith(expect.objectContaining({ queryKey: INCIDENTS_KEY }), {
+      cancelRefetch: false,
+    });
   });
 
   it("drops a removed Device from the cache", () => {
@@ -84,7 +86,11 @@ describe("useVigilStream", () => {
 
     push("connected");
 
-    expect(invalidate).toHaveBeenCalledWith(expect.objectContaining({ queryKey: SERVICE_HEALTH_KEY }));
-    expect(invalidate).toHaveBeenCalledWith(expect.objectContaining({ queryKey: DEVICE_STATUSES_KEY }));
+    expect(invalidate).toHaveBeenCalledWith(expect.objectContaining({ queryKey: SERVICE_HEALTH_KEY }), {
+      cancelRefetch: false,
+    });
+    expect(invalidate).toHaveBeenCalledWith(expect.objectContaining({ queryKey: DEVICE_STATUSES_KEY }), {
+      cancelRefetch: false,
+    });
   });
 });

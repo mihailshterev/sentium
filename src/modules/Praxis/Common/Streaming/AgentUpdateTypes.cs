@@ -3,7 +3,6 @@ namespace Sentium.Praxis.Common.Streaming;
 internal static class AgentUpdateTypes
 {
     public const string Message = "message";
-    public const string Tool = "tool";
     public const string ToolCall = "tool_call";
     public const string ToolResult = "tool_result";
     public const string ApprovalRequest = "approval_request";
@@ -14,6 +13,11 @@ internal static class AgentUpdateTypes
     public const string EnhancedPrompt = "enhanced_prompt";
     public const string Status = "status";
     public const string Title = "title";
+
+    /// <summary>
+    /// A workflow run entered a phase (see <see cref="WorkflowPhases"/>). Live-only: it is not kept in the run's log.
+    /// </summary>
+    public const string Phase = "phase";
 
     /// <summary>
     /// The terminal frame of a stream the relay no longer holds (never started, or evicted after it ended): the client

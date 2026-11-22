@@ -1,3 +1,5 @@
+using Sentium.Sentinel.Contracts;
+
 namespace Sentium.Sentinel.Features.Policies;
 
 /// <summary>
@@ -19,5 +21,5 @@ internal interface IPdpPolicy
     /// or <see langword="null"/> when the policy is not applicable and the engine
     /// should continue to the next layer.
     /// </returns>
-    Task<PolicyDecision?> EvaluateAsync(PolicyRequest request, CancellationToken ct);
+    Task<PolicyDecision?> EvaluateAsync(PolicyEvaluationRequest request, CancellationToken ct);
 }

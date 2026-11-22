@@ -26,7 +26,7 @@ public sealed class PdpSettings
 
     [Setting(
         "Semantic intent check",
-        "Asks a model to verify that each agent action matches what the user asked for.",
+        "Asks a model to verify that each risky agent action (a write, code execution or external call) matches what the user asked for.",
         Keywords = ["sentinel", "pdp", "alignment", "llm"])]
     public bool SemanticIntentCheckEnabled { get; set; } = true;
 

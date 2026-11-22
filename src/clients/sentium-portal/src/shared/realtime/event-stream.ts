@@ -86,12 +86,23 @@ export function openEventStream(url: string, options: EventStreamOptions): Event
     source = null;
   };
 
+  /**
+   * Fires at the deadline the last activity set. Activity itself only records a timestamp - a streamed answer is many
+   * frames a second - and the timer re-arms for whatever time is left when it finds the connection was active.
+   */
+  const checkHeartbeat = () => {
+    const silentFor = Date.now() - lastActivity;
+    if (silentFor >= heartbeatTimeoutMs) {
+      watchdog = null;
+      void recover();
+      return;
+    }
+    watchdog = setTimeout(checkHeartbeat, heartbeatTimeoutMs - silentFor);
+  };
+
   const noteActivity = () => {
     lastActivity = Date.now();
-    if (watchdog) {
-      clearTimeout(watchdog);
-    }
-    watchdog = setTimeout(() => void recover(), heartbeatTimeoutMs);
+    watchdog ??= setTimeout(checkHeartbeat, heartbeatTimeoutMs);
   };
 
   const connect = () => {

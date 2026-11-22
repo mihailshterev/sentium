@@ -1,4 +1,4 @@
-using Sentium.Infrastructure.Extensions;
+using Microsoft.Extensions.Options;
 using Sentium.Infrastructure.Realtime;
 using Sentium.Infrastructure.Security;
 using Sentium.Praxis.Common.Streaming;
@@ -29,16 +29,14 @@ internal sealed class WorkflowRunProcessor(
     ScheduledRunGate scheduledRunGate,
     IEnumerable<IUnattendedRunObserver> runObservers,
     IRealtimePublisher realtime,
-    IConfiguration configuration,
+    IOptions<StreamingOptions> options,
     ILogger<WorkflowRunProcessor> logger) : BackgroundService
 {
-    private const int DefaultMaxConcurrency = 4;
-    private const int DefaultTimeoutMinutes = 120;
     private const int MaxAttempts = 4;
     private static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(3);
 
-    private readonly int _maxConcurrency = ResolveMaxConcurrency(configuration);
-    private readonly TimeSpan _workflowTimeout = ResolveWorkflowTimeout(configuration);
+    private readonly int _maxConcurrency = options.Value.MaxConcurrentWorkflows;
+    private readonly TimeSpan _workflowTimeout = options.Value.WorkflowTimeout;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -347,16 +345,6 @@ internal sealed class WorkflowRunProcessor(
             logger.LogWarning(ex, "Failed to emit '{Type}' frame for stream {StreamId}.", type, streamId);
         }
     }
-
-    private static int ResolveMaxConcurrency(IConfiguration configuration)
-    {
-        return int.TryParse(configuration["Orchestration:MaxConcurrentWorkflows"], out var configured) && configured > 0
-            ? configured
-            : DefaultMaxConcurrency;
-    }
-
-    private static TimeSpan ResolveWorkflowTimeout(IConfiguration configuration)
-        => configuration.GetTimeSpan("Orchestration:WorkflowTimeout", TimeSpan.FromMinutes(DefaultTimeoutMinutes));
 
     private sealed record RunEnd(UnattendedRunStatus Status, PersistedRun? Run);
 }

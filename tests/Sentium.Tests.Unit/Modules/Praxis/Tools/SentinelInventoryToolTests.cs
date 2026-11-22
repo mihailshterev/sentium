@@ -30,9 +30,9 @@ public sealed class SentinelInventoryToolTests
             .Returns(new PolicyEvaluationResponse
             {
                 Allowed = true,
-                Effect = "Allow",
+                Effect = PolicyEffect.Allow,
                 Reason = "ok",
-                Risk = "Low",
+                Risk = PolicyRiskLevel.Low,
                 AuditId = Guid.NewGuid(),
                 Timestamp = DateTimeOffset.UtcNow
             });
@@ -77,7 +77,7 @@ public sealed class SentinelInventoryToolTests
         Assert.Equal("result", result);
         Assert.NotNull(_captured);
         Assert.Equal(toolName, _captured!.SkillName);
-        Assert.Equal("Inventory", _captured.ResourceType);
+        Assert.Equal(ResourceType.Inventory, _captured.ResourceType);
         Assert.Equal(expectedAction, _captured.Action);
         Assert.Equal(value, _captured.ResourceId);
         // reads and searches never forward an egress payload

@@ -1,4 +1,4 @@
-using Sentium.Infrastructure.Extensions;
+using Microsoft.Extensions.Options;
 using Sentium.Infrastructure.Security;
 using Sentium.Praxis.Common.Streaming;
 using Sentium.Praxis.Contracts;
@@ -19,19 +19,16 @@ internal sealed class AssistantTurnProcessor(
     IAgentStreamPublisher stream,
     IServiceScopeFactory scopeFactory,
     IPdpContextAccessor runContext,
-    IConfiguration configuration,
+    IOptions<AssistantOptions> options,
     ILogger<AssistantTurnProcessor> logger) : BackgroundService
 {
-    private const int DefaultMaxConcurrency = 8;
     private const string FailedMessage = "An unexpected error occurred while generating the response.";
     private const string ShutdownMessage = "Sentium stopped before the response finished.";
     private const string TimeoutMessage = "The response took too long and was stopped.";
     private const string StoppedMessage = "Stopped by user.";
 
-    private static readonly TimeSpan DefaultTurnTimeout = TimeSpan.FromMinutes(30);
-
-    private readonly int _maxConcurrency = ResolveMaxConcurrency(configuration);
-    private readonly TimeSpan _turnTimeout = configuration.GetTimeSpan("Assistant:TurnTimeout", DefaultTurnTimeout);
+    private readonly int _maxConcurrency = options.Value.MaxConcurrentTurns;
+    private readonly TimeSpan _turnTimeout = options.Value.TurnTimeout;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -130,12 +127,5 @@ internal sealed class AssistantTurnProcessor(
         {
             logger.LogWarning(ex, "Failed to emit the '{Type}' frame of assistant turn {TurnId}.", type, turnId);
         }
-    }
-
-    private static int ResolveMaxConcurrency(IConfiguration configuration)
-    {
-        return int.TryParse(configuration["Assistant:MaxConcurrentTurns"], out var configured) && configured > 0
-            ? configured
-            : DefaultMaxConcurrency;
     }
 }

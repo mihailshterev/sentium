@@ -1,8 +1,8 @@
+using System.Diagnostics;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Sentium.Core.Constants;
+using Microsoft.Extensions.Options;
 using Sentium.Infrastructure.Security;
-using Sentium.Infrastructure.Streaming;
 using Sentium.Praxis.Features.Agents.Approvals;
 using Sentium.Praxis.Features.Conversations;
 using Sentium.Praxis.Features.Orchestration;
@@ -24,14 +24,13 @@ internal sealed class AssistantController(
     IStreamRelay streamRelay,
     IPendingApprovalStore approvalStore,
     ICurrentUser currentUser,
-    IWorkspaceContextBuilder workspaceContext) : ControllerBase
+    IWorkspaceContextBuilder workspaceContext,
+    IOptions<StreamingOptions> streamingOptions) : ControllerBase
 {
     /// <summary>
     /// The user turn sent when files are attached without any text, so the turn is still recorded and titled.
     /// </summary>
     private const string AttachmentOnlyPrompt = "Please review the attached files.";
-
-    private static readonly TimeSpan MaxStreamDuration = TimeSpan.FromMinutes(30);
 
     /// <summary>
     /// Queues a chat turn and returns its id; follow it on <c>turns/{turnId}/stream</c> (thoughts, tool calls, text,
@@ -79,13 +78,12 @@ internal sealed class AssistantController(
     [HttpPost("chat/approve")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public ActionResult<AssistantTurnAcceptedResponse> ApproveToolCall([FromBody] ApproveToolCallRequest requestBody)
+    public async Task<ActionResult<AssistantTurnAcceptedResponse>> ApproveToolCall([FromBody] ApproveToolCallRequest requestBody, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(requestBody);
 
         if (currentUser.UserId is not { } userId
-            || !approvalStore.TryTake(requestBody.RequestId, userId, out var pending)
-            || pending is null)
+            || await approvalStore.TakeAsync(requestBody.RequestId, userId, ct) is not { } pending)
         {
             return NotFound();
         }
@@ -121,8 +119,8 @@ internal sealed class AssistantController(
             streamRelay,
             turnId,
             RelayStreams.ResumePoint(Request),
-            SseStreams.DefaultHeartbeatInterval,
-            MaxStreamDuration,
+            streamingOptions.Value.HeartbeatInterval,
+            streamingOptions.Value.StreamMaxDuration,
             HttpContext.RequestAborted);
     }
 
@@ -149,9 +147,12 @@ internal sealed class AssistantController(
         return new AssistantTurnAcceptedResponse(turn.TurnId);
     }
 
-    private string ResolveCorrelationId()
+    /// <summary>
+    /// The request's trace id, so the turn's audit records and sandbox runs line up with its logs and traces.
+    /// </summary>
+    private static string ResolveCorrelationId()
     {
-        return Request.Headers.TryGetValue(CommonHeaderNames.CorrelationId, out var header) ? header.ToString() : Guid.NewGuid().ToString();
+        return Activity.Current?.TraceId.ToHexString() ?? Guid.NewGuid().ToString();
     }
 
     private static string NewTurnId() => Guid.NewGuid().ToString("N");

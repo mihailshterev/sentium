@@ -38,9 +38,9 @@ describe("useNotificationStream", () => {
     const invalidate = vi.spyOn(qc, "invalidateQueries");
 
     push(frame);
-    await act(() => vi.advanceTimersByTimeAsync(300));
+    await act(() => vi.advanceTimersByTimeAsync(1_100));
 
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: notificationKeys.all });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: notificationKeys.all }, { cancelRefetch: false });
   });
 
   it("refreshes once for a burst of events", async () => {
@@ -49,7 +49,7 @@ describe("useNotificationStream", () => {
 
     push({ topic: "notifications", data: { type: "notification" } });
     push({ topic: "notifications", data: { type: "notification" } });
-    await act(() => vi.advanceTimersByTimeAsync(300));
+    await act(() => vi.advanceTimersByTimeAsync(1_100));
 
     expect(invalidate).toHaveBeenCalledTimes(1);
   });
@@ -60,7 +60,7 @@ describe("useNotificationStream", () => {
 
     act(() => FakeEventSource.last().emit("not json"));
     push({ topic: "vault" });
-    await act(() => vi.advanceTimersByTimeAsync(300));
+    await act(() => vi.advanceTimersByTimeAsync(1_100));
 
     expect(invalidate).not.toHaveBeenCalled();
   });
@@ -71,7 +71,7 @@ describe("useNotificationStream", () => {
 
     unmount();
     push({ topic: "notifications", data: { type: "read" } });
-    await act(() => vi.advanceTimersByTimeAsync(300));
+    await act(() => vi.advanceTimersByTimeAsync(1_100));
 
     expect(invalidate).not.toHaveBeenCalled();
   });

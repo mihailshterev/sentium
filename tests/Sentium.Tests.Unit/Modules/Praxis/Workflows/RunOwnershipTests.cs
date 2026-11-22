@@ -1,5 +1,5 @@
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Sentium.Praxis.Features.Orchestration;
 using Xunit;
 
@@ -13,7 +13,7 @@ public sealed class RunOwnershipTests : IDisposable
     private static readonly Guid Owner = Guid.NewGuid();
     private static readonly Guid Stranger = Guid.NewGuid();
 
-    private readonly StreamRelay _relay = new(new ConfigurationBuilder().Build(), NullLogger<StreamRelay>.Instance);
+    private readonly StreamRelay _relay = new(Options.Create(new StreamingOptions { TextCoalesceWindow = TimeSpan.Zero }), NullLogger<StreamRelay>.Instance);
     private readonly WorkflowExecutionRegistry _registry = new();
     private readonly CancellationTokenSource _run = new();
 

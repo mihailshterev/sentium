@@ -1,10 +1,10 @@
 using System.Text.Json.Serialization;
 
-namespace Sentium.Sentinel.Features.Policies;
+namespace Sentium.Sentinel.Contracts;
 
 // Serialized by name: API clients read these as strings.
 [JsonConverter(typeof(JsonStringEnumConverter<PolicyRiskLevel>))]
-internal enum PolicyRiskLevel
+public enum PolicyRiskLevel
 {
     Low,
     Medium,

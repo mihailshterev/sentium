@@ -85,34 +85,28 @@ internal sealed class PgVectorRepository(CodexDbContext db, IOptions<RagOptions>
         ArgumentNullException.ThrowIfNull(metadataValue);
         ArgumentNullException.ThrowIfNull(batches);
 
-        // The retrying execution strategy only accepts a user transaction wrapped as one unit; a retry re-runs the
-        // whole replacement, including the (re-enumerated) batches.
-        var strategy = db.Database.CreateExecutionStrategy();
-        await strategy.ExecuteAsync(async cancellationToken =>
+        db.ChangeTracker.Clear();
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+
+        var deleted = await DeleteByMetadataCoreAsync(collectionName, metadataKey, metadataValue, ct);
+        var added = 0;
+
+        await foreach (var batch in batches.WithCancellation(ct))
         {
+            AddEntities(collectionName, batch);
+            await db.SaveChangesAsync(ct);
             db.ChangeTracker.Clear();
-            await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
+            added += batch.Count;
+        }
 
-            var deleted = await DeleteByMetadataCoreAsync(collectionName, metadataKey, metadataValue, cancellationToken);
-            var added = 0;
+        await transaction.CommitAsync(ct);
 
-            await foreach (var batch in batches.WithCancellation(cancellationToken))
-            {
-                AddEntities(collectionName, batch);
-                await db.SaveChangesAsync(cancellationToken);
-                db.ChangeTracker.Clear();
-                added += batch.Count;
-            }
-
-            await transaction.CommitAsync(cancellationToken);
-
-            if (logger.IsEnabled(LogLevel.Information))
-            {
-                logger.LogInformation(
-                    "Replaced {Deleted} chunks with {Added} for {Key}={Value} in collection '{Collection}'",
-                    deleted, added, metadataKey, metadataValue, collectionName);
-            }
-        }, ct);
+        if (logger.IsEnabled(LogLevel.Information))
+        {
+            logger.LogInformation(
+                "Replaced {Deleted} chunks with {Added} for {Key}={Value} in collection '{Collection}'",
+                deleted, added, metadataKey, metadataValue, collectionName);
+        }
     }
 
     public Task<int> DeleteByMetadataAsync(string collectionName, string metadataKey, string metadataValue, CancellationToken ct = default)
@@ -136,23 +130,17 @@ internal sealed class PgVectorRepository(CodexDbContext db, IOptions<RagOptions>
         var query = new Vector(queryEmbedding);
 
         // The HNSW index is scanned before the collection/scope filter is applied; iterative scan keeps
-        // walking the graph until topK rows survive the filter. SET LOCAL needs a transaction, and the
-        // retrying execution strategy needs that transaction wrapped so it can replay it as a unit.
-        var strategy = db.Database.CreateExecutionStrategy();
-        var hits = await strategy.ExecuteAsync(async cancellationToken =>
-        {
-            await using var transaction = await db.Database.BeginTransactionAsync(cancellationToken);
-            await db.Database.ExecuteSqlRawAsync("SET LOCAL hnsw.iterative_scan = relaxed_order", cancellationToken);
+        // walking the graph until topK rows survive the filter. SET LOCAL needs a transaction.
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+        await db.Database.ExecuteSqlRawAsync("SET LOCAL hnsw.iterative_scan = relaxed_order", ct);
 
-            var rows = await ApplyScope(Chunks(scope).AsNoTracking().Where(e => e.Collection == collectionName), scope)
-                .Select(e => new { Chunk = e, Distance = e.Embedding.CosineDistance(query) })
-                .OrderBy(x => x.Distance)
-                .Take(topK)
-                .ToListAsync(cancellationToken);
+        var hits = await ApplyScope(Chunks(scope).AsNoTracking().Where(e => e.Collection == collectionName), scope)
+            .Select(e => new { Chunk = e, Distance = e.Embedding.CosineDistance(query) })
+            .OrderBy(x => x.Distance)
+            .Take(topK)
+            .ToListAsync(ct);
 
-            await transaction.CommitAsync(cancellationToken);
-            return rows;
-        }, ct);
+        await transaction.CommitAsync(ct);
 
         if (logger.IsEnabled(LogLevel.Debug))
         {

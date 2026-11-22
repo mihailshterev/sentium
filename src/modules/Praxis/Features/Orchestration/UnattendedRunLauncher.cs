@@ -16,6 +16,7 @@ namespace Sentium.Praxis.Features.Orchestration;
 internal sealed class UnattendedRunLauncher(
     IWorkflowRunQueue queue,
     ScheduledRunGate gate,
+    IStreamRelay streamRelay,
     IServiceScopeFactory scopeFactory,
     ILogger<UnattendedRunLauncher> logger) : IUnattendedRunLauncher
 {
@@ -39,6 +40,9 @@ internal sealed class UnattendedRunLauncher(
             StreamId = Guid.NewGuid().ToString("N"),
             Schedule = new ScheduledRun(request.ScheduleId, request.ScheduleName, new UnattendedRunPolicy(preApproved)),
         };
+
+        // Claimed like an interactive run, so only the owner (or a Sovereign) can follow it.
+        streamRelay.Claim(trigger.StreamId, request.OwnerId);
 
         try
         {

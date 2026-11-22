@@ -2,6 +2,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Sentium.Core.Constants;
 using Sentium.Identity.Contracts;
+using Sentium.Infrastructure.Diagnostics;
 using Sentium.Infrastructure.Extensions;
 using Sentium.Infrastructure.Inference;
 using Sentium.Infrastructure.Retention;
@@ -20,27 +21,8 @@ namespace Sentium.Vigil;
 
 public static class VigilModuleExtensions
 {
-    internal const string ModuleName = "vigil";
-
     // Metrics reads are small; a server that takes longer is effectively unavailable for this sample.
     private static readonly TimeSpan MetricsRequestTimeout = TimeSpan.FromSeconds(10);
-
-    /// <summary>
-    /// Modules hosted in Sentium.Web, probed in-process through the health checks each one tags with its name.
-    /// </summary>
-    private static readonly (string Display, string Tag)[] MonitoredModules =
-    [
-        ("Identity", "identity"),
-        ("Sentinel", "sentinel"),
-        ("Praxis",   "praxis"),
-        ("MCP",      "mcp"),
-        ("Codex",    "codex"),
-        ("Locus",    "locus"),
-        ("Tempus",   "tempus"),
-        ("Memoria",  "memoria"),
-        ("Nuntius",  "nuntius"),
-        ("Registry", "registry")
-    ];
 
     /// <summary>
     /// Processes outside Sentium.Web, probed over HTTP on their <c>/health</c> endpoint.
@@ -65,7 +47,6 @@ public static class VigilModuleExtensions
         services.AddSingleton<IIncidentStore, IncidentStore>();
         services.AddSingleton<IVigilFeed, VigilFeed>();
 
-        RegisterModuleProbes(services);
         RegisterServiceProbes(services);
         RegisterInfrastructureProbes(services, builder.Configuration);
 
@@ -80,8 +61,6 @@ public static class VigilModuleExtensions
         services.AddHostedService<DeviceOfflineWatcher>();
 
         RegisterInferenceMetrics(services, builder.Configuration);
-
-        services.AddHealthChecks().AddDbContextCheck<VigilDbContext>("vigil-db", tags: [ModuleName]);
 
         return builder;
     }
@@ -120,14 +99,6 @@ public static class VigilModuleExtensions
 #pragma warning restore EXTEXP0001
     }
 
-    private static void RegisterModuleProbes(IServiceCollection services)
-    {
-        foreach (var (display, tag) in MonitoredModules)
-        {
-            services.AddSingleton<IHealthProbe>(sp => new ModuleHealthProbe(sp.GetRequiredService<HealthCheckService>(), display, tag));
-        }
-    }
-
     private static void RegisterServiceProbes(IServiceCollection services)
     {
         foreach (var (display, clientName) in MonitoredServices)
@@ -147,7 +118,10 @@ public static class VigilModuleExtensions
 
     private static void RegisterInfrastructureProbes(IServiceCollection services, IConfiguration configuration)
     {
-        AddTcpProbe(services, configuration, ResourceNames.SentiumDb, "PostgreSQL", defaultPort: 5432);
+        // Every module lives in this process and keeps its schema in the one database, so the database is probed once
+        // rather than once per module: an outage is one incident, not one per module.
+        services.AddSingleton<IHealthProbe>(sp => new HealthCheckProbe(
+            sp.GetRequiredService<HealthCheckService>(), "PostgreSQL", DatabaseHealthCheck.Tag, ComponentKind.Infrastructure));
         AddTcpProbe(services, configuration, ResourceNames.WorkspaceBlobs, "Object storage", defaultPort: 8333);
 
         // Both llama-server instances expose an unauthenticated /health that only turns healthy once their

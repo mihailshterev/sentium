@@ -16,7 +16,6 @@ import {
   decideApproval,
   finalizeTurn,
   finishTool,
-  legacyToolName,
   parseJson,
   requestApproval,
   startTool,
@@ -26,7 +25,7 @@ import {
   type ToolResultFrame,
 } from "@/shared/agent-activity";
 
-export type MessageUpdateKind = "content" | "thought" | "tool" | "tool_call" | "tool_result" | "approval";
+export type MessageUpdateKind = "content" | "thought" | "tool_call" | "tool_result" | "approval";
 
 interface SendMessageArgs {
   conversationId: string | null;
@@ -75,7 +74,7 @@ const STOP_FALLBACK_MS = 8_000;
 /** Failed connections in a row before the turn is given up on (the backoff makes this about a minute). */
 const MAX_STREAM_ATTEMPTS = 6;
 const LOST_CONNECTION_MESSAGE = "Lost the connection to the assistant. Please try again.";
-const ACTIVITY_TYPES = new Set<string>(["thought", "tool", "tool_call", "tool_result"]);
+const ACTIVITY_TYPES = new Set<string>(["thought", "tool_call", "tool_result"]);
 /** Frames whose text simply concatenates, so a batch of them applies as one update. */
 const MERGEABLE_TYPES = new Set<string>(["message", "thought"]);
 
@@ -143,9 +142,6 @@ const withUpdate = (
       next = finishTool(turn, frame);
       break;
     }
-    case "tool":
-      next = startTool(turn, { callId: "", name: legacyToolName(appendContent) });
-      break;
     case "approval": {
       const frame = parseJson<ApprovalFrame>(appendContent);
       if (!frame) return null;
@@ -241,7 +237,12 @@ export const createConversationStore = (options: CreateConversationStoreOptions 
     /** Keeps the shown conversation's messages when leaving it while its turn still streams. */
     const parkIfLeavingStream = (nextId: string | null) => {
       const { activeConversationId, streamingConversationId, isStreaming, messages } = get();
-      if (isStreaming && activeConversationId && activeConversationId === streamingConversationId && nextId !== activeConversationId) {
+      if (
+        isStreaming &&
+        activeConversationId &&
+        activeConversationId === streamingConversationId &&
+        nextId !== activeConversationId
+      ) {
         parked = { conversationId: activeConversationId, messages };
       }
     };

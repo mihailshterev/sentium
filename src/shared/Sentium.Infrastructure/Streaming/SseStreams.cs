@@ -75,6 +75,12 @@ public static class SseStreams
     {
         try
         {
+            // A frame already waiting (a replayed backlog, a burst of tokens) needs no heartbeat timer.
+            if (next.IsCompleted)
+            {
+                return await next ? WaitResult.Item : WaitResult.End;
+            }
+
             return await next.WaitAsync(heartbeatInterval, ct) ? WaitResult.Item : WaitResult.End;
         }
         catch (TimeoutException)

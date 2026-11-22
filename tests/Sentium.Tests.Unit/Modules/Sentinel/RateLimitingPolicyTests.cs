@@ -1,3 +1,4 @@
+using Sentium.Sentinel.Contracts;
 using Sentium.Sentinel.Features.Policies;
 using Sentium.Sentinel.Features.RateLimiting;
 using Sentium.Sentinel.Features.Settings;
@@ -5,16 +6,20 @@ using Xunit;
 
 namespace Sentium.Tests.Unit.Modules.Sentinel;
 
-public sealed class RateLimitingPolicyTests
+public sealed class RateLimitingPolicyTests : IDisposable
 {
-    private static RateLimitingPolicy MakePolicy(int max = 10, int windowSeconds = 60)
+    private readonly AgentRateLimiter _limiter = new();
+
+    public void Dispose() => _limiter.Dispose();
+
+    private RateLimitingPolicy MakePolicy(int max = 10, int windowSeconds = 60)
     {
         var provider = new FakePdpRuntimeSettingsProvider(
             new PdpRuntimeSettings { RateLimitMaxRequests = max, RateLimitWindowSeconds = windowSeconds });
-        return new RateLimitingPolicy(new InMemoryRateLimitStore(), provider);
+        return new RateLimitingPolicy(_limiter, provider);
     }
 
-    private static PolicyRequest MakeRequest(string agentId = "agent-1")
+    private static PolicyEvaluationRequest MakeRequest(string agentId = "agent-1")
     {
         return new()
         {

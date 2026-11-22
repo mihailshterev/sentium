@@ -1,9 +1,9 @@
 using System.Text;
 using System.Text.Json;
 using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Sentium.Praxis.Common.Streaming;
 using Sentium.Praxis.Features.Orchestration;
 using Xunit;
@@ -20,7 +20,7 @@ public sealed class RelayStreamsTests : IDisposable
     private static readonly TimeSpan NoHeartbeat = TimeSpan.FromHours(1);
     private static readonly TimeSpan NoCap = TimeSpan.FromHours(1);
 
-    private readonly StreamRelay _relay = new(new ConfigurationBuilder().Build(), NullLogger<StreamRelay>.Instance);
+    private readonly StreamRelay _relay = new(Options.Create(new StreamingOptions { TextCoalesceWindow = TimeSpan.Zero }), NullLogger<StreamRelay>.Instance);
     private readonly ServiceProvider _services = new ServiceCollection().AddLogging().BuildServiceProvider();
 
     [Fact]

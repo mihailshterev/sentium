@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Sentium.Infrastructure.BackgroundWork;
 using Sentium.Codex.Contracts;
 using Sentium.Codex.Contracts.Models;
 using Sentium.Memoria.Common;
@@ -16,9 +17,13 @@ internal sealed class NoteIndexProcessor(
     IDocumentIngestionService ingestion,
     NoteIndexOutbox outbox,
     TimeProvider timeProvider,
-    ILogger<NoteIndexProcessor> logger)
+    ILogger<NoteIndexProcessor> logger) : IOutboxProcessor
 {
     public const int BatchSize = 20;
+
+    static int IOutboxProcessor.BatchSize => BatchSize;
+
+    Task IOutboxProcessor.ProcessEntryAsync(Guid id, CancellationToken ct) => ProcessAsync(id, ct);
 
     public async Task<IReadOnlyList<Guid>> GetDueAsync(int limit, CancellationToken ct = default)
     {
@@ -134,11 +139,11 @@ internal sealed class NoteIndexProcessor(
     private async Task RecordFailureAsync(NoteIndexEntry entry, Exception exception, CancellationToken ct)
     {
         var attempts = entry.Attempts + 1;
-        var status = attempts >= NoteIndexBackoff.MaxAttempts ? NoteIndexStatus.Failed : NoteIndexStatus.Pending;
-        var nextAttemptAt = timeProvider.GetUtcNow() + NoteIndexBackoff.DelayAfter(attempts);
+        var status = attempts >= RetryBackoff.MaxAttempts ? NoteIndexStatus.Failed : NoteIndexStatus.Pending;
+        var nextAttemptAt = timeProvider.GetUtcNow() + RetryBackoff.DelayAfter(attempts);
         var error = exception.Message.Length > MemoriaLimits.IndexErrorMax ? exception.Message[..MemoriaLimits.IndexErrorMax] : exception.Message;
 
-        logger.LogWarning(exception, "Indexing vault note {NoteId} failed (attempt {Attempt}/{MaxAttempts})", entry.NoteId, attempts, NoteIndexBackoff.MaxAttempts);
+        logger.LogWarning(exception, "Indexing vault note {NoteId} failed (attempt {Attempt}/{MaxAttempts})", entry.NoteId, attempts, RetryBackoff.MaxAttempts);
 
         await db.IndexEntries
             .Where(e => e.NoteId == entry.NoteId && e.Version == entry.Version)

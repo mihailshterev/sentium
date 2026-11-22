@@ -1,3 +1,4 @@
+using Sentium.Sentinel.Contracts;
 using Sentium.Sentinel.Features.Settings;
 
 namespace Sentium.Sentinel.Features.Policies;
@@ -16,7 +17,7 @@ internal sealed class LockdownPolicy(IPdpRuntimeSettingsProvider settings) : IPd
 {
     public string Name => "Lockdown";
 
-    public async Task<PolicyDecision?> EvaluateAsync(PolicyRequest request, CancellationToken ct)
+    public async Task<PolicyDecision?> EvaluateAsync(PolicyEvaluationRequest request, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(request);
 

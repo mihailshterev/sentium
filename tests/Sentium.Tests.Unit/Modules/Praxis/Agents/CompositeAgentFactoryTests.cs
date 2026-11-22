@@ -117,7 +117,7 @@ public sealed class CompositeAgentFactoryTests
         await _host.Pdp.Received(1).EvaluateAsync(
             Arg.Is<PolicyEvaluationRequest>(r =>
                 r.AgentId == AgentRole.GeneralAssistant && r.SkillName == "guarded_write" &&
-                r.ResourceType == "File" && r.Action == "Write" && r.Metadata["payload"].Contains("quarterly numbers")),
+                r.ResourceType == ResourceType.File && r.Action == "Write" && r.Payload!.Contains("quarterly numbers")),
             Arg.Any<CancellationToken>());
     }
 

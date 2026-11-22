@@ -1,9 +1,9 @@
 using System.Text.Json.Serialization;
 
-namespace Sentium.Sentinel.Features.Policies;
+namespace Sentium.Sentinel.Contracts;
 
 [JsonConverter(typeof(JsonStringEnumConverter<ResourceType>))]
-internal enum ResourceType
+public enum ResourceType
 {
     File,
     VectorDb,

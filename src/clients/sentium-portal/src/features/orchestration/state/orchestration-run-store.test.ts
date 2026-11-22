@@ -79,28 +79,33 @@ describe("stream message handling", () => {
     expect(useOrchestrationRunStore.getState().logs).toHaveLength(0);
   });
 
-  it("appends a message log and sets PLANNING phase for orchestrator author", async () => {
+  it("appends a message log without guessing the phase from its author", async () => {
     const src = await startAndGetSource();
-    src.emit(JSON.stringify({ type: "message", author: "Orchestrator", text: "Planning..." }));
+    src.emit(JSON.stringify({ type: "message", author: "Validator", text: "Planning..." }));
     await applied();
 
     const state = useOrchestrationRunStore.getState();
     expect(state.phase).toBe("PLANNING");
-    expect(state.logs).toEqual([{ author: "Orchestrator", text: "Planning...", type: "message" }]);
+    expect(state.logs).toEqual([{ author: "Validator", text: "Planning...", type: "message" }]);
   });
 
-  it("sets VALIDATING phase for validator author", async () => {
+  it("follows the phase frames the run announces, without logging them", async () => {
     const src = await startAndGetSource();
-    src.emit(JSON.stringify({ type: "message", author: "Validator", text: "checking" }));
-    await applied();
-    expect(useOrchestrationRunStore.getState().phase).toBe("VALIDATING");
-  });
-
-  it("sets SQUAD phase for a generic agent author", async () => {
-    const src = await startAndGetSource();
-    src.emit(JSON.stringify({ type: "message", author: "Worker", text: "doing" }));
+    src.emit(JSON.stringify({ type: "phase", author: "System", text: "SQUAD" }));
     await applied();
     expect(useOrchestrationRunStore.getState().phase).toBe("SQUAD");
+
+    src.emit(JSON.stringify({ type: "phase", author: "System", text: "VALIDATING" }));
+    await applied();
+    expect(useOrchestrationRunStore.getState().phase).toBe("VALIDATING");
+    expect(useOrchestrationRunStore.getState().logs).toEqual([]);
+  });
+
+  it("ignores an unknown phase", async () => {
+    const src = await startAndGetSource();
+    src.emit(JSON.stringify({ type: "phase", author: "System", text: "DANCING" }));
+    await applied();
+    expect(useOrchestrationRunStore.getState().phase).toBe("PLANNING");
   });
 
   it("coalesces consecutive same-author message chunks", async () => {
@@ -130,7 +135,11 @@ describe("stream message handling", () => {
 
     const state = useOrchestrationRunStore.getState();
     expect(state.lastOutcome).toBe("error");
-    expect(state.logs.at(-1)).toEqual({ author: "System", text: "The workflow timed out before completing.", type: "error" });
+    expect(state.logs.at(-1)).toEqual({
+      author: "System",
+      text: "The workflow timed out before completing.",
+      type: "error",
+    });
   });
 
   it("reopens a failed stream after the last event it saw", async () => {
@@ -251,7 +260,9 @@ describe("stopRun / resetRun", () => {
 describe("surviving a reload", () => {
   it("remembers the run it follows for this tab, and forgets it once the run ends", async () => {
     await useOrchestrationRunStore.getState().startPredefined({ workflowId: "w1", scenario: "s" });
-    expect(JSON.parse(sessionStorage.getItem("sentium.orchestration.activeRun") ?? "{}")).toMatchObject({ eventId: "e1" });
+    expect(JSON.parse(sessionStorage.getItem("sentium.orchestration.activeRun") ?? "{}")).toMatchObject({
+      eventId: "e1",
+    });
 
     FakeEventSource.last().emit(JSON.stringify({ type: "done", done: true }));
 
@@ -290,7 +301,9 @@ describe("frame batching", () => {
     await applied();
     unsubscribe();
 
-    expect(useOrchestrationRunStore.getState().logs).toEqual([{ author: "Worker", text: "x".repeat(500), type: "message" }]);
+    expect(useOrchestrationRunStore.getState().logs).toEqual([
+      { author: "Worker", text: "x".repeat(500), type: "message" },
+    ]);
   });
 
   it("applies the waiting frames before the terminal one", async () => {

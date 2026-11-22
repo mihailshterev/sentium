@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Options;
+using Sentium.Sentinel.Contracts;
 using Sentium.Sentinel.Features.Policies;
 using Sentium.Sentinel.Features.Options;
 using Xunit;
@@ -10,7 +11,7 @@ public sealed class ProtectedResourcePolicyTests
     private static ProtectedResourcePolicy MakePolicy() =>
         new(Options.Create(new PdpOptions()));
 
-    private static PolicyRequest MakeRequest(
+    private static PolicyEvaluationRequest MakeRequest(
         string action = "read",
         string resourceId = "docs/1",
         string skillName = "read_file") =>

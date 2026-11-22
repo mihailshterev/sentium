@@ -1,5 +1,6 @@
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Options;
+using Sentium.Sentinel.Contracts;
 using Sentium.Sentinel.Features.Options;
 
 namespace Sentium.Sentinel.Features.Policies;
@@ -48,7 +49,7 @@ internal sealed class ProtectedResourcePolicy : IPdpPolicy
 
     public string Name => "ProtectedResource";
 
-    public Task<PolicyDecision?> EvaluateAsync(PolicyRequest request, CancellationToken ct)
+    public Task<PolicyDecision?> EvaluateAsync(PolicyEvaluationRequest request, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(request);
 

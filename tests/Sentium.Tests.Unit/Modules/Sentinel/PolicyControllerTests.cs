@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Sentium.Core.Results;
 using Sentium.Sentinel.Features.Audit;
 using Sentium.Sentinel.Features.Engine;
-using Sentium.Sentinel.Features.Policies;
+using Sentium.Sentinel.Contracts;
 using Xunit;
 
 namespace Sentium.Tests.Unit.Modules.Sentinel;

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Sentium.Infrastructure.Security;
 using Sentium.Praxis.Features.Agents;
 using Sentium.Praxis.Features.Registry;
@@ -22,13 +23,13 @@ internal sealed class OrchestrationController(
     IRegistrySettingsService registrySettingsService,
     IWorkspaceService workspaceService,
     IWorkspaceContextBuilder workspaceContext,
-    IConfiguration configuration,
+    IOptions<StreamingOptions> streamingOptions,
     ILogger<OrchestrationController> logger) : ControllerBase
 {
     private const string UnknownWorkspaceMessage = "There is no such workspace.";
+    private const string ForeignWorkflowMessage = "You can only run your own workflows.";
 
-    private readonly TimeSpan _maxStreamDuration = ResolveTimeSpan(configuration, "Orchestration:StreamMaxDuration", TimeSpan.FromMinutes(30));
-    private readonly TimeSpan _heartbeatInterval = ResolveTimeSpan(configuration, "Orchestration:HeartbeatInterval", TimeSpan.FromSeconds(20));
+    private readonly StreamingOptions _streaming = streamingOptions.Value;
 
     /// <summary>
     /// Queues an ad-hoc dynamic workflow run; the activity is enhanced when prompt enhancement is on. Returns the
@@ -73,6 +74,7 @@ internal sealed class OrchestrationController(
     [HttpPost("run-workflow")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<WorkflowAcceptedResponse>> RunWorkflow([FromBody] RunWorkflowRequest request, CancellationToken ct)
     {
@@ -87,6 +89,13 @@ internal sealed class OrchestrationController(
         if (workflow is null)
         {
             return NotFound();
+        }
+
+        // A run acts as the user who starts it, with no Sovereign bypass, so it could not see another user's workflow or
+        // its agents. A Sovereign sees every workflow here, but runs only their own.
+        if (workflow.UserId != currentUser.UserId)
+        {
+            return Problem(detail: ForeignWorkflowMessage, statusCode: StatusCodes.Status403Forbidden);
         }
 
         var streamId = Guid.NewGuid().ToString("N");
@@ -146,8 +155,8 @@ internal sealed class OrchestrationController(
             streamRelay,
             eventId,
             RelayStreams.ResumePoint(Request),
-            _heartbeatInterval,
-            _maxStreamDuration,
+            _streaming.HeartbeatInterval,
+            _streaming.StreamMaxDuration,
             HttpContext.RequestAborted);
     }
 
@@ -157,25 +166,6 @@ internal sealed class OrchestrationController(
         {
             streamRelay.Claim(streamId, userId);
         }
-    }
-
-    private static TimeSpan ResolveTimeSpan(IConfiguration configuration, string key, TimeSpan fallback)
-    {
-        var raw = configuration[key];
-        if (!string.IsNullOrWhiteSpace(raw))
-        {
-            if (TimeSpan.TryParse(raw, out var asTimeSpan) && asTimeSpan > TimeSpan.Zero)
-            {
-                return asTimeSpan;
-            }
-
-            if (double.TryParse(raw, out var asSeconds) && asSeconds > 0)
-            {
-                return TimeSpan.FromSeconds(asSeconds);
-            }
-        }
-
-        return fallback;
     }
 
     private async Task<string> EnhanceIfEnabledAsync(string? text, CancellationToken ct)

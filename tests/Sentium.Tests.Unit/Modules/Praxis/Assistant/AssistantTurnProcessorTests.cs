@@ -1,6 +1,6 @@
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Sentium.Infrastructure.Security;
 using Sentium.Praxis.Common.Streaming;
 using Sentium.Praxis.Features.Assistant;
@@ -20,7 +20,7 @@ public sealed class AssistantTurnProcessorTests : IAsyncDisposable
 
     private readonly AssistantTurnRegistry _registry = new();
     private readonly AssistantTurnQueue _queue;
-    private readonly StreamRelay _relay = new(new ConfigurationBuilder().Build(), NullLogger<StreamRelay>.Instance);
+    private readonly StreamRelay _relay = new(Options.Create(new StreamingOptions { TextCoalesceWindow = TimeSpan.Zero }), NullLogger<StreamRelay>.Instance);
     private readonly ServiceProvider _services;
     private readonly AssistantTurnProcessor _processor;
 
@@ -38,7 +38,7 @@ public sealed class AssistantTurnProcessorTests : IAsyncDisposable
             _relay,
             _services.GetRequiredService<IServiceScopeFactory>(),
             new PdpContextAccessor(),
-            new ConfigurationBuilder().Build(),
+            Options.Create(new AssistantOptions()),
             NullLogger<AssistantTurnProcessor>.Instance);
     }
 

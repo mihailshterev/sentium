@@ -36,7 +36,7 @@ public sealed class PolicyDecisionPointTests : IDisposable
         {
             AgentId = "agent-1",
             SkillName = "TestSkill",
-            ResourceType = "File",
+            ResourceType = ResourceType.File,
             ResourceId = "docs/report-1",
             Action = "read",
             OriginalUserPrompt = "Show me the report",
@@ -51,30 +51,6 @@ public sealed class PolicyDecisionPointTests : IDisposable
     }
 
     [Fact]
-    public async Task EvaluateAsync_DeniesUnknownResourceType_InsteadOfThrowing()
-    {
-        // Arrange
-        var ct = TestContext.Current.CancellationToken;
-        var body = new PolicyEvaluationRequest
-        {
-            AgentId = "agent-1",
-            SkillName = "TestSkill",
-            ResourceType = "NotAResourceType",
-            ResourceId = "x",
-            Action = "read",
-            OriginalUserPrompt = "Show me the report",
-            CorrelationId = Guid.NewGuid().ToString()
-        };
-
-        // Act
-        var decision = await _sut.EvaluateAsync(body, ct);
-
-        // Assert - fail-closed: an invalid request is a deny decision, not an exception.
-        Assert.False(decision.Allowed);
-        Assert.Equal("Deny", decision.Effect);
-    }
-
-    [Fact]
     public async Task EvaluateAsync_FailsClosed_WhenTheEngineCannotRun()
     {
         var ct = TestContext.Current.CancellationToken;
@@ -85,7 +61,7 @@ public sealed class PolicyDecisionPointTests : IDisposable
         {
             AgentId = "agent-1",
             SkillName = "TestSkill",
-            ResourceType = "File",
+            ResourceType = ResourceType.File,
             ResourceId = "docs/report-1",
             Action = "read",
             OriginalUserPrompt = "Show me the report",

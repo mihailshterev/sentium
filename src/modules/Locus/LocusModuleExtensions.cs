@@ -16,8 +16,6 @@ namespace Sentium.Locus;
 /// </summary>
 public static class LocusModuleExtensions
 {
-    internal const string ModuleName = "locus";
-
     public static IHostApplicationBuilder AddLocusModule(this IHostApplicationBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -40,8 +38,6 @@ public static class LocusModuleExtensions
 
         services.AddScoped<InventoryLookupService>();
         services.AddSingleton<IInventoryLookup, ScopedInventoryLookup>();
-
-        services.AddHealthChecks().AddDbContextCheck<LocusDbContext>("locus-db", tags: [ModuleName]);
 
         return builder;
     }

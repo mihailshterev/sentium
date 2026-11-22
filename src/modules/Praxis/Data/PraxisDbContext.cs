@@ -41,6 +41,8 @@ internal sealed class PraxisDbContext : DbContext
     /// </summary>
     public DbSet<ExecutionLogEntry> ExecutionLogs { get; set; }
 
+    public DbSet<PendingApprovalRecord> PendingApprovals { get; set; }
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -223,6 +225,16 @@ internal sealed class PraxisDbContext : DbContext
             entity.HasIndex(e => new { e.UserId, e.Name }).IsUnique();
             entity.HasIndex(e => e.CreatedAt);
             entity.HasQueryFilter(e => BypassUserScope || e.UserId == ScopeUserId);
+        });
+
+        builder.Entity<PendingApprovalRecord>(entity =>
+        {
+            entity.ToTable("PendingApprovals");
+            entity.HasKey(e => e.RequestId);
+            entity.Property(e => e.RequestId).HasMaxLength(200);
+            // text, not jsonb: jsonb reorders keys, and the serializer needs its "$type" discriminators first.
+            entity.Property(e => e.Payload).IsRequired();
+            entity.HasIndex(e => e.UserId);
         });
 
         builder.Entity<ExecutionLogEntry>(entity =>

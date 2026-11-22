@@ -1,4 +1,5 @@
 using Microsoft.Agents.AI.Workflows;
+using Sentium.Praxis.Common.Streaming;
 using Sentium.Praxis.Features.Orchestration;
 
 namespace Sentium.Praxis.Features.Workflows.Squad;
@@ -17,6 +18,7 @@ internal sealed class StepExecutor(SquadRunContext run) : Executor<StepRequest>(
         var step = message.Step;
         var position = $"Step {message.StepIndex + 1}/{message.State.Plan.Steps.Count}";
 
+        run.EnterPhase(WorkflowPhases.Squad);
         run.Status(WorkflowTimeline.SystemAuthor, message.Attempt == 1
             ? $"{position} - {step.Agent}: {step.Task}"
             : $"{position} - {step.Agent}: revising (attempt {message.Attempt})");

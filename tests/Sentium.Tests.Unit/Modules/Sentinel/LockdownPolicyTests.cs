@@ -1,3 +1,4 @@
+using Sentium.Sentinel.Contracts;
 using Sentium.Sentinel.Features.Policies;
 using Sentium.Sentinel.Features.Settings;
 using Xunit;
@@ -9,7 +10,7 @@ public sealed class LockdownPolicyTests
     private static LockdownPolicy MakePolicy(bool lockdown) =>
         new(new FakePdpRuntimeSettingsProvider(new PdpRuntimeSettings { LockdownMode = lockdown }));
 
-    private static PolicyRequest MakeRequest()
+    private static PolicyEvaluationRequest MakeRequest()
     {
         return new()
         {

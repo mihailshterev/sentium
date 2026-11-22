@@ -1,5 +1,4 @@
 using Sentium.Sentinel.Contracts;
-using Sentium.Sentinel.Features.Policies;
 
 namespace Sentium.Sentinel.Features.Engine;
 
@@ -29,35 +28,17 @@ internal sealed class PolicyDecisionPoint(IServiceScopeFactory scopeFactory, ILo
 
     private async Task<PolicyEvaluationResponse> EvaluateCoreAsync(PolicyEvaluationRequest request, CancellationToken ct)
     {
-        if (!Enum.TryParse<ResourceType>(request.ResourceType, ignoreCase: true, out var resourceType))
-        {
-            return Deny($"Unknown resource type '{request.ResourceType}'. Valid values: {string.Join(", ", Enum.GetNames<ResourceType>())}", PolicyRiskLevel.High, "InvalidRequest");
-        }
-
-        var policyRequest = new PolicyRequest
-        {
-            AgentId = request.AgentId,
-            SkillName = request.SkillName,
-            ResourceType = resourceType,
-            ResourceId = request.ResourceId,
-            Action = request.Action,
-            OriginalUserPrompt = request.OriginalUserPrompt,
-            CorrelationId = request.CorrelationId,
-            UserId = request.UserId,
-            Metadata = request.Metadata
-        };
-
         await using var scope = scopeFactory.CreateAsyncScope();
         var engine = scope.ServiceProvider.GetRequiredService<SentinelPolicyEngine>();
 
-        var decision = await engine.EvaluateAsync(policyRequest, ct);
+        var decision = await engine.EvaluateAsync(request, ct);
 
         return new PolicyEvaluationResponse
         {
             Allowed = decision.Allowed,
-            Effect = decision.Effect.ToString(),
+            Effect = decision.Effect,
             Reason = decision.Reason,
-            Risk = decision.Risk.ToString(),
+            Risk = decision.Risk,
             AuditId = decision.AuditId,
             Timestamp = decision.Timestamp,
             TriggeredPolicies = decision.TriggeredPolicies
@@ -69,9 +50,9 @@ internal sealed class PolicyDecisionPoint(IServiceScopeFactory scopeFactory, ILo
         return new()
         {
             Allowed = false,
-            Effect = nameof(PolicyEffect.Deny),
+            Effect = PolicyEffect.Deny,
             Reason = reason,
-            Risk = risk.ToString(),
+            Risk = risk,
             AuditId = Guid.Empty,
             Timestamp = DateTimeOffset.UtcNow,
             TriggeredPolicies = [trigger]

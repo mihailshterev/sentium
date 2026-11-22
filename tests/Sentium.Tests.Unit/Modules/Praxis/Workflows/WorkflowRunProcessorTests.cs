@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using NSubstitute;
 using Sentium.Infrastructure.Realtime;
 using Sentium.Infrastructure.Security;
@@ -22,7 +23,7 @@ public sealed class WorkflowRunProcessorTests : IAsyncDisposable
     private static readonly TimeSpan WaitLimit = TimeSpan.FromSeconds(15);
 
     private readonly WorkflowRunQueue _queue = new();
-    private readonly StreamRelay _relay = new(new ConfigurationBuilder().Build(), NullLogger<StreamRelay>.Instance);
+    private readonly StreamRelay _relay = new(Options.Create(new StreamingOptions { TextCoalesceWindow = TimeSpan.Zero }), NullLogger<StreamRelay>.Instance);
     private readonly WorkflowExecutionRegistry _registry = new();
     private readonly PdpContextAccessor _runContext = new();
     private readonly IOrchestrator _orchestrator = Substitute.For<IOrchestrator>();
@@ -357,7 +358,7 @@ public sealed class WorkflowRunProcessorTests : IAsyncDisposable
             _gate,
             [_observer],
             Substitute.For<IRealtimePublisher>(),
-            configuration,
+            Options.Create(configuration.GetSection(StreamingOptions.SectionName).Get<StreamingOptions>() ?? new StreamingOptions()),
             NullLogger<WorkflowRunProcessor>.Instance);
 
         await _processor.StartAsync(ct);
@@ -373,6 +374,8 @@ public sealed class WorkflowRunProcessorTests : IAsyncDisposable
             StreamId = Guid.NewGuid().ToString("N")
         };
 
+        // As the controllers and the schedule launcher do: a stream is claimed before its run is queued.
+        _relay.Claim(trigger.StreamId, trigger.UserId ?? Guid.NewGuid());
         await _queue.EnqueueAsync(trigger, ct);
         return trigger;
     }
@@ -389,6 +392,8 @@ public sealed class WorkflowRunProcessorTests : IAsyncDisposable
             Schedule = new ScheduledRun("schedule-1", "Morning briefing", new UnattendedRunPolicy(new HashSet<string>(preApproved))),
         };
 
+        // As the controllers and the schedule launcher do: a stream is claimed before its run is queued.
+        _relay.Claim(trigger.StreamId, trigger.UserId ?? Guid.NewGuid());
         await _queue.EnqueueAsync(trigger, ct);
         return trigger;
     }

@@ -88,7 +88,15 @@ describe("Workflows list", () => {
 
   it("renders list of workflows", () => {
     const workflows = [
-      { id: "1", name: "Test Workflow", description: "Test desc", agents: [], createdAt: "", updatedAt: "" },
+      {
+        id: "1",
+        userId: "user-1",
+        name: "Test Workflow",
+        description: "Test desc",
+        agents: [],
+        createdAt: "",
+        updatedAt: "",
+      },
     ];
     mockUseWorkflows.mockReturnValue({ ...baseWorkflowsReturn, workflows });
     renderAt("/workflows");

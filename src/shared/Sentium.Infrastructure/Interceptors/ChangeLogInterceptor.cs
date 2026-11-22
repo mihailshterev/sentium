@@ -5,13 +5,17 @@ using Sentium.Core.Common;
 
 namespace Sentium.Infrastructure.Interceptors;
 
-internal class AuditInterceptor(ILogger<AuditInterceptor> logger) : SaveChangesInterceptor
+/// <summary>
+/// Logs, at Debug level, which entities a save adds, changes or deletes - a troubleshooting aid, not an audit trail
+/// (Sentinel keeps that). Entities marked <see cref="INonAudited"/> are left out.
+/// </summary>
+internal sealed class ChangeLogInterceptor(ILogger<ChangeLogInterceptor> logger) : SaveChangesInterceptor
 {
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
     {
         ArgumentNullException.ThrowIfNull(eventData);
 
-        LogAudit(eventData.Context);
+        LogChanges(eventData.Context);
         return base.SavingChanges(eventData, result);
     }
 
@@ -19,18 +23,18 @@ internal class AuditInterceptor(ILogger<AuditInterceptor> logger) : SaveChangesI
     {
         ArgumentNullException.ThrowIfNull(eventData);
 
-        LogAudit(eventData.Context);
+        LogChanges(eventData.Context);
         return base.SavingChangesAsync(eventData, result, ct);
     }
 
-    private void LogAudit(DbContext? context)
+    private void LogChanges(DbContext? context)
     {
         if (context is null)
         {
             return;
         }
 
-        if (!logger.IsEnabled(LogLevel.Information))
+        if (!logger.IsEnabled(LogLevel.Debug))
         {
             return;
         }
@@ -55,8 +59,8 @@ internal class AuditInterceptor(ILogger<AuditInterceptor> logger) : SaveChangesI
 
         foreach (var entry in entries)
         {
-            logger.LogInformation(
-                "AUDIT: {Action} on {Entity} (key={Key}) changed [{ChangedProperties}]",
+            logger.LogDebug(
+                "{Action} on {Entity} (key={Key}) changed [{ChangedProperties}]",
                 entry.Action, entry.Entity, entry.Key, string.Join(", ", entry.ChangedProperties));
         }
     }

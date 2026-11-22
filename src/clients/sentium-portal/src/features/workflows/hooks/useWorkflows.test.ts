@@ -16,6 +16,7 @@ const createWrapper = () => {
 
 const mockWorkflow: WorkflowRecord = {
   id: "wf-1",
+  userId: "user-1",
   name: "Data Pipeline",
   description: "Processes data end-to-end",
   createdAt: "2025-01-01T00:00:00Z",

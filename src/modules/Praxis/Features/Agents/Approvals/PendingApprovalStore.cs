@@ -1,79 +1,52 @@
-using System.Collections.Concurrent;
+using Microsoft.EntityFrameworkCore;
+using Sentium.Infrastructure.Retention;
+using Sentium.Praxis.Data;
+using Sentium.Praxis.Entities;
 
 namespace Sentium.Praxis.Features.Agents.Approvals;
 
 /// <summary>
-/// In-memory store for tool-approval continuations.
+/// Pending approvals in the <c>PendingApprovals</c> table. An approval nobody decides within <see cref="Ttl"/> expires;
+/// the retention sweep deletes it.
 /// </summary>
-internal sealed class PendingApprovalStore : IPendingApprovalStore
+internal sealed class PendingApprovalStore(PraxisDbContext db, TimeProvider timeProvider) : IPendingApprovalStore, IRetentionSweep
 {
-    private static readonly TimeSpan Ttl = TimeSpan.FromMinutes(30);
-    private const int MaxEntries = 1000;
+    public static readonly TimeSpan Ttl = TimeSpan.FromHours(24);
 
-    private readonly ConcurrentDictionary<string, Entry> _pending = new();
-
-    public void Add(string requestId, PendingApproval approval)
+    public async Task AddAsync(string requestId, PendingApproval approval, CancellationToken ct = default)
     {
-        PruneExpired();
-        EnforceCap();
-        _pending[requestId] = new Entry(approval, DateTimeOffset.UtcNow);
+        ArgumentException.ThrowIfNullOrEmpty(requestId);
+        ArgumentNullException.ThrowIfNull(approval);
+
+        db.PendingApprovals.Add(new PendingApprovalRecord
+        {
+            RequestId = requestId,
+            UserId = approval.UserId,
+            CreatedAt = timeProvider.GetUtcNow(),
+            Payload = PendingApprovalSerializer.Serialize(approval)
+        });
+
+        await db.SaveChangesAsync(ct);
     }
 
-    public bool TryTake(string requestId, Guid? ownerId, out PendingApproval? approval)
+    public async Task<PendingApproval?> TakeAsync(string requestId, Guid ownerId, CancellationToken ct = default)
     {
-        approval = null;
+        var cutoff = timeProvider.GetUtcNow() - Ttl;
+        var owned = db.PendingApprovals.Where(p => p.RequestId == requestId && p.UserId == ownerId && p.CreatedAt > cutoff);
 
-        if (!_pending.TryGetValue(requestId, out var entry) || entry.Approval.UserId != ownerId)
+        var payload = await owned.Select(p => p.Payload).FirstOrDefaultAsync(ct);
+        if (payload is null)
         {
-            return false;
+            return null;
         }
 
-        if (!_pending.TryRemove(new KeyValuePair<string, Entry>(requestId, entry)) || IsExpired(entry))
-        {
-            return false;
-        }
-
-        approval = entry.Approval;
-        return true;
+        // The delete is the claim: only the take that removes the row resumes the run.
+        return await owned.ExecuteDeleteAsync(ct) == 1 ? PendingApprovalSerializer.Deserialize(payload) : null;
     }
 
-    private static bool IsExpired(Entry entry) => DateTimeOffset.UtcNow - entry.CreatedAt > Ttl;
-
-    private void PruneExpired()
+    public Task<int> SweepAsync(DateTimeOffset now, CancellationToken ct)
     {
-        foreach (var kvp in _pending)
-        {
-            if (IsExpired(kvp.Value))
-            {
-                _pending.TryRemove(kvp.Key, out _);
-            }
-        }
+        var cutoff = now - Ttl;
+        return db.PendingApprovals.Where(p => p.CreatedAt <= cutoff).ExecuteDeleteAsync(ct);
     }
-
-    private void EnforceCap()
-    {
-        while (_pending.Count >= MaxEntries)
-        {
-            var oldestKey = string.Empty;
-            var oldestAt = DateTimeOffset.MaxValue;
-            var found = false;
-
-            foreach (var kvp in _pending)
-            {
-                if (kvp.Value.CreatedAt < oldestAt)
-                {
-                    oldestKey = kvp.Key;
-                    oldestAt = kvp.Value.CreatedAt;
-                    found = true;
-                }
-            }
-
-            if (!found || !_pending.TryRemove(oldestKey, out _))
-            {
-                break;
-            }
-        }
-    }
-
-    private readonly record struct Entry(PendingApproval Approval, DateTimeOffset CreatedAt);
 }

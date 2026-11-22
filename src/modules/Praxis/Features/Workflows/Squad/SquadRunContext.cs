@@ -31,6 +31,8 @@ internal sealed class SquadRunContext(
         timeline.Post(author, text, AgentUpdateTypes.Status);
     }
 
+    public void EnterPhase(string phase) => timeline.EnterPhase(phase);
+
     /// <summary>
     /// A specialist equipped for a team step: its role plus the step rules, its curated tools minus approval-gated ones
     /// (no human can approve inside a workflow). Built once per run and reused across retries.

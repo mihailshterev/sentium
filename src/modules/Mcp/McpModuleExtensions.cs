@@ -17,8 +17,6 @@ namespace Sentium.Mcp;
 /// </summary>
 public static class McpModuleExtensions
 {
-    internal const string ModuleName = "mcp";
-
     public static IHostApplicationBuilder AddMcpModule(this IHostApplicationBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -61,8 +59,6 @@ public static class McpModuleExtensions
             totalTimeout: TimeSpan.FromMinutes(11),
             attemptTimeout: TimeSpan.FromMinutes(10),
             retries: 0);
-
-        services.AddHealthChecks().AddDbContextCheck<McpDbContext>("mcp-db", tags: [ModuleName]);
 
         return builder;
     }

@@ -58,19 +58,19 @@ internal sealed class SandboxClient(
         {
             AgentId = request.AgentId,
             SkillName = SkillName,
-            ResourceType = "Code",
+            ResourceType = ResourceType.Code,
             ResourceId = language.ToString(),
             Action = "execute",
             OriginalUserPrompt = request.OriginalUserPrompt ?? DefaultPrompt,
             CorrelationId = correlationId,
             UserId = request.UserId,
+            // The (capped) source, so content-inspection layers (sensitive-data egress) scan what is executed.
+            Payload = request.Code.Length > MaxScanChars ? request.Code[..MaxScanChars] : request.Code,
             Metadata = new Dictionary<string, string>
             {
                 ["language"] = language.ToString(),
                 ["codeLength"] = request.Code.Length.ToString(CultureInfo.InvariantCulture),
-                ["fileContextCount"] = (request.FileContext?.Count ?? 0).ToString(CultureInfo.InvariantCulture),
-                // The (capped) source, so content-inspection layers (sensitive-data egress) scan what is executed.
-                [PolicyEvaluationRequest.PayloadKey] = request.Code.Length > MaxScanChars ? request.Code[..MaxScanChars] : request.Code
+                ["fileContextCount"] = (request.FileContext?.Count ?? 0).ToString(CultureInfo.InvariantCulture)
             }
         };
     }

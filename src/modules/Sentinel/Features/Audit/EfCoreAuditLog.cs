@@ -1,7 +1,7 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Sentium.Infrastructure.Realtime;
-using Sentium.Sentinel.Features.Policies;
+using Sentium.Sentinel.Contracts;
 using Sentium.Sentinel.Data;
 
 namespace Sentium.Sentinel.Features.Audit;

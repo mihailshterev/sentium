@@ -20,8 +20,6 @@ namespace Sentium.Identity;
 
 public static class IdentityModuleExtensions
 {
-    internal const string ModuleName = "identity";
-
     /// <summary>
     /// Registers ASP.NET Core Identity. Its cookie becomes the host's default authentication scheme,
     /// so every module's <c>[Authorize]</c> authenticates the portal session cookie.
@@ -119,8 +117,6 @@ public static class IdentityModuleExtensions
         services.AddSingleton<IDeviceDirectory, ScopedDeviceDirectory>();
 
         services.AddSingleton<IdentitySeeder>();
-
-        services.AddHealthChecks().AddDbContextCheck<IdentityDbContext>("identity-db", tags: [ModuleName]);
 
         return builder;
     }

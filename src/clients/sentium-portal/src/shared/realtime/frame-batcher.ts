@@ -48,15 +48,32 @@ export function createFrameBatcher<T>(apply: (frames: T[]) => void, delayMs = DE
 }
 
 /** Joins consecutive frames of the same type whose text simply concatenates, keeping everything else in order. */
-export function mergeTextFrames<T extends { type?: string; text?: string }>(frames: T[], mergeable: ReadonlySet<string>): T[] {
+export function mergeTextFrames<T extends { type?: string; text?: string }>(
+  frames: T[],
+  mergeable: ReadonlySet<string>,
+): T[] {
   const merged: T[] = [];
+  // Text parts of the run being merged, joined once at its end: a replay can hold thousands of frames.
+  let parts: string[] | null = null;
+
+  const closeRun = () => {
+    if (parts) {
+      const last = merged[merged.length - 1];
+      merged[merged.length - 1] = { ...last, text: parts.join("") };
+      parts = null;
+    }
+  };
+
   for (const frame of frames) {
     const last = merged[merged.length - 1];
     if (last && frame.type && last.type === frame.type && mergeable.has(frame.type)) {
-      merged[merged.length - 1] = { ...last, text: (last.text ?? "") + (frame.text ?? "") };
+      parts ??= [last.text ?? ""];
+      parts.push(frame.text ?? "");
     } else {
+      closeRun();
       merged.push(frame);
     }
   }
+  closeRun();
   return merged;
 }

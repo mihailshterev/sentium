@@ -1,3 +1,5 @@
+using Sentium.Sentinel.Contracts;
+
 namespace Sentium.Sentinel.Features.Policies;
 
 internal sealed record PolicyDecision

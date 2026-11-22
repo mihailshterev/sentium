@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AgentOrchestrationView as AgentOrchestration } from "./agent-orchestration-view";
+import { useAuthStore } from "@/shared/auth/state/auth-store";
 import * as useWorkflowsHook from "@/features/workflows/hooks/useWorkflows";
 import * as workflowsService from "@/features/workflows/api/workflows.service";
 import * as workspaceService from "@/features/workspaces/api/workspaces.service";
@@ -53,6 +54,7 @@ class MockEventSource {
 
 const mockWorkflow: WorkflowRecord = {
   id: "wf-1",
+  userId: "user-1",
   name: "Threat Pipeline",
   description: "Main threat analysis",
   createdAt: "2025-01-01T00:00:00Z",
@@ -103,6 +105,7 @@ const renderOrchestration = (path = "/orchestration") => {
 };
 
 beforeEach(() => {
+  useAuthStore.setState({ user: { sub: "user-1", name: "tester", roles: ["Sovereign"] } });
   useOrchestrationRunStore.setState({ logs: [], phase: "IDLE", isRunning: false });
   vi.spyOn(useWorkflowsHook, "useWorkflows").mockReturnValue(defaultWorkflowsHook);
   vi.stubGlobal("EventSource", MockEventSource);
@@ -128,6 +131,17 @@ describe("AgentOrchestration initial render", () => {
   it("renders workflow list in the sidebar", () => {
     renderOrchestration();
     expect(screen.getByText("Threat Pipeline")).toBeInTheDocument();
+  });
+
+  it("offers only the user's own workflows to run, even to a Sovereign", () => {
+    vi.spyOn(useWorkflowsHook, "useWorkflows").mockReturnValue({
+      ...defaultWorkflowsHook,
+      workflows: [mockWorkflow, { ...mockWorkflow, id: "wf-2", userId: "member-2", name: "Member Pipeline" }],
+    });
+    renderOrchestration();
+
+    expect(screen.getByText("Threat Pipeline")).toBeInTheDocument();
+    expect(screen.queryByText("Member Pipeline")).not.toBeInTheDocument();
   });
 
   it("shows workflow agent count", () => {

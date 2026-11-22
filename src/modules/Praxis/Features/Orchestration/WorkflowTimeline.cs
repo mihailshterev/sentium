@@ -22,6 +22,15 @@ internal sealed class WorkflowTimeline(IAgentStreamPublisher stream, string stre
     }
 
     /// <summary>
+    /// Announces the phase the run entered. Goes to the live stream only: the persisted log keeps what happened, not
+    /// where the progress indicator stood.
+    /// </summary>
+    public void EnterPhase(string phase)
+    {
+        stream.Publish(streamId, new AgentStreamUpdate(SystemAuthor, phase, AgentUpdateTypes.Phase));
+    }
+
+    /// <summary>
     /// A sink that posts an agent run's updates under <paramref name="author"/>.
     /// </summary>
     public IAgentUpdateSink For(string author) => new AuthorSink(this, author);

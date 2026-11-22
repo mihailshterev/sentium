@@ -2,11 +2,9 @@ namespace Sentium.Sentinel.Contracts;
 
 public sealed record PolicyEvaluationRequest
 {
-    public const string PayloadKey = "payload";
-
     public required string AgentId { get; init; }
     public required string SkillName { get; init; }
-    public required string ResourceType { get; init; }
+    public required ResourceType ResourceType { get; init; }
     public required string ResourceId { get; init; }
     public required string Action { get; init; }
     public required string OriginalUserPrompt { get; init; }
@@ -19,8 +17,13 @@ public sealed record PolicyEvaluationRequest
     public Guid? UserId { get; init; }
 
     /// <summary>
-    /// Inspected by the content policies (sensitive-data egress, semantic intent). Under <see cref="PayloadKey"/> it
-    /// carries the outbound payload, which the audit trail stores only as a length and hash.
+    /// The outbound content of a write, an execution or an external call, scanned by the content policies (sensitive-data
+    /// egress, semantic intent). The audit trail keeps only its length and hash.
+    /// </summary>
+    public string? Payload { get; init; }
+
+    /// <summary>
+    /// Extra facts about the call (a language, a code length), recorded in the audit trail and scanned like the payload.
     /// </summary>
     public IReadOnlyDictionary<string, string> Metadata { get; init; } = new Dictionary<string, string>();
 }

@@ -21,14 +21,7 @@ interface StartDynamicArgs {
   fileIds?: string[];
 }
 
-export type RunConnection =
-  | "idle"
-  | "starting"
-  | "connecting"
-  | "waiting"
-  | "streaming"
-  | "reconnecting"
-  | "stopping";
+export type RunConnection = "idle" | "starting" | "connecting" | "waiting" | "streaming" | "reconnecting" | "stopping";
 
 export type RunOutcome = "completed" | "stopped" | "error";
 
@@ -66,7 +59,7 @@ const ACTIVE_RUN_KEY = "sentium.orchestration.activeRun";
 const STOP_FALLBACK_MS = 8_000;
 /** Failed connections in a row before the run is given up on (the backoff makes this about a minute). */
 const MAX_STREAM_ATTEMPTS = 6;
-const STREAMING_TYPES = new Set(["message", "thought", "tool", "tool_call"]);
+const STREAMING_TYPES = new Set(["message", "thought", "tool_call"]);
 const COALESCED_TYPES = new Set(["message", "thought"]);
 const TERMINAL_TYPES = new Set(["done", "cancelled", "gone", "error"]);
 
@@ -113,21 +106,8 @@ const closeStream = () => {
   currentStreamId = null;
 };
 
-const phaseForMessage = (author: string): Phase => {
-  const a = author.toLowerCase();
-  if (a.includes("orchestrator") || a.includes("planner")) {
-    return "PLANNING";
-  }
-  return a.includes("validator") ? "VALIDATING" : "SQUAD";
-};
-
-const phaseForStatus = (text: string): Phase | null => {
-  const t = text.toLowerCase();
-  if (t.includes("validat") || t.includes("review")) {
-    return "VALIDATING";
-  }
-  return t.includes("squad") || t.includes("rewriting") ? "SQUAD" : null;
-};
+/** The phases a run announces in its `phase` frames. */
+const RUN_PHASES = new Set<Phase>(["PLANNING", "SQUAD", "VALIDATING"]);
 
 export const useOrchestrationRunStore = createStore<OrchestrationRunState>((set, get) => {
   const finalize = (outcome: RunOutcome, extra?: Partial<OrchestrationRunState>) => {
@@ -155,7 +135,9 @@ export const useOrchestrationRunStore = createStore<OrchestrationRunState>((set,
         return true;
       }
       case "gone":
-        finalize("completed", { logs: withNote("This run ended while the page was away; its result is in the history.") });
+        finalize("completed", {
+          logs: withNote("This run ended while the page was away; its result is in the history."),
+        });
         return true;
       case "error":
         finalize("error", { logs: withNote(frame.message ?? frame.text ?? "The run ended with an error.", "error") });
@@ -166,18 +148,16 @@ export const useOrchestrationRunStore = createStore<OrchestrationRunState>((set,
   };
 
   const appendFrame = (frame: RunFrame) => {
+    if (frame.type === "phase") {
+      if (RUN_PHASES.has(frame.text as Phase)) {
+        set({ phase: frame.text as Phase });
+      }
+      return;
+    }
+
     const type = (frame.type ?? "message") as LogEntry["type"];
     const author = frame.author ?? "Agent";
     const text = frame.text ?? "";
-
-    if (type === "message") {
-      set({ phase: phaseForMessage(author) });
-    } else if (type === "status") {
-      const phase = phaseForStatus(text);
-      if (phase) {
-        set({ phase });
-      }
-    }
 
     if (!text) {
       return;
@@ -190,7 +170,12 @@ export const useOrchestrationRunStore = createStore<OrchestrationRunState>((set,
 
     set((state) => {
       const last = state.logs.length - 1;
-      if (COALESCED_TYPES.has(type) && last >= 0 && state.logs[last].author === author && state.logs[last].type === type) {
+      if (
+        COALESCED_TYPES.has(type) &&
+        last >= 0 &&
+        state.logs[last].author === author &&
+        state.logs[last].type === type
+      ) {
         const updated = [...state.logs];
         updated[last] = { ...updated[last], text: updated[last].text + text };
         return { logs: updated };

@@ -1,6 +1,6 @@
 namespace Sentium.Core.Common;
 
 /// <summary>
-/// Marker interface for entities that must be excluded from the audit log.
+/// Marks a high-volume entity (chunks, outbox rows, metrics) whose saves the change log leaves out.
 /// </summary>
 public interface INonAudited;

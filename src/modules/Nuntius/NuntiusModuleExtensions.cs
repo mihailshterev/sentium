@@ -18,8 +18,6 @@ namespace Sentium.Nuntius;
 /// </summary>
 public static class NuntiusModuleExtensions
 {
-    internal const string ModuleName = "nuntius";
-
     public static IHostApplicationBuilder AddNuntiusModule(this IHostApplicationBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -42,8 +40,6 @@ public static class NuntiusModuleExtensions
 
         services.AddSingleton<IUserRemovalObserver, InboxUserDataRemover>();
         services.AddRetentionSweep<NotificationRetention>();
-
-        services.AddHealthChecks().AddDbContextCheck<NuntiusDbContext>("nuntius-db", tags: [ModuleName]);
 
         return builder;
     }

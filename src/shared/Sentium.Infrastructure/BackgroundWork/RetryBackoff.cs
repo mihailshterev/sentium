@@ -1,9 +1,12 @@
-namespace Sentium.Memoria.Features.Indexing;
+namespace Sentium.Infrastructure.BackgroundWork;
 
-internal static class NoteIndexBackoff
+/// <summary>
+/// The retry schedule of the outboxes: 30s, 1m, 2m, ... capped at 1h, for at most <see cref="MaxAttempts"/> attempts.
+/// </summary>
+public static class RetryBackoff
 {
     /// <summary>
-    /// After this many failed attempts an entry is marked failed and waits for the note's next change.
+    /// After this many failed attempts an entry is marked failed and waits for the next change to its source.
     /// </summary>
     public const int MaxAttempts = 8;
 
@@ -11,7 +14,7 @@ internal static class NoteIndexBackoff
     private static readonly TimeSpan MaxDelay = TimeSpan.FromHours(1);
 
     /// <summary>
-    /// Delay before the next try after <paramref name="attempts"/> failures: 30s, 1m, 2m, ... capped at 1h.
+    /// Delay before the next try after <paramref name="attempts"/> failures.
     /// </summary>
     public static TimeSpan DelayAfter(int attempts)
     {

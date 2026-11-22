@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Sentium.Infrastructure.BackgroundWork;
 using Sentium.Codex.Contracts;
 using Sentium.Codex.Contracts.Models;
 using Sentium.Infrastructure.Realtime;
@@ -19,9 +20,13 @@ internal sealed class KnowledgeSyncProcessor(
     KnowledgeSyncOutbox outbox,
     TimeProvider timeProvider,
     IRealtimePublisher realtime,
-    ILogger<KnowledgeSyncProcessor> logger)
+    ILogger<KnowledgeSyncProcessor> logger) : IOutboxProcessor
 {
     public const int BatchSize = 20;
+
+    static int IOutboxProcessor.BatchSize => BatchSize;
+
+    Task IOutboxProcessor.ProcessEntryAsync(Guid id, CancellationToken ct) => ProcessAsync(id, ct);
 
     public async Task<IReadOnlyList<Guid>> GetDueAsync(int limit, CancellationToken ct = default)
     {
@@ -170,11 +175,11 @@ internal sealed class KnowledgeSyncProcessor(
     private async Task RecordFailureAsync(KnowledgeSyncEntry entry, Exception exception, CancellationToken ct)
     {
         var attempts = entry.Attempts + 1;
-        var status = attempts >= KnowledgeSyncBackoff.MaxAttempts ? KnowledgeSyncStatus.Failed : KnowledgeSyncStatus.Pending;
-        var nextAttemptAt = timeProvider.GetUtcNow() + KnowledgeSyncBackoff.DelayAfter(attempts);
+        var status = attempts >= RetryBackoff.MaxAttempts ? KnowledgeSyncStatus.Failed : KnowledgeSyncStatus.Pending;
+        var nextAttemptAt = timeProvider.GetUtcNow() + RetryBackoff.DelayAfter(attempts);
         var error = exception.Message.Length > LocusLimits.SyncErrorMax ? exception.Message[..LocusLimits.SyncErrorMax] : exception.Message;
 
-        logger.LogWarning(exception, "Knowledge sync for asset {AssetId} failed (attempt {Attempt}/{MaxAttempts})", entry.AssetId, attempts, KnowledgeSyncBackoff.MaxAttempts);
+        logger.LogWarning(exception, "Knowledge sync for asset {AssetId} failed (attempt {Attempt}/{MaxAttempts})", entry.AssetId, attempts, RetryBackoff.MaxAttempts);
 
         await db.KnowledgeSyncEntries
             .Where(e => e.AssetId == entry.AssetId && e.Version == entry.Version)

@@ -61,19 +61,18 @@ const groupConversationsByDate = (convs: ConversationSummary[]) => {
 };
 
 export function AssistantView() {
-  const {
-    activeConversationId,
-    messages,
-    model,
-    isStreaming,
-    streamingConversationId,
-    setActiveConversation,
-    setModel,
-    sendMessage,
-    respondToApproval,
-    stopStreaming,
-    retryLastMessage,
-  } = useConversationStore();
+  // One selector per field: while an answer streams only `messages` changes, and the actions never do.
+  const activeConversationId = useConversationStore((s) => s.activeConversationId);
+  const messages = useConversationStore((s) => s.messages);
+  const model = useConversationStore((s) => s.model);
+  const isStreaming = useConversationStore((s) => s.isStreaming);
+  const streamingConversationId = useConversationStore((s) => s.streamingConversationId);
+  const setActiveConversation = useConversationStore((s) => s.setActiveConversation);
+  const setModel = useConversationStore((s) => s.setModel);
+  const sendMessage = useConversationStore((s) => s.sendMessage);
+  const respondToApproval = useConversationStore((s) => s.respondToApproval);
+  const stopStreaming = useConversationStore((s) => s.stopStreaming);
+  const retryLastMessage = useConversationStore((s) => s.retryLastMessage);
 
   const [conversationSearch, setConversationSearch] = useState("");
   const debouncedConversationSearch = useDebouncedValue(conversationSearch);
@@ -365,20 +364,24 @@ export function AssistantView() {
               <WelcomeScreen suggestions={randomizedSuggestions} onSelectSuggestion={(s) => setInput(s)} />
             ) : (
               <div className={styles.messagesArea}>
-                {messages.map((msg, i) => (
-                  <MessageBubble
-                    key={msg.id}
-                    msg={msg}
-                    isTyping={isTyping}
-                    live={isTyping && i === messages.length - 1}
-                    statusIndex={statusIndex}
-                    statusVisible={statusVisible}
-                    copiedMessageId={copiedMessageId}
-                    onCopyMessage={copyMessage}
-                    onApproval={handleApproval}
-                    onRetry={msg.error ? retryLastMessage : undefined}
-                  />
-                ))}
+                {messages.map((msg, i) => {
+                  const live = isTyping && i === messages.length - 1;
+                  return (
+                    <MessageBubble
+                      key={msg.id}
+                      msg={msg}
+                      isTyping={isTyping}
+                      live={live}
+                      // Only the live bubble shows the status cycler; the others keep stable props and skip its ticks.
+                      statusIndex={live ? statusIndex : 0}
+                      statusVisible={live && statusVisible}
+                      copiedMessageId={copiedMessageId}
+                      onCopyMessage={copyMessage}
+                      onApproval={handleApproval}
+                      onRetry={msg.error ? retryLastMessage : undefined}
+                    />
+                  );
+                })}
                 <div ref={messagesEndRef} />
               </div>
             )}

@@ -8,8 +8,11 @@ import {
   type RealtimeMessage,
 } from "./realtime-client";
 
-/** Events often come in bursts (an Evaluation's cases, Sentinel decisions); one refetch covers a burst. */
-const INVALIDATE_COALESCE_MS = 250;
+/**
+ * Events often come in bursts (an Evaluation's cases, Sentinel decisions, an inventory re-sync); one refetch covers a
+ * burst. Long enough that a refetch usually finishes before the next one is due.
+ */
+const INVALIDATE_COALESCE_MS = 1_000;
 
 /** Keeps the realtime stream open while mounted; mount it once, in the signed-in layout. */
 export function useRealtimeConnection(): void {
@@ -24,7 +27,10 @@ export function useRealtimeStatus() {
 }
 
 /** Calls the latest `handler` for every event on `topics`, and with `resync` after every (re)connect. */
-export function useRealtimeTopic(topics: string | readonly string[], handler: (message: RealtimeMessage) => void): void {
+export function useRealtimeTopic(
+  topics: string | readonly string[],
+  handler: (message: RealtimeMessage) => void,
+): void {
   const handlerRef = useRef(handler);
   useEffect(() => {
     handlerRef.current = handler;
@@ -63,7 +69,9 @@ export function useRealtimeInvalidate(topics: string | readonly string[], queryK
     timer.current = setTimeout(() => {
       timer.current = null;
       for (const queryKey of keysRef.current) {
-        void queryClient.invalidateQueries({ queryKey });
+        // A refetch already running is left to finish: cancelling it on every event of a burst would mean a slow
+        // list never finishes loading while the burst lasts.
+        void queryClient.invalidateQueries({ queryKey }, { cancelRefetch: false });
       }
     }, INVALIDATE_COALESCE_MS);
   });
