@@ -17,7 +17,7 @@ setup("authenticate the seeded e2e user", async ({ page }) => {
 
   // The portal treats this cookie as a signed-in session: confirm it end to end before sharing it.
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Control Center" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Home", exact: true })).toBeVisible();
 
   await page.context().storageState({ path: paths.authState });
 });

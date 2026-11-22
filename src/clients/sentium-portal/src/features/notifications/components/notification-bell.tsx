@@ -14,15 +14,11 @@ import styles from "./notification-bell.module.css";
 const PANEL_LIMIT = 20;
 const PANEL_GAP = 8;
 
-interface NotificationBellProps {
-  tooltipSide?: "top" | "right";
-}
-
 /**
- * Bell with the unread count; opens the Inbox panel. Mounting it also keeps the inbox live through the SSE stream.
- * The panel is portalled to the body because the sidebar clips its overflow.
+ * Bell with the unread count; opens the Inbox panel below it, right-aligned. Mounting it also keeps the inbox live
+ * through the SSE stream. The panel is portalled to the body so no scroll container can clip it.
  */
-export function NotificationBell({ tooltipSide = "top" }: NotificationBellProps) {
+export function NotificationBell() {
   useNotificationStream();
   const unread = useUnreadCount();
   const [panelPosition, setPanelPosition] = useState<React.CSSProperties | null>(null);
@@ -37,7 +33,7 @@ export function NotificationBell({ tooltipSide = "top" }: NotificationBellProps)
 
     const rect = anchorRef.current?.getBoundingClientRect();
     setPanelPosition(
-      rect ? { left: rect.right + PANEL_GAP, bottom: Math.max(PANEL_GAP, window.innerHeight - rect.bottom) } : {},
+      rect ? { top: rect.bottom + PANEL_GAP, right: Math.max(PANEL_GAP, window.innerWidth - rect.right) } : {},
     );
   };
 
@@ -45,7 +41,7 @@ export function NotificationBell({ tooltipSide = "top" }: NotificationBellProps)
 
   return (
     <span className={styles.anchor}>
-      <Tooltip content="Notifications" side={tooltipSide} disabled={open}>
+      <Tooltip content="Notifications" side="bottom" disabled={open}>
         <Button
           ref={anchorRef}
           variant="ghost"

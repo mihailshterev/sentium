@@ -678,10 +678,6 @@
     .dayNumber {
       color: var(--text-dim);
     }
-
-    .chip:not([data-dragging]) {
-      opacity: 0.6;
-    }
   }
 
   &[data-today] {
@@ -843,12 +839,20 @@
     --tone: var(--danger);
   }
 
-  &[data-done] {
-    opacity: 0.55;
+  /* Done and past chips step back through colour, not opacity, so their text keeps a readable contrast. */
+  &[data-done],
+  &[data-past] {
+    border-color: color-mix(in srgb, var(--tone) 16%, transparent);
+    background: color-mix(in srgb, var(--tone) 4%, var(--bg-base));
+    color: var(--text-muted);
 
-    .chipTitle {
-      text-decoration: line-through;
+    .chipDot {
+      opacity: 0.5;
     }
+  }
+
+  &[data-done] .chipTitle {
+    text-decoration: line-through;
   }
 
   &[data-kind="event"] {
@@ -861,10 +865,6 @@
       background: transparent;
       box-shadow: none;
     }
-  }
-
-  &[data-past] {
-    opacity: 0.45;
   }
 
   &[data-dragging] {
@@ -1052,7 +1052,12 @@
   }
 
   &[data-past] {
-    opacity: 0.55;
+    border-left-color: color-mix(in srgb, var(--tone) 40%, transparent);
+    background: color-mix(in srgb, var(--tone) 2%, transparent);
+
+    .rowTitle {
+      color: var(--text-muted);
+    }
   }
 }
 

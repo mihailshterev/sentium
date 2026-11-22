@@ -82,7 +82,7 @@
   --page-pad-x: 28px;
   --page-max: 1320px;
   --page-max-wide: 1640px;
-  --header-h: 124px;
+  --header-h: 96px;
   --tick: 10px; /* corner registration marks on framed panels */
 
   /* ---------- Color: dark (default) ---------- */
@@ -188,8 +188,8 @@
   --on-accent: #140d04;
 
   --gold: #8a6410;
-  --accent-green: #17784a;
-  --accent-green-rgb: 23, 120, 74;
+  --accent-green: #146c43;
+  --accent-green-rgb: 20, 108, 67;
   --accent-blue: #2860ba;
   --accent-blue-rgb: 40, 96, 186;
   --accent-purple: #6f4fd0;
@@ -198,8 +198,8 @@
   --accent-amber-rgb: 154, 77, 11;
   --accent-red: #b52f2f;
   --accent-red-rgb: 181, 47, 47;
-  --accent-cyan: #0f7389;
-  --accent-cyan-rgb: 15, 115, 137;
+  --accent-cyan: #0d6a7e;
+  --accent-cyan-rgb: 13, 106, 126;
 
   --bg-base: #f3efe8;
   --bg-surface: #fbf9f5;
@@ -256,7 +256,9 @@
   --accent-soft: color-mix(in srgb, var(--accent) 12%, transparent);
   --accent-line: color-mix(in srgb, var(--accent) 40%, transparent);
   --accent-glow: color-mix(in srgb, var(--accent-fill) 45%, transparent);
-  --focus-ring: 0 0 0 3px color-mix(in srgb, var(--accent) 32%, transparent);
+  /* Solid accent: a translucent ring fell below the 3:1 a focus indicator needs against the panels. One shadow only,
+     since some rules prefix it with `inset`. */
+  --focus-ring: 0 0 0 2px var(--accent);
 
   --success: var(--accent-green);
   --warning: var(--accent-amber);

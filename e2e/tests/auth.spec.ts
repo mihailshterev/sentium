@@ -14,7 +14,7 @@ test.describe("Authentication", () => {
     await loginPage.goto();
     await loginPage.login(testUser.userName, testUser.password);
 
-    await expect(page.getByRole("heading", { name: "Control Center" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Home", exact: true })).toBeVisible();
   });
 
   test("rejects invalid credentials", { tag: "@regression" }, async ({ page, loginPage }) => {

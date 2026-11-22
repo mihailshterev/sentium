@@ -275,3 +275,22 @@
     transform: rotate(360deg);
   }
 }
+
+/*
+ * The readout has a fixed CSS size but hangs above an anchor in scaled SVG units; below this width it would poke out
+ * of the map (over a card title, say). Small maps drop the callout and label the focused node like the others.
+ */
+.focusLabel {
+  display: none;
+}
+
+@container (max-width: 600px) {
+  .callout,
+  .readout {
+    display: none;
+  }
+
+  .focusLabel {
+    display: block;
+  }
+}

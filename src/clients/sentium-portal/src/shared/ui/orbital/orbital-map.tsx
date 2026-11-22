@@ -224,6 +224,13 @@ export function OrbitalMap({
           (p) => p !== focus && <Label key={p.node.id} placed={p} className={`${styles.label} ${styles.innerLabel}`} />,
         )}
         {outerPlaced.map((p) => p !== focus && <Label key={p.node.id} placed={p} className={styles.label} />)}
+        {/* Small maps have no room for the readout, so there the focused node is labelled like the rest. */}
+        {focus && (
+          <Label
+            placed={focus}
+            className={`${styles.label} ${styles.focusLabel} ${focus === innerPlaced[0] && !outerPlaced[0] ? styles.innerLabel : ""}`}
+          />
+        )}
 
         {focus && leader && readout && readout.length > 0 && (
           <dl className={styles.readout} data-side={leader.dir < 0 ? "left" : "right"} style={toPercent(leader.end)}>
