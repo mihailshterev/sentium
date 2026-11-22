@@ -18,6 +18,7 @@ import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { EmptyState } from "@/shared/ui/empty-state";
 import { Page } from "@/shared/ui/page";
+import { REALTIME_FALLBACK_POLL_MS, REALTIME_TOPICS, useRealtimeInvalidate } from "@/shared/realtime";
 import { WorkflowTimeline } from "../components/workflow-timeline";
 import { ExecuteSidebar, type AttachedFile, type ExecuteMode } from "../components/execute-sidebar";
 
@@ -34,6 +35,7 @@ const PREDEFINED_PHASE_STEPS: { key: Phase; label: string; icon: React.ElementTy
 
 const PHASE_ORDER: Phase[] = ["IDLE", "PLANNING", "SQUAD", "VALIDATING", "COMPLETE"];
 
+const RUN_HISTORY_KEYS = [["workflowRuns"]] as const;
 export function AgentOrchestrationView() {
   const { workflows } = useWorkflows();
   const { runId } = useParams<{ runId?: string }>();
@@ -72,6 +74,8 @@ export function AgentOrchestrationView() {
   const [runSearch, setRunSearch] = useState("");
   const debouncedRunSearch = useDebouncedValue(runSearch).trim();
 
+  useRealtimeInvalidate(REALTIME_TOPICS.workflowRuns, RUN_HISTORY_KEYS);
+
   const {
     items: workflowRuns,
     totalCount: runCount,
@@ -84,7 +88,7 @@ export function AgentOrchestrationView() {
     (page, pageSize) => fetchWorkflowRunsPaged(page, pageSize, debouncedRunSearch || undefined),
     {
       enabled: sidebarView === "history",
-      refetchInterval: sidebarView === "history" ? 15_000 : undefined,
+      refetchInterval: sidebarView === "history" ? REALTIME_FALLBACK_POLL_MS : undefined,
       keepPrevious: true,
     },
   );
@@ -189,7 +193,9 @@ export function AgentOrchestrationView() {
             ? "Queued…"
             : connection === "connecting"
               ? "Connecting…"
-              : "Warming up agents";
+              : connection === "reconnecting"
+                ? "Reconnecting…"
+                : "Warming up agents";
 
     return (
       <div className={styles.runIndicator} role="status">

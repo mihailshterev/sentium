@@ -1,5 +1,5 @@
 import { test, expect } from "../fixtures";
-import { sseMessage, sseDone } from "../support/mock-sse";
+import { mockAssistantTurn, turnFrame } from "../support/mock-sse";
 
 // The e2e stack runs with reduced motion and without the speech containers, so these cover the Companion's
 // silent behaviour: it is always there, it reflects real activity, and no voice control is offered.
@@ -20,14 +20,7 @@ test.describe("Companion", () => {
     { tag: "@regression" },
     async ({ assistantPage, page }) => {
       // Held open long enough to outlast the Companion's settle delay; an instant reply is deliberately not shown.
-      await page.route(/\/assistant\/chat/, async (route) => {
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-        await route.fulfill({
-          status: 200,
-          contentType: "text/event-stream",
-          body: sseMessage({ type: "content", message: { content: "Hello from the companion test" } }) + sseDone(),
-        });
-      });
+      await mockAssistantTurn(page, [turnFrame("message", "Hello from the companion test")], { delayMs: 1500 });
 
       await assistantPage.goto();
       await assistantPage.expectLoaded();

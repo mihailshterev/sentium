@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Sentium.Codex.Contracts;
 using Sentium.Codex.Contracts.Models;
+using Sentium.Infrastructure.Realtime;
 using Sentium.Locus.Common;
 using Sentium.Locus.Data;
 using Sentium.Locus.Entities;
@@ -17,6 +18,7 @@ internal sealed class KnowledgeSyncProcessor(
     IDocumentIngestionService ingestion,
     KnowledgeSyncOutbox outbox,
     TimeProvider timeProvider,
+    IRealtimePublisher realtime,
     ILogger<KnowledgeSyncProcessor> logger)
 {
     public const int BatchSize = 20;
@@ -61,13 +63,23 @@ internal sealed class KnowledgeSyncProcessor(
                 .Where(e => e.AssetId == assetId && e.Version == entry.Version)
                 .ExecuteDeleteAsync(ct);
 
+            PublishKnowledgeChanged();
             return outcome;
         }
         catch (Exception ex) when (!ct.IsCancellationRequested)
         {
             await RecordFailureAsync(entry, ex, ct);
+            PublishKnowledgeChanged();
             return KnowledgeSyncOutcome.Failed;
         }
+    }
+
+    /// <summary>
+    /// The inventory is shared by the household, so every signed-in user hears about it.
+    /// </summary>
+    private void PublishKnowledgeChanged()
+    {
+        realtime.Publish(new RealtimeEvent(RealtimeTopics.InventoryKnowledge, RealtimeAudience.Everyone));
     }
 
     /// <summary>

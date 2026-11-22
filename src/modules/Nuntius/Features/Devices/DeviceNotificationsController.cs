@@ -1,5 +1,8 @@
+using System.Net.ServerSentEvents;
+using System.Runtime.CompilerServices;
 using Microsoft.AspNetCore.Mvc;
 using Sentium.Infrastructure.Security;
+using Sentium.Infrastructure.Streaming;
 using Sentium.Nuntius.Features.Inbox;
 using Sentium.Nuntius.Features.Streaming;
 
@@ -20,30 +23,20 @@ internal sealed class DeviceNotificationsController(
     INotificationFeed feed,
     IInboxService inbox,
     DeviceStreamRegistry streams,
-    ICurrentUser currentUser,
-    ILogger<DeviceNotificationsController> logger) : ControllerBase
+    ICurrentUser currentUser) : ControllerBase
 {
     [HttpGet("stream")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task Stream(CancellationToken ct)
+    public IResult Stream()
     {
         if (User.GetDeviceId() is not { } deviceId || currentUser.UserId is not { } ownerUserId)
         {
-            Response.StatusCode = StatusCodes.Status401Unauthorized;
-            return;
+            return TypedResults.Unauthorized();
         }
 
-        using var lease = streams.Open(deviceId, ct);
-
-        try
-        {
-            await NotificationStreamPump.RunAsync(Response, feed, ownerUserId, lease.Token);
-        }
-        catch (OperationCanceledException)
-        {
-            logger.LogDebug("Device {DeviceId} left the notification stream", deviceId);
-        }
+        var ct = HttpContext.RequestAborted;
+        return SseStreams.Create(ReadAsync(deviceId, ownerUserId, ct), SseStreams.DefaultHeartbeatInterval, ct);
     }
 
     [HttpGet("unread-count")]
@@ -51,4 +44,17 @@ internal sealed class DeviceNotificationsController(
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> UnreadCount(CancellationToken ct)
         => Ok(new UnreadCountDto(await inbox.CountUnreadAsync(ct)));
+
+    /// <summary>
+    /// The lease lives as long as the stream, so removing the Device ends it.
+    /// </summary>
+    private async IAsyncEnumerable<SseItem<string>> ReadAsync(Guid deviceId, Guid ownerUserId, [EnumeratorCancellation] CancellationToken ct)
+    {
+        using var lease = streams.Open(deviceId, ct);
+
+        await foreach (var item in NotificationStreamPump.ReadAsync(feed, ownerUserId, lease.Token))
+        {
+            yield return item;
+        }
+    }
 }

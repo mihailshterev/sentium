@@ -1,355 +1,165 @@
-using System.Text.Json;
-using Microsoft.Agents.AI;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.AI;
 using Sentium.Core.Constants;
 using Sentium.Infrastructure.Security;
-using Sentium.Praxis.Common.Streaming;
-using Sentium.Praxis.Contracts;
-using Sentium.Praxis.Features.Agents;
-using Sentium.Praxis.Features.Agents.Activity;
+using Sentium.Infrastructure.Streaming;
 using Sentium.Praxis.Features.Agents.Approvals;
-using Sentium.Praxis.Features.Agents.Runtime;
 using Sentium.Praxis.Features.Conversations;
-using Sentium.Praxis.Features.Registry;
-using Sentium.Praxis.Features.Titles;
+using Sentium.Praxis.Features.Orchestration;
 using Sentium.Praxis.Features.Workspaces;
-using AiChatMessage = Microsoft.Extensions.AI.ChatMessage;
 
 namespace Sentium.Praxis.Features.Assistant;
 
 /// <summary>
-/// Streams an agent over Server-Sent Events: the conversation's agent (see <see cref="IConversationService.ResolveChatAgentAsync"/>)
-/// or the general assistant. For a persisted conversation the server owns the history
-/// (<see cref="ConversationChatHistoryProvider"/>); tool-approval pauses are resumed from a serialized
-/// <see cref="AgentSession"/> in the approving request's own scope.
+/// Accepts assistant turns and streams them. A turn runs on its own (see <see cref="AssistantTurnProcessor"/>), so the
+/// client follows it on <c>turns/{turnId}/stream</c> and can drop and resume that stream at will; stopping a turn is an
+/// explicit <c>turns/{turnId}/cancel</c>.
 /// </summary>
 [ApiController]
 [Authorize]
 [Route($"{PraxisRoutes.Prefix}/assistant")]
 internal sealed class AssistantController(
-    IAgentFactory agentFactory,
+    AssistantTurnQueue turnQueue,
+    AssistantTurnRegistry turnRegistry,
+    IStreamRelay streamRelay,
     IPendingApprovalStore approvalStore,
-    IPdpContextAccessor runContext,
     ICurrentUser currentUser,
-    IPromptEnhancementService promptEnhancementService,
-    IRegistrySettingsService registrySettingsService,
-    ConversationChatHistoryProvider conversationHistory,
-    IConversationService conversationService,
-    ITitleGenerator titleGenerator,
-    IWorkspaceContextBuilder workspaceContext,
-    ILogger<AssistantController> logger) : ControllerBase
+    IWorkspaceContextBuilder workspaceContext) : ControllerBase
 {
-    private const string GenericStreamErrorMessage = "An unexpected error occurred while generating the response.";
-
     /// <summary>
     /// The user turn sent when files are attached without any text, so the turn is still recorded and titled.
     /// </summary>
     private const string AttachmentOnlyPrompt = "Please review the attached files.";
 
+    private static readonly TimeSpan MaxStreamDuration = TimeSpan.FromMinutes(30);
+
     /// <summary>
-    /// Sends a chat message to the assistant and streams the response (thoughts, tool calls, text, approval requests).
-    /// With a <see cref="ChatRequest.ConversationId"/> only the latest user message is taken from the request - prior
-    /// turns are loaded from the persisted conversation. If a tool call needs approval, the stream ends with an
-    /// approval request; resume it via <c>chat/approve</c>.
+    /// Queues a chat turn and returns its id; follow it on <c>turns/{turnId}/stream</c> (thoughts, tool calls, text,
+    /// approval requests). With a <see cref="ChatRequest.ConversationId"/> only the latest user message is taken from
+    /// the request - prior turns are loaded from the persisted conversation. If a tool call needs approval, the turn
+    /// ends with an approval request; resume it via <c>chat/approve</c>.
     /// </summary>
     [HttpPost("chat")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task Chat([FromBody] ChatRequest requestBody, CancellationToken ct)
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<ActionResult<AssistantTurnAcceptedResponse>> Chat([FromBody] ChatRequest requestBody, CancellationToken ct)
     {
         ArgumentNullException.ThrowIfNull(requestBody);
 
-        var attachments = currentUser.UserId is { } userId && requestBody.FileIds is { Count: > 0 } fileIds
+        if (currentUser.UserId is not { } userId)
+        {
+            return Unauthorized();
+        }
+
+        IReadOnlyList<MessageAttachment> attachments = requestBody.FileIds is { Count: > 0 } fileIds
             ? await workspaceContext.ResolveAttachmentsAsync(userId, fileIds, ct)
             : [];
 
-        var lastUserMessage = WithAttachmentPrompt(requestBody.Messages.LastOrDefault(m => IsUserRole(m.Role)), attachments);
+        var prompt = ResolvePrompt(requestBody.Messages, attachments);
 
-        // Ambient run context (AsyncLocal): set here, in the method that awaits the agent run, so it flows to every tool.
-        runContext.OriginalUserPrompt = lastUserMessage?.Content ?? string.Empty;
-        runContext.UserId = currentUser.UserId;
-        runContext.CorrelationId = Request.Headers.TryGetValue(CommonHeaderNames.CorrelationId, out var header) ? header.ToString() : Guid.NewGuid().ToString();
-
-        await using var sse = await SseStreamWriter.StartAsync(Response, logger, ct);
-
-        // Started before enhancement and the run so it overlaps them; it only calls the model, never the DbContext.
-        var pendingTitle = await StartTitleGenerationAsync(requestBody.ConversationId, lastUserMessage?.Content, ct);
-
-        var enhancedPrompt = await TryEnhancePromptAsync(lastUserMessage?.Content, ct);
-        if (enhancedPrompt is not null)
+        return Accepted(Enqueue(new AssistantTurn
         {
-            await sse.WriteUpdateAsync(AgentUpdateTypes.EnhancedPrompt, enhancedPrompt, ct);
-        }
-
-        var persisted = requestBody.ConversationId is not null;
-
-        // The conversation fixes its agent; custom agents resolve for this user explicitly (a Sovereign bypasses the
-        // query filter, and must not pick up another member's same-named agent).
-        var agentName = await conversationService.ResolveChatAgentAsync(requestBody.ConversationId, currentUser.UserId, ct);
-        var agent = await agentFactory.CreateAsync(agentName, overrideModel: requestBody.Model, actingUserId: currentUser.UserId, chatHistory: persisted ? conversationHistory : null, ct: ct);
-        var session = await agent.CreateSessionAsync(ct);
-
-        List<AiChatMessage> input;
-        Guid? workspaceId;
-        if (requestBody.ConversationId is { } conversationId)
-        {
-            conversationHistory.Attach(session, conversationId);
-            input = lastUserMessage is null ? [] : [CreateUserTurn(lastUserMessage.Content, enhancedPrompt, attachments)];
-            workspaceId = currentUser.UserId is { } owner ? await conversationService.GetWorkspaceIdAsync(conversationId, owner, ct) : null;
-        }
-        else
-        {
-            // Ephemeral chat: there is no server-side transcript, so the client-held history is the context.
-            input = MapClientHistory(requestBody.Messages, enhancedPrompt, lastUserMessage);
-            workspaceId = requestBody.WorkspaceId;
-        }
-
-        WorkspaceContextProvider.Attach(session, workspaceId, [.. attachments.Select(a => a.FileId)]);
-
-        await RunStreamingAsync(agent, agentName, session, input, requestBody.ConversationId, requestBody.Model, sse, ct, pendingTitle);
+            TurnId = NewTurnId(),
+            UserId = userId,
+            CorrelationId = ResolveCorrelationId(),
+            Model = requestBody.Model,
+            ConversationId = requestBody.ConversationId,
+            Prompt = prompt,
+            OriginalUserPrompt = prompt ?? string.Empty,
+            Messages = requestBody.Messages,
+            Attachments = attachments,
+            WorkspaceId = requestBody.WorkspaceId
+        }));
     }
 
     /// <summary>
-    /// Approves or rejects a pending tool call and streams the resumed response. Only the user who owns the paused run
-    /// can resume it.
+    /// Approves or rejects a pending tool call and queues the resumed run as a new turn. Only the user who owns the
+    /// paused run can resume it.
     /// </summary>
-    /// <param name="requestBody">The approval decision.</param>
     [HttpPost("chat/approve")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task ApproveToolCall([FromBody] ApproveToolCallRequest requestBody, CancellationToken ct)
+    public ActionResult<AssistantTurnAcceptedResponse> ApproveToolCall([FromBody] ApproveToolCallRequest requestBody)
     {
         ArgumentNullException.ThrowIfNull(requestBody);
 
-        if (!approvalStore.TryTake(requestBody.RequestId, currentUser.UserId, out var pending) || pending is null)
+        if (currentUser.UserId is not { } userId
+            || !approvalStore.TryTake(requestBody.RequestId, userId, out var pending)
+            || pending is null)
         {
-            Response.StatusCode = StatusCodes.Status404NotFound;
-            return;
+            return NotFound();
         }
 
-        runContext.OriginalUserPrompt = pending.OriginalUserPrompt;
-        runContext.CorrelationId = pending.CorrelationId;
-        runContext.UserId = pending.UserId;
-
-        await using var sse = await SseStreamWriter.StartAsync(Response, logger, ct);
-
-        var persisted = pending.ConversationId is not null;
-        var agent = await agentFactory.CreateAsync(pending.AgentName, overrideModel: pending.Model, actingUserId: pending.UserId, chatHistory: persisted ? conversationHistory : null, ct: ct);
-        var session = await agent.DeserializeSessionAsync(pending.Session, cancellationToken: ct);
-
-        // The documented resume: send only the approval response; the session supplies the rest of the context.
-        AiChatMessage approval = new(ChatRole.User, [pending.ApprovalRequest.CreateResponse(requestBody.Approved)]);
-
-        await RunStreamingAsync(agent, pending.AgentName, session, [approval], pending.ConversationId, pending.Model, sse, ct);
-    }
-
-    private async Task RunStreamingAsync(
-        AIAgent agent,
-        string agentName,
-        AgentSession session,
-        IReadOnlyList<AiChatMessage> input,
-        Guid? conversationId,
-        string model,
-        SseStreamWriter sse,
-        CancellationToken ct,
-        Task<string?>? pendingTitle = null)
-    {
-        var run = new AgentRunStream(sse);
-        conversationHistory.TrackActivity(run.Activity);
-
-        try
+        return Accepted(Enqueue(new AssistantTurn
         {
-            await run.RunAsync(agent.RunStreamingAsync(input, session, cancellationToken: ct), ct);
-
-            await PublishTitleAsync(conversationId, pendingTitle, sse, ct);
-
-            if (run.Contents.OfType<ToolApprovalRequestContent>().FirstOrDefault() is { } approvalRequest)
-            {
-                await PauseForApprovalAsync(agent, agentName, session, approvalRequest, conversationId, model, sse, ct);
-                return;
-            }
-
-            await sse.CompleteAsync(ct);
-        }
-        catch (OperationCanceledException)
-        {
-            if (logger.IsEnabled(LogLevel.Information))
-            {
-                logger.LogInformation("Streaming request cancelled. CorrelationId: {CorrelationId}", runContext.CorrelationId);
-            }
-
-            await PersistPartialResponseAsync(session, conversationId, run);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Error while streaming assistant response. CorrelationId: {CorrelationId}", runContext.CorrelationId);
-            await sse.FailAsync(GenericStreamErrorMessage);
-        }
-    }
-
-    private async Task PauseForApprovalAsync(
-        AIAgent agent,
-        string agentName,
-        AgentSession session,
-        ToolApprovalRequestContent request,
-        Guid? conversationId,
-        string model,
-        SseStreamWriter sse,
-        CancellationToken ct)
-    {
-        var serializedSession = await agent.SerializeSessionAsync(session, cancellationToken: ct);
-
-        approvalStore.Add(request.RequestId, new PendingApproval(
-            serializedSession,
-            request,
-            conversationId,
-            model,
-            runContext.UserId,
-            runContext.CorrelationId,
-            runContext.OriginalUserPrompt,
-            agentName));
-
-        var call = request.ToolCall as FunctionCallContent;
-        var approvalData = new ToolApprovalData(request.RequestId, call?.Name ?? "unknown", call?.Arguments, call?.CallId);
-
-        await sse.WriteUpdateAsync(AgentUpdateTypes.ApprovalRequest, JsonSerializer.Serialize(approvalData), ct);
-    }
-
-    private async Task PersistPartialResponseAsync(AgentSession session, Guid? conversationId, AgentRunStream run)
-    {
-        var text = run.Text;
-        if (conversationId is null || text.Length == 0)
-        {
-            return;
-        }
-
-        try
-        {
-            var (answer, steps) = AgentTurnSteps.Build([new AiChatMessage(ChatRole.Assistant, [.. run.Contents])], run.Activity.Durations);
-            await conversationHistory.PersistPartialResponseAsync(session, answer.Length > 0 ? answer : text, steps.Count > 0 ? steps : null);
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "Failed to persist partial assistant response after cancellation. CorrelationId: {CorrelationId}", runContext.CorrelationId);
-        }
+            TurnId = NewTurnId(),
+            UserId = userId,
+            CorrelationId = pending.CorrelationId,
+            Model = pending.Model,
+            ConversationId = pending.ConversationId,
+            OriginalUserPrompt = pending.OriginalUserPrompt,
+            Approval = new ApprovalDecision(pending, requestBody.Approved)
+        }));
     }
 
     /// <summary>
-    /// Starts generating a title when this turn belongs to a conversation that is still untitled; otherwise
-    /// <see langword="null"/>. The returned task never faults (see <see cref="ITitleGenerator.GenerateAsync"/>).
+    /// Streams a turn over SSE: the updates after <c>Last-Event-ID</c> or <c>?after=</c>, then live ones, ending with one
+    /// terminal frame (<c>done</c>, <c>cancelled</c>, <c>error</c>, or <c>gone</c> for a turn that ended a while ago -
+    /// its outcome is in the conversation).
     /// </summary>
-    private async Task<Task<string?>?> StartTitleGenerationAsync(Guid? conversationId, string? prompt, CancellationToken ct)
+    [HttpGet("turns/{turnId}/stream")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public IResult StreamTurn(string turnId)
     {
-        if (conversationId is not { } id || string.IsNullOrWhiteSpace(prompt))
+        if (currentUser.UserId is not { } userId || !streamRelay.IsVisibleTo(turnId, userId))
         {
-            return null;
+            return TypedResults.NotFound();
         }
 
-        try
-        {
-            return await conversationService.IsTitlePendingAsync(id, ct) ? titleGenerator.GenerateAsync(prompt, ct) : null;
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException)
-        {
-            logger.LogWarning(ex, "Could not check whether conversation {ConversationId} needs a title.", id);
-            return null;
-        }
+        return RelayStreams.Create(
+            streamRelay,
+            turnId,
+            RelayStreams.ResumePoint(Request),
+            SseStreams.DefaultHeartbeatInterval,
+            MaxStreamDuration,
+            HttpContext.RequestAborted);
     }
 
     /// <summary>
-    /// Stores the generated title (unless the user renamed the conversation meanwhile) and tells the client. Best effort:
-    /// a failure leaves the conversation pending, so the next turn tries again.
+    /// Stops the caller's turn (a no-op when it already ended). The partial answer is kept and the stream ends with a
+    /// <c>cancelled</c> frame.
     /// </summary>
-    private async Task PublishTitleAsync(Guid? conversationId, Task<string?>? pendingTitle, SseStreamWriter sse, CancellationToken ct)
+    [HttpPost("turns/{turnId}/cancel")]
+    [ProducesResponseType(StatusCodes.Status202Accepted)]
+    public IActionResult CancelTurn(string turnId)
     {
-        if (pendingTitle is null || conversationId is not { } id)
+        if (currentUser.UserId is { } userId)
         {
-            return;
+            turnRegistry.CancelOwned(turnId, userId);
         }
 
-        try
-        {
-            if (await pendingTitle is { } title && await conversationService.TrySetGeneratedTitleAsync(id, title, ct))
-            {
-                await sse.WriteUpdateAsync(AgentUpdateTypes.Title, title, ct);
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            // The client went away after the answer completed: the title is either stored (and shown on the next list
-            // refresh) or the conversation stays pending for the next turn.
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex, "Failed to store the generated title of conversation {ConversationId}.", id);
-        }
+        return Accepted();
     }
 
-    private async Task<string?> TryEnhancePromptAsync(string? prompt, CancellationToken ct)
+    private AssistantTurnAcceptedResponse Enqueue(AssistantTurn turn)
     {
-        if (string.IsNullOrWhiteSpace(prompt))
-        {
-            return null;
-        }
-
-        var settings = await registrySettingsService.GetAsync(currentUser.UserId, ct);
-        if (!settings.Harness.IsPromptEnhancementEnabled)
-        {
-            return null;
-        }
-
-        var enhanced = await promptEnhancementService.EnhanceAsync(prompt, ct);
-
-        return !string.IsNullOrWhiteSpace(enhanced) && !string.Equals(enhanced, prompt, StringComparison.Ordinal) ? enhanced : null;
+        streamRelay.Claim(turn.TurnId, turn.UserId);
+        turnQueue.Enqueue(turn);
+        return new AssistantTurnAcceptedResponse(turn.TurnId);
     }
 
-    /// <summary>
-    /// The user turn sent to the model: the enhanced prompt when there is one, carrying the original text so the
-    /// transcript stores what the user actually typed, and the attached files so the transcript lists them.
-    /// </summary>
-    private static AiChatMessage CreateUserTurn(string original, string? enhancedPrompt, IReadOnlyList<MessageAttachment>? attachments = null)
+    private string ResolveCorrelationId()
     {
-        var properties = new AdditionalPropertiesDictionary();
-        if (enhancedPrompt is not null)
-        {
-            properties[ConversationChatHistoryProvider.OriginalPromptProperty] = original;
-        }
-
-        if (attachments is { Count: > 0 })
-        {
-            ConversationChatHistoryProvider.WithAttachments(properties, attachments);
-        }
-
-        return new AiChatMessage(ChatRole.User, enhancedPrompt ?? original)
-        {
-            AdditionalProperties = properties.Count > 0 ? properties : null,
-        };
+        return Request.Headers.TryGetValue(CommonHeaderNames.CorrelationId, out var header) ? header.ToString() : Guid.NewGuid().ToString();
     }
 
-    private static List<AiChatMessage> MapClientHistory(IReadOnlyList<ChatMessage> messages, string? enhancedPrompt, ChatMessage? lastUserMessage)
+    private static string NewTurnId() => Guid.NewGuid().ToString("N");
+
+    private static string? ResolvePrompt(IReadOnlyList<ChatMessage> messages, IReadOnlyList<MessageAttachment> attachments)
     {
-        var mapped = messages
-            .Select(m => new AiChatMessage(IsUserRole(m.Role) ? ChatRole.User : ChatRole.Assistant, m.Content))
-            .ToList();
+        var content = messages.LastOrDefault(m => ChatRoles.IsUser(m.Role))?.Content;
 
-        if (lastUserMessage is not null && mapped.FindLastIndex(m => m.Role == ChatRole.User) is var last and >= 0)
-        {
-            mapped[last] = CreateUserTurn(lastUserMessage.Content, enhancedPrompt);
-        }
-
-        return mapped;
+        return attachments.Count > 0 && string.IsNullOrWhiteSpace(content) ? AttachmentOnlyPrompt : content;
     }
-
-    private static ChatMessage? WithAttachmentPrompt(ChatMessage? message, IReadOnlyList<MessageAttachment> attachments)
-    {
-        if (attachments.Count == 0 || !string.IsNullOrWhiteSpace(message?.Content))
-        {
-            return message;
-        }
-
-        return new ChatMessage(ChatRole.User.Value, AttachmentOnlyPrompt);
-    }
-
-    private static bool IsUserRole(string role) => role.Equals(ChatRole.User.ToString(), StringComparison.OrdinalIgnoreCase);
 }

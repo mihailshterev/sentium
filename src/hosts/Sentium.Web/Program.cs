@@ -3,6 +3,7 @@ using Microsoft.Extensions.Caching.Hybrid;
 using Sentium.Core.Constants;
 using Sentium.Infrastructure.Extensions;
 using Sentium.Infrastructure.Mvc;
+using Sentium.Infrastructure.Realtime;
 using Sentium.Infrastructure.Validation;
 using Sentium.Web;
 
@@ -60,6 +61,7 @@ app.UseAuthorization();
 
 app.MapDefaultEndpoints();
 app.MapControllers();
+app.MapSentiumRealtime();
 
 // Unknown API routes must 404 instead of falling through to the SPA shell.
 app.MapFallback("api/{**path}", () => Results.NotFound());

@@ -1,31 +1,10 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { useOrchestrationRunStore } from "./orchestration-run-store";
 import * as orchestrationService from "@/features/orchestration/api/orchestration.service";
+import { FakeEventSource } from "@/test/fake-event-source";
 
-class FakeEventSource {
-  static instances: FakeEventSource[] = [];
-  url: string;
-  onmessage: ((e: { data: string }) => void) | null = null;
-  onerror: (() => void) | null = null;
-  closed = false;
-
-  constructor(url: string) {
-    this.url = url;
-    FakeEventSource.instances.push(this);
-  }
-  close() {
-    this.closed = true;
-  }
-  emit(data: string) {
-    this.onmessage?.({ data });
-  }
-  fail() {
-    this.onerror?.();
-  }
-  static last() {
-    return FakeEventSource.instances[FakeEventSource.instances.length - 1];
-  }
-}
+/** Frames are applied in batches; wait for the batch holding the ones just emitted. */
+const applied = () => new Promise((resolve) => setTimeout(resolve, 60));
 
 const resetStore = () =>
   useOrchestrationRunStore.setState({
@@ -36,8 +15,8 @@ const resetStore = () =>
   });
 
 beforeEach(() => {
-  FakeEventSource.instances = [];
-  vi.stubGlobal("EventSource", FakeEventSource as unknown as typeof EventSource);
+  sessionStorage.clear();
+  FakeEventSource.install();
   vi.spyOn(orchestrationService, "runWorkflowPipeline").mockResolvedValue({ eventId: "e1" });
   vi.spyOn(orchestrationService, "runDynamicWorkflow").mockResolvedValue({ eventId: "e2" });
   vi.spyOn(orchestrationService, "cancelOrchestrationRun").mockResolvedValue(undefined);
@@ -103,6 +82,7 @@ describe("stream message handling", () => {
   it("appends a message log and sets PLANNING phase for orchestrator author", async () => {
     const src = await startAndGetSource();
     src.emit(JSON.stringify({ type: "message", author: "Orchestrator", text: "Planning..." }));
+    await applied();
 
     const state = useOrchestrationRunStore.getState();
     expect(state.phase).toBe("PLANNING");
@@ -112,12 +92,14 @@ describe("stream message handling", () => {
   it("sets VALIDATING phase for validator author", async () => {
     const src = await startAndGetSource();
     src.emit(JSON.stringify({ type: "message", author: "Validator", text: "checking" }));
+    await applied();
     expect(useOrchestrationRunStore.getState().phase).toBe("VALIDATING");
   });
 
   it("sets SQUAD phase for a generic agent author", async () => {
     const src = await startAndGetSource();
     src.emit(JSON.stringify({ type: "message", author: "Worker", text: "doing" }));
+    await applied();
     expect(useOrchestrationRunStore.getState().phase).toBe("SQUAD");
   });
 
@@ -125,6 +107,7 @@ describe("stream message handling", () => {
     const src = await startAndGetSource();
     src.emit(JSON.stringify({ type: "message", author: "Worker", text: "Hello " }));
     src.emit(JSON.stringify({ type: "message", author: "Worker", text: "world" }));
+    await applied();
 
     const logs = useOrchestrationRunStore.getState().logs;
     expect(logs).toHaveLength(1);
@@ -133,7 +116,7 @@ describe("stream message handling", () => {
 
   it("closes the stream and completes on a 'done' event", async () => {
     const src = await startAndGetSource();
-    src.emit(JSON.stringify({ Type: "done" }));
+    src.emit(JSON.stringify({ type: "done", done: true }));
 
     const state = useOrchestrationRunStore.getState();
     expect(state.phase).toBe("COMPLETE");
@@ -141,13 +124,58 @@ describe("stream message handling", () => {
     expect(src.closed).toBe(true);
   });
 
-  it("completes after exceeding the reconnect limit on errors", async () => {
+  it("ends with an error frame's message", async () => {
     const src = await startAndGetSource();
-    for (let i = 0; i < 6; i++) src.fail();
+    src.emit(JSON.stringify({ type: "error", message: "The workflow timed out before completing.", done: true }));
 
     const state = useOrchestrationRunStore.getState();
-    expect(state.phase).toBe("COMPLETE");
+    expect(state.lastOutcome).toBe("error");
+    expect(state.logs.at(-1)).toEqual({ author: "System", text: "The workflow timed out before completing.", type: "error" });
+  });
+
+  it("reopens a failed stream after the last event it saw", async () => {
+    vi.useFakeTimers();
+    try {
+      const src = await startAndGetSource();
+      src.emit(JSON.stringify({ type: "message", author: "Worker", text: "doing" }), "3");
+
+      src.fail();
+      await vi.advanceTimersByTimeAsync(1_000);
+
+      expect(FakeEventSource.last()).not.toBe(src);
+      expect(FakeEventSource.last().url).toContain("/orchestration/stream/e1?after=3");
+      expect(useOrchestrationRunStore.getState().connection).toBe("reconnecting");
+      expect(useOrchestrationRunStore.getState().isRunning).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("gives up with an error once reconnecting keeps failing", async () => {
+    vi.useFakeTimers();
+    try {
+      await startAndGetSource();
+      for (let i = 0; i < 7; i++) {
+        FakeEventSource.last().fail();
+        await vi.advanceTimersByTimeAsync(60_000);
+      }
+
+      const state = useOrchestrationRunStore.getState();
+      expect(state.phase).toBe("COMPLETE");
+      expect(state.isRunning).toBe(false);
+      expect(state.lastOutcome).toBe("error");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("reports a run that ended while nobody followed it", async () => {
+    const src = await startAndGetSource();
+    src.emit(JSON.stringify({ type: "gone", done: true }));
+
+    const state = useOrchestrationRunStore.getState();
     expect(state.isRunning).toBe(false);
+    expect(state.logs.at(-1)?.text).toContain("its result is in the history");
   });
 });
 
@@ -168,7 +196,7 @@ describe("stopRun / resetRun", () => {
     const src = FakeEventSource.last();
 
     useOrchestrationRunStore.getState().stopRun();
-    src.emit(JSON.stringify({ Type: "cancelled" }));
+    src.emit(JSON.stringify({ type: "cancelled", done: true }));
 
     const state = useOrchestrationRunStore.getState();
     expect(state.phase).toBe("COMPLETE");
@@ -217,5 +245,63 @@ describe("stopRun / resetRun", () => {
     expect(state.phase).toBe("IDLE");
     expect(state.logs).toHaveLength(0);
     expect(state.isDynamicRun).toBe(false);
+  });
+});
+
+describe("surviving a reload", () => {
+  it("remembers the run it follows for this tab, and forgets it once the run ends", async () => {
+    await useOrchestrationRunStore.getState().startPredefined({ workflowId: "w1", scenario: "s" });
+    expect(JSON.parse(sessionStorage.getItem("sentium.orchestration.activeRun") ?? "{}")).toMatchObject({ eventId: "e1" });
+
+    FakeEventSource.last().emit(JSON.stringify({ type: "done", done: true }));
+
+    expect(sessionStorage.getItem("sentium.orchestration.activeRun")).toBeNull();
+  });
+
+  it("re-attaches to the remembered run when the page loads, replaying it from the start", async () => {
+    sessionStorage.setItem(
+      "sentium.orchestration.activeRun",
+      JSON.stringify({ eventId: "e-reload", isDynamicRun: true, runStartedAt: 1234 }),
+    );
+    vi.resetModules();
+    const { useOrchestrationRunStore: reloaded } = await import("./orchestration-run-store");
+
+    expect(reloaded.getState()).toMatchObject({ isRunning: true, isDynamicRun: true, runStartedAt: 1234 });
+    await vi.waitFor(() => expect(FakeEventSource.instances.length).toBeGreaterThan(0));
+    expect(FakeEventSource.last().url).toMatch(/\/orchestration\/stream\/e-reload$/);
+
+    FakeEventSource.last().emit(JSON.stringify({ type: "message", author: "Worker", text: "replayed" }), "1");
+    await applied();
+    expect(reloaded.getState().logs).toEqual([{ author: "Worker", text: "replayed", type: "message" }]);
+  });
+});
+
+describe("frame batching", () => {
+  it("applies a burst of frames - a replay after a reload - in one go", async () => {
+    await useOrchestrationRunStore.getState().startPredefined({ workflowId: "w1", scenario: "s" });
+    const src = FakeEventSource.last();
+    const listener = vi.fn();
+    const unsubscribe = useOrchestrationRunStore.subscribe(listener);
+
+    for (let i = 0; i < 500; i++) {
+      src.emit(JSON.stringify({ type: "message", author: "Worker", text: "x" }), String(i + 1));
+    }
+    expect(useOrchestrationRunStore.getState().logs).toHaveLength(0);
+    await applied();
+    unsubscribe();
+
+    expect(useOrchestrationRunStore.getState().logs).toEqual([{ author: "Worker", text: "x".repeat(500), type: "message" }]);
+  });
+
+  it("applies the waiting frames before the terminal one", async () => {
+    await useOrchestrationRunStore.getState().startPredefined({ workflowId: "w1", scenario: "s" });
+    const src = FakeEventSource.last();
+
+    src.emit(JSON.stringify({ type: "message", author: "Worker", text: "last words" }));
+    src.emit(JSON.stringify({ type: "done", done: true }));
+
+    const state = useOrchestrationRunStore.getState();
+    expect(state.logs[0]).toEqual({ author: "Worker", text: "last words", type: "message" });
+    expect(state.isRunning).toBe(false);
   });
 });

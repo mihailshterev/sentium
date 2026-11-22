@@ -10,7 +10,8 @@ import type { Device, DeviceStatus } from "@/features/devices/types/device";
 export const MY_DEVICES_KEY = ["devices", "mine"] as const;
 export const DEVICE_STATUSES_KEY = ["devices", "statuses"] as const;
 
-const STATUS_POLL_INTERVAL = 15_000;
+/** The Vigil stream patches Device state as it changes; the poll only covers a missed event. */
+const STATUS_POLL_INTERVAL = 60_000;
 
 export function useMyDevices() {
   const queryClient = useQueryClient();

@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { DEVICE_STATUSES_KEY, type DeviceStatus, type DeviceUpdate } from "@/features/devices";
-import { BASE_URL } from "@/shared/api/client";
+import { REALTIME_TOPICS, useRealtimeStatus, useRealtimeTopic, type RealtimeMessage } from "@/shared/realtime";
 import { SERVICE_HEALTH_KEY } from "./useServiceHealth";
 import { SYSTEM_OVERVIEW_KEY } from "./useSystemOverview";
 import { INCIDENTS_KEY } from "./useIncidents";
@@ -17,85 +16,78 @@ interface StatusPayload {
   details?: string | null;
 }
 
-interface Envelope {
-  type: string;
-  data?: unknown;
+const VIGIL_TOPICS = [
+  REALTIME_TOPICS.vigilStatus,
+  REALTIME_TOPICS.vigilIncidentOpened,
+  REALTIME_TOPICS.vigilIncidentResolved,
+  REALTIME_TOPICS.vigilDeviceUpdated,
+  REALTIME_TOPICS.vigilDeviceRemoved,
+] as const;
+
+function applyStatus(queryClient: QueryClient, update: StatusPayload) {
+  queryClient.setQueryData<ServiceHealthStatus[]>(SERVICE_HEALTH_KEY, (prev) =>
+    prev?.map((s) =>
+      s.serviceName === update.serviceName
+        ? {
+            ...s,
+            status: update.status,
+            latencyMs: update.latencyMs,
+            uptimePercent: update.uptimePercent,
+            checkedAt: update.timestamp,
+            details: update.details ?? null,
+          }
+        : s,
+    ),
+  );
+  void queryClient.invalidateQueries({ queryKey: SYSTEM_OVERVIEW_KEY });
 }
 
+function applyDeviceUpdate(queryClient: QueryClient, update: DeviceUpdate) {
+  const known = queryClient.getQueryData<DeviceStatus[]>(DEVICE_STATUSES_KEY)?.some((d) => d.id === update.id);
+  if (!known) {
+    // A Device paired since the list was loaded: the frame has no name or owner, so fetch the list.
+    void queryClient.invalidateQueries({ queryKey: DEVICE_STATUSES_KEY });
+    return;
+  }
+  queryClient.setQueryData<DeviceStatus[]>(DEVICE_STATUSES_KEY, (prev) =>
+    prev?.map((d) =>
+      d.id === update.id ? { ...d, isOnline: update.isOnline, lastSeenAt: update.lastSeenAt, report: update.report } : d,
+    ),
+  );
+}
+
+/** Applies Vigil's realtime events to the health, incident and Device queries. */
 export function useVigilStream() {
   const queryClient = useQueryClient();
-  const [isLive, setIsLive] = useState(false);
-  const sourceRef = useRef<EventSource | null>(null);
+  const isLive = useRealtimeStatus() === "live";
 
-  useEffect(() => {
-    const source = new EventSource(`${BASE_URL}/vigil/stream`, { withCredentials: true });
-    sourceRef.current = source;
-
-    source.onopen = () => setIsLive(true);
-    source.onerror = () => setIsLive(false);
-
-    source.onmessage = (event) => {
-      if (!event.data || event.data.startsWith(":")) {
-        return;
+  useRealtimeTopic(VIGIL_TOPICS, (message: RealtimeMessage) => {
+    if (message.kind === "resync") {
+      for (const queryKey of [SERVICE_HEALTH_KEY, SYSTEM_OVERVIEW_KEY, INCIDENTS_KEY, DEVICE_STATUSES_KEY]) {
+        void queryClient.invalidateQueries({ queryKey });
       }
+      return;
+    }
 
-      let envelope: Envelope;
-      try {
-        envelope = JSON.parse(event.data);
-      } catch {
-        return;
-      }
-
-      if (envelope.type === "status" && envelope.data) {
-        const update = envelope.data as StatusPayload;
-        queryClient.setQueryData<ServiceHealthStatus[]>(SERVICE_HEALTH_KEY, (prev) => {
-          if (!prev) {
-            return prev;
-          }
-          return prev.map((s) =>
-            s.serviceName === update.serviceName
-              ? {
-                  ...s,
-                  status: update.status,
-                  latencyMs: update.latencyMs,
-                  uptimePercent: update.uptimePercent,
-                  checkedAt: update.timestamp,
-                  details: update.details ?? null,
-                }
-              : s,
-          );
-        });
-        queryClient.invalidateQueries({ queryKey: SYSTEM_OVERVIEW_KEY });
-      } else if (envelope.type === "incident.opened" || envelope.type === "incident.resolved") {
-        queryClient.invalidateQueries({ queryKey: INCIDENTS_KEY });
-        queryClient.invalidateQueries({ queryKey: SYSTEM_OVERVIEW_KEY });
-      } else if (envelope.type === "device.updated" && envelope.data) {
-        const update = envelope.data as DeviceUpdate;
-        const known = queryClient.getQueryData<DeviceStatus[]>(DEVICE_STATUSES_KEY)?.some((d) => d.id === update.id);
-        if (!known) {
-          // A Device paired since the list was loaded: the frame has no name or owner, so fetch the list.
-          queryClient.invalidateQueries({ queryKey: DEVICE_STATUSES_KEY });
-          return;
-        }
-        queryClient.setQueryData<DeviceStatus[]>(DEVICE_STATUSES_KEY, (prev) =>
-          prev?.map((d) =>
-            d.id === update.id
-              ? { ...d, isOnline: update.isOnline, lastSeenAt: update.lastSeenAt, report: update.report }
-              : d,
-          ),
-        );
-      } else if (envelope.type === "device.removed" && envelope.data) {
-        const removedId = (envelope.data as { id: string }).id;
+    switch (message.topic) {
+      case REALTIME_TOPICS.vigilStatus:
+        applyStatus(queryClient, message.data as StatusPayload);
+        break;
+      case REALTIME_TOPICS.vigilIncidentOpened:
+      case REALTIME_TOPICS.vigilIncidentResolved:
+        void queryClient.invalidateQueries({ queryKey: INCIDENTS_KEY });
+        void queryClient.invalidateQueries({ queryKey: SYSTEM_OVERVIEW_KEY });
+        break;
+      case REALTIME_TOPICS.vigilDeviceUpdated:
+        applyDeviceUpdate(queryClient, message.data as DeviceUpdate);
+        break;
+      case REALTIME_TOPICS.vigilDeviceRemoved: {
+        const removedId = (message.data as { id: string }).id;
         queryClient.setQueryData<DeviceStatus[]>(DEVICE_STATUSES_KEY, (prev) => prev?.filter((d) => d.id !== removedId));
+        break;
       }
-    };
-
-    return () => {
-      source.close();
-      sourceRef.current = null;
-      setIsLive(false);
-    };
-  }, [queryClient]);
+    }
+  });
 
   return { isLive };
 }

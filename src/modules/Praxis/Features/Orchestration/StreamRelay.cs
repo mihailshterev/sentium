@@ -7,7 +7,8 @@ namespace Sentium.Praxis.Features.Orchestration;
 
 internal sealed class StreamRelay(IConfiguration configuration, ILogger<StreamRelay> logger) : BackgroundService, IStreamRelay, IAgentStreamPublisher
 {
-    private const int MaxBufferedEntries = 5000;
+    // An assistant answer streams token by token, so a long one is thousands of frames; the character cap bounds memory.
+    private const int MaxBufferedEntries = 20_000;
     private const int MaxBufferedChars = 1_000_000;
     private const int MaxSubscriberQueue = 8192;
     private const int MaxTrackedStreams = 1000;
@@ -35,6 +36,8 @@ internal sealed class StreamRelay(IConfiguration configuration, ILogger<StreamRe
     {
         return !_streams.TryGetValue(streamId, out var state) || state.OwnerId is not { } owner || owner == userId;
     }
+
+    public bool Exists(string streamId) => _streams.ContainsKey(streamId);
 
     public void Publish(string streamId, AgentStreamUpdate update)
     {

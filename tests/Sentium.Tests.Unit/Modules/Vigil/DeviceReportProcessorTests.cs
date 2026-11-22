@@ -11,7 +11,7 @@ public sealed class DeviceReportProcessorTests
 {
     private readonly INotifier _notifier = Substitute.For<INotifier>();
     private readonly IVigilSettingsProvider _settings = Substitute.For<IVigilSettingsProvider>();
-    private readonly VigilFeed _feed = new();
+    private readonly IVigilFeed _feed = Substitute.For<IVigilFeed>();
     private readonly DeviceStateStore _store = new(TimeProvider.System);
     private readonly DeviceReportProcessor _sut;
     private readonly Guid _device = Guid.NewGuid();
@@ -40,12 +40,13 @@ public sealed class DeviceReportProcessorTests
     [Fact]
     public async Task Process_PublishesTheUpdate_ForTheOwnerOnly()
     {
-        using var subscription = _feed.Subscribe();
+        VigilFeedEvent? evt = null;
+        _feed.When(f => f.Publish(Arg.Any<VigilFeedEvent>())).Do(call => evt = call.Arg<VigilFeedEvent>());
 
         await _sut.ProcessAsync(_device, _owner, Report(), Ct);
 
-        Assert.True(subscription.Reader.TryRead(out var evt));
-        Assert.Equal(VigilFeedEventTypes.DeviceUpdated, evt!.Type);
+        Assert.NotNull(evt);
+        Assert.Equal(VigilFeedEventTypes.DeviceUpdated, evt.Type);
         Assert.Equal(_owner, evt.AudienceUserId);
         Assert.Equal(_device, Assert.IsType<DeviceUpdatedFrame>(evt.Data).Id);
     }

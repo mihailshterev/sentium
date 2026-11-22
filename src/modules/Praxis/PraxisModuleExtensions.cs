@@ -16,6 +16,7 @@ using Sentium.Praxis.Features.Agents.Approvals;
 using Sentium.Praxis.Features.Agents.Native;
 using Sentium.Praxis.Features.Agents.Runtime;
 using Sentium.Praxis.Features.Agents.ToolOverrides;
+using Sentium.Praxis.Features.Assistant;
 using Sentium.Praxis.Features.CodeExecution;
 using Sentium.Praxis.Features.Conversations;
 using Sentium.Praxis.Features.Files;
@@ -94,6 +95,10 @@ public static class PraxisModuleExtensions
         services.AddScoped<WorkspaceContextProviderFactory>();
 
         services.AddSingleton<IPendingApprovalStore, PendingApprovalStore>();
+        services.AddSingleton<AssistantTurnRegistry>();
+        services.AddSingleton<AssistantTurnQueue>();
+        services.AddScoped<AssistantTurnRunner>();
+        services.AddHostedService<AssistantTurnProcessor>();
 
         services.AddScoped<IAgentRegistry, AgentRegistry>();
         services.AddScoped<IAgentRoster, AgentRoster>();

@@ -26,4 +26,9 @@ internal interface IStreamRelay
     /// Whether <paramref name="userId"/> may read the stream: it is theirs, or nobody has claimed it.
     /// </summary>
     bool IsVisibleTo(string streamId, Guid userId);
+
+    /// <summary>
+    /// Whether the relay still holds the stream: it was claimed or published to and not yet evicted.
+    /// </summary>
+    bool Exists(string streamId);
 }

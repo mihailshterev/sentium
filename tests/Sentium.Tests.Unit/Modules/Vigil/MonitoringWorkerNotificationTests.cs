@@ -53,7 +53,7 @@ public sealed class MonitoringWorkerNotificationTests
         settings.GetAsync(Arg.Any<CancellationToken>()).Returns(new VigilRuntimeSettings { PollIntervalSeconds = 0 });
 
         using var worker = new MonitoringWorker(
-            [probe], new ServiceHealthStateStore(), new IncidentStore(), settings, new VigilFeed(), _notifier, NullLogger<MonitoringWorker>.Instance);
+            [probe], new ServiceHealthStateStore(), new IncidentStore(), settings, Substitute.For<IVigilFeed>(), _notifier, NullLogger<MonitoringWorker>.Instance);
 
         await worker.StartAsync(Ct);
         await WaitUntilAsync(() => SentCount >= 2);
@@ -93,7 +93,7 @@ public sealed class MonitoringWorkerNotificationTests
         settings.GetAsync(Arg.Any<CancellationToken>()).Returns(new VigilRuntimeSettings { PollIntervalSeconds = 0 });
 
         using var worker = new MonitoringWorker(
-            [probe], new ServiceHealthStateStore(), new IncidentStore(), settings, new VigilFeed(), _notifier, NullLogger<MonitoringWorker>.Instance);
+            [probe], new ServiceHealthStateStore(), new IncidentStore(), settings, Substitute.For<IVigilFeed>(), _notifier, NullLogger<MonitoringWorker>.Instance);
 
         await worker.StartAsync(Ct);
         await WaitUntilAsync(() => SentCount >= 2);

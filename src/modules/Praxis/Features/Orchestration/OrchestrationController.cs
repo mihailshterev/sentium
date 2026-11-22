@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Sentium.Infrastructure.Security;
-using Sentium.Praxis.Common.Streaming;
 using Sentium.Praxis.Features.Agents;
 using Sentium.Praxis.Features.Registry;
 using Sentium.Praxis.Features.WorkflowManagement;
@@ -129,52 +128,27 @@ internal sealed class OrchestrationController(
     }
 
     /// <summary>
-    /// Streams a run's updates over SSE: the buffered backlog after <c>Last-Event-ID</c>, then live frames, ending with
-    /// one terminal frame. A connection is capped at <c>Orchestration:StreamMaxDuration</c>; the EventSource then
-    /// reconnects and resumes from its last id.
+    /// Streams a run's updates over SSE (see <see cref="RelayStreams"/>): the buffered backlog after <c>Last-Event-ID</c>
+    /// or <c>?after=</c>, then live frames, ending with one terminal frame. A connection is capped at
+    /// <c>Orchestration:StreamMaxDuration</c>; the client then reconnects and resumes from its last id.
     /// </summary>
     [HttpGet("stream/{eventId}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task StreamAgentExecution(string eventId, CancellationToken ct)
+    public IResult StreamAgentExecution(string eventId)
     {
         if (!currentUser.IsSovereign && (currentUser.UserId is not { } userId || !streamRelay.IsVisibleTo(eventId, userId)))
         {
-            Response.StatusCode = StatusCodes.Status404NotFound;
-            return;
+            return TypedResults.NotFound();
         }
 
-        var fromSeq = ParseLastEventId(Request.Headers["Last-Event-ID"].ToString());
-
-        using var streamCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        streamCts.CancelAfter(_maxStreamDuration);
-        var token = streamCts.Token;
-
-        await using var sse = await SseStreamWriter.StartAsync(Response, _heartbeatInterval, logger, token);
-
-        try
-        {
-            await sse.ForwardAsync(streamRelay.Subscribe(eventId, fromSeq, token), token);
-        }
-        catch (OperationCanceledException) when (ct.IsCancellationRequested)
-        {
-            if (logger.IsEnabled(LogLevel.Information))
-            {
-                logger.LogInformation("Client disconnected from stream {EventId}", eventId);
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            if (logger.IsEnabled(LogLevel.Information))
-            {
-                logger.LogInformation("Stream {EventId} hit the per-connection cap; closing for transparent reconnect.", eventId);
-            }
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Error while streaming agent execution for event {EventId}.", eventId);
-            await sse.FailAsync("An unexpected error occurred while streaming the run.");
-        }
+        return RelayStreams.Create(
+            streamRelay,
+            eventId,
+            RelayStreams.ResumePoint(Request),
+            _heartbeatInterval,
+            _maxStreamDuration,
+            HttpContext.RequestAborted);
     }
 
     private void ClaimStream(string streamId)
@@ -184,8 +158,6 @@ internal sealed class OrchestrationController(
             streamRelay.Claim(streamId, userId);
         }
     }
-
-    private static long ParseLastEventId(string header) => long.TryParse(header, out var seq) && seq > 0 ? seq : 0;
 
     private static TimeSpan ResolveTimeSpan(IConfiguration configuration, string key, TimeSpan fallback)
     {

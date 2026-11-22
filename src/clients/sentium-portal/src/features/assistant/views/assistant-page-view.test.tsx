@@ -193,19 +193,12 @@ describe("Assistant page", () => {
     });
   });
 
-  it("waits while the routed conversation is streaming, then refetches it when the stream ends", () => {
+  it("loads the routed conversation even while its turn is streaming", () => {
     routeParams = { conversationId: "c2" };
     setStore({ activeConversationId: "c1", isStreaming: true, streamingConversationId: "c2" });
-    const { rerender } = renderPage();
-    expect(fetchConversation).not.toHaveBeenCalled();
-    expect(screen.getByText(/loading conversation/i)).toBeInTheDocument();
 
-    setStore({ activeConversationId: "c1", isStreaming: false, streamingConversationId: null });
-    rerender(
-      <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
-        <Assistant />
-      </QueryClientProvider>,
-    );
+    renderPage();
+
     expect(fetchConversation).toHaveBeenCalledWith("c2");
   });
 

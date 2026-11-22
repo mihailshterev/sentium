@@ -10,8 +10,6 @@ vi.mock("@/shared/api/client", async (importOriginal) => {
   };
 });
 
-const okResponse = (body: unknown) => ({ ok: true, status: 200, json: async () => body }) as unknown as Response;
-
 beforeEach(() => {
   vi.clearAllMocks();
   vi.stubGlobal("fetch", vi.fn());
@@ -60,24 +58,28 @@ describe("assistant.service conversations", () => {
   });
 });
 
-describe("assistant.service chat", () => {
-  it("sendChatMessage POSTs to the assistant/chat endpoint", async () => {
-    vi.mocked(fetch).mockResolvedValueOnce({ ok: true } as unknown as Response);
-    const payload = {
-      conversationId: "c-1",
-      model: "llama3",
-      messages: [{ role: "user", content: "Hi" }],
-      stream: true,
-    };
-    await assistantService.sendChatMessage(payload);
-    const [url, config] = vi.mocked(fetch).mock.calls[0];
-    expect(url).toContain("/praxis/assistant/chat");
-    expect((config as RequestInit).method).toBe("POST");
+describe("assistant.service chat turns", () => {
+  it("startChatTurn posts the chat to the assistant/chat endpoint", async () => {
+    vi.mocked(client.post).mockResolvedValueOnce({ turnId: "t1" });
+    const payload = { conversationId: "c-1", model: "llama3", messages: [{ role: "user", content: "Hi" }], stream: true };
+
+    await expect(assistantService.startChatTurn(payload)).resolves.toEqual({ turnId: "t1" });
+    expect(client.post).toHaveBeenCalledWith("/praxis/assistant/chat", payload);
   });
 
-  it("approveToolCall posts to the approval endpoint", async () => {
-    vi.mocked(fetch).mockResolvedValueOnce(okResponse({}));
+  it("approveToolCall posts the decision to the approval endpoint", async () => {
+    vi.mocked(client.post).mockResolvedValueOnce({ turnId: "t2" });
     await assistantService.approveToolCall("req-1", true);
-    expect(fetch).toHaveBeenCalledWith(expect.stringContaining("/assistant/chat/approve"), expect.any(Object));
+    expect(client.post).toHaveBeenCalledWith("/praxis/assistant/chat/approve", { requestId: "req-1", approved: true });
+  });
+
+  it("cancelChatTurn posts to the turn's cancel endpoint", async () => {
+    vi.mocked(client.post).mockResolvedValueOnce(undefined);
+    await assistantService.cancelChatTurn("t1");
+    expect(client.post).toHaveBeenCalledWith("/praxis/assistant/turns/t1/cancel", {});
+  });
+
+  it("chatTurnStreamUrl points at the turn's stream", () => {
+    expect(assistantService.chatTurnStreamUrl("t1")).toBe("/api/praxis/assistant/turns/t1/stream");
   });
 });

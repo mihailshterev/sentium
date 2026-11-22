@@ -157,9 +157,7 @@ export function AssistantView() {
       if (routeConversationId === activeConversationId) {
         return;
       }
-      if (isStreaming && streamingConversationId === routeConversationId) {
-        return;
-      }
+      // Always load, even the conversation whose turn is streaming: the store swaps in its live copy.
       fetchConversation(routeConversationId)
         .then((data) => {
           if (cancelled) {
@@ -180,7 +178,7 @@ export function AssistantView() {
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [routeConversationId, isStreaming, streamingConversationId, activeConversationId]);
+  }, [routeConversationId, activeConversationId]);
 
   // Attachments belong to the message being written in one conversation; switching conversations drops them.
   useEffect(() => {

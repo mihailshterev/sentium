@@ -35,20 +35,17 @@ export const renameConversation = (id: string, title: string) =>
 export const setConversationWorkspace = (id: string, workspaceId: string | null) =>
   client.put<void>(`${BASE}/conversations/${id}/workspace`, { workspaceId });
 
-export const sendChatMessage = (payload: ChatPayload, signal?: AbortSignal): Promise<Response> =>
-  fetch(`${BASE_URL}${BASE}/assistant/chat`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-    credentials: "include",
-    signal,
-  });
+/** A queued assistant turn; follow it on {@link chatTurnStreamUrl}. */
+export interface ChatTurnAccepted {
+  turnId: string;
+}
 
-export const approveToolCall = (requestId: string, approved: boolean, signal?: AbortSignal): Promise<Response> =>
-  fetch(`${BASE_URL}${BASE}/assistant/chat/approve`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ requestId, approved }),
-    credentials: "include",
-    signal,
-  });
+export const startChatTurn = (payload: ChatPayload) => client.post<ChatTurnAccepted>(`${BASE}/assistant/chat`, payload);
+
+export const approveToolCall = (requestId: string, approved: boolean) =>
+  client.post<ChatTurnAccepted>(`${BASE}/assistant/chat/approve`, { requestId, approved });
+
+/** Stops a turn; it keeps its partial answer and its stream ends with a "cancelled" frame. */
+export const cancelChatTurn = (turnId: string) => client.post<void>(`${BASE}/assistant/turns/${turnId}/cancel`, {});
+
+export const chatTurnStreamUrl = (turnId: string) => `${BASE_URL}${BASE}/assistant/turns/${turnId}/stream`;

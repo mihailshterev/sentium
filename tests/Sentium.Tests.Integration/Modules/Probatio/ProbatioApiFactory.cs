@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
+using Sentium.Infrastructure.Realtime;
 using Sentium.Praxis;
 using Sentium.Praxis.Features.Models;
 using Sentium.Probatio.Features.Evaluations;
@@ -43,6 +44,7 @@ public sealed class ProbatioApiFactory : MonolithWebApplicationFactory
         Services.GetRequiredService<EvaluationQueue>(),
         Services.GetRequiredService<EvaluationCancellations>(),
         TimeProvider.System,
+        Services.GetRequiredService<IRealtimePublisher>(),
         NullLogger<EvaluationWorker>.Instance);
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)

@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useInfiniteList } from "@/shared/hooks/useInfiniteList";
+import { REALTIME_FALLBACK_POLL_MS, REALTIME_TOPICS, useRealtimeInvalidate } from "@/shared/realtime";
 import * as api from "../api/inventory.service";
 import type { AssetFilters, AttachmentKind, SaveAssetPayload, SaveLocationPayload } from "../types/inventory";
 
@@ -13,7 +14,6 @@ export const inventoryKeys = {
 };
 
 const ASSET_PAGE_SIZE = 30;
-const PENDING_POLL_MS = 4000;
 
 function useInvalidateInventory() {
   const queryClient = useQueryClient();
@@ -67,11 +67,14 @@ export function useAssetSearch(filters: AssetFilters) {
 }
 
 export function useAsset(id: string | undefined) {
+  // The knowledge-base sync reports when it finishes; the poll while pending only covers a missed event.
+  useRealtimeInvalidate(REALTIME_TOPICS.inventoryKnowledge, [inventoryKeys.all]);
+
   const query = useQuery({
     queryKey: inventoryKeys.asset(id ?? ""),
     queryFn: () => api.fetchAsset(id!),
     enabled: !!id,
-    refetchInterval: (q) => (q.state.data?.knowledgeStatus === "Pending" ? PENDING_POLL_MS : false),
+    refetchInterval: (q) => (q.state.data?.knowledgeStatus === "Pending" ? REALTIME_FALLBACK_POLL_MS : false),
   });
   return { asset: query.data ?? null, isLoading: query.isLoading, error: query.error };
 }

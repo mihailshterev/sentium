@@ -11,12 +11,16 @@ import {
   updateSchedule,
 } from "@/features/scheduler/api/scheduler.service";
 import type { CronJobRecord, PreApprovalTarget, SaveSchedulePayload } from "@/features/scheduler/types/scheduler";
+import { REALTIME_FALLBACK_POLL_MS, REALTIME_TOPICS, useRealtimeInvalidate } from "@/shared/realtime";
 
 const SCHEDULER_POLL_INTERVAL = 5_000;
 const QUERY_KEY = "scheduler-jobs";
 const BACKGROUND_KEY = "scheduler-background-jobs";
+const JOB_KEYS = [[QUERY_KEY], [BACKGROUND_KEY]] as const;
 
 export const useSchedulerJobs = () => {
+  useRealtimeInvalidate(REALTIME_TOPICS.schedules, JOB_KEYS);
+
   const {
     data: jobs = [],
     isLoading,
@@ -25,7 +29,7 @@ export const useSchedulerJobs = () => {
   } = useQuery<CronJobRecord[]>({
     queryKey: [QUERY_KEY],
     queryFn: fetchActiveSchedulerJobs,
-    refetchInterval: SCHEDULER_POLL_INTERVAL,
+    refetchInterval: REALTIME_FALLBACK_POLL_MS,
     retry: false,
   });
 

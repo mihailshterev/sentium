@@ -1,4 +1,5 @@
 using Sentium.Infrastructure.Extensions;
+using Sentium.Infrastructure.Realtime;
 using Sentium.Infrastructure.Security;
 using Sentium.Praxis.Common.Streaming;
 using Sentium.Praxis.Contracts;
@@ -27,6 +28,7 @@ internal sealed class WorkflowRunProcessor(
     WorkflowRunNotifier runNotifier,
     ScheduledRunGate scheduledRunGate,
     IEnumerable<IUnattendedRunObserver> runObservers,
+    IRealtimePublisher realtime,
     IConfiguration configuration,
     ILogger<WorkflowRunProcessor> logger) : BackgroundService
 {
@@ -237,6 +239,7 @@ internal sealed class WorkflowRunProcessor(
                 Logs = [.. result.StreamLog]
             }, CancellationToken.None);
             persisted = run;
+            PublishRunRecorded(trigger.UserId);
         }
         catch (Exception ex)
         {
@@ -296,6 +299,7 @@ internal sealed class WorkflowRunProcessor(
                 CompletedAt = DateTime.UtcNow,
                 Logs = []
             }, CancellationToken.None);
+            PublishRunRecorded(trigger.UserId);
             return run;
         }
         catch (Exception ex)
@@ -321,6 +325,15 @@ internal sealed class WorkflowRunProcessor(
         }
 
         return trigger.WorkflowName is { Length: > 0 } workflowName ? $"Workflow: {workflowName}" : "Dynamic workflow";
+    }
+
+    /// <summary>
+    /// Sovereigns see every user's run history, so they hear about every run.
+    /// </summary>
+    private void PublishRunRecorded(Guid? userId)
+    {
+        var audience = userId is { } owner ? RealtimeAudience.User(owner, includeSovereigns: true) : RealtimeAudience.Sovereigns;
+        realtime.Publish(new RealtimeEvent(RealtimeTopics.WorkflowRuns, audience));
     }
 
     private void EmitSystem(string streamId, string text, string type)

@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Net;
 using Sentium.Core.Constants;
+using Sentium.Infrastructure.Realtime;
 using Sentium.Praxis.Contracts;
 using Sentium.Sentinel.Contracts;
 
@@ -18,6 +19,7 @@ internal sealed class SandboxClient(
     HttpClient httpClient,
     IPolicyDecisionPoint sentinel,
     IServiceScopeFactory scopeFactory,
+    IRealtimePublisher realtime,
     ILogger<SandboxClient> logger) : ISandboxClient
 {
     private const string SkillName = "sandbox.execute";
@@ -165,6 +167,10 @@ internal sealed class SandboxClient(
                     SizeBytes = a.SizeBytes
                 })]
             }, ct);
+
+            // Sovereigns see every user's executions, so they hear about every one.
+            var audience = request.UserId is { } userId ? RealtimeAudience.User(userId, includeSovereigns: true) : RealtimeAudience.Sovereigns;
+            realtime.Publish(new RealtimeEvent(RealtimeTopics.SandboxExecutions, audience));
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {

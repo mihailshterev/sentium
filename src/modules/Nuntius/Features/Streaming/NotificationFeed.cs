@@ -1,12 +1,14 @@
 using System.Threading.Channels;
+using Sentium.Infrastructure.Realtime;
 
 namespace Sentium.Nuntius.Features.Streaming;
 
 /// <summary>
-/// In-memory fan-out keyed by user, with a small bounded queue per open session; a slow client drops its oldest
-/// events rather than slowing the publisher.
+/// In-memory fan-out keyed by user, with a small bounded queue per open Device stream; a slow client drops its oldest
+/// events rather than slowing the publisher. Every event also goes to the user's portal sessions as a
+/// <see cref="RealtimeTopics.Notifications"/> event.
 /// </summary>
-internal sealed class NotificationFeed : INotificationFeed
+internal sealed class NotificationFeed(IRealtimePublisher realtime) : INotificationFeed
 {
     private const int SubscriberCapacity = 64;
 
@@ -16,6 +18,8 @@ internal sealed class NotificationFeed : INotificationFeed
     public void Publish(Guid userId, NotificationFeedEvent evt)
     {
         ArgumentNullException.ThrowIfNull(evt);
+
+        realtime.Publish(new RealtimeEvent(RealtimeTopics.Notifications, RealtimeAudience.User(userId), evt));
 
         lock (_gate)
         {

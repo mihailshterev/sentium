@@ -14,4 +14,10 @@ internal static class AgentUpdateTypes
     public const string EnhancedPrompt = "enhanced_prompt";
     public const string Status = "status";
     public const string Title = "title";
+
+    /// <summary>
+    /// The terminal frame of a stream the relay no longer holds (never started, or evicted after it ended): the client
+    /// reads the outcome over REST instead.
+    /// </summary>
+    public const string Gone = "gone";
 }

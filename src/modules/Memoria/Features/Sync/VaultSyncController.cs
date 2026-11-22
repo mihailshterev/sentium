@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using Sentium.Core.Results;
+using Sentium.Infrastructure.Realtime;
 using Sentium.Infrastructure.Results;
 using Sentium.Infrastructure.Security;
 using Sentium.Memoria.Common;
@@ -12,7 +14,7 @@ namespace Sentium.Memoria.Features.Sync;
 [ApiController]
 [AuthorizeDevice]
 [Route($"{MemoriaRoutes.Prefix}/device/vault")]
-internal sealed class VaultSyncController(IVaultSyncService syncService, ICurrentUser currentUser) : ControllerBase
+internal sealed class VaultSyncController(IVaultSyncService syncService, ICurrentUser currentUser, IRealtimePublisher realtime) : ControllerBase
 {
     [HttpGet]
     [ProducesResponseType(typeof(DeviceVaultDto), StatusCodes.Status200OK)]
@@ -37,7 +39,7 @@ internal sealed class VaultSyncController(IVaultSyncService syncService, ICurren
             return Unauthorized();
         }
 
-        return (await syncService.ClaimAsync(userId, deviceId, request, ct)).ToActionResult(this);
+        return Changed(await syncService.ClaimAsync(userId, deviceId, request, ct), userId);
     }
 
     [HttpPost("manifest")]
@@ -52,7 +54,7 @@ internal sealed class VaultSyncController(IVaultSyncService syncService, ICurren
             return Unauthorized();
         }
 
-        return (await syncService.ReconcileAsync(userId, deviceId, request, ct)).ToActionResult(this);
+        return Changed(await syncService.ReconcileAsync(userId, deviceId, request, ct), userId);
     }
 
     [HttpPut("notes")]
@@ -68,7 +70,7 @@ internal sealed class VaultSyncController(IVaultSyncService syncService, ICurren
             return Unauthorized();
         }
 
-        return (await syncService.UploadAsync(userId, deviceId, request, ct)).ToActionResult(this);
+        return Changed(await syncService.UploadAsync(userId, deviceId, request, ct), userId);
     }
 
     [HttpPost("notes/remove")]
@@ -82,7 +84,7 @@ internal sealed class VaultSyncController(IVaultSyncService syncService, ICurren
             return Unauthorized();
         }
 
-        return (await syncService.RemoveAsync(userId, deviceId, request, ct)).ToActionResult(this);
+        return Changed(await syncService.RemoveAsync(userId, deviceId, request, ct), userId);
     }
 
     [HttpPost("notes/move")]
@@ -96,7 +98,20 @@ internal sealed class VaultSyncController(IVaultSyncService syncService, ICurren
             return Unauthorized();
         }
 
-        return (await syncService.MoveAsync(userId, deviceId, request, ct)).ToActionResult(this);
+        return Changed(await syncService.MoveAsync(userId, deviceId, request, ct), userId);
+    }
+
+    /// <summary>
+    /// Tells the user's portal sessions the vault changed when the sync step succeeded.
+    /// </summary>
+    private IActionResult Changed<T>(Result<T> result, Guid userId)
+    {
+        if (result.IsSuccess)
+        {
+            realtime.Publish(new RealtimeEvent(RealtimeTopics.Vault, RealtimeAudience.User(userId)));
+        }
+
+        return result.ToActionResult(this);
     }
 
     private bool TryGetCaller(out Guid userId, out Guid deviceId)

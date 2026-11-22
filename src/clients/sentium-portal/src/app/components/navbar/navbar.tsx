@@ -46,6 +46,7 @@ import { Button } from "@/shared/ui/button";
 import { SentiumMark } from "@/shared/ui/sentium-mark";
 import { ThemeToggle } from "@/shared/ui/theme-toggle";
 import { Tooltip } from "@/shared/ui/tooltip";
+import { RealtimeIndicator } from "@/shared/realtime";
 
 interface NavLinkItem {
   to: string;
@@ -203,6 +204,7 @@ export function Navbar() {
       <div className={styles.brand}>
         <SentiumMark className={styles.logo} />
         <span className={styles.wordmark}>Sentium</span>
+        <RealtimeIndicator className={styles.realtime} />
       </div>
 
       <div className={styles.scroll}>

@@ -2,6 +2,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
+using Sentium.Infrastructure.Realtime;
 using Sentium.Infrastructure.Security;
 using Sentium.Nuntius.Contracts;
 using Sentium.Praxis.Common.Streaming;
@@ -355,6 +356,7 @@ public sealed class WorkflowRunProcessorTests : IAsyncDisposable
             new WorkflowRunNotifier(_notifier),
             _gate,
             [_observer],
+            Substitute.For<IRealtimePublisher>(),
             configuration,
             NullLogger<WorkflowRunProcessor>.Instance);
 

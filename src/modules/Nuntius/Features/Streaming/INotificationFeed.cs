@@ -1,8 +1,8 @@
 namespace Sentium.Nuntius.Features.Streaming;
 
 /// <summary>
-/// Live per-user fan-out to open portal sessions. Events for users with no open session are discarded; clients
-/// fetch the unread count by REST on connect, so a missed event costs nothing.
+/// Live per-user fan-out to open Device streams and, through the realtime stream, portal sessions. Events for users
+/// with nothing open are discarded; clients fetch the unread count by REST on connect, so a missed event costs nothing.
 /// </summary>
 internal interface INotificationFeed
 {

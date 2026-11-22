@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
+using Sentium.Infrastructure.Realtime;
 using Sentium.Praxis.Contracts;
 using Sentium.Praxis.Features.CodeExecution;
 using Sentium.Sentinel.Contracts;
@@ -34,6 +35,7 @@ public sealed class SandboxClientTests : IDisposable
             _httpClient,
             _pdp,
             _services.GetRequiredService<IServiceScopeFactory>(),
+            Substitute.For<IRealtimePublisher>(),
             NullLogger<SandboxClient>.Instance);
     }
 

@@ -29,6 +29,7 @@
 /* ---------- Brand ---------- */
 
 .brand {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -53,6 +54,17 @@
 
 .nav[data-collapsed] .wordmark {
   opacity: 0;
+}
+
+.realtime {
+  margin-left: auto;
+}
+
+/* Collapsed, the wordmark's row is clipped, so the dot sits on the logo's corner instead. */
+.nav[data-collapsed] .realtime {
+  position: absolute;
+  top: 12px;
+  left: 40px;
 }
 
 /* ---------- Links ---------- */

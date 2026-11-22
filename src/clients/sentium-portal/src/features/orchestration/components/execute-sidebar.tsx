@@ -158,9 +158,11 @@ export function ExecuteSidebar({
         ? "Connecting"
         : connection === "waiting"
           ? "Warming up"
-          : connection === "stopping"
-            ? "Stopping"
-            : "Streaming";
+          : connection === "reconnecting"
+            ? "Reconnecting"
+            : connection === "stopping"
+              ? "Stopping"
+              : "Streaming";
 
   const stopButton = (
     <Button

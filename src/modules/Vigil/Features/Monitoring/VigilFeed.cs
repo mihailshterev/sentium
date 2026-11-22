@@ -1,51 +1,27 @@
-using System.Threading.Channels;
+using Sentium.Infrastructure.Realtime;
 
 namespace Sentium.Vigil.Features.Monitoring;
 
-/// <summary>
-/// In-memory fan-out with a small bounded queue per subscriber; a slow client drops its oldest updates
-/// rather than slowing the monitoring loop. Updates published while nobody is connected are discarded.
-/// </summary>
-internal sealed class VigilFeed : IVigilFeed
+internal sealed class VigilFeed(IRealtimePublisher realtime) : IVigilFeed
 {
-    private const int SubscriberCapacity = 256;
-
-    private readonly Lock _gate = new();
-    private readonly List<Channel<VigilFeedEvent>> _subscribers = [];
-
     public void Publish(VigilFeedEvent evt)
     {
         ArgumentNullException.ThrowIfNull(evt);
 
-        lock (_gate)
-        {
-            foreach (var subscriber in _subscribers)
-            {
-                subscriber.Writer.TryWrite(evt);
-            }
-        }
+        var audience = evt.AudienceUserId is { } userId
+            ? RealtimeAudience.User(userId, includeSovereigns: true)
+            : RealtimeAudience.Everyone;
+
+        realtime.Publish(new RealtimeEvent(ToTopic(evt.Type), audience, evt.Data));
     }
 
-    public VigilFeedSubscription Subscribe()
+    private static string ToTopic(string type) => type switch
     {
-        var channel = Channel.CreateBounded<VigilFeedEvent>(new BoundedChannelOptions(SubscriberCapacity)
-        {
-            FullMode = BoundedChannelFullMode.DropOldest,
-            SingleReader = true,
-            SingleWriter = false
-        });
-
-        lock (_gate)
-        {
-            _subscribers.Add(channel);
-        }
-
-        return new VigilFeedSubscription(channel.Reader, () =>
-        {
-            lock (_gate)
-            {
-                _subscribers.Remove(channel);
-            }
-        });
-    }
+        VigilFeedEventTypes.Status => RealtimeTopics.VigilStatus,
+        VigilFeedEventTypes.IncidentOpened => RealtimeTopics.VigilIncidentOpened,
+        VigilFeedEventTypes.IncidentResolved => RealtimeTopics.VigilIncidentResolved,
+        VigilFeedEventTypes.DeviceUpdated => RealtimeTopics.VigilDeviceUpdated,
+        VigilFeedEventTypes.DeviceRemoved => RealtimeTopics.VigilDeviceRemoved,
+        _ => throw new ArgumentOutOfRangeException(nameof(type), type, "Unknown Vigil feed event type.")
+    };
 }

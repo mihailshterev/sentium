@@ -21,6 +21,9 @@
     <PackageReference Include="Microsoft.Extensions.AI.OpenAI" />
   </ItemGroup>
   <ItemGroup>
+    <InternalsVisibleTo Include="Sentium.Tests.Unit" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\Sentium.Core\Sentium.Core.csproj" />
   </ItemGroup>
 </Project>
