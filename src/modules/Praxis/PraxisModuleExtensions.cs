@@ -16,6 +16,7 @@ using Sentium.Praxis.Features.Agents.Approvals;
 using Sentium.Praxis.Features.Agents.Native;
 using Sentium.Praxis.Features.Agents.Runtime;
 using Sentium.Praxis.Features.Agents.ToolOverrides;
+using Sentium.Praxis.Features.Assistant;
 using Sentium.Praxis.Features.CodeExecution;
 using Sentium.Praxis.Features.Conversations;
 using Sentium.Praxis.Features.Files;
@@ -45,8 +46,6 @@ namespace Sentium.Praxis;
 
 public static class PraxisModuleExtensions
 {
-    internal const string ModuleName = "praxis";
-
     /// <summary>
     /// Named HttpClient for the agent chat models. Module-specific so it never merges configuration
     /// with the inference clients other modules register.
@@ -69,7 +68,7 @@ public static class PraxisModuleExtensions
         var services = builder.Services;
         var configuration = builder.Configuration;
 
-        AddOrchestration(services);
+        AddOrchestration(services, configuration);
         AddInference(services, configuration);
 
         services.AddSingleton<IRegistrySettingsService, RegistrySettingsService>();
@@ -94,7 +93,17 @@ public static class PraxisModuleExtensions
         services.AddScoped<IWorkspaceContextBuilder, WorkspaceContextBuilder>();
         services.AddScoped<WorkspaceContextProviderFactory>();
 
-        services.AddSingleton<IPendingApprovalStore, PendingApprovalStore>();
+        // Registered as a retention sweep too, which expires approvals nobody decided.
+        services.AddRetentionSweep<PendingApprovalStore>();
+        services.AddScoped<IPendingApprovalStore>(sp => sp.GetRequiredService<PendingApprovalStore>());
+        services.AddOptions<AssistantOptions>()
+            .Bind(configuration.GetSection(AssistantOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+        services.AddSingleton<AssistantTurnRegistry>();
+        services.AddSingleton<AssistantTurnQueue>();
+        services.AddScoped<AssistantTurnRunner>();
+        services.AddHostedService<AssistantTurnProcessor>();
 
         services.AddScoped<IAgentRegistry, AgentRegistry>();
         services.AddScoped<IAgentRoster, AgentRoster>();
@@ -150,8 +159,6 @@ public static class PraxisModuleExtensions
         AddCodeExecution(services, configuration);
         AddSpeech(services, configuration);
 
-        services.AddHealthChecks().AddDbContextCheck<PraxisDbContext>("praxis-db", tags: [ModuleName]);
-
         return builder;
     }
 
@@ -162,8 +169,13 @@ public static class PraxisModuleExtensions
         await app.Services.MigrateModuleDbContextAsync<PraxisDbContext>();
     }
 
-    private static void AddOrchestration(IServiceCollection services)
+    private static void AddOrchestration(IServiceCollection services, IConfiguration configuration)
     {
+        services.AddOptions<StreamingOptions>()
+            .Bind(configuration.GetSection(StreamingOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
         services.AddSingleton<IWorkflowExecutionRegistry, WorkflowExecutionRegistry>();
         services.AddSingleton<WorkflowRunQueue>();
         services.AddSingleton<IWorkflowRunQueue>(sp => sp.GetRequiredService<WorkflowRunQueue>());

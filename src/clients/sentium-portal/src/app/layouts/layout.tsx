@@ -5,7 +5,9 @@ import { CommandPalette } from "../components/command-palette/command-palette";
 import { Navbar } from "../components/navbar/navbar";
 import { Topbar } from "../components/topbar/topbar";
 import { Companion, PHONE_QUERY, useCompanionRuntime } from "@/features/companion";
+import { useVigilStream } from "@/features/vigil";
 import { useMediaQuery } from "@/shared/hooks/useMediaQuery";
+import { useRealtimeConnection } from "@/shared/realtime";
 import { CosmosBackground } from "@/shared/ui/cosmos-background";
 import styles from "./layout.module.css";
 
@@ -16,7 +18,10 @@ export function Layout() {
   // The chat has no card, so its text reads straight off the background.
   const backgroundCalm = pathname.startsWith("/assistant");
 
-  // Mounted here, above the routes, so the Companion's state and speech survive navigation.
+  // Mounted here, above the routes, so the realtime stream, the Companion's state and its speech survive navigation.
+  useRealtimeConnection();
+  // Keeps health, incident and Device data live on every page that shows it (Home, the top bar, Vigil).
+  useVigilStream();
   useCompanionRuntime();
   const isPhone = useMediaQuery(PHONE_QUERY);
 

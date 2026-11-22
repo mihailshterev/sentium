@@ -7,14 +7,14 @@ import {
   reindexWorkspaceFile,
 } from "@/features/workspaces/api/workspaces.service";
 import type { WorkspaceFile } from "@/features/workspaces/types/workspace";
+import { REALTIME_FALLBACK_POLL_MS, REALTIME_TOPICS, useRealtimeInvalidate } from "@/shared/realtime";
 
 const hasPending = (files: WorkspaceFile[]) =>
   files.some((f) => f.processingStatus === "Pending" || f.processingStatus === "Processing");
 
-const STATUS_POLL_MS = 4000;
-
 const filesKey = (workspaceId: string | undefined) => ["workspaceFiles", workspaceId] as const;
 const workspacesKey = ["workspaces"] as const;
+const ALL_FILES_KEY = ["workspaceFiles"] as const;
 
 export function useWorkspaceFiles(workspaceId: string | undefined) {
   const queryClient = useQueryClient();
@@ -25,6 +25,9 @@ export function useWorkspaceFiles(workspaceId: string | undefined) {
     void queryClient.invalidateQueries({ queryKey: workspacesKey });
   };
 
+  // Ingestion reports each status change; the poll while files are pending only covers a missed event.
+  useRealtimeInvalidate(REALTIME_TOPICS.workspaceFiles, [ALL_FILES_KEY, workspacesKey]);
+
   const {
     data: files = [],
     isLoading: isFilesLoading,
@@ -33,7 +36,7 @@ export function useWorkspaceFiles(workspaceId: string | undefined) {
     queryKey: filesKey(workspaceId),
     queryFn: () => fetchWorkspaceFiles(workspaceId!),
     enabled: !!workspaceId,
-    refetchInterval: (query) => (query.state.data && hasPending(query.state.data) ? STATUS_POLL_MS : false),
+    refetchInterval: (query) => (query.state.data && hasPending(query.state.data) ? REALTIME_FALLBACK_POLL_MS : false),
   });
 
   // Files go up one at a time so progress is meaningful; the ones before a failure stay uploaded.

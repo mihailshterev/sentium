@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
+using Sentium.Infrastructure.Realtime;
 using Sentium.Praxis.Contracts;
 using Sentium.Praxis.Features.CodeExecution;
 using Sentium.Sentinel.Contracts;
@@ -34,6 +35,7 @@ public sealed class SandboxClientTests : IDisposable
             _httpClient,
             _pdp,
             _services.GetRequiredService<IServiceScopeFactory>(),
+            Substitute.For<IRealtimePublisher>(),
             NullLogger<SandboxClient>.Instance);
     }
 
@@ -75,9 +77,9 @@ public sealed class SandboxClientTests : IDisposable
             .Returns(new PolicyEvaluationResponse
             {
                 Allowed = allowed,
-                Effect = allowed ? "Allow" : "Deny",
+                Effect = allowed ? PolicyEffect.Allow : PolicyEffect.Deny,
                 Reason = reason,
-                Risk = "Low",
+                Risk = PolicyRiskLevel.Low,
                 AuditId = auditId,
                 Timestamp = DateTimeOffset.UtcNow
             });
@@ -113,9 +115,9 @@ public sealed class SandboxClientTests : IDisposable
         await _sut.ExecuteAsync(MakeRequest(language: "node", code: "console.log(1)"), "corr-2", ct);
 
         await _pdp.Received(1).EvaluateAsync(
-            Arg.Is<PolicyEvaluationRequest>(r => r.SkillName == "sandbox.execute" && r.ResourceType == "Code" && r.ResourceId == "Node"
+            Arg.Is<PolicyEvaluationRequest>(r => r.SkillName == "sandbox.execute" && r.ResourceType == ResourceType.Code && r.ResourceId == "Node"
                 && r.Action == "execute" && r.AgentId == "agent-1" && r.CorrelationId == "corr-2" && r.OriginalUserPrompt == "say hi"
-                && r.Metadata["payload"] == "console.log(1)" && r.Metadata["language"] == "Node"),
+                && r.Payload! == "console.log(1)" && r.Metadata["language"] == "Node"),
             Arg.Any<CancellationToken>());
     }
 
@@ -129,7 +131,7 @@ public sealed class SandboxClientTests : IDisposable
         await _sut.ExecuteAsync(MakeRequest(code: new string('x', 10_000)), "corr-3", ct);
 
         await _pdp.Received(1).EvaluateAsync(
-            Arg.Is<PolicyEvaluationRequest>(r => r.Metadata["payload"].Length == 8 * 1024 && r.Metadata["codeLength"] == "10000"),
+            Arg.Is<PolicyEvaluationRequest>(r => r.Payload!.Length == 8 * 1024 && r.Metadata["codeLength"] == "10000"),
             Arg.Any<CancellationToken>());
     }
 

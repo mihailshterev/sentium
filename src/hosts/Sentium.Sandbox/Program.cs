@@ -15,7 +15,7 @@ using Sentium.Sandbox.Options;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
-builder.AddSentiumAuditLogging();
+builder.AddSentiumConsoleLogging();
 builder.AddInternalApiSecurity();
 
 builder.Services.AddSentiumProblemDetails();
@@ -52,7 +52,6 @@ builder.Services.AddHealthChecks().AddCheck<DockerHealthCheck>("docker");
 
 var app = builder.Build();
 
-app.UseSentiumTracing();
 app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())

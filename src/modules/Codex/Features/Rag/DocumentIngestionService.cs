@@ -54,7 +54,15 @@ internal sealed class DocumentIngestionService(
 
         var collectionName = targetCollection ?? ragOptions.CollectionName;
 
-        await vectorRepository.ReplaceByMetadataAsync(collectionName, documentKey, documentValue, EmbedAsync(request, ct), ct);
+        // Every chunk is embedded before the replacement starts: the replacement runs in one transaction, which must
+        // not stay open (holding the deleted rows' locks) while the embedding server works through a large document.
+        var batches = new List<IReadOnlyList<EmbeddedChunk>>();
+        await foreach (var batch in EmbedAsync(request, ct))
+        {
+            batches.Add(batch);
+        }
+
+        await vectorRepository.ReplaceByMetadataAsync(collectionName, documentKey, documentValue, batches.ToAsyncEnumerable(), ct);
     }
 
     public async Task RemoveDocumentAsync(string documentKey, string documentValue, string? targetCollection = null, CancellationToken ct = default)

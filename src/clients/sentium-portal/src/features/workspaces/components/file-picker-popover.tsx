@@ -4,10 +4,11 @@ import { Check, ChevronRight, FileText, FolderOpen, Loader2, Upload } from "luci
 import { fetchWorkspaceFiles, fetchWorkspaces, listWorkspaceFiles } from "@/features/workspaces/api/workspaces.service";
 import type { Workspace, WorkspaceFile } from "@/features/workspaces/types/workspace";
 import { formatBytesToMb } from "@/shared/utils/formatters";
+import { REALTIME_FALLBACK_POLL_MS, REALTIME_TOPICS, useRealtimeInvalidate } from "@/shared/realtime";
 import { FileStatusBadge } from "./file-status-badge";
 import styles from "./file-picker-popover.module.css";
 
-const STATUS_POLL_MS = 4000;
+const ALL_FILES_KEY = ["workspaceFiles"] as const;
 
 const isProcessing = (files: WorkspaceFile[] | undefined) =>
   !!files?.some((f) => f.processingStatus === "Pending" || f.processingStatus === "Processing");
@@ -48,6 +49,8 @@ function PickerPanel({
   const searchRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const [expanded, setExpanded] = useState<string | null>(preferredWorkspaceId ?? null);
+
+  useRealtimeInvalidate(REALTIME_TOPICS.workspaceFiles, [ALL_FILES_KEY]);
 
   const workspacesQuery = useQuery({ queryKey: ["workspaces", "options"], queryFn: fetchWorkspaces });
   const searching = query.trim().length > 0;
@@ -163,7 +166,7 @@ function WorkspaceGroup({
     queryKey: ["workspaceFiles", workspace.id],
     queryFn: () => fetchWorkspaceFiles(workspace.id),
     enabled: expanded,
-    refetchInterval: (query) => (isProcessing(query.state.data) ? STATUS_POLL_MS : false),
+    refetchInterval: (query) => (isProcessing(query.state.data) ? REALTIME_FALLBACK_POLL_MS : false),
   });
 
   return (

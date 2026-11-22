@@ -15,8 +15,6 @@ namespace Sentium.Probatio;
 /// </summary>
 public static class ProbatioModuleExtensions
 {
-    internal const string ModuleName = "probatio";
-
     public static IHostApplicationBuilder AddProbatioModule(this IHostApplicationBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -37,8 +35,6 @@ public static class ProbatioModuleExtensions
         services.AddScoped<IBenchmarkService, BenchmarkService>();
         services.AddHostedService<EvaluationWorker>();
         services.AddSingleton<IUserRemovalObserver, ProbatioUserDataRemover>();
-
-        services.AddHealthChecks().AddDbContextCheck<ProbatioDbContext>("probatio-db", tags: [ModuleName]);
 
         return builder;
     }

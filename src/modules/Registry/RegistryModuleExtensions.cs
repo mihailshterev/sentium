@@ -22,8 +22,6 @@ public static class RegistryModuleExtensions
         services.AddScoped<SettingsService>();
         services.AddSingleton<ISettingsService, ScopedSettingsService>();
 
-        services.AddHealthChecks().AddDbContextCheck<RegistryDbContext>("registry-db", tags: [ModuleName]);
-
         return builder;
     }
 
@@ -33,6 +31,4 @@ public static class RegistryModuleExtensions
 
         return app.Services.MigrateModuleDbContextAsync<RegistryDbContext>();
     }
-
-    internal const string ModuleName = "registry";
 }

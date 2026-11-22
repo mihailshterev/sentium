@@ -38,6 +38,8 @@ public static class SchedulingModuleExtensions
 
             q.MisfireThreshold = TimeSpan.FromMinutes(1);
 
+            q.AddJobListener<ScheduleChangeListener>();
+
             q.UsePersistentStore(store =>
             {
                 store.UseProperties = true;

@@ -14,7 +14,7 @@ namespace Sentium.Memoria.Features.Sync;
 
 /// <remarks>
 /// Each write runs in one transaction with its outbox rows, then rings <see cref="NoteIndexSignal"/> after the commit.
-/// The retrying execution strategy may re-run a transaction, so every operation starts from a cleared change tracker.
+/// Every operation starts from a cleared change tracker, so a failed earlier write in the same scope leaves nothing behind.
 /// </remarks>
 internal sealed partial class VaultSyncService(
     MemoriaDbContext db,

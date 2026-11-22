@@ -1,11 +1,12 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
-using Sentium.Sentinel.Features.Policies;
+using Sentium.Infrastructure.Realtime;
+using Sentium.Sentinel.Contracts;
 using Sentium.Sentinel.Data;
 
 namespace Sentium.Sentinel.Features.Audit;
 
-internal sealed class EfCoreAuditLog(SentinelDbContext dbContext, ILogger<EfCoreAuditLog> logger) : IAuditLog
+internal sealed class EfCoreAuditLog(SentinelDbContext dbContext, IRealtimePublisher realtime, ILogger<EfCoreAuditLog> logger) : IAuditLog
 {
     private static readonly JsonSerializerOptions JsonOpts = new(JsonSerializerDefaults.Web);
 
@@ -17,6 +18,7 @@ internal sealed class EfCoreAuditLog(SentinelDbContext dbContext, ILogger<EfCore
         {
             dbContext.AuditLogs.Add(MapToEntity(record));
             await dbContext.SaveChangesAsync(ct);
+            realtime.Publish(new RealtimeEvent(RealtimeTopics.SentinelAudit, RealtimeAudience.Sovereigns));
         }
         catch (Exception ex)
         {

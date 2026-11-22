@@ -8,6 +8,7 @@ import { fetchWorkspaces } from "@/features/workspaces/api/workspaces.service";
 import { useWorkflows } from "@/features/workflows/hooks/useWorkflows";
 import { useRenameWorkflowRun, useWorkflowRun } from "@/features/workflows/hooks/useWorkflowRuns";
 import { describeRun } from "@/features/workflows/utils/describe-run";
+import { useAuthStore } from "@/shared/auth/state/auth-store";
 import { useInfiniteList } from "@/shared/hooks/useInfiniteList";
 import { useDebouncedValue } from "@/shared/hooks/useDebouncedValue";
 import type { Phase } from "@/features/orchestration/types/orchestration";
@@ -18,6 +19,7 @@ import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { EmptyState } from "@/shared/ui/empty-state";
 import { Page } from "@/shared/ui/page";
+import { REALTIME_FALLBACK_POLL_MS, REALTIME_TOPICS, useRealtimeInvalidate } from "@/shared/realtime";
 import { WorkflowTimeline } from "../components/workflow-timeline";
 import { ExecuteSidebar, type AttachedFile, type ExecuteMode } from "../components/execute-sidebar";
 
@@ -34,8 +36,12 @@ const PREDEFINED_PHASE_STEPS: { key: Phase; label: string; icon: React.ElementTy
 
 const PHASE_ORDER: Phase[] = ["IDLE", "PLANNING", "SQUAD", "VALIDATING", "COMPLETE"];
 
+const RUN_HISTORY_KEYS = [["workflowRuns"]] as const;
 export function AgentOrchestrationView() {
-  const { workflows } = useWorkflows();
+  const { workflows: visibleWorkflows } = useWorkflows();
+  const userId = useAuthStore((s) => s.user?.sub);
+  // A Sovereign sees every member's workflows, but a run acts as its starter and can only use their own.
+  const workflows = useMemo(() => visibleWorkflows.filter((w) => w.userId === userId), [visibleWorkflows, userId]);
   const { runId } = useParams<{ runId?: string }>();
   const navigate = useNavigate();
 
@@ -72,6 +78,8 @@ export function AgentOrchestrationView() {
   const [runSearch, setRunSearch] = useState("");
   const debouncedRunSearch = useDebouncedValue(runSearch).trim();
 
+  useRealtimeInvalidate(REALTIME_TOPICS.workflowRuns, RUN_HISTORY_KEYS);
+
   const {
     items: workflowRuns,
     totalCount: runCount,
@@ -84,7 +92,7 @@ export function AgentOrchestrationView() {
     (page, pageSize) => fetchWorkflowRunsPaged(page, pageSize, debouncedRunSearch || undefined),
     {
       enabled: sidebarView === "history",
-      refetchInterval: sidebarView === "history" ? 15_000 : undefined,
+      refetchInterval: sidebarView === "history" ? REALTIME_FALLBACK_POLL_MS : undefined,
       keepPrevious: true,
     },
   );
@@ -189,7 +197,9 @@ export function AgentOrchestrationView() {
             ? "Queued…"
             : connection === "connecting"
               ? "Connecting…"
-              : "Warming up agents";
+              : connection === "reconnecting"
+                ? "Reconnecting…"
+                : "Warming up agents";
 
     return (
       <div className={styles.runIndicator} role="status">

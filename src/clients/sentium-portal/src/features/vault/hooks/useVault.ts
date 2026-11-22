@@ -8,6 +8,7 @@ import {
   forgetVault,
 } from "@/features/vault/api/vault.service";
 import type { VaultNotesFilter } from "@/features/vault/types/vault";
+import { REALTIME_FALLBACK_POLL_MS, REALTIME_TOPICS, useRealtimeInvalidate } from "@/shared/realtime";
 
 export const vaultKeys = {
   all: ["vault"] as const,
@@ -18,14 +19,15 @@ export const vaultKeys = {
   graph: (tag?: string) => ["vault", "graph", tag ?? ""] as const,
 };
 
-/** Notes keep arriving from Satelles while the page is open, so the summary refreshes on its own. */
-const SUMMARY_POLL_INTERVAL = 30_000;
+const VAULT_KEYS = [vaultKeys.all] as const;
 
+/** Notes keep arriving from Satelles while the page is open; every sync step is reported as it lands. */
 export function useVaultSummary() {
+  useRealtimeInvalidate(REALTIME_TOPICS.vault, VAULT_KEYS);
   return useQuery({
     queryKey: vaultKeys.summary,
     queryFn: fetchVaultSummary,
-    refetchInterval: SUMMARY_POLL_INTERVAL,
+    refetchInterval: REALTIME_FALLBACK_POLL_MS,
   });
 }
 

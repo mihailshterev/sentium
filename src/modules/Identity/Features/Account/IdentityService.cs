@@ -32,7 +32,7 @@ internal sealed class IdentityService(
         ArgumentNullException.ThrowIfNull(request);
 
         // Serializable, so of two accounts registering at once on a fresh install only one becomes the Sovereign; the
-        // retrying execution strategy re-runs the other, which then sees the first account.
+        // other fails to serialize and is re-run (see ExecuteInTransactionAsync), and then sees the first account.
         var outcome = await dbContext.Database.ExecuteInTransactionAsync(
             () => CreateUserAsync(request, ct),
             IsolationLevel.Serializable,

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { act, render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { AssistantView as Assistant } from "./assistant-view";
@@ -10,6 +10,7 @@ import * as workspaceService from "@/features/workspaces/api/workspaces.service"
 import { useConversationStore } from "@/features/assistant/state/assistant-conversation-store";
 import type { ConversationSummary } from "@/features/assistant/types/assistant";
 import { SUGGESTIONS_POOL } from "@/shared/utils/constants";
+import { FakeEventSource } from "@/test/fake-event-source";
 
 vi.mock("@/features/assistant/api/assistant.service", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/features/assistant/api/assistant.service")>();
@@ -19,7 +20,8 @@ vi.mock("@/features/assistant/api/assistant.service", async (importOriginal) => 
     createConversation: vi.fn().mockResolvedValue({ id: "conv-1" }),
     deleteConversation: vi.fn().mockResolvedValue(undefined),
     fetchConversation: vi.fn().mockResolvedValue({ id: "conv-1", title: "Chat 1", model: "llama3.2", messages: [] }),
-    sendChatMessage: vi.fn(),
+    startChatTurn: vi.fn().mockResolvedValue({ turnId: "t1" }),
+    cancelChatTurn: vi.fn().mockResolvedValue(undefined),
   };
 });
 vi.mock("@/features/workspaces/api/workspaces.service", async (importOriginal) => ({
@@ -71,6 +73,8 @@ const renderAssistant = (initialPath = "/assistant") => {
 };
 
 beforeEach(() => {
+  FakeEventSource.install();
+  sessionStorage.clear();
   useConversationStore.setState({
     activeConversationId: null,
     messages: [],
@@ -297,35 +301,19 @@ describe("Assistant message sending", () => {
     expect(sendBtn).not.toBeDisabled();
   });
 
-  it("submits message and calls sendChatMessage", async () => {
-    const mockResponse = {
-      ok: true,
-      body: {
-        getReader: () => ({
-          read: vi.fn().mockResolvedValue({ done: true, value: undefined }),
-        }),
-      },
-    };
-    vi.mocked(assistantService.sendChatMessage).mockResolvedValue(mockResponse as unknown as Response);
+  it("submits message and starts a chat turn", async () => {
+    vi.mocked(assistantService.startChatTurn).mockResolvedValue({ turnId: "t1" });
     vi.mocked(assistantService.createConversation).mockResolvedValue({ id: "conv-1" });
 
     renderAssistant();
     const input = screen.getByPlaceholderText(/ask sentium/i);
     fireEvent.change(input, { target: { value: "Test message" } });
     fireEvent.submit(document.querySelector("form")!);
-    await waitFor(() => expect(assistantService.sendChatMessage).toHaveBeenCalled());
+    await waitFor(() => expect(assistantService.startChatTurn).toHaveBeenCalled());
   });
 
   it("shows message in chat after sending", async () => {
-    const mockResponse = {
-      ok: true,
-      body: {
-        getReader: () => ({
-          read: vi.fn().mockResolvedValue({ done: true, value: undefined }),
-        }),
-      },
-    };
-    vi.mocked(assistantService.sendChatMessage).mockResolvedValue(mockResponse as unknown as Response);
+    vi.mocked(assistantService.startChatTurn).mockResolvedValue({ turnId: "t1" });
     vi.mocked(assistantService.createConversation).mockResolvedValue({ id: "conv-1" });
     useConversationStore.setState({ activeConversationId: "conv-1", messages: [], model: "llama3.2" });
 
@@ -476,101 +464,52 @@ describe("Assistant model input when no models list", () => {
 });
 
 describe("Assistant stop generation", () => {
-  it("shows stop button when typing/generating", async () => {
-    const mockResponse = {
-      ok: true,
-      body: {
-        getReader: () => ({
-          read: () => new Promise(() => {}),
-        }),
-      },
-    };
-    vi.mocked(assistantService.sendChatMessage).mockResolvedValue(mockResponse as unknown as Response);
-    vi.mocked(assistantService.createConversation).mockResolvedValue({ id: "conv-1" });
-    useConversationStore.setState({ activeConversationId: "conv-1", messages: [], model: "llama3.2" });
-
+  const sendFromComposer = (text: string) => {
     renderAssistant();
     const input = screen.getByPlaceholderText(/ask sentium/i);
-    fireEvent.change(input, { target: { value: "Tell me something long" } });
+    fireEvent.change(input, { target: { value: text } });
     fireEvent.submit(document.querySelector("form")!);
+    return input;
+  };
+
+  beforeEach(() => {
+    vi.mocked(assistantService.startChatTurn).mockResolvedValue({ turnId: "t1" });
+    vi.mocked(assistantService.createConversation).mockResolvedValue({ id: "conv-1" });
+    useConversationStore.setState({ activeConversationId: "conv-1", messages: [], model: "llama3.2" });
+  });
+
+  it("shows the stop button while the turn is generating", async () => {
+    sendFromComposer("test");
     await waitFor(() => expect(screen.getByTitle("Stop generation")).toBeInTheDocument());
   });
 
-  it("handles non-ok response gracefully", async () => {
-    const mockResponse = { ok: false, body: null };
-    vi.mocked(assistantService.sendChatMessage).mockResolvedValue(mockResponse as unknown as Response);
-    vi.mocked(assistantService.createConversation).mockResolvedValue({ id: "conv-1" });
-    useConversationStore.setState({ activeConversationId: "conv-1", messages: [], model: "llama3.2" });
-
-    renderAssistant();
-    const input = screen.getByPlaceholderText(/ask sentium/i);
-    fireEvent.change(input, { target: { value: "test" } });
-    fireEvent.submit(document.querySelector("form")!);
+  it("stops generating when the turn cannot be started", async () => {
+    vi.mocked(assistantService.startChatTurn).mockRejectedValue(new Error("Assistant request failed"));
+    sendFromComposer("test");
     await waitFor(() => expect(screen.queryByTitle("Stop generation")).not.toBeInTheDocument(), { timeout: 3000 });
   });
 
   it("does not submit when already generating (isTyping)", async () => {
-    const mockResponse = {
-      ok: true,
-      body: { getReader: () => ({ read: () => new Promise(() => {}) }) },
-    };
-    vi.mocked(assistantService.sendChatMessage).mockResolvedValue(mockResponse as unknown as Response);
-    vi.mocked(assistantService.createConversation).mockResolvedValue({ id: "conv-1" });
-    useConversationStore.setState({ activeConversationId: "conv-1", messages: [], model: "llama3.2" });
-
-    renderAssistant();
-    const input = screen.getByPlaceholderText(/ask sentium/i);
-    fireEvent.change(input, { target: { value: "first message" } });
-    fireEvent.submit(document.querySelector("form")!);
+    const input = sendFromComposer("first message");
     await waitFor(() => expect(screen.getByTitle("Stop generation")).toBeInTheDocument());
+
     fireEvent.change(input, { target: { value: "second message" } });
     fireEvent.submit(document.querySelector("form")!);
-    expect(assistantService.sendChatMessage).toHaveBeenCalledTimes(1);
+
+    expect(assistantService.startChatTurn).toHaveBeenCalledTimes(1);
   });
 
-  it("handles null body (no reader) gracefully", async () => {
-    const mockResponse = { ok: true, body: null };
-    vi.mocked(assistantService.sendChatMessage).mockResolvedValue(mockResponse as unknown as Response);
-    vi.mocked(assistantService.createConversation).mockResolvedValue({ id: "conv-1" });
-    useConversationStore.setState({ activeConversationId: "conv-1", messages: [], model: "llama3.2" });
+  it("renders the streamed answer and settles on the done frame", async () => {
+    sendFromComposer("Hello");
+    await waitFor(() => expect(FakeEventSource.instances.length).toBeGreaterThan(0));
 
-    renderAssistant();
-    const input = screen.getByPlaceholderText(/ask sentium/i);
-    fireEvent.change(input, { target: { value: "test" } });
-    fireEvent.submit(document.querySelector("form")!);
-    await waitFor(() => expect(screen.queryByTitle("Stop generation")).not.toBeInTheDocument(), { timeout: 3000 });
-  });
+    act(() => {
+      FakeEventSource.last().emit({ type: "thought", text: "Thinking..." });
+      FakeEventSource.last().emit({ type: "message", text: "Hi there" });
+      FakeEventSource.last().emit({ type: "done", done: true });
+    });
 
-  it("processes streamed content chunks", async () => {
-    const encoder = new TextEncoder();
-    const chunk1 = encoder.encode(JSON.stringify({ type: "content", message: { content: "Hello" } }) + "\n");
-    const chunk2 = encoder.encode(JSON.stringify({ type: "thought", message: { content: "Thinking..." } }) + "\n");
-    const chunk3 = encoder.encode(JSON.stringify({ type: "tool", message: { content: "tool_call" } }) + "\n");
-    let callCount = 0;
-    const reads = [
-      { done: false, value: chunk1 },
-      { done: false, value: chunk2 },
-      { done: false, value: chunk3 },
-      { done: true, value: undefined },
-    ];
-    const mockResponse = {
-      ok: true,
-      body: {
-        getReader: () => ({
-          read: vi
-            .fn()
-            .mockImplementation(() => Promise.resolve(reads[callCount++] || { done: true, value: undefined })),
-        }),
-      },
-    };
-    vi.mocked(assistantService.sendChatMessage).mockResolvedValue(mockResponse as unknown as Response);
-    vi.mocked(assistantService.createConversation).mockResolvedValue({ id: "conv-1" });
-    useConversationStore.setState({ activeConversationId: "conv-1", messages: [], model: "llama3.2" });
-
-    renderAssistant();
-    const input = screen.getByPlaceholderText(/ask sentium/i);
-    fireEvent.change(input, { target: { value: "Hello" } });
-    fireEvent.submit(document.querySelector("form")!);
+    expect(await screen.findByText("Hi there")).toBeInTheDocument();
     await waitFor(() => expect(screen.queryByTitle("Stop generation")).not.toBeInTheDocument(), { timeout: 3000 });
   });
 });
@@ -612,7 +551,7 @@ describe("Assistant attachments", () => {
   it("sends attachments as file ids instead of text tags", async () => {
     vi.mocked(workspaceService.fetchWorkspaces).mockResolvedValue([workspace]);
     vi.mocked(workspaceService.fetchWorkspaceFiles).mockResolvedValue([{ ...dataFile, processingStatus: "Completed" }]);
-    vi.mocked(assistantService.sendChatMessage).mockClear();
+    vi.mocked(assistantService.startChatTurn).mockClear();
     renderAssistant();
 
     fireEvent.click(screen.getByRole("button", { name: "Attach files" }));
@@ -621,8 +560,8 @@ describe("Assistant attachments", () => {
     fireEvent.change(screen.getByPlaceholderText(/ask sentium/i), { target: { value: "Summarise it" } });
     fireEvent.submit(screen.getByRole("textbox", { name: "Chat message" }).closest("form")!);
 
-    await waitFor(() => expect(assistantService.sendChatMessage).toHaveBeenCalled());
-    const payload = vi.mocked(assistantService.sendChatMessage).mock.calls[0][0];
+    await waitFor(() => expect(assistantService.startChatTurn).toHaveBeenCalled());
+    const payload = vi.mocked(assistantService.startChatTurn).mock.calls[0][0];
     expect(payload.fileIds).toEqual(["file-1"]);
     expect(payload.messages.at(-1)?.content).toBe("Summarise it");
     expect(screen.queryByTestId("composer-attachment")).not.toBeInTheDocument();

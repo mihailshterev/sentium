@@ -3,22 +3,23 @@ using Microsoft.Extensions.Caching.Hybrid;
 using Sentium.Core.Constants;
 using Sentium.Infrastructure.Extensions;
 using Sentium.Infrastructure.Mvc;
+using Sentium.Infrastructure.Realtime;
 using Sentium.Infrastructure.Validation;
 using Sentium.Web;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
-builder.AddSentiumAuditLogging();
+builder.AddSentiumConsoleLogging();
 
 builder.AddSentiumObjectStore(ResourceNames.WorkspaceBlobs);
 
+// In-process only (no distributed second level): one expiration is all that applies.
 builder.Services.AddHybridCache(options =>
 {
     options.DefaultEntryOptions = new HybridCacheEntryOptions
     {
-        Expiration = TimeSpan.FromMinutes(30),
-        LocalCacheExpiration = TimeSpan.FromMinutes(5)
+        Expiration = TimeSpan.FromMinutes(5)
     };
 });
 
@@ -40,7 +41,6 @@ builder.Services.AddValidatorsFromAssemblies(SentiumModules.Assemblies, includeI
 
 var app = builder.Build();
 
-app.UseSentiumTracing();
 app.UseSentiumSecurityHeaders();
 app.UseExceptionHandler();
 app.UseStatusCodePages();
@@ -60,6 +60,7 @@ app.UseAuthorization();
 
 app.MapDefaultEndpoints();
 app.MapControllers();
+app.MapSentiumRealtime();
 
 // Unknown API routes must 404 instead of falling through to the SPA shell.
 app.MapFallback("api/{**path}", () => Results.NotFound());

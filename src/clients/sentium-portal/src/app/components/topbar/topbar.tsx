@@ -4,6 +4,7 @@ import { AccountMenu } from "./account-menu";
 import { Breadcrumbs } from "./breadcrumbs";
 import { TopbarClock } from "./topbar-clock";
 import { NotificationBell } from "@/features/notifications";
+import { RealtimeIndicator } from "@/shared/realtime";
 import styles from "./topbar.module.css";
 
 /** Global bar above every page: where you are, search, notifications and the account menu. */
@@ -12,6 +13,7 @@ export function Topbar() {
     <header className={styles.topbar}>
       <Breadcrumbs />
       <div className={styles.actions}>
+        <RealtimeIndicator tooltipSide="bottom" />
         <TopbarClock />
         <button
           type="button"

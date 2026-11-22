@@ -2,6 +2,7 @@ using System.Diagnostics;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.AI.Evaluation;
+using Sentium.Infrastructure.Realtime;
 using Sentium.Praxis.Contracts;
 using Sentium.Probatio.Common;
 using Sentium.Probatio.Data;
@@ -16,6 +17,7 @@ namespace Sentium.Probatio.Features.Evaluations;
 internal sealed class EvaluationExecutor(
     ProbatioDbContext db,
     IEvaluationAgentBuilder agents,
+    IRealtimePublisher realtime,
     ILogger<EvaluationExecutor> logger)
 {
     private const string UserRole = "user";
@@ -41,6 +43,7 @@ internal sealed class EvaluationExecutor(
             }
 
             await db.SaveChangesAsync(CancellationToken.None);
+            realtime.Publish(new RealtimeEvent(RealtimeTopics.Evaluations, RealtimeAudience.User(evaluation.UserId, includeSovereigns: true)));
         }
     }
 

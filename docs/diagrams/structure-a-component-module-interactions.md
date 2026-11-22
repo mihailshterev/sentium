@@ -41,7 +41,9 @@ flowchart TB
     VIG -.->|"HTTP /health"| SBX
 ```
 
-Portal → Nuntius also carries a live SSE stream (`GET /api/nuntius/stream`) of the signed-in user's Notifications.
+The portal also holds one live SSE stream, `GET /api/realtime/stream` (Sentium.Infrastructure): modules publish change
+events to it through `IRealtimePublisher` (Notifications, Vigil health, run histories, ingestion, Evaluations), and the
+portal refetches what changed. Assistant turns and workflow runs stream from Praxis' relay on their own resumable streams.
 
 Solid arrows inside Sentium.Web are in-process calls through the target module's `Contracts`
 (`ModuleBoundaryTests` rejects any other dependency). Only the two Sandbox arrows cross a process

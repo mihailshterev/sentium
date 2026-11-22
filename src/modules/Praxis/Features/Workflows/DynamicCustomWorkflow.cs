@@ -41,8 +41,8 @@ internal sealed class DynamicCustomWorkflow(
         var workflowDef = await workflowService.GetWorkflowAsync(workflowId, ct);
         if (workflowDef is null)
         {
-            var missing = $"Workflow '{trigger.WorkflowName ?? workflowId.ToString()}' was not found.";
-            return trigger.Schedule is null ? new WorkflowResult { Explanation = missing } : throw new UnrunnableWorkflowException(missing);
+            // Deleted since it was queued, or not visible to the user the run acts for: either way the run fails.
+            throw new UnrunnableWorkflowException($"Workflow '{trigger.WorkflowName ?? workflowId.ToString()}' was not found.");
         }
 
         var agents = new List<AgentResponse>();

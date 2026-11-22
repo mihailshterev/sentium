@@ -19,8 +19,8 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(30);
 const VAULT_REQUEST_TIMEOUT: Duration = Duration::from_secs(120);
 const VAULT_PATH: &str = "api/memoria/device/vault";
 
-/// The server sends a heartbeat comment every 20 seconds; this much silence means the connection is dead (for
-/// example after the PC woke from sleep).
+/// The server sends a `ping` event (whose `{}` data is not a frame) every 15 seconds; this much silence means the
+/// connection is dead (for example after the PC woke from sleep).
 const STREAM_IDLE_TIMEOUT: Duration = Duration::from_secs(60);
 
 #[derive(Serialize)]

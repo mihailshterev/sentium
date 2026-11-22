@@ -4,7 +4,8 @@ import type { Incident } from "@/features/vigil/types/serviceHealth";
 
 export const INCIDENTS_KEY = ["vigil-incidents"] as const;
 
-const POLL_INTERVAL = 15_000;
+/** The Vigil stream refetches this on every change; the poll only covers a missed event. */
+const POLL_INTERVAL = 60_000;
 
 export function useIncidents() {
   const {

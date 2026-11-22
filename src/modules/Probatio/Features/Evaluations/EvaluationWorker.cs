@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Sentium.Infrastructure.Realtime;
 using Sentium.Infrastructure.Security;
 using Sentium.Probatio.Common;
 using Sentium.Probatio.Data;
@@ -15,6 +16,7 @@ internal sealed class EvaluationWorker(
     EvaluationQueue queue,
     EvaluationCancellations cancellations,
     TimeProvider timeProvider,
+    IRealtimePublisher realtime,
     ILogger<EvaluationWorker> logger) : BackgroundService
 {
     private const string InterruptedMessage = "Sentium stopped before the Evaluation finished.";
@@ -66,7 +68,11 @@ internal sealed class EvaluationWorker(
                 return;
             }
 
+            var ownerId = await db.Evaluations.Where(e => e.Id == evaluationId).Select(e => e.UserId).FirstAsync(stoppingToken);
+            PublishChanged(ownerId);
+
             await ExecuteClaimedAsync(scope.ServiceProvider, db, evaluationId, cancellation.Token, stoppingToken);
+            PublishChanged(ownerId);
         }
         finally
         {
@@ -125,6 +131,14 @@ internal sealed class EvaluationWorker(
             logger.LogError(ex, "Evaluation {EvaluationId} failed.", evaluationId);
             await FinishAsync(db, evaluationId, EvaluationStatus.Failed, ErrorText.Fit($"The Evaluation failed: {ex.Message}"));
         }
+    }
+
+    /// <summary>
+    /// Sovereigns see every user's Evaluations, so they hear about every one.
+    /// </summary>
+    private void PublishChanged(Guid ownerId)
+    {
+        realtime.Publish(new RealtimeEvent(RealtimeTopics.Evaluations, RealtimeAudience.User(ownerId, includeSovereigns: true)));
     }
 
     private async Task FinishAsync(ProbatioDbContext db, Guid evaluationId, EvaluationStatus status, string? error)

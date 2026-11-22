@@ -5,7 +5,7 @@ import { useServiceHealth } from "@/features/vigil/hooks/useServiceHealth";
 import { useSystemMetrics } from "@/features/vigil/hooks/useSystemMetrics";
 import { useSystemOverview } from "@/features/vigil/hooks/useSystemOverview";
 import { useIncidents } from "@/features/vigil/hooks/useIncidents";
-import { useVigilStream } from "@/features/vigil/hooks/useVigilStream";
+import { useRealtimeStatus } from "@/shared/realtime";
 import { useDeviceStatuses, type DeviceStatus } from "@/features/devices";
 import { useRole } from "@/shared/auth/hooks/useRole";
 import { Badge } from "@/shared/ui/badge";
@@ -111,7 +111,7 @@ export function VigilView() {
   const { metrics, isLoading: metricsLoading, isRefetching } = useSystemMetrics();
   const { overview } = useSystemOverview();
   const { incidents } = useIncidents();
-  const { isLive } = useVigilStream();
+  const isLive = useRealtimeStatus() === "live";
   const { isSovereign } = useRole();
   const { devices } = useDeviceStatuses();
 

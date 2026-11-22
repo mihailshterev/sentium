@@ -1,6 +1,6 @@
 import { test, expect } from "../fixtures";
 import { localToday } from "../pages/TimelinePage";
-import { mockSseRoute, sseDone, sseMessage } from "../support/mock-sse";
+import { mockAssistantTurn, turnFrame } from "../support/mock-sse";
 import { uniqueName } from "../support/test-data";
 
 test.describe("Timeline", () => {
@@ -135,10 +135,7 @@ test.describe("Timeline", () => {
 
   test("chats with the planner about a month", async ({ timelinePage, page }) => {
     const today = localToday();
-    await mockSseRoute(page, /\/assistant\/chat$/, [
-      sseMessage({ type: "message", message: { content: "Your month looks balanced." } }),
-      sseDone(),
-    ]);
+    await mockAssistantTurn(page, [turnFrame("message", "Your month looks balanced.")]);
 
     await timelinePage.openMonth(today.month, today.monthName, today.year);
     await page.getByRole("button", { name: "Plan with agent" }).click();

@@ -55,8 +55,6 @@ public static class CodexModuleExtensions
         services.AddScoped<IDocumentIngestionService, DocumentIngestionService>();
         services.AddSingleton<IUserRemovalObserver, CodexUserDataRemover>();
 
-        services.AddHealthChecks().AddDbContextCheck<CodexDbContext>("codex-db", tags: [ModuleName]);
-
         return builder;
     }
 
@@ -66,6 +64,4 @@ public static class CodexModuleExtensions
 
         return app.Services.MigrateModuleDbContextAsync<CodexDbContext>();
     }
-
-    internal const string ModuleName = "codex";
 }

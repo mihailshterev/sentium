@@ -20,7 +20,6 @@ internal sealed class SentinelFunctionMiddleware(IPolicyDecisionPoint sentinel, 
     private const int MaxResourceIdChars = 200;
 
     private static readonly string[] ResourceIdKeys = ["input", "path", "query", "workspace", "workspaceId", "fileId", "fileName", "asset", "location", "taskId", "date", "month"];
-    private static readonly IReadOnlyDictionary<string, string> EmptyMetadata = new Dictionary<string, string>();
 
     public async ValueTask<object?> InvokeAsync(
         AIAgent agent,
@@ -39,17 +38,25 @@ internal sealed class SentinelFunctionMiddleware(IPolicyDecisionPoint sentinel, 
 
         var agentName = string.IsNullOrWhiteSpace(agent.Name) ? "Agent" : agent.Name;
 
+        // Tool resources are named after Sentinel's resource types; an unknown one is a classification bug, so the call
+        // is denied rather than checked against the wrong rules.
+        if (!Enum.TryParse<ResourceType>(resource, ignoreCase: true, out var resourceType))
+        {
+            logger.LogError("Tool {Tool} of agent {Agent} has an unknown Sentinel resource '{Resource}'; the call is denied.", context.Function.Name, agentName, resource);
+            return $"[Access Denied by Security Policy] The tool's resource '{resource}' is not known to the security policy.";
+        }
+
         var decision = await sentinel.EvaluateAsync(new PolicyEvaluationRequest
         {
             AgentId = agentName,
             SkillName = context.Function.Name,
-            ResourceType = resource,
+            ResourceType = resourceType,
             ResourceId = AgentToolFunction.TryGetResourceId(context.Function, out var declaredId) ? declaredId : ExtractResourceId(context.Arguments),
             Action = action,
             OriginalUserPrompt = runContext.OriginalUserPrompt,
             CorrelationId = runContext.CorrelationId.Length > 0 ? runContext.CorrelationId : Guid.NewGuid().ToString(),
             UserId = runContext.UserId,
-            Metadata = BuildMetadata(resource, action, context.Arguments),
+            Payload = BuildPayload(resource, action, context.Arguments),
         }, cancellationToken);
 
         if (!decision.Allowed)
@@ -68,21 +75,21 @@ internal sealed class SentinelFunctionMiddleware(IPolicyDecisionPoint sentinel, 
     /// (sensitive-data egress, semantic intent) can scan it. Internal reads and searches carry no payload to keep
     /// evaluation cheap.
     /// </summary>
-    private static IReadOnlyDictionary<string, string> BuildMetadata(string resource, string action, AIFunctionArguments arguments)
+    private static string? BuildPayload(string resource, string action, AIFunctionArguments arguments)
     {
         var isEgress = action is nameof(ToolAction.Write) or nameof(ToolAction.Execute) || resource == nameof(ToolResource.External);
         if (!isEgress || arguments.Count == 0)
         {
-            return EmptyMetadata;
+            return null;
         }
 
         var payload = string.Join(" ", arguments.Values.Select(v => v?.ToString()).Where(s => !string.IsNullOrEmpty(s)));
         if (payload.Length == 0)
         {
-            return EmptyMetadata;
+            return null;
         }
 
-        return new Dictionary<string, string> { [PolicyEvaluationRequest.PayloadKey] = payload.Length > MaxPayloadChars ? payload[..MaxPayloadChars] : payload };
+        return payload.Length > MaxPayloadChars ? payload[..MaxPayloadChars] : payload;
     }
 
     private static string ExtractResourceId(AIFunctionArguments arguments)

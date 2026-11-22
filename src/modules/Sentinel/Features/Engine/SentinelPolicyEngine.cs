@@ -15,13 +15,15 @@ internal sealed class SentinelPolicyEngine(
     IAuditLog auditLog,
     ILogger<SentinelPolicyEngine> logger)
 {
+    private const string AuditPayloadKey = "payload";
+
     private readonly IReadOnlyList<IPdpPolicy> _policies = policies.ToList();
 
     /// <summary>
-    /// Evaluates a <see cref="PolicyRequest"/> against all registered policy layers
+    /// Evaluates a <see cref="PolicyEvaluationRequest"/> against all registered policy layers
     /// and returns a <see cref="PolicyDecision"/>.
     /// </summary>
-    public async Task<PolicyDecision> EvaluateAsync(PolicyRequest request, CancellationToken ct = default)
+    public async Task<PolicyDecision> EvaluateAsync(PolicyEvaluationRequest request, CancellationToken ct = default)
     {
         ArgumentNullException.ThrowIfNull(request);
 
@@ -103,25 +105,23 @@ internal sealed class SentinelPolicyEngine(
 
     /// <summary>
     /// The payload exists so the content policies can inspect it; it can hold the very secret the egress policy just
-    /// blocked, so the audit trail keeps only its length and hash.
+    /// blocked, so the audit trail keeps only its length and hash, under <see cref="AuditPayloadKey"/>.
     /// </summary>
-    private static IReadOnlyDictionary<string, string> RedactPayload(IReadOnlyDictionary<string, string> metadata)
+    private static IReadOnlyDictionary<string, string> AuditMetadata(PolicyEvaluationRequest request)
     {
-        if (!metadata.TryGetValue(PolicyEvaluationRequest.PayloadKey, out var payload))
+        if (request.Payload is not { } payload)
         {
-            return metadata;
+            return request.Metadata;
         }
 
-        var redacted = new Dictionary<string, string>(metadata)
+        return new Dictionary<string, string>(request.Metadata)
         {
-            [PolicyEvaluationRequest.PayloadKey] = $"[redacted: {payload.Length} chars, sha256 {AuditHash.Of(payload)}]"
+            [AuditPayloadKey] = $"[redacted: {payload.Length} chars, sha256 {AuditHash.Of(payload)}]"
         };
-
-        return redacted;
     }
 
     private async Task WriteAuditAsync(
-        PolicyRequest request,
+        PolicyEvaluationRequest request,
         PolicyDecision decision,
         Guid auditId,
         long durationMs,
@@ -139,7 +139,7 @@ internal sealed class SentinelPolicyEngine(
             UserPromptHash = AuditHash.Of(request.OriginalUserPrompt),
             CorrelationId = request.CorrelationId,
             UserId = request.UserId,
-            Metadata = RedactPayload(request.Metadata),
+            Metadata = AuditMetadata(request),
             Allowed = decision.Allowed,
             Effect = decision.Effect,
             Reason = decision.Reason,

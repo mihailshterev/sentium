@@ -148,26 +148,28 @@ public sealed class NuntiusApiTests(MonolithWebApplicationFactory factory) : ICl
     }
 
     [Fact]
-    public async Task Stream_PushesOnlyTheSubscribersOwnNotifications()
+    public async Task RealtimeStream_PushesOnlyTheSubscribersOwnNotifications()
     {
         var alice = Guid.NewGuid();
         var bob = Guid.NewGuid();
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(Ct);
         timeout.CancelAfter(TimeSpan.FromSeconds(30));
 
-        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/nuntius/stream");
+        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/realtime/stream");
         using var response = await ClientFor(alice).SendAsync(request, HttpCompletionOption.ResponseHeadersRead, timeout.Token);
         Assert.Equal("text/event-stream", response.Content.Headers.ContentType!.MediaType);
         using var reader = new StreamReader(await response.Content.ReadAsStreamAsync(timeout.Token));
 
-        Assert.Equal("connected", (await ReadFrameAsync(reader, timeout.Token)).GetProperty("type").GetString());
+        Assert.Equal("connected", (await ReadFrameAsync(reader, timeout.Token)).GetProperty("topic").GetString());
 
         await Notifier.NotifyAsync(NotificationRecipient.User(bob), Message("For Bob"), Ct);
         await Notifier.NotifyAsync(NotificationRecipient.User(alice), Message("For Alice"), Ct);
 
         var frame = await ReadFrameAsync(reader, timeout.Token);
-        Assert.Equal("notification", frame.GetProperty("type").GetString());
-        Assert.Equal("For Alice", frame.GetProperty("data").GetProperty("title").GetString());
+        Assert.Equal("notifications", frame.GetProperty("topic").GetString());
+        var evt = frame.GetProperty("data");
+        Assert.Equal("notification", evt.GetProperty("type").GetString());
+        Assert.Equal("For Alice", evt.GetProperty("data").GetProperty("title").GetString());
     }
 
     [Fact]
@@ -193,16 +195,28 @@ public sealed class NuntiusApiTests(MonolithWebApplicationFactory factory) : ICl
         await scope.ServiceProvider.GetRequiredService<NotificationRetention>().SweepAsync(now, Ct);
     }
 
+    /// <summary>
+    /// The next unnamed event's data; named events (the heartbeat <c>ping</c>) are skipped.
+    /// </summary>
     private static async Task<JsonElement> ReadFrameAsync(StreamReader reader, CancellationToken ct)
     {
+        var named = false;
         while (await reader.ReadLineAsync(ct) is { } line)
         {
-            if (line.StartsWith("data: ", StringComparison.Ordinal))
+            if (line.StartsWith("event: ", StringComparison.Ordinal))
+            {
+                named = true;
+            }
+            else if (line.Length == 0)
+            {
+                named = false;
+            }
+            else if (!named && line.StartsWith("data: ", StringComparison.Ordinal))
             {
                 return JsonSerializer.Deserialize<JsonElement>(line["data: ".Length..], WebJson);
             }
         }
 
-        throw new EndOfStreamException("The notification stream closed before a frame arrived.");
+        throw new EndOfStreamException("The realtime stream closed before a frame arrived.");
     }
 }

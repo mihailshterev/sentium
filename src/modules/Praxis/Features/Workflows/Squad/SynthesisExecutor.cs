@@ -1,4 +1,5 @@
 using Microsoft.Agents.AI.Workflows;
+using Sentium.Praxis.Common.Streaming;
 using Sentium.Praxis.Features.Agents;
 
 namespace Sentium.Praxis.Features.Workflows.Squad;
@@ -28,6 +29,7 @@ internal sealed class SynthesisExecutor(SquadRunContext run) : Executor<SquadOut
         }
         else
         {
+            run.EnterPhase(WorkflowPhases.Squad);
             run.Status(AgentRole.Summarizer, "Combining the team's results into the final answer");
             var synthesizer = await run.CreateControlAgentAsync(AgentRole.Summarizer, instructions: null, cancellationToken);
             answer = await run.StreamAsync(synthesizer, AgentRole.Summarizer, SquadPrompts.SynthesisInput(state.Request, results), cancellationToken);

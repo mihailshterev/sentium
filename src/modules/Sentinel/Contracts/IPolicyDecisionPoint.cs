@@ -8,7 +8,7 @@ public interface IPolicyDecisionPoint
 {
     /// <summary>
     /// Evaluates the request against the full policy chain and records a forensic audit entry.
-    /// Never throws for a policy failure: an unknown resource type or an engine fault yields a deny.
+    /// Never throws for a policy failure: an engine fault yields a deny.
     /// </summary>
     Task<PolicyEvaluationResponse> EvaluateAsync(PolicyEvaluationRequest request, CancellationToken ct = default);
 }

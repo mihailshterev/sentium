@@ -1,0 +1,43 @@
+.indicator {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--success);
+  opacity: 0.55;
+  transition:
+    background-color 0.3s ease,
+    opacity 0.3s ease;
+}
+
+.indicator[data-status="connecting"] .dot,
+.indicator[data-status="reconnecting"] .dot {
+  background: var(--warning);
+  opacity: 1;
+  animation: realtime-pulse 1.4s ease-in-out infinite;
+}
+
+.indicator[data-status="offline"] .dot {
+  background: var(--danger);
+  opacity: 1;
+}
+
+@keyframes realtime-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .indicator .dot {
+    animation: none;
+  }
+}

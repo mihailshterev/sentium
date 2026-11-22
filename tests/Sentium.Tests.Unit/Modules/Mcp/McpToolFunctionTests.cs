@@ -142,7 +142,7 @@ public sealed class McpToolFunctionTests
         var pdp = Substitute.For<IPolicyDecisionPoint>();
         PolicyEvaluationRequest? captured = null;
         pdp.EvaluateAsync(Arg.Do<PolicyEvaluationRequest>(r => captured = r), Arg.Any<CancellationToken>())
-            .Returns(new PolicyEvaluationResponse { Allowed = true, Effect = "Allow", Reason = "ok", Risk = "Low", AuditId = Guid.NewGuid(), Timestamp = DateTimeOffset.UtcNow });
+            .Returns(new PolicyEvaluationResponse { Allowed = true, Effect = PolicyEffect.Allow, Reason = "ok", Risk = PolicyRiskLevel.Low, AuditId = Guid.NewGuid(), Timestamp = DateTimeOffset.UtcNow });
 
         var middleware = new SentinelFunctionMiddleware(pdp, new PdpContextAccessor(), NullLogger<SentinelFunctionMiddleware>.Instance);
 
@@ -157,11 +157,11 @@ public sealed class McpToolFunctionTests
             Ct);
 
         Assert.NotNull(captured);
-        Assert.Equal("External", captured!.ResourceType);
+        Assert.Equal(ResourceType.External, captured!.ResourceType);
         Assert.Equal("Execute", captured.Action);
         // argument names of an external tool must not decide the resource id
         Assert.Equal("mcp:docs/search", captured.ResourceId);
-        Assert.Contains("AKIAABCDEFGHIJKLMNOP", Assert.Contains("payload", captured.Metadata), StringComparison.Ordinal);
+        Assert.Contains("AKIAABCDEFGHIJKLMNOP", captured.Payload ?? string.Empty, StringComparison.Ordinal);
     }
 
     [Fact]

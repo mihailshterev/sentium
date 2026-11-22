@@ -1,4 +1,4 @@
-using Sentium.Sentinel.Features.Policies;
+using Sentium.Sentinel.Contracts;
 
 namespace Sentium.Sentinel.Features.Audit;
 

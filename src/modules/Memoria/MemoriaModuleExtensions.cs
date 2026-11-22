@@ -17,8 +17,6 @@ namespace Sentium.Memoria;
 /// </summary>
 public static class MemoriaModuleExtensions
 {
-    internal const string ModuleName = "memoria";
-
     public static IHostApplicationBuilder AddMemoriaModule(this IHostApplicationBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -44,8 +42,6 @@ public static class MemoriaModuleExtensions
         services.AddSingleton<IVaultAgentAccess, ScopedVaultAgentAccess>();
 
         services.AddSingleton<IUserRemovalObserver, MemoriaUserDataRemover>();
-
-        services.AddHealthChecks().AddDbContextCheck<MemoriaDbContext>("memoria-db", tags: [ModuleName]);
 
         return builder;
     }

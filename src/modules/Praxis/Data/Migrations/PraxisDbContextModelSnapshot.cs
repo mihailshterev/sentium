@@ -19,7 +19,7 @@ namespace Sentium.Praxis.Data.Migrations
 #pragma warning disable 612, 618
             modelBuilder
                 .HasDefaultSchema("praxis")
-                .HasAnnotation("ProductVersion", "10.0.14")
+                .HasAnnotation("ProductVersion", "10.0.15")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -273,6 +273,29 @@ namespace Sentium.Praxis.Data.Migrations
                     b.HasIndex("ConversationId");
 
                     b.ToTable("Messages", "praxis");
+                });
+
+            modelBuilder.Entity("Sentium.Praxis.Entities.PendingApprovalRecord", b =>
+                {
+                    b.Property<string>("RequestId")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Payload")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("RequestId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("PendingApprovals", "praxis");
                 });
 
             modelBuilder.Entity("Sentium.Praxis.Entities.ProjectFile", b =>

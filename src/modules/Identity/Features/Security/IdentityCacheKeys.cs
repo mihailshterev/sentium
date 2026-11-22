@@ -5,13 +5,12 @@ namespace Sentium.Identity.Features.Security;
 internal static class IdentityCacheKeys
 {
     /// <summary>
-    /// Identity's HybridCache entry lifetimes. User and role data must go stale sooner than the
-    /// Sentium.Web host defaults allow, so Identity passes these explicitly.
+    /// User and role data must go stale sooner than the Sentium.Web host default allows, so Identity passes this
+    /// explicitly. The cache is in-process only, so one expiration is all that applies.
     /// </summary>
     internal static readonly HybridCacheEntryOptions EntryOptions = new()
     {
-        Expiration = TimeSpan.FromMinutes(15),
-        LocalCacheExpiration = TimeSpan.FromMinutes(3)
+        Expiration = TimeSpan.FromMinutes(3)
     };
 
     internal const string AllUsers = "identity:users:all";

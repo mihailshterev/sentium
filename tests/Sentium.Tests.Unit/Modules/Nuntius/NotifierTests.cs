@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Sentium.Identity.Contracts;
+using Sentium.Infrastructure.Realtime;
 using Sentium.Nuntius.Contracts;
 using Sentium.Nuntius.Features.Inbox;
 using Sentium.Nuntius.Features.Publishing;
@@ -20,7 +21,7 @@ public sealed class NotifierTests
 
     private readonly IUserDirectory _directory = Substitute.For<IUserDirectory>();
     private readonly InMemoryNotificationStore _store = new();
-    private readonly NotificationFeed _feed = new();
+    private readonly NotificationFeed _feed = new(Substitute.For<IRealtimePublisher>());
     private readonly List<INotificationChannel> _channels = [];
 
     public NotifierTests()

@@ -1,113 +1,96 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { renderHook, act, waitFor } from "@testing-library/react";
+import { renderHook, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import { useVigilStream } from "./useVigilStream";
 import { SERVICE_HEALTH_KEY } from "./useServiceHealth";
 import { INCIDENTS_KEY } from "./useIncidents";
-
-class FakeEventSource {
-  static instances: FakeEventSource[] = [];
-  url: string;
-  onopen: (() => void) | null = null;
-  onerror: (() => void) | null = null;
-  onmessage: ((e: { data: string }) => void) | null = null;
-  closed = false;
-
-  constructor(url: string) {
-    this.url = url;
-    FakeEventSource.instances.push(this);
-  }
-  close() {
-    this.closed = true;
-  }
-  static last() {
-    return FakeEventSource.instances[FakeEventSource.instances.length - 1];
-  }
-}
+import { DEVICE_STATUSES_KEY } from "@/features/devices";
+import { startRealtime, stopRealtime } from "@/shared/realtime";
+import { FakeEventSource } from "@/test/fake-event-source";
 
 let qc: QueryClient;
 
 const wrapper = ({ children }: { children: React.ReactNode }) =>
   React.createElement(QueryClientProvider, { client: qc }, children);
 
+const push = (topic: string, data?: unknown) => act(() => FakeEventSource.last().emit({ topic, data }));
+
 beforeEach(() => {
-  FakeEventSource.instances = [];
-  vi.stubGlobal("EventSource", FakeEventSource as unknown as typeof EventSource);
+  FakeEventSource.install();
+  vi.stubGlobal("BroadcastChannel", undefined);
   qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  startRealtime();
 });
 
 afterEach(() => {
+  stopRealtime();
   vi.unstubAllGlobals();
 });
 
 describe("useVigilStream", () => {
-  it("opens a stream and reports live status on open/error", () => {
+  it("is live while the realtime stream is", () => {
     const { result } = renderHook(() => useVigilStream(), { wrapper });
     expect(result.current.isLive).toBe(false);
 
-    act(() => FakeEventSource.last().onopen?.());
+    act(() => FakeEventSource.last().open());
     expect(result.current.isLive).toBe(true);
 
-    act(() => FakeEventSource.last().onerror?.());
+    act(() => FakeEventSource.last().drop());
     expect(result.current.isLive).toBe(false);
-  });
-
-  it("ignores blank or comment SSE frames", () => {
-    renderHook(() => useVigilStream(), { wrapper });
-    const src = FakeEventSource.last();
-    expect(() => {
-      act(() => src.onmessage?.({ data: "" }));
-      act(() => src.onmessage?.({ data: ":keep-alive" }));
-      act(() => src.onmessage?.({ data: "not json" }));
-    }).not.toThrow();
   });
 
   it("merges a status update into the service-health cache", () => {
     qc.setQueryData(SERVICE_HEALTH_KEY, [
       { serviceName: "Praxis", status: "Healthy", latencyMs: 1, uptimePercent: 100, checkedAt: "t0", details: null },
     ]);
-
     renderHook(() => useVigilStream(), { wrapper });
-    const src = FakeEventSource.last();
 
-    act(() =>
-      src.onmessage?.({
-        data: JSON.stringify({
-          type: "status",
-          data: {
-            serviceName: "Praxis",
-            kind: "Service",
-            status: "Degraded",
-            latencyMs: 42,
-            uptimePercent: 98,
-            timestamp: "t1",
-            details: "slow",
-          },
-        }),
-      }),
-    );
+    push("vigil.status", {
+      serviceName: "Praxis",
+      kind: "Service",
+      status: "Degraded",
+      latencyMs: 42,
+      uptimePercent: 98,
+      timestamp: "t1",
+      details: "slow",
+    });
 
     const cached = qc.getQueryData<Array<Record<string, unknown>>>(SERVICE_HEALTH_KEY);
     expect(cached?.[0]).toMatchObject({ status: "Degraded", latencyMs: 42, checkedAt: "t1", details: "slow" });
   });
 
-  it("invalidates incident queries on incident events", async () => {
-    const invalidateSpy = vi.spyOn(qc, "invalidateQueries");
+  it("refetches incidents on incident events", () => {
+    const invalidate = vi.spyOn(qc, "invalidateQueries");
     renderHook(() => useVigilStream(), { wrapper });
-    const src = FakeEventSource.last();
 
-    act(() => src.onmessage?.({ data: JSON.stringify({ type: "incident.opened" }) }));
+    push("vigil.incident.opened", { id: "i1" });
 
-    await waitFor(() =>
-      expect(invalidateSpy).toHaveBeenCalledWith(expect.objectContaining({ queryKey: INCIDENTS_KEY })),
-    );
+    expect(invalidate).toHaveBeenCalledWith(expect.objectContaining({ queryKey: INCIDENTS_KEY }), {
+      cancelRefetch: false,
+    });
   });
 
-  it("closes the stream on unmount", () => {
-    const { unmount } = renderHook(() => useVigilStream(), { wrapper });
-    const src = FakeEventSource.last();
-    unmount();
-    expect(src.closed).toBe(true);
+  it("drops a removed Device from the cache", () => {
+    qc.setQueryData(DEVICE_STATUSES_KEY, [{ id: "d1" }, { id: "d2" }]);
+    renderHook(() => useVigilStream(), { wrapper });
+
+    push("vigil.device.removed", { id: "d1" });
+
+    expect(qc.getQueryData(DEVICE_STATUSES_KEY)).toEqual([{ id: "d2" }]);
+  });
+
+  it("refetches everything it shows after a (re)connect", () => {
+    const invalidate = vi.spyOn(qc, "invalidateQueries");
+    renderHook(() => useVigilStream(), { wrapper });
+
+    push("connected");
+
+    expect(invalidate).toHaveBeenCalledWith(expect.objectContaining({ queryKey: SERVICE_HEALTH_KEY }), {
+      cancelRefetch: false,
+    });
+    expect(invalidate).toHaveBeenCalledWith(expect.objectContaining({ queryKey: DEVICE_STATUSES_KEY }), {
+      cancelRefetch: false,
+    });
   });
 });

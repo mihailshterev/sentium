@@ -1,4 +1,5 @@
 using Microsoft.Agents.AI.Workflows;
+using Sentium.Praxis.Common.Streaming;
 using Sentium.Praxis.Features.Agents;
 using Sentium.Praxis.Features.Orchestration;
 
@@ -19,6 +20,7 @@ internal sealed class StepCheckExecutor(SquadRunContext run, int maxAttempts) : 
         var request = message.Request;
         var label = $"Step {request.StepIndex + 1}";
 
+        run.EnterPhase(WorkflowPhases.Validating);
         var stuck = request.PreviousOutput is not null && OutputSimilarity.IsStuck(request.PreviousOutput, message.Output);
         var verdict = await ReviewAsync(request.Step, message.Output, cancellationToken);
         var passed = verdict?.Passed == true;

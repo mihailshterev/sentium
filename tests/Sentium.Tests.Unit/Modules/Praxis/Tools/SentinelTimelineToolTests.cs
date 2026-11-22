@@ -32,9 +32,9 @@ public sealed class SentinelTimelineToolTests
             .Returns(new PolicyEvaluationResponse
             {
                 Allowed = true,
-                Effect = "Allow",
+                Effect = PolicyEffect.Allow,
                 Reason = "ok",
-                Risk = "Low",
+                Risk = PolicyRiskLevel.Low,
                 AuditId = Guid.NewGuid(),
                 Timestamp = DateTimeOffset.UtcNow
             });
@@ -100,13 +100,13 @@ public sealed class SentinelTimelineToolTests
         Assert.Equal("result", result);
         Assert.NotNull(_captured);
         Assert.Equal(toolName, _captured!.SkillName);
-        Assert.Equal("Timeline", _captured.ResourceType);
+        Assert.Equal(ResourceType.Timeline, _captured.ResourceType);
         Assert.Equal(expectedAction, _captured.Action);
         Assert.Equal(expectedResourceId, _captured.ResourceId);
 
         if (forwardsPayload)
         {
-            Assert.Contains("payload", _captured.Metadata);
+            Assert.NotNull(_captured.Payload);
         }
         else
         {

@@ -67,9 +67,9 @@ internal sealed class AgentTestHost
         Pdp.EvaluateAsync(Arg.Any<PolicyEvaluationRequest>(), Arg.Any<CancellationToken>()).Returns(new PolicyEvaluationResponse
         {
             Allowed = allowed,
-            Effect = allowed ? "Allow" : "Deny",
+            Effect = allowed ? PolicyEffect.Allow : PolicyEffect.Deny,
             Reason = reason,
-            Risk = "Low",
+            Risk = PolicyRiskLevel.Low,
             AuditId = Guid.NewGuid(),
             Timestamp = DateTimeOffset.UtcNow,
         });

@@ -6,6 +6,6 @@ namespace Sentium.Vigil.Features.Monitoring;
 /// </summary>
 /// <param name="AudienceUserId">
 /// When set, only this user and Sovereigns receive the update (a Device is visible to its owner and to Sovereigns);
-/// <see langword="null"/> broadcasts to every subscriber.
+/// <see langword="null"/> broadcasts to every signed-in user.
 /// </param>
 internal sealed record VigilFeedEvent(string Type, object Data, Guid? AudienceUserId = null);

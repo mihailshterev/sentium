@@ -1,4 +1,4 @@
-import { Fragment, useMemo, type ReactNode } from "react";
+import { Fragment, useDeferredValue, useMemo, type ReactNode } from "react";
 import type { Block, Inline, LinkDefinitions } from "./ast";
 import { defaultUrlTransform } from "./default-url-transform";
 import { parseBlocks } from "./parse-blocks";
@@ -37,11 +37,14 @@ const defaultLink = ({ href, title, children }: MarkdownLinkProps) => (
  * content (model output, notes) cannot add elements or scripts; URLs go through `urlTransform`.
  */
 export function Markdown({ children, urlTransform = defaultUrlTransform, components }: MarkdownProps) {
+  // A streamed answer changes many times a second and is re-parsed whole each time; deferring lets React skip
+  // intermediate versions while it is busy instead of parsing and rendering every one.
+  const source = useDeferredValue(children);
   const document = useMemo(() => {
     const definitions: LinkDefinitions = new Map();
-    const blocks = parseBlocks(children, definitions);
+    const blocks = parseBlocks(source, definitions);
     return { blocks, definitions };
-  }, [children]);
+  }, [source]);
 
   const context: RenderContext = {
     definitions: document.definitions,

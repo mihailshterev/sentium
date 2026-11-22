@@ -18,10 +18,10 @@ internal sealed class SettingsService(
 
     private static readonly JsonSerializerOptions WebOptions = new(JsonSerializerDefaults.Web);
 
+    // Every write evicts the entry, so the expiration only bounds memory, not staleness.
     private static readonly HybridCacheEntryOptions CacheOptions = new()
     {
-        Expiration = TimeSpan.FromHours(1),
-        LocalCacheExpiration = TimeSpan.FromMinutes(5)
+        Expiration = TimeSpan.FromHours(1)
     };
 
     public async Task<SettingsEnvelope?> GetAsync(string key, Guid? userId, CancellationToken ct = default)

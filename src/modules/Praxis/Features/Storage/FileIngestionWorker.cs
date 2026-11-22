@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Sentium.Codex.Contracts;
 using Sentium.Codex.Contracts.Models;
 using Sentium.Infrastructure.Caching;
+using Sentium.Infrastructure.Realtime;
 using Sentium.Infrastructure.Security;
 using Sentium.Praxis.Data;
 using Sentium.Praxis.Features.Files;
@@ -28,7 +29,11 @@ namespace Sentium.Praxis.Features.Storage;
 /// re-queued on startup, so a restart never strands a file.
 /// </para>
 /// </remarks>
-internal sealed class FileIngestionWorker(IServiceScopeFactory scopeFactory, FileIngestionQueue queue, ILogger<FileIngestionWorker> logger) : BackgroundService
+internal sealed class FileIngestionWorker(
+    IServiceScopeFactory scopeFactory,
+    FileIngestionQueue queue,
+    IRealtimePublisher realtime,
+    ILogger<FileIngestionWorker> logger) : BackgroundService
 {
     private const int MaxErrorLength = 1000;
 
@@ -124,6 +129,7 @@ internal sealed class FileIngestionWorker(IServiceScopeFactory scopeFactory, Fil
             projectFile.ProcessingStatus = FileProcessingStatus.Processing;
             projectFile.ProcessingError = null;
             await dbContext.SaveChangesAsync(ct);
+            PublishFileChanged(projectFile.UserId);
 
             var content = await textReader.ReadAsync(projectFile.BlobName, projectFile.Extension, ct);
 
@@ -169,6 +175,7 @@ internal sealed class FileIngestionWorker(IServiceScopeFactory scopeFactory, Fil
         }
 
         await SaveStatusAsync(scope, dbContext, fileId, ct);
+        PublishFileChanged(projectFile.UserId);
     }
 
     private async Task SaveStatusAsync(IServiceScope scope, PraxisDbContext dbContext, Guid fileId, CancellationToken ct)
@@ -183,6 +190,11 @@ internal sealed class FileIngestionWorker(IServiceScopeFactory scopeFactory, Fil
         }
 
         await scope.ServiceProvider.GetRequiredService<IScopedCache>().InvalidateTagAsync(WorkspaceService.CacheTag, ct);
+    }
+
+    private void PublishFileChanged(Guid ownerId)
+    {
+        realtime.Publish(new RealtimeEvent(RealtimeTopics.WorkspaceFiles, RealtimeAudience.User(ownerId)));
     }
 
     private static string Truncate(string message)

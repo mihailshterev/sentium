@@ -29,15 +29,21 @@ public static class ModuleDbContextExtensions
         ArgumentNullException.ThrowIfNull(builder);
         ArgumentException.ThrowIfNullOrWhiteSpace(schema);
 
-        builder.Services.TryAddScoped<AuditInterceptor>();
+        builder.Services.TryAddScoped<ChangeLogInterceptor>();
 
         builder.Services.AddDbContext<TContext>((sp, options) =>
         {
             options.UseModuleNpgsql(builder.Configuration.GetConnectionString(ResourceNames.SentiumDb), schema, configureNpgsql)
-                .AddInterceptors(sp.GetRequiredService<AuditInterceptor>());
+                .AddInterceptors(sp.GetRequiredService<ChangeLogInterceptor>());
         });
 
-        builder.EnrichNpgsqlDbContext<TContext>();
+        // The database is local, so connection failures are not retried: a retrying execution strategy would force
+        // every user transaction into a replayable closure. One "Database" health check covers every module's context.
+        builder.EnrichNpgsqlDbContext<TContext>(settings =>
+        {
+            settings.DisableRetry = true;
+            settings.DisableHealthChecks = true;
+        });
 
         return builder;
     }

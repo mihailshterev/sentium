@@ -1,15 +1,21 @@
 import { createStore } from "@/shared/state/create-store";
 import type { ConversationMessage, MessageAttachment } from "@/features/assistant/types/assistant";
 import { DEFAULT_ASSISTANT_MODEL } from "@/shared/utils/constants";
-import { sendChatMessage, approveToolCall } from "@/features/assistant/api/assistant.service";
-import { handleUnauthorized } from "@/shared/api/client";
+import {
+  approveToolCall,
+  cancelChatTurn,
+  chatTurnStreamUrl,
+  fetchConversation,
+  startChatTurn,
+} from "@/features/assistant/api/assistant.service";
+import { messageFromDto } from "@/features/assistant/utils/message-from-dto";
+import { createFrameBatcher, mergeTextFrames, openEventStream } from "@/shared/realtime";
 import {
   appendContent as appendAnswer,
   appendThought,
   decideApproval,
   finalizeTurn,
   finishTool,
-  legacyToolName,
   parseJson,
   requestApproval,
   startTool,
@@ -19,7 +25,7 @@ import {
   type ToolResultFrame,
 } from "@/shared/agent-activity";
 
-export type MessageUpdateKind = "content" | "thought" | "tool" | "tool_call" | "tool_result" | "approval";
+export type MessageUpdateKind = "content" | "thought" | "tool_call" | "tool_result" | "approval";
 
 interface SendMessageArgs {
   conversationId: string | null;
@@ -36,25 +42,131 @@ interface RespondToApprovalArgs {
   conversationId: string | null;
 }
 
-class StreamStallError extends Error {
-  constructor() {
-    super("Response timed out.");
-    this.name = "StreamStallError";
-  }
+/** One relay frame of a turn: `{ type, text }`, or a terminal `{ type, done }` / `{ type: "error", message }`. */
+interface TurnFrame {
+  type?: string;
+  text?: string;
+  message?: string;
 }
 
-const isAbortError = (err: unknown): boolean =>
-  typeof err === "object" && err !== null && (err as { name?: string }).name === "AbortError";
+/** The turn being followed, kept for this tab's session so a reload re-attaches to it. */
+interface StoredTurn {
+  turnId: string;
+  conversationId: string;
+  /** The user message of a chat turn: it is only saved with the answer, so a reload must show it again. */
+  userContent?: string;
+  attachments?: MessageAttachment[];
+}
 
-const streamErrorMessage = (err: unknown, fallback: string): string => {
-  if (err instanceof StreamStallError) {
-    return "Response timed out. Please try again.";
+interface ActiveTurn {
+  turnId: string;
+  /** Stop following: `stop` waits briefly for the server's "cancelled" frame, `abandon` lets go at once. */
+  stop: () => void;
+  abandon: () => void;
+}
+
+interface CreateConversationStoreOptions {
+  /** A sessionStorage key: set it on the one store whose turns should survive a reload. */
+  resumeKey?: string;
+}
+
+const STOP_FALLBACK_MS = 8_000;
+/** Failed connections in a row before the turn is given up on (the backoff makes this about a minute). */
+const MAX_STREAM_ATTEMPTS = 6;
+const LOST_CONNECTION_MESSAGE = "Lost the connection to the assistant. Please try again.";
+const ACTIVITY_TYPES = new Set<string>(["thought", "tool_call", "tool_result"]);
+/** Frames whose text simply concatenates, so a batch of them applies as one update. */
+const MERGEABLE_TYPES = new Set<string>(["message", "thought"]);
+
+const streamErrorMessage = (err: unknown, fallback: string): string =>
+  err instanceof Error && err.message.startsWith("Session expired") ? err.message : fallback;
+
+const turnStorage = (key: string | undefined) => ({
+  read: (): StoredTurn | null => {
+    if (!key) {
+      return null;
+    }
+    try {
+      const raw = sessionStorage.getItem(key);
+      return raw ? (JSON.parse(raw) as StoredTurn) : null;
+    } catch {
+      return null;
+    }
+  },
+  write: (turn: StoredTurn) => {
+    if (!key) {
+      return;
+    }
+    try {
+      sessionStorage.setItem(key, JSON.stringify(turn));
+    } catch {
+      // Storage unavailable: the turn just cannot be re-attached after a reload.
+    }
+  },
+  clear: () => {
+    if (!key) {
+      return;
+    }
+    try {
+      sessionStorage.removeItem(key);
+    } catch {
+      // Nothing to clear.
+    }
+  },
+});
+
+/** `msg` with one streamed update applied, or null when the update is malformed. */
+const withUpdate = (
+  msg: ConversationMessage,
+  appendContent: string,
+  type: MessageUpdateKind,
+  streamingConversationId: string | null,
+): ConversationMessage | null => {
+  const turn: ActivityTurn = { content: msg.content, steps: msg.steps ?? [] };
+  let next: ActivityTurn;
+  let pendingApproval = msg.pendingApproval;
+
+  switch (type) {
+    case "thought":
+      next = appendThought(turn, appendContent);
+      break;
+    case "tool_call": {
+      const frame = parseJson<ToolCallFrame>(appendContent);
+      if (!frame) return null;
+      next = startTool(turn, frame);
+      break;
+    }
+    case "tool_result": {
+      const frame = parseJson<ToolResultFrame>(appendContent);
+      if (!frame) return null;
+      next = finishTool(turn, frame);
+      break;
+    }
+    case "approval": {
+      const frame = parseJson<ApprovalFrame>(appendContent);
+      if (!frame) return null;
+      next = requestApproval(turn, frame);
+      pendingApproval = {
+        requestId: frame.requestId,
+        toolName: frame.toolName,
+        arguments: frame.arguments ?? {},
+        callId: frame.callId ?? undefined,
+        conversationId: streamingConversationId ?? undefined,
+      };
+      break;
+    }
+    default:
+      next = appendAnswer(turn, appendContent);
   }
-  if (err instanceof Error && err.message.startsWith("Session expired")) {
-    return err.message;
-  }
-  return fallback;
+
+  return { ...msg, content: next.content, steps: next.steps, pendingApproval };
 };
+
+/** A conversation left while its turn streams: its messages, kept up to date until it is shown again. */
+interface ParkedThread {
+  conversationId: string;
+  messages: ConversationMessage[];
+}
 
 interface ConversationState {
   activeConversationId: string | null;
@@ -81,137 +193,254 @@ interface ConversationState {
   stopStreaming: () => void;
 }
 
-const STREAM_KEY = "active";
-
 /**
- * Creates an independent conversation store: its own active conversation, messages and stream (each store aborts
- * only its own requests). The assistant page uses {@link useConversationStore}; other surfaces (e.g. the timeline's
- * agent drawer) create their own so they never take over the assistant's chat.
+ * Creates an independent conversation store: its own active conversation, messages and turn. A turn runs on the
+ * server on its own; the store follows its stream, which survives dropped connections (it resumes where it left off)
+ * and, for a store with a `resumeKey`, a reload. The assistant page uses {@link useConversationStore}; other surfaces
+ * (e.g. the timeline's agent drawer) create their own so they never take over the assistant's chat.
  */
-export const createConversationStore = () => {
-  const controllers = new Map<string, AbortController>();
+export const createConversationStore = (options: CreateConversationStoreOptions = {}) => {
+  const storage = turnStorage(options.resumeKey);
+  let active: ActiveTurn | null = null;
+  let generation = 0;
+  let parked: ParkedThread | null = null;
 
   return createStore<ConversationState>((set, get) => {
-    const STALL_TIMEOUT_MS = 120_000;
+    /**
+     * Applies `update` to message `id` wherever it lives: the shown conversation, or the parked one whose turn is
+     * still streaming in the background.
+     */
+    const patchMessage = (id: string, update: (msg: ConversationMessage) => ConversationMessage | null) => {
+      if (get().messages.some((m) => m.id === id)) {
+        set((state) => {
+          const idx = state.messages.findLastIndex((m) => m.id === id);
+          const next = idx === -1 ? null : update(state.messages[idx]);
+          if (!next) {
+            return state;
+          }
+          const messages = state.messages.slice();
+          messages[idx] = next;
+          return { messages };
+        });
+        return;
+      }
 
-    const consumeStream = async (
-      response: Response,
+      const idx = parked?.messages.findLastIndex((m) => m.id === id) ?? -1;
+      const next = parked && idx !== -1 ? update(parked.messages[idx]) : null;
+      if (parked && next) {
+        const messages = parked.messages.slice();
+        messages[idx] = next;
+        parked = { ...parked, messages };
+      }
+    };
+
+    /** Keeps the shown conversation's messages when leaving it while its turn still streams. */
+    const parkIfLeavingStream = (nextId: string | null) => {
+      const { activeConversationId, streamingConversationId, isStreaming, messages } = get();
+      if (
+        isStreaming &&
+        activeConversationId &&
+        activeConversationId === streamingConversationId &&
+        nextId !== activeConversationId
+      ) {
+        parked = { conversationId: activeConversationId, messages };
+      }
+    };
+
+    /** The messages to show for `id`: the parked copy while (or since) its turn streamed away from view. */
+    const messagesFor = (id: string | null, loaded: ConversationMessage[]): ConversationMessage[] => {
+      if (!id || parked?.conversationId !== id) {
+        return loaded;
+      }
+      const thread = parked;
+      parked = null;
+      // Once the turn has ended its answer is saved, so the loaded transcript is the truth - unless it was read
+      // before the answer was saved.
+      const stillStreaming = get().isStreaming && get().streamingConversationId === id;
+      return stillStreaming || loaded.length < thread.messages.length ? thread.messages : loaded;
+    };
+
+    const applyFrame = (frame: TurnFrame, aiMsgId: string, conversationId: string | null, userMsgId?: string) => {
+      const { updateLastMessage, setEnhancedPrompt, setConversationTitle } = get();
+      const text = frame.text ?? "";
+
+      switch (frame.type) {
+        case "title":
+          if (text && conversationId) {
+            setConversationTitle(conversationId, text);
+          }
+          return;
+        case "enhanced_prompt":
+          if (text && userMsgId) {
+            setEnhancedPrompt(userMsgId, text);
+          }
+          return;
+        case "approval_request":
+          updateLastMessage(aiMsgId, text, "approval");
+          return;
+        default:
+          if (text) {
+            const kind = ACTIVITY_TYPES.has(frame.type ?? "") ? (frame.type as MessageUpdateKind) : "content";
+            updateLastMessage(aiMsgId, text, kind);
+          }
+      }
+    };
+
+    /** The turn ended while nobody followed it: its answer is in the conversation, so show that instead. */
+    const reloadConversation = (conversationId: string) => {
+      void fetchConversation(conversationId)
+        .then((data) => {
+          if (get().activeConversationId === conversationId && !get().isStreaming) {
+            set({ messages: (data.messages ?? []).map(messageFromDto) });
+          }
+        })
+        .catch(() => {});
+    };
+
+    /** Follows a turn's stream until its terminal frame; resolves then, or when the turn is given up on. */
+    const followTurn = (turnId: string, aiMsgId: string, conversationId: string | null, userMsgId?: string) =>
+      new Promise<void>((resolve) => {
+        let settled = false;
+        let stopTimer: ReturnType<typeof setTimeout> | null = null;
+        const batch = createFrameBatcher<TurnFrame>((frames) => {
+          for (const frame of mergeTextFrames(frames, MERGEABLE_TYPES)) {
+            applyFrame(frame, aiMsgId, conversationId, userMsgId);
+          }
+        });
+
+        const settle = (error?: string) => {
+          if (settled) {
+            return;
+          }
+          settled = true;
+          if (stopTimer) {
+            clearTimeout(stopTimer);
+          }
+          stream.close();
+          batch.flush();
+          if (active?.turnId === turnId) {
+            active = null;
+          }
+          storage.clear();
+          get().finalizeMessage(aiMsgId);
+          if (error) {
+            get().setMessageError(aiMsgId, error);
+          }
+          resolve();
+        };
+
+        const stream = openEventStream(chatTurnStreamUrl(turnId), {
+          resume: true,
+          maxAttempts: MAX_STREAM_ATTEMPTS,
+          onGiveUp: () => settle(LOST_CONNECTION_MESSAGE),
+          onFrame: (data) => {
+            let frame: TurnFrame;
+            try {
+              frame = JSON.parse(data);
+            } catch {
+              return;
+            }
+
+            switch (frame.type) {
+              case "done":
+              case "cancelled":
+                settle();
+                return;
+              case "gone":
+                settle();
+                if (conversationId) {
+                  reloadConversation(conversationId);
+                }
+                return;
+              case "error":
+                settle(frame.message || "Connection to AI node failed.");
+                return;
+              default:
+                batch.push(frame);
+            }
+          },
+        });
+
+        active = {
+          turnId,
+          stop: () => {
+            if (!settled && !stopTimer) {
+              stopTimer = setTimeout(() => settle(), STOP_FALLBACK_MS);
+            }
+          },
+          abandon: () => settle(),
+        };
+      });
+
+    /** Stops and lets go of the turn this store follows, without waiting for it to end. */
+    const abandonActiveTurn = () => {
+      const previous = active;
+      if (!previous) {
+        return;
+      }
+      void cancelChatTurn(previous.turnId).catch(() => {});
+      previous.abandon();
+    };
+
+    const runTurn = async (
+      start: () => Promise<{ turnId: string }>,
       aiMsgId: string,
-      controller: AbortController,
+      conversationId: string | null,
+      fallbackError: string,
+      stored: Omit<StoredTurn, "turnId" | "conversationId"> = {},
       userMsgId?: string,
-    ): Promise<boolean> => {
-      if (response.status === 401) {
-        handleUnauthorized();
-      }
-      if (!response.ok) {
-        throw new Error(`Assistant request failed (${response.status})`);
-      }
-
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder("utf-8");
-      if (!reader) {
-        throw new Error("Failed to read stream");
-      }
-
-      const { updateLastMessage, setEnhancedPrompt, setConversationTitle, finalizeMessage } = get();
-      const conversationId = get().streamingConversationId;
-      let leftover = "";
-
-      let stalled = false;
-      const abortOnStall = () => {
-        stalled = true;
-        controller.abort();
-      };
-      let stallTimer = setTimeout(abortOnStall, STALL_TIMEOUT_MS);
-      const resetStallTimer = () => {
-        clearTimeout(stallTimer);
-        stallTimer = setTimeout(abortOnStall, STALL_TIMEOUT_MS);
-      };
+    ) => {
+      abandonActiveTurn();
+      const mine = ++generation;
+      set({ isStreaming: true, streamingConversationId: conversationId });
 
       try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) {
-            break;
-          }
-
-          resetStallTimer();
-
-          const chunk = leftover + decoder.decode(value, { stream: true });
-          const lines = chunk.split("\n");
-          leftover = lines.pop() || "";
-
-          for (const line of lines) {
-            let trimmed = line.trim();
-            if (!trimmed || trimmed.startsWith(":")) {
-              continue;
-            }
-            if (trimmed.startsWith("data: ")) {
-              trimmed = trimmed.slice(6).trim();
-            }
-            if (!trimmed) {
-              continue;
-            }
-
-            let parsed: { type?: string; message?: string | { content?: string } };
-            try {
-              parsed = JSON.parse(trimmed);
-            } catch {
-              continue;
-            }
-
-            if (parsed.type === "done") {
-              return false;
-            }
-            if (parsed.type === "error") {
-              const errorText = typeof parsed.message === "string" ? parsed.message : parsed.message?.content;
-              throw new Error(errorText || "Connection to AI node failed.");
-            }
-
-            const content = typeof parsed.message === "string" ? undefined : parsed.message?.content;
-
-            if (parsed.type === "title") {
-              if (content && conversationId) {
-                setConversationTitle(conversationId, content);
-              }
-              continue;
-            }
-
-            if (parsed.type === "enhanced_prompt") {
-              if (content && userMsgId) {
-                setEnhancedPrompt(userMsgId, content);
-              }
-              continue;
-            }
-            if (parsed.type === "approval_request") {
-              updateLastMessage(aiMsgId, content ?? "", "approval");
-              return true;
-            }
-            if (content) {
-              switch (parsed.type) {
-                case "thought":
-                case "tool":
-                case "tool_call":
-                case "tool_result":
-                  updateLastMessage(aiMsgId, content, parsed.type);
-                  break;
-                default:
-                  updateLastMessage(aiMsgId, content, "content");
-              }
-            }
-          }
+        const { turnId } = await start();
+        if (mine !== generation) {
+          // Superseded while the turn was being accepted.
+          void cancelChatTurn(turnId).catch(() => {});
+          return;
         }
+        if (conversationId) {
+          storage.write({ turnId, conversationId, ...stored });
+        }
+        await followTurn(turnId, aiMsgId, conversationId, userMsgId);
       } catch (err) {
-        if (stalled) {
-          throw new StreamStallError();
-        }
-        throw err;
+        get().setMessageError(aiMsgId, streamErrorMessage(err, fallbackError));
       } finally {
-        clearTimeout(stallTimer);
-        finalizeMessage(aiMsgId);
+        if (mine === generation) {
+          set({ isStreaming: false, streamingConversationId: null });
+        }
+      }
+    };
+
+    /** Re-attaches to the turn a reload interrupted, once its conversation is shown again. */
+    const resumeStoredTurn = (conversationId: string) => {
+      const stored = storage.read();
+      if (!stored || stored.conversationId !== conversationId || get().isStreaming) {
+        return;
       }
 
-      return false;
+      const now = new Date();
+      if (stored.userContent !== undefined) {
+        get().appendMessage({
+          id: crypto.randomUUID(),
+          role: "user",
+          content: stored.userContent,
+          timestamp: now,
+          ...(stored.attachments?.length ? { attachments: stored.attachments } : {}),
+        });
+      }
+      const aiMsgId = crypto.randomUUID();
+      get().appendMessage({ id: aiMsgId, role: "assistant", content: "", timestamp: now });
+
+      const mine = ++generation;
+      set({ isStreaming: true, streamingConversationId: conversationId });
+      void followTurn(stored.turnId, aiMsgId, conversationId).finally(() => {
+        if (mine === generation) {
+          set({ isStreaming: false, streamingConversationId: null });
+        }
+      });
     };
 
     return {
@@ -222,12 +451,17 @@ export const createConversationStore = () => {
       streamingConversationId: null,
       conversationTitles: {},
 
-      setActiveConversation: (id, messages, model) =>
+      setActiveConversation: (id, messages, model) => {
+        parkIfLeavingStream(id);
         set({
           activeConversationId: id,
-          messages: messages.length > 0 ? messages : [],
+          messages: messagesFor(id, messages),
           model,
-        }),
+        });
+        if (id) {
+          resumeStoredTurn(id);
+        }
+      },
 
       appendMessage: (message) =>
         set((state) => ({
@@ -235,92 +469,29 @@ export const createConversationStore = () => {
         })),
 
       updateLastMessage: (id, appendContent, type = "content") =>
-        set((state) => {
-          const idx = state.messages.findLastIndex((m) => m.id === id);
-          if (idx === -1) {
-            return state;
-          }
-
-          const msg = state.messages[idx];
-          const turn: ActivityTurn = { content: msg.content, steps: msg.steps ?? [] };
-          let next: ActivityTurn = turn;
-          let pendingApproval = msg.pendingApproval;
-
-          switch (type) {
-            case "thought":
-              next = appendThought(turn, appendContent);
-              break;
-            case "tool_call": {
-              const frame = parseJson<ToolCallFrame>(appendContent);
-              if (!frame) return state;
-              next = startTool(turn, frame);
-              break;
-            }
-            case "tool_result": {
-              const frame = parseJson<ToolResultFrame>(appendContent);
-              if (!frame) return state;
-              next = finishTool(turn, frame);
-              break;
-            }
-            case "tool":
-              next = startTool(turn, { callId: "", name: legacyToolName(appendContent) });
-              break;
-            case "approval": {
-              const frame = parseJson<ApprovalFrame>(appendContent);
-              if (!frame) return state;
-              next = requestApproval(turn, frame);
-              pendingApproval = {
-                requestId: frame.requestId,
-                toolName: frame.toolName,
-                arguments: frame.arguments ?? {},
-                callId: frame.callId ?? undefined,
-                conversationId: state.streamingConversationId ?? undefined,
-              };
-              break;
-            }
-            default:
-              next = appendAnswer(turn, appendContent);
-          }
-
-          const messages = state.messages.slice();
-          messages[idx] = { ...msg, content: next.content, steps: next.steps, pendingApproval };
-          return { messages };
-        }),
+        patchMessage(id, (msg) => withUpdate(msg, appendContent, type, get().streamingConversationId)),
 
       finalizeMessage: (id) =>
-        set((state) => {
-          const idx = state.messages.findLastIndex((m) => m.id === id);
-          if (idx === -1 || !state.messages[idx].steps?.length) {
-            return state;
+        patchMessage(id, (msg) => {
+          if (!msg.steps?.length) {
+            return null;
           }
-          const msg = state.messages[idx];
-          const settled = finalizeTurn({ content: msg.content, steps: msg.steps ?? [] });
-          const messages = state.messages.slice();
-          messages[idx] = { ...msg, content: settled.content, steps: settled.steps };
-          return { messages };
+          const settledTurn = finalizeTurn({ content: msg.content, steps: msg.steps });
+          return { ...msg, content: settledTurn.content, steps: settledTurn.steps };
         }),
 
-      setEnhancedPrompt: (id, prompt) =>
-        set((state) => ({
-          messages: state.messages.map((msg) => (msg.id === id ? { ...msg, enhancedPrompt: prompt } : msg)),
-        })),
+      setEnhancedPrompt: (id, prompt) => patchMessage(id, (msg) => ({ ...msg, enhancedPrompt: prompt })),
 
-      setMessageError: (id, error) =>
-        set((state) => ({
-          messages: state.messages.map((msg) => (msg.id === id ? { ...msg, error } : msg)),
-        })),
+      setMessageError: (id, error) => patchMessage(id, (msg) => ({ ...msg, error })),
 
       clearPendingApproval: (id, approved) =>
-        set((state) => ({
-          messages: state.messages.map((msg) => {
-            if (msg.id !== id) return msg;
-            const decided =
-              approved !== undefined && msg.pendingApproval && msg.steps
-                ? decideApproval({ content: msg.content, steps: msg.steps }, msg.pendingApproval, approved).steps
-                : msg.steps;
-            return { ...msg, steps: decided, pendingApproval: undefined };
-          }),
-        })),
+        patchMessage(id, (msg) => {
+          const decided =
+            approved !== undefined && msg.pendingApproval && msg.steps
+              ? decideApproval({ content: msg.content, steps: msg.steps }, msg.pendingApproval, approved).steps
+              : msg.steps;
+          return { ...msg, steps: decided, pendingApproval: undefined };
+        }),
 
       setModel: (model) => set({ model }),
 
@@ -337,12 +508,14 @@ export const createConversationStore = () => {
           return { conversationTitles: next };
         }),
 
-      clearConversation: () =>
+      clearConversation: () => {
+        parkIfLeavingStream(null);
         set({
           activeConversationId: null,
           messages: [],
           model: DEFAULT_ASSISTANT_MODEL,
-        }),
+        });
+      },
 
       sendMessage: async ({ conversationId, model, userContent, attachments }) => {
         const { appendMessage } = get();
@@ -370,34 +543,21 @@ export const createConversationStore = () => {
           timestamp: new Date(),
         });
 
-        controllers.get(STREAM_KEY)?.abort();
-        const controller = new AbortController();
-        controllers.set(STREAM_KEY, controller);
-        set({ isStreaming: true, streamingConversationId: conversationId });
-
-        try {
-          const response = await sendChatMessage(
-            {
+        await runTurn(
+          () =>
+            startChatTurn({
               conversationId: conversationId ?? undefined,
               model,
               messages: chatHistory,
               stream: true,
               ...(attachments?.length ? { fileIds: attachments.map((a) => a.fileId) } : {}),
-            },
-            controller.signal,
-          );
-
-          await consumeStream(response, aiMsgId, controller, userMsg.id);
-        } catch (err) {
-          if (!isAbortError(err)) {
-            get().setMessageError(aiMsgId, streamErrorMessage(err, "Connection to AI node failed."));
-          }
-        } finally {
-          if (controllers.get(STREAM_KEY) === controller) {
-            controllers.delete(STREAM_KEY);
-            set({ isStreaming: false, streamingConversationId: null });
-          }
-        }
+            }),
+          aiMsgId,
+          conversationId,
+          "Connection to AI node failed.",
+          { userContent, ...(attachments?.length ? { attachments } : {}) },
+          userMsg.id,
+        );
       },
 
       retryLastMessage: () => {
@@ -418,31 +578,21 @@ export const createConversationStore = () => {
       },
 
       respondToApproval: async ({ aiMsgId, requestId, approved, conversationId }) => {
-        const { clearPendingApproval } = get();
-        clearPendingApproval(aiMsgId, approved);
+        get().clearPendingApproval(aiMsgId, approved);
 
-        controllers.get(STREAM_KEY)?.abort();
-        const controller = new AbortController();
-        controllers.set(STREAM_KEY, controller);
-        set({ isStreaming: true, streamingConversationId: conversationId });
-
-        try {
-          const response = await approveToolCall(requestId, approved, controller.signal);
-          await consumeStream(response, aiMsgId, controller);
-        } catch (err) {
-          if (!isAbortError(err)) {
-            get().setMessageError(aiMsgId, streamErrorMessage(err, "Failed to process approval. Please try again."));
-          }
-        } finally {
-          if (controllers.get(STREAM_KEY) === controller) {
-            controllers.delete(STREAM_KEY);
-            set({ isStreaming: false, streamingConversationId: null });
-          }
-        }
+        await runTurn(
+          () => approveToolCall(requestId, approved),
+          aiMsgId,
+          conversationId,
+          "Failed to process approval. Please try again.",
+        );
       },
 
       stopStreaming: () => {
-        controllers.get(STREAM_KEY)?.abort();
+        if (active) {
+          void cancelChatTurn(active.turnId).catch(() => {});
+          active.stop();
+        }
       },
     };
   });
@@ -450,4 +600,4 @@ export const createConversationStore = () => {
 
 export type ConversationStore = ReturnType<typeof createConversationStore>;
 
-export const useConversationStore = createConversationStore();
+export const useConversationStore = createConversationStore({ resumeKey: "sentium.assistant.activeTurn" });

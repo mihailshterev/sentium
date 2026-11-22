@@ -22,8 +22,6 @@ namespace Sentium.Tempus;
 /// </summary>
 public static class TempusModuleExtensions
 {
-    internal const string ModuleName = "tempus";
-
     public static IHostApplicationBuilder AddTempusModule(this IHostApplicationBuilder builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -51,8 +49,6 @@ public static class TempusModuleExtensions
         services.AddHostedService<TimelineReminderWorker>();
 
         services.AddSingleton<IUserRemovalObserver, TempusUserDataRemover>();
-
-        services.AddHealthChecks().AddDbContextCheck<TempusDbContext>("tempus-db", tags: [ModuleName]);
 
         return builder;
     }

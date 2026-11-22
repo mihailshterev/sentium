@@ -76,6 +76,25 @@ services:
       start_period: 10s
     restart: unless-stopped
 
+  # One-shot, before every start of sentium-web: creates (or updates) the sentium_app role sentium-web connects as and
+  # hands it every Sentium schema - on a fresh install, on one that predates the role, and after a restore. See
+  # infra/postgres/app-role.sql. Uses the postgres image only for psql.
+  db-init:
+    image: pgvector/pgvector:pg18-trixie
+    environment:
+      PGHOST: postgres
+      PGUSER: postgres
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      PGDATABASE: sentiumdb
+      APP_DB_PASSWORD: ${POSTGRES_APP_PASSWORD:?Set POSTGRES_APP_PASSWORD in .env (see .env.example)}
+    entrypoint: ["sh", "-c", 'psql --no-psqlrc -v app_password="$$APP_DB_PASSWORD" -f /init/app-role.sql']
+    volumes:
+      - ./infra/postgres:/init:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
   # S3-compatible object storage, pinned by digest: workspace files, sandbox artifacts and inventory attachments.
   # Only the S3 API is authenticated, so the store sits alone on the internal sentium-storage network with no
   # published port; telemetry and every other front end are off. The entrypoint drops to an unprivileged user,
@@ -277,7 +296,8 @@ services:
     extra_hosts: *extra-hosts
     environment:
       <<: *service-env
-      ConnectionStrings__sentiumdb: Host=postgres;Port=5432;Database=sentiumdb;Username=postgres;Password=${POSTGRES_PASSWORD}
+      # Not the superuser: see db-init.
+      ConnectionStrings__sentiumdb: Host=postgres;Port=5432;Database=sentiumdb;Username=sentium_app;Password=${POSTGRES_APP_PASSWORD}
       ConnectionStrings__workspace-storage: *storage-connection
       Inference__ChatEndpoint: http://llm:8080
       Inference__EmbeddingEndpoint: http://embeddings:8080
@@ -302,15 +322,17 @@ services:
       - sentium-sandbox
       - sentium-backup
       - sentium-storage
+    # The models are not waited for: the portal, inventory and timeline work while a model loads (or fails to), and
+    # Vigil reports the inference servers' state.
     depends_on:
-      postgres:
-        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
       storage:
         condition: service_healthy
       llm:
-        condition: service_healthy
+        condition: service_started
       embeddings:
-        condition: service_healthy
+        condition: service_started
     restart: unless-stopped
 
   # Runs agent-written code in throwaway Docker containers. Kept out of the web process on purpose
@@ -340,8 +362,8 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
-  # Nightly backups of the database, blobs and data-protection keys to BACKUP_DESTINATION. It holds the database
-  # superuser tooling so sentium-web does not; Vigil reads its status and "back up now" calls it, both with the
+  # Nightly backups of the database, blobs and data-protection keys to BACKUP_DESTINATION. It is the only service
+  # with the database superuser's credentials; Vigil reads its status and "back up now" calls it, both with the
   # internal API key. It keeps running while sentium-web is down. Only on sentium-backup (see x-backup).
   backup:
     <<: *backup

@@ -31,6 +31,7 @@ const mockAgent: AgentRecord = {
 
 const mockWorkflow: WorkflowRecord = {
   id: "w1",
+  userId: "user-1",
   name: "Threat Pipeline",
   description: "Main threat workflow",
   createdAt: "2025-01-01T00:00:00Z",

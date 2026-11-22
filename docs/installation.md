@@ -291,7 +291,8 @@ runtime.
 
 | Variable                        | Default                | Description                                                                             |
 | ------------------------------- | ---------------------- | --------------------------------------------------------------------------------------- |
-| `POSTGRES_PASSWORD`             | `change-me-…`          | PostgreSQL `postgres` superuser password.                                               |
+| `POSTGRES_PASSWORD`             | `change-me-…`          | PostgreSQL `postgres` superuser password (used only by `db-init` and `backup`).         |
+| `POSTGRES_APP_PASSWORD`         | `change-me-…`          | Password of `sentium_app`, the non-superuser role `sentium-web` connects as (required). |
 | `INTERNAL_API_KEY`              | `change-me-…`          | Pre-shared `X-Internal-Token` from `sentium-web` to `sandbox` and `backup`.             |
 | `SENTIUM_HOSTNAME`              | `sentium.home.arpa`    | LAN hostname the certificate is issued for; comma-separate several names.               |
 | `HTTPS_PORT`                    | `443`                  | Host HTTPS port of `caddy` (the portal and the API).                                    |

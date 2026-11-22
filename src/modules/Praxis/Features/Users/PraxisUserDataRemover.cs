@@ -74,6 +74,7 @@ internal sealed class PraxisUserDataRemover(
             + await db.AgentToolOverrides.IgnoreQueryFilters().Where(o => o.UserId == userId).ExecuteDeleteAsync(ct)
             + await db.AgentSkills.IgnoreQueryFilters().Where(s => s.UserId == userId).ExecuteDeleteAsync(ct)
             + await db.AgentLearnings.IgnoreQueryFilters().Where(l => l.UserId == userId).ExecuteDeleteAsync(ct)
+            + await db.PendingApprovals.Where(p => p.UserId == userId).ExecuteDeleteAsync(ct)
             + await db.Conversations.IgnoreQueryFilters().Where(c => c.UserId == userId).ExecuteDeleteAsync(ct)
             + await db.ProjectFiles.IgnoreQueryFilters().Where(f => f.UserId == userId).ExecuteDeleteAsync(ct)
             + await db.Workspaces.IgnoreQueryFilters().Where(w => w.UserId == userId).ExecuteDeleteAsync(ct)

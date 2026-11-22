@@ -1,3 +1,4 @@
+using Sentium.Infrastructure.BackgroundWork;
 using Sentium.Locus.Entities;
 using Sentium.Locus.Features.Assets;
 using Sentium.Locus.Features.Knowledge;
@@ -96,12 +97,12 @@ public sealed class AssetKnowledgeDocumentBuilderTests
     [Fact]
     public void Backoff_DoublesFromThirtySeconds_AndCapsAtOneHour()
     {
-        Assert.Equal(TimeSpan.Zero, KnowledgeSyncBackoff.DelayAfter(0));
-        Assert.Equal(TimeSpan.FromSeconds(30), KnowledgeSyncBackoff.DelayAfter(1));
-        Assert.Equal(TimeSpan.FromMinutes(1), KnowledgeSyncBackoff.DelayAfter(2));
-        Assert.Equal(TimeSpan.FromMinutes(4), KnowledgeSyncBackoff.DelayAfter(4));
-        Assert.Equal(TimeSpan.FromHours(1), KnowledgeSyncBackoff.DelayAfter(KnowledgeSyncBackoff.MaxAttempts));
-        Assert.Equal(TimeSpan.FromHours(1), KnowledgeSyncBackoff.DelayAfter(500));
+        Assert.Equal(TimeSpan.Zero, RetryBackoff.DelayAfter(0));
+        Assert.Equal(TimeSpan.FromSeconds(30), RetryBackoff.DelayAfter(1));
+        Assert.Equal(TimeSpan.FromMinutes(1), RetryBackoff.DelayAfter(2));
+        Assert.Equal(TimeSpan.FromMinutes(4), RetryBackoff.DelayAfter(4));
+        Assert.Equal(TimeSpan.FromHours(1), RetryBackoff.DelayAfter(RetryBackoff.MaxAttempts));
+        Assert.Equal(TimeSpan.FromHours(1), RetryBackoff.DelayAfter(500));
     }
 
     [Theory]

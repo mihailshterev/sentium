@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 using Sentium.Infrastructure.Security;
-using Sentium.Praxis.Common.Streaming;
 using Sentium.Praxis.Features.Agents;
 using Sentium.Praxis.Features.Registry;
 using Sentium.Praxis.Features.WorkflowManagement;
@@ -23,13 +23,13 @@ internal sealed class OrchestrationController(
     IRegistrySettingsService registrySettingsService,
     IWorkspaceService workspaceService,
     IWorkspaceContextBuilder workspaceContext,
-    IConfiguration configuration,
+    IOptions<StreamingOptions> streamingOptions,
     ILogger<OrchestrationController> logger) : ControllerBase
 {
     private const string UnknownWorkspaceMessage = "There is no such workspace.";
+    private const string ForeignWorkflowMessage = "You can only run your own workflows.";
 
-    private readonly TimeSpan _maxStreamDuration = ResolveTimeSpan(configuration, "Orchestration:StreamMaxDuration", TimeSpan.FromMinutes(30));
-    private readonly TimeSpan _heartbeatInterval = ResolveTimeSpan(configuration, "Orchestration:HeartbeatInterval", TimeSpan.FromSeconds(20));
+    private readonly StreamingOptions _streaming = streamingOptions.Value;
 
     /// <summary>
     /// Queues an ad-hoc dynamic workflow run; the activity is enhanced when prompt enhancement is on. Returns the
@@ -74,6 +74,7 @@ internal sealed class OrchestrationController(
     [HttpPost("run-workflow")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<WorkflowAcceptedResponse>> RunWorkflow([FromBody] RunWorkflowRequest request, CancellationToken ct)
     {
@@ -88,6 +89,13 @@ internal sealed class OrchestrationController(
         if (workflow is null)
         {
             return NotFound();
+        }
+
+        // A run acts as the user who starts it, with no Sovereign bypass, so it could not see another user's workflow or
+        // its agents. A Sovereign sees every workflow here, but runs only their own.
+        if (workflow.UserId != currentUser.UserId)
+        {
+            return Problem(detail: ForeignWorkflowMessage, statusCode: StatusCodes.Status403Forbidden);
         }
 
         var streamId = Guid.NewGuid().ToString("N");
@@ -129,52 +137,27 @@ internal sealed class OrchestrationController(
     }
 
     /// <summary>
-    /// Streams a run's updates over SSE: the buffered backlog after <c>Last-Event-ID</c>, then live frames, ending with
-    /// one terminal frame. A connection is capped at <c>Orchestration:StreamMaxDuration</c>; the EventSource then
-    /// reconnects and resumes from its last id.
+    /// Streams a run's updates over SSE (see <see cref="RelayStreams"/>): the buffered backlog after <c>Last-Event-ID</c>
+    /// or <c>?after=</c>, then live frames, ending with one terminal frame. A connection is capped at
+    /// <c>Orchestration:StreamMaxDuration</c>; the client then reconnects and resumes from its last id.
     /// </summary>
     [HttpGet("stream/{eventId}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task StreamAgentExecution(string eventId, CancellationToken ct)
+    public IResult StreamAgentExecution(string eventId)
     {
         if (!currentUser.IsSovereign && (currentUser.UserId is not { } userId || !streamRelay.IsVisibleTo(eventId, userId)))
         {
-            Response.StatusCode = StatusCodes.Status404NotFound;
-            return;
+            return TypedResults.NotFound();
         }
 
-        var fromSeq = ParseLastEventId(Request.Headers["Last-Event-ID"].ToString());
-
-        using var streamCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-        streamCts.CancelAfter(_maxStreamDuration);
-        var token = streamCts.Token;
-
-        await using var sse = await SseStreamWriter.StartAsync(Response, _heartbeatInterval, logger, token);
-
-        try
-        {
-            await sse.ForwardAsync(streamRelay.Subscribe(eventId, fromSeq, token), token);
-        }
-        catch (OperationCanceledException) when (ct.IsCancellationRequested)
-        {
-            if (logger.IsEnabled(LogLevel.Information))
-            {
-                logger.LogInformation("Client disconnected from stream {EventId}", eventId);
-            }
-        }
-        catch (OperationCanceledException)
-        {
-            if (logger.IsEnabled(LogLevel.Information))
-            {
-                logger.LogInformation("Stream {EventId} hit the per-connection cap; closing for transparent reconnect.", eventId);
-            }
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Error while streaming agent execution for event {EventId}.", eventId);
-            await sse.FailAsync("An unexpected error occurred while streaming the run.");
-        }
+        return RelayStreams.Create(
+            streamRelay,
+            eventId,
+            RelayStreams.ResumePoint(Request),
+            _streaming.HeartbeatInterval,
+            _streaming.StreamMaxDuration,
+            HttpContext.RequestAborted);
     }
 
     private void ClaimStream(string streamId)
@@ -183,27 +166,6 @@ internal sealed class OrchestrationController(
         {
             streamRelay.Claim(streamId, userId);
         }
-    }
-
-    private static long ParseLastEventId(string header) => long.TryParse(header, out var seq) && seq > 0 ? seq : 0;
-
-    private static TimeSpan ResolveTimeSpan(IConfiguration configuration, string key, TimeSpan fallback)
-    {
-        var raw = configuration[key];
-        if (!string.IsNullOrWhiteSpace(raw))
-        {
-            if (TimeSpan.TryParse(raw, out var asTimeSpan) && asTimeSpan > TimeSpan.Zero)
-            {
-                return asTimeSpan;
-            }
-
-            if (double.TryParse(raw, out var asSeconds) && asSeconds > 0)
-            {
-                return TimeSpan.FromSeconds(asSeconds);
-            }
-        }
-
-        return fallback;
     }
 
     private async Task<string> EnhanceIfEnabledAsync(string? text, CancellationToken ct)

@@ -1,5 +1,5 @@
 import { test, expect } from "../fixtures";
-import { mockSseRoute, sseMessage, sseDone } from "../support/mock-sse";
+import { mockAssistantTurn, turnFrame } from "../support/mock-sse";
 import { uniqueName } from "../support/test-data";
 
 test.describe("Assistant", () => {
@@ -47,10 +47,7 @@ test.describe("Assistant", () => {
     "uploads a file from the composer and sends it as an attachment, not as text",
     { tag: "@regression" },
     async ({ assistantPage, page }) => {
-      await mockSseRoute(page, /\/assistant\/chat/, [
-        sseMessage({ type: "content", message: { content: "Read it." } }),
-        sseDone(),
-      ]);
+      await mockAssistantTurn(page, [turnFrame("message", "Read it.")]);
       const fileName = `${uniqueName("brief")}.md`;
 
       await assistantPage.startNewConversation();
@@ -60,7 +57,7 @@ test.describe("Assistant", () => {
       await expect(page.getByTestId("composer-attachment")).toContainText(fileName);
       await expect(page.locator("form button[type='submit']")).toBeEnabled();
 
-      const chatRequest = page.waitForRequest(/\/assistant\/chat/);
+      const chatRequest = page.waitForRequest(/\/assistant\/chat$/);
       await assistantPage.typeMessage("Summarise the brief");
       await assistantPage.sendMessage();
 
@@ -75,10 +72,7 @@ test.describe("Assistant", () => {
   );
 
   test("sends a message and shows mocked SSE response", { tag: "@regression" }, async ({ assistantPage, page }) => {
-    await mockSseRoute(page, /\/assistant\/chat/, [
-      sseMessage({ type: "content", message: { content: "Hello from mock" } }),
-      sseDone(),
-    ]);
+    await mockAssistantTurn(page, [turnFrame("message", "Hello from mock")]);
 
     await assistantPage.startNewConversation();
     await assistantPage.typeMessage("hello world");
@@ -90,22 +84,17 @@ test.describe("Assistant", () => {
     "shows the agent's thinking and tool calls as an ordered timeline",
     { tag: "@regression" },
     async ({ assistantPage, page }) => {
-      const toolCall = (callId: string, name: string, args: object) => ({
-        type: "tool_call",
-        message: { content: JSON.stringify({ callId, name, arguments: JSON.stringify(args) }) },
-      });
-      const toolResult = (callId: string, result: string, durationMs: number) => ({
-        type: "tool_result",
-        message: { content: JSON.stringify({ callId, status: "ok", result, durationMs }) },
-      });
+      const toolCall = (callId: string, name: string, args: object) =>
+        turnFrame("tool_call", JSON.stringify({ callId, name, arguments: JSON.stringify(args) }));
+      const toolResult = (callId: string, result: string, durationMs: number) =>
+        turnFrame("tool_result", JSON.stringify({ callId, status: "ok", result, durationMs }));
 
-      await mockSseRoute(page, /\/assistant\/chat/, [
-        sseMessage({ type: "thought", message: { content: "The user wants their drill." } }),
-        sseMessage(toolCall("c1", "find_assets", { query: "drill" })),
-        sseMessage(toolResult("c1", "Cordless drill - garage", 42)),
-        sseMessage({ type: "thought", message: { content: "Found it in the garage." } }),
-        sseMessage({ type: "message", message: { content: "Your drill is in the garage." } }),
-        sseDone(),
+      await mockAssistantTurn(page, [
+        turnFrame("thought", "The user wants their drill."),
+        toolCall("c1", "find_assets", { query: "drill" }),
+        toolResult("c1", "Cordless drill - garage", 42),
+        turnFrame("thought", "Found it in the garage."),
+        turnFrame("message", "Your drill is in the garage."),
       ]);
 
       await assistantPage.startNewConversation();

@@ -1,4 +1,5 @@
-using Sentium.Infrastructure.Extensions;
+using Microsoft.Extensions.Options;
+using Sentium.Infrastructure.Realtime;
 using Sentium.Infrastructure.Security;
 using Sentium.Praxis.Common.Streaming;
 using Sentium.Praxis.Contracts;
@@ -27,16 +28,15 @@ internal sealed class WorkflowRunProcessor(
     WorkflowRunNotifier runNotifier,
     ScheduledRunGate scheduledRunGate,
     IEnumerable<IUnattendedRunObserver> runObservers,
-    IConfiguration configuration,
+    IRealtimePublisher realtime,
+    IOptions<StreamingOptions> options,
     ILogger<WorkflowRunProcessor> logger) : BackgroundService
 {
-    private const int DefaultMaxConcurrency = 4;
-    private const int DefaultTimeoutMinutes = 120;
     private const int MaxAttempts = 4;
     private static readonly TimeSpan RetryDelay = TimeSpan.FromSeconds(3);
 
-    private readonly int _maxConcurrency = ResolveMaxConcurrency(configuration);
-    private readonly TimeSpan _workflowTimeout = ResolveWorkflowTimeout(configuration);
+    private readonly int _maxConcurrency = options.Value.MaxConcurrentWorkflows;
+    private readonly TimeSpan _workflowTimeout = options.Value.WorkflowTimeout;
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -237,6 +237,7 @@ internal sealed class WorkflowRunProcessor(
                 Logs = [.. result.StreamLog]
             }, CancellationToken.None);
             persisted = run;
+            PublishRunRecorded(trigger.UserId);
         }
         catch (Exception ex)
         {
@@ -296,6 +297,7 @@ internal sealed class WorkflowRunProcessor(
                 CompletedAt = DateTime.UtcNow,
                 Logs = []
             }, CancellationToken.None);
+            PublishRunRecorded(trigger.UserId);
             return run;
         }
         catch (Exception ex)
@@ -323,6 +325,15 @@ internal sealed class WorkflowRunProcessor(
         return trigger.WorkflowName is { Length: > 0 } workflowName ? $"Workflow: {workflowName}" : "Dynamic workflow";
     }
 
+    /// <summary>
+    /// Sovereigns see every user's run history, so they hear about every run.
+    /// </summary>
+    private void PublishRunRecorded(Guid? userId)
+    {
+        var audience = userId is { } owner ? RealtimeAudience.User(owner, includeSovereigns: true) : RealtimeAudience.Sovereigns;
+        realtime.Publish(new RealtimeEvent(RealtimeTopics.WorkflowRuns, audience));
+    }
+
     private void EmitSystem(string streamId, string text, string type)
     {
         try
@@ -334,16 +345,6 @@ internal sealed class WorkflowRunProcessor(
             logger.LogWarning(ex, "Failed to emit '{Type}' frame for stream {StreamId}.", type, streamId);
         }
     }
-
-    private static int ResolveMaxConcurrency(IConfiguration configuration)
-    {
-        return int.TryParse(configuration["Orchestration:MaxConcurrentWorkflows"], out var configured) && configured > 0
-            ? configured
-            : DefaultMaxConcurrency;
-    }
-
-    private static TimeSpan ResolveWorkflowTimeout(IConfiguration configuration)
-        => configuration.GetTimeSpan("Orchestration:WorkflowTimeout", TimeSpan.FromMinutes(DefaultTimeoutMinutes));
 
     private sealed record RunEnd(UnattendedRunStatus Status, PersistedRun? Run);
 }
