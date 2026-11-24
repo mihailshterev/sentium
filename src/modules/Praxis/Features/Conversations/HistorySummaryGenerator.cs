@@ -59,9 +59,6 @@ internal sealed partial class HistorySummaryGenerator(IChatClient chatClient, IL
         }
     }
 
-    /// <summary>
-    /// What one message costs of the input budget.
-    /// </summary>
     public static int CostOf(MessageResponse message)
     {
         ArgumentNullException.ThrowIfNull(message);
@@ -91,9 +88,6 @@ internal sealed partial class HistorySummaryGenerator(IChatClient chatClient, IL
         return sb.ToString();
     }
 
-    /// <summary>
-    /// Reasoning a thinking model may inline in its answer.
-    /// </summary>
     [GeneratedRegex(@"<think>.*?</think>", RegexOptions.Singleline | RegexOptions.IgnoreCase)]
     private static partial Regex ThinkBlock();
 }

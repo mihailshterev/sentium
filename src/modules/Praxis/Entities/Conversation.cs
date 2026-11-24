@@ -38,9 +38,6 @@ internal sealed class Conversation : IUserOwned
     /// </summary>
     public DateTime? LastActivityAt { get; set; }
 
-    /// <summary>
-    /// Listed above every other conversation.
-    /// </summary>
     public bool IsPinned { get; set; }
 
     /// <summary>

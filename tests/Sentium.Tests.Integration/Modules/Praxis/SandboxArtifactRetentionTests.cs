@@ -127,9 +127,6 @@ public sealed class SandboxArtifactRetentionTests(SandboxArtifactRetentionTests.
         return scope;
     }
 
-    /// <summary>
-    /// The monolith with an in-memory object store.
-    /// </summary>
     public sealed class Factory : MonolithWebApplicationFactory
     {
         public InMemoryObjectStore ObjectStore { get; } = new();
