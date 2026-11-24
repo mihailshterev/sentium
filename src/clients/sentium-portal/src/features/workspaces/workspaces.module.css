@@ -142,7 +142,7 @@
 }
 
 .fileSearch {
-  padding: var(--space-3) var(--space-5) 0;
+  padding: var(--space-3) var(--space-5);
 }
 
 .fileList {
