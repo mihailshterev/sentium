@@ -5,6 +5,7 @@ import type {
   ConversationSummary,
   CreateConversationPayload,
   CreateConversationResult,
+  EarlierMessagesPage,
 } from "../types/assistant";
 import type { PagedResponse } from "@/shared/types/pagination";
 
@@ -12,16 +13,31 @@ const BASE = "/praxis";
 
 const searchParam = (search?: string) => (search?.trim() ? `&search=${encodeURIComponent(search.trim())}` : "");
 
+/** Pinned first, then by latest activity; `archived` lists the archived conversations instead. */
 export const fetchConversations = (
   page = 1,
   pageSize = 20,
   search?: string,
+  archived = false,
 ): Promise<PagedResponse<ConversationSummary>> =>
   client.get<PagedResponse<ConversationSummary>>(
-    `${BASE}/conversations?page=${page}&pageSize=${pageSize}${searchParam(search)}`,
+    `${BASE}/conversations?page=${page}&pageSize=${pageSize}${searchParam(search)}${archived ? "&archived=true" : ""}`,
   );
 
+/** The conversation with its newest messages; see {@link fetchEarlierMessages} for the rest. */
 export const fetchConversation = (id: string) => client.get<ConversationDetail>(`${BASE}/conversations/${id}`);
+
+export const fetchEarlierMessages = (id: string, beforeMessageId: string, limit = 100) =>
+  client.get<EarlierMessagesPage>(
+    `${BASE}/conversations/${id}/messages?before=${encodeURIComponent(beforeMessageId)}&limit=${limit}`,
+  );
+
+export const setConversationPinned = (id: string, pinned: boolean) =>
+  client.put<void>(`${BASE}/conversations/${id}/pinned`, { pinned });
+
+/** Archiving also unpins; a new message brings the conversation back. */
+export const setConversationArchived = (id: string, archived: boolean) =>
+  client.put<void>(`${BASE}/conversations/${id}/archived`, { archived });
 
 export const createConversation = (payload: CreateConversationPayload) =>
   client.post<CreateConversationResult>(`${BASE}/conversations`, payload);

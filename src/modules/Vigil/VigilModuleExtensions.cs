@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Options;
 using Sentium.Core.Constants;
 using Sentium.Identity.Contracts;
 using Sentium.Infrastructure.Diagnostics;
@@ -45,6 +46,7 @@ public static class VigilModuleExtensions
         services.AddSingleton<IVigil, VigilService>();
         services.AddSingleton<IServiceHealthStateStore, ServiceHealthStateStore>();
         services.AddSingleton<IIncidentStore, IncidentStore>();
+        services.AddRetentionSweep<IncidentRetention>();
         services.AddSingleton<IVigilFeed, VigilFeed>();
 
         RegisterServiceProbes(services);
@@ -70,6 +72,9 @@ public static class VigilModuleExtensions
         ArgumentNullException.ThrowIfNull(app);
 
         await app.Services.MigrateModuleDbContextAsync<VigilDbContext>();
+
+        var monitoredTargets = app.Services.GetServices<IHealthProbe>().Select(p => p.Target).ToHashSet(StringComparer.Ordinal);
+        await app.Services.GetRequiredService<IIncidentStore>().RestoreOpenAsync(monitoredTargets);
     }
 
     private static void RegisterInferenceMetrics(IServiceCollection services, IConfiguration configuration)
@@ -123,6 +128,9 @@ public static class VigilModuleExtensions
         services.AddSingleton<IHealthProbe>(sp => new HealthCheckProbe(
             sp.GetRequiredService<HealthCheckService>(), "PostgreSQL", DatabaseHealthCheck.Tag, ComponentKind.Infrastructure));
         AddTcpProbe(services, configuration, ResourceNames.WorkspaceBlobs, "Object storage", defaultPort: 8333);
+
+        services.AddOptions<DiskSpaceOptions>().Bind(configuration.GetSection(DiskSpaceOptions.SectionName)).ValidateDataAnnotations().ValidateOnStart();
+        services.AddSingleton<IHealthProbe>(sp => new DiskSpaceProbe(VigilService.GetDiskInfo, sp.GetRequiredService<IOptions<DiskSpaceOptions>>()));
 
         // Both llama-server instances expose an unauthenticated /health that only turns healthy once their
         // model is loaded, so a loading or crashed model shows up here, not just a dead process.

@@ -7,11 +7,36 @@ namespace Sentium.Praxis.Features.Conversations;
 internal interface IConversationRepository
 {
     /// <summary>
-    /// Returns a page of conversation summaries (newest first) plus the total count, optionally only those whose title
-    /// contains <paramref name="search"/> (case-insensitive).
+    /// Returns a page of the archived or the active conversations (pinned first, then by latest activity) plus the
+    /// total count, optionally only those whose title or any message contains <paramref name="search"/>
+    /// (case-insensitive).
     /// </summary>
-    Task<(IReadOnlyList<ConversationSummary> Items, int TotalCount)> GetConversationsAsync(int page, int pageSize, string? search = null, CancellationToken ct = default);
-    Task<ConversationResponse?> GetConversationAsync(Guid conversationId, CancellationToken ct = default);
+    Task<(IReadOnlyList<ConversationSummary> Items, int TotalCount)> GetConversationsAsync(
+        int page,
+        int pageSize,
+        string? search = null,
+        bool archived = false,
+        CancellationToken ct = default);
+
+    /// <summary>
+    /// The conversation with its newest <paramref name="messageLimit"/> messages.
+    /// </summary>
+    Task<ConversationResponse?> GetConversationAsync(Guid conversationId, int messageLimit, CancellationToken ct = default);
+
+    /// <summary>
+    /// Up to <paramref name="limit"/> messages older than <paramref name="beforeMessageId"/>, oldest first;
+    /// <see langword="null"/> when the conversation has no such message.
+    /// </summary>
+    Task<MessagePageResponse?> GetMessagesBeforeAsync(Guid conversationId, Guid beforeMessageId, int limit, CancellationToken ct = default);
+
+    /// <returns><see langword="false"/> when the conversation does not exist.</returns>
+    Task<bool> SetPinnedAsync(Guid conversationId, bool pinned, CancellationToken ct = default);
+
+    /// <summary>
+    /// Archives (and unpins) or unarchives a conversation.
+    /// </summary>
+    /// <returns><see langword="false"/> when the conversation does not exist.</returns>
+    Task<bool> SetArchivedAsync(Guid conversationId, bool archived, CancellationToken ct = default);
     Task<ConversationSummary> CreateConversationAsync(CreateConversationRequest request, CancellationToken ct = default);
     Task<bool> DeleteConversationAsync(Guid conversationId, CancellationToken ct = default);
 
@@ -52,7 +77,8 @@ internal interface IConversationRepository
     Task<bool> WorkspaceIsOwnedByAsync(Guid workspaceId, Guid userId, CancellationToken ct = default);
 
     /// <summary>
-    /// Appends a message (with optional enhanced prompt, activity steps and attached files) to a conversation.
+    /// Appends a message (with optional enhanced prompt, activity steps and attached files) to a conversation, which
+    /// becomes its latest activity and unarchives it.
     /// </summary>
     Task AddMessageAsync(
         Guid conversationId,
@@ -74,4 +100,24 @@ internal interface IConversationRepository
     /// oldest first. Empty when the conversation does not exist or belongs to someone else.
     /// </summary>
     Task<IReadOnlyList<MessageResponse>> GetRecentMessagesAsync(Guid conversationId, Guid userId, int limit, CancellationToken ct = default);
+
+    /// <summary>
+    /// The running summary of <paramref name="userId"/>'s conversation, or <see langword="null"/> when it has none (or
+    /// is not theirs).
+    /// </summary>
+    Task<HistorySummary?> GetHistorySummaryAsync(Guid conversationId, Guid userId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Up to <paramref name="limit"/> messages, oldest first, that are older than the newest
+    /// <paramref name="recentMessages"/> and newer than <paramref name="after"/> (the summary's coverage).
+    /// </summary>
+    Task<IReadOnlyList<MessageResponse>> GetMessagesBeyondWindowAsync(
+        Guid conversationId,
+        Guid userId,
+        DateTime? after,
+        int recentMessages,
+        int limit,
+        CancellationToken ct = default);
+
+    Task SaveHistorySummaryAsync(Guid conversationId, Guid userId, HistorySummary summary, CancellationToken ct = default);
 }

@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
 using Sentium.Core.Results;
 using Sentium.Praxis.Features.Agents;
@@ -15,7 +16,7 @@ public sealed class AgentServiceTests
     public AgentServiceTests()
     {
         _registry.GetRegisteredNames().Returns(new[] { "Validator", "Orchestrator", "Summarizer", "GeneralAssistant" });
-        _service = new AgentService(_repository, new PassThroughScopedCache(), _registry);
+        _service = new AgentService(_repository, new PassThroughScopedCache(), _registry, new RunTargetNotifier([], NullLogger<RunTargetNotifier>.Instance));
     }
 
     private static AgentResponse MakeResponse(Guid? id = null, string name = "TestAgent")

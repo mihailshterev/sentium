@@ -182,4 +182,52 @@ internal sealed class AccountController(
 
         return NoContent();
     }
+
+    /// <summary>
+    /// Changes the authenticated user's password. This session stays signed in; the account's other sessions end
+    /// within a minute.
+    /// </summary>
+    /// <response code="400">If the current password is wrong or the new one does not meet the password rules.</response>
+    [HttpPut("me/password")]
+    [Authorize]
+    [EnableRateLimiting("auth")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (currentUser.UserId is not { } userId)
+        {
+            return Unauthorized();
+        }
+
+        var result = await identityService.ChangePasswordAsync(userId, request.CurrentPassword, request.NewPassword);
+        if (!result.Succeeded)
+        {
+            return Problem(
+                detail: string.Join(" ", result.Errors.Select(e => e.Description)),
+                statusCode: StatusCodes.Status400BadRequest);
+        }
+
+        return NoContent();
+    }
+
+    /// <summary>
+    /// Signs the authenticated user out of every other browser session within a minute; this one stays signed in.
+    /// Paired Devices are not affected (remove them on the Profile page).
+    /// </summary>
+    [HttpPost("me/sessions/revoke-others")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> SignOutOtherSessions()
+    {
+        if (currentUser.UserId is not { } userId)
+        {
+            return Unauthorized();
+        }
+
+        return await identityService.SignOutOtherSessionsAsync(userId) ? NoContent() : Unauthorized();
+    }
 }

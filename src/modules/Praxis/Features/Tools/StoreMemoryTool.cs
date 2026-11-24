@@ -1,18 +1,16 @@
 using System.ComponentModel;
 using Microsoft.Extensions.AI;
-using Sentium.Codex.Contracts;
-using Sentium.Codex.Contracts.Models;
 using Sentium.Praxis.Contracts;
+using Sentium.Praxis.Features.Memories;
 
 namespace Sentium.Praxis.Features.Tools;
 
 /// <summary>
-/// Tool that allows the agent to save a personal fact to the acting user's long-term vector memory, through the
-/// ingestion service so it is properly chunked, embedded, and scoped to that user.
+/// Saves a personal fact to the acting user's memories, which they can review, edit and delete on the Memories page.
 /// </summary>
 [AgentToolPolicy(RiskLevel = ToolRiskLevel.Low, Resource = ToolResource.Memory, Action = ToolAction.Write)]
 internal sealed class StoreMemoryTool(
-    IDocumentIngestionService ingestionService,
+    IUserMemoryService memories,
     IPdpContextAccessor pdpContext,
     ILogger<StoreMemoryTool> logger) : IAgentTool
 {
@@ -23,6 +21,7 @@ internal sealed class StoreMemoryTool(
             StoreAsync,
             ToolNames.StoreMemory,
             "Saves a PERSONAL fact or preference the USER explicitly asked you to remember (their name, a setting, a standing instruction) to long-term memory. " +
+            "If the fact changes something you already remember, call recall_memory first and use update_memory on the old memory instead. " +
             "Do NOT use this for things YOU figured out - patterns, conclusions, designs, fixes, or reusable approaches belong in capture_agent_learning instead.");
     }
 
@@ -35,8 +34,7 @@ internal sealed class StoreMemoryTool(
             return "Error: Memory content cannot be empty.";
         }
 
-        // A memory is a personal fact: without an acting user there is no private scope to put it in, and
-        // falling back to the shared knowledge base would expose it to every user. Fail closed.
+        // A memory is a personal fact: without an acting user there is no private scope to put it in. Fail closed.
         if (pdpContext.UserId is not { } userId)
         {
             logger.LogWarning("store_memory called without an acting user; refusing to store the memory.");
@@ -45,29 +43,15 @@ internal sealed class StoreMemoryTool(
 
         try
         {
-            var request = new IngestionRequest
-            {
-                Content = content,
-                Source = "Agent_Self_Memory",
-                SourceType = IngestionSourceType.Custom,
-                Scope = KnowledgeScope.User,
-                UserId = userId,
-                Metadata = new Dictionary<string, string>
-                {
-                    { "memory_type", "long_term_recall" },
-                    { "importance", "high" }
-                }
-            };
+            var result = await memories.RememberAsync(userId, content, ct);
 
-            await ingestionService.IngestAsync(request, KnowledgeCollections.UserMemories, ct);
-
-            logger.LogInformation("Agent successfully stored a new semantic memory.");
-
-            return "Successfully stored that in my long-term memory. I will be able to recall this in future conversations.";
+            return result.ReplacedExisting
+                ? $"Updated memory {result.Memory.Id}, which said nearly the same thing. I will recall it in future conversations."
+                : $"Saved memory {result.Memory.Id}. I will be able to recall it in future conversations.";
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            logger.LogError(ex, "Failed to store semantic memory.");
+            logger.LogError(ex, "Failed to store a memory.");
             return $"Error: I encountered a problem while trying to save that memory: {ex.Message}";
         }
     }

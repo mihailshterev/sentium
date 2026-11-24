@@ -14,16 +14,17 @@ const createWrapper = () => {
 };
 
 const file = { id: "f1", name: "doc.txt", processingStatus: "Completed" } as never;
+const page = { items: [file], totalCount: 1, page: 1, pageSize: 50, totalPages: 1 };
 
 beforeEach(() => {
-  vi.spyOn(workspacesService, "fetchWorkspaceFiles").mockResolvedValue([file]);
+  vi.spyOn(workspacesService, "fetchWorkspaceFilesPage").mockResolvedValue(page);
   vi.spyOn(workspacesService, "uploadWorkspaceFile").mockResolvedValue(file);
   vi.spyOn(workspacesService, "deleteWorkspaceFile").mockResolvedValue(undefined);
 });
 
 describe("useWorkspaceFiles", () => {
   it("does not fetch when no workspace id is provided", () => {
-    const spy = vi.spyOn(workspacesService, "fetchWorkspaceFiles");
+    const spy = vi.spyOn(workspacesService, "fetchWorkspaceFilesPage");
     const { result } = renderHook(() => useWorkspaceFiles(undefined), { wrapper: createWrapper() });
     expect(result.current.files).toEqual([]);
     expect(spy).not.toHaveBeenCalled();
@@ -32,8 +33,27 @@ describe("useWorkspaceFiles", () => {
   it("fetches files for the given workspace", async () => {
     const { result } = renderHook(() => useWorkspaceFiles("w1"), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isFilesLoading).toBe(false));
-    expect(workspacesService.fetchWorkspaceFiles).toHaveBeenCalledWith("w1");
+    expect(workspacesService.fetchWorkspaceFilesPage).toHaveBeenCalledWith("w1", 1, 50, undefined);
     expect(result.current.files).toEqual([file]);
+    expect(result.current.totalCount).toBe(1);
+    expect(result.current.hasMoreFiles).toBe(false);
+  });
+
+  it("searches the workspace's files on the server", async () => {
+    const { result } = renderHook(() => useWorkspaceFiles("w1", "  tax "), { wrapper: createWrapper() });
+    await waitFor(() => expect(result.current.isFilesLoading).toBe(false));
+    expect(workspacesService.fetchWorkspaceFilesPage).toHaveBeenCalledWith("w1", 1, 50, "tax");
+  });
+
+  it("loads the next page", async () => {
+    vi.mocked(workspacesService.fetchWorkspaceFilesPage)
+      .mockResolvedValueOnce({ ...page, totalCount: 2, totalPages: 2 })
+      .mockResolvedValueOnce({ ...page, items: [{ id: "f2" } as never], totalCount: 2, page: 2, totalPages: 2 });
+    const { result } = renderHook(() => useWorkspaceFiles("w1"), { wrapper: createWrapper() });
+    await waitFor(() => expect(result.current.hasMoreFiles).toBe(true));
+    act(() => result.current.loadMoreFiles());
+    await waitFor(() => expect(result.current.files).toHaveLength(2));
+    expect(workspacesService.fetchWorkspaceFilesPage).toHaveBeenLastCalledWith("w1", 2, 50, undefined);
   });
 
   it("uploads several files one after another, scoped to the workspace", async () => {

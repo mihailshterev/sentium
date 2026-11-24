@@ -25,7 +25,21 @@ describe("workspaces.service files", () => {
     await workspacesService.listWorkspaceFiles();
     await workspacesService.listWorkspaceFiles("w 1");
     expect(client.get).toHaveBeenCalledWith("/praxis/workspaces/files");
-    expect(client.get).toHaveBeenCalledWith("/praxis/workspaces/files?workspaceId=w%201");
+    expect(client.get).toHaveBeenCalledWith("/praxis/workspaces/files?workspaceId=w+1");
+  });
+
+  it("listWorkspaceFiles passes a trimmed search", async () => {
+    vi.mocked(client.get).mockResolvedValue([] as never);
+    await workspacesService.listWorkspaceFiles(undefined, "  report ");
+    expect(client.get).toHaveBeenCalledWith("/praxis/workspaces/files?search=report");
+  });
+
+  it("fetchWorkspaceFilesPage asks for one page, optionally searched", async () => {
+    vi.mocked(client.get).mockResolvedValue({} as never);
+    await workspacesService.fetchWorkspaceFilesPage("w1", 2, 50);
+    await workspacesService.fetchWorkspaceFilesPage("w1", 1, 50, "tax");
+    expect(client.get).toHaveBeenCalledWith("/praxis/workspaces/w1/files/page?page=2&pageSize=50");
+    expect(client.get).toHaveBeenCalledWith("/praxis/workspaces/w1/files/page?page=1&pageSize=50&search=tax");
   });
 
   it("fetchWorkspaceFiles calls the workspace files endpoint", async () => {

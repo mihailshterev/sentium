@@ -121,6 +121,26 @@ public static class IdentityModuleExtensions
         return builder;
     }
 
+    /// <summary>
+    /// Whether the command line asks for an Identity maintenance command (<c>reset-password &lt;username&gt;</c>)
+    /// instead of the web host.
+    /// </summary>
+    public static bool IsIdentityCommand(string[] args)
+    {
+        ArgumentNullException.ThrowIfNull(args);
+        return PasswordResetCommand.IsCommand(args);
+    }
+
+    /// <summary>
+    /// Runs the Identity maintenance command against the existing database and returns its exit code.
+    /// </summary>
+    public static Task<int> RunIdentityCommandAsync(this WebApplication app, string[] args)
+    {
+        ArgumentNullException.ThrowIfNull(app);
+        ArgumentNullException.ThrowIfNull(args);
+        return PasswordResetCommand.RunAsync(app.Services, args, Console.Out);
+    }
+
     public static async Task InitializeIdentityModuleAsync(this WebApplication app)
     {
         ArgumentNullException.ThrowIfNull(app);

@@ -126,6 +126,26 @@ internal sealed class WorkspacesController(IWorkspaceService workspaceService) :
     }
 
     /// <summary>
+    /// A page of a workspace's files, newest first.
+    /// </summary>
+    /// <param name="page">1-based page number (default: 1).</param>
+    /// <param name="pageSize">Files per page (default: 20, max: 100).</param>
+    /// <param name="search">Optional text the file name must contain (case-insensitive).</param>
+    [HttpGet("{id:guid}/files/page")]
+    [ProducesResponseType(typeof(PagedResponse<WorkspaceFileDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetWorkspaceFilesPage(
+        Guid id,
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = PaginationQuery.DefaultPageSize,
+        [FromQuery] string? search = null,
+        CancellationToken ct = default)
+    {
+        var files = await workspaceService.GetWorkspaceFilesPageAsync(id, page, pageSize, search, ct);
+        return files is null ? NotFound() : Ok(files);
+    }
+
+    /// <summary>
     /// The upload rules the portal validates against before sending a file.
     /// </summary>
     [HttpGet("files/rules")]
@@ -200,14 +220,15 @@ internal sealed class WorkspacesController(IWorkspaceService workspaceService) :
     /// Retrieves files, optionally filtered by workspace.
     /// </summary>
     /// <param name="workspaceId">Optional workspace ID to filter files. If null, returns all files.</param>
+    /// <param name="search">Optional text the file name must contain (case-insensitive).</param>
     /// <returns>
     /// An HTTP 200 OK response containing a list of file DTOs,  sorted by creation date (most recent first).
     /// </returns>
     [HttpGet("files")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetFiles([FromQuery] Guid? workspaceId, CancellationToken ct)
+    public async Task<IActionResult> GetFiles([FromQuery] Guid? workspaceId, [FromQuery] string? search, CancellationToken ct)
     {
-        var files = await workspaceService.GetFilesAsync(workspaceId, ct);
+        var files = await workspaceService.GetFilesAsync(workspaceId, search, ct);
         return Ok(files);
     }
 

@@ -10,4 +10,9 @@ internal interface IWorkflowRepository
     Task<WorkflowResponse> CreateWorkflowAsync(CreateWorkflowRequest request, CancellationToken ct = default);
     Task<bool> UpdateWorkflowAsync(Guid workflowId, UpdateWorkflowRequest request, CancellationToken ct = default);
     Task<bool> DeleteWorkflowAsync(Guid workflowId, CancellationToken ct = default);
+
+    /// <summary>
+    /// The owner of a workflow the caller can see, or <see langword="null"/>.
+    /// </summary>
+    Task<Guid?> GetOwnerAsync(Guid workflowId, CancellationToken ct = default);
 }

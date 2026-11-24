@@ -50,9 +50,16 @@ internal interface IWorkspaceService
     Task<IReadOnlyList<WorkspaceFileDto>?> GetWorkspaceFilesAsync(Guid workspaceId, CancellationToken ct = default);
 
     /// <summary>
-    /// Retrieves files, optionally filtered by workspace (all files when <paramref name="workspaceId"/> is null).
+    /// A page of a workspace's files, newest first, optionally filtered by a part of their name.
     /// </summary>
-    Task<IReadOnlyList<WorkspaceFileDto>> GetFilesAsync(Guid? workspaceId, CancellationToken ct = default);
+    /// <returns><c>null</c> if the workspace is not found.</returns>
+    Task<PagedResponse<WorkspaceFileDto>?> GetWorkspaceFilesPageAsync(Guid workspaceId, int page, int pageSize, string? search, CancellationToken ct = default);
+
+    /// <summary>
+    /// Retrieves files, optionally filtered by workspace (all files when <paramref name="workspaceId"/> is null) and by
+    /// a part of their name.
+    /// </summary>
+    Task<IReadOnlyList<WorkspaceFileDto>> GetFilesAsync(Guid? workspaceId, string? search = null, CancellationToken ct = default);
 
     /// <summary>
     /// Uploads a file to cloud storage and records its metadata in the database.

@@ -1,6 +1,7 @@
 using FluentValidation;
 using Microsoft.Extensions.Caching.Hybrid;
 using Sentium.Core.Constants;
+using Sentium.Identity;
 using Sentium.Infrastructure.Extensions;
 using Sentium.Infrastructure.Mvc;
 using Sentium.Infrastructure.Realtime;
@@ -40,6 +41,12 @@ builder.Services.AddControllers(options => options.Filters.Add<FluentValidationF
 builder.Services.AddValidatorsFromAssemblies(SentiumModules.Assemblies, includeInternalTypes: true);
 
 var app = builder.Build();
+
+if (IdentityModuleExtensions.IsIdentityCommand(args))
+{
+    Environment.ExitCode = await app.RunIdentityCommandAsync(args);
+    return;
+}
 
 app.UseSentiumSecurityHeaders();
 app.UseExceptionHandler();

@@ -38,4 +38,20 @@ internal interface IAgentLearningRepository
     /// Removes a specific learning record and persists the change.
     /// </summary>
     Task RemoveAsync(AgentLearning entity, CancellationToken ct = default);
+
+    /// <summary>
+    /// Up to <paramref name="max"/> learnings, oldest first, whose embedding failed and can still be retried. Every
+    /// user's, regardless of the caller.
+    /// </summary>
+    Task<IReadOnlyList<AgentLearning>> GetPendingIngestionAsync(int max, CancellationToken ct = default);
+
+    /// <summary>
+    /// Counts one recall of each learning in <paramref name="ids"/>.
+    /// </summary>
+    Task RecordRecallAsync(IReadOnlyCollection<Guid> ids, DateTimeOffset recalledAt, CancellationToken ct = default);
+
+    /// <summary>
+    /// Every user's learnings neither recalled nor captured since <paramref name="cutoff"/>.
+    /// </summary>
+    Task<IReadOnlyList<Guid>> GetUnusedSinceAsync(DateTimeOffset cutoff, CancellationToken ct = default);
 }

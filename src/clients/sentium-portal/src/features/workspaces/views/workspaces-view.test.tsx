@@ -14,6 +14,7 @@ vi.mock("@/features/workspaces/api/workspaces.service", () => ({
   updateWorkspace: vi.fn(),
   deleteWorkspace: vi.fn(),
   fetchWorkspaceFiles: vi.fn(),
+  fetchWorkspaceFilesPage: vi.fn(),
   uploadWorkspaceFile: vi.fn(),
   deleteWorkspaceFile: vi.fn(),
   fetchWorkspace: vi.fn(),
@@ -22,6 +23,14 @@ vi.mock("@/features/workspaces/api/workspaces.service", () => ({
   fetchWorkspaceFileText: vi.fn(),
   workspaceFileContentUrl: (id: string) => `/files/${id}/content`,
 }));
+
+const pageOf = (items: WorkspaceFile[]) => ({
+  items,
+  totalCount: items.length,
+  page: 1,
+  pageSize: 50,
+  totalPages: 1,
+});
 
 const mockWorkspace: Workspace = {
   id: "ws-1",
@@ -80,7 +89,7 @@ beforeEach(() => {
     pageSize: 100,
     totalPages: 1,
   });
-  vi.mocked(workspaceService.fetchWorkspaceFiles).mockResolvedValue([mockFile]);
+  vi.mocked(workspaceService.fetchWorkspaceFilesPage).mockResolvedValue(pageOf([mockFile]));
   vi.mocked(workspaceService.createWorkspace).mockResolvedValue(mockWorkspace);
   vi.mocked(workspaceService.updateWorkspace).mockResolvedValue(mockWorkspace);
   vi.mocked(workspaceService.deleteWorkspace).mockResolvedValue(undefined);
@@ -144,7 +153,7 @@ describe("Workspaces selecting a workspace", () => {
   });
 
   it("shows empty files message when no files in workspace", async () => {
-    vi.mocked(workspaceService.fetchWorkspaceFiles).mockResolvedValue([]);
+    vi.mocked(workspaceService.fetchWorkspaceFilesPage).mockResolvedValue(pageOf([]));
     renderWorkspaceDetail();
     await waitFor(() => expect(screen.getByText(/no files yet/i)).toBeInTheDocument());
   });
@@ -155,7 +164,7 @@ describe("Workspaces selecting a workspace", () => {
   });
 
   it("shows Pending status badge", async () => {
-    vi.mocked(workspaceService.fetchWorkspaceFiles).mockResolvedValue([{ ...mockFile, processingStatus: "Pending" }]);
+    vi.mocked(workspaceService.fetchWorkspaceFilesPage).mockResolvedValue(pageOf([{ ...mockFile, processingStatus: "Pending" }]));
     renderWorkspaceDetail();
     await waitFor(() => expect(screen.getByText("Pending")).toBeInTheDocument());
   });
@@ -230,7 +239,7 @@ describe("Workspaces formatBytes utility", () => {
   });
 
   it("shows file size in MB for large files", async () => {
-    vi.mocked(workspaceService.fetchWorkspaceFiles).mockResolvedValue([{ ...mockFile, sizeBytes: 5 * 1024 * 1024 }]);
+    vi.mocked(workspaceService.fetchWorkspaceFilesPage).mockResolvedValue(pageOf([{ ...mockFile, sizeBytes: 5 * 1024 * 1024 }]));
     renderWorkspaceDetail();
     await waitFor(() => expect(screen.getByText(/5\.0 MB/)).toBeInTheDocument());
   });
@@ -384,15 +393,15 @@ describe("Workspaces empty workspace state", () => {
 
 describe("Workspaces Processing file status", () => {
   it("shows Processing status badge", async () => {
-    vi.mocked(workspaceService.fetchWorkspaceFiles).mockResolvedValue([
+    vi.mocked(workspaceService.fetchWorkspaceFilesPage).mockResolvedValue(pageOf([
       { ...mockFile, processingStatus: "Processing" },
-    ]);
+    ]));
     renderWorkspaceDetail();
     await waitFor(() => expect(screen.getByText("Processing")).toBeInTheDocument());
   });
 
   it("shows Failed status badge", async () => {
-    vi.mocked(workspaceService.fetchWorkspaceFiles).mockResolvedValue([{ ...mockFile, processingStatus: "Failed" }]);
+    vi.mocked(workspaceService.fetchWorkspaceFilesPage).mockResolvedValue(pageOf([{ ...mockFile, processingStatus: "Failed" }]));
     renderWorkspaceDetail();
     await waitFor(() => expect(screen.getByText("Failed")).toBeInTheDocument());
   });
@@ -400,7 +409,7 @@ describe("Workspaces Processing file status", () => {
 
 describe("Workspaces small file bytes", () => {
   it("shows file size in bytes for tiny files", async () => {
-    vi.mocked(workspaceService.fetchWorkspaceFiles).mockResolvedValue([{ ...mockFile, sizeBytes: 500 }]);
+    vi.mocked(workspaceService.fetchWorkspaceFilesPage).mockResolvedValue(pageOf([{ ...mockFile, sizeBytes: 500 }]));
     renderWorkspaceDetail();
     await waitFor(() => expect(screen.getByText(/500 B/)).toBeInTheDocument());
   });
@@ -457,9 +466,9 @@ describe("Workspaces file actions", () => {
   });
 
   it("shows why indexing failed and retries it", async () => {
-    vi.mocked(workspaceService.fetchWorkspaceFiles).mockResolvedValue([
+    vi.mocked(workspaceService.fetchWorkspaceFilesPage).mockResolvedValue(pageOf([
       { ...mockFile, processingStatus: "Failed", processingError: "The PDF could not be read." },
-    ]);
+    ]));
     renderWorkspaceDetail();
     expect(await screen.findByText("The PDF could not be read.")).toBeInTheDocument();
     fireEvent.click(screen.getByTitle("Retry indexing"));

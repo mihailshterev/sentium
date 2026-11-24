@@ -140,6 +140,15 @@ internal sealed class WorkflowRepository(PraxisDbContext context) : IWorkflowRep
         return true;
     }
 
+    public async Task<Guid?> GetOwnerAsync(Guid workflowId, CancellationToken ct = default)
+    {
+        return await context.Workflows
+            .AsNoTracking()
+            .Where(w => w.Id == workflowId)
+            .Select(w => (Guid?)w.UserId)
+            .FirstOrDefaultAsync(ct);
+    }
+
     public async Task<bool> DeleteWorkflowAsync(Guid workflowId, CancellationToken ct = default)
     {
         var affected = await context.Workflows

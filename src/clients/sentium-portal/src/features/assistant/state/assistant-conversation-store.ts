@@ -177,6 +177,8 @@ interface ConversationState {
   conversationTitles: Record<string, string>;
 
   setActiveConversation: (id: string | null, messages: ConversationMessage[], model: string) => void;
+  /** Puts older messages above the loaded ones, if that conversation is still the active one. */
+  prependMessages: (conversationId: string, earlier: ConversationMessage[]) => void;
   appendMessage: (message: ConversationMessage) => void;
   updateLastMessage: (id: string, appendContent: string, type?: MessageUpdateKind) => void;
   finalizeMessage: (id: string) => void;
@@ -462,6 +464,11 @@ export const createConversationStore = (options: CreateConversationStoreOptions 
           resumeStoredTurn(id);
         }
       },
+
+      prependMessages: (conversationId, earlier) =>
+        set((state) =>
+          state.activeConversationId === conversationId ? { messages: [...earlier, ...state.messages] } : {},
+        ),
 
       appendMessage: (message) =>
         set((state) => ({

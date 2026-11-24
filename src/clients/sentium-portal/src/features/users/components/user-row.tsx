@@ -1,4 +1,4 @@
-import { ShieldMinus, Trash2 } from "lucide-react";
+import { KeyRound, LockOpen, ShieldMinus, Trash2 } from "lucide-react";
 import styles from "../users.module.css";
 import type { UserListItem } from "../../auth/api/identity.service";
 import type { Role } from "../../../shared/utils/roles";
@@ -17,6 +17,8 @@ interface UserRowProps {
   onAssignRole: (userId: string, role: Role) => void;
   onRemoveRole: (userId: string, role: Role) => void;
   onDeleteUser: (userId: string) => void;
+  onResetPassword: (userId: string) => void;
+  onUnlock: (userId: string) => void;
 }
 
 export function UserRow({
@@ -28,6 +30,8 @@ export function UserRow({
   onAssignRole,
   onRemoveRole,
   onDeleteUser,
+  onResetPassword,
+  onUnlock,
 }: UserRowProps) {
   const fullName = user.firstName || user.lastName ? `${user.firstName} ${user.lastName ?? ""}`.trim() : "—";
 
@@ -104,6 +108,27 @@ export function UserRow({
 
       {isSovereign && (
         <td className={styles.actions}>
+          <div className={styles.actionButtons}>
+          {user.isLockedOut && (
+            <Button
+              variant="ghost"
+              size="sm"
+              iconOnly
+              icon={<LockOpen size={15} />}
+              title="Unlock account"
+              disabled={isPending}
+              onClick={() => onUnlock(user.id)}
+            />
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            iconOnly
+            icon={<KeyRound size={15} />}
+            title={isSelf ? "Change your password on your Profile page" : "Reset password"}
+            disabled={isSelf || isPending}
+            onClick={() => onResetPassword(user.id)}
+          />
           <Button
             variant="ghost"
             size="sm"
@@ -114,6 +139,7 @@ export function UserRow({
             onClick={() => onDeleteUser(user.id)}
             className={styles.deleteButton}
           />
+          </div>
         </td>
       )}
     </tr>

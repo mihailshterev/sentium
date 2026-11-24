@@ -24,9 +24,9 @@ public sealed class ConversationsControllerTests
             new(Guid.NewGuid(), "Chat 1", "gemma3:1b", DateTime.UtcNow)
         };
         var paged = PagedResponse<ConversationSummary>.Create(conversations, 1, 1, 20);
-        _service.GetConversationsAsync(1, 20, null, Arg.Any<CancellationToken>()).Returns(paged);
+        _service.GetConversationsAsync(1, 20, null, false, Arg.Any<CancellationToken>()).Returns(paged);
 
-        var result = await _controller.GetConversations(1, 20, null, TestContext.Current.CancellationToken);
+        var result = await _controller.GetConversations(1, 20, null, false, TestContext.Current.CancellationToken);
 
         Assert.Equal(paged, Assert.IsType<OkObjectResult>(result.Result).Value);
     }
@@ -36,9 +36,9 @@ public sealed class ConversationsControllerTests
     {
         var id = Guid.NewGuid();
         var expected = new ConversationResponse(id, "Chat", "gemma3:1b", DateTime.UtcNow, []);
-        _service.GetConversationAsync(id, Arg.Any<CancellationToken>()).Returns(expected);
+        _service.GetConversationAsync(id, 100, Arg.Any<CancellationToken>()).Returns(expected);
 
-        var result = await _controller.GetConversation(id, TestContext.Current.CancellationToken);
+        var result = await _controller.GetConversation(id, 100, TestContext.Current.CancellationToken);
 
         Assert.Equal(expected, Assert.IsType<OkObjectResult>(result.Result).Value);
     }

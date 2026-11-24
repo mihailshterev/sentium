@@ -125,6 +125,15 @@ internal sealed class AgentRepository(PraxisDbContext context) : IAgentRepositor
         return affectedRows > 0;
     }
 
+    public async Task<AgentIdentity?> GetIdentityAsync(Guid agentId, CancellationToken ct = default)
+    {
+        return await context.Agents
+            .AsNoTracking()
+            .Where(a => a.Id == agentId)
+            .Select(a => new AgentIdentity(a.UserId, a.Name))
+            .FirstOrDefaultAsync(ct);
+    }
+
     private static List<string>? NormalizeTools(IReadOnlyList<string>? tools) =>
         tools is null ? null : [.. tools.Distinct(StringComparer.OrdinalIgnoreCase)];
 }

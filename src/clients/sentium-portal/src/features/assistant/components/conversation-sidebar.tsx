@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { MessageSquare, Pencil, Plus, Trash2 } from "lucide-react";
+import { Archive, ArchiveRestore, MessageSquare, Pencil, Pin, PinOff, Plus, Trash2 } from "lucide-react";
 import styles from "../assistant.module.css";
 import { Button } from "@/shared/ui/button";
 import { InfiniteScrollSentinel } from "@/shared/ui/infinite-scroll-sentinel";
@@ -29,6 +29,11 @@ interface ConversationSidebarProps {
   onLoadConversation: (conv: ConversationSummary) => void;
   onDeleteConversation: (id: string, e: React.MouseEvent) => void;
   onRenameConversation: (id: string, title: string) => void;
+  /** Lists the archived conversations instead of the active ones. */
+  showArchived: boolean;
+  onShowArchivedChange: (show: boolean) => void;
+  onSetPinned: (id: string, pinned: boolean) => void;
+  onSetArchived: (id: string, archived: boolean) => void;
 }
 
 export function ConversationSidebar({
@@ -47,6 +52,10 @@ export function ConversationSidebar({
   onLoadConversation,
   onDeleteConversation,
   onRenameConversation,
+  showArchived,
+  onShowArchivedChange,
+  onSetPinned,
+  onSetArchived,
 }: ConversationSidebarProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const searching = search.trim().length > 0;
@@ -55,7 +64,7 @@ export function ConversationSidebar({
     <aside className={styles.sidebar} data-open={isOpen || undefined} aria-label="Conversations">
       <div className={styles.sidebarHeader}>
         <div className={styles.sidebarHeading}>
-          <span className={styles.sidebarTitle}>Conversations</span>
+          <span className={styles.sidebarTitle}>{showArchived ? "Archived" : "Conversations"}</span>
           {totalCount > 0 && <span className={styles.sidebarCount}>{totalCount}</span>}
         </div>
         <Button
@@ -84,13 +93,28 @@ export function ConversationSidebar({
             }
           }}
         />
+        <Button
+          variant="ghost"
+          size="sm"
+          iconOnly
+          icon={showArchived ? <MessageSquare size={15} /> : <Archive size={15} />}
+          aria-pressed={showArchived}
+          title={showArchived ? "Back to conversations" : "Show archived conversations"}
+          onClick={() => onShowArchivedChange(!showArchived)}
+        />
       </div>
 
       <div className={styles.convList}>
         {conversations.length === 0 && (
           <div className={styles.convEmpty}>
             <MessageSquare size={20} aria-hidden="true" />
-            <span>{searching ? `No conversations match “${search.trim()}”` : "No conversations yet"}</span>
+            <span>
+              {searching
+                ? `No conversations match “${search.trim()}”`
+                : showArchived
+                  ? "No archived conversations"
+                  : "No conversations yet"}
+            </span>
           </div>
         )}
         {conversationGroups.map((group) => (
@@ -103,7 +127,8 @@ export function ConversationSidebar({
             <ul className={styles.convItems}>
               {group.items.map((conv) => {
                 const active = activeConversationId === conv.id;
-                const time = formatConversationTime(conv.createdAt);
+                const lastActive = conv.lastActivityAt ?? conv.createdAt;
+                const time = formatConversationTime(lastActive);
 
                 return (
                   <li key={conv.id} className={styles.convItem} data-active={active || undefined}>
@@ -130,12 +155,38 @@ export function ConversationSidebar({
                         >
                           <span className={styles.convTitle}>{conv.title}</span>
                           {time && (
-                            <time className={styles.convTime} dateTime={conv.createdAt}>
+                            <time className={styles.convTime} dateTime={lastActive}>
                               {time}
                             </time>
                           )}
                         </button>
                         <div className={styles.convActions}>
+                          {!showArchived && (
+                            <button
+                              type="button"
+                              className={styles.convAction}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onSetPinned(conv.id, !conv.isPinned);
+                              }}
+                              title={conv.isPinned ? "Unpin conversation" : "Pin conversation"}
+                              aria-label={`${conv.isPinned ? "Unpin" : "Pin"} ${conv.title}`}
+                            >
+                              {conv.isPinned ? <PinOff size={13} /> : <Pin size={13} />}
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            className={styles.convAction}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onSetArchived(conv.id, !showArchived);
+                            }}
+                            title={showArchived ? "Unarchive conversation" : "Archive conversation"}
+                            aria-label={`${showArchived ? "Unarchive" : "Archive"} ${conv.title}`}
+                          >
+                            {showArchived ? <ArchiveRestore size={13} /> : <Archive size={13} />}
+                          </button>
                           <button
                             type="button"
                             className={styles.convAction}

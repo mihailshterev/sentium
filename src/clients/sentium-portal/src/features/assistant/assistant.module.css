@@ -1104,8 +1104,21 @@
 }
 
 .sidebarSearch {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
   padding: 0 var(--space-3) var(--space-3);
   border-bottom: 1px solid var(--border-subtle);
+}
+
+.sidebarSearch > :first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.earlierMessages {
+  display: flex;
+  justify-content: center;
 }
 
 .convList {

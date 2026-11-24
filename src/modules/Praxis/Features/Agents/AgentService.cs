@@ -8,7 +8,8 @@ namespace Sentium.Praxis.Features.Agents;
 internal sealed class AgentService(
     IAgentRepository repository,
     IScopedCache cache,
-    IAgentRegistry registry) : IAgentService
+    IAgentRegistry registry,
+    RunTargetNotifier runTargets) : IAgentService
 {
     public const string CacheTag = "agents";
 
@@ -74,6 +75,7 @@ internal sealed class AgentService(
             return Result<AgentResponse>.Conflict($"An agent named '{request.Name}' already exists.");
         }
 
+        var before = await repository.GetIdentityAsync(agentId, ct);
         var updated = await repository.UpdateAgentAsync(agentId, request, ct);
         if (!updated)
         {
@@ -82,17 +84,28 @@ internal sealed class AgentService(
 
         await cache.InvalidateTagAsync(CacheTag, ct);
 
+        if (before is not null && !string.Equals(before.Name, request.Name, StringComparison.Ordinal))
+        {
+            await runTargets.AgentRenamedAsync(before.OwnerId, before.Name, request.Name, ct);
+        }
+
         var response = await repository.GetAgentByIdAsync(agentId, ct);
         return response is null ? Result<AgentResponse>.NotFound() : Result<AgentResponse>.Success(response);
     }
 
     public async ValueTask<bool> DeleteAgentAsync(Guid agentId, CancellationToken ct = default)
     {
+        var identity = await repository.GetIdentityAsync(agentId, ct);
         var deleted = await repository.DeleteAgentAsync(agentId, ct);
         if (deleted)
         {
             await cache.InvalidateTagAsync(CacheTag, ct);
             await cache.InvalidateTagAsync(WorkflowService.CacheTag, ct);
+
+            if (identity is not null)
+            {
+                await runTargets.AgentDeletedAsync(identity.OwnerId, identity.Name, ct);
+            }
         }
 
         return deleted;

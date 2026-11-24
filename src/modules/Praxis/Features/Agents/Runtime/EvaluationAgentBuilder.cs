@@ -39,7 +39,7 @@ internal sealed class EvaluationAgentBuilder(
             return Result<EvaluationAgentSnapshot>.Invalid($"You have no agent named '{agentName}'.");
         }
 
-        var blueprint = await agentFactory.ResolveBlueprintAsync(entry.Name, model, userId, allowApprovalTools: true, ct);
+        var blueprint = await agentFactory.ResolveBlueprintAsync(entry.Name, model, userId, allowApprovalTools: true, exactModel: true, ct);
         if (blueprint is null)
         {
             return Result<EvaluationAgentSnapshot>.Invalid($"You have no agent named '{agentName}'.");

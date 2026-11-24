@@ -5,6 +5,7 @@ using Sentium.Infrastructure.Security;
 using Sentium.Praxis.Entities;
 using Sentium.Praxis.Features.CodeExecution;
 using Sentium.Praxis.Features.Conversations;
+using Sentium.Praxis.Features.Memories;
 
 namespace Sentium.Praxis.Data;
 
@@ -14,6 +15,7 @@ internal sealed class PraxisDbContext : DbContext
 
     private Guid ScopeUserId { get; }
     private bool BypassUserScope { get; }
+    private bool SystemScope { get; }
 
     public PraxisDbContext(DbContextOptions<PraxisDbContext> options, ICurrentUser currentUser) : base(options)
     {
@@ -21,6 +23,7 @@ internal sealed class PraxisDbContext : DbContext
 
         ScopeUserId = currentUser.UserId ?? Guid.Empty;
         BypassUserScope = currentUser.IsSovereign || currentUser.IsSystem;
+        SystemScope = currentUser.IsSystem;
     }
 
     public DbSet<Agent> Agents { get; set; }
@@ -42,6 +45,7 @@ internal sealed class PraxisDbContext : DbContext
     public DbSet<ExecutionLogEntry> ExecutionLogs { get; set; }
 
     public DbSet<PendingApprovalRecord> PendingApprovals { get; set; }
+    public DbSet<UserMemory> UserMemories { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -84,6 +88,8 @@ internal sealed class PraxisDbContext : DbContext
                 .IsRequired()
                 .HasMaxLength(255);
             entity.HasIndex(e => new { e.UserId, e.CreatedAt });
+            entity.HasIndex(e => new { e.UserId, e.IsArchived, e.LastActivityAt });
+            entity.Property(e => e.HistorySummary).HasMaxLength(HistorySummaryGenerator.MaxSummaryLength);
             entity.Property(e => e.Model)
                 .IsRequired()
                 .HasMaxLength(255);
@@ -212,6 +218,16 @@ internal sealed class PraxisDbContext : DbContext
             entity.HasIndex(e => e.UserId);
             entity.HasIndex(e => e.IsGlobal);
             entity.HasQueryFilter(e => BypassUserScope || e.IsGlobal || e.UserId == ScopeUserId);
+        });
+
+        builder.Entity<UserMemory>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Content).IsRequired().HasMaxLength(UserMemoryService.MaxContentLength);
+            entity.HasIndex(e => new { e.UserId, e.UpdatedAt });
+
+            // No Sovereign bypass: memories are private. The service filters on the user explicitly as well.
+            entity.HasQueryFilter(e => SystemScope || e.UserId == ScopeUserId);
         });
 
         builder.Entity<AgentSkill>(entity =>

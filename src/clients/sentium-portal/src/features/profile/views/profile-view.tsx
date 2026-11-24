@@ -11,6 +11,7 @@ import { Skeleton, SkeletonText } from "@/shared/ui/skeleton";
 import { StatusMessage } from "@/shared/ui/status-message";
 import { AvatarPicker } from "../components/avatar-picker";
 import { ProfileEditForm } from "../components/profile-edit-form";
+import { SecurityCard } from "../components/security-card";
 
 export function ProfileView() {
   const { highestRole } = useRole();
@@ -74,6 +75,8 @@ export function ProfileView() {
           </>
         )}
       </Card>
+
+      <SecurityCard className={styles.card} />
 
       <MyDevicesCard className={styles.card} />
     </Page>

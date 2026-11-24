@@ -80,7 +80,7 @@ internal sealed class DynamicCustomWorkflow(
 
     private async Task<WorkflowResult> RunSingleAgentAsync(WorkflowTrigger trigger, string agentName, CancellationToken ct)
     {
-        var blueprint = await agentFactory.ResolveBlueprintAsync(agentName, overrideModel: null, trigger.UserId, allowApprovalTools: false, ct)
+        var blueprint = await agentFactory.ResolveBlueprintAsync(agentName, overrideModel: null, trigger.UserId, allowApprovalTools: false, ct: ct)
             ?? throw new UnrunnableWorkflowException($"Agent '{agentName}' no longer exists.");
 
         var definition = blueprint.Definition;

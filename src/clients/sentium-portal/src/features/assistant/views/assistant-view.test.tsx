@@ -49,6 +49,8 @@ const defaultConversationsHook = {
   isDeleting: false,
   totalCount: 1,
   renameConversation: vi.fn(),
+  setPinned: vi.fn(),
+  setArchived: vi.fn(),
 };
 
 const defaultModelsHook = {
@@ -167,6 +169,56 @@ describe("Assistant conversation loading", () => {
     await waitFor(() => expect(assistantService.fetchConversation).toHaveBeenCalledWith("conv-1"));
   });
 
+  it("loads earlier messages above the newest ones", async () => {
+    vi.mocked(assistantService.fetchConversation).mockResolvedValueOnce({
+      id: "conv-1",
+      title: "Chat 1",
+      model: "llama3.2",
+      messages: [{ id: "m3", role: "user", content: "Newest question", timestamp: "2025-01-01T10:03:00Z" }],
+      hasEarlierMessages: true,
+    });
+    const earlier = vi.spyOn(assistantService, "fetchEarlierMessages").mockResolvedValue({
+      messages: [{ id: "m1", role: "user", content: "First question", timestamp: "2025-01-01T10:00:00Z" }],
+      hasEarlierMessages: false,
+    });
+    renderAssistant("/assistant/conv-1");
+
+    fireEvent.click(await screen.findByRole("button", { name: /load earlier messages/i }));
+
+    expect(await screen.findByText("First question")).toBeInTheDocument();
+    expect(earlier).toHaveBeenCalledWith("conv-1", "m3");
+    await waitFor(() =>
+      expect(screen.queryByRole("button", { name: /load earlier messages/i })).not.toBeInTheDocument(),
+    );
+  });
+
+  it("offers no earlier messages for a short conversation", async () => {
+    vi.mocked(assistantService.fetchConversation).mockResolvedValueOnce({
+      id: "conv-1",
+      title: "Chat 1",
+      model: "llama3.2",
+      messages: [{ id: "m1", role: "user", content: "Only question", timestamp: "2025-01-01T10:00:00Z" }],
+      hasEarlierMessages: false,
+    });
+    renderAssistant("/assistant/conv-1");
+
+    expect(await screen.findByText("Only question")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /load earlier messages/i })).not.toBeInTheDocument();
+  });
+
+  it("groups pinned conversations first", () => {
+    vi.spyOn(useConversationsHook, "useConversations").mockReturnValue({
+      ...defaultConversationsHook,
+      conversations: [mockConversation, { ...mockConversation, id: "conv-2", title: "Pinned chat", isPinned: true }],
+    });
+    renderAssistant();
+    const groups = screen
+      .getAllByRole("region")
+      .map((r) => r.getAttribute("aria-label"))
+      .filter((label) => label === "Pinned" || label === "Older");
+    expect(groups).toEqual(["Pinned", "Older"]);
+  });
+
   it("deletes a conversation when delete button is clicked", async () => {
     const deleteConversation = vi.fn();
     vi.spyOn(useConversationsHook, "useConversations").mockReturnValue({
@@ -253,7 +305,7 @@ describe("Assistant conversation search", () => {
 
     fireEvent.change(screen.getByLabelText("Search conversations"), { target: { value: "trip" } });
 
-    await waitFor(() => expect(spy).toHaveBeenLastCalledWith("trip"));
+    await waitFor(() => expect(spy).toHaveBeenLastCalledWith("trip", false));
   });
 });
 

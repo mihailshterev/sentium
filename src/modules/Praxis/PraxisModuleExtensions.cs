@@ -21,6 +21,7 @@ using Sentium.Praxis.Features.CodeExecution;
 using Sentium.Praxis.Features.Conversations;
 using Sentium.Praxis.Features.Files;
 using Sentium.Praxis.Features.Learnings;
+using Sentium.Praxis.Features.Memories;
 using Sentium.Praxis.Features.Models;
 using Sentium.Praxis.Features.Orchestration;
 using Sentium.Praxis.Features.Registry;
@@ -83,6 +84,8 @@ public static class PraxisModuleExtensions
         services.AddScoped<IAgentLearningRepository, AgentLearningRepository>();
         services.AddScoped<ILearningSanitizationPipeline, LearningSanitizationPipeline>();
         services.AddScoped<IAgentLearningService, AgentLearningService>();
+        services.AddHostedService<LearningIngestionRetryWorker>();
+        services.AddRetentionSweep<UnusedLearningRetention>();
 
         services.AddSingleton<IBuiltInSkillCatalog, BuiltInSkillCatalog>();
         services.AddScoped<IAgentSkillRepository, AgentSkillRepository>();
@@ -118,12 +121,16 @@ public static class PraxisModuleExtensions
         services.AddScoped<IPromptEnhancementService, PromptEnhancementService>();
         services.AddScoped<ITitleGenerator, TitleGenerator>();
         services.AddScoped<IAgentRepository, AgentRepository>();
+        services.AddScoped<RunTargetNotifier>();
         services.AddScoped<IWorkspaceRepository, WorkspaceRepository>();
+        services.AddScoped<IUserMemoryService, UserMemoryService>();
 
         services.AddTransient<IAgentTool, KnowledgeBaseSearchTool>();
         services.AddTransient<IAgentTool, CodeExecutionSandboxTool>();
         services.AddTransient<IAgentTool, StoreMemoryTool>();
         services.AddTransient<IAgentTool, RecallMemoryTool>();
+        services.AddTransient<IAgentTool, UpdateMemoryTool>();
+        services.AddTransient<IAgentTool, ForgetMemoryTool>();
         services.AddTransient<IAgentTool, RecallLearningsTool>();
         services.AddTransient<IAgentTool, ListWorkspacesTool>();
         services.AddTransient<IAgentTool, ListWorkspaceFilesTool>();
@@ -149,6 +156,11 @@ public static class PraxisModuleExtensions
 
         services.AddScoped<IConversationRepository, ConversationRepository>();
         services.AddScoped<ConversationChatHistoryProvider>();
+        services.AddScoped<HistorySummaryContextProvider>();
+        services.AddScoped<HistorySummaryGenerator>();
+        services.AddScoped<HistorySummarizer>();
+        services.AddSingleton<HistorySummaryQueue>();
+        services.AddHostedService<HistorySummaryWorker>();
         services.AddScoped<IWorkflowRepository, WorkflowRepository>();
         services.AddScoped<IWorkflowRunRepository, WorkflowRunRepository>();
 
@@ -221,6 +233,7 @@ public static class PraxisModuleExtensions
 
         services.AddMemoryCache();
         services.AddScoped<IModelContextWindowProvider, CatalogModelContextWindowProvider>();
+        services.AddScoped<IInstalledModels, CatalogInstalledModels>();
 
         // Direct (non-agent) calls on the default model: prompt enhancement, learning sanitization.
         services.AddChatClient(CreateDefaultModelClient)
@@ -271,7 +284,10 @@ public static class PraxisModuleExtensions
     {
         services.Configure<SandboxArtifactOptions>(configuration.GetSection(SandboxArtifactOptions.SectionName));
         services.AddScoped<IExecutionLogRepository, EfCoreExecutionLogRepository>();
+        services.AddSingleton<SandboxArtifactRemover>();
+        services.AddSingleton<OrphanedArtifactSuspects>();
         services.AddRetentionSweep<RunHistoryRetention>();
+        services.AddRetentionSweep<OrphanedArtifactSweep>();
 
         services.TryAddTransient<InternalApiKeyDelegatingHandler>();
 

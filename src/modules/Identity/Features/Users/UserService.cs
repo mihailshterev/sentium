@@ -126,6 +126,60 @@ internal sealed class UserService(
         return (true, []);
     }
 
+    public async Task<(bool Succeeded, string[] Errors)> ResetPasswordAsync(Guid targetUserId, string newPassword, CancellationToken ct)
+    {
+        var user = await userManager.FindByIdAsync(targetUserId.ToString());
+        if (user is null)
+        {
+            return (false, ["User not found."]);
+        }
+
+        // Resetting through a token validates the new password and rotates the security stamp, ending the sessions.
+        var token = await userManager.GeneratePasswordResetTokenAsync(user);
+        var result = await userManager.ResetPasswordAsync(user, token, newPassword);
+        if (!result.Succeeded)
+        {
+            return (false, result.Errors.Select(e => e.Description).ToArray());
+        }
+
+        await ClearLockoutAsync(user);
+        await ForgetCachedUserAsync(targetUserId, ct);
+
+        logger.LogWarning("The password of user {UserId} was reset.", targetUserId);
+        return (true, []);
+    }
+
+    public async Task<bool> UnlockAsync(Guid targetUserId, CancellationToken ct)
+    {
+        var user = await userManager.FindByIdAsync(targetUserId.ToString());
+        if (user is null)
+        {
+            return false;
+        }
+
+        await ClearLockoutAsync(user);
+        await ForgetCachedUserAsync(targetUserId, ct);
+
+        if (logger.IsEnabled(LogLevel.Information))
+        {
+            logger.LogInformation("User {UserId} was unlocked.", targetUserId);
+        }
+
+        return true;
+    }
+
+    private async Task ClearLockoutAsync(ApplicationUser user)
+    {
+        await userManager.SetLockoutEndDateAsync(user, null);
+        await userManager.ResetAccessFailedCountAsync(user);
+    }
+
+    private async Task ForgetCachedUserAsync(Guid userId, CancellationToken ct)
+    {
+        await cache.RemoveByTagAsync(IdentityCacheKeys.UserTag(userId), ct);
+        await cache.RemoveAsync(IdentityCacheKeys.AllUsers, ct);
+    }
+
     /// <summary>
     /// The account is already gone, so the cleanup runs to the end even if the request is aborted, and one module's
     /// failure does not stop the others.

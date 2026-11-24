@@ -26,6 +26,7 @@ public static class SchedulingModuleExtensions
         services.AddTransient<IAgentTool, ScheduleTaskTool>();
         services.AddSingleton<IUserRemovalObserver, ScheduledJobRemover>();
         services.AddSingleton<IUnattendedRunObserver, ScheduleRunRecorder>();
+        services.AddSingleton<IRunTargetObserver, ScheduleTargetFollower>();
         services.AddSingleton<OwnerTimeZoneResolver>();
         services.AddScoped<ScheduleService>();
         services.AddSingleton<IBackgroundActivitySource, ExecutingScheduleSource>();

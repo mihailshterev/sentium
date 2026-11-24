@@ -102,8 +102,30 @@ describe("useConversations search", () => {
     const fetch = vi.spyOn(assistantService, "fetchConversations");
     const { result } = renderHook(() => useConversations("  trip "), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.conversations).toHaveLength(1));
-    expect(fetch).toHaveBeenCalledWith(1, 20, "trip");
+    expect(fetch).toHaveBeenCalledWith(1, 20, "trip", false);
     expect(result.current.totalCount).toBe(1);
+  });
+});
+
+describe("useConversations archive and pins", () => {
+  it("asks the server for the archived list", async () => {
+    const fetch = vi.spyOn(assistantService, "fetchConversations");
+    const { result } = renderHook(() => useConversations("", true), { wrapper: createWrapper() });
+    await waitFor(() => expect(result.current.conversations).toHaveLength(1));
+    expect(fetch).toHaveBeenCalledWith(1, 20, undefined, true);
+  });
+
+  it("pins and archives through the API", async () => {
+    const pin = vi.spyOn(assistantService, "setConversationPinned").mockResolvedValue(undefined);
+    const archive = vi.spyOn(assistantService, "setConversationArchived").mockResolvedValue(undefined);
+    const { result } = renderHook(() => useConversations(), { wrapper: createWrapper() });
+    await waitFor(() => expect(result.current.conversations).toHaveLength(1));
+
+    act(() => result.current.setPinned("conv-1", true));
+    act(() => result.current.setArchived("conv-1", true));
+
+    await waitFor(() => expect(pin).toHaveBeenCalledWith("conv-1", true));
+    await waitFor(() => expect(archive).toHaveBeenCalledWith("conv-1", true));
   });
 });
 

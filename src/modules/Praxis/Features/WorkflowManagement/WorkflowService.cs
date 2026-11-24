@@ -1,12 +1,14 @@
 using Sentium.Core.Results;
 using Sentium.Infrastructure.Caching;
+using Sentium.Praxis.Features.Agents;
 using Sentium.Praxis.Features.Workflows;
 
 namespace Sentium.Praxis.Features.WorkflowManagement;
 
 internal sealed class WorkflowService(
     IWorkflowRepository repository,
-    IScopedCache cache) : IWorkflowService
+    IScopedCache cache,
+    RunTargetNotifier runTargets) : IWorkflowService
 {
     public const string CacheTag = "workflows";
 
@@ -59,10 +61,16 @@ internal sealed class WorkflowService(
 
     public async Task<bool> DeleteWorkflowAsync(Guid workflowId, CancellationToken ct = default)
     {
+        var owner = await repository.GetOwnerAsync(workflowId, ct);
         var deleted = await repository.DeleteWorkflowAsync(workflowId, ct);
         if (deleted)
         {
             await cache.InvalidateTagAsync(CacheTag, ct);
+
+            if (owner is { } ownerId)
+            {
+                await runTargets.WorkflowDeletedAsync(ownerId, workflowId, ct);
+            }
         }
 
         return deleted;

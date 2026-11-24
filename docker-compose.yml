@@ -1,5 +1,13 @@
 name: sentium
 
+# Docker's default json-file log driver never rotates its files, so every container is capped at LOG_MAX_FILE files
+# of LOG_MAX_SIZE each (30 MB by default); `docker compose logs` still shows them.
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: ${LOG_MAX_SIZE:-10m}
+    max-file: ${LOG_MAX_FILE:-3}
+
 x-extra-hosts: &extra-hosts
   - "host.docker.internal:host-gateway"
 
@@ -57,6 +65,7 @@ x-backup: &backup
 
 services:
   postgres:
+    logging: *default-logging
     image: pgvector/pgvector:pg18-trixie
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -80,6 +89,7 @@ services:
   # hands it every Sentium schema - on a fresh install, on one that predates the role, and after a restore. See
   # infra/postgres/app-role.sql. Uses the postgres image only for psql.
   db-init:
+    logging: *default-logging
     image: pgvector/pgvector:pg18-trixie
     environment:
       PGHOST: postgres
@@ -100,6 +110,7 @@ services:
   # published port; telemetry and every other front end are off. The entrypoint drops to an unprivileged user,
   # hence the CHOWN/SETUID/SETGID capabilities.
   storage:
+    logging: *default-logging
     image: chrislusf/seaweedfs:4.54@sha256:4b42c212543a0acd4c0e675215ecdcaf62a186ef98def76c7e12701871222d15
     command:
       - mini
@@ -139,6 +150,7 @@ services:
   # One-shot: downloads the model files pinned in infra/llm/models.lock and verifies their SHA-256
   # (skips files already present). Exits non-zero on a checksum mismatch, which keeps the servers down.
   models-init:
+    logging: *default-logging
     image: curlimages/curl:8.22.0@sha256:58adaa4e8dca9c988bae2aba4ab3434a0bb2da16bbe3f92dec39ec7785166777
     user: "0:0"
     entrypoint: ["sh", "/infra/fetch-models.sh"]
@@ -151,6 +163,7 @@ services:
 
   # Chat models: llama-server in router mode, serving the presets in infra/llm/models.ini.
   llm:
+    logging: *default-logging
     <<: *llama-server
     command: ["--no-webui", "--metrics", "--models-preset", "/infra/models.ini", "--models-max", "2"]
     ports:
@@ -172,6 +185,7 @@ services:
 
   # Embeddings: a dedicated llama-server for the RAG embedding model (768 dimensions).
   embeddings:
+    logging: *default-logging
     <<: *llama-server
     command:
       - --no-webui
@@ -198,6 +212,7 @@ services:
   # model from the verified models volume and converts browser recordings (WebM/Opus, MP4/AAC) with ffmpeg.
   # No published port: only sentium-web talks to it. Optional - see SPEECH_TRANSCRIPTION_ENDPOINT in .env.example.
   whisper:
+    logging: *default-logging
     image: ghcr.io/ggml-org/whisper.cpp:main-1fe009caeda75f69bc864d6370b10674e45a92bd@sha256:77926a46acc8aafab4af8fa932daf8a2df22151954257e18b6a38911ed9f02fc
     entrypoint: ["/app/build/bin/whisper-server"]
     # whisper-server only accepts "--flag value" (not "--flag=value"), so every value is its own argument.
@@ -235,6 +250,7 @@ services:
   # Text-to-speech for spoken replies: Kokoro on the CPU. The model and voices are part of the image, so the
   # digest pins them and nothing is downloaded at run time. No published port.
   tts:
+    logging: *default-logging
     image: ghcr.io/remsky/kokoro-fastapi-cpu:v0.10.0@sha256:f54c5960c2b9387f6349080a9944f8bc7e8cdb98a4ef9238cb0b0f9ff9795f44
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8880/health"]
@@ -245,6 +261,7 @@ services:
     restart: unless-stopped
 
   searxng:
+    logging: *default-logging
     image: searxng/searxng@sha256:7add5ffe7933e6b46aa3a26bed8a0c342c9a45ec331d9a8cf145e46b04b24f36
     environment:
       SEARXNG_SECRET: ${SEARXNG_SECRET:?Set SEARXNG_SECRET in .env (see .env.example)}
@@ -271,6 +288,7 @@ services:
     restart: unless-stopped
 
   caddy:
+    logging: *default-logging
     image: caddy:2.10.2-alpine
     environment:
       SENTIUM_HOSTNAME: ${SENTIUM_HOSTNAME:-sentium.home.arpa}
@@ -290,6 +308,7 @@ services:
   # portal and the API from one origin, over plain HTTP on the internal network only; caddy is its sole public entry.
   # Forwarded headers make requests read as HTTPS from the client's address.
   sentium-web:
+    logging: *default-logging
     build:
       context: .
       dockerfile: src/hosts/Sentium.Web/Dockerfile
@@ -339,6 +358,7 @@ services:
   # (it owns the Docker socket); stateless. Only on sentium-sandbox, so only sentium-web can call it (with the
   # internal API key), and it calls nothing back: Sentinel authorizes each run inside sentium-web beforehand.
   sandbox:
+    logging: *default-logging
     build:
       context: .
       dockerfile: src/hosts/Sentium.Sandbox/Dockerfile
@@ -366,6 +386,7 @@ services:
   # with the database superuser's credentials; Vigil reads its status and "back up now" calls it, both with the
   # internal API key. It keeps running while sentium-web is down. Only on sentium-backup (see x-backup).
   backup:
+    logging: *default-logging
     <<: *backup
     volumes:
       - ${BACKUP_DESTINATION:-./backups}:/backups
@@ -379,6 +400,7 @@ services:
 
   # One-shot restore, run only by infra/backup/restore.sh while the application containers are stopped.
   backup-restore:
+    logging: *default-logging
     <<: *backup
     profiles: ["restore"]
     volumes:

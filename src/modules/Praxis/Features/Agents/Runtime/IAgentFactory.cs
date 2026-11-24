@@ -35,11 +35,16 @@ internal interface IAgentFactory
     /// What <see cref="CreateAsync"/> would build the agent from, without building it; <see langword="null"/> when
     /// <paramref name="agentName"/> matches neither a native nor a database agent.
     /// </summary>
+    /// <param name="exactModel">
+    /// Use the model asked for even when the server no longer declares it (evaluations check it and report an unknown
+    /// model) instead of falling back to an installed default like a chat does.
+    /// </param>
     Task<AgentBlueprint?> ResolveBlueprintAsync(
         string agentName,
         string? overrideModel,
         Guid? actingUserId,
         bool allowApprovalTools,
+        bool exactModel = false,
         CancellationToken ct = default);
 
     /// <summary>

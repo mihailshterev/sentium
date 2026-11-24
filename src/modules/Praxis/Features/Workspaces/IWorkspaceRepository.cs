@@ -52,10 +52,22 @@ internal interface IWorkspaceRepository
     Task<IReadOnlyList<WorkspaceFileDto>> GetWorkspaceFilesAsync(Guid workspaceId, CancellationToken ct = default);
 
     /// <summary>
-    /// Retrieves files, optionally filtered by workspace (all files when <paramref name="workspaceId"/> is null).
+    /// A page of a workspace's files, newest first, optionally only those whose name contains
+    /// <paramref name="search"/> (case-insensitive), plus how many match.
     /// </summary>
-    /// <returns>The matching files, ordered by creation date descending.</returns>
-    Task<IReadOnlyList<WorkspaceFileDto>> GetFilesAsync(Guid? workspaceId, CancellationToken ct = default);
+    Task<(IReadOnlyList<WorkspaceFileDto> Items, int TotalCount)> GetWorkspaceFilesPageAsync(
+        Guid workspaceId,
+        int page,
+        int pageSize,
+        string? search,
+        CancellationToken ct = default);
+
+    /// <summary>
+    /// Retrieves files, optionally filtered by workspace (all files when <paramref name="workspaceId"/> is null) and by
+    /// a case-insensitive part of their name.
+    /// </summary>
+    /// <returns>The newest matching files (at most the list cap), ordered by creation date descending.</returns>
+    Task<IReadOnlyList<WorkspaceFileDto>> GetFilesAsync(Guid? workspaceId, string? search = null, CancellationToken ct = default);
 
     /// <summary>
     /// Adds a file record to the system (called after blob upload).

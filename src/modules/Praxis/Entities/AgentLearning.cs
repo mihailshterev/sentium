@@ -29,4 +29,12 @@ internal sealed class AgentLearning
     /// The <see cref="Features.Learnings.AgentLearningService"/> flips this flag after successful ingestion.
     /// </summary>
     public bool IsIngested { get; set; }
+
+    /// <summary>
+    /// How often recall has handed this learning to an agent; with <see cref="LastRecalledAt"/>, shows which
+    /// learnings still earn their place.
+    /// </summary>
+    public int RecallCount { get; set; }
+
+    public DateTimeOffset? LastRecalledAt { get; set; }
 }

@@ -23,7 +23,8 @@ internal sealed class AgentLearningRepository(PraxisDbContext context) : IAgentL
             .Take(pageSize)
             .Select(l => new AgentLearningResponse(
                 l.Id, l.AgentName, l.Content, l.Tags,
-                l.ConversationId, l.CapturedAt, l.IsIngested, l.IsGlobal))
+                l.ConversationId, l.CapturedAt, l.IsIngested, l.IsGlobal,
+                l.RecallCount, l.LastRecalledAt))
             .ToListAsync(ct);
 
         return (items, total);
@@ -60,5 +61,40 @@ internal sealed class AgentLearningRepository(PraxisDbContext context) : IAgentL
     {
         context.AgentLearnings.Remove(entity);
         await context.SaveChangesAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<AgentLearning>> GetPendingIngestionAsync(int max, CancellationToken ct = default)
+    {
+        // Ownerless private learnings are never embedded (they have no retrieval scope), so they are not pending.
+        return await context.AgentLearnings
+            .IgnoreQueryFilters()
+            .Where(l => !l.IsIngested && (l.IsGlobal || l.UserId != null))
+            .OrderBy(l => l.CapturedAt)
+            .Take(max)
+            .ToListAsync(ct);
+    }
+
+    public async Task RecordRecallAsync(IReadOnlyCollection<Guid> ids, DateTimeOffset recalledAt, CancellationToken ct = default)
+    {
+        if (ids.Count == 0)
+        {
+            return;
+        }
+
+        await context.AgentLearnings
+            .IgnoreQueryFilters()
+            .Where(l => ids.Contains(l.Id))
+            .ExecuteUpdateAsync(s => s
+                .SetProperty(l => l.RecallCount, l => l.RecallCount + 1)
+                .SetProperty(l => l.LastRecalledAt, recalledAt), ct);
+    }
+
+    public async Task<IReadOnlyList<Guid>> GetUnusedSinceAsync(DateTimeOffset cutoff, CancellationToken ct = default)
+    {
+        return await context.AgentLearnings
+            .IgnoreQueryFilters()
+            .Where(l => (l.LastRecalledAt ?? l.CapturedAt) < cutoff)
+            .Select(l => l.Id)
+            .ToListAsync(ct);
     }
 }

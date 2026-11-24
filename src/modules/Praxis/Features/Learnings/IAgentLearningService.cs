@@ -42,4 +42,11 @@ internal interface IAgentLearningService
     /// as best-effort (it must never break an agent run).
     /// </summary>
     Task<IReadOnlyList<RecalledLearning>> RecallRelevantAsync(string query, Guid? userId, int limit = 5, CancellationToken ct = default);
+
+    /// <summary>
+    /// Embeds up to <paramref name="max"/> learnings whose embedding failed earlier, oldest first, stopping at the
+    /// first failure.
+    /// </summary>
+    /// <returns>The number of learnings embedded.</returns>
+    Task<int> RetryPendingIngestionAsync(int max, CancellationToken ct = default);
 }

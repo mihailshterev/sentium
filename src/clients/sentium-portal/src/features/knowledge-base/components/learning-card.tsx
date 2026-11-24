@@ -15,6 +15,8 @@ interface LearningCardProps {
     capturedAt: string;
     isIngested: boolean;
     isGlobal: boolean;
+    recallCount?: number;
+    lastRecalledAt?: string | null;
   };
   isSaving: boolean;
   isDeleting: boolean;
@@ -64,6 +66,12 @@ export function LearningCard({ learning: l, isSaving, isDeleting, onSave, onDele
             {l.isGlobal ? "Global" : "Private"}
           </Badge>
           <Badge tone={l.isIngested ? "success" : "warning"}>{l.isIngested ? "Indexed" : "Pending"}</Badge>
+          <Badge
+            tone="neutral"
+            title={l.lastRecalledAt ? `Last recalled ${formatDate(l.lastRecalledAt)}` : "No agent has used this learning yet"}
+          >
+            {l.recallCount ? `Recalled ${l.recallCount}×` : "Never recalled"}
+          </Badge>
         </div>
 
         <div className={styles.learningActions}>

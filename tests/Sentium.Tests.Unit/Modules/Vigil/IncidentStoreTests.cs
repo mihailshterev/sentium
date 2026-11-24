@@ -3,14 +3,19 @@ using Xunit;
 
 namespace Sentium.Tests.Unit.Modules.Vigil;
 
+/// <summary>
+/// The in-memory side of the store, which the monitoring loop relies on even while the database is down.
+/// </summary>
 public sealed class IncidentStoreTests
 {
-    private readonly IncidentStore _sut = new();
+    private readonly IncidentStore _sut = OfflineIncidentStore.Create();
+
+    private static CancellationToken Ct => TestContext.Current.CancellationToken;
 
     [Fact]
-    public void Open_CreatesIncident_WhenNoneOpen()
+    public async Task Open_CreatesIncident_WhenNoneOpen()
     {
-        var incident = _sut.Open("Identity", ComponentKind.Service, IncidentSeverity.Critical, ServiceStatus.Unhealthy, "down");
+        var incident = await _sut.OpenAsync("Identity", ComponentKind.Service, IncidentSeverity.Critical, ServiceStatus.Unhealthy, "down", Ct);
 
         Assert.NotNull(incident);
         Assert.Equal(IncidentStatus.Open, incident!.Status);
@@ -19,21 +24,21 @@ public sealed class IncidentStoreTests
     }
 
     [Fact]
-    public void Open_IsDeduplicated_WhenAlreadyOpen()
+    public async Task Open_IsDeduplicated_WhenAlreadyOpen()
     {
-        _sut.Open("Identity", ComponentKind.Service, IncidentSeverity.Critical, ServiceStatus.Unhealthy, null);
-        var second = _sut.Open("Identity", ComponentKind.Service, IncidentSeverity.Warning, ServiceStatus.Degraded, null);
+        await _sut.OpenAsync("Identity", ComponentKind.Service, IncidentSeverity.Critical, ServiceStatus.Unhealthy, null, Ct);
+        var second = await _sut.OpenAsync("Identity", ComponentKind.Service, IncidentSeverity.Warning, ServiceStatus.Degraded, null, Ct);
 
         Assert.Null(second);
         Assert.Equal(1, _sut.OpenCount);
     }
 
     [Fact]
-    public void Resolve_ClosesIncident_AndSetsDuration()
+    public async Task Resolve_ClosesIncident_AndSetsDuration()
     {
-        _sut.Open("Redis", ComponentKind.Infrastructure, IncidentSeverity.Critical, ServiceStatus.Unhealthy, null);
+        await _sut.OpenAsync("Redis", ComponentKind.Infrastructure, IncidentSeverity.Critical, ServiceStatus.Unhealthy, null, Ct);
 
-        var resolved = _sut.Resolve("Redis");
+        var resolved = await _sut.ResolveAsync("Redis", Ct);
 
         Assert.NotNull(resolved);
         Assert.Equal(IncidentStatus.Resolved, resolved!.Status);
@@ -44,19 +49,19 @@ public sealed class IncidentStoreTests
     }
 
     [Fact]
-    public void Resolve_ReturnsNull_WhenNoneOpen()
+    public async Task Resolve_ReturnsNull_WhenNoneOpen()
     {
-        Assert.Null(_sut.Resolve("Unknown"));
+        Assert.Null(await _sut.ResolveAsync("Unknown", Ct));
     }
 
     [Fact]
-    public void GetAll_ReturnsOpenAndResolved()
+    public async Task GetRecent_WithoutDatabase_ReturnsOpenAndResolvedFromMemory()
     {
-        _sut.Open("A", ComponentKind.Service, IncidentSeverity.Critical, ServiceStatus.Unhealthy, null);
-        _sut.Open("B", ComponentKind.Service, IncidentSeverity.Warning, ServiceStatus.Degraded, null);
-        _sut.Resolve("A");
+        await _sut.OpenAsync("A", ComponentKind.Service, IncidentSeverity.Critical, ServiceStatus.Unhealthy, null, Ct);
+        await _sut.OpenAsync("B", ComponentKind.Service, IncidentSeverity.Warning, ServiceStatus.Degraded, null, Ct);
+        await _sut.ResolveAsync("A", Ct);
 
-        var all = _sut.GetAll();
+        var all = await _sut.GetRecentAsync(10, Ct);
 
         Assert.Equal(2, all.Count);
         Assert.Equal(1, all.Count(i => i.Status == IncidentStatus.Open));
@@ -64,12 +69,12 @@ public sealed class IncidentStoreTests
     }
 
     [Fact]
-    public void Open_AfterResolve_StartsNewIncident()
+    public async Task Open_AfterResolve_StartsNewIncident()
     {
-        _sut.Open("A", ComponentKind.Service, IncidentSeverity.Critical, ServiceStatus.Unhealthy, null);
-        _sut.Resolve("A");
+        await _sut.OpenAsync("A", ComponentKind.Service, IncidentSeverity.Critical, ServiceStatus.Unhealthy, null, Ct);
+        await _sut.ResolveAsync("A", Ct);
 
-        var reopened = _sut.Open("A", ComponentKind.Service, IncidentSeverity.Critical, ServiceStatus.Unhealthy, null);
+        var reopened = await _sut.OpenAsync("A", ComponentKind.Service, IncidentSeverity.Critical, ServiceStatus.Unhealthy, null, Ct);
 
         Assert.NotNull(reopened);
         Assert.Equal(1, _sut.OpenCount);
