@@ -1,4 +1,4 @@
-import { AlertTriangle, Bot, CalendarDays, Sparkles, StickyNote } from "lucide-react";
+import { AlertTriangle, Bot, CalendarDays, Lightbulb, StickyNote } from "lucide-react";
 import styles from "../timeline.module.css";
 import type { MonthSummary } from "../types/timeline";
 import { MONTH_NAMES } from "../utils/calendar";
@@ -72,7 +72,7 @@ export function MonthCallout({ year, month, summary, position, now, onSelect }: 
           )}
           {suggested > 0 && (
             <span className={styles.stat} data-tone="gold">
-              <Sparkles size={10} />
+              <Lightbulb size={10} />
               {suggested}
             </span>
           )}

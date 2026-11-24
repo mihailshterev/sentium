@@ -267,22 +267,16 @@
 
   --accent-green-subtle: color-mix(in srgb, var(--accent-green) 12%, transparent);
   --accent-green-border: color-mix(in srgb, var(--accent-green) 32%, transparent);
-  --accent-green-glow: color-mix(in srgb, var(--accent-green) 30%, transparent);
   --accent-blue-subtle: color-mix(in srgb, var(--accent-blue) 12%, transparent);
   --accent-blue-border: color-mix(in srgb, var(--accent-blue) 32%, transparent);
-  --accent-blue-glow: color-mix(in srgb, var(--accent-blue) 30%, transparent);
   --accent-purple-subtle: color-mix(in srgb, var(--accent-purple) 12%, transparent);
   --accent-purple-border: color-mix(in srgb, var(--accent-purple) 32%, transparent);
-  --accent-purple-glow: color-mix(in srgb, var(--accent-purple) 30%, transparent);
   --accent-amber-subtle: color-mix(in srgb, var(--accent-amber) 12%, transparent);
   --accent-amber-border: color-mix(in srgb, var(--accent-amber) 32%, transparent);
-  --accent-amber-glow: color-mix(in srgb, var(--accent-amber) 30%, transparent);
   --accent-red-subtle: color-mix(in srgb, var(--accent-red) 12%, transparent);
   --accent-red-border: color-mix(in srgb, var(--accent-red) 32%, transparent);
-  --accent-red-glow: color-mix(in srgb, var(--accent-red) 30%, transparent);
   --accent-cyan-subtle: color-mix(in srgb, var(--accent-cyan) 12%, transparent);
   --accent-cyan-border: color-mix(in srgb, var(--accent-cyan) 32%, transparent);
-  --accent-cyan-glow: color-mix(in srgb, var(--accent-cyan) 30%, transparent);
 
   --success-soft: var(--accent-green-subtle);
   --success-line: var(--accent-green-border);

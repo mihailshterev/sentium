@@ -2,9 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   CX,
   CY,
-  angleDistance,
   labelSide,
-  nearestByAngle,
   placeRing,
   polar,
   toPercent,
@@ -36,23 +34,21 @@ describe("placeRing", () => {
   it("spreads nodes evenly from the start angle", () => {
     const placed = placeRing(["a", "b", "c", "d"], 100, -90);
     expect(placed.map((p) => p.deg)).toEqual([-90, 0, 90, 180]);
-    expect(placed[1].labelPoint.x).toBeCloseTo(CX + 114);
+    expect(placed[1].point.x).toBeCloseTo(CX + 100);
+  });
+
+  it("puts narrow-map labels above nodes on the upper half and below on the lower half", () => {
+    const placed = placeRing(["a", "b", "c", "d"], 100, -135);
+    expect(placed.map((p) => p.vside)).toEqual(["top", "top", "bottom", "bottom"]);
+  });
+
+  it("turns inner-ring labels towards the vertical axis, except near the top and bottom", () => {
+    const placed = placeRing(["a", "b", "c", "d"], 100, -90);
+    expect(placed.map((p) => p.inward)).toEqual(["top", "left", "bottom", "right"]);
   });
 
   it("returns nothing for an empty ring", () => {
     expect(placeRing([], 100, 0)).toEqual([]);
-  });
-});
-
-describe("angles", () => {
-  it("measures the short way round", () => {
-    expect(angleDistance(350, 10)).toBe(20);
-    expect(angleDistance(-170, 170)).toBe(20);
-  });
-
-  it("finds the nearest placed node, or -1", () => {
-    expect(nearestByAngle([{ deg: 0 }, { deg: 120 }, { deg: 240 }], 200)).toBe(2);
-    expect(nearestByAngle([], 0)).toBe(-1);
   });
 });
 

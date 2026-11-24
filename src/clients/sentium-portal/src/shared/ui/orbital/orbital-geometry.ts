@@ -25,9 +25,18 @@ export interface PlacedNode<T> {
   node: T;
   deg: number;
   point: Point;
-  /** Anchor for the node's label, just outside the node along its radius. */
-  labelPoint: Point;
+  /** Outward side for the label on wide maps. */
   side: LabelSide;
+  /**
+   * Above or below the node, for narrow maps: there a label beside a node near the left or right edge would run out
+   * of the frame, while one centred over the node always fits.
+   */
+  vside: "top" | "bottom";
+  /**
+   * Side facing the vertical axis, for inner-ring labels: outward they would land among the outer ring's labels.
+   * Nodes near the top or bottom keep their outward side, where nothing sits between them and the outer ring.
+   */
+  inward: LabelSide;
 }
 
 const rad = (deg: number) => (deg * Math.PI) / 180;
@@ -49,33 +58,28 @@ export function labelSide(deg: number): LabelSide {
   return Math.sin(rad(deg)) < 0 ? "top" : "bottom";
 }
 
+function inwardSide(deg: number): LabelSide {
+  const side = labelSide(deg);
+  if (side === "right") {
+    return "left";
+  }
+  return side === "left" ? "right" : side;
+}
+
 /** Spreads nodes evenly around a ring, starting at startDeg. */
-export function placeRing<T>(nodes: readonly T[], r: number, startDeg: number, labelGap = 14): PlacedNode<T>[] {
+export function placeRing<T>(nodes: readonly T[], r: number, startDeg: number): PlacedNode<T>[] {
   const step = 360 / Math.max(nodes.length, 1);
   return nodes.map((node, i) => {
     const deg = startDeg + i * step;
-    return { node, deg, point: polar(r, deg), labelPoint: polar(r + labelGap, deg), side: labelSide(deg) };
+    return {
+      node,
+      deg,
+      point: polar(r, deg),
+      side: labelSide(deg),
+      vside: Math.sin(rad(deg)) < 0 ? "top" : "bottom",
+      inward: inwardSide(deg),
+    };
   });
-}
-
-/** Smallest absolute difference between two angles, in degrees (0-180). */
-export function angleDistance(a: number, b: number): number {
-  const d = Math.abs((((a - b) % 360) + 360) % 360);
-  return d > 180 ? 360 - d : d;
-}
-
-/** Index of the placed node whose angle is closest to deg, or -1 when there are none. */
-export function nearestByAngle(placed: readonly { deg: number }[], deg: number): number {
-  let best = -1;
-  let bestDistance = Infinity;
-  placed.forEach((p, i) => {
-    const d = angleDistance(p.deg, deg);
-    if (d < bestDistance) {
-      best = i;
-      bestDistance = d;
-    }
-  });
-  return best;
 }
 
 /** CSS position of a view-box point inside the map's box. */

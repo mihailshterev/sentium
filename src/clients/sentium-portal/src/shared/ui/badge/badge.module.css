@@ -30,7 +30,6 @@
   flex-shrink: 0;
   border-radius: 50%;
   background: currentColor;
-  box-shadow: 0 0 6px currentColor;
 }
 
 .neutral {

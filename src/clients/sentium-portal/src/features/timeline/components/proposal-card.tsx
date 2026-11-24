@@ -1,4 +1,4 @@
-import { ArrowRight, Check, Sparkles, X } from "lucide-react";
+import { ArrowRight, Check, Lightbulb, X } from "lucide-react";
 import styles from "../timeline.module.css";
 import type { TimelineProposal } from "../types/timeline";
 import { formatShortDay, monthLabel } from "../utils/calendar";
@@ -22,7 +22,7 @@ export function ProposalGhost({
   const busy = busyId === proposal.id;
   return (
     <div className={styles.ghost} data-kind={proposal.kind.toLowerCase()} title={proposal.rationale ?? undefined}>
-      <Sparkles size={10} aria-hidden="true" />
+      <Lightbulb size={10} aria-hidden="true" />
       <span className={styles.chipTitle}>{proposal.title}</span>
       <button
         type="button"
@@ -58,7 +58,7 @@ export function ProposalCard({
   return (
     <li className={styles.proposal} data-testid={`proposal-${proposal.id}`}>
       <div className={styles.proposalHead}>
-        <Sparkles size={13} aria-hidden="true" />
+        <Lightbulb size={13} aria-hidden="true" />
         <span className={styles.proposalTitle}>{describeProposal(proposal)}</span>
       </div>
       <p className={styles.proposalWhere}>

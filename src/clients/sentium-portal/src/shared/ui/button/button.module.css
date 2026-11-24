@@ -80,21 +80,17 @@
   font-weight: var(--fw-semibold);
   box-shadow:
     0 0 0 1px color-mix(in srgb, var(--accent-fill) 35%, transparent),
-    0 0 22px -4px var(--accent-glow),
     inset 0 1px 0 rgba(255, 255, 255, 0.35);
 
   &:hover:not(:disabled) {
     background: var(--accent-fill-hover);
     box-shadow:
       0 0 0 1px color-mix(in srgb, var(--accent-fill) 50%, transparent),
-      0 0 30px -2px var(--accent-glow),
       inset 0 1px 0 rgba(255, 255, 255, 0.4);
   }
 
   &:focus-visible {
-    box-shadow:
-      0 0 22px -4px var(--accent-glow),
-      var(--focus-ring);
+    box-shadow: var(--focus-ring);
   }
 
   /* Faded fill reads muddy; disabled primaries go neutral instead. */

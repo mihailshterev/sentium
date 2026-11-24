@@ -4,16 +4,10 @@ import {
   CalendarCheck,
   ChartLine,
   CodeXml,
-  Compass,
-  FlaskConical,
   GraduationCap,
   Lightbulb,
   PenLine,
-  Rocket,
   ScrollText,
-  Sparkles,
-  Telescope,
-  Zap,
   type LucideIcon,
 } from "lucide-react";
 import { useProfile } from "@/features/profile/hooks/useProfile";
@@ -35,94 +29,11 @@ const SUGGESTION_ICONS: Record<SuggestionKind, LucideIcon> = {
   analyze: ChartLine,
 };
 
-type Greeting = {
-  icon: React.ReactNode;
-  title: (name: string) => string;
-  subtitle: string;
-  meta: string;
-};
-
-const GREETINGS_BY_PERIOD: Record<"morning" | "afternoon" | "evening" | "night", Greeting[]> = {
-  morning: [
-    {
-      icon: <Rocket size={30} />,
-      title: (n) => `Morning${n} - Let's Launch Something Big`,
-      subtitle: "The day is blank. What are we building?",
-      meta: "Fresh mind, fresh ideas. Throw your first thought at me.",
-    },
-    {
-      icon: <Lightbulb size={30} />,
-      title: (n) => `Rise and Ideate${n}`,
-      subtitle: "Your best ideas happen before lunch.",
-      meta: "Give me a spark - I'll fan it into something remarkable.",
-    },
-    {
-      icon: <Compass size={30} />,
-      title: (n) => `Good Morning${n} - Which Direction Today?`,
-      subtitle: "Every great journey starts with a single question.",
-      meta: "Pick a direction, any direction - we'll navigate from there.",
-    },
-  ],
-  afternoon: [
-    {
-      icon: <Zap size={30} />,
-      title: (n) => `Afternoon Surge${n}`,
-      subtitle: "Momentum is everything - let's keep it going.",
-      meta: "Tell me what's on your mind and we'll turn it into something.",
-    },
-    {
-      icon: <FlaskConical size={30} />,
-      title: (n) => `Ready to Experiment${n}?`,
-      subtitle: "Afternoons are perfect for trying something unexpected.",
-      meta: "Bring me a problem, a hunch, or a half-baked idea.",
-    },
-    {
-      icon: <Sparkles size={30} />,
-      title: (n) => `Let's Create Something${n}`,
-      subtitle: "What Shall We Explore Together?",
-      meta: "Throw me a wild idea, a half-formed thought, or a big question - let's brainstorm.",
-    },
-  ],
-  evening: [
-    {
-      icon: <Telescope size={30} />,
-      title: (n) => `Evening Exploration${n}`,
-      subtitle: "Some of the best ideas come after hours.",
-      meta: "No constraints, no rush - just you, me, and a good idea.",
-    },
-    {
-      icon: <Sparkles size={30} />,
-      title: (n) => `The Evening is Ours${n}`,
-      subtitle: "Creativity loves the quiet hours.",
-      meta: "Bring me something to chew on - big, weird, or half-finished.",
-    },
-    {
-      icon: <Lightbulb size={30} />,
-      title: (n) => `Good Evening${n} - Still Thinking?`,
-      subtitle: "The best breakthroughs don't wait for morning.",
-      meta: "Share what's been rattling around in your head - let's figure it out.",
-    },
-  ],
-  night: [
-    {
-      icon: <Telescope size={30} />,
-      title: (n) => `Burning the Midnight Oil${n}?`,
-      subtitle: "Night owls have the best ideas.",
-      meta: "Whatever's keeping you up - let's dig into it together.",
-    },
-    {
-      icon: <Zap size={30} />,
-      title: (n) => `Late Night${n} - Let's Make It Count`,
-      subtitle: "The world is quiet. Your thoughts are loud.",
-      meta: "Tell me what you're working on and let's make progress.",
-    },
-    {
-      icon: <FlaskConical size={30} />,
-      title: (n) => `Still Here${n}? Good.`,
-      subtitle: "The best experiments happen when nobody's watching.",
-      meta: "Go on - hit me with the idea you've been sitting on all day.",
-    },
-  ],
+const GREETING_BY_PERIOD: Record<"morning" | "afternoon" | "evening" | "night", string> = {
+  morning: "Good morning",
+  afternoon: "Good afternoon",
+  evening: "Good evening",
+  night: "Working late",
 };
 
 function getPeriod(): "morning" | "afternoon" | "evening" | "night" {
@@ -143,19 +54,15 @@ export function WelcomeScreen({ suggestions, onSelectSuggestion }: WelcomeScreen
   const { profile } = useProfile();
   const firstName = profile?.firstName ? `, ${profile.firstName}` : "";
 
-  const [greeting] = useState(() => {
-    const pool = GREETINGS_BY_PERIOD[getPeriod()];
-    return pool[Math.floor(Math.random() * pool.length)];
-  });
+  const [greeting] = useState(() => GREETING_BY_PERIOD[getPeriod()]);
 
   return (
     <div className={styles.welcome}>
-      <div className={styles.welcomeIcon} aria-hidden="true">
-        {greeting.icon}
-      </div>
-      <h1 className={styles.welcomeTitle}>{greeting.title(firstName)}</h1>
-      <h2 className={styles.welcomeSubtitle}>{greeting.subtitle}</h2>
-      <p className={styles.welcomeMeta}>{greeting.meta}</p>
+      <h1 className={styles.welcomeTitle}>
+        {greeting}
+        {firstName}
+      </h1>
+      <h2 className={styles.welcomeSubtitle}>How can I help?</h2>
       <div className={styles.suggestions}>
         {suggestions.map(({ text, kind }) => {
           const Icon = SUGGESTION_ICONS[kind];

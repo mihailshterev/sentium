@@ -1,8 +1,10 @@
+/* Size the map by its width: the plot keeps the view box's 5:4, which the HTML labels rely on to sit on their nodes. */
 .root {
   position: relative;
   container-type: inline-size;
+  display: flex;
+  flex-direction: column;
   width: 100%;
-  aspect-ratio: 5 / 4;
   margin: 0;
   border: 1px solid var(--mat-regular-border);
   border-radius: var(--radius-lg);
@@ -49,6 +51,11 @@
   background: transparent;
   box-shadow: none;
   backdrop-filter: none;
+}
+
+.plot {
+  position: relative;
+  aspect-ratio: 5 / 4;
 }
 
 .layer {
@@ -172,7 +179,10 @@
   letter-spacing: 0.04em;
 }
 
+/* Anchored on the node itself and pushed clear of its halo by a fixed gap, so it stays attached at any size. */
 .label {
+  --gap: 10px;
+
   position: absolute;
   padding: 1px 4px;
   border-radius: var(--radius-xs);
@@ -182,19 +192,19 @@
   white-space: nowrap;
 
   &[data-side="right"] {
-    transform: translate(0, -50%);
+    transform: translate(var(--gap), -50%);
   }
 
   &[data-side="left"] {
-    transform: translate(-100%, -50%);
+    transform: translate(calc(-100% - var(--gap)), -50%);
   }
 
   &[data-side="top"] {
-    transform: translate(-50%, -100%);
+    transform: translate(-50%, calc(-100% - var(--gap)));
   }
 
   &[data-side="bottom"] {
-    transform: translate(-50%, 0);
+    transform: translate(-50%, var(--gap));
   }
 }
 
@@ -237,20 +247,34 @@
   }
 }
 
-.caption {
-  position: absolute;
-  bottom: 12px;
-  padding: 1px 4px;
-  background: color-mix(in srgb, var(--bg-base) 82%, transparent);
+.captions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-4);
+  padding: 0 12px 10px;
   color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-2xs);
+  letter-spacing: 0.04em;
 }
 
-.captionLeft {
-  left: 12px;
-}
+/*
+ * Labels keep their CSS size while the rings shrink; beside a node near the left or right edge they'd leave the frame.
+ * Inner labels carry no data-vside: they face the centre and keep their side.
+ */
+@container (max-width: 720px) {
+  .label {
+    --gap: 7px;
 
-.captionRight {
-  right: 12px;
+    &[data-vside="top"] {
+      transform: translate(-50%, calc(-100% - var(--gap)));
+    }
+
+    &[data-vside="bottom"] {
+      transform: translate(-50%, var(--gap));
+    }
+  }
 }
 
 @container (max-width: 460px) {
