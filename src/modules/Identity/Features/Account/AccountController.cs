@@ -8,9 +8,6 @@ using Sentium.Infrastructure.Security;
 
 namespace Sentium.Identity.Features.Account;
 
-/// <summary>
-/// Provides endpoints for authentication, session, registration, and personal profile management.
-/// </summary>
 [ApiController]
 [Route($"{IdentityRoutes.Prefix}/account")]
 internal sealed class AccountController(
@@ -31,9 +28,8 @@ internal sealed class AccountController(
         return Ok(await identityService.GetRegistrationStatusAsync(ct));
     }
 
-    /// <response code="200">Returns the new user's unique identifier and username.</response>
-    /// <response code="400">If the registration data is invalid or the username is already in use.</response>
-    /// <response code="403">If registration is closed.</response>
+    /// <response code="400">The data is invalid or the username is taken.</response>
+    /// <response code="403">Registration is closed.</response>
     [HttpPost("register")]
     [AllowAnonymous]
     [EnableRateLimiting("auth")]
@@ -56,13 +52,7 @@ internal sealed class AccountController(
         return Ok(new RegisterResponse(outcome.User!.Id, outcome.User.UserName));
     }
 
-    /// <summary>
-    /// Authenticates a user and initiates a session.
-    /// </summary>
-    /// <param name="returnUrl">Optional URL to redirect to after successful login.</param>
-    /// <response code="200">Login successful. Returns redirect info or 2FA requirement.</response>
-    /// <response code="401">Invalid credentials provided.</response>
-    /// <response code="423">Account is locked due to repeated failed attempts.</response>
+    /// <response code="423">The account is locked after repeated failed attempts.</response>
     [HttpPost("login")]
     [AllowAnonymous]
     [EnableRateLimiting("auth")]
@@ -113,7 +103,6 @@ internal sealed class AccountController(
     /// <remarks>
     /// Cheap by design: it never touches the database, so the portal can use it as its "am I signed in?" check.
     /// </remarks>
-    /// <response code="401">If there is no valid session.</response>
     [HttpGet("session")]
     [Authorize]
     [ProducesResponseType(typeof(SessionResponse), StatusCodes.Status200OK)]
@@ -128,9 +117,6 @@ internal sealed class AccountController(
             roles));
     }
 
-    /// <summary>
-    /// Returns the profile of the currently authenticated user.
-    /// </summary>
     [HttpGet("me")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -152,10 +138,7 @@ internal sealed class AccountController(
         return Ok(new ProfileResponse(user.Id, user.UserName, user.FirstName, user.LastName, AvatarUrls.For(user.Id, user.AvatarUpdatedAt)));
     }
 
-    /// <summary>
-    /// Updates the authenticated user's own profile information.
-    /// </summary>
-    /// <response code="400">If the update data is invalid (e.g., username conflict).</response>
+    /// <response code="400">The data is invalid or the username is taken.</response>
     [HttpPut("me")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -187,7 +170,7 @@ internal sealed class AccountController(
     /// Changes the authenticated user's password. This session stays signed in; the account's other sessions end
     /// within a minute.
     /// </summary>
-    /// <response code="400">If the current password is wrong or the new one does not meet the password rules.</response>
+    /// <response code="400">The current password is wrong or the new one breaks the password rules.</response>
     [HttpPut("me/password")]
     [Authorize]
     [EnableRateLimiting("auth")]

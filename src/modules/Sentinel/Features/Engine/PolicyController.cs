@@ -16,10 +16,9 @@ internal sealed class PolicyController(IAuditLog auditLog) : ControllerBase
     private const int StatsWindow = 500;
 
     /// <summary>
-    /// Returns a page of forensic audit records, newest first. Requires authentication.
+    /// Newest first.
     /// </summary>
-    /// <param name="page">1-based page number (default: 1).</param>
-    /// <param name="pageSize">Number of records per page (default: 20, max: 100).</param>
+    /// <param name="page">1-based.</param>
     [HttpGet("audit")]
     [AuthorizeSovereign]
     [ProducesResponseType<PagedResponse<AuditRecord>>(StatusCodes.Status200OK)]
@@ -36,10 +35,9 @@ internal sealed class PolicyController(IAuditLog auditLog) : ControllerBase
     }
 
     /// <summary>
-    /// Returns a page of audit records for a specific agent. Requires authentication.
+    /// Newest first.
     /// </summary>
-    /// <param name="page">1-based page number (default: 1).</param>
-    /// <param name="pageSize">Number of records per page (default: 20, max: 100).</param>
+    /// <param name="page">1-based.</param>
     [HttpGet("audit/agent/{agentId}")]
     [AuthorizeSovereign]
     [ProducesResponseType<PagedResponse<AuditRecord>>(StatusCodes.Status200OK)]
@@ -57,7 +55,7 @@ internal sealed class PolicyController(IAuditLog auditLog) : ControllerBase
     }
 
     /// <summary>
-    /// Returns aggregate statistics for the current audit window. Requires authentication.
+    /// Outcomes of the newest <see cref="StatsWindow"/> records.
     /// </summary>
     [HttpGet("audit/stats")]
     [AuthorizeSovereign]

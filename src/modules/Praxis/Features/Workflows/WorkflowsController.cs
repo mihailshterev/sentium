@@ -12,10 +12,9 @@ namespace Sentium.Praxis.Features.Workflows;
 internal sealed class WorkflowsController(IWorkflowService workflowService, IWorkflowRunRepository runRepository) : ControllerBase
 {
     /// <summary>
-    /// Returns a page of workflows (newest first).
+    /// Newest first.
     /// </summary>
-    /// <param name="page">1-based page number (default: 1).</param>
-    /// <param name="pageSize">Number of items per page (default: 20, max: 100).</param>
+    /// <param name="page">1-based.</param>
     [HttpGet]
     [ProducesResponseType(typeof(PagedResponse<WorkflowResponse>), StatusCodes.Status200OK)]
     public async Task<ActionResult<PagedResponse<WorkflowResponse>>> GetWorkflows(
@@ -28,11 +27,10 @@ internal sealed class WorkflowsController(IWorkflowService workflowService, IWor
     }
 
     /// <summary>
-    /// Returns a page of workflow runs, ordered by start time descending.
+    /// Most recently started first.
     /// </summary>
-    /// <param name="page">1-based page number (default: 1).</param>
-    /// <param name="pageSize">Number of runs per page (default: 20, max: 100).</param>
-    /// <param name="search">Optional text matched against the run title, its workflow name, or (untitled runs) the scenario.</param>
+    /// <param name="page">1-based.</param>
+    /// <param name="search">Matched against the run title, its workflow name, or (untitled runs) the scenario.</param>
     [HttpGet("runs")]
     [ProducesResponseType(typeof(PagedResponse<WorkflowRunSummaryResponse>), StatusCodes.Status200OK)]
     public async Task<ActionResult<PagedResponse<WorkflowRunSummaryResponse>>> GetWorkflowRuns(
@@ -49,9 +47,8 @@ internal sealed class WorkflowsController(IWorkflowService workflowService, IWor
     }
 
     /// <summary>
-    /// Returns a single workflow run by its ID, including its full log history.
+    /// Includes the full log history.
     /// </summary>
-    /// <returns>The workflow run if found; otherwise, a 404 Not Found response.</returns>
     [HttpGet("runs/{runId:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -61,7 +58,6 @@ internal sealed class WorkflowsController(IWorkflowService workflowService, IWor
         return run is null ? NotFound() : Ok(run);
     }
 
-    /// <returns>No content, or 404 Not Found when the run does not exist.</returns>
     [HttpPut("runs/{runId:guid}/title")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -74,7 +70,6 @@ internal sealed class WorkflowsController(IWorkflowService workflowService, IWor
         return renamed ? NoContent() : NotFound();
     }
 
-    /// <returns>The workflow details if found; otherwise, a 404 Not Found response.</returns>
     [HttpGet("{workflowId:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -84,9 +79,6 @@ internal sealed class WorkflowsController(IWorkflowService workflowService, IWor
         return workflow is null ? NotFound() : Ok(workflow);
     }
 
-    /// <summary>
-    /// Creates a new workflow based on the provided configuration and returns the created workflow details.
-    /// </summary>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     public async Task<ActionResult<WorkflowResponse>> CreateWorkflow([FromBody] CreateWorkflowRequest request, CancellationToken ct)
@@ -95,9 +87,6 @@ internal sealed class WorkflowsController(IWorkflowService workflowService, IWor
         return CreatedAtAction(nameof(GetWorkflow), new { workflowId = result.Id }, result);
     }
 
-    /// <summary>
-    /// Updates an existing workflow with the provided configuration.
-    /// </summary>
     [HttpPut("{workflowId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

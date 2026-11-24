@@ -4,9 +4,6 @@ using Sentium.Core.Results;
 
 namespace Sentium.Praxis.Features.Skills;
 
-/// <summary>
-/// Provides endpoints for managing and retrieving agent skills, including built-in and user-defined skills.
-/// </summary>
 [ApiController]
 [Authorize]
 [Route($"{PraxisRoutes.Prefix}/skills")]
@@ -14,9 +11,8 @@ internal sealed class SkillsController(
     IAgentSkillService skillService,
     IBuiltInSkillCatalog builtInSkillCatalog) : ControllerBase
 {
-    /// <summary>
-    /// Retrieves a list of all built-in skills available in the system catalog.
-    /// </summary>
+    private const long MaxUploadBytes = 500 * 1024;
+
     [HttpGet("built-in")]
     [ProducesResponseType(typeof(IEnumerable<BuiltInSkillInfo>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -26,12 +22,7 @@ internal sealed class SkillsController(
         return Ok(skills);
     }
 
-    /// <summary>
-    /// Retrieves a page of custom agent skills, optionally filtered by skill type.
-    /// </summary>
-    /// <param name="skillType">Optional skill-type filter (Custom or Uploaded).</param>
-    /// <param name="page">1-based page number (default: 1).</param>
-    /// <param name="pageSize">Number of items per page (default: 20, max: 100).</param>
+    /// <param name="page">1-based.</param>
     [HttpGet]
     [ProducesResponseType(typeof(PagedResponse<AgentSkillDto>), StatusCodes.Status200OK)]
     public async ValueTask<IActionResult> GetSkills(
@@ -44,9 +35,6 @@ internal sealed class SkillsController(
         return Ok(skills);
     }
 
-    /// <summary>
-    /// Retrieves a specific agent skill by its unique identifier.
-    /// </summary>
     [HttpGet("{skillId:guid}")]
     [ProducesResponseType(typeof(AgentSkillDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -56,12 +44,6 @@ internal sealed class SkillsController(
         return skill is null ? NotFound() : Ok(skill);
     }
 
-    /// <summary>
-    /// Creates a new custom agent skill.
-    /// </summary>
-    /// <response code="201">Returns the newly created skill.</response>
-    /// <response code="400">If the request is invalid.</response>
-    /// <response code="409">If a skill with the same name already exists.</response>
     [HttpPost]
     [ProducesResponseType(typeof(AgentSkillDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -78,11 +60,8 @@ internal sealed class SkillsController(
     }
 
     /// <summary>
-    /// Creates a new skill by uploading a Markdown (.md) file.
+    /// Creates a skill from a Markdown file whose content becomes its instructions.
     /// </summary>
-    /// <param name="file">The Markdown file containing the skill instructions.</param>
-    /// <response code="201">Returns the newly created skill.</response>
-    /// <response code="400">If the file is invalid, empty, or not a Markdown file.</response>
     [HttpPost("upload")]
     [Consumes("multipart/form-data")]
     [ProducesResponseType(typeof(AgentSkillDto), StatusCodes.Status201Created)]
@@ -100,7 +79,7 @@ internal sealed class SkillsController(
             return BadRequest("Only .md (Markdown) files are supported for upload.");
         }
 
-        if (file.Length > 500 * 1024)
+        if (file.Length > MaxUploadBytes)
         {
             return BadRequest("File exceeds the 500 KB limit.");
         }
@@ -127,10 +106,6 @@ internal sealed class SkillsController(
         return CreatedAtAction(nameof(GetSkillById), new { skillId = result.Value!.Id }, result.Value);
     }
 
-    /// <summary>
-    /// Updates the details of an existing agent skill.
-    /// </summary>
-    /// <response code="400">If the request is null or invalid.</response>
     [HttpPut("{skillId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -141,9 +116,6 @@ internal sealed class SkillsController(
         return updated ? NoContent() : NotFound();
     }
 
-    /// <summary>
-    /// Permanently deletes an agent skill.
-    /// </summary>
     [HttpDelete("{skillId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

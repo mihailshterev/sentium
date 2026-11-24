@@ -17,7 +17,7 @@ internal interface IWorkflowRunRepository
     /// Returns a page of run summaries (newest first) plus the total count. Summaries omit the
     /// per-run log transcript; use <see cref="GetByIdAsync"/> for the full run including logs.
     /// </summary>
-    /// <param name="page">1-based page number.</param>
+    /// <param name="page">1-based.</param>
     /// <param name="pageSize">Runs per page.</param>
     /// <param name="search">
     /// Optional text matched (case-insensitive) against the run title and the name of the workflow that ran; runs recorded

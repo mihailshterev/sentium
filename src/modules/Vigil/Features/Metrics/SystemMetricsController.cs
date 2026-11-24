@@ -8,9 +8,6 @@ namespace Sentium.Vigil.Features.Metrics;
 [Route($"{VigilRoutes.Prefix}/system")]
 internal sealed class SystemMetricsController(IVigil vigil) : ControllerBase
 {
-    /// <summary>
-    /// Returns a current snapshot of host system metrics.
-    /// </summary>
     [HttpGet("metrics")]
     public IActionResult GetMetrics()
     {

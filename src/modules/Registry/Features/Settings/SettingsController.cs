@@ -10,9 +10,6 @@ using Sentium.Registry.Contracts.Settings;
 
 namespace Sentium.Registry.Features.Settings;
 
-/// <summary>
-/// Centralized key-based settings API.
-/// </summary>
 [ApiController]
 [Authorize]
 [Route($"{RegistryRoutes.Prefix}/settings")]

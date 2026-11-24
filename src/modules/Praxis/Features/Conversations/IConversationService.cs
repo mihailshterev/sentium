@@ -2,9 +2,6 @@ using Sentium.Core.Results;
 
 namespace Sentium.Praxis.Features.Conversations;
 
-/// <summary>
-/// Application-layer operations for conversations and their messages.
-/// </summary>
 internal interface IConversationService
 {
     /// <summary>
@@ -37,6 +34,7 @@ internal interface IConversationService
     /// </summary>
     /// <returns><see langword="false"/> when the conversation does not exist.</returns>
     Task<bool> SetArchivedAsync(Guid conversationId, bool archived, CancellationToken ct = default);
+
     /// <summary>
     /// Creates a conversation, optionally with a specific agent (a built-in specialist or one of the user's agents).
     /// An unknown agent or a control role is <see cref="ResultStatus.Invalid"/>.
@@ -79,9 +77,6 @@ internal interface IConversationService
     /// </summary>
     Task<Guid?> GetWorkspaceIdAsync(Guid conversationId, Guid userId, CancellationToken ct = default);
 
-    /// <summary>
-    /// Appends a message (with optional enhanced prompt, ordered activity steps and attached files) to a conversation.
-    /// </summary>
     Task AddMessageAsync(
         Guid conversationId,
         string role,

@@ -1,7 +1,7 @@
 namespace Sentium.Sentinel.Features.Settings;
 
 /// <summary>
-/// Provides cached, Registry-backed access to the runtime PDP settings.
+/// The runtime PDP settings, read from the Registry through its cache.
 /// </summary>
 internal interface IPdpRuntimeSettingsProvider
 {

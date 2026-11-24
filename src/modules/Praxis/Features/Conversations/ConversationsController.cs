@@ -11,11 +11,10 @@ namespace Sentium.Praxis.Features.Conversations;
 internal sealed class ConversationsController(IConversationService conversationService) : ControllerBase
 {
     /// <summary>
-    /// Returns a page of conversations: pinned first, then by latest activity.
+    /// Pinned first, then by latest activity.
     /// </summary>
-    /// <param name="page">1-based page number (default: 1).</param>
-    /// <param name="pageSize">Number of items per page (default: 20, max: 100).</param>
-    /// <param name="search">Optional text the conversation title or any of its messages must contain (case-insensitive).</param>
+    /// <param name="page">1-based.</param>
+    /// <param name="search">Text the title or any message must contain (case-insensitive).</param>
     /// <param name="archived">List the archived conversations instead of the active ones.</param>
     [HttpGet]
     [ProducesResponseType(typeof(PagedResponse<ConversationSummary>), StatusCodes.Status200OK)]

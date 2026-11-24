@@ -26,15 +26,10 @@ internal sealed class SandboxController(
     private readonly SandboxArtifactOptions _opts = options.Value;
 
     /// <summary>
-    /// Returns a page of sandbox execution records (newest first), optionally filtered by outcome,
-    /// language, or a free-text term matched against agent id / job id.
-    /// Each record includes the original request context (code, agent ID, prompt) and the full result.
+    /// Newest first. Each record includes the request (code, agent id, prompt) and the full result.
     /// </summary>
-    /// <param name="page">1-based page number (default: 1).</param>
-    /// <param name="pageSize">Number of records per page (default: 20, max: 100).</param>
-    /// <param name="status">Optional outcome filter: Succeeded, Failed, or Denied.</param>
-    /// <param name="language">Optional language filter: Python or Node.</param>
-    /// <param name="search">Optional term matched against agent id or job id.</param>
+    /// <param name="page">1-based.</param>
+    /// <param name="search">Matched against the agent id or job id.</param>
     [HttpGet("executions")]
     [ProducesResponseType<PagedResponse<SandboxExecutionLogRecord>>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetExecutions(
@@ -65,10 +60,6 @@ internal sealed class SandboxController(
         return Ok(new PagedResponse<SandboxExecutionLogRecord>(items, totalCount, page, pageSize, totalPages));
     }
 
-    /// <summary>
-    /// Returns a single sandbox execution record by its job id.
-    /// </summary>
-    /// <response code="404">If no execution with the given job id exists.</response>
     [HttpGet("executions/{jobId:guid}")]
     [ProducesResponseType<SandboxExecutionLogRecord>(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -78,9 +69,6 @@ internal sealed class SandboxController(
         return entry is null ? NotFound() : Ok(ToRecord(entry));
     }
 
-    /// <summary>
-    /// Returns aggregate outcome counts across all recorded executions.
-    /// </summary>
     [HttpGet("executions/stats")]
     [ProducesResponseType<SandboxExecutionStatsResponse>(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetStats(CancellationToken ct)

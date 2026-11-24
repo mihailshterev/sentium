@@ -3,16 +3,13 @@ using Sentium.Codex.Contracts.Models;
 namespace Sentium.Codex.Contracts;
 
 /// <summary>
-/// Abstracts over the vector store (PostgreSQL + pgvector, <c>codex</c> schema).
-/// All vector storage and retrieval operations go through this interface,
-/// making it straightforward to swap the backing store in tests or future migrations.
-/// A "collection" is a logical partition of the store (see <see cref="KnowledgeCollections"/>); it needs no setup.
+/// The vector store (PostgreSQL + pgvector, <c>codex</c> schema). A "collection" is a logical partition of the store
+/// (see <see cref="KnowledgeCollections"/>); it needs no setup.
 /// </summary>
 public interface IVectorRepository
 {
     /// <summary>
-    /// Inserts or replaces a single document chunk along with its pre-computed embedding.
-    /// Uses the chunk's <see cref="DocumentChunk.Id"/> as the stable row ID.
+    /// Keyed by <see cref="DocumentChunk.Id"/>.
     /// </summary>
     Task UpsertAsync(string collectionName, DocumentChunk chunk, float[] embedding, CancellationToken ct = default);
 
@@ -35,42 +32,27 @@ public interface IVectorRepository
     Task<int> DeleteByMetadataAsync(string collectionName, string metadataKey, string metadataValue, CancellationToken ct = default);
 
     /// <summary>
-    /// Performs a cosine-similarity search and returns the top-<paramref name="topK"/> results
-    /// whose score meets or exceeds <paramref name="scoreThreshold"/>.
+    /// The top <paramref name="topK"/> cosine-similarity hits scoring at least <paramref name="scoreThreshold"/>.
     /// </summary>
     /// <param name="scope">
-    /// Optional per-user visibility filter. When non-null, results are restricted to shared entries
-    /// plus the given user's own entries; a filter with a <c>null</c> <see cref="KnowledgeScopeFilter.UserId"/>
-    /// narrows this to shared/global entries only. When <c>null</c> (default), no scope filtering is
-    /// applied - but all current collections (knowledge_base, agent_learnings, user_memories) pass a
-    /// non-null filter, so the unfiltered branch is effectively unused.
+    /// Restricts results to shared entries plus the user's own; with a <see langword="null"/>
+    /// <see cref="KnowledgeScopeFilter.UserId"/>, to shared entries only. <see langword="null"/> applies no filter.
     /// </param>
     Task<IReadOnlyList<VectorSearchResult>> SearchAsync(string collectionName, float[] queryEmbedding, int topK = 5, float scoreThreshold = 0.0f, KnowledgeScopeFilter? scope = null, CancellationToken ct = default);
 
     /// <summary>
     /// Deletes all entries whose <c>source</c> exactly matches <paramref name="source"/>.
-    /// Used to remove all vectors associated with a single document or entity.
     /// </summary>
     Task DeleteBySourceAsync(string collectionName, string source, CancellationToken ct = default);
 
-    /// <summary>
-    /// Returns high-level statistics for the given collection (point count, vector size, etc.).
-    /// Returns <c>null</c> if the collection holds no entries.
-    /// </summary>
+    /// <returns><see langword="null"/> when the collection holds no entries.</returns>
     Task<CollectionStats?> GetCollectionStatsAsync(string collectionName, CancellationToken ct = default);
 
-    /// <summary>
-    /// Deletes every entry in the collection. Use with caution!
-    /// </summary>
     Task DeleteCollectionAsync(string collectionName, CancellationToken ct = default);
 
     /// <summary>
-    /// Retrieves a page of document chunks from a collection, oldest first.
-    /// Returns up to <paramref name="limit"/> chunks after skipping <paramref name="offset"/> chunks.
+    /// Oldest first.
     /// </summary>
-    /// <param name="scope">
-    /// Optional per-user visibility filter (same semantics as <see cref="SearchAsync"/>).
-    /// When <c>null</c>, no scope filtering is applied.
-    /// </param>
+    /// <param name="scope">As for <see cref="SearchAsync"/>.</param>
     Task<IReadOnlyList<DocumentChunk>> GetPageAsync(string collectionName, ulong limit = 200, ulong? offset = null, KnowledgeScopeFilter? scope = null, CancellationToken ct = default);
 }

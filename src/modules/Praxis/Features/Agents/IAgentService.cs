@@ -5,13 +5,9 @@ namespace Sentium.Praxis.Features.Agents;
 internal interface IAgentService
 {
     /// <summary>
-    /// Creates a new agent for the current user.
+    /// <see cref="ResultStatus.Conflict"/> when the name is a reserved built-in agent name or already used by another
+    /// of the current user's agents.
     /// </summary>
-    /// <param name="request">The agent's name, description, and optional model.</param>
-    /// <returns>
-    /// <see cref="ResultStatus.Success"/> with the created agent; or <see cref="ResultStatus.Conflict"/> when the name
-    /// is a reserved built-in agent name or is already used by another of the current user's agents.
-    /// </returns>
     ValueTask<Result<AgentResponse>> CreateAgentAsync(CreateAgentRequest request, CancellationToken ct = default);
 
     /// <summary>
@@ -21,28 +17,17 @@ internal interface IAgentService
     ValueTask<IReadOnlyList<AgentResponse>> GetAgentsAsync(CancellationToken ct = default);
 
     /// <summary>
-    /// Returns a page of the current user's agents (newest first).
+    /// Newest first.
     /// </summary>
     ValueTask<PagedResponse<AgentResponse>> GetAgentsPagedAsync(int page, int pageSize, CancellationToken ct = default);
 
-    /// <summary>
-    /// Returns the agent with the given id, or <see langword="null"/> if it does not exist for the current user.
-    /// </summary>
     ValueTask<AgentResponse?> GetAgentByIdAsync(Guid agentId, CancellationToken ct = default);
 
     /// <summary>
-    /// Updates an existing agent's name, description, and model.
+    /// <see cref="ResultStatus.Conflict"/> when the new name is reserved or already taken by another of the user's
+    /// agents.
     /// </summary>
-    /// <returns>
-    /// <see cref="ResultStatus.Success"/> with the updated agent; <see cref="ResultStatus.NotFound"/> when no such agent
-    /// exists for the current user; or <see cref="ResultStatus.Conflict"/> when the new name is reserved or already taken
-    /// by another of the user's agents.
-    /// </returns>
     ValueTask<Result<AgentResponse>> UpdateAgentAsync(Guid agentId, UpdateAgentRequest request, CancellationToken ct = default);
 
-    /// <summary>
-    /// Deletes an agent and its associated data.
-    /// </summary>
-    /// <returns><see langword="true"/> if an agent was deleted; <see langword="false"/> if none existed for the current user.</returns>
     ValueTask<bool> DeleteAgentAsync(Guid agentId, CancellationToken ct = default);
 }

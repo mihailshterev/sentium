@@ -4,20 +4,15 @@ using Sentium.Core.Results;
 
 namespace Sentium.Praxis.Features.Learnings;
 
-/// <summary>
-/// Exposes agent learnings and knowledge-base overview statistics.
-/// </summary>
 [ApiController]
 [Authorize]
 [Route($"{PraxisRoutes.Prefix}/agent-learnings")]
 internal sealed class AgentLearningsController(IAgentLearningService learningService) : ControllerBase
 {
     /// <summary>
-    /// Returns a page of captured learnings (newest first). Optionally filter by agent name.
+    /// Newest first.
     /// </summary>
-    /// <param name="agentName">Optional agent name to filter learnings.</param>
-    /// <param name="page">1-based page number (default: 1).</param>
-    /// <param name="pageSize">Number of learnings per page (default: 20, max: 100).</param>
+    /// <param name="page">1-based.</param>
     [HttpGet]
     [ProducesResponseType(typeof(PagedResponse<AgentLearningResponse>), StatusCodes.Status200OK)]
     public async Task<ActionResult<PagedResponse<AgentLearningResponse>>> GetLearnings(
@@ -30,9 +25,6 @@ internal sealed class AgentLearningsController(IAgentLearningService learningSer
         return Ok(results);
     }
 
-    /// <summary>
-    /// Returns aggregate statistics about captured learnings.
-    /// </summary>
     [HttpGet("stats")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<AgentLearningStats>> GetStats(CancellationToken ct)
@@ -54,8 +46,7 @@ internal sealed class AgentLearningsController(IAgentLearningService learningSer
     }
 
     /// <summary>
-    /// Updates the content and tags of an existing learning.
-    /// Old vectors are removed and the learning is re-ingested with the new content.
+    /// Replaces the content and tags, and re-ingests the learning in place of its old vectors.
     /// </summary>
     [HttpPut("{id:guid}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
