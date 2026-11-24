@@ -1227,9 +1227,16 @@
     box-shadow: var(--focus-ring);
   }
 
+  /* Fades the text out before the hover actions: 4 × 26px buttons + 3 × 2px gaps + 6px inset = 116px. */
+  --conv-actions-fade: linear-gradient(to right, #000 calc(100% - 132px), transparent calc(100% - 116px));
+
   .convItem:hover &,
   .convItem:focus-within & {
-    mask-image: linear-gradient(to right, #000 calc(100% - 76px), transparent calc(100% - 60px));
+    mask-image: var(--conv-actions-fade);
+  }
+
+  @media (hover: none) {
+    mask-image: var(--conv-actions-fade);
   }
 }
 
