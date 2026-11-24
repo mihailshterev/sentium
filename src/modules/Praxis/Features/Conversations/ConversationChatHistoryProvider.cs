@@ -38,14 +38,16 @@ internal sealed class ConversationChatHistoryProvider : ChatHistoryProvider
     /// </summary>
     public const string AttachmentsProperty = "sentium.attachments";
 
-    private const int MaxHistoryMessages = 20;
-
     private static readonly JsonSerializerOptions AttachmentJson = new(JsonSerializerDefaults.Web);
 
-    private readonly ProviderSessionState<State> sessionState;
+    // AIJsonUtilities options serialize ChatMessage/AIContent polymorphically (the in-flight turn holds them).
+    private static readonly ProviderSessionState<State> SessionState =
+        new(_ => new State(), nameof(ConversationChatHistoryProvider), AIJsonUtilities.DefaultOptions);
+
     private readonly IConversationRepository repository;
     private readonly IConversationService conversations;
     private readonly IPdpContextAccessor runContext;
+    private readonly HistorySummaryQueue summaryQueue;
     private readonly ILogger<ConversationChatHistoryProvider> logger;
     private AgentActivityTranslator? activity;
 
@@ -53,14 +55,14 @@ internal sealed class ConversationChatHistoryProvider : ChatHistoryProvider
         IConversationRepository repository,
         IConversationService conversations,
         IPdpContextAccessor runContext,
+        HistorySummaryQueue summaryQueue,
         ILogger<ConversationChatHistoryProvider> logger)
         : base(null, null, null)
     {
-        // AIJsonUtilities options serialize ChatMessage/AIContent polymorphically (the in-flight turn holds them).
-        sessionState = new ProviderSessionState<State>(_ => new State(), nameof(ConversationChatHistoryProvider), AIJsonUtilities.DefaultOptions);
         this.repository = repository;
         this.conversations = conversations;
         this.runContext = runContext;
+        this.summaryQueue = summaryQueue;
         this.logger = logger;
     }
 
@@ -78,7 +80,13 @@ internal sealed class ConversationChatHistoryProvider : ChatHistoryProvider
     /// Binds <paramref name="session"/> to a persisted conversation.
     /// </summary>
     public void Attach(AgentSession session, Guid conversationId) =>
-        sessionState.SaveState(session, new State { ConversationId = conversationId });
+        SessionState.SaveState(session, new State { ConversationId = conversationId });
+
+    /// <summary>
+    /// The persisted conversation <paramref name="session"/> is bound to, if any.
+    /// </summary>
+    public static Guid? ConversationIdOf(AgentSession? session) =>
+        session is null ? null : SessionState.GetOrInitializeState(session).ConversationId;
 
     /// <summary>
     /// Supplies the tool durations measured while this request streams the run, so the stored timeline keeps them.
@@ -105,13 +113,15 @@ internal sealed class ConversationChatHistoryProvider : ChatHistoryProvider
     {
         ArgumentNullException.ThrowIfNull(context);
 
-        var state = sessionState.GetOrInitializeState(context.Session);
+        var state = SessionState.GetOrInitializeState(context.Session);
         if (state.ConversationId is not { } conversationId || runContext.UserId is not { } userId)
         {
             return [];
         }
 
-        var rows = await repository.GetRecentMessagesAsync(conversationId, userId, MaxHistoryMessages, cancellationToken);
+        var loaded = await repository.GetRecentMessagesAsync(conversationId, userId, HistoryWindow.MaxLoadedMessages, cancellationToken);
+        var summary = await repository.GetHistorySummaryAsync(conversationId, userId, cancellationToken);
+        var rows = HistoryWindow.Select(loaded, summary?.Through);
 
         var history = rows
             .Select(row => IsUser(row.Role)
@@ -140,7 +150,7 @@ internal sealed class ConversationChatHistoryProvider : ChatHistoryProvider
     {
         ArgumentNullException.ThrowIfNull(context);
 
-        var state = sessionState.GetOrInitializeState(context.Session);
+        var state = SessionState.GetOrInitializeState(context.Session);
         if (await ResolveOwnedConversationAsync(context.Session, cancellationToken) is not { } conversationId)
         {
             return;
@@ -162,7 +172,7 @@ internal sealed class ConversationChatHistoryProvider : ChatHistoryProvider
             // Paused on approval: keep the raw turn (and the tool timings measured so far) in the session until it completes.
             state.PendingTurn = [.. state.PendingTurn ?? [], .. external, .. responses];
             state.ToolDurations = durations;
-            sessionState.SaveState(context.Session, state);
+            SessionState.SaveState(context.Session, state);
             return;
         }
 
@@ -178,11 +188,16 @@ internal sealed class ConversationChatHistoryProvider : ChatHistoryProvider
                 ct: cancellationToken);
         }
 
+        if (runContext.UserId is { } userId)
+        {
+            summaryQueue.Enqueue(conversationId, userId);
+        }
+
         if (resuming)
         {
             state.PendingTurn = null;
             state.ToolDurations = null;
-            sessionState.SaveState(context.Session, state);
+            SessionState.SaveState(context.Session, state);
         }
     }
 
@@ -199,14 +214,14 @@ internal sealed class ConversationChatHistoryProvider : ChatHistoryProvider
         // Failed or cancelled run: record what the user asked (a resumed turn already recorded it) and drop the in-flight turn.
         try
         {
-            var state = sessionState.GetOrInitializeState(context.Session);
+            var state = SessionState.GetOrInitializeState(context.Session);
             if (state.PendingTurn is null && await ResolveOwnedConversationAsync(context.Session, CancellationToken.None) is { } conversationId)
             {
                 await PersistUserTurnsAsync(conversationId, context.RequestMessages.Where(IsExternal), CancellationToken.None);
             }
 
             state.PendingTurn = null;
-            sessionState.SaveState(context.Session, state);
+            SessionState.SaveState(context.Session, state);
         }
         catch (Exception ex)
         {
@@ -251,7 +266,7 @@ internal sealed class ConversationChatHistoryProvider : ChatHistoryProvider
 
     private async Task<Guid?> ResolveOwnedConversationAsync(AgentSession? session, CancellationToken ct)
     {
-        if (sessionState.GetOrInitializeState(session).ConversationId is not { } conversationId || runContext.UserId is not { } userId)
+        if (SessionState.GetOrInitializeState(session).ConversationId is not { } conversationId || runContext.UserId is not { } userId)
         {
             return null;
         }

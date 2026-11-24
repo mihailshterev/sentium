@@ -313,6 +313,8 @@ runtime.
 | `BACKUP_KEEP_WEEKLY`            | `4`                    | ISO weeks for which the newest backup is kept.                                          |
 | `BACKUP_AGE_RECIPIENT`          | _(empty)_              | age public key to encrypt archives to. Empty leaves them unencrypted.                   |
 | `BACKUP_ENDPOINT`               | `http://backup:8080`   | Where `sentium-web` finds the backup service. Empty turns backup monitoring off.        |
+| `LOG_MAX_SIZE`                  | `10m`                  | Size at which a container's log file is rotated.                                        |
+| `LOG_MAX_FILE`                  | `3`                    | Rotated log files kept per container; older ones are deleted.                           |
 
 > **Changing the port?** With `HTTPS_PORT` other than 443, include it in the URL
 > (`https://sentium.home.arpa:8443`); the port-80 redirect then points at the wrong port, so use the
@@ -681,20 +683,39 @@ offers sign-in. To let someone join, a Sovereign opens **Settings → Access →
 An existing installation upgraded to this version keeps its accounts and has registration closed until a Sovereign
 opens it.
 
+**Passwords.** Everyone changes their own password under **Profile → Sign-in & security**, which also signs them out
+of their other browsers (paired Satelles devices keep working; remove them on the same page). A Sovereign resets a
+forgotten password or lifts a lockout (five wrong passwords lock an account for five minutes) from the **Users** page;
+the account is signed out everywhere. If the only Sovereign has forgotten their password, reset it from the host:
+
+```bash
+docker compose exec sentium-web dotnet Sentium.Web.dll reset-password <username>
+```
+
+It prints a new generated password once; sign in with it and change it on the Profile page.
+
 **Deleting an account** (Users page, Sovereign only) deletes the user's data in every module - conversations,
 workspaces and files, knowledge, learnings, agents, skills, workflows and runs, sandbox history and artifacts, timeline,
 notifications and personal settings - and unschedules their scheduled jobs.
 
 **Retention.** History that grows with every agent action is pruned daily:
 
-| Setting (environment variable)      | Default | What                                                      |
-| ----------------------------------- | ------- | --------------------------------------------------------- |
-| `Sentinel__AuditRetentionDays`      | 180     | Sentinel policy-decision audit records                    |
-| `Praxis__ExecutionLogRetentionDays` | 90      | Sandbox execution history (code, file context and output) |
-| `Praxis__WorkflowRunRetentionDays`  | 180     | Workflow run history                                      |
-| `Nuntius__RetentionDays`            | 90      | Notifications                                             |
+| Setting (environment variable)        | Default | What                                                                 |
+| ------------------------------------- | ------- | -------------------------------------------------------------------- |
+| `Sentinel__AuditRetentionDays`        | 180     | Sentinel policy-decision audit records                               |
+| `Praxis__ExecutionLogRetentionDays`   | 90      | Sandbox execution history (code, file context, output and artifacts) |
+| `Praxis__WorkflowRunRetentionDays`    | 180     | Workflow run history                                                 |
+| `Praxis__UnusedLearningRetentionDays` | 0 (off) | Agent learnings no agent has recalled for this many days             |
+| `Nuntius__RetentionDays`              | 90      | Notifications                                                        |
+| `Vigil__IncidentRetentionDays`        | 365     | Resolved Vigil incidents (open ones are kept)                        |
 
-Conversations, knowledge and the timeline are your content and are never expired.
+Conversations, knowledge, memories and the timeline are your content and are never expired. The Knowledge Base page
+shows how often each learning was recalled, so unused ones can also be deleted by hand.
+
+**Disk space.** Vigil watches the disks the server sees (under Compose, the disk holding Docker's data, where the
+database, object storage and logs live). It opens a warning incident at `Vigil__Disk__WarningPercent` (default 90) and
+a critical one at `Vigil__Disk__CriticalPercent` (default 95), and notifies the Sovereigns. Backups in
+`BACKUP_DESTINATION` on another disk are not covered; the Backups panel reports a failed run.
 
 ---
 

@@ -2,7 +2,11 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router";
 import styles from "../assistant.module.css";
 import { ArrowDown, Loader2, PanelRightClose, PanelRightOpen } from "lucide-react";
-import { fetchConversation, setConversationWorkspace } from "@/features/assistant/api/assistant.service";
+import {
+  fetchConversation,
+  fetchEarlierMessages,
+  setConversationWorkspace,
+} from "@/features/assistant/api/assistant.service";
 import { useConversations } from "@/features/assistant/hooks/useConversations";
 import { useDebouncedValue } from "@/shared/hooks/useDebouncedValue";
 import { useModels } from "@/features/models/hooks/useModels";
@@ -30,13 +34,18 @@ import { acceptAttribute } from "@/features/workspaces/utils/upload-validation";
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
 import { StatusMessage } from "@/shared/ui/status-message";
 
-const groupConversationsByDate = (convs: ConversationSummary[]) => {
+/** When the conversation was last active: its latest message, or its creation for older conversations. */
+const activityOf = (conv: ConversationSummary) => conv.lastActivityAt ?? conv.createdAt;
+
+/** Pinned conversations first, then the rest by the day of their latest activity. */
+const groupConversations = (convs: ConversationSummary[]) => {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const yesterday = new Date(today.getTime() - 86_400_000);
   const sevenDaysAgo = new Date(today.getTime() - 7 * 86_400_000);
 
   const groups: { label: string; items: ConversationSummary[] }[] = [
+    { label: "Pinned", items: [] },
     { label: "Today", items: [] },
     { label: "Yesterday", items: [] },
     { label: "Previous 7 Days", items: [] },
@@ -44,16 +53,20 @@ const groupConversationsByDate = (convs: ConversationSummary[]) => {
   ];
 
   convs.forEach((conv) => {
-    const d = new Date(conv.createdAt);
+    if (conv.isPinned) {
+      groups[0].items.push(conv);
+      return;
+    }
+    const d = new Date(activityOf(conv));
     const cd = new Date(d.getFullYear(), d.getMonth(), d.getDate());
     if (cd >= today) {
-      groups[0].items.push(conv);
-    } else if (cd >= yesterday) {
       groups[1].items.push(conv);
-    } else if (cd >= sevenDaysAgo) {
+    } else if (cd >= yesterday) {
       groups[2].items.push(conv);
-    } else {
+    } else if (cd >= sevenDaysAgo) {
       groups[3].items.push(conv);
+    } else {
+      groups[4].items.push(conv);
     }
   });
 
@@ -68,6 +81,7 @@ export function AssistantView() {
   const isStreaming = useConversationStore((s) => s.isStreaming);
   const streamingConversationId = useConversationStore((s) => s.streamingConversationId);
   const setActiveConversation = useConversationStore((s) => s.setActiveConversation);
+  const prependMessages = useConversationStore((s) => s.prependMessages);
   const setModel = useConversationStore((s) => s.setModel);
   const sendMessage = useConversationStore((s) => s.sendMessage);
   const respondToApproval = useConversationStore((s) => s.respondToApproval);
@@ -76,6 +90,9 @@ export function AssistantView() {
 
   const [conversationSearch, setConversationSearch] = useState("");
   const debouncedConversationSearch = useDebouncedValue(conversationSearch);
+  const [showArchived, setShowArchived] = useState(false);
+  const [earlierMessages, setEarlierMessages] = useState<{ conversationId: string; hasMore: boolean } | null>(null);
+  const [isLoadingEarlier, setIsLoadingEarlier] = useState(false);
 
   const {
     conversations,
@@ -83,11 +100,13 @@ export function AssistantView() {
     createConversation,
     deleteConversation: deleteConversationMutate,
     renameConversation,
+    setPinned,
+    setArchived,
     isCreating,
     hasMore: hasMoreConversations,
     loadMore: loadMoreConversations,
     isLoadingMore: isLoadingMoreConversations,
-  } = useConversations(debouncedConversationSearch);
+  } = useConversations(debouncedConversationSearch, showArchived);
 
   const { models, defaultModel } = useModels();
 
@@ -164,6 +183,7 @@ export function AssistantView() {
           }
           const loadedMessages: ConversationMessage[] = (data.messages ?? []).map(messageFromDto);
           setActiveConversation(routeConversationId, loadedMessages, data.model);
+          setEarlierMessages({ conversationId: routeConversationId, hasMore: data.hasEarlierMessages ?? false });
           setModel(data.model);
           setChatWorkspace(data.workspaceId ? { id: data.workspaceId, name: data.workspaceName ?? "Workspace" } : null);
         })
@@ -198,6 +218,36 @@ export function AssistantView() {
     } catch {
       setChatWorkspace(previous);
       setSendError("The workspace could not be changed. Please try again.");
+    }
+  };
+
+  const hasEarlierMessages =
+    earlierMessages?.conversationId === activeConversationId && earlierMessages.hasMore && messages.length > 0;
+
+  /** Loads the page before the oldest message shown and keeps the view where it was. */
+  const loadEarlierMessages = async () => {
+    const conversationId = activeConversationId;
+    const oldest = messages[0];
+    if (!conversationId || !oldest || isLoadingEarlier) {
+      return;
+    }
+
+    setIsLoadingEarlier(true);
+    const area = chatAreaRef.current;
+    const previousHeight = area?.scrollHeight ?? 0;
+    try {
+      const page = await fetchEarlierMessages(conversationId, oldest.id);
+      prependMessages(conversationId, page.messages.map(messageFromDto));
+      setEarlierMessages({ conversationId, hasMore: page.hasEarlierMessages });
+      requestAnimationFrame(() => {
+        if (area) {
+          area.scrollTop += area.scrollHeight - previousHeight;
+        }
+      });
+    } catch {
+      setSendError("Earlier messages could not be loaded. Please try again.");
+    } finally {
+      setIsLoadingEarlier(false);
     }
   };
 
@@ -328,7 +378,7 @@ export function AssistantView() {
 
   const isEmpty = messages.length === 0 && !isTyping;
   const isLoadingConversation = !!routeConversationId && routeConversationId !== activeConversationId;
-  const conversationGroups = groupConversationsByDate(conversations);
+  const conversationGroups = groupConversations(conversations);
 
   return (
     <Page
@@ -364,6 +414,13 @@ export function AssistantView() {
               <WelcomeScreen suggestions={randomizedSuggestions} onSelectSuggestion={(s) => setInput(s)} />
             ) : (
               <div className={styles.messagesArea}>
+                {hasEarlierMessages && (
+                  <div className={styles.earlierMessages}>
+                    <Button variant="ghost" size="sm" loading={isLoadingEarlier} onClick={() => void loadEarlierMessages()}>
+                      Load earlier messages
+                    </Button>
+                  </div>
+                )}
                 {messages.map((msg, i) => {
                   const live = isTyping && i === messages.length - 1;
                   return (
@@ -453,6 +510,10 @@ export function AssistantView() {
           onLoadConversation={loadConversation}
           onDeleteConversation={deleteConversation}
           onRenameConversation={(id, title) => renameConversation({ id, title })}
+          showArchived={showArchived}
+          onShowArchivedChange={setShowArchived}
+          onSetPinned={setPinned}
+          onSetArchived={setArchived}
         />
       </div>
 

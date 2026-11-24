@@ -7,6 +7,9 @@ export interface AgentLearning {
   capturedAt: string;
   isIngested: boolean;
   isGlobal: boolean;
+  /** How often recall has handed this learning to an agent. */
+  recallCount?: number;
+  lastRecalledAt?: string | null;
 }
 
 export interface AgentLearningStats {

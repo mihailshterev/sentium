@@ -10,6 +10,7 @@ using Sentium.Praxis.Features.Agents;
 using Sentium.Praxis.Features.Agents.Native;
 using Sentium.Praxis.Features.Agents.Runtime;
 using Sentium.Praxis.Features.Agents.ToolOverrides;
+using Sentium.Praxis.Features.Conversations;
 using Sentium.Praxis.Features.Learnings;
 using Sentium.Praxis.Features.Models;
 using Sentium.Praxis.Features.Registry;
@@ -31,6 +32,13 @@ internal sealed class AgentTestHost
 {
     public RecordingChatClient Model { get; } = new();
     public IAgentLearningService Learnings { get; } = Substitute.For<IAgentLearningService>();
+
+    public IConversationRepository Conversations { get; } = Substitute.For<IConversationRepository>();
+
+    /// <summary>
+    /// Every model counts as installed unless a test says otherwise.
+    /// </summary>
+    public IInstalledModels InstalledModels { get; } = CreateInstalledModels();
 
     public IWorkspaceContextBuilder WorkspaceContext { get; } = Substitute.For<IWorkspaceContextBuilder>();
     public IAgentSkillRepository Skills { get; } = Substitute.For<IAgentSkillRepository>();
@@ -98,6 +106,7 @@ internal sealed class AgentTestHost
             Model,
             Options.Create(Inference),
             ContextWindows,
+            InstalledModels,
             toolProvider,
             [mcpSource],
             Agents,
@@ -105,11 +114,20 @@ internal sealed class AgentTestHost
             Settings,
             new AgentSkillsProviderFactory(new BuiltInSkillCatalog(), Skills, RunContext, NullLoggerFactory.Instance),
             new CurrentDateContextProvider(CalendarSettings, RunContext, Clock, NullLogger<CurrentDateContextProvider>.Instance),
+            new HistorySummaryContextProvider(Conversations, RunContext),
             new LearningsContextProvider(Learnings, RunContext),
             new WorkspaceContextProviderFactory(WorkspaceContext, RunContext),
             new SentinelFunctionMiddleware(Pdp, RunContext, NullLogger<SentinelFunctionMiddleware>.Instance),
             RunContext,
             provider,
             NullLoggerFactory.Instance);
+    }
+
+    private static IInstalledModels CreateInstalledModels()
+    {
+        var models = Substitute.For<IInstalledModels>();
+        models.PickAsync(Arg.Any<IReadOnlyList<string>>(), Arg.Any<CancellationToken>())
+            .Returns(call => ValueTask.FromResult(call.Arg<IReadOnlyList<string>>()[0]));
+        return models;
     }
 }

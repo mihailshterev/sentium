@@ -54,7 +54,6 @@ public sealed class RateLimitingPolicyTests : IDisposable
         var ct = TestContext.Current.CancellationToken;
         var sut = MakePolicy(max: 3);
 
-        // Consume up to limit
         for (var i = 0; i < 3; i++)
         {
             await sut.EvaluateAsync(MakeRequest("burst-agent"), ct);

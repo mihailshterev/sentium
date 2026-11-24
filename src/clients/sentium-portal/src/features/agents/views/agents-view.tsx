@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Bot, Plus, Sparkles } from "lucide-react";
+import { Bot, Package, Plus } from "lucide-react";
 import styles from "../agents.module.css";
 import { useAgents } from "@/features/agents/hooks/useAgents";
 import { useModels } from "@/features/models/hooks/useModels";
@@ -134,7 +134,7 @@ export function AgentsView() {
           {builtInAgents.length > 0 && (
             <Card padding="none" as="section" className={styles.listCard}>
               <CardHeader
-                icon={<Sparkles />}
+                icon={<Package />}
                 title="Built-in agents"
                 description="Ship with Sentium. Change which tools they may call; the defaults stay one click away."
               />

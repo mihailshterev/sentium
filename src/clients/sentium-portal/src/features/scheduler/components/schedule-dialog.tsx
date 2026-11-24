@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CalendarClock, Sparkles } from "lucide-react";
+import { CalendarClock } from "lucide-react";
 import styles from "../scheduler.module.css";
 import { useAgentRoster } from "@/features/agents/hooks/useAgentRoster";
 import { useWorkflows } from "@/features/workflows/hooks/useWorkflows";
@@ -167,9 +167,7 @@ export function ScheduleDialog({ job, onClose }: ScheduleDialogProps) {
                 onClick={() => applyTemplate(t)}
                 data-testid={`schedule-template-${t.id}`}
               >
-                <span className={styles.templateName}>
-                  <Sparkles size={14} aria-hidden="true" /> {t.name}
-                </span>
+                <span className={styles.templateName}>{t.name}</span>
                 <span className={styles.templateDescription}>{t.description}</span>
               </button>
             ))}

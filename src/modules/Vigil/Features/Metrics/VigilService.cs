@@ -116,7 +116,7 @@ internal sealed class VigilService : IVigil
         };
     }
 
-    private static List<DiskInfo> GetDiskInfo()
+    public static List<DiskInfo> GetDiskInfo()
     {
         return DriveInfo.GetDrives()
             .Where(d => d.IsReady && d.DriveType == DriveType.Fixed)

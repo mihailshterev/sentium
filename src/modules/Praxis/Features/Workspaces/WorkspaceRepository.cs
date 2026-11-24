@@ -1,6 +1,7 @@
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using Sentium.Core.Results;
+using Sentium.Praxis.Common;
 using Sentium.Praxis.Data;
 using Sentium.Praxis.Entities;
 using Sentium.Praxis.Features.Files;
@@ -140,9 +141,30 @@ internal sealed class WorkspaceRepository(PraxisDbContext context) : IWorkspaceR
             .ToListAsync(ct);
     }
 
-    public async Task<IReadOnlyList<WorkspaceFileDto>> GetFilesAsync(Guid? workspaceId, CancellationToken ct = default)
+    public async Task<(IReadOnlyList<WorkspaceFileDto> Items, int TotalCount)> GetWorkspaceFilesPageAsync(
+        Guid workspaceId,
+        int page,
+        int pageSize,
+        string? search,
+        CancellationToken ct = default)
     {
-        var query = context.ProjectFiles.AsNoTracking().AsQueryable();
+        var query = MatchingName(context.ProjectFiles.AsNoTracking().Where(f => f.WorkspaceId == workspaceId), search);
+
+        var total = await query.CountAsync(ct);
+        var items = await query
+            .OrderByDescending(f => f.CreatedAt)
+            .ThenByDescending(f => f.Id)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(ToFileDto)
+            .ToListAsync(ct);
+
+        return (items, total);
+    }
+
+    public async Task<IReadOnlyList<WorkspaceFileDto>> GetFilesAsync(Guid? workspaceId, string? search = null, CancellationToken ct = default)
+    {
+        var query = MatchingName(context.ProjectFiles.AsNoTracking(), search);
 
         if (workspaceId.HasValue)
         {
@@ -248,5 +270,16 @@ internal sealed class WorkspaceRepository(PraxisDbContext context) : IWorkspaceR
             .Where(w => w.Name == name)
             .Select(w => (Guid?)w.Id)
             .FirstOrDefaultAsync(ct);
+    }
+
+    private static IQueryable<ProjectFile> MatchingName(IQueryable<ProjectFile> files, string? search)
+    {
+        if (TextSearch.Normalize(search) is not { } term)
+        {
+            return files;
+        }
+
+        var pattern = TextSearch.ToContainsPattern(term);
+        return files.Where(f => EF.Functions.ILike(f.FileName, pattern, TextSearch.EscapeCharacter));
     }
 }

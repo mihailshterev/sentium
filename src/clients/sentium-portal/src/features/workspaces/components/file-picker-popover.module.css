@@ -11,7 +11,7 @@
   border-radius: var(--radius-lg);
   background: var(--mat-thick-bg);
   box-shadow: var(--mat-thick-shadow);
-  backdrop-filter: blur(18px);
+  backdrop-filter: var(--mat-thick-filter);
 }
 
 .search {

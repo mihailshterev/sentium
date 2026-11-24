@@ -19,6 +19,12 @@ internal sealed class AgentLearningService(
     private const string SourcePrefix = "learning:";
     private const string CacheTag = "learnings";
     private const float RecallScoreThreshold = 0.35f;
+    private const string LearningIdKey = "learning_id";
+
+    /// <summary>
+    /// Cosine similarity at which a new private learning says what an existing one (private or global) already says.
+    /// </summary>
+    private const float DuplicateScoreThreshold = 0.92f;
 
     public async Task<PagedResponse<AgentLearningResponse>> GetLearningsAsync(
         string? agentName,
@@ -85,14 +91,19 @@ internal sealed class AgentLearningService(
             IsIngested = false
         };
 
+        // Compared in the form learnings are embedded in, so the header does not hide an identical body.
+        if (!isGlobal && await FindNearDuplicateAsync(FormatAsMarkdown(entity), request.UserId, ct) is { } duplicate)
+        {
+            logger.LogInformation("Skipped capture for agent {AgentName}: learning {LearningId} already says the same.", request.AgentName, duplicate.Id);
+            return ToResponse(duplicate);
+        }
+
         await repository.AddAsync(entity, ct);
         await cache.InvalidateTagAsync(CacheTag, ct);
 
         await IngestLearningAsync(entity, ct);
 
-        return new AgentLearningResponse(
-            entity.Id, entity.AgentName, entity.Content, entity.Tags,
-            entity.ConversationId, entity.CapturedAt, entity.IsIngested, entity.IsGlobal);
+        return ToResponse(entity);
     }
 
     public async Task<bool> DeleteAsync(Guid id, CancellationToken ct = default)
@@ -130,9 +141,7 @@ internal sealed class AgentLearningService(
 
         await IngestLearningAsync(entity, ct);
 
-        return new AgentLearningResponse(
-            entity.Id, entity.AgentName, entity.Content, entity.Tags,
-            entity.ConversationId, entity.CapturedAt, entity.IsIngested, entity.IsGlobal);
+        return ToResponse(entity);
     }
 
     public async Task<IReadOnlyList<RecalledLearning>> RecallRelevantAsync(string query, Guid? userId, int limit = 5, CancellationToken ct = default)
@@ -159,6 +168,8 @@ internal sealed class AgentLearningService(
                 return [];
             }
 
+            await RecordRecallAsync(results, ct);
+
             return results
                 .Select(r => new RecalledLearning(
                     r.Chunk.Content,
@@ -172,6 +183,79 @@ internal sealed class AgentLearningService(
             return [];
         }
     }
+
+    public async Task<int> RetryPendingIngestionAsync(int max, CancellationToken ct = default)
+    {
+        var ingested = 0;
+        foreach (var learning in await repository.GetPendingIngestionAsync(max, ct))
+        {
+            await IngestLearningAsync(learning, ct);
+            if (!learning.IsIngested)
+            {
+                // The embedding server is most likely still away; the rest waits for the next attempt.
+                break;
+            }
+
+            ingested++;
+        }
+
+        if (ingested > 0)
+        {
+            await cache.InvalidateTagAsync(CacheTag, ct);
+        }
+
+        return ingested;
+    }
+
+    private static AgentLearningResponse ToResponse(AgentLearning entity)
+    {
+        return new AgentLearningResponse(
+            entity.Id, entity.AgentName, entity.Content, entity.Tags, entity.ConversationId, entity.CapturedAt,
+            entity.IsIngested, entity.IsGlobal, entity.RecallCount, entity.LastRecalledAt);
+    }
+
+    /// <summary>
+    /// An existing learning the user's agents can see (their own or a global one) that says nearly the same thing.
+    /// Best effort: without the embedding server there is no comparison, and the learning is simply captured.
+    /// </summary>
+    private async Task<AgentLearning?> FindNearDuplicateAsync(string embeddedText, Guid? userId, CancellationToken ct)
+    {
+        if (userId is null)
+        {
+            return null;
+        }
+
+        try
+        {
+            var embedding = await embeddingService.GenerateEmbeddingAsync(embeddedText, ct);
+            var hits = await vectorRepository.SearchAsync(
+                LearningsCollection, embedding, topK: 1, scoreThreshold: DuplicateScoreThreshold, scope: new KnowledgeScopeFilter(userId), ct: ct);
+
+            return hits.Count > 0 && LearningIdOf(hits[0]) is { } id ? await repository.FindAsync(id, ct) : null;
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogWarning(ex, "Could not check a new learning for duplicates; capturing it anyway.");
+            return null;
+        }
+    }
+
+    private async Task RecordRecallAsync(IReadOnlyList<VectorSearchResult> results, CancellationToken ct)
+    {
+        var ids = results.Select(LearningIdOf).OfType<Guid>().Distinct().ToList();
+
+        try
+        {
+            await repository.RecordRecallAsync(ids, DateTimeOffset.UtcNow, ct);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            logger.LogWarning(ex, "Could not record the recall of {Count} learnings.", ids.Count);
+        }
+    }
+
+    private static Guid? LearningIdOf(VectorSearchResult result) =>
+        result.Chunk.Metadata.TryGetValue(LearningIdKey, out var value) && Guid.TryParse(value, out var id) ? id : null;
 
     private async Task IngestLearningAsync(AgentLearning entity, CancellationToken ct)
     {
@@ -197,7 +281,7 @@ internal sealed class AgentLearningService(
                     { "agent_name", entity.AgentName },
                     { "tags", entity.Tags },
                     { "captured_at", entity.CapturedAt.ToString("O") },
-                    { "learning_id", entity.Id.ToString() },
+                    { LearningIdKey, entity.Id.ToString() },
                     { "origin_user_id", entity.UserId?.ToString() ?? string.Empty }
                 }
             };

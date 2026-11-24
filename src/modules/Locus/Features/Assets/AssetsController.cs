@@ -34,9 +34,6 @@ internal sealed class AssetsController(IAssetService assetService) : ControllerB
         return asset is null ? NotFound() : Ok(asset);
     }
 
-    /// <summary>
-    /// Catalogues a new asset.
-    /// </summary>
     /// <response code="400">Invalid data or the location does not exist.</response>
     [HttpPost]
     [ProducesResponseType(typeof(AssetDto), StatusCodes.Status201Created)]

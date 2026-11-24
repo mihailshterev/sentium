@@ -9,6 +9,8 @@ internal static class ToolNames
     public const string RecallMemory = "recall_memory";
     public const string RecallLearnings = "recall_learnings";
     public const string StoreMemory = "store_memory";
+    public const string UpdateMemory = "update_memory";
+    public const string ForgetMemory = "forget_memory";
     public const string CaptureAgentLearning = "capture_agent_learning";
     public const string ExecuteCode = "execute_code_sandbox";
     public const string ListWorkspaces = "list_workspaces";

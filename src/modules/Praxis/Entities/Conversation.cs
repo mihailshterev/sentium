@@ -32,5 +32,29 @@ internal sealed class Conversation : IUserOwned
 
     public DateTime CreatedAt { get; set; }
 
+    /// <summary>
+    /// When the last message was added; <see langword="null"/> for conversations last active before this was tracked,
+    /// which sort by <see cref="CreatedAt"/> instead.
+    /// </summary>
+    public DateTime? LastActivityAt { get; set; }
+
+    public bool IsPinned { get; set; }
+
+    /// <summary>
+    /// Left out of the conversation list until unarchived, or until a new message brings it back.
+    /// </summary>
+    public bool IsArchived { get; set; }
+
+    /// <summary>
+    /// Running summary of the messages that have moved out of what the model sees verbatim; see
+    /// <c>HistoryWindow</c>. <see langword="null"/> until the conversation is long enough.
+    /// </summary>
+    public string? HistorySummary { get; set; }
+
+    /// <summary>
+    /// Timestamp of the newest message <see cref="HistorySummary"/> covers.
+    /// </summary>
+    public DateTime? HistorySummarizedThrough { get; set; }
+
     public ICollection<Message> Messages { get; set; } = [];
 }

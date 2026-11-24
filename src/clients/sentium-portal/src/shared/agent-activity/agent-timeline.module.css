@@ -188,27 +188,7 @@
 }
 
 .labelActive {
-  background: linear-gradient(
-    90deg,
-    var(--text-muted) 0%,
-    var(--text-muted) 35%,
-    var(--text-primary) 50%,
-    var(--text-muted) 65%,
-    var(--text-muted) 100%
-  );
-  background-size: 250% 100%;
-  background-clip: text;
-  color: transparent;
-  animation: shimmer 2.2s linear infinite;
-}
-
-@keyframes shimmer {
-  from {
-    background-position: 100% 0;
-  }
-  to {
-    background-position: -150% 0;
-  }
+  color: var(--text-secondary);
 }
 
 .toolName {
@@ -502,12 +482,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .labelActive {
-    background: none;
-    color: var(--text-secondary);
-    animation: none;
-  }
-
   .step[data-tone="running"] .dot::after,
   .step[data-tone="awaiting_approval"] .dot::after {
     animation: none;

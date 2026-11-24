@@ -1,4 +1,4 @@
-import { AlertTriangle, Bot, CalendarClock, CalendarDays, Sparkles } from "lucide-react";
+import { AlertTriangle, Bot, CalendarClock, CalendarDays, Lightbulb } from "lucide-react";
 import styles from "../timeline.module.css";
 import { Button } from "@/shared/ui/button";
 import type { TimelineTask, Upcoming } from "../types/timeline";
@@ -103,7 +103,7 @@ export function UpNext({
       <section className={styles.upColumn}>
         <header className={styles.sideHead}>
           <h3>
-            <Sparkles size={13} aria-hidden="true" /> Suggestions
+            <Lightbulb size={13} aria-hidden="true" /> Suggestions
           </h3>
         </header>
         <p className={styles.sideEmpty}>
@@ -113,7 +113,7 @@ export function UpNext({
         </p>
         <div className={styles.upActions}>
           {pending > 0 && (
-            <Button size="sm" icon={<Sparkles size={14} />} onClick={onShowSuggestions}>
+            <Button size="sm" icon={<Lightbulb size={14} />} onClick={onShowSuggestions}>
               Review
             </Button>
           )}

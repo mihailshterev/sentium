@@ -10,7 +10,8 @@ import {
   Layers,
   Brain,
   Database,
-  Sparkles,
+  FlaskConical,
+  Bookmark,
   ChevronRight,
   Info,
 } from "lucide-react";
@@ -105,7 +106,7 @@ export function Toolbar({
         <Presence>
           {isDemo && (
             <Animated className={styles.demoBadge} title="No indexed knowledge yet — showing sample data" {...FADE_MOTION}>
-              <Sparkles size={12} aria-hidden="true" />
+              <FlaskConical size={12} aria-hidden="true" />
               <span>Demo</span>
             </Animated>
           )}
@@ -121,7 +122,7 @@ export function Toolbar({
             {stats.learnings} Learnings
           </span>
           <span className={styles.statChip} title="User memories">
-            <Sparkles size={12} style={{ color: COLLECTION_COLORS.user_memories.color }} aria-hidden="true" />
+            <Bookmark size={12} style={{ color: COLLECTION_COLORS.user_memories.color }} aria-hidden="true" />
             {stats.memories} Memories
           </span>
         </div>

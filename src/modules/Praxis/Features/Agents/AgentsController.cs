@@ -12,10 +12,9 @@ namespace Sentium.Praxis.Features.Agents;
 internal sealed class AgentsController(IAgentService agentService) : ControllerBase
 {
     /// <summary>
-    /// Returns a page of agents (newest first).
+    /// Newest first.
     /// </summary>
-    /// <param name="page">1-based page number (default: 1).</param>
-    /// <param name="pageSize">Number of items per page (default: 20, max: 100).</param>
+    /// <param name="page">1-based.</param>
     [HttpGet]
     [ProducesResponseType(typeof(PagedResponse<AgentResponse>), StatusCodes.Status200OK)]
     public async ValueTask<ActionResult<PagedResponse<AgentResponse>>> GetAgents(
@@ -63,9 +62,7 @@ internal sealed class AgentsController(IAgentService agentService) : ControllerB
     /// <summary>
     /// Replaces a built-in agent's tools for the signed-in user (<c>tools: null</c> = every tool).
     /// </summary>
-    /// <param name="agentName">The built-in agent's name.</param>
-    /// <param name="request">The tool names.</param>
-    /// <returns>The updated agent, or HTTP 404 for an unknown or control agent.</returns>
+    /// <response code="404">Unknown or control agent.</response>
     [HttpPut("built-in/{agentName}/tools")]
     [ProducesResponseType(typeof(BuiltInAgentResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -92,8 +89,7 @@ internal sealed class AgentsController(IAgentService agentService) : ControllerB
     /// <summary>
     /// Restores a built-in agent's code-defined tools for the signed-in user.
     /// </summary>
-    /// <param name="agentName">The built-in agent's name.</param>
-    /// <returns>The agent with its default tools, or HTTP 404 for an unknown or control agent.</returns>
+    /// <response code="404">Unknown or control agent.</response>
     [HttpDelete("built-in/{agentName}/tools")]
     [ProducesResponseType(typeof(BuiltInAgentResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -124,10 +120,7 @@ internal sealed class AgentsController(IAgentService agentService) : ControllerB
         return agent is null ? NotFound() : Ok(agent);
     }
 
-    /// <summary>
-    /// Creates a new agent based on the provided configuration
-    /// </summary>
-    /// <returns>Created agent details, or HTTP 409 Conflict if an agent with the same name already exists.</returns>
+    /// <response code="409">The name is reserved or already taken.</response>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
@@ -142,10 +135,7 @@ internal sealed class AgentsController(IAgentService agentService) : ControllerB
         return CreatedAtAction(nameof(GetAgentById), new { agentId = result.Value!.Id }, result.Value);
     }
 
-    /// <summary>
-    /// Updates an existing agent based on the provided configuration
-    /// </summary>
-    /// <returns>No content, HTTP 404 if the agent does not exist, or HTTP 409 Conflict if the new name is taken by another agent.</returns>
+    /// <response code="409">The new name is reserved or taken by another agent.</response>
     [HttpPut("{agentId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -161,9 +151,6 @@ internal sealed class AgentsController(IAgentService agentService) : ControllerB
         };
     }
 
-    /// <summary>
-    /// Deletes an agent by its ID. This will remove the agent and all its associated data, including sessions and learnings.
-    /// </summary>
     [HttpDelete("{agentId:guid}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

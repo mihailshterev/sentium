@@ -100,3 +100,9 @@
   flex-direction: column;
   gap: 6px;
 }
+
+.actionButtons {
+  display: flex;
+  gap: var(--space-1);
+  justify-content: flex-end;
+}

@@ -26,4 +26,16 @@ internal interface IIdentityService
     /// Ends the current session by clearing the Identity auth cookie.
     /// </summary>
     Task LogoutAsync();
+
+    /// <summary>
+    /// Changes the user's password and re-issues this session's cookie. The account's other sessions end within the
+    /// security-stamp validation interval; paired Devices keep their own tokens.
+    /// </summary>
+    Task<IdentityResult> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword);
+
+    /// <summary>
+    /// Ends every other session of the account (within the security-stamp validation interval) and keeps this one.
+    /// </summary>
+    /// <returns><see langword="false"/> when the user does not exist.</returns>
+    Task<bool> SignOutOtherSessionsAsync(Guid userId);
 }

@@ -108,7 +108,7 @@ internal sealed class MonitoringWorker(
         {
             case ServiceStatus.Unhealthy when open is null:
                 await PublishIncidentAsync(
-                    incidentStore.Open(probe.Target, probe.Kind, IncidentSeverity.Critical, current.Status, current.Details),
+                    await incidentStore.OpenAsync(probe.Target, probe.Kind, IncidentSeverity.Critical, current.Status, current.Details, ct),
                     VigilFeedEventTypes.IncidentOpened,
                     category,
                     ct);
@@ -116,14 +116,14 @@ internal sealed class MonitoringWorker(
 
             case ServiceStatus.Degraded when open is null && current.ConsecutiveFailures >= settings.ConsecutiveFailuresToOpenIncident:
                 await PublishIncidentAsync(
-                    incidentStore.Open(probe.Target, probe.Kind, IncidentSeverity.Warning, current.Status, current.Details),
+                    await incidentStore.OpenAsync(probe.Target, probe.Kind, IncidentSeverity.Warning, current.Status, current.Details, ct),
                     VigilFeedEventTypes.IncidentOpened,
                     category,
                     ct);
                 break;
 
             case ServiceStatus.Healthy when open is not null:
-                await PublishIncidentAsync(incidentStore.Resolve(probe.Target), VigilFeedEventTypes.IncidentResolved, category, ct);
+                await PublishIncidentAsync(await incidentStore.ResolveAsync(probe.Target, ct), VigilFeedEventTypes.IncidentResolved, category, ct);
                 break;
         }
     }

@@ -58,12 +58,6 @@
   letter-spacing: var(--tracking-label);
 }
 
-.glass {
-  background: var(--mat-regular-bg);
-  border: 1px solid var(--mat-regular-border);
-  backdrop-filter: var(--mat-regular-filter);
-}
-
 @media (prefers-reduced-transparency: reduce) {
   :root,
   :root[data-theme="light"] {

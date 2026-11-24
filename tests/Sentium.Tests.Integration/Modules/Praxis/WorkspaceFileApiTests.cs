@@ -5,6 +5,7 @@ using System.Net.Http.Json;
 using System.Text;
 using Microsoft.Extensions.DependencyInjection;
 using NSubstitute;
+using Sentium.Core.Results;
 using Sentium.Praxis.Features.Conversations;
 using Sentium.Praxis.Features.Storage;
 using Sentium.Praxis.Features.Workspaces;
@@ -169,6 +170,33 @@ public sealed class WorkspaceFileApiTests : IClassFixture<WorkspaceApiFactory>
     private Stream Open(Guid blob)
     {
         return _blobs.TryGetValue(blob, out var bytes) ? new MemoryStream(bytes) : throw new FileNotFoundException();
+    }
+
+    [Fact]
+    public async Task WorkspaceFiles_ArePaged_AndSearchableByName()
+    {
+        var workspace = await CreateWorkspaceAsync();
+        for (var i = 0; i < 5; i++)
+        {
+            await UploadAsync($"note-{i}.md", Encoding.UTF8.GetBytes($"note {i}"), workspace.Id);
+        }
+
+        await UploadAsync("Tax-Return-2025.md", Encoding.UTF8.GetBytes("taxes"), workspace.Id);
+
+        var first = await _client.GetFromJsonAsync<PagedResponse<WorkspaceFileDto>>($"/api/praxis/workspaces/{workspace.Id}/files/page?page=1&pageSize=4", Ct);
+        var second = await _client.GetFromJsonAsync<PagedResponse<WorkspaceFileDto>>($"/api/praxis/workspaces/{workspace.Id}/files/page?page=2&pageSize=4", Ct);
+        Assert.Equal(6, first!.TotalCount);
+        Assert.Equal(4, first.Items.Count);
+        Assert.Equal(2, second!.Items.Count);
+        Assert.Empty(first.Items.Select(f => f.Id).Intersect(second.Items.Select(f => f.Id)));
+
+        var found = await _client.GetFromJsonAsync<PagedResponse<WorkspaceFileDto>>($"/api/praxis/workspaces/{workspace.Id}/files/page?search=tax-return", Ct);
+        Assert.Equal("Tax-Return-2025.md", Assert.Single(found!.Items).FileName);
+
+        var anywhere = await _client.GetFromJsonAsync<List<WorkspaceFileDto>>("/api/praxis/workspaces/files?search=TAX-RETURN-2025", Ct);
+        Assert.Contains(anywhere!, f => f.FileName == "Tax-Return-2025.md");
+
+        Assert.Equal(HttpStatusCode.NotFound, (await _client.GetAsync($"/api/praxis/workspaces/{Guid.NewGuid()}/files/page", Ct)).StatusCode);
     }
 
     private async Task<WorkspaceDto> CreateWorkspaceAsync()

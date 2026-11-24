@@ -337,6 +337,21 @@ describe("KnowledgeBase Learning card edit", () => {
     expect(screen.getByText("Pending")).toBeInTheDocument();
   });
 
+  it("shows how often a learning was recalled", () => {
+    cleanup();
+    vi.spyOn(useAgentLearningsHook, "useAgentLearnings").mockReturnValue({
+      ...defaultLearningsHook,
+      learnings: [
+        { ...mockLearning, recallCount: 3, lastRecalledAt: "2026-01-02T10:00:00Z" },
+        { ...mockLearning, id: "learn-2", recallCount: 0 },
+      ],
+    });
+    renderKb();
+    fireEvent.click(screen.getByRole("tab", { name: /agent learnings/i }));
+    expect(screen.getByText("Recalled 3×")).toBeInTheDocument();
+    expect(screen.getByText("Never recalled")).toBeInTheDocument();
+  });
+
   it("shows Saving state while update is pending", () => {
     cleanup();
     vi.spyOn(useAgentLearningsHook, "useAgentLearnings").mockReturnValue({

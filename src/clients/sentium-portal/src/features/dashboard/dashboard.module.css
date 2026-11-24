@@ -264,9 +264,11 @@
   overflow: hidden;
 }
 
+/* Capped by width, not height: a height cap would stretch the box out of the map's 5:4 and pull labels off their nodes. */
 .map {
-  max-height: 360px;
-  padding: 0 var(--space-4) var(--space-4);
+  width: calc(100% - 2 * var(--space-4));
+  max-width: 480px;
+  margin: 0 auto var(--space-4);
 }
 
 /* ---------- Runs feed ---------- */

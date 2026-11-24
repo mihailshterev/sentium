@@ -36,6 +36,15 @@ export function updateMe(data: { firstName: string; lastName?: string | null; us
   return client.put<void>("/identity/account/me", data);
 }
 
+export function changePassword(data: { currentPassword: string; newPassword: string }) {
+  return client.put<void>("/identity/account/me/password", data);
+}
+
+/** Ends every other browser session of the signed-in account; this one stays signed in. */
+export function signOutOtherSessions() {
+  return client.post<void>("/identity/account/me/sessions/revoke-others", null);
+}
+
 export function uploadAvatar(picture: Blob) {
   const form = new FormData();
   form.append("file", picture, "avatar");
@@ -56,6 +65,15 @@ export function getUser(id: string) {
 
 export function deleteUser(id: string) {
   return client.delete<void>(`/identity/users/${id}`);
+}
+
+/** Sovereign only: sets another user's password, unlocks the account and signs it out everywhere. */
+export function resetUserPassword(id: string, newPassword: string) {
+  return client.put<void>(`/identity/users/${id}/password`, { newPassword });
+}
+
+export function unlockUser(id: string) {
+  return client.post<void>(`/identity/users/${id}/unlock`, null);
 }
 
 export function getRoles() {

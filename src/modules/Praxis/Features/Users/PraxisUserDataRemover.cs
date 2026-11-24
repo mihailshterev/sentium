@@ -1,8 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using Sentium.Identity.Contracts;
 using Sentium.Infrastructure.Security;
-using Sentium.Infrastructure.Storage;
 using Sentium.Praxis.Data;
 using Sentium.Praxis.Features.CodeExecution;
 using Sentium.Praxis.Features.Storage;
@@ -11,7 +9,7 @@ namespace Sentium.Praxis.Features.Users;
 
 /// <summary>
 /// Deletes a removed user's agents, skills, workflows and runs, conversations, workspaces and files (with their blobs),
-/// learnings and sandbox history (with its artifacts). The user's knowledge chunks are Codex's to remove.
+/// learnings, memories and sandbox history (with its artifacts). The user's knowledge chunks are Codex's to remove.
 /// </summary>
 /// <remarks>
 /// The rows go first and the blobs after, one by one: an unreachable blob store then leaves orphaned blobs (logged),
@@ -19,8 +17,7 @@ namespace Sentium.Praxis.Features.Users;
 /// </remarks>
 internal sealed class PraxisUserDataRemover(
     IServiceScopeFactory scopeFactory,
-    IObjectStore objectStore,
-    IOptions<SandboxArtifactOptions> artifactOptions,
+    SandboxArtifactRemover artifacts,
     ILogger<PraxisUserDataRemover> logger) : IUserRemovalObserver
 {
     public async Task OnUserRemovedAsync(Guid userId, CancellationToken ct)
@@ -35,8 +32,8 @@ internal sealed class PraxisUserDataRemover(
             .ToListAsync(ct);
 
         var runs = await db.ExecutionLogs.IgnoreQueryFilters()
-            .AsNoTracking()
             .Where(e => e.UserId == userId)
+            .Select(e => e.JobId)
             .ToListAsync(ct);
 
         var deleted = await DeleteRecordsAsync(db, userId, ct);
@@ -52,18 +49,7 @@ internal sealed class PraxisUserDataRemover(
             await DeleteBlobAsync(() => files.DeleteFileAsync(blobName, ct), blobName.ToString());
         }
 
-        var artifactBucket = artifactOptions.Value.ArtifactContainerName;
-        foreach (var artifact in runs.SelectMany(r => r.Artifacts))
-        {
-            var key = ObjectUri.GetKey(artifact.BlobUri, artifactBucket);
-            if (key is null)
-            {
-                logger.LogWarning("Artifact {BlobUri} of a removed user is not in the {Bucket} bucket; it is orphaned.", artifact.BlobUri, artifactBucket);
-                continue;
-            }
-
-            await DeleteBlobAsync(() => objectStore.DeleteAsync(artifactBucket, key, ct), key);
-        }
+        await artifacts.DeleteAsync(runs, ct);
     }
 
     private static async Task<int> DeleteRecordsAsync(PraxisDbContext db, Guid userId, CancellationToken ct)
@@ -74,6 +60,7 @@ internal sealed class PraxisUserDataRemover(
             + await db.AgentToolOverrides.IgnoreQueryFilters().Where(o => o.UserId == userId).ExecuteDeleteAsync(ct)
             + await db.AgentSkills.IgnoreQueryFilters().Where(s => s.UserId == userId).ExecuteDeleteAsync(ct)
             + await db.AgentLearnings.IgnoreQueryFilters().Where(l => l.UserId == userId).ExecuteDeleteAsync(ct)
+            + await db.UserMemories.IgnoreQueryFilters().Where(m => m.UserId == userId).ExecuteDeleteAsync(ct)
             + await db.PendingApprovals.Where(p => p.UserId == userId).ExecuteDeleteAsync(ct)
             + await db.Conversations.IgnoreQueryFilters().Where(c => c.UserId == userId).ExecuteDeleteAsync(ct)
             + await db.ProjectFiles.IgnoreQueryFilters().Where(f => f.UserId == userId).ExecuteDeleteAsync(ct)

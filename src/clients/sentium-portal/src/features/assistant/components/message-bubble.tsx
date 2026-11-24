@@ -1,7 +1,7 @@
 import { memo, useState } from "react";
 import { Markdown } from "@/shared/markdown";
 import { markdownUrlTransform } from "@/shared/utils/markdown-url";
-import { Check, ChevronDown, Copy, FileText, ShieldAlert, Sparkles } from "lucide-react";
+import { Check, ChevronDown, Copy, FileText, PenLine, ShieldAlert } from "lucide-react";
 import styles from "../assistant.module.css";
 import { Button } from "@/shared/ui/button";
 import { SentiumMark } from "@/shared/ui/sentium-mark";
@@ -93,7 +93,7 @@ export const MessageBubble = memo(function MessageBubble({
                 onClick={() => setEnhancedOpen((v) => !v)}
                 aria-expanded={enhancedOpen}
               >
-                <Sparkles size={13} aria-hidden="true" />
+                <PenLine size={13} aria-hidden="true" />
                 <span>Enhanced prompt</span>
                 <ChevronDown size={13} className={enhancedOpen ? styles.chevronOpen : styles.chevron} />
               </button>

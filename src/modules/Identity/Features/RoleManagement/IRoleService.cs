@@ -1,31 +1,18 @@
 namespace Sentium.Identity.Features.RoleManagement;
 
-/// <summary>
-/// Manages user roles and enforces hierarchical security constraints.
-/// </summary>
 internal interface IRoleService
 {
     /// <summary>
-    /// Assigns a role to a user, strictly enforcing hierarchy permissions.
+    /// Fails unless <paramref name="requesterId"/> is a <see cref="Security.Roles.Sovereign"/> and
+    /// <paramref name="roleName"/> is one of <see cref="Security.Roles"/>.
     /// </summary>
-    /// <param name="requesterId">The ID of the user attempting the assignment.</param>
-    /// <param name="targetUserId">The ID of the user receiving the role.</param>
-    /// <param name="roleName">The name of the role to assign (must exist in <see cref="Security.Roles"/>).</param>
-    /// <remarks>
-    /// Security Policy:
-    /// 1. Only users with the <see cref="Security.Roles.Sovereign"/> role can assign roles.
-    /// 2. Only a Sovereign can promote another user to Sovereign.
-    /// </remarks>
     Task<(bool Succeeded, string? Error)> AssignRoleAsync(Guid requesterId, Guid targetUserId, string roleName, CancellationToken ct);
 
     /// <summary>
-    /// Safety Logic:
-    /// Prevents the removal of the final <see cref="Security.Roles.Sovereign"/> to ensure the system remains administrable.
+    /// Fails unless <paramref name="requesterId"/> is a <see cref="Security.Roles.Sovereign"/>, and never removes the
+    /// last Sovereign so the system stays administrable.
     /// </summary>
     Task<(bool Succeeded, string? Error)> RemoveRoleAsync(Guid requesterId, Guid targetUserId, string roleName, CancellationToken ct);
 
-    /// <summary>
-    /// Retrieves all roles currently assigned to a user.
-    /// </summary>
     ValueTask<IList<string>> GetRolesAsync(Guid userId, CancellationToken ct);
 }

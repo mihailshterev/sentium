@@ -44,6 +44,11 @@ const defaultUsersHook = {
   isRemovingRole: false,
   deleteUser: vi.fn().mockResolvedValue(undefined),
   isDeletingUser: false,
+  resetPassword: vi.fn().mockResolvedValue(undefined),
+  isResettingPassword: false,
+  resetPasswordError: null,
+  clearResetPasswordError: vi.fn(),
+  unlockUser: vi.fn().mockResolvedValue(undefined),
 };
 
 const memberRole = {
@@ -306,6 +311,54 @@ describe("Users sovereign controls", () => {
     });
     renderUsers();
     expect(screen.getByTitle("Delete user")).toBeDisabled();
+  });
+});
+
+describe("Users password and lockout", () => {
+  beforeEach(() => {
+    vi.spyOn(useRoleHook, "useRole").mockReturnValue({ ...memberRole, isSovereign: true });
+  });
+
+  it("resets another user's password from the dialog", async () => {
+    const resetPassword = vi.fn().mockResolvedValue(undefined);
+    vi.spyOn(useUsersHook, "useUsers").mockReturnValue({ ...defaultUsersHook, resetPassword });
+    renderUsers();
+    fireEvent.click(screen.getByTitle("Reset password"));
+    fireEvent.change(screen.getByLabelText("New password"), { target: { value: "fresh-pass-42" } });
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: /reset password/i }));
+    await waitFor(() => expect(resetPassword).toHaveBeenCalledWith({ userId: "user-1", newPassword: "fresh-pass-42" }));
+  });
+
+  it("does not submit a password that breaks the rules", async () => {
+    const resetPassword = vi.fn().mockResolvedValue(undefined);
+    vi.spyOn(useUsersHook, "useUsers").mockReturnValue({ ...defaultUsersHook, resetPassword });
+    renderUsers();
+    fireEvent.click(screen.getByTitle("Reset password"));
+    fireEvent.change(screen.getByLabelText("New password"), { target: { value: "short" } });
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: /reset password/i }));
+    await waitFor(() => expect(screen.getByText("Password must be at least 8 characters")).toBeInTheDocument());
+    expect(resetPassword).not.toHaveBeenCalled();
+  });
+
+  it("unlocks a locked-out user", async () => {
+    const unlockUser = vi.fn().mockResolvedValue(undefined);
+    vi.spyOn(useUsersHook, "useUsers").mockReturnValue({
+      ...defaultUsersHook,
+      users: [{ ...mockUser, isLockedOut: true }],
+      unlockUser,
+    });
+    renderUsers();
+    fireEvent.click(screen.getByTitle("Unlock account"));
+    await waitFor(() => expect(unlockUser).toHaveBeenCalledWith("user-1"));
+  });
+
+  it("does not offer a password reset for yourself", () => {
+    useAuthStore.setState({
+      user: { sub: "user-1", name: "Alice", roles: ["Sovereign"] },
+      status: "authenticated",
+    });
+    renderUsers();
+    expect(screen.getByTitle("Change your password on your Profile page")).toBeDisabled();
   });
 });
 

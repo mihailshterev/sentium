@@ -8,9 +8,8 @@ using Sentium.Infrastructure.Security;
 namespace Sentium.Codex.Features.SemanticMap;
 
 /// <summary>
-/// Provides graph-ready data for the semantic knowledge map visualization.
-/// Returns nodes (document chunks) from one or more vector collections and
-/// supports semantic search for query-traversal animation.
+/// Data for the portal's semantic knowledge map: chunks as graph nodes, and search hits for the query-traversal
+/// animation.
 /// </summary>
 [ApiController]
 [Authorize]
@@ -21,24 +20,25 @@ internal sealed class SemanticMapController(
     IOptions<RagOptions> ragOptions,
     ICurrentUser currentUser) : ControllerBase
 {
+    private const int DefaultNodeLimit = 300;
+    private const int MaxNodeLimit = 500;
+    private const int MaxTopK = 50;
+    private const int PreviewChars = 200;
+
     private static readonly HashSet<string> ScopedCollections = [.. KnowledgeCollections.All];
 
-    /// <summary>
-    /// Returns a page of nodes from the specified collections for graph rendering.
-    /// Each node represents a document chunk with its source metadata.
-    /// </summary>
-    /// <param name="limit">The maximum number of nodes to return (default 300, max 500).</param>
-    /// <param name="collection">Optional specific collection to query; if not provided, queries all tracked collections.</param>
+    /// <param name="limit">Per collection, at most 500.</param>
+    /// <param name="collection">All tracked collections when omitted.</param>
     [HttpGet("nodes")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<KnowledgeMapResponse>> GetNodes(
-        [FromQuery] int limit = 300,
+        [FromQuery] int limit = DefaultNodeLimit,
         [FromQuery] string? collection = null,
         CancellationToken ct = default)
     {
         var collections = collection is not null ? [collection] : KnowledgeCollections.All;
 
-        var safeLimit = Math.Clamp(limit, 1, 500);
+        var safeLimit = Math.Clamp(limit, 1, MaxNodeLimit);
 
         var allNodes = new List<KnowledgeMapNode>();
 
@@ -52,7 +52,7 @@ internal sealed class SemanticMapController(
             allNodes.AddRange(chunks.Select(chunk => new KnowledgeMapNode
             {
                 Id = chunk.Id.ToString(),
-                Content = chunk.Content.Length > 200 ? chunk.Content[..200] + "…" : chunk.Content,
+                Content = Preview(chunk.Content),
                 FullContent = chunk.Content,
                 Source = chunk.Source,
                 SourceType = chunk.SourceType.ToString(),
@@ -71,8 +71,7 @@ internal sealed class SemanticMapController(
     }
 
     /// <summary>
-    /// Performs a semantic search across all tracked collections and returns
-    /// ranked results for query-traversal visualization.
+    /// The best <see cref="KnowledgeMapSearchRequest.TopK"/> hits across all tracked collections.
     /// </summary>
     [HttpPost("search")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -80,7 +79,7 @@ internal sealed class SemanticMapController(
     [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
     public async Task<ActionResult<KnowledgeMapSearchResponse>> Search([FromBody] KnowledgeMapSearchRequest request, CancellationToken ct)
     {
-        var topK = Math.Clamp(request.TopK, 1, 50);
+        var topK = Math.Clamp(request.TopK, 1, MaxTopK);
         var threshold = ragOptions.Value.ScoreThreshold;
 
         float[] embedding;
@@ -106,7 +105,7 @@ internal sealed class SemanticMapController(
             {
                 Id = hit.Chunk.Id.ToString(),
                 Score = hit.Score,
-                Content = hit.Chunk.Content.Length > 200 ? hit.Chunk.Content[..200] + "…" : hit.Chunk.Content,
+                Content = Preview(hit.Chunk.Content),
                 FullContent = hit.Chunk.Content,
                 Source = hit.Chunk.Source,
                 SourceType = hit.Chunk.SourceType.ToString(),
@@ -127,4 +126,7 @@ internal sealed class SemanticMapController(
             TotalMatches = ranked.Count
         });
     }
+
+    private static string Preview(string content) =>
+        content.Length > PreviewChars ? content[..PreviewChars] + "…" : content;
 }

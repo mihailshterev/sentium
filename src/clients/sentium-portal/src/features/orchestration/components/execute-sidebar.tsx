@@ -8,7 +8,7 @@ import {
   Paperclip,
   Pencil,
   Play,
-  Sparkles,
+  Route,
   Square,
   X,
 } from "lucide-react";
@@ -234,7 +234,7 @@ export function ExecuteSidebar({
             disabled={isRunning}
             options={[
               { value: "predefined", label: "Predefined", icon: <Layers size={13} aria-hidden="true" /> },
-              { value: "dynamic", label: "Dynamic", icon: <Sparkles size={13} aria-hidden="true" /> },
+              { value: "dynamic", label: "Dynamic", icon: <Route size={13} aria-hidden="true" /> },
             ]}
           />
 
@@ -301,7 +301,7 @@ export function ExecuteSidebar({
           {executeMode === "dynamic" && (
             <>
               <div className={styles.dynamicNote}>
-                <Sparkles size={16} aria-hidden="true" />
+                <Route size={16} aria-hidden="true" />
                 <span>
                   <strong>Dynamic run.</strong> Sentium plans and assembles the right agents for your scenario.
                 </span>
@@ -326,7 +326,7 @@ export function ExecuteSidebar({
                 <Button
                   variant="primary"
                   fullWidth
-                  icon={<Sparkles size={15} />}
+                  icon={<Play size={15} />}
                   onClick={onRunDynamic}
                   disabled={!scenarioInput.trim()}
                 >

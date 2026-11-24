@@ -11,10 +11,18 @@ import type { PagedResponse } from "@/shared/types/pagination";
 
 const BASE = "/praxis";
 
-export const listWorkspaceFiles = (workspaceId?: string): Promise<WorkspaceFile[]> =>
-  client.get<WorkspaceFile[]>(
-    `${BASE}/workspaces/files${workspaceId ? `?workspaceId=${encodeURIComponent(workspaceId)}` : ""}`,
-  );
+/** The newest files (optionally of one workspace, optionally whose name contains `search`), at most 500. */
+export const listWorkspaceFiles = (workspaceId?: string, search?: string): Promise<WorkspaceFile[]> => {
+  const params = new URLSearchParams();
+  if (workspaceId) {
+    params.set("workspaceId", workspaceId);
+  }
+  if (search?.trim()) {
+    params.set("search", search.trim());
+  }
+  const query = params.toString();
+  return client.get<WorkspaceFile[]>(`${BASE}/workspaces/files${query ? `?${query}` : ""}`);
+};
 
 export const deleteWorkspaceFile = (fileId: string): Promise<void> =>
   client.delete<void>(`${BASE}/workspaces/files/${fileId}`);
@@ -36,6 +44,20 @@ export const deleteWorkspace = (id: string): Promise<void> => client.delete<void
 
 export const fetchWorkspaceFiles = (workspaceId: string): Promise<WorkspaceFile[]> =>
   client.get<WorkspaceFile[]>(`${BASE}/workspaces/${workspaceId}/files`);
+
+/** A page of a workspace's files, newest first, optionally only those whose name contains `search`. */
+export const fetchWorkspaceFilesPage = (
+  workspaceId: string,
+  page = 1,
+  pageSize = 50,
+  search?: string,
+): Promise<PagedResponse<WorkspaceFile>> => {
+  const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+  if (search?.trim()) {
+    params.set("search", search.trim());
+  }
+  return client.get<PagedResponse<WorkspaceFile>>(`${BASE}/workspaces/${workspaceId}/files/page?${params}`);
+};
 
 export const fetchUploadRules = (): Promise<UploadRules> => client.get<UploadRules>(`${BASE}/workspaces/files/rules`);
 

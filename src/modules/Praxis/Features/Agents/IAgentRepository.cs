@@ -60,4 +60,9 @@ internal interface IAgentRepository
 
     /// <returns><see langword="true"/> if a matching agent was deleted; otherwise <see langword="false"/>.</returns>
     Task<bool> DeleteAgentAsync(Guid agentId, CancellationToken ct = default);
+
+    /// <summary>
+    /// The owner and current name of an agent the caller can see, or <see langword="null"/>.
+    /// </summary>
+    Task<AgentIdentity?> GetIdentityAsync(Guid agentId, CancellationToken ct = default);
 }

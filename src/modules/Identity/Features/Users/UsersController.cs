@@ -12,15 +12,7 @@ namespace Sentium.Identity.Features.Users;
 [Authorize]
 internal sealed class UsersController(IUserService userService, ICurrentUser currentUser) : ControllerBase
 {
-    /// <summary>
-    /// Lists users registered in the system, with pagination.
-    /// </summary>
-    /// <remarks>
-    /// Only accessible by users with the Sovereign role.
-    /// </remarks>
-    /// <param name="page">1-based page number (default: 1).</param>
-    /// <param name="pageSize">Number of items per page (default: 20, max: 100).</param>
-    /// <response code="200">Returns a paginated list of users with their basic profiles and roles.</response>
+    /// <param name="page">1-based.</param>
     [HttpGet]
     [Authorize(Roles = Roles.Sovereign)]
     [ProducesResponseType(typeof(PagedResponse<UserResponse>), StatusCodes.Status200OK)]
@@ -34,9 +26,6 @@ internal sealed class UsersController(IUserService userService, ICurrentUser cur
         return Ok(PagedResponse<UserResponse>.Create(items, totalCount, page, pageSize));
     }
 
-    /// <summary>
-    /// Retrieves detailed information for a specific user.
-    /// </summary>
     [HttpGet("{id:guid}")]
     [Authorize(Roles = Roles.Sovereign)]
     [ProducesResponseType(typeof(UserResponse), StatusCodes.Status200OK)]
@@ -52,14 +41,7 @@ internal sealed class UsersController(IUserService userService, ICurrentUser cur
         return Ok(ToResponse(user));
     }
 
-    /// <summary>
-    /// Permanently deletes a user from the system.
-    /// </summary>
-    /// <remarks>
-    /// Only accessible by Sovereign.
-    /// This operation is destructive and includes a hierarchy check to prevent self-deletion or unauthorized escalation.
-    /// </remarks>
-    /// <response code="400">If the deletion violates business rules (e.g., deleting yourself).</response>
+    /// <response code="400">The target is the requester or the last Sovereign.</response>
     [HttpDelete("{id:guid}")]
     [Authorize(Roles = Roles.Sovereign)]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -82,6 +64,54 @@ internal sealed class UsersController(IUserService userService, ICurrentUser cur
         }
 
         return NoContent();
+    }
+
+    /// <summary>
+    /// Sets a new password for another user who forgot theirs, unlocks the account and signs it out everywhere.
+    /// </summary>
+    /// <response code="400">If the target is the requester (use the Profile page) or the password breaks the rules.</response>
+    [HttpPut("{id:guid}/password")]
+    [Authorize(Roles = Roles.Sovereign)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ResetPassword(Guid id, [FromBody] ResetPasswordRequest request, CancellationToken ct)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        if (currentUser.UserId is not { } requesterId)
+        {
+            return Unauthorized();
+        }
+
+        if (requesterId == id)
+        {
+            return Problem(
+                detail: "Change your own password on your Profile page.",
+                statusCode: StatusCodes.Status400BadRequest);
+        }
+
+        if (await userService.GetUserByIdAsync(id, ct) is null)
+        {
+            return NotFound();
+        }
+
+        var (succeeded, errors) = await userService.ResetPasswordAsync(id, request.NewPassword, ct);
+        return succeeded
+            ? NoContent()
+            : Problem(detail: string.Join(" ", errors), statusCode: StatusCodes.Status400BadRequest);
+    }
+
+    /// <summary>
+    /// Lifts a lockout caused by repeated failed sign-ins.
+    /// </summary>
+    [HttpPost("{id:guid}/unlock")]
+    [Authorize(Roles = Roles.Sovereign)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Unlock(Guid id, CancellationToken ct)
+    {
+        return await userService.UnlockAsync(id, ct) ? NoContent() : NotFound();
     }
 
     private static UserResponse ToResponse(UserDto user) =>

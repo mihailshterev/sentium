@@ -69,6 +69,50 @@ internal sealed class IdentityService(
 
     public Task LogoutAsync() => signInManager.SignOutAsync();
 
+    public async Task<IdentityResult> ChangePasswordAsync(Guid userId, string currentPassword, string newPassword)
+    {
+        var user = await userManager.FindByIdAsync(userId.ToString());
+        if (user is null)
+        {
+            return IdentityResult.Failed(new IdentityError { Description = "User not found." });
+        }
+
+        // Also rotates the security stamp, which is what ends the other sessions.
+        var result = await userManager.ChangePasswordAsync(user, currentPassword, newPassword);
+        if (!result.Succeeded)
+        {
+            return result;
+        }
+
+        await signInManager.RefreshSignInAsync(user);
+
+        if (logger.IsEnabled(LogLevel.Information))
+        {
+            logger.LogInformation("User {UserId} changed their password.", userId);
+        }
+
+        return result;
+    }
+
+    public async Task<bool> SignOutOtherSessionsAsync(Guid userId)
+    {
+        var user = await userManager.FindByIdAsync(userId.ToString());
+        if (user is null)
+        {
+            return false;
+        }
+
+        await userManager.UpdateSecurityStampAsync(user);
+        await signInManager.RefreshSignInAsync(user);
+
+        if (logger.IsEnabled(LogLevel.Information))
+        {
+            logger.LogInformation("User {UserId} signed out their other sessions.", userId);
+        }
+
+        return true;
+    }
+
     /// <summary>
     /// The first account of an installation becomes its Sovereign (there is no other way to get one); after that,
     /// accounts are Members and may only register while a Sovereign keeps registration open.

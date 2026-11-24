@@ -141,6 +141,10 @@
   padding: 0 var(--space-5) var(--space-5);
 }
 
+.fileSearch {
+  padding: var(--space-3) var(--space-5);
+}
+
 .fileList {
   margin: 0;
   padding: 0 0 var(--space-2);

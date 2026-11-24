@@ -3,6 +3,7 @@ using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Options;
 using Sentium.Infrastructure.Inference;
 using Sentium.Praxis.Contracts;
+using Sentium.Praxis.Features.Conversations;
 using Sentium.Praxis.Features.Learnings;
 using Sentium.Praxis.Features.Models;
 using Sentium.Praxis.Features.Registry;
@@ -25,6 +26,7 @@ internal sealed class CompositeAgentFactory(
     [FromKeyedServices(PraxisModuleExtensions.AgentChatClientKey)] IChatClient baseChatClient,
     IOptions<InferenceOptions> inferenceOptions,
     IModelContextWindowProvider contextWindows,
+    IInstalledModels installedModels,
     IAgentToolProvider agentToolProvider,
     IEnumerable<IAgentToolSource> toolSources,
     IAgentRepository agentRepository,
@@ -32,6 +34,7 @@ internal sealed class CompositeAgentFactory(
     IRegistrySettingsService registrySettingsService,
     AgentSkillsProviderFactory skillsProviderFactory,
     CurrentDateContextProvider currentDateProvider,
+    HistorySummaryContextProvider historySummaryProvider,
     LearningsContextProvider learningsProvider,
     WorkspaceContextProviderFactory workspaceContextFactory,
     SentinelFunctionMiddleware sentinelMiddleware,
@@ -48,7 +51,7 @@ internal sealed class CompositeAgentFactory(
         bool allowApprovalTools = true,
         CancellationToken ct = default)
     {
-        var blueprint = await ResolveBlueprintAsync(agentName, overrideModel, actingUserId, allowApprovalTools, ct)
+        var blueprint = await ResolveBlueprintAsync(agentName, overrideModel, actingUserId, allowApprovalTools, ct: ct)
             ?? throw new InvalidOperationException($"Agent '{agentName}' could not be resolved.");
 
         var chatOptions = new ChatOptions
@@ -66,12 +69,13 @@ internal sealed class CompositeAgentFactory(
             ChatOptions = chatOptions,
             ChatHistoryProvider = chatHistory,
 
-            // Most stable first, so llama-server's prompt cache keeps the longest prefix: the date changes daily,
-            // learnings and workspace context per message.
+            // Most stable first, so llama-server's prompt cache keeps the longest prefix: the date changes daily, the
+            // conversation summary every few turns, learnings and workspace context per message.
             AIContextProviders =
             [
                 skillsProviderFactory.Create(),
                 currentDateProvider,
+                historySummaryProvider,
                 learningsProvider,
                 workspaceContextFactory.Create(blueprint.ContextWindow),
             ],
@@ -91,6 +95,7 @@ internal sealed class CompositeAgentFactory(
         string? overrideModel,
         Guid? actingUserId,
         bool allowApprovalTools,
+        bool exactModel = false,
         CancellationToken ct = default)
     {
         var definition = await ResolveDefinitionAsync(agentName, actingUserId, ct);
@@ -99,7 +104,7 @@ internal sealed class CompositeAgentFactory(
             return null;
         }
 
-        var (settings, model, contextWindow) = await ResolveSettingsAsync(overrideModel, actingUserId, ct);
+        var (settings, model, contextWindow) = await ResolveSettingsAsync(overrideModel, actingUserId, exactModel, ct);
         var tools = await SelectToolsAsync(definition, allowApprovalTools, ct);
 
         return new AgentBlueprint(definition, settings, model, contextWindow, tools);
@@ -127,7 +132,7 @@ internal sealed class CompositeAgentFactory(
         var definition = serviceProvider.GetKeyedService<IAgent>(agentName)
             ?? throw new InvalidOperationException($"Control agent '{agentName}' is not a registered native agent.");
 
-        var (settings, model, contextWindow) = await ResolveSettingsAsync(overrideModel, actingUserId, ct);
+        var (settings, model, contextWindow) = await ResolveSettingsAsync(overrideModel, actingUserId, exactModel: false, ct);
 
         // Lean by design: no harness, tools, skills, or learnings - just the role and a deterministic temperature.
         var chatOptions = new ChatOptions
@@ -154,11 +159,14 @@ internal sealed class CompositeAgentFactory(
     private async Task<(SettingsSnapshot Settings, string Model, int ContextWindow)> ResolveSettingsAsync(
         string? overrideModel,
         Guid? actingUserId,
+        bool exactModel,
         CancellationToken ct)
     {
         // HTTP callers pass no actingUserId; the entry point has already put the user on the run context.
         var settings = await registrySettingsService.GetAsync(actingUserId ?? runContext.UserId, ct);
-        var model = ResolveModel(overrideModel, settings.Inference);
+        var model = exactModel
+            ? ResolveModel(overrideModel, settings.Inference)
+            : await installedModels.PickAsync(ModelCandidates(overrideModel, settings.Inference), ct);
         var contextWindow = await contextWindows.GetContextWindowAsync(model, ct);
 
         return (settings, model, contextWindow);
@@ -212,6 +220,16 @@ internal sealed class CompositeAgentFactory(
             : await agentRepository.GetAgentByNameAsync(agentName, ct);
 
         return dbAgent is null ? null : new DynamicCustomAgent(dbAgent.Name, dbAgent.Description, dbAgent.Tools);
+    }
+
+    /// <summary>
+    /// The model asked for, then the user's default, then the installation's: a conversation keeps its model, and a
+    /// model removed since falls back to one that is installed.
+    /// </summary>
+    private List<string> ModelCandidates(string? overrideModel, InferenceSettingsSnapshot? inferenceSettings)
+    {
+        List<string?> candidates = [overrideModel, inferenceSettings?.DefaultModel, inferenceOptions.Value.DefaultModel];
+        return [.. candidates.OfType<string>().Where(m => !string.IsNullOrWhiteSpace(m)).Distinct(StringComparer.Ordinal)];
     }
 
     private string ResolveModel(string? overrideModel, InferenceSettingsSnapshot? inferenceSettings)

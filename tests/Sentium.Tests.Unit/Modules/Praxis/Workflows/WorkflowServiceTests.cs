@@ -1,4 +1,6 @@
+using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
+using Sentium.Praxis.Features.Agents;
 using Sentium.Praxis.Features.WorkflowManagement;
 using Sentium.Praxis.Features.Workflows;
 using Xunit;
@@ -12,7 +14,7 @@ public sealed class WorkflowServiceTests
 
     public WorkflowServiceTests()
     {
-        _service = new WorkflowService(_repository, new PassThroughScopedCache());
+        _service = new WorkflowService(_repository, new PassThroughScopedCache(), new RunTargetNotifier([], NullLogger<RunTargetNotifier>.Instance));
     }
 
     private static WorkflowResponse MakeResponse(Guid? id = null)

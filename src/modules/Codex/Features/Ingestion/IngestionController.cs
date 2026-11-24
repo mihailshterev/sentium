@@ -18,10 +18,6 @@ internal sealed class IngestionController(
     IDocumentIngestionService ingestionService,
     IEnumerable<IIngestionSource> sources) : ControllerBase
 {
-    /// <summary>
-    /// Ingest a single document into the knowledge base.
-    /// The service will chunk, embed, and store it in the vector store.
-    /// </summary>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     public async Task<IActionResult> IngestDocument([FromBody] IngestionRequest request, CancellationToken ct)
@@ -31,7 +27,6 @@ internal sealed class IngestionController(
     }
 
     /// <summary>
-    /// Ingest multiple documents in a single call.
     /// Each document is processed independently; a failure on one does not abort the rest.
     /// </summary>
     [HttpPost("batch")]
@@ -43,11 +38,8 @@ internal sealed class IngestionController(
     }
 
     /// <summary>
-    /// Triggers ingestion from a named registered <see cref="IIngestionSource"/>.
-    /// Useful for on-demand back-fills or scheduled refresh jobs.
-    /// Returns 404 if no source with that name is registered.
+    /// Runs the registered <see cref="IIngestionSource"/> with this name.
     /// </summary>
-    /// <returns>Accepted if the source was found and ingestion started; 404 otherwise.</returns>
     [HttpPost("sources/{sourceName}")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -64,9 +56,6 @@ internal sealed class IngestionController(
         return Accepted();
     }
 
-    /// <summary>
-    /// Lists all named ingestion sources currently registered in the DI container.
-    /// </summary>
     [HttpGet("sources")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public IActionResult GetSources()
@@ -76,9 +65,6 @@ internal sealed class IngestionController(
         return Ok(result);
     }
 
-    /// <summary>
-    /// Removes all vector chunks associated with the given source identifier.
-    /// </summary>
     [HttpDelete]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

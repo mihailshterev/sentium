@@ -8,6 +8,10 @@ export interface ConversationSummary {
   agentName?: string | null;
   workspaceId?: string | null;
   workspaceName?: string | null;
+  /** When the last message was added (the creation time for older conversations). */
+  lastActivityAt?: string | null;
+  isPinned?: boolean;
+  isArchived?: boolean;
 }
 
 /** A workspace file attached to a user message. */
@@ -52,10 +56,20 @@ export interface ConversationDetail {
   id: string;
   title: string;
   model: string;
+  /** The newest messages, oldest first; older ones come from {@link EarlierMessagesPage}. */
   messages: ConversationMessageDto[];
   agentName?: string | null;
   workspaceId?: string | null;
   workspaceName?: string | null;
+  hasEarlierMessages?: boolean;
+  isPinned?: boolean;
+  isArchived?: boolean;
+}
+
+export interface EarlierMessagesPage {
+  /** Oldest first. */
+  messages: ConversationMessageDto[];
+  hasEarlierMessages: boolean;
 }
 
 export interface CreateConversationPayload {

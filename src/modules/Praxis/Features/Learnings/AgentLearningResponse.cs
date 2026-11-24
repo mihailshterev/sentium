@@ -8,4 +8,6 @@ internal sealed record AgentLearningResponse(
     Guid? ConversationId,
     DateTimeOffset CapturedAt,
     bool IsIngested,
-    bool IsGlobal = false);
+    bool IsGlobal = false,
+    int RecallCount = 0,
+    DateTimeOffset? LastRecalledAt = null);

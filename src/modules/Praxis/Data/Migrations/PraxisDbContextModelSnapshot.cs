@@ -94,6 +94,12 @@ namespace Sentium.Praxis.Data.Migrations
                     b.Property<bool>("IsIngested")
                         .HasColumnType("boolean");
 
+                    b.Property<DateTimeOffset?>("LastRecalledAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("RecallCount")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Tags")
                         .IsRequired()
                         .HasMaxLength(1000)
@@ -204,8 +210,24 @@ namespace Sentium.Praxis.Data.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<DateTime?>("HistorySummarizedThrough")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("HistorySummary")
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<bool>("IsArchived")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsPinned")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("IsTitlePending")
                         .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LastActivityAt")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Model")
                         .IsRequired()
@@ -228,6 +250,8 @@ namespace Sentium.Praxis.Data.Migrations
                     b.HasIndex("WorkspaceId");
 
                     b.HasIndex("UserId", "CreatedAt");
+
+                    b.HasIndex("UserId", "IsArchived", "LastActivityAt");
 
                     b.ToTable("Conversations", "praxis");
                 });
@@ -345,6 +369,33 @@ namespace Sentium.Praxis.Data.Migrations
                     b.HasIndex("WorkspaceId");
 
                     b.ToTable("ProjectFiles", "praxis");
+                });
+
+            modelBuilder.Entity("Sentium.Praxis.Entities.UserMemory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "UpdatedAt");
+
+                    b.ToTable("UserMemories", "praxis");
                 });
 
             modelBuilder.Entity("Sentium.Praxis.Entities.Workflow", b =>

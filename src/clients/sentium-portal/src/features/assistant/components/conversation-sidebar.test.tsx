@@ -49,6 +49,10 @@ const renderSidebar = (overrides: Partial<React.ComponentProps<typeof Conversati
     onLoadConversation: vi.fn(),
     onDeleteConversation: vi.fn(),
     onRenameConversation: vi.fn(),
+    showArchived: false,
+    onShowArchivedChange: vi.fn(),
+    onSetPinned: vi.fn(),
+    onSetArchived: vi.fn(),
     ...overrides,
   };
   render(<ConversationSidebar {...props} />);
@@ -88,5 +92,50 @@ describe("ConversationSidebar", () => {
   it("shows the matching count in the header", () => {
     renderSidebar({ totalCount: 42 });
     expect(screen.getByText("42")).toBeInTheDocument();
+  });
+});
+
+describe("ConversationSidebar pinning and archiving", () => {
+  it("pins an unpinned conversation", () => {
+    const props = renderSidebar();
+    fireEvent.click(screen.getByTitle("Pin conversation"));
+    expect(props.onSetPinned).toHaveBeenCalledWith("c1", true);
+    expect(props.onLoadConversation).not.toHaveBeenCalled();
+  });
+
+  it("unpins a pinned conversation", () => {
+    const pinned = { ...conversation, isPinned: true };
+    const props = renderSidebar({ conversations: [pinned], conversationGroups: [{ label: "Pinned", items: [pinned] }] });
+    fireEvent.click(screen.getByTitle("Unpin conversation"));
+    expect(props.onSetPinned).toHaveBeenCalledWith("c1", false);
+  });
+
+  it("archives a conversation", () => {
+    const props = renderSidebar();
+    fireEvent.click(screen.getByTitle("Archive conversation"));
+    expect(props.onSetArchived).toHaveBeenCalledWith("c1", true);
+  });
+
+  it("unarchives from the archived list, which offers no pinning", () => {
+    const props = renderSidebar({ showArchived: true });
+    expect(screen.getByText("Archived")).toBeInTheDocument();
+    expect(screen.queryByTitle("Pin conversation")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTitle("Unarchive conversation"));
+    expect(props.onSetArchived).toHaveBeenCalledWith("c1", false);
+  });
+
+  it("switches between the active and the archived list", () => {
+    const props = renderSidebar();
+    fireEvent.click(screen.getByTitle("Show archived conversations"));
+    expect(props.onShowArchivedChange).toHaveBeenCalledWith(true);
+  });
+
+  it("shows when the conversation was last active", () => {
+    const lastActivityAt = new Date(2025, 0, 15, 8, 0).toISOString();
+    renderSidebar({
+      conversations: [{ ...conversation, lastActivityAt }],
+      conversationGroups: [{ label: "Older", items: [{ ...conversation, lastActivityAt }] }],
+    });
+    expect(screen.getByText("15 Jan 2025")).toBeInTheDocument();
   });
 });

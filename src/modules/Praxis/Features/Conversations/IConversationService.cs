@@ -2,18 +2,39 @@ using Sentium.Core.Results;
 
 namespace Sentium.Praxis.Features.Conversations;
 
-/// <summary>
-/// Application-layer operations for conversations and their messages.
-/// </summary>
 internal interface IConversationService
 {
     /// <summary>
-    /// Returns a page of conversation summaries (newest first), optionally only those whose title contains
-    /// <paramref name="search"/> (case-insensitive).
+    /// Returns a page of the archived or the active conversations (pinned first, then by latest activity), optionally
+    /// only those whose title or any message contains <paramref name="search"/> (case-insensitive).
     /// </summary>
-    Task<PagedResponse<ConversationSummary>> GetConversationsAsync(int page, int pageSize, string? search = null, CancellationToken ct = default);
+    Task<PagedResponse<ConversationSummary>> GetConversationsAsync(
+        int page,
+        int pageSize,
+        string? search = null,
+        bool archived = false,
+        CancellationToken ct = default);
 
-    Task<ConversationResponse?> GetConversationAsync(Guid conversationId, CancellationToken ct = default);
+    /// <summary>
+    /// The conversation with its newest <paramref name="messageLimit"/> messages (clamped to the maximum page).
+    /// </summary>
+    Task<ConversationResponse?> GetConversationAsync(Guid conversationId, int messageLimit = ConversationService.DefaultMessageLimit, CancellationToken ct = default);
+
+    /// <summary>
+    /// Up to <paramref name="limit"/> messages older than <paramref name="beforeMessageId"/>, oldest first;
+    /// <see langword="null"/> when the conversation has no such message.
+    /// </summary>
+    Task<MessagePageResponse?> GetMessagesBeforeAsync(Guid conversationId, Guid beforeMessageId, int limit, CancellationToken ct = default);
+
+    /// <returns><see langword="false"/> when the conversation does not exist.</returns>
+    Task<bool> SetPinnedAsync(Guid conversationId, bool pinned, CancellationToken ct = default);
+
+    /// <summary>
+    /// Archives (and unpins) or unarchives a conversation. A new message unarchives it too.
+    /// </summary>
+    /// <returns><see langword="false"/> when the conversation does not exist.</returns>
+    Task<bool> SetArchivedAsync(Guid conversationId, bool archived, CancellationToken ct = default);
+
     /// <summary>
     /// Creates a conversation, optionally with a specific agent (a built-in specialist or one of the user's agents).
     /// An unknown agent or a control role is <see cref="ResultStatus.Invalid"/>.
@@ -56,9 +77,6 @@ internal interface IConversationService
     /// </summary>
     Task<Guid?> GetWorkspaceIdAsync(Guid conversationId, Guid userId, CancellationToken ct = default);
 
-    /// <summary>
-    /// Appends a message (with optional enhanced prompt, ordered activity steps and attached files) to a conversation.
-    /// </summary>
     Task AddMessageAsync(
         Guid conversationId,
         string role,

@@ -1,9 +1,10 @@
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Check, ChevronRight, FileText, FolderOpen, Loader2, Upload } from "lucide-react";
 import { fetchWorkspaceFiles, fetchWorkspaces, listWorkspaceFiles } from "@/features/workspaces/api/workspaces.service";
 import type { Workspace, WorkspaceFile } from "@/features/workspaces/types/workspace";
 import { formatBytesToMb } from "@/shared/utils/formatters";
+import { useDebouncedValue } from "@/shared/hooks/useDebouncedValue";
 import { REALTIME_FALLBACK_POLL_MS, REALTIME_TOPICS, useRealtimeInvalidate } from "@/shared/realtime";
 import { FileStatusBadge } from "./file-status-badge";
 import styles from "./file-picker-popover.module.css";
@@ -54,10 +55,13 @@ function PickerPanel({
 
   const workspacesQuery = useQuery({ queryKey: ["workspaces", "options"], queryFn: fetchWorkspaces });
   const searching = query.trim().length > 0;
+  const term = useDebouncedValue(query.trim());
+  // Searched on the server, so files beyond the newest few hundred are found too.
   const allFilesQuery = useQuery({
-    queryKey: ["workspaceFiles", "all"],
-    queryFn: () => listWorkspaceFiles(),
-    enabled: searching,
+    queryKey: ["workspaceFiles", "all", term],
+    queryFn: () => listWorkspaceFiles(undefined, term),
+    enabled: term.length > 0,
+    placeholderData: keepPreviousData,
   });
 
   const close = useEffectEvent(() => onClose());

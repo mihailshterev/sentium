@@ -18,6 +18,9 @@ import { Page } from "@/shared/ui/page";
 import { SkeletonText } from "@/shared/ui/skeleton";
 import { StatusMessage } from "@/shared/ui/status-message";
 import { formatBytesToMb, formatDateTimeShort } from "@/shared/utils/formatters";
+import { useDebouncedValue } from "@/shared/hooks/useDebouncedValue";
+import { SearchInput } from "@/shared/ui/form-controls";
+import { LoadMore } from "@/shared/ui/load-more";
 import { FilePreviewDialog } from "../components/file-preview-dialog";
 import { FileStatusBadge } from "../components/file-status-badge";
 import { UploadPanel } from "../components/upload-panel";
@@ -37,6 +40,8 @@ export function WorkspaceDetailView() {
   const [showEditForm, setShowEditForm] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<{ id: string; name: string } | null>(null);
   const [previewing, setPreviewing] = useState<WorkspaceFile | null>(null);
+  const [fileSearch, setFileSearch] = useState("");
+  const debouncedFileSearch = useDebouncedValue(fileSearch);
 
   const { updateWorkspace, isUpdatingWorkspace } = useWorkspaces();
   const { data: workspace, isError: isWorkspaceError } = useQuery({
@@ -47,6 +52,10 @@ export function WorkspaceDetailView() {
 
   const {
     files,
+    totalCount,
+    hasMoreFiles,
+    loadMoreFiles,
+    isLoadingMoreFiles,
     isFilesLoading,
     isFilesError,
     uploadFiles,
@@ -59,7 +68,8 @@ export function WorkspaceDetailView() {
     deleteFile,
     reindexFile,
     reindexingFileId,
-  } = useWorkspaceFiles(workspaceId);
+  } = useWorkspaceFiles(workspaceId, debouncedFileSearch);
+  const searchingFiles = debouncedFileSearch.trim().length > 0;
 
   useEffect(() => {
     if (!workspaceId) {
@@ -142,13 +152,25 @@ export function WorkspaceDetailView() {
             icon={<FolderOpen />}
             title={`${workspace?.name ?? "…"}/`}
             actions={
-              files.length > 0 && (
+              totalCount > 0 && (
                 <Badge tone="neutral">
-                  {files.length} file{files.length !== 1 ? "s" : ""}
+                  {totalCount} file{totalCount !== 1 ? "s" : ""}
                 </Badge>
               )
             }
           />
+
+          {(totalCount > 0 || searchingFiles) && (
+            <div className={styles.fileSearch}>
+              <SearchInput
+                controlSize="sm"
+                placeholder="Search files by name"
+                aria-label="Search files"
+                value={fileSearch}
+                onChange={(e) => setFileSearch(e.target.value)}
+              />
+            </div>
+          )}
 
           {isFilesLoading && (
             <div className={styles.filesPadding} aria-busy="true">
@@ -162,7 +184,11 @@ export function WorkspaceDetailView() {
           )}
 
           {!isFilesLoading && !isFilesError && files.length === 0 && (
-            <EmptyState icon={<FileText />} title="No files yet" hint="Upload files using the panel on the right" />
+            <EmptyState
+              icon={<FileText />}
+              title={searchingFiles ? `No files match “${debouncedFileSearch.trim()}”` : "No files yet"}
+              hint={searchingFiles ? undefined : "Upload files using the panel on the right"}
+            />
           )}
 
           {files.length > 0 && (
@@ -179,6 +205,8 @@ export function WorkspaceDetailView() {
               ))}
             </ul>
           )}
+
+          <LoadMore hasMore={hasMoreFiles} isLoading={isLoadingMoreFiles} onLoadMore={loadMoreFiles} />
         </Card>
 
         <UploadPanel

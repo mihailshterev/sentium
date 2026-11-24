@@ -5,6 +5,8 @@ import {
   createConversation,
   deleteConversation,
   renameConversation,
+  setConversationArchived,
+  setConversationPinned,
 } from "@/features/assistant/api/assistant.service";
 import { useConversationStore } from "@/features/assistant/state/assistant-conversation-store";
 import type { CreateConversationPayload } from "@/features/assistant/types/assistant";
@@ -17,15 +19,20 @@ interface RenameArgs {
   title: string;
 }
 
-export function useConversations(search = "") {
+interface FlagArgs {
+  id: string;
+  value: boolean;
+}
+
+export function useConversations(search = "", archived = false) {
   const term = search.trim();
   const queryClient = useQueryClient();
   const generatedTitles = useConversationStore((s) => s.conversationTitles);
   const clearConversationTitle = useConversationStore((s) => s.clearConversationTitle);
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteQuery({
-    queryKey: [...CONVERSATIONS_KEY, term],
-    queryFn: ({ pageParam }) => fetchConversations(pageParam, PAGE_SIZE, term || undefined),
+    queryKey: [...CONVERSATIONS_KEY, term, archived],
+    queryFn: ({ pageParam }) => fetchConversations(pageParam, PAGE_SIZE, term || undefined, archived),
     initialPageParam: 1,
     getNextPageParam: (lastPage) => (lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined),
     placeholderData: keepPreviousData,
@@ -63,6 +70,16 @@ export function useConversations(search = "") {
     },
   });
 
+  const pinMutation = useMutation({
+    mutationFn: ({ id, value }: FlagArgs) => setConversationPinned(id, value),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: CONVERSATIONS_KEY }),
+  });
+
+  const archiveMutation = useMutation({
+    mutationFn: ({ id, value }: FlagArgs) => setConversationArchived(id, value),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: CONVERSATIONS_KEY }),
+  });
+
   return {
     conversations,
     totalCount: data?.pages[0]?.totalCount ?? 0,
@@ -75,5 +92,7 @@ export function useConversations(search = "") {
     deleteConversation: deleteMutation.mutate,
     isDeleting: deleteMutation.isPending,
     renameConversation: renameMutation.mutate,
+    setPinned: (id: string, value: boolean) => pinMutation.mutate({ id, value }),
+    setArchived: (id: string, value: boolean) => archiveMutation.mutate({ id, value }),
   };
 }

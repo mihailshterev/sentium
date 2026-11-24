@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import { Animated, EASE_OUT_QUINT, Presence } from "@/shared/ui/motion";
-import { CalendarRange, Sparkles } from "lucide-react";
+import { CalendarRange, Lightbulb } from "lucide-react";
 import styles from "../timeline.module.css";
 import { Button } from "@/shared/ui/button";
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
@@ -298,7 +298,7 @@ export function TimelineView() {
           </Button>
           <Button
             size="sm"
-            icon={<Sparkles size={14} />}
+            icon={<Lightbulb size={14} />}
             onClick={() => setShowProposals(true)}
             aria-label={`Suggestions${pending.length > 0 ? ` (${pending.length})` : ""}`}
             data-testid="timeline-suggestions"

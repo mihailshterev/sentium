@@ -14,6 +14,7 @@ import { LoadMore } from "@/shared/ui/load-more";
 import { SkeletonRows } from "../components/skeleton-rows";
 import { UserRow } from "../components/user-row";
 import { ConfirmDialog } from "@/shared/ui/confirm-dialog";
+import { ResetPasswordDialog } from "../components/reset-password-dialog";
 
 const ROLE_OPTIONS = ROLE_HIERARCHY as readonly Role[];
 
@@ -23,6 +24,7 @@ export function UsersView() {
 
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [userToDelete, setUserToDelete] = useState<{ id: string; identifier: string } | null>(null);
+  const [userToReset, setUserToReset] = useState<{ id: string; identifier: string } | null>(null);
 
   const { isSovereign } = useRole();
   const currentUser = useAuthStore((s) => s.user);
@@ -39,6 +41,11 @@ export function UsersView() {
     assignRole,
     removeRole,
     deleteUser,
+    resetPassword,
+    isResettingPassword,
+    resetPasswordError,
+    clearResetPasswordError,
+    unlockUser,
   } = useUsers();
 
   const handleAssignRole = async (userId: string, role: Role) => {
@@ -65,14 +72,42 @@ export function UsersView() {
     }
   };
 
-  const handleDeleteUser = (userId: string) => {
+  const identifierOf = (userId: string) => {
     const targetUser = users.find((u) => u.id === userId);
     const fullName = targetUser ? `${targetUser.firstName} ${targetUser.lastName || ""}`.trim() : "";
 
-    const identifier = fullName || targetUser?.userName || "this user";
+    return fullName || targetUser?.userName || "this user";
+  };
 
-    setUserToDelete({ id: userId, identifier });
+  const handleDeleteUser = (userId: string) => {
+    setUserToDelete({ id: userId, identifier: identifierOf(userId) });
     setIsConfirmOpen(true);
+  };
+
+  const handleOpenResetPassword = (userId: string) => {
+    clearResetPasswordError();
+    setUserToReset({ id: userId, identifier: identifierOf(userId) });
+  };
+
+  const handleResetPassword = async (userId: string, newPassword: string) => {
+    try {
+      await resetPassword({ userId, newPassword });
+      setUserToReset(null);
+    } catch {
+      // shown in the dialog through resetPasswordError
+    }
+  };
+
+  const handleUnlock = async (userId: string) => {
+    setActionError(null);
+    setPendingUserId(userId);
+    try {
+      await unlockUser(userId);
+    } catch (err: unknown) {
+      setActionError(err instanceof Error ? err.message : "Failed to unlock the account.");
+    } finally {
+      setPendingUserId(null);
+    }
   };
 
   const handleConfirmDelete = async () => {
@@ -170,6 +205,8 @@ export function UsersView() {
                     onAssignRole={handleAssignRole}
                     onRemoveRole={handleRemoveRole}
                     onDeleteUser={handleDeleteUser}
+                    onResetPassword={handleOpenResetPassword}
+                    onUnlock={handleUnlock}
                   />
                 ))}
               </tbody>
@@ -179,6 +216,14 @@ export function UsersView() {
 
         <LoadMore hasMore={hasMore} isLoading={isLoadingMore} onLoadMore={loadMore} />
       </Card>
+
+      <ResetPasswordDialog
+        target={userToReset}
+        isSaving={isResettingPassword}
+        error={resetPasswordError}
+        onSubmit={handleResetPassword}
+        onClose={() => setUserToReset(null)}
+      />
 
       <ConfirmDialog
         open={isConfirmOpen}

@@ -1,6 +1,7 @@
 using Sentium.Codex.Contracts;
 using Sentium.Core.Results;
 using Sentium.Infrastructure.Caching;
+using Sentium.Praxis.Common;
 using Sentium.Praxis.Features.Storage;
 
 namespace Sentium.Praxis.Features.Workspaces;
@@ -120,11 +121,29 @@ internal sealed class WorkspaceService(
             ct);
     }
 
-    public async Task<IReadOnlyList<WorkspaceFileDto>> GetFilesAsync(Guid? workspaceId, CancellationToken ct = default)
+    public async Task<PagedResponse<WorkspaceFileDto>?> GetWorkspaceFilesPageAsync(Guid workspaceId, int page, int pageSize, string? search, CancellationToken ct = default)
     {
+        if (!await repository.ExistsAsync(workspaceId, ct))
+        {
+            return null;
+        }
+
+        (page, pageSize) = new PaginationQuery { Page = page, PageSize = pageSize }.Normalize();
+        var term = TextSearch.Normalize(search);
+
         return await cache.GetOrCreateAsync(
-            $"{CacheTag}:files:{workspaceId?.ToString() ?? "all"}",
-            async token => await repository.GetFilesAsync(workspaceId, token),
+            $"{CacheTag}:files:{workspaceId}:page:{page}:{pageSize}:q:{term?.ToLowerInvariant()}",
+            token => LoadFilesPageAsync(workspaceId, page, pageSize, term, token),
+            CacheTag,
+            ct);
+    }
+
+    public async Task<IReadOnlyList<WorkspaceFileDto>> GetFilesAsync(Guid? workspaceId, string? search = null, CancellationToken ct = default)
+    {
+        var term = TextSearch.Normalize(search);
+        return await cache.GetOrCreateAsync(
+            $"{CacheTag}:files:{workspaceId?.ToString() ?? "all"}:q:{term?.ToLowerInvariant()}",
+            token => LoadFilesAsync(workspaceId, term, token),
             CacheTag,
             ct);
     }
@@ -245,5 +264,16 @@ internal sealed class WorkspaceService(
     {
         var (items, total) = await repository.GetPagedAsync(page, pageSize, ct);
         return PagedResponse<WorkspaceDto>.Create(items, total, page, pageSize);
+    }
+
+    private async ValueTask<PagedResponse<WorkspaceFileDto>?> LoadFilesPageAsync(Guid workspaceId, int page, int pageSize, string? term, CancellationToken ct)
+    {
+        var (items, total) = await repository.GetWorkspaceFilesPageAsync(workspaceId, page, pageSize, term, ct);
+        return PagedResponse<WorkspaceFileDto>.Create(items, total, page, pageSize);
+    }
+
+    private async ValueTask<IReadOnlyList<WorkspaceFileDto>> LoadFilesAsync(Guid? workspaceId, string? term, CancellationToken ct)
+    {
+        return await repository.GetFilesAsync(workspaceId, term, ct);
     }
 }

@@ -210,7 +210,7 @@ public sealed class ConversationChatHistoryProviderTests
     }
 
     private ConversationChatHistoryProvider CreateProvider() =>
-        new(_repository, _conversations, _host.RunContext, NullLogger<ConversationChatHistoryProvider>.Instance);
+        new(_repository, _conversations, _host.RunContext, new HistorySummaryQueue(), NullLogger<ConversationChatHistoryProvider>.Instance);
 
     [AgentToolPolicy(RequiresApproval = true, Resource = ToolResource.Code, Action = ToolAction.Execute)]
     private sealed class ApprovalTool : IAgentTool

@@ -14,31 +14,69 @@ internal sealed class ConversationService(
     ICurrentUser currentUser,
     ILogger<ConversationService> logger) : IConversationService
 {
+    public const int DefaultMessageLimit = 100;
+    public const int MaxMessageLimit = 500;
+
     private const string CacheTag = "conversations";
 
-    public async Task<PagedResponse<ConversationSummary>> GetConversationsAsync(int page, int pageSize, string? search = null, CancellationToken ct = default)
+    public async Task<PagedResponse<ConversationSummary>> GetConversationsAsync(
+        int page,
+        int pageSize,
+        string? search = null,
+        bool archived = false,
+        CancellationToken ct = default)
     {
         var query = new PaginationQuery { Page = page, PageSize = pageSize };
         (page, pageSize) = query.Normalize();
         var term = TextSearch.Normalize(search);
-        var key = term is null
-            ? $"{CacheTag}:page:{page}:{pageSize}"
-            : $"{CacheTag}:page:{page}:{pageSize}:q:{term.ToLowerInvariant()}";
+        var key = $"{CacheTag}:page:{page}:{pageSize}:archived:{archived}";
+        if (term is not null)
+        {
+            key += $":q:{term.ToLowerInvariant()}";
+        }
 
         return await cache.GetOrCreateAsync(
             key,
-            token => LoadPageAsync(page, pageSize, term, token),
+            token => LoadPageAsync(page, pageSize, term, archived, token),
             CacheTag,
             ct);
     }
 
-    public async Task<ConversationResponse?> GetConversationAsync(Guid conversationId, CancellationToken ct = default)
+    public async Task<ConversationResponse?> GetConversationAsync(Guid conversationId, int messageLimit = DefaultMessageLimit, CancellationToken ct = default)
     {
+        var limit = Math.Clamp(messageLimit, 1, MaxMessageLimit);
         return await cache.GetOrCreateAsync(
-            $"{CacheTag}:{conversationId}",
-            async token => await repository.GetConversationAsync(conversationId, token),
+            $"{CacheTag}:{conversationId}:{limit}",
+            token => LoadConversationAsync(conversationId, limit, token),
             CacheTag,
             ct);
+    }
+
+    public Task<MessagePageResponse?> GetMessagesBeforeAsync(Guid conversationId, Guid beforeMessageId, int limit, CancellationToken ct = default)
+    {
+        return repository.GetMessagesBeforeAsync(conversationId, beforeMessageId, Math.Clamp(limit, 1, MaxMessageLimit), ct);
+    }
+
+    public async Task<bool> SetPinnedAsync(Guid conversationId, bool pinned, CancellationToken ct = default)
+    {
+        var updated = await repository.SetPinnedAsync(conversationId, pinned, ct);
+        if (updated)
+        {
+            await cache.InvalidateTagAsync(CacheTag, ct);
+        }
+
+        return updated;
+    }
+
+    public async Task<bool> SetArchivedAsync(Guid conversationId, bool archived, CancellationToken ct = default)
+    {
+        var updated = await repository.SetArchivedAsync(conversationId, archived, ct);
+        if (updated)
+        {
+            await cache.InvalidateTagAsync(CacheTag, ct);
+        }
+
+        return updated;
     }
 
     public async Task<Result<ConversationSummary>> CreateConversationAsync(CreateConversationRequest request, CancellationToken ct = default)
@@ -153,7 +191,9 @@ internal sealed class ConversationService(
         CancellationToken ct = default)
     {
         await repository.AddMessageAsync(conversationId, role, content, enhancedPrompt, steps, attachments, ct);
-        await cache.RemoveAsync($"{CacheTag}:{conversationId}", ct);
+
+        // The message changes the conversation and its place in the list.
+        await cache.InvalidateTagAsync(CacheTag, ct);
     }
 
     private async Task<bool> IsOwnWorkspaceAsync(Guid workspaceId, CancellationToken ct)
@@ -161,9 +201,14 @@ internal sealed class ConversationService(
         return currentUser.UserId is { } userId && await repository.WorkspaceIsOwnedByAsync(workspaceId, userId, ct);
     }
 
-    private async ValueTask<PagedResponse<ConversationSummary>> LoadPageAsync(int page, int pageSize, string? term, CancellationToken ct)
+    private async ValueTask<PagedResponse<ConversationSummary>> LoadPageAsync(int page, int pageSize, string? term, bool archived, CancellationToken ct)
     {
-        var (items, total) = await repository.GetConversationsAsync(page, pageSize, term, ct);
+        var (items, total) = await repository.GetConversationsAsync(page, pageSize, term, archived, ct);
         return PagedResponse<ConversationSummary>.Create(items, total, page, pageSize);
+    }
+
+    private async ValueTask<ConversationResponse?> LoadConversationAsync(Guid conversationId, int messageLimit, CancellationToken ct)
+    {
+        return await repository.GetConversationAsync(conversationId, messageLimit, ct);
     }
 }

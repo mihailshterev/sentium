@@ -4,6 +4,8 @@ import {
   assignRole,
   removeRole,
   deleteUser,
+  resetUserPassword,
+  unlockUser,
   type AssignRolePayload,
 } from "@/features/auth/api/identity.service";
 import { useInfiniteList } from "@/shared/hooks/useInfiniteList";
@@ -35,6 +37,17 @@ export function useUsers() {
     onSuccess: invalidate,
   });
 
+  const resetPasswordMutation = useMutation({
+    mutationFn: ({ userId, newPassword }: { userId: string; newPassword: string }) =>
+      resetUserPassword(userId, newPassword),
+    onSuccess: invalidate,
+  });
+
+  const unlockMutation = useMutation({
+    mutationFn: (userId: string) => unlockUser(userId),
+    onSuccess: invalidate,
+  });
+
   return {
     users: list.items,
     totalCount: list.totalCount,
@@ -51,6 +64,11 @@ export function useUsers() {
     isRemovingRole: removeRoleMutation.isPending,
     deleteUser: deleteUserMutation.mutateAsync,
     isDeletingUser: deleteUserMutation.isPending,
+    resetPassword: resetPasswordMutation.mutateAsync,
+    isResettingPassword: resetPasswordMutation.isPending,
+    resetPasswordError: resetPasswordMutation.error,
+    clearResetPasswordError: resetPasswordMutation.reset,
+    unlockUser: unlockMutation.mutateAsync,
   };
 }
 

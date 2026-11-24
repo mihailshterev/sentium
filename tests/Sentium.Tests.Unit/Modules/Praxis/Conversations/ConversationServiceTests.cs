@@ -37,17 +37,17 @@ public sealed class ConversationServiceTests
         {
             new(Guid.NewGuid(), "Chat 1", "gemma3:1b", DateTime.UtcNow)
         };
-        _repository.GetConversationsAsync(1, 20, null, ct).Returns((expected, expected.Count));
+        _repository.GetConversationsAsync(1, 20, null, false, ct).Returns((expected, expected.Count));
 
         // Act
-        var result = await _service.GetConversationsAsync(1, 20, null, ct);
+        var result = await _service.GetConversationsAsync(1, 20, null, false, ct);
 
         // Assert
         Assert.Equivalent(expected, result.Items);
         Assert.Equal(expected.Count, result.TotalCount);
         Assert.Equal(1, result.Page);
         Assert.Equal(20, result.PageSize);
-        await _repository.Received(1).GetConversationsAsync(1, 20, null, ct);
+        await _repository.Received(1).GetConversationsAsync(1, 20, null, false, ct);
     }
 
     [Fact]
@@ -57,14 +57,14 @@ public sealed class ConversationServiceTests
         var ct = TestContext.Current.CancellationToken;
         var id = Guid.NewGuid();
         var expected = new ConversationResponse(id, "Chat", "gemma3:1b", DateTime.UtcNow, []);
-        _repository.GetConversationAsync(id, ct).Returns(expected);
+        _repository.GetConversationAsync(id, 100, ct).Returns(expected);
 
         // Act
-        var result = await _service.GetConversationAsync(id, ct);
+        var result = await _service.GetConversationAsync(id, 100, ct);
 
         // Assert
         Assert.Equal(expected, result);
-        await _repository.Received(1).GetConversationAsync(id, ct);
+        await _repository.Received(1).GetConversationAsync(id, 100, ct);
     }
 
     [Fact]
@@ -223,11 +223,11 @@ public sealed class ConversationServiceTests
     public async Task GetConversationsAsync_PassesNormalizedSearch_ToRepository()
     {
         var ct = TestContext.Current.CancellationToken;
-        _repository.GetConversationsAsync(1, 20, "trip", ct).Returns((new List<ConversationSummary>(), 0));
+        _repository.GetConversationsAsync(1, 20, "trip", false, ct).Returns((new List<ConversationSummary>(), 0));
 
-        await _service.GetConversationsAsync(1, 20, "  trip ", ct);
+        await _service.GetConversationsAsync(1, 20, "  trip ", false, ct);
 
-        await _repository.Received(1).GetConversationsAsync(1, 20, "trip", ct);
+        await _repository.Received(1).GetConversationsAsync(1, 20, "trip", false, ct);
     }
 
     [Fact]
@@ -237,10 +237,10 @@ public sealed class ConversationServiceTests
         var cache = Substitute.For<IScopedCache>();
         var service = CreateService(cache);
 
-        await service.GetConversationsAsync(1, 20, "Trip", ct);
+        await service.GetConversationsAsync(1, 20, "Trip", false, ct);
 
         await cache.Received(1).GetOrCreateAsync(
-            "conversations:page:1:20:q:trip",
+            "conversations:page:1:20:archived:False:q:trip",
             Arg.Any<Func<CancellationToken, ValueTask<PagedResponse<ConversationSummary>>>>(),
             "conversations",
             ct);
