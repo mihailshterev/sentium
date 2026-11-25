@@ -1,8 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchBackups, startBackup } from "@/features/system/api/backups.service";
-import type { BackupsOverview } from "@/features/system/types/backup";
-
-export const BACKUPS_KEY = ["system", "backups"] as const;
+import { startBackup } from "@/features/system/api/backups.service";
+import { backupKeys, backupQueries } from "@/features/system/api/backups.queries";
 
 const IDLE_POLL_INTERVAL = 30_000;
 const RUNNING_POLL_INTERVAL = 3_000;
@@ -10,16 +8,15 @@ const RUNNING_POLL_INTERVAL = 3_000;
 export function useBackups() {
   const queryClient = useQueryClient();
 
-  const { data, isLoading, error } = useQuery<BackupsOverview>({
-    queryKey: BACKUPS_KEY,
-    queryFn: fetchBackups,
+  const { data, isLoading, error } = useQuery({
+    ...backupQueries.overview(),
     refetchInterval: (query) => (query.state.data?.status?.running ? RUNNING_POLL_INTERVAL : IDLE_POLL_INTERVAL),
     retry: false,
   });
 
   const start = useMutation({
     mutationFn: startBackup,
-    onSettled: () => queryClient.invalidateQueries({ queryKey: BACKUPS_KEY }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: backupKeys.overview() }),
   });
 
   return { overview: data, isLoading, error, start };

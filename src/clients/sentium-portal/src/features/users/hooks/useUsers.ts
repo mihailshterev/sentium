@@ -8,17 +8,16 @@ import {
   unlockUser,
   type AssignRolePayload,
 } from "@/features/auth/api/identity.service";
+import { identityKeys } from "@/features/auth/api/identity.queries";
 import { useInfiniteList } from "@/shared/hooks/useInfiniteList";
 import type { UserListItem } from "@/features/auth/api/identity.service";
-
-const USERS_KEY = ["users"] as const;
 const DEFAULT_PAGE_SIZE = 20;
 
 export function useUsers() {
   const queryClient = useQueryClient();
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: USERS_KEY });
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: identityKeys.users() });
 
-  const list = useInfiniteList<UserListItem>(USERS_KEY, getUsers, { pageSize: DEFAULT_PAGE_SIZE });
+  const list = useInfiniteList<UserListItem>(identityKeys.userList(), getUsers, { pageSize: DEFAULT_PAGE_SIZE });
 
   const assignRoleMutation = useMutation({
     mutationFn: (payload: AssignRolePayload) => assignRole(payload),

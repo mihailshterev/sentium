@@ -1,17 +1,19 @@
 import { client } from "@/shared/api/client";
+import { pathIn } from "@/shared/api/url";
 import type { SettingsEnvelope, SettingsGroupValue, SettingsKey, SettingsSectionSchema } from "../types/settings";
 
 const BASE = "/registry/settings";
+const url = pathIn(BASE);
 
 /** The sections the caller may edit: personal ones, plus household ones for a Sovereign. */
 export const fetchSettingsSchema = (): Promise<SettingsSectionSchema[]> =>
   client.get<SettingsSectionSchema[]>(`${BASE}/schema`);
 
 export const fetchSettingsGroup = <T = SettingsGroupValue>(key: SettingsKey): Promise<SettingsEnvelope<T>> =>
-  client.get<SettingsEnvelope<T>>(`${BASE}/${key}`);
+  client.get<SettingsEnvelope<T>>(url`/${key}`);
 
 /** The server merges the patch into the stored group, so only changed fields need sending. */
 export const updateSettingsGroup = <T = SettingsGroupValue>(
   key: SettingsKey,
   patch: Partial<T>,
-): Promise<SettingsEnvelope<T>> => client.put<SettingsEnvelope<T>>(`${BASE}/${key}`, patch);
+): Promise<SettingsEnvelope<T>> => client.put<SettingsEnvelope<T>>(url`/${key}`, patch);

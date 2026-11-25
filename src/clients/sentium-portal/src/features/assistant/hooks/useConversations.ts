@@ -8,10 +8,10 @@ import {
   setConversationArchived,
   setConversationPinned,
 } from "@/features/assistant/api/assistant.service";
+import { conversationKeys } from "@/features/assistant/api/assistant.queries";
 import { useConversationStore } from "@/features/assistant/state/assistant-conversation-store";
 import type { CreateConversationPayload } from "@/features/assistant/types/assistant";
 
-const CONVERSATIONS_KEY = ["conversations"] as const;
 const PAGE_SIZE = 20;
 
 interface RenameArgs {
@@ -31,7 +31,7 @@ export function useConversations(search = "", archived = false) {
   const clearConversationTitle = useConversationStore((s) => s.clearConversationTitle);
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteQuery({
-    queryKey: [...CONVERSATIONS_KEY, term, archived],
+    queryKey: conversationKeys.list(term, archived),
     queryFn: ({ pageParam }) => fetchConversations(pageParam, PAGE_SIZE, term || undefined, archived),
     initialPageParam: 1,
     getNextPageParam: (lastPage) => (lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined),
@@ -40,7 +40,7 @@ export function useConversations(search = "", archived = false) {
 
   useEffect(() => {
     if (Object.keys(generatedTitles).length > 0) {
-      void queryClient.invalidateQueries({ queryKey: CONVERSATIONS_KEY });
+      void queryClient.invalidateQueries({ queryKey: conversationKeys.all });
     }
   }, [generatedTitles, queryClient]);
 
@@ -54,30 +54,30 @@ export function useConversations(search = "", archived = false) {
 
   const createMutation = useMutation({
     mutationFn: (payload: CreateConversationPayload) => createConversation(payload),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: CONVERSATIONS_KEY }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: conversationKeys.all }),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteConversation(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: CONVERSATIONS_KEY }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: conversationKeys.all }),
   });
 
   const renameMutation = useMutation({
     mutationFn: ({ id, title }: RenameArgs) => renameConversation(id, title),
     onSuccess: (_data, { id }) => {
       clearConversationTitle(id);
-      return queryClient.invalidateQueries({ queryKey: CONVERSATIONS_KEY });
+      return queryClient.invalidateQueries({ queryKey: conversationKeys.all });
     },
   });
 
   const pinMutation = useMutation({
     mutationFn: ({ id, value }: FlagArgs) => setConversationPinned(id, value),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: CONVERSATIONS_KEY }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: conversationKeys.all }),
   });
 
   const archiveMutation = useMutation({
     mutationFn: ({ id, value }: FlagArgs) => setConversationArchived(id, value),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: CONVERSATIONS_KEY }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: conversationKeys.all }),
   });
 
   return {

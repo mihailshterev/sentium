@@ -1,4 +1,5 @@
 import { client } from "@/shared/api/client";
+import { pathIn, withQuery } from "@/shared/api/url";
 import type { ToolDescriptor } from "@/features/agents/types/agents";
 import type {
   BackgroundJobsSnapshot,
@@ -9,8 +10,9 @@ import type {
 } from "@/features/scheduler/types/scheduler";
 
 const BASE = "/praxis/scheduler";
+const url = pathIn(BASE);
 
-const jobUrl = (jobId: string) => `${BASE}/jobs/${encodeURIComponent(jobId)}`;
+const jobUrl = (jobId: string) => url`/jobs/${jobId}`;
 
 export const fetchActiveSchedulerJobs = (): Promise<CronJobRecord[]> => client.get<CronJobRecord[]>(`${BASE}/jobs`);
 
@@ -29,18 +31,7 @@ export const deleteSchedule = async (jobId: string): Promise<void> => {
 
 export const fetchScheduleTemplates = () => client.get<ScheduleTemplate[]>(`${BASE}/templates`);
 
-export const fetchPreApprovableTools = (target: PreApprovalTarget) => {
-  const params = new URLSearchParams({ kind: target.kind });
-  if (target.agentName) {
-    params.set("agentName", target.agentName);
-  }
-  if (target.workflowId) {
-    params.set("workflowId", target.workflowId);
-  }
-  if (target.jobId) {
-    params.set("jobId", target.jobId);
-  }
-  return client.get<ToolDescriptor[]>(`${BASE}/pre-approvable-tools?${params.toString()}`);
-};
+export const fetchPreApprovableTools = ({ kind, agentName, workflowId, jobId }: PreApprovalTarget) =>
+  client.get<ToolDescriptor[]>(withQuery(`${BASE}/pre-approvable-tools`, { kind, agentName, workflowId, jobId }));
 
 export const fetchBackgroundJobs = () => client.get<BackgroundJobsSnapshot>(`${BASE}/background-jobs`);

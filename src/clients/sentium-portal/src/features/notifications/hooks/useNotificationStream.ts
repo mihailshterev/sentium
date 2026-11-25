@@ -1,5 +1,5 @@
 import { REALTIME_TOPICS, useRealtimeInvalidate } from "@/shared/realtime";
-import { notificationKeys } from "./useInbox";
+import { notificationKeys } from "../api/notifications.queries";
 
 const INBOX_KEYS = [notificationKeys.all] as const;
 

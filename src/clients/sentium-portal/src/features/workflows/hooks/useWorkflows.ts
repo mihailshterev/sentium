@@ -5,16 +5,16 @@ import {
   updateWorkflow,
   deleteWorkflow,
 } from "@/features/workflows/api/workflows.service";
+import { workflowKeys } from "@/features/workflows/api/workflows.queries";
 import { useInfiniteList } from "@/shared/hooks/useInfiniteList";
 import type { WorkflowPayload, UpdateWorkflowPayload, WorkflowRecord } from "@/features/workflows/types/workflows";
 
-const WORKFLOWS_KEY = ["workflows"] as const;
 
 export function useWorkflows() {
   const queryClient = useQueryClient();
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: WORKFLOWS_KEY });
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: workflowKeys.all });
 
-  const list = useInfiniteList<WorkflowRecord>(WORKFLOWS_KEY, fetchWorkflowsPaged, { pageSize: 100 });
+  const list = useInfiniteList<WorkflowRecord>(workflowKeys.list(), fetchWorkflowsPaged, { pageSize: 100 });
 
   const createMutation = useMutation({
     mutationFn: (payload: WorkflowPayload) => createWorkflow(payload),

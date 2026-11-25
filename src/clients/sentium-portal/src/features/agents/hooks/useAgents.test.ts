@@ -32,7 +32,7 @@ beforeEach(() => {
     totalPages: 1,
   });
   vi.spyOn(agentsService, "createAgent").mockResolvedValue(mockAgent);
-  vi.spyOn(agentsService, "updateAgent").mockResolvedValue({ ...mockAgent, name: "Updated" });
+  vi.spyOn(agentsService, "updateAgent").mockResolvedValue(undefined);
   vi.spyOn(agentsService, "deleteAgent").mockResolvedValue(undefined);
 });
 

@@ -1,4 +1,5 @@
 import { client } from "@/shared/api/client";
+import { pathIn, withQuery } from "@/shared/api/url";
 import type { PagedResponse } from "@/shared/types/pagination";
 import type {
   Asset,
@@ -13,6 +14,7 @@ import type {
 } from "../types/inventory";
 
 const BASE = "/locus";
+const url = pathIn(BASE);
 
 export const fetchLocations = (): Promise<InventoryLocation[]> => client.get<InventoryLocation[]>(`${BASE}/locations`);
 
@@ -20,12 +22,10 @@ export const createLocation = (payload: SaveLocationPayload): Promise<InventoryL
   client.post<InventoryLocation>(`${BASE}/locations`, payload);
 
 export const updateLocation = (id: string, payload: SaveLocationPayload): Promise<InventoryLocation> =>
-  client.put<InventoryLocation>(`${BASE}/locations/${encodeURIComponent(id)}`, payload);
+  client.put<InventoryLocation>(url`/locations/${id}`, payload);
 
 export const deleteLocation = (id: string, moveContentsTo?: string | null): Promise<void> =>
-  client.delete<void>(
-    `${BASE}/locations/${encodeURIComponent(id)}${moveContentsTo ? `?moveContentsTo=${encodeURIComponent(moveContentsTo)}` : ""}`,
-  );
+  client.delete<void>(withQuery(url`/locations/${id}`, { moveContentsTo }));
 
 export function buildAssetQuery(filters: AssetFilters, page: number, pageSize: number): string {
   const params = new URLSearchParams();
@@ -47,21 +47,20 @@ export function buildAssetQuery(filters: AssetFilters, page: number, pageSize: n
 export const searchAssets = (filters: AssetFilters, page = 1, pageSize = 30): Promise<PagedResponse<AssetSummary>> =>
   client.get<PagedResponse<AssetSummary>>(`${BASE}/assets?${buildAssetQuery(filters, page, pageSize)}`);
 
-export const fetchAsset = (id: string): Promise<Asset> => client.get<Asset>(`${BASE}/assets/${encodeURIComponent(id)}`);
+export const fetchAsset = (id: string): Promise<Asset> => client.get<Asset>(url`/assets/${id}`);
 
 export const createAsset = (payload: SaveAssetPayload): Promise<Asset> => client.post<Asset>(`${BASE}/assets`, payload);
 
 export const updateAsset = (id: string, payload: SaveAssetPayload): Promise<Asset> =>
-  client.put<Asset>(`${BASE}/assets/${encodeURIComponent(id)}`, payload);
+  client.put<Asset>(url`/assets/${id}`, payload);
 
-export const deleteAsset = (id: string): Promise<void> =>
-  client.delete<void>(`${BASE}/assets/${encodeURIComponent(id)}`);
+export const deleteAsset = (id: string): Promise<void> => client.delete<void>(url`/assets/${id}`);
 
 export const requestKnowledgeSync = (id: string): Promise<void> =>
-  client.post<void>(`${BASE}/assets/${encodeURIComponent(id)}/knowledge-sync`, undefined);
+  client.post<void>(url`/assets/${id}/knowledge-sync`, undefined);
 
 export const fetchTags = (prefix?: string): Promise<TagCount[]> =>
-  client.get<TagCount[]>(`${BASE}/tags${prefix ? `?prefix=${encodeURIComponent(prefix)}` : ""}`);
+  client.get<TagCount[]>(withQuery(`${BASE}/tags`, { prefix }));
 
 export const fetchCategories = (): Promise<string[]> => client.get<string[]>(`${BASE}/categories`);
 
@@ -69,10 +68,10 @@ export const uploadAttachment = (assetId: string, file: File, kind: AttachmentKi
   const form = new FormData();
   form.append("file", file);
   form.append("kind", kind);
-  return client.postForm<Attachment>(`${BASE}/assets/${encodeURIComponent(assetId)}/attachments`, form);
+  return client.postForm<Attachment>(url`/assets/${assetId}/attachments`, form);
 };
 
 export const deleteAttachment = (assetId: string, attachmentId: string): Promise<void> =>
-  client.delete<void>(`${BASE}/assets/${encodeURIComponent(assetId)}/attachments/${encodeURIComponent(attachmentId)}`);
+  client.delete<void>(url`/assets/${assetId}/attachments/${attachmentId}`);
 
 export const downloadUrl = (attachment: Attachment): string => `${attachment.contentUrl}?download=true`;

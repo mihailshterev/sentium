@@ -1,9 +1,7 @@
 import { useQueryClient, type QueryClient } from "@tanstack/react-query";
-import { DEVICE_STATUSES_KEY, type DeviceStatus, type DeviceUpdate } from "@/features/devices";
+import { deviceKeys, type DeviceStatus, type DeviceUpdate } from "@/features/devices";
 import { REALTIME_TOPICS, useRealtimeStatus, useRealtimeTopic, type RealtimeMessage } from "@/shared/realtime";
-import { SERVICE_HEALTH_KEY } from "./useServiceHealth";
-import { SYSTEM_OVERVIEW_KEY } from "./useSystemOverview";
-import { INCIDENTS_KEY } from "./useIncidents";
+import { vigilKeys } from "../api/vigil.queries";
 import type { ComponentKind, ServiceHealthStatus, ServiceStatus } from "@/features/vigil/types/serviceHealth";
 
 interface StatusPayload {
@@ -25,7 +23,7 @@ const VIGIL_TOPICS = [
 ] as const;
 
 function applyStatus(queryClient: QueryClient, update: StatusPayload) {
-  queryClient.setQueryData<ServiceHealthStatus[]>(SERVICE_HEALTH_KEY, (prev) =>
+  queryClient.setQueryData<ServiceHealthStatus[]>(vigilKeys.serviceHealth(), (prev) =>
     prev?.map((s) =>
       s.serviceName === update.serviceName
         ? {
@@ -39,17 +37,17 @@ function applyStatus(queryClient: QueryClient, update: StatusPayload) {
         : s,
     ),
   );
-  void queryClient.invalidateQueries({ queryKey: SYSTEM_OVERVIEW_KEY }, { cancelRefetch: false });
+  void queryClient.invalidateQueries({ queryKey: vigilKeys.overview() }, { cancelRefetch: false });
 }
 
 function applyDeviceUpdate(queryClient: QueryClient, update: DeviceUpdate) {
-  const known = queryClient.getQueryData<DeviceStatus[]>(DEVICE_STATUSES_KEY)?.some((d) => d.id === update.id);
+  const known = queryClient.getQueryData<DeviceStatus[]>(deviceKeys.statuses())?.some((d) => d.id === update.id);
   if (!known) {
     // A Device paired since the list was loaded: the frame has no name or owner, so fetch the list.
-    void queryClient.invalidateQueries({ queryKey: DEVICE_STATUSES_KEY });
+    void queryClient.invalidateQueries({ queryKey: deviceKeys.statuses() });
     return;
   }
-  queryClient.setQueryData<DeviceStatus[]>(DEVICE_STATUSES_KEY, (prev) =>
+  queryClient.setQueryData<DeviceStatus[]>(deviceKeys.statuses(), (prev) =>
     prev?.map((d) =>
       d.id === update.id
         ? { ...d, isOnline: update.isOnline, lastSeenAt: update.lastSeenAt, report: update.report }
@@ -65,7 +63,7 @@ export function useVigilStream() {
 
   useRealtimeTopic(VIGIL_TOPICS, (message: RealtimeMessage) => {
     if (message.kind === "resync") {
-      for (const queryKey of [SERVICE_HEALTH_KEY, SYSTEM_OVERVIEW_KEY, INCIDENTS_KEY, DEVICE_STATUSES_KEY]) {
+      for (const queryKey of [vigilKeys.serviceHealth(), vigilKeys.overview(), vigilKeys.incidents(), deviceKeys.statuses()]) {
         void queryClient.invalidateQueries({ queryKey }, { cancelRefetch: false });
       }
       return;
@@ -77,15 +75,15 @@ export function useVigilStream() {
         break;
       case REALTIME_TOPICS.vigilIncidentOpened:
       case REALTIME_TOPICS.vigilIncidentResolved:
-        void queryClient.invalidateQueries({ queryKey: INCIDENTS_KEY }, { cancelRefetch: false });
-        void queryClient.invalidateQueries({ queryKey: SYSTEM_OVERVIEW_KEY }, { cancelRefetch: false });
+        void queryClient.invalidateQueries({ queryKey: vigilKeys.incidents() }, { cancelRefetch: false });
+        void queryClient.invalidateQueries({ queryKey: vigilKeys.overview() }, { cancelRefetch: false });
         break;
       case REALTIME_TOPICS.vigilDeviceUpdated:
         applyDeviceUpdate(queryClient, message.data as DeviceUpdate);
         break;
       case REALTIME_TOPICS.vigilDeviceRemoved: {
         const removedId = (message.data as { id: string }).id;
-        queryClient.setQueryData<DeviceStatus[]>(DEVICE_STATUSES_KEY, (prev) =>
+        queryClient.setQueryData<DeviceStatus[]>(deviceKeys.statuses(), (prev) =>
           prev?.filter((d) => d.id !== removedId),
         );
         break;

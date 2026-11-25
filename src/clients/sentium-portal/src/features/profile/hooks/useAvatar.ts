@@ -1,16 +1,14 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { deleteAvatar, uploadAvatar, type UserProfile } from "@/features/auth/api/identity.service";
+import { deleteAvatar, uploadAvatar } from "@/features/auth/api/identity.service";
+import { identityKeys, identityQueries } from "@/features/auth/api/identity.queries";
 import { toAvatarImage } from "../lib/resize-image";
-
-const PROFILE_KEY = ["profile"] as const;
-const USERS_KEY = ["users"] as const;
 
 export function useAvatar() {
   const queryClient = useQueryClient();
 
   const applyAvatar = (avatarUrl: string | null) => {
-    queryClient.setQueryData<UserProfile>(PROFILE_KEY, (prev) => (prev ? { ...prev, avatarUrl } : prev));
-    void queryClient.invalidateQueries({ queryKey: USERS_KEY });
+    queryClient.setQueryData(identityQueries.profile().queryKey, (prev) => (prev ? { ...prev, avatarUrl } : prev));
+    void queryClient.invalidateQueries({ queryKey: identityKeys.users() });
   };
 
   const uploadMutation = useMutation({

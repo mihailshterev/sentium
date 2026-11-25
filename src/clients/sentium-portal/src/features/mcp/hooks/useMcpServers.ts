@@ -1,37 +1,30 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { TOOL_CATALOG_QUERY_KEY } from "@/features/agents/hooks/useToolCatalog";
+import { toolKeys } from "@/features/agents/api/agents.queries";
 import {
   createMcpServer,
   deleteMcpServer,
-  fetchMcpServers,
   syncMcpServer,
   updateMcpServer,
   updateMcpTools,
 } from "../api/mcp.service";
-import type {
-  CreateMcpServerPayload,
-  McpServer,
-  McpToolUpdate,
-  UpdateMcpServerPayload,
-} from "../types/mcp";
-
-export const MCP_SERVERS_KEY = ["mcp-servers"] as const;
+import { mcpKeys, mcpQueries } from "../api/mcp.queries";
+import type { CreateMcpServerPayload, McpServer, McpToolUpdate, UpdateMcpServerPayload } from "../types/mcp";
 
 export function useMcpServers(enabled = true) {
   const qc = useQueryClient();
 
-  const query = useQuery({ queryKey: MCP_SERVERS_KEY, queryFn: fetchMcpServers, enabled });
+  const query = useQuery({ ...mcpQueries.servers(), enabled });
 
   const replace = (server: McpServer) => {
-    qc.setQueryData<McpServer[]>(MCP_SERVERS_KEY, (current) =>
+    qc.setQueryData(mcpQueries.servers().queryKey, (current) =>
       current ? current.map((s) => (s.id === server.id ? server : s)) : current,
     );
-    void qc.invalidateQueries({ queryKey: TOOL_CATALOG_QUERY_KEY });
+    void qc.invalidateQueries({ queryKey: toolKeys.catalog() });
   };
 
   const refreshAll = () => {
-    void qc.invalidateQueries({ queryKey: MCP_SERVERS_KEY });
-    void qc.invalidateQueries({ queryKey: TOOL_CATALOG_QUERY_KEY });
+    void qc.invalidateQueries({ queryKey: mcpKeys.servers() });
+    void qc.invalidateQueries({ queryKey: toolKeys.catalog() });
   };
 
   const create = useMutation({
@@ -49,7 +42,7 @@ export function useMcpServers(enabled = true) {
   const sync = useMutation({
     mutationFn: (id: string) => syncMcpServer(id),
     onSuccess: replace,
-    onError: () => void qc.invalidateQueries({ queryKey: MCP_SERVERS_KEY }),
+    onError: () => void qc.invalidateQueries({ queryKey: mcpKeys.servers() }),
   });
 
   const updateTools = useMutation({

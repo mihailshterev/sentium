@@ -1,25 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  deleteKnowledgeMapCollection,
-  fetchKnowledgeBaseStats,
-} from "@/features/knowledge-base/api/knowledge-base.service";
-
-const KB_STATS_KEY = ["knowledge-base-stats"] as const;
+import { deleteKnowledgeMapCollection } from "@/features/knowledge-base/api/knowledge-base.service";
+import { knowledgeBaseKeys, knowledgeBaseQueries } from "@/features/knowledge-base/api/knowledge-base.queries";
 
 export const useKnowledgeBaseStats = () => {
   const queryClient = useQueryClient();
 
-  const query = useQuery({
-    queryKey: KB_STATS_KEY,
-    queryFn: fetchKnowledgeBaseStats,
-    staleTime: 30_000,
-    retry: 1,
-  });
+  const query = useQuery({ ...knowledgeBaseQueries.collectionStats(), retry: 1 });
 
   const deleteMutation = useMutation({
     mutationFn: deleteKnowledgeMapCollection,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: KB_STATS_KEY });
+      queryClient.invalidateQueries({ queryKey: knowledgeBaseKeys.stats() });
     },
   });
 

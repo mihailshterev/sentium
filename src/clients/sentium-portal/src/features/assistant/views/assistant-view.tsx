@@ -18,6 +18,7 @@ import { useCompanionStore, useVoiceHint } from "@/features/companion/state/comp
 import { SUGGESTIONS_POOL } from "@/shared/utils/constants";
 import { isImeComposing } from "@/shared/utils/keyboard";
 import { useQueryClient } from "@tanstack/react-query";
+import { conversationKeys } from "@/features/assistant/api/assistant.queries";
 import { Button } from "@/shared/ui/button";
 import { Page } from "@/shared/ui/page";
 import { MessageBubble } from "../components/message-bubble";
@@ -214,7 +215,7 @@ export function AssistantView() {
     }
     try {
       await setConversationWorkspace(activeConversationId, next?.id ?? null);
-      void queryClient.invalidateQueries({ queryKey: ["conversations"] });
+      void queryClient.invalidateQueries({ queryKey: conversationKeys.all });
     } catch {
       setChatWorkspace(previous);
       setSendError("The workspace could not be changed. Please try again.");

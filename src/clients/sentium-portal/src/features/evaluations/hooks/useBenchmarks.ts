@@ -1,19 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useInfiniteList } from "@/shared/hooks/useInfiniteList";
 import { REALTIME_TOPICS, useRealtimeInvalidate } from "@/shared/realtime";
-import { cancelBenchmark, deleteBenchmark, fetchBenchmark, fetchBenchmarksPaged, startBenchmark } from "../api/benchmarks.service";
+import { cancelBenchmark, deleteBenchmark, fetchBenchmarksPaged, startBenchmark } from "../api/benchmarks.service";
+import { benchmarkKeys, evaluationKeys, evaluationQueries } from "../api/evaluations.queries";
 import type { BenchmarkSummary } from "../types/benchmarks";
 import { isActive } from "../types/evaluations";
-import { EVALUATION_POLL_MS, EVALUATIONS_KEY } from "./useEvaluations";
+import { EVALUATION_POLL_MS } from "./useEvaluations";
 
-export const BENCHMARKS_KEY = ["benchmarks"] as const;
-
-const BENCHMARK_KEYS = [BENCHMARKS_KEY, EVALUATIONS_KEY] as const;
+const BENCHMARK_KEYS = [benchmarkKeys.all, evaluationKeys.all] as const;
 
 /** The user's Benchmarks, newest first. Live while any of their Evaluations is still active. */
 export function useBenchmarks() {
   useRealtimeInvalidate(REALTIME_TOPICS.evaluations, BENCHMARK_KEYS);
-  const list = useInfiniteList<BenchmarkSummary>([...BENCHMARKS_KEY, "list"], fetchBenchmarksPaged, {
+  const list = useInfiniteList<BenchmarkSummary>(benchmarkKeys.list(), fetchBenchmarksPaged, {
     refetchInterval: (items) =>
       items.some((b) => b.evaluations.some((e) => isActive(e.status))) ? EVALUATION_POLL_MS : false,
   });
@@ -30,14 +29,13 @@ export function useBenchmarks() {
 export function useBenchmark(id: string | undefined) {
   const qc = useQueryClient();
   const invalidate = async () => {
-    await qc.invalidateQueries({ queryKey: BENCHMARKS_KEY });
-    await qc.invalidateQueries({ queryKey: EVALUATIONS_KEY });
+    await qc.invalidateQueries({ queryKey: benchmarkKeys.all });
+    await qc.invalidateQueries({ queryKey: evaluationKeys.all });
   };
   useRealtimeInvalidate(REALTIME_TOPICS.evaluations, BENCHMARK_KEYS);
 
   const query = useQuery({
-    queryKey: [...BENCHMARKS_KEY, id],
-    queryFn: () => fetchBenchmark(id!),
+    ...evaluationQueries.benchmark(id ?? ""),
     enabled: id !== undefined,
     refetchInterval: (q) =>
       q.state.data?.evaluations.some((e) => isActive(e.summary.status)) ? EVALUATION_POLL_MS : false,
@@ -62,8 +60,8 @@ export function useStartBenchmark() {
   return useMutation({
     mutationFn: startBenchmark,
     onSuccess: async () => {
-      await qc.invalidateQueries({ queryKey: BENCHMARKS_KEY });
-      await qc.invalidateQueries({ queryKey: EVALUATIONS_KEY });
+      await qc.invalidateQueries({ queryKey: benchmarkKeys.all });
+      await qc.invalidateQueries({ queryKey: evaluationKeys.all });
     },
   });
 }

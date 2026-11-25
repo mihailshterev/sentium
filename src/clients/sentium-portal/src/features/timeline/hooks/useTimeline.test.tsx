@@ -4,7 +4,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import * as api from "../api/timeline.service";
 import { monthDetail, task } from "../test-fixtures";
-import { timelineKeys, useTaskMutations, useYearOverviews } from "./useTimeline";
+import { useTaskMutations, useYearOverviews } from "./useTimeline";
+import { timelineKeys } from "../api/timeline.queries";
 import type { MonthDetail } from "../types/timeline";
 
 function setup() {

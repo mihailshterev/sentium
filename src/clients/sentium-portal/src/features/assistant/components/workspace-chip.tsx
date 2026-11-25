@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Check, ChevronDown, FolderOpen } from "lucide-react";
-import { fetchWorkspaces } from "@/features/workspaces/api/workspaces.service";
+import { workspaceQueries } from "@/features/workspaces/api/workspaces.queries";
 import chip from "@/shared/ui/model-selector/model-selector.module.css";
 import styles from "../assistant.module.css";
 
@@ -24,8 +24,7 @@ export function WorkspaceChip({ value, onChange, disabled }: WorkspaceChipProps)
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const { data: workspaces = [], isLoading, isError } = useQuery({
-    queryKey: ["workspaces", "options"],
-    queryFn: fetchWorkspaces,
+    ...workspaceQueries.options(),
     enabled: open,
   });
 

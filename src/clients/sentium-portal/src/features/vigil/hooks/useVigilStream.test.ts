@@ -3,9 +3,12 @@ import { renderHook, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import { useVigilStream } from "./useVigilStream";
-import { SERVICE_HEALTH_KEY } from "./useServiceHealth";
-import { INCIDENTS_KEY } from "./useIncidents";
-import { DEVICE_STATUSES_KEY } from "@/features/devices";
+import { vigilKeys } from "../api/vigil.queries";
+import { deviceKeys } from "@/features/devices";
+
+const SERVICE_HEALTH_KEY = vigilKeys.serviceHealth();
+const INCIDENTS_KEY = vigilKeys.incidents();
+const DEVICE_STATUSES_KEY = deviceKeys.statuses();
 import { startRealtime, stopRealtime } from "@/shared/realtime";
 import { FakeEventSource } from "@/test/fake-event-source";
 

@@ -3,7 +3,8 @@ import { useNavigate, useParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowLeft, Download, Eye, FileText, FolderOpen, Pencil, RotateCw, Trash2 } from "lucide-react";
 import styles from "../workspaces.module.css";
-import { fetchWorkspace, workspaceFileContentUrl } from "@/features/workspaces/api/workspaces.service";
+import { workspaceFileContentUrl } from "@/features/workspaces/api/workspaces.service";
+import { workspaceQueries } from "@/features/workspaces/api/workspaces.queries";
 import { useWorkspaces } from "@/features/workspaces/hooks/useWorkspaces";
 import { useWorkspaceFiles } from "@/features/workspaces/hooks/useWorkspaceFiles";
 import { useUploadRules } from "@/features/workspaces/hooks/useUploadRules";
@@ -45,8 +46,7 @@ export function WorkspaceDetailView() {
 
   const { updateWorkspace, isUpdatingWorkspace } = useWorkspaces();
   const { data: workspace, isError: isWorkspaceError } = useQuery({
-    queryKey: ["workspaces", "detail", workspaceId],
-    queryFn: () => fetchWorkspace(workspaceId!),
+    ...workspaceQueries.detail(workspaceId ?? ""),
     enabled: !!workspaceId,
   });
 
