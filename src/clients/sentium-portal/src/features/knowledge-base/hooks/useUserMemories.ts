@@ -1,13 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { addMemory, deleteMemory, fetchMemories, updateMemory } from "../api/memories.service";
-
-export const MEMORIES_KEY = ["user-memories"] as const;
+import { addMemory, deleteMemory, updateMemory } from "../api/memories.service";
+import { knowledgeBaseQueries, memoryKeys } from "../api/knowledge-base.queries";
 
 export function useUserMemories() {
   const qc = useQueryClient();
-  const invalidate = () => qc.invalidateQueries({ queryKey: MEMORIES_KEY });
+  const invalidate = () => qc.invalidateQueries({ queryKey: memoryKeys.all });
 
-  const query = useQuery({ queryKey: MEMORIES_KEY, queryFn: fetchMemories, staleTime: 15_000 });
+  const query = useQuery(knowledgeBaseQueries.memories());
 
   const addMutation = useMutation({ mutationFn: (content: string) => addMemory(content), onSuccess: invalidate });
 

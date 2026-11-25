@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchWorkflowRuns, fetchWorkflowRun, renameWorkflowRun } from "@/features/workflows/api/workflows.service";
-import type { WorkflowRun } from "@/features/workflows/types/workflows";
+import { renameWorkflowRun } from "@/features/workflows/api/workflows.service";
+import { workflowQueries, workflowRunKeys } from "@/features/workflows/api/workflows.queries";
 import { REALTIME_FALLBACK_POLL_MS, REALTIME_TOPICS, useRealtimeInvalidate } from "@/shared/realtime";
 
-const RUN_QUERY_KEYS = [["workflowRuns"], ["workflow-runs"], ["workflow-run"]] as const;
+const RUN_QUERY_KEYS = [workflowRunKeys.all] as const;
 
 /** Keeps every run list live: each finished run is reported as it is recorded. */
 export function useLiveWorkflowRuns() {
@@ -12,9 +12,8 @@ export function useLiveWorkflowRuns() {
 
 export function useWorkflowRuns(count = 15) {
   useLiveWorkflowRuns();
-  const { data, isLoading } = useQuery<WorkflowRun[]>({
-    queryKey: ["workflow-runs", count],
-    queryFn: () => fetchWorkflowRuns(count),
+  const { data, isLoading } = useQuery({
+    ...workflowQueries.recentRuns(count),
     refetchInterval: REALTIME_FALLBACK_POLL_MS,
   });
 
@@ -25,9 +24,8 @@ export function useWorkflowRuns(count = 15) {
 }
 
 export function useWorkflowRun(runId: string | undefined) {
-  const { data, isLoading, error } = useQuery<WorkflowRun>({
-    queryKey: ["workflow-run", runId],
-    queryFn: () => fetchWorkflowRun(runId as string),
+  const { data, isLoading, error } = useQuery({
+    ...workflowQueries.run(runId ?? ""),
     enabled: !!runId,
     retry: false,
   });
@@ -40,7 +38,6 @@ export function useRenameWorkflowRun() {
 
   return useMutation({
     mutationFn: ({ runId, title }: { runId: string; title: string }) => renameWorkflowRun(runId, title),
-    onSuccess: () =>
-      Promise.all(RUN_QUERY_KEYS.map((queryKey) => queryClient.invalidateQueries({ queryKey: [...queryKey] }))),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: workflowRunKeys.all }),
   });
 }

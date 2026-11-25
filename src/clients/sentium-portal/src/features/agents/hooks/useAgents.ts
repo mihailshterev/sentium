@@ -1,15 +1,14 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchAgentsPaged, createAgent, updateAgent, deleteAgent } from "@/features/agents/api/agents.service";
 import { useInfiniteList } from "@/shared/hooks/useInfiniteList";
+import { agentKeys } from "@/features/agents/api/agents.queries";
 import type { AgentRecord, CreateAgentPayload, UpdateAgentPayload } from "@/features/agents/types/agents";
-
-const AGENTS_KEY = ["agents"] as const;
 
 export function useAgents() {
   const queryClient = useQueryClient();
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: AGENTS_KEY });
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: agentKeys.all });
 
-  const list = useInfiniteList<AgentRecord>(AGENTS_KEY, fetchAgentsPaged, { pageSize: 100 });
+  const list = useInfiniteList<AgentRecord>(agentKeys.list(), fetchAgentsPaged, { pageSize: 100 });
 
   const createMutation = useMutation({
     mutationFn: (payload: CreateAgentPayload) => createAgent(payload),

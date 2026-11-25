@@ -57,7 +57,7 @@ describe("client.get()", () => {
     expect(result).toEqual(payload);
   });
 
-  it("returns empty object for 204 No Content", async () => {
+  it("returns undefined for 204 No Content", async () => {
     vi.mocked(fetch).mockResolvedValueOnce({
       ok: true,
       status: 204,
@@ -68,10 +68,10 @@ describe("client.get()", () => {
     } as unknown as Response);
 
     const result = await client.get("/no-content");
-    expect(result).toEqual({});
+    expect(result).toBeUndefined();
   });
 
-  it("returns empty object when Content-Length is 0", async () => {
+  it("returns undefined when Content-Length is 0", async () => {
     vi.mocked(fetch).mockResolvedValueOnce({
       ok: true,
       status: 200,
@@ -80,7 +80,7 @@ describe("client.get()", () => {
     } as unknown as Response);
 
     const result = await client.get("/empty");
-    expect(result).toEqual({});
+    expect(result).toBeUndefined();
   });
 });
 

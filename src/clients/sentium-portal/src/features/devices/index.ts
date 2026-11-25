@@ -1,3 +1,4 @@
 export { MyDevicesCard } from "./components/my-devices-card";
-export { DEVICE_STATUSES_KEY, useDeviceStatuses } from "./hooks/useDevices";
+export { useDeviceStatuses } from "./hooks/useDevices";
+export { deviceKeys, deviceQueries } from "./api/devices.queries";
 export type { DeviceStatus, DeviceUpdate } from "./types/device";

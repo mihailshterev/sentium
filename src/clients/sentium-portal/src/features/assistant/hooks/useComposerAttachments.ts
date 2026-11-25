@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { uploadWorkspaceFile } from "@/features/workspaces/api/workspaces.service";
+import { workspaceFileKeys, workspaceKeys } from "@/features/workspaces/api/workspaces.queries";
 import { useUploadRules } from "@/features/workspaces/hooks/useUploadRules";
 import { uploadProblem } from "@/features/workspaces/utils/upload-validation";
 import type { FileProcessingStatus, WorkspaceFile } from "@/features/workspaces/types/workspace";
@@ -69,8 +70,8 @@ export function useComposerAttachments(uploadWorkspaceId: string | null) {
         uploadWorkspaceFile(file, uploadWorkspaceId, (progress) => update(key, { progress }))
           .then((uploaded) => {
             update(key, { fileId: uploaded.id, state: "ready", progress: 1, processingStatus: uploaded.processingStatus });
-            void queryClient.invalidateQueries({ queryKey: ["workspaceFiles"] });
-            void queryClient.invalidateQueries({ queryKey: ["workspaces"] });
+            void queryClient.invalidateQueries({ queryKey: workspaceFileKeys.all });
+            void queryClient.invalidateQueries({ queryKey: workspaceKeys.all });
           })
           .catch((err: unknown) => {
             update(key, { state: "error", error: err instanceof Error ? err.message : "Upload failed." });

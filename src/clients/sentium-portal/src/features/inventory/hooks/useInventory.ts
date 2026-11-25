@@ -2,16 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useInfiniteList } from "@/shared/hooks/useInfiniteList";
 import { REALTIME_FALLBACK_POLL_MS, REALTIME_TOPICS, useRealtimeInvalidate } from "@/shared/realtime";
 import * as api from "../api/inventory.service";
+import { inventoryKeys, inventoryQueries } from "../api/inventory.queries";
 import type { AssetFilters, AttachmentKind, SaveAssetPayload, SaveLocationPayload } from "../types/inventory";
-
-export const inventoryKeys = {
-  all: ["inventory"] as const,
-  locations: () => ["inventory", "locations"] as const,
-  assets: (filters: AssetFilters) => ["inventory", "assets", filters] as const,
-  asset: (id: string) => ["inventory", "asset", id] as const,
-  tags: () => ["inventory", "tags"] as const,
-  categories: () => ["inventory", "categories"] as const,
-};
 
 const ASSET_PAGE_SIZE = 30;
 
@@ -21,7 +13,7 @@ function useInvalidateInventory() {
 }
 
 export function useLocations() {
-  const query = useQuery({ queryKey: inventoryKeys.locations(), queryFn: api.fetchLocations });
+  const query = useQuery(inventoryQueries.locations());
   return {
     locations: query.data ?? [],
     isLoading: query.isLoading,
@@ -71,8 +63,7 @@ export function useAsset(id: string | undefined) {
   useRealtimeInvalidate(REALTIME_TOPICS.inventoryKnowledge, [inventoryKeys.all]);
 
   const query = useQuery({
-    queryKey: inventoryKeys.asset(id ?? ""),
-    queryFn: () => api.fetchAsset(id!),
+    ...inventoryQueries.asset(id ?? ""),
     enabled: !!id,
     refetchInterval: (q) => (q.state.data?.knowledgeStatus === "Pending" ? REALTIME_FALLBACK_POLL_MS : false),
   });
@@ -112,8 +103,8 @@ export function useAttachmentMutations(assetId: string) {
 }
 
 export function useTaxonomy() {
-  const tags = useQuery({ queryKey: inventoryKeys.tags(), queryFn: () => api.fetchTags() });
-  const categories = useQuery({ queryKey: inventoryKeys.categories(), queryFn: api.fetchCategories });
+  const tags = useQuery(inventoryQueries.tags());
+  const categories = useQuery(inventoryQueries.categories());
   return {
     tags: tags.data ?? [],
     categories: categories.data ?? [],

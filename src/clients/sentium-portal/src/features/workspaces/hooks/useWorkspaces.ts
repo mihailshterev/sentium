@@ -5,16 +5,16 @@ import {
   updateWorkspace,
   deleteWorkspace,
 } from "@/features/workspaces/api/workspaces.service";
+import { workspaceKeys } from "@/features/workspaces/api/workspaces.queries";
 import { useInfiniteList } from "@/shared/hooks/useInfiniteList";
 import type { Workspace, CreateWorkspacePayload, UpdateWorkspacePayload } from "@/features/workspaces/types/workspace";
 
-const WORKSPACES_KEY = ["workspaces"] as const;
 
 export function useWorkspaces() {
   const queryClient = useQueryClient();
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: WORKSPACES_KEY });
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: workspaceKeys.all });
 
-  const list = useInfiniteList<Workspace>(WORKSPACES_KEY, fetchWorkspacesPaged, { pageSize: 100 });
+  const list = useInfiniteList<Workspace>(workspaceKeys.list(), fetchWorkspacesPaged, { pageSize: 100 });
 
   const createMutation = useMutation({
     mutationFn: (payload: CreateWorkspacePayload) => createWorkspace(payload),

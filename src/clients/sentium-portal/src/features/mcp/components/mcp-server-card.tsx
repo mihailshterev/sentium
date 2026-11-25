@@ -4,7 +4,7 @@ import { Activity, ChevronDown, Container, Globe, Pencil, RefreshCw, Trash2 } fr
 import { Badge } from "@/shared/ui/badge";
 import { Button } from "@/shared/ui/button";
 import { StatusMessage } from "@/shared/ui/status-message";
-import { fetchMcpServerStatus } from "../api/mcp.service";
+import { mcpQueries } from "../api/mcp.queries";
 import type { McpServer, McpToolUpdate } from "../types/mcp";
 import { McpToolsTable } from "./mcp-tools-table";
 import styles from "../mcp.module.css";
@@ -40,8 +40,7 @@ export function McpServerCard({
   const isHttp = server.transport === "Http";
 
   const status = useQuery({
-    queryKey: ["mcp-server-status", server.id],
-    queryFn: () => fetchMcpServerStatus(server.id),
+    ...mcpQueries.status(server.id),
     enabled: showStatus,
     refetchInterval: showStatus ? 10_000 : false,
   });

@@ -1,9 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchSystemMetrics } from "@/features/vigil/api/vigil.service";
+import { vigilQueries } from "@/features/vigil/api/vigil.queries";
 
 const REFRESH_INTERVAL = 5000;
-
-const SYSTEM_METRICS_KEY = ["system-metrics"] as const;
 
 export function useSystemMetrics() {
   const {
@@ -13,8 +11,7 @@ export function useSystemMetrics() {
     error,
     refetch,
   } = useQuery({
-    queryKey: SYSTEM_METRICS_KEY,
-    queryFn: fetchSystemMetrics,
+    ...vigilQueries.systemMetrics(),
     refetchInterval: REFRESH_INTERVAL,
     retry: false,
   });

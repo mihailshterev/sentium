@@ -2,7 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Download, FileText, Loader2 } from "lucide-react";
 import { Dialog } from "@/shared/ui/dialog";
 import { StatusMessage } from "@/shared/ui/status-message";
-import { fetchWorkspaceFileText, workspaceFileContentUrl } from "@/features/workspaces/api/workspaces.service";
+import { workspaceFileContentUrl } from "@/features/workspaces/api/workspaces.service";
+import { workspaceQueries } from "@/features/workspaces/api/workspaces.queries";
 import styles from "./file-preview-dialog.module.css";
 
 interface FilePreviewDialogProps {
@@ -14,10 +15,8 @@ interface FilePreviewDialogProps {
 /** The file's extracted text (PDF and Word included) with a download of the original. */
 export function FilePreviewDialog({ file, onClose }: FilePreviewDialogProps) {
   const { data, isLoading, error } = useQuery({
-    queryKey: ["workspaceFileText", file?.id],
-    queryFn: () => fetchWorkspaceFileText(file!.id),
+    ...workspaceQueries.fileText(file?.id ?? ""),
     enabled: !!file,
-    staleTime: 60_000,
   });
 
   return (

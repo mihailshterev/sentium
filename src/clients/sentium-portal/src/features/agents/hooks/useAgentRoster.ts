@@ -1,14 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchAgentRoster } from "../api/agents.service";
-
-export const AGENT_ROSTER_QUERY_KEY = ["agents", "roster"] as const;
+import { agentQueries } from "../api/agents.queries";
 
 export function useAgentRoster() {
-  const { data, isLoading, isError } = useQuery({
-    queryKey: AGENT_ROSTER_QUERY_KEY,
-    queryFn: fetchAgentRoster,
-    staleTime: 5 * 60_000,
-  });
+  const { data, isLoading, isError } = useQuery(agentQueries.roster());
 
   return { roster: data ?? [], isLoading, isError };
 }

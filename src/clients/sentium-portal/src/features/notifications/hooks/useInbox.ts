@@ -1,31 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  fetchNotifications,
-  fetchUnreadCount,
-  markAllNotificationsRead,
-  markNotificationRead,
-} from "@/features/notifications/api/notifications.service";
-
-export const notificationKeys = {
-  all: ["notifications"] as const,
-  list: (unreadOnly: boolean, limit: number) => ["notifications", "list", { unreadOnly, limit }] as const,
-  unreadCount: ["notifications", "unread-count"] as const,
-};
+import { markAllNotificationsRead, markNotificationRead } from "@/features/notifications/api/notifications.service";
+import { notificationKeys, notificationQueries } from "@/features/notifications/api/notifications.queries";
 
 export function useNotifications(unreadOnly = false, limit = 50) {
-  const { data = [], isLoading, error } = useQuery({
-    queryKey: notificationKeys.list(unreadOnly, limit),
-    queryFn: () => fetchNotifications(unreadOnly, limit),
-  });
+  const { data = [], isLoading, error } = useQuery(notificationQueries.list(unreadOnly, limit));
 
   return { notifications: data, isLoading, error };
 }
 
 export function useUnreadCount() {
-  const { data } = useQuery({
-    queryKey: notificationKeys.unreadCount,
-    queryFn: fetchUnreadCount,
-  });
+  const { data } = useQuery(notificationQueries.unreadCount());
 
   return data?.count ?? 0;
 }

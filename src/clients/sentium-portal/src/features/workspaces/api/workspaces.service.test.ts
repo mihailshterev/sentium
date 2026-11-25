@@ -25,7 +25,7 @@ describe("workspaces.service files", () => {
     await workspacesService.listWorkspaceFiles();
     await workspacesService.listWorkspaceFiles("w 1");
     expect(client.get).toHaveBeenCalledWith("/praxis/workspaces/files");
-    expect(client.get).toHaveBeenCalledWith("/praxis/workspaces/files?workspaceId=w+1");
+    expect(client.get).toHaveBeenCalledWith("/praxis/workspaces/files?workspaceId=w%201");
   });
 
   it("listWorkspaceFiles passes a trimmed search", async () => {

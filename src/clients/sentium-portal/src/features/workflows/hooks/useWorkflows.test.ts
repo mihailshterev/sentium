@@ -33,7 +33,7 @@ beforeEach(() => {
     totalPages: 1,
   });
   vi.spyOn(workflowsService, "createWorkflow").mockResolvedValue(mockWorkflow);
-  vi.spyOn(workflowsService, "updateWorkflow").mockResolvedValue({ ...mockWorkflow, name: "Updated" });
+  vi.spyOn(workflowsService, "updateWorkflow").mockResolvedValue(undefined);
   vi.spyOn(workflowsService, "deleteWorkflow").mockResolvedValue(undefined);
 });
 

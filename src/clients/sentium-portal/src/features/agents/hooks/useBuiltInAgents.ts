@@ -1,13 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { fetchBuiltInAgents, resetBuiltInAgentTools, updateBuiltInAgentTools } from "../api/agents.service";
-
-export const BUILT_IN_AGENTS_QUERY_KEY = ["agents", "built-in"] as const;
+import { resetBuiltInAgentTools, updateBuiltInAgentTools } from "../api/agents.service";
+import { agentKeys, agentQueries } from "../api/agents.queries";
 
 export function useBuiltInAgents() {
   const queryClient = useQueryClient();
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["agents"] });
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: agentKeys.all });
 
-  const query = useQuery({ queryKey: BUILT_IN_AGENTS_QUERY_KEY, queryFn: fetchBuiltInAgents });
+  const query = useQuery(agentQueries.builtIn());
 
   const save = useMutation({
     mutationFn: ({ name, tools }: { name: string; tools: string[] | null }) => updateBuiltInAgentTools(name, tools),

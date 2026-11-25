@@ -3,7 +3,7 @@ import { renderHook, act } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import React from "react";
 import { useNotificationStream } from "./useNotificationStream";
-import { notificationKeys } from "./useInbox";
+import { notificationKeys } from "../api/notifications.queries";
 import { startRealtime, stopRealtime } from "@/shared/realtime";
 import { FakeEventSource } from "@/test/fake-event-source";
 

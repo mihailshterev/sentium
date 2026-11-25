@@ -2,11 +2,11 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createSkill,
   deleteSkill,
-  fetchBuiltInSkills,
   fetchSkillsPaged,
   updateSkill,
   uploadSkillFile,
 } from "@/features/skills/api/skills.service";
+import { skillKeys, skillQueries } from "@/features/skills/api/skills.queries";
 import { useInfiniteList } from "@/shared/hooks/useInfiniteList";
 import type {
   AgentSkill,
@@ -15,25 +15,18 @@ import type {
   UpdateSkillPayload,
 } from "@/features/skills/types/skills";
 
-const SKILLS_KEY = ["skills"] as const;
-const BUILT_IN_KEY = ["skills", "built-in"] as const;
 
 export const useSkills = (skillType?: AgentSkillType) => {
   const qc = useQueryClient();
-  const invalidate = () => qc.invalidateQueries({ queryKey: SKILLS_KEY });
+  const invalidate = () => qc.invalidateQueries({ queryKey: skillKeys.all });
 
   const list = useInfiniteList<AgentSkill>(
-    [...SKILLS_KEY, skillType ?? "all"],
+    skillKeys.list(skillType),
     (page, pageSize) => fetchSkillsPaged(skillType, page, pageSize),
     { enabled: skillType !== undefined },
   );
 
-  const builtInQuery = useQuery({
-    queryKey: BUILT_IN_KEY,
-    queryFn: fetchBuiltInSkills,
-    staleTime: Infinity,
-    retry: 1,
-  });
+  const builtInQuery = useQuery({ ...skillQueries.builtIn(), retry: 1 });
 
   const createMutation = useMutation({
     mutationFn: (payload: CreateSkillPayload) => createSkill(payload),

@@ -2,42 +2,35 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   deleteAgentLearning,
   fetchAgentLearnings,
-  fetchAgentLearningStats,
   updateAgentLearning,
 } from "@/features/knowledge-base/api/knowledge-base.service";
+import { knowledgeBaseQueries, learningKeys } from "@/features/knowledge-base/api/knowledge-base.queries";
 import { useInfiniteList } from "@/shared/hooks/useInfiniteList";
 import type { AgentLearning } from "@/features/knowledge-base/types/agent-learning";
-
-const STATS_KEY = ["agent-learnings", "stats"] as const;
 
 export const useAgentLearnings = (agentName?: string, pageSize = 20) => {
   const qc = useQueryClient();
 
   const list = useInfiniteList<AgentLearning>(
-    ["agent-learnings", agentName ?? "all"],
+    learningKeys.list(agentName),
     (page, ps) => fetchAgentLearnings(agentName, page, ps),
     { pageSize, staleTime: 15_000 },
   );
 
-  const statsQuery = useQuery({
-    queryKey: STATS_KEY,
-    queryFn: fetchAgentLearningStats,
-    staleTime: 15_000,
-    retry: 1,
-  });
+  const statsQuery = useQuery({ ...knowledgeBaseQueries.learningStats(), retry: 1 });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, content, tags }: { id: string; content: string; tags: string }) =>
       updateAgentLearning(id, { content, tags }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["agent-learnings"] });
+      qc.invalidateQueries({ queryKey: learningKeys.all });
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteAgentLearning(id),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["agent-learnings"] });
+      qc.invalidateQueries({ queryKey: learningKeys.all });
     },
   });
 

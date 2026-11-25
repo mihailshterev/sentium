@@ -4,6 +4,7 @@ import { Link } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowUp, ExternalLink, Plus, Square, X } from "lucide-react";
 import { createConversation } from "@/features/assistant/api/assistant.service";
+import { conversationKeys } from "@/features/assistant/api/assistant.queries";
 import { MessageBubble } from "@/features/assistant/components/message-bubble";
 import { useMessageListUi } from "@/features/assistant/hooks/useMessageListUi";
 import { useModels } from "@/features/models/hooks/useModels";
@@ -101,7 +102,7 @@ export function QuickChat({ anchor, position, onClose }: QuickChatProps) {
       try {
         conversationId = (await createConversation({ model })).id;
         setActiveConversation(conversationId, [], model);
-        void queryClient.invalidateQueries({ queryKey: ["conversations"] });
+        void queryClient.invalidateQueries({ queryKey: conversationKeys.all });
       } catch {
         setError("Could not start a conversation.");
         return;

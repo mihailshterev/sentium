@@ -60,7 +60,7 @@ describe("fetchPreApprovableTools()", () => {
   it("passes only the fields of the target that are set", async () => {
     await schedulerService.fetchPreApprovableTools({ kind: "Agent", agentName: "Timeline Planner" });
 
-    expect(client.get).toHaveBeenCalledWith("/praxis/scheduler/pre-approvable-tools?kind=Agent&agentName=Timeline+Planner");
+    expect(client.get).toHaveBeenCalledWith("/praxis/scheduler/pre-approvable-tools?kind=Agent&agentName=Timeline%20Planner");
   });
 
   it("includes the job when editing", async () => {

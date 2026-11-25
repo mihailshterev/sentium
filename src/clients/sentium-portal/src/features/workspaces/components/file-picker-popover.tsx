@@ -1,7 +1,7 @@
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Check, ChevronRight, FileText, FolderOpen, Loader2, Upload } from "lucide-react";
-import { fetchWorkspaceFiles, fetchWorkspaces, listWorkspaceFiles } from "@/features/workspaces/api/workspaces.service";
+import { workspaceFileKeys, workspaceQueries } from "@/features/workspaces/api/workspaces.queries";
 import type { Workspace, WorkspaceFile } from "@/features/workspaces/types/workspace";
 import { formatBytesToMb } from "@/shared/utils/formatters";
 import { useDebouncedValue } from "@/shared/hooks/useDebouncedValue";
@@ -9,7 +9,6 @@ import { REALTIME_FALLBACK_POLL_MS, REALTIME_TOPICS, useRealtimeInvalidate } fro
 import { FileStatusBadge } from "./file-status-badge";
 import styles from "./file-picker-popover.module.css";
 
-const ALL_FILES_KEY = ["workspaceFiles"] as const;
 
 const isProcessing = (files: WorkspaceFile[] | undefined) =>
   !!files?.some((f) => f.processingStatus === "Pending" || f.processingStatus === "Processing");
@@ -51,15 +50,13 @@ function PickerPanel({
   const [query, setQuery] = useState("");
   const [expanded, setExpanded] = useState<string | null>(preferredWorkspaceId ?? null);
 
-  useRealtimeInvalidate(REALTIME_TOPICS.workspaceFiles, [ALL_FILES_KEY]);
+  useRealtimeInvalidate(REALTIME_TOPICS.workspaceFiles, [workspaceFileKeys.all]);
 
-  const workspacesQuery = useQuery({ queryKey: ["workspaces", "options"], queryFn: fetchWorkspaces });
+  const workspacesQuery = useQuery(workspaceQueries.options());
   const searching = query.trim().length > 0;
   const term = useDebouncedValue(query.trim());
-  // Searched on the server, so files beyond the newest few hundred are found too.
   const allFilesQuery = useQuery({
-    queryKey: ["workspaceFiles", "all", term],
-    queryFn: () => listWorkspaceFiles(undefined, term),
+    ...workspaceQueries.searchFiles(term),
     enabled: term.length > 0,
     placeholderData: keepPreviousData,
   });
@@ -167,8 +164,7 @@ function WorkspaceGroup({
   onToggleFile: (file: WorkspaceFile) => void;
 }) {
   const filesQuery = useQuery({
-    queryKey: ["workspaceFiles", workspace.id],
-    queryFn: () => fetchWorkspaceFiles(workspace.id),
+    ...workspaceQueries.files(workspace.id),
     enabled: expanded,
     refetchInterval: (query) => (isProcessing(query.state.data) ? REALTIME_FALLBACK_POLL_MS : false),
   });

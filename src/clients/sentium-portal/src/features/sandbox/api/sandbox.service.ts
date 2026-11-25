@@ -1,4 +1,5 @@
 import { client, BASE_URL } from "@/shared/api/client";
+import { pathIn, withQuery } from "@/shared/api/url";
 import type { PagedResponse } from "@/shared/types/pagination";
 import type {
   SandboxExecutionLog,
@@ -8,6 +9,7 @@ import type {
 } from "@/features/sandbox/types/sandbox";
 
 const BASE = "/sandbox";
+const url = pathIn(BASE);
 
 export interface FetchExecutionsParams {
   page: number;
@@ -17,25 +19,19 @@ export interface FetchExecutionsParams {
   search?: string;
 }
 
-export const fetchExecutions = (params: FetchExecutionsParams): Promise<PagedResponse<SandboxExecutionLog>> => {
-  const query = new URLSearchParams({
-    page: String(params.page),
-    pageSize: String(params.pageSize),
-  });
-  if (params.status) {
-    query.set("status", params.status);
-  }
-  if (params.language) {
-    query.set("language", params.language);
-  }
-  if (params.search?.trim()) {
-    query.set("search", params.search.trim());
-  }
-  return client.get<PagedResponse<SandboxExecutionLog>>(`${BASE}/executions?${query.toString()}`);
-};
+export const fetchExecutions = ({
+  page,
+  pageSize,
+  status,
+  language,
+  search,
+}: FetchExecutionsParams): Promise<PagedResponse<SandboxExecutionLog>> =>
+  client.get<PagedResponse<SandboxExecutionLog>>(
+    withQuery(`${BASE}/executions`, { page, pageSize, status, language, search: search?.trim() }),
+  );
 
 export const fetchExecution = (jobId: string): Promise<SandboxExecutionLog> =>
-  client.get<SandboxExecutionLog>(`${BASE}/executions/${jobId}`);
+  client.get<SandboxExecutionLog>(url`/executions/${jobId}`);
 
 export const fetchSandboxStats = (): Promise<SandboxStats> => client.get<SandboxStats>(`${BASE}/executions/stats`);
 

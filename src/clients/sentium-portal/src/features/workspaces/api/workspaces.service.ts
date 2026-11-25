@@ -1,4 +1,5 @@
 import { ApiError, BASE_URL, client, handleUnauthorized } from "@/shared/api/client";
+import { pathIn, withQuery } from "@/shared/api/url";
 import type {
   CreateWorkspacePayload,
   UpdateWorkspacePayload,
@@ -10,40 +11,32 @@ import type {
 import type { PagedResponse } from "@/shared/types/pagination";
 
 const BASE = "/praxis";
+const url = pathIn(BASE);
 
 /** The newest files (optionally of one workspace, optionally whose name contains `search`), at most 500. */
-export const listWorkspaceFiles = (workspaceId?: string, search?: string): Promise<WorkspaceFile[]> => {
-  const params = new URLSearchParams();
-  if (workspaceId) {
-    params.set("workspaceId", workspaceId);
-  }
-  if (search?.trim()) {
-    params.set("search", search.trim());
-  }
-  const query = params.toString();
-  return client.get<WorkspaceFile[]>(`${BASE}/workspaces/files${query ? `?${query}` : ""}`);
-};
+export const listWorkspaceFiles = (workspaceId?: string, search?: string): Promise<WorkspaceFile[]> =>
+  client.get<WorkspaceFile[]>(withQuery(`${BASE}/workspaces/files`, { workspaceId, search: search?.trim() }));
 
 export const deleteWorkspaceFile = (fileId: string): Promise<void> =>
-  client.delete<void>(`${BASE}/workspaces/files/${fileId}`);
+  client.delete<void>(url`/workspaces/files/${fileId}`);
 
 export const fetchWorkspacesPaged = (page = 1, pageSize = 100): Promise<PagedResponse<Workspace>> =>
-  client.get<PagedResponse<Workspace>>(`${BASE}/workspaces?page=${page}&pageSize=${pageSize}`);
+  client.get<PagedResponse<Workspace>>(withQuery(`${BASE}/workspaces`, { page, pageSize }));
 
 export const fetchWorkspaces = async (): Promise<Workspace[]> => (await fetchWorkspacesPaged(1, 100)).items;
 
-export const fetchWorkspace = (id: string): Promise<Workspace> => client.get<Workspace>(`${BASE}/workspaces/${id}`);
+export const fetchWorkspace = (id: string): Promise<Workspace> => client.get<Workspace>(url`/workspaces/${id}`);
 
 export const createWorkspace = (payload: CreateWorkspacePayload): Promise<Workspace> =>
   client.post<Workspace>(`${BASE}/workspaces`, payload);
 
 export const updateWorkspace = (id: string, payload: UpdateWorkspacePayload): Promise<Workspace> =>
-  client.put<Workspace>(`${BASE}/workspaces/${id}`, payload);
+  client.put<Workspace>(url`/workspaces/${id}`, payload);
 
-export const deleteWorkspace = (id: string): Promise<void> => client.delete<void>(`${BASE}/workspaces/${id}`);
+export const deleteWorkspace = (id: string): Promise<void> => client.delete<void>(url`/workspaces/${id}`);
 
 export const fetchWorkspaceFiles = (workspaceId: string): Promise<WorkspaceFile[]> =>
-  client.get<WorkspaceFile[]>(`${BASE}/workspaces/${workspaceId}/files`);
+  client.get<WorkspaceFile[]>(url`/workspaces/${workspaceId}/files`);
 
 /** A page of a workspace's files, newest first, optionally only those whose name contains `search`. */
 export const fetchWorkspaceFilesPage = (
@@ -51,25 +44,22 @@ export const fetchWorkspaceFilesPage = (
   page = 1,
   pageSize = 50,
   search?: string,
-): Promise<PagedResponse<WorkspaceFile>> => {
-  const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
-  if (search?.trim()) {
-    params.set("search", search.trim());
-  }
-  return client.get<PagedResponse<WorkspaceFile>>(`${BASE}/workspaces/${workspaceId}/files/page?${params}`);
-};
+): Promise<PagedResponse<WorkspaceFile>> =>
+  client.get<PagedResponse<WorkspaceFile>>(
+    withQuery(url`/workspaces/${workspaceId}/files/page`, { page, pageSize, search: search?.trim() }),
+  );
 
 export const fetchUploadRules = (): Promise<UploadRules> => client.get<UploadRules>(`${BASE}/workspaces/files/rules`);
 
 export const reindexWorkspaceFile = (fileId: string): Promise<void> =>
-  client.post<void>(`${BASE}/workspaces/files/${fileId}/reindex`, undefined);
+  client.post<void>(url`/workspaces/files/${fileId}/reindex`, undefined);
 
 export const fetchWorkspaceFileText = (fileId: string, maxChars = 20_000): Promise<WorkspaceFileText> =>
-  client.get<WorkspaceFileText>(`${BASE}/workspaces/files/${fileId}/text?maxChars=${maxChars}`);
+  client.get<WorkspaceFileText>(withQuery(url`/workspaces/files/${fileId}/text`, { maxChars }));
 
 /** Downloads as an attachment (the server never serves uploaded files inline). */
 export const workspaceFileContentUrl = (fileId: string): string =>
-  `${BASE_URL}${BASE}/workspaces/files/${fileId}/content`;
+  BASE_URL + url`/workspaces/files/${fileId}/content`;
 
 const uploadError = (xhr: XMLHttpRequest): ApiError => {
   let detail: string | undefined;

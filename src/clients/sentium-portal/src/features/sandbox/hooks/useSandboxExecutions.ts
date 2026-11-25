@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { fetchExecutions } from "@/features/sandbox/api/sandbox.service";
+import { sandboxKeys } from "@/features/sandbox/api/sandbox.queries";
 import { useInfiniteList } from "@/shared/hooks/useInfiniteList";
 import { REALTIME_FALLBACK_POLL_MS, REALTIME_TOPICS, useRealtimeInvalidate } from "@/shared/realtime";
 import type { SandboxExecutionLog, SandboxLanguage, SandboxStatusFilter } from "@/features/sandbox/types/sandbox";
 
-const SANDBOX_KEYS = [["sandbox-executions"], ["sandbox-stats"]] as const;
+const SANDBOX_KEYS = [sandboxKeys.executions(), sandboxKeys.stats()] as const;
 const DEFAULT_PAGE_SIZE = 20;
 const SEARCH_DEBOUNCE = 300;
 
@@ -22,7 +23,7 @@ export const useSandboxExecutions = (pageSize = DEFAULT_PAGE_SIZE) => {
   useRealtimeInvalidate(REALTIME_TOPICS.sandboxExecutions, SANDBOX_KEYS);
 
   const list = useInfiniteList<SandboxExecutionLog>(
-    ["sandbox-executions", pageSize, status, language, debouncedSearch],
+    sandboxKeys.executionList(pageSize, status, language, debouncedSearch),
     (page, ps) =>
       fetchExecutions({
         page,

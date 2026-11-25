@@ -61,8 +61,9 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
     throw new ApiError(response.status, message, errorData.errors);
   }
 
+  // No body resolves to `undefined`, never a stand-in object: type an endpoint that can answer 204 as `T | undefined`.
   if (response.status === 204 || response.headers.get("Content-Length") === "0") {
-    return {} as T;
+    return undefined as T;
   }
 
   try {
@@ -72,7 +73,7 @@ async function request<T>(endpoint: string, options: RequestOptions = {}): Promi
     if (response.headers.get("Content-Type")?.includes("json")) {
       throw new ApiError(response.status, "The server sent a malformed response.");
     }
-    return {} as T;
+    return undefined as T;
   }
 }
 

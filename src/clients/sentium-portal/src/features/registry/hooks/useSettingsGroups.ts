@@ -1,9 +1,7 @@
 import { useMutation, useQueries, useQueryClient } from "@tanstack/react-query";
-import { fetchSettingsGroup, updateSettingsGroup } from "../api/registry.service";
+import { updateSettingsGroup } from "../api/registry.service";
+import { settingsQueries } from "../api/registry.queries";
 import type { SettingsEnvelope, SettingsGroupValue, SettingsKey } from "../types/settings";
-
-/** Shared with feature pages that read a group too (e.g. Sentinel's PDP readout), so a save updates them all. */
-export const settingsQueryKey = (key: SettingsKey) => ["registry-settings", key] as const;
 
 export interface GroupPatch {
   key: SettingsKey;
@@ -17,11 +15,7 @@ export interface GroupSaveResult {
 
 export function useSettingsGroups(keys: SettingsKey[]) {
   const results = useQueries({
-    queries: keys.map((key) => ({
-      queryKey: settingsQueryKey(key),
-      queryFn: () => fetchSettingsGroup(key),
-      retry: false,
-    })),
+    queries: keys.map((key) => ({ ...settingsQueries.group(key), retry: false })),
   });
 
   const envelopes: Partial<Record<SettingsKey, SettingsEnvelope<SettingsGroupValue>>> = {};
@@ -49,7 +43,7 @@ export function useSaveSettingsGroups() {
 
   async function saveGroup({ key, patch }: GroupPatch): Promise<GroupSaveResult> {
     try {
-      qc.setQueryData(settingsQueryKey(key), await updateSettingsGroup(key, patch));
+      qc.setQueryData(settingsQueries.group(key).queryKey, await updateSettingsGroup(key, patch));
       return { key, error: null };
     } catch (error) {
       return { key, error: error instanceof Error ? error : new Error("Failed to save.") };

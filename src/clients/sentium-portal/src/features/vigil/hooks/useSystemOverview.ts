@@ -1,8 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchSystemOverview } from "@/features/vigil/api/vigil.service";
-import type { SystemHealthOverview } from "@/features/vigil/types/serviceHealth";
-
-export const SYSTEM_OVERVIEW_KEY = ["vigil-overview"] as const;
+import { vigilQueries } from "@/features/vigil/api/vigil.queries";
 
 /** The Vigil stream refetches this on every change; the poll only covers a missed event. */
 const POLL_INTERVAL = 60_000;
@@ -13,9 +10,8 @@ export function useSystemOverview() {
     isLoading,
     error,
     refetch,
-  } = useQuery<SystemHealthOverview>({
-    queryKey: SYSTEM_OVERVIEW_KEY,
-    queryFn: fetchSystemOverview,
+  } = useQuery({
+    ...vigilQueries.overview(),
     refetchInterval: POLL_INTERVAL,
     retry: false,
   });

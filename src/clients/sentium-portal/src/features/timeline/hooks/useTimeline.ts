@@ -7,6 +7,7 @@ import {
   type QueryKey,
 } from "@tanstack/react-query";
 import * as api from "../api/timeline.service";
+import { timelineKeys, timelineQueries } from "../api/timeline.queries";
 import type {
   CreateNotePayload,
   EditScope,
@@ -20,13 +21,6 @@ import type {
 } from "../types/timeline";
 import { withTask, withoutTask } from "../utils/month-cache";
 
-export const timelineKeys = {
-  all: ["timeline"] as const,
-  year: (year: number) => ["timeline", "year", year] as const,
-  month: (year: number, month: number) => ["timeline", "month", year, month] as const,
-  proposals: () => ["timeline", "proposals"] as const,
-  upcoming: () => ["timeline", "upcoming"] as const,
-};
 
 /** Agents can write from workflows and schedules too, so the open timeline refreshes itself now and then. */
 const REFRESH_MS = 60_000;
@@ -34,11 +28,7 @@ const REFRESH_MS = 60_000;
 /** The overviews of every year the scrollable rail shows, keyed by year (loaded ones only). */
 export function useYearOverviews(years: number[], today: string) {
   return useQueries({
-    queries: years.map((year) => ({
-      queryKey: timelineKeys.year(year),
-      queryFn: () => api.fetchYear(year, today),
-      refetchInterval: REFRESH_MS,
-    })),
+    queries: years.map((year) => ({ ...timelineQueries.year(year, today), refetchInterval: REFRESH_MS })),
     combine: (results) => ({
       overviews: new Map<number, YearOverview>(results.flatMap((r) => (r.data ? [[r.data.year, r.data]] : []))),
       isError: results.some((r) => r.isError),
@@ -47,18 +37,13 @@ export function useYearOverviews(years: number[], today: string) {
 }
 
 export function useUpcoming(today: string) {
-  const { data, isLoading, isError } = useQuery({
-    queryKey: timelineKeys.upcoming(),
-    queryFn: () => api.fetchUpcoming(today),
-    refetchInterval: REFRESH_MS,
-  });
+  const { data, isLoading, isError } = useQuery({ ...timelineQueries.upcoming(today), refetchInterval: REFRESH_MS });
   return { upcoming: data, isLoading, isError };
 }
 
 export function useMonthDetail(year: number, month: number | null, today?: string) {
   const { data, isLoading, isError } = useQuery({
-    queryKey: timelineKeys.month(year, month ?? 0),
-    queryFn: () => api.fetchMonth(year, month!, today),
+    ...timelineQueries.month(year, month ?? 0, today),
     enabled: month !== null,
     refetchInterval: REFRESH_MS,
   });
@@ -66,11 +51,7 @@ export function useMonthDetail(year: number, month: number | null, today?: strin
 }
 
 export function usePendingProposals() {
-  const { data, isLoading } = useQuery({
-    queryKey: timelineKeys.proposals(),
-    queryFn: () => api.fetchProposals("Pending"),
-    refetchInterval: REFRESH_MS,
-  });
+  const { data, isLoading } = useQuery({ ...timelineQueries.pendingProposals(), refetchInterval: REFRESH_MS });
   return { proposals: data ?? [], isLoading };
 }
 

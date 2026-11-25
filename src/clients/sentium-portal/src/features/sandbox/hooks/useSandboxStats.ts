@@ -1,15 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
-import { fetchSandboxStats } from "@/features/sandbox/api/sandbox.service";
-import type { SandboxStats } from "@/features/sandbox/types/sandbox";
+import { sandboxKeys, sandboxQueries } from "@/features/sandbox/api/sandbox.queries";
 import { REALTIME_FALLBACK_POLL_MS, REALTIME_TOPICS, useRealtimeInvalidate } from "@/shared/realtime";
 
-const STATS_KEYS = [["sandbox-stats"]] as const;
+const STATS_KEYS = [sandboxKeys.stats()] as const;
 
 export const useSandboxStats = () => {
   useRealtimeInvalidate(REALTIME_TOPICS.sandboxExecutions, STATS_KEYS);
-  const { data, isLoading, error, refetch } = useQuery<SandboxStats>({
-    queryKey: ["sandbox-stats"],
-    queryFn: fetchSandboxStats,
+  const { data, isLoading, error, refetch } = useQuery({
+    ...sandboxQueries.stats(),
     refetchInterval: REALTIME_FALLBACK_POLL_MS,
     retry: false,
   });

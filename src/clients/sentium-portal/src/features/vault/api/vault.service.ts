@@ -1,4 +1,5 @@
 import { client } from "@/shared/api/client";
+import { pathIn, withQuery } from "@/shared/api/url";
 import type {
   PagedResponse,
   VaultGraph,
@@ -10,31 +11,21 @@ import type {
 } from "@/features/vault/types/vault";
 
 const BASE = "/memoria/vault";
+const url = pathIn(BASE);
 
-/** null until a vault has been synced (the API answers 204, which the client turns into an empty object). */
-export const fetchVaultSummary = async (): Promise<VaultSummary | null> => {
-  const summary = await client.get<Partial<VaultSummary>>(BASE);
-  return summary.id ? (summary as VaultSummary) : null;
-};
+/** null until a vault has been synced (the API answers 204). */
+export const fetchVaultSummary = async (): Promise<VaultSummary | null> =>
+  (await client.get<VaultSummary | undefined>(BASE)) ?? null;
 
-export const fetchVaultNotes = (filter: VaultNotesFilter): Promise<PagedResponse<VaultNoteSummary>> => {
-  const params = new URLSearchParams();
-  for (const [key, value] of Object.entries(filter)) {
-    if (value !== undefined && value !== "") {
-      params.set(key, String(value));
-    }
-  }
-
-  const query = params.toString();
-  return client.get<PagedResponse<VaultNoteSummary>>(`${BASE}/notes${query ? `?${query}` : ""}`);
-};
+export const fetchVaultNotes = (filter: VaultNotesFilter): Promise<PagedResponse<VaultNoteSummary>> =>
+  client.get<PagedResponse<VaultNoteSummary>>(withQuery(`${BASE}/notes`, filter));
 
 export const fetchVaultNote = (id: string): Promise<VaultNote> =>
-  client.get<VaultNote>(`${BASE}/notes/${encodeURIComponent(id)}`);
+  client.get<VaultNote>(url`/notes/${id}`);
 
 export const fetchVaultTags = (): Promise<VaultTagCount[]> => client.get<VaultTagCount[]>(`${BASE}/tags`);
 
 export const fetchVaultGraph = (tag?: string): Promise<VaultGraph> =>
-  client.get<VaultGraph>(`${BASE}/graph${tag ? `?tag=${encodeURIComponent(tag)}` : ""}`);
+  client.get<VaultGraph>(withQuery(`${BASE}/graph`, { tag }));
 
 export const forgetVault = (): Promise<void> => client.delete<void>(BASE);

@@ -4,7 +4,8 @@ import { CheckCircle, Circle, History, Loader2, Square, Terminal, Zap } from "lu
 import { useQuery } from "@tanstack/react-query";
 import styles from "../agent-orchestration.module.css";
 import { fetchWorkflowRunsPaged } from "@/features/workflows/api/workflows.service";
-import { fetchWorkspaces } from "@/features/workspaces/api/workspaces.service";
+import { workflowRunKeys } from "@/features/workflows/api/workflows.queries";
+import { workspaceQueries } from "@/features/workspaces/api/workspaces.queries";
 import { useWorkflows } from "@/features/workflows/hooks/useWorkflows";
 import { useRenameWorkflowRun, useWorkflowRun } from "@/features/workflows/hooks/useWorkflowRuns";
 import { describeRun } from "@/features/workflows/utils/describe-run";
@@ -36,7 +37,7 @@ const PREDEFINED_PHASE_STEPS: { key: Phase; label: string; icon: React.ElementTy
 
 const PHASE_ORDER: Phase[] = ["IDLE", "PLANNING", "SQUAD", "VALIDATING", "COMPLETE"];
 
-const RUN_HISTORY_KEYS = [["workflowRuns"]] as const;
+const RUN_HISTORY_KEYS = [workflowRunKeys.all] as const;
 export function AgentOrchestrationView() {
   const { workflows: visibleWorkflows } = useWorkflows();
   const userId = useAuthStore((s) => s.user?.sub);
@@ -70,10 +71,7 @@ export function AgentOrchestrationView() {
   const { run: selectedRun, isLoading: runLoading, error: runError } = useWorkflowRun(runId);
   const { mutate: renameRun } = useRenameWorkflowRun();
 
-  const { data: workspaces = [] } = useQuery({
-    queryKey: ["workspaces", "options"],
-    queryFn: fetchWorkspaces,
-  });
+  const { data: workspaces = [] } = useQuery(workspaceQueries.options());
 
   const [runSearch, setRunSearch] = useState("");
   const debouncedRunSearch = useDebouncedValue(runSearch).trim();
@@ -88,7 +86,7 @@ export function AgentOrchestrationView() {
     loadMore: loadMoreRuns,
     isLoadingMore: isLoadingMoreRuns,
   } = useInfiniteList<WorkflowRun>(
-    ["workflowRuns", debouncedRunSearch],
+    workflowRunKeys.history(debouncedRunSearch),
     (page, pageSize) => fetchWorkflowRunsPaged(page, pageSize, debouncedRunSearch || undefined),
     {
       enabled: sidebarView === "history",

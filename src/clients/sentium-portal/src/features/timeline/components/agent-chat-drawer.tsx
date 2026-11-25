@@ -10,13 +10,13 @@ import { MessageBubble } from "@/features/assistant/components/message-bubble";
 import { useMessageListUi } from "@/features/assistant/hooks/useMessageListUi";
 import { messageFromDto } from "@/features/assistant/utils/message-from-dto";
 import { createConversation, fetchConversation } from "@/features/assistant/api/assistant.service";
+import { conversationKeys } from "@/features/assistant/api/assistant.queries";
 import type { ConversationMessage } from "@/features/assistant/types/assistant";
 import { useAgentRoster } from "@/features/agents/hooks/useAgentRoster";
 import { useModels } from "@/features/models/hooks/useModels";
-import { MODELS_QUERY_KEY } from "@/features/models/hooks/useModelCatalog";
-import { fetchModelCatalog } from "@/features/models/api/models.service";
+import { modelQueries } from "@/features/models/api/models.queries";
 import { useTimelineChatStore, timelineThreads } from "../state/timeline-chat-store";
-import { timelineKeys } from "../hooks/useTimeline";
+import { timelineKeys } from "../api/timeline.queries";
 import { isImeComposing } from "@/shared/utils/keyboard";
 import type { AgentChatContext } from "../types/timeline";
 import { contextAgent, contextKey, contextLabel, contextPrefix, starterPrompts } from "../utils/agent-context";
@@ -106,7 +106,7 @@ export function AgentChatDrawer({ context, today, onClose }: AgentChatDrawerProp
   const resolveModel = async () => {
     if (effectiveModel) return effectiveModel;
     try {
-      const catalog = await queryClient.fetchQuery({ queryKey: MODELS_QUERY_KEY, queryFn: fetchModelCatalog });
+      const catalog = await queryClient.fetchQuery(modelQueries.catalog());
       return agent?.model || catalog.defaultModel || catalog.models[0]?.id || "";
     } catch {
       return "";
@@ -130,7 +130,7 @@ export function AgentChatDrawer({ context, today, onClose }: AgentChatDrawerProp
         conversationId = created.id;
         timelineThreads.set(key, conversationId);
         setActiveConversation(conversationId, [], model);
-        void queryClient.invalidateQueries({ queryKey: ["conversations"] });
+        void queryClient.invalidateQueries({ queryKey: conversationKeys.all });
       } catch {
         setError(`Could not start a conversation with ${agentName}.`);
         return;
