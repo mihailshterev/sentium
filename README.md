@@ -308,6 +308,13 @@ pnpm infra:down           # remove the e2e containers
 
 Set `PLAYWRIGHT_BASE_URL` to run the suite against an already running Testing stack instead (nothing is started then).
 
+**Load (k6)**: smoke, load, stress, spike, soak and breakpoint profiles against a resource-limited Sentium.Web container, with an LLM stub, SLO thresholds and baseline comparison. It needs Docker and bash. CI runs it on demand (the Sentium.Load workflow). See [load/README.md](load/README.md).
+
+```bash
+load/run.sh smoke         # 1 min sanity check
+load/run.sh load          # expected peak, 27 min
+```
+
 ---
 
 ## Deployment & trust model

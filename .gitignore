@@ -446,3 +446,6 @@ FodyWeavers.xsd
 !/infra/backup/
 !/src/modules/Vigil/Features/Backups/
 !/tests/Sentium.Tests.Unit/Modules/Backup/
+
+# Load test output (load/README.md)
+/load/results/

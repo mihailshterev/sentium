@@ -1,0 +1,112 @@
+# The system under test for the load suite (see load/README.md). Start it through load/run.sh, which wipes it,
+# waits for it and runs k6 from the "tools" profile.
+#
+# Unlike e2e/compose.e2e.yaml, Postgres keeps its default durability (fsync on) and Sentium.Web runs from its
+# production Dockerfile with fixed CPU and memory limits, so results are comparable between runs and machines.
+name: sentium-load
+
+x-limits: &db-limits
+  cpus: ${LOAD_DB_CPUS:-2}
+  mem_limit: ${LOAD_DB_MEMORY:-2g}
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg18-trixie@sha256:5895949dfcdf308eb0cd31c950c93c14895c77f33fbedfecf1fa511ab1d4bcd2
+    <<: *db-limits
+    shm_size: 256m
+    environment:
+      POSTGRES_PASSWORD: load
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -h 127.0.0.1"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  storage:
+    image: chrislusf/seaweedfs:4.54@sha256:4b42c212543a0acd4c0e675215ecdcaf62a186ef98def76c7e12701871222d15
+    command:
+      [
+        "mini",
+        "-dir=/data",
+        "-ip=storage",
+        "-ip.bind=0.0.0.0",
+        "-master.telemetry=false",
+        "-admin.ui=false",
+        "-webdav=false",
+        "-s3.port.iceberg=0",
+        "-s3.port.lance=0",
+      ]
+    environment:
+      AWS_ACCESS_KEY_ID: loadaccesskey
+      AWS_SECRET_ACCESS_KEY: loadsecretkey-not-a-real-secret
+    tmpfs:
+      - /data
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8333/healthz"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  llm-stub:
+    image: node:24-alpine@sha256:116b800c3754b440ee0aa3ed2f20f5bf3d99a554bfd9adeea09ea8017f6e85f5
+    command: ["node", "/stub/llm-stub.mjs"]
+    environment:
+      PORT: "8080"
+      STUB_TTFT_MS: ${STUB_TTFT_MS:-300}
+      STUB_TOKENS: ${STUB_TOKENS:-60}
+      STUB_TOKENS_PER_SEC: ${STUB_TOKENS_PER_SEC:-40}
+      STUB_EMBED_MS: ${STUB_EMBED_MS:-25}
+      STUB_JITTER: ${STUB_JITTER:-0.2}
+    volumes:
+      - ./stub:/stub:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/health"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  sentium-web:
+    image: sentium-web:load
+    build:
+      context: ..
+      dockerfile: src/hosts/Sentium.Web/Dockerfile
+    cpus: ${LOAD_WEB_CPUS:-2}
+    mem_limit: ${LOAD_WEB_MEMORY:-2g}
+    # The Testing environment seeds the Sovereign "testuser" the suite's setup signs in with (E2E:* settings in
+    # appsettings.Testing.json); everything that points at localhost there is overridden here.
+    environment:
+      ASPNETCORE_ENVIRONMENT: Testing
+      DOTNET_ENVIRONMENT: Testing
+      ConnectionStrings__sentiumdb: Host=postgres;Port=5432;Database=sentiumdb;Username=postgres;Password=load
+      ConnectionStrings__workspace-storage: Endpoint=http://storage:8333;AccessKey=loadaccesskey;SecretKey=loadsecretkey-not-a-real-secret
+      Inference__ChatEndpoint: http://llm-stub:8080
+      Inference__EmbeddingEndpoint: http://llm-stub:8080
+      # Every VU signs in from the k6 container's single address; the per-IP auth window must not throttle the suite.
+      Identity__AuthRateLimit__PermitLimit: "1000000"
+    ports:
+      - "${LOAD_WEB_PORT:-25280}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      storage:
+        condition: service_healthy
+      llm-stub:
+        condition: service_healthy
+
+  k6:
+    image: grafana/k6:1.3.0@sha256:3ddc8b1a33a2c3d8edc6e99b6a762ae36cba08788463458f5e6a7703e14eb77d
+    profiles: ["tools"]
+    environment:
+      BASE_URL: ${BASE_URL:-http://sentium-web:8080}
+      RESULTS_DIR: /results
+      K6_WEB_DASHBOARD: "true"
+      K6_WEB_DASHBOARD_EXPORT: /results/${PROFILE:-smoke}-report.html
+      K6_WEB_DASHBOARD_PERIOD: 10s
+    volumes:
+      - ./k6:/scripts:ro
+      - ./results:/results
+
+volumes:
+  pgdata:
