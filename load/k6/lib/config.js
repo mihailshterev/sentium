@@ -30,6 +30,12 @@ export const HOLD = __ENV.HOLD || "";
 /** Turns off think time, e.g. to push a constant-VU profile harder. Arrival-rate profiles never think. */
 export const NO_THINK = __ENV.NO_THINK === "1";
 
+/** Comma-separated scenarios to run (e.g. "browse,write,search,auth"); empty runs them all. */
+export const SCENARIOS = (__ENV.SCENARIOS || "")
+  .split(",")
+  .map((name) => name.trim())
+  .filter(Boolean);
+
 /** Must match the stub's settings (compose.load.yaml), so the chat SLO tracks the simulated generation time. */
 export const STUB = {
   ttftMs: number("STUB_TTFT_MS", 300),

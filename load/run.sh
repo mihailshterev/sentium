@@ -84,7 +84,7 @@ fi
 
 # Forward the tuning knobs to k6 (-e) so the scripts and the SLOs see the same values as the stub.
 k6_env=(-e "PROFILE=$profile")
-for name in VUS HOLD NO_THINK STUB_TTFT_MS STUB_TOKENS STUB_TOKENS_PER_SEC CHAT_OVERHEAD_MS KB_DOCUMENTS \
+for name in VUS HOLD NO_THINK SCENARIOS STUB_TTFT_MS STUB_TOKENS STUB_TOKENS_PER_SEC CHAT_OVERHEAD_MS KB_DOCUMENTS \
   TURNS_PER_CONVERSATION LOAD_USER_PASSWORD SOVEREIGN_USER SOVEREIGN_PASSWORD MODEL; do
   if [ -n "${!name:-}" ]; then
     k6_env+=(-e "$name=${!name}")

@@ -47,12 +47,24 @@ Each virtual user (VU) is a household member with its own account (`loaduser-000
 | ------------ | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
 | `smoke`      | 1 VU per scenario × 1 min                                           | Do the scripts and the stack work? Zero errors allowed.                               |
 | `load`       | ramp to 20 VUs in 5 min, hold 20 min, ramp down                     | Are the SLOs met at the expected peak, with headroom?                                 |
-| `stress`     | 20 → 50 → 100 → 150 VUs, 5 min per step                             | Where do the SLOs start to break, and how does it degrade?                            |
-| `spike`      | 5 → 150 VUs in 30 s, hold 2 min, back to 5 for 5 min                | Does a burst cause errors, and does the system recover by itself?                     |
+| `stress`     | 130 → 333 → 670 → 1000 VUs, 5 min per step                          | Where do the SLOs start to break, and how does it degrade?                            |
+| `spike`      | 5 → 600 VUs in 30 s, hold 2 min, back to 5 for 5 min                | Does a burst cause errors, and does the system recover by itself?                     |
 | `soak`       | 15 VUs for 2 h                                                      | Are there leaks (memory, connections, SSE relay, caches)?                             |
 | `breakpoint` | arrival rate ramping to 200 iterations/s over 30 min, no think time | What is the maximum sustainable throughput? Aborts at the first sustained SLO breach. |
 
-`VUS` scales the peak (for breakpoint, the peak rate) and `HOLD` sets the plateau. `NO_THINK=1` removes think time.
+`VUS` scales the peak (for breakpoint, the peak rate) and `HOLD` sets the plateau. `NO_THINK=1` removes think time. `SCENARIOS=browse,write,search,auth` runs a subset, which keeps its relative weights and takes the whole load.
+
+**Chat saturates first, by design.** Praxis runs at most `Assistant:MaxConcurrentTurns` (8) turns at once, and the rest queue. With the stub's 1.8 s answers, that caps turns at about 8 ÷ 1.9 s ≈ 4 per second; above that, `chat_turn_ms` grows with the queue. A full-mix breakpoint therefore stops on chat at about 5 turns/s, long before the HTTP paths are busy. To measure those, leave chat out: `SCENARIOS=browse,write,search,auth VUS=400 load/run.sh breakpoint`. In production, llama.cpp's `parallel` slots (2 in `infra/llm/models.ini`) cap chat well below Sentium's 8.
+
+## Capacity (measured 2026-11-28, 2 CPU / 2 GB sentium-web)
+
+| Path                               | Limit                                                        | What runs out                                                    |
+| ---------------------------------- | ------------------------------------------------------------ | ---------------------------------------------------------------- |
+| Assistant turns                    | about 4 turns/s (8 concurrent × 1.9 s stub answers)          | `Assistant:MaxConcurrentTurns`; turns queue beyond it            |
+| HTTP (browse, write, search, auth) | about 220 iterations/s, roughly 450 requests/s               | sentium-web CPU (≈1.6 of 2 cores); Postgres stays near 0.2 cores |
+| Real household load                | 150 members with think time ≈ 64 requests/s, under 0.3 cores | nothing                                                          |
+
+Past the HTTP limit the failure is a cascade, not a clean refusal: requests slow down, hold database connections longer, the Npgsql pool (100) runs dry, and requests fail with 500 after waiting 15 s for a connection. Sentium sheds no load before that point.
 
 ## Service-level objectives
 

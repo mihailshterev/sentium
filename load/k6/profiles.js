@@ -1,6 +1,6 @@
 // The standard test types as k6 scenario sets. Each profile describes one load shape for the whole household; it is
 // split across the scenarios by WEIGHTS, so every profile runs the same workload mix.
-import { HOLD, PEAK, PROFILE } from "./lib/config.js";
+import { HOLD, PEAK, PROFILE, SCENARIOS } from "./lib/config.js";
 
 /** Share of the concurrent users (or of the arrival rate) each scenario gets. */
 export const WEIGHTS = { browse: 0.6, write: 0.15, chat: 0.15, search: 0.07, auth: 0.03 };
@@ -21,10 +21,11 @@ const PROFILES = {
       ["2m", 0],
     ],
   },
-  // Steps past the expected peak to find where the SLOs start to break.
+  // Steps past the expected peak to find where the SLOs break: ~1000 thinking VUs is about the ~450 req/s a
+  // 2-CPU sentium-web saturates at (README "Capacity"); chat saturates far earlier, by design.
   stress: {
     kind: "ramp",
-    peak: 150,
+    peak: 1000,
     hold: "5m",
     stages: (p, h) => [
       ["2m", p * 0.13],
@@ -41,7 +42,7 @@ const PROFILES = {
   // A sudden burst, then a quiet stretch to check the system recovers on its own.
   spike: {
     kind: "ramp",
-    peak: 150,
+    peak: 600,
     hold: "2m",
     stages: (p, h) => [
       ["1m", 5],
@@ -108,8 +109,17 @@ function scenario(name, weight) {
   };
 }
 
+const unknown = SCENARIOS.filter((name) => !(name in WEIGHTS));
+if (unknown.length > 0) {
+  throw new Error(`Unknown SCENARIOS ${unknown.join(", ")}. Use any of: ${Object.keys(WEIGHTS).join(", ")}`);
+}
+
+// A subset keeps its relative weights and gets the whole load, so the profile's peak still means the same total.
+const selected = Object.entries(WEIGHTS).filter(([name]) => SCENARIOS.length === 0 || SCENARIOS.includes(name));
+const selectedWeight = selected.reduce((sum, [, weight]) => sum + weight, 0);
+
 export const scenarios = Object.fromEntries(
-  Object.entries(WEIGHTS).map(([name, weight]) => [name, scenario(name, weight)]),
+  selected.map(([name, weight]) => [name, scenario(name, weight / selectedWeight)]),
 );
 
 function maxVUs(definition) {
