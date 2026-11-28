@@ -1,0 +1,85 @@
+name: Sentium.Load
+
+# Load tests run on demand only (see load/README.md): they take minutes to hours and need a quiet runner.
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: "Test type"
+        type: choice
+        options: [smoke, load, stress, spike, soak, breakpoint]
+        default: smoke
+      vus:
+        description: "Peak VUs (breakpoint: peak iterations/s); empty = profile default"
+        type: string
+        default: ""
+      hold:
+        description: "Plateau duration, e.g. 10m; empty = profile default"
+        type: string
+        default: ""
+      tolerance:
+        description: "Allowed p95/p99 regression against the baseline (%)"
+        type: string
+        default: "15"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: load-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  load:
+    name: Load test (${{ inputs.profile }})
+    runs-on: ubuntu-latest
+    # Soak holds for 2 h by default; everything else finishes well within an hour.
+    timeout-minutes: ${{ inputs.profile == 'soak' && 180 || 75 }}
+
+    env:
+      PROFILE: ${{ inputs.profile }}
+      VUS: ${{ inputs.vus }}
+      HOLD: ${{ inputs.hold }}
+      TOLERANCE: ${{ inputs.tolerance }}
+
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          persist-credentials: false
+
+      - name: Setup Node (baseline comparison)
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: "24"
+
+      - name: Build the system under test
+        run: docker compose -f load/compose.load.yaml build sentium-web
+
+      - name: Run the load test
+        run: LOAD_SKIP_BUILD=1 load/run.sh "$PROFILE"
+
+      - name: Write the job summary
+        if: ${{ !cancelled() }}
+        run: |
+          {
+            echo "## Load test: $PROFILE"
+            if [ -f "load/results/$PROFILE-comparison.md" ]; then cat "load/results/$PROFILE-comparison.md"; fi
+            echo
+            echo "The k6 HTML report, the full summary JSON and the container resource samples are in the run's artifacts."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Dump service logs
+        if: failure()
+        run: docker compose -f load/compose.load.yaml logs --no-color --tail 500
+
+      - name: Upload results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: load-${{ inputs.profile }}-results
+          path: load/results
+          retention-days: 14
+
+      - name: Stop the stack
+        if: always()
+        run: docker compose -f load/compose.load.yaml down --volumes --remove-orphans

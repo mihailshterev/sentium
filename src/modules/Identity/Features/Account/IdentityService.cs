@@ -1,4 +1,3 @@
-using System.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Sentium.Core.Constants;
@@ -18,6 +17,8 @@ internal sealed class IdentityService(
     ISettingsService settings,
     ILogger<IdentityService> logger) : IIdentityService
 {
+    private const long RegistrationLockKey = 0x4964_5265_6769_7374; // "IdRegist"
+
     private static readonly string[] FirstAccountRoles = [Roles.Member, Roles.Sovereign];
     private static readonly string[] MemberRoles = [Roles.Member];
 
@@ -31,12 +32,7 @@ internal sealed class IdentityService(
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        // Serializable, so of two accounts registering at once on a fresh install only one becomes the Sovereign; the
-        // other fails to serialize and is re-run (see ExecuteInTransactionAsync), and then sees the first account.
-        var outcome = await dbContext.Database.ExecuteInTransactionAsync(
-            () => CreateUserAsync(request, ct),
-            IsolationLevel.Serializable,
-            ct);
+        var outcome = await dbContext.Database.ExecuteInTransactionAsync(() => CreateUserAsync(request, ct), ct: ct);
 
         if (outcome.User is { } user && outcome.Result.Succeeded)
         {
@@ -77,7 +73,6 @@ internal sealed class IdentityService(
             return IdentityResult.Failed(new IdentityError { Description = "User not found." });
         }
 
-        // Also rotates the security stamp, which is what ends the other sessions.
         var result = await userManager.ChangePasswordAsync(user, currentPassword, newPassword);
         if (!result.Succeeded)
         {
@@ -121,6 +116,11 @@ internal sealed class IdentityService(
     {
         dbContext.ChangeTracker.Clear();
 
+        // Registrations take turns, so of two accounts registering at once on a fresh install only one becomes the
+        // Sovereign. A lock, not SERIALIZABLE: every sign-up reads the whole user table, so under SERIALIZABLE a burst
+        // of them conflicts on every retry until the retries run out.
+        await dbContext.Database.ExecuteSqlAsync($"SELECT pg_advisory_xact_lock({RegistrationLockKey})", ct);
+
         var isFirstAccount = !await userManager.Users.AnyAsync(ct);
         if (!isFirstAccount && !await IsRegistrationOpenAsync(ct))
         {
@@ -146,8 +146,7 @@ internal sealed class IdentityService(
             if (!roleResult.Succeeded)
             {
                 // Rolls the account back with the transaction: a user without its roles must not exist.
-                throw new InvalidOperationException(
-                    $"Failed to assign role {role} to the new user: {string.Join(", ", roleResult.Errors.Select(e => e.Description))}");
+                throw new InvalidOperationException($"Failed to assign role {role} to the new user: {string.Join(", ", roleResult.Errors.Select(e => e.Description))}");
             }
         }
 
